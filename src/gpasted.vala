@@ -28,12 +28,14 @@ namespace GPaste {
                 return;
             }
 
-            string line;
             try {
+                int64 length;
                 var dis = new DataInputStream(history_file.read());
-                while((line = dis.read_line(null)) != null) {
-                    stdout.printf("loaded: %s\n", line);
-                    history.append(line);
+                while((length = dis.read_int64()) != 0) {
+                    var line = new StringBuilder();
+                    for(int64 i = 0 ; i < length ; ++i) line.append_unichar(dis.read_byte());
+                    stdout.printf("loaded: %s\n", line.str);
+                    history.append(line.str);
                 }
             } catch (Error e) {
                 stderr.printf("Could not read history file\n");
@@ -54,9 +56,10 @@ namespace GPaste {
                 var dos = new DataOutputStream(history_file_stream);
                 foreach(string line in history) {
                     stdout.printf("saved: %s\n", line);
+                    dos.put_int64(line.length);
                     dos.put_string(line);
-                    dos.put_string("\n");
                 }
+                dos.put_int64(0);
             } catch (Error e) {
                 stderr.printf("Could not create history file\n");
             }
