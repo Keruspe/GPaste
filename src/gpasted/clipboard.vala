@@ -40,14 +40,27 @@ namespace GPaste {
             time.attach(null);
         }
 
+        public void select(string selection) {
+            foreach(Clipboard c in clipboards) {
+                c.real().set_text(selection, selection.length);
+            }
+        }
+
         private bool checkClipboards() {
             string text;
             foreach(Clipboard c in clipboards) {
                 text = c.real().wait_for_text();
-                if (text == null) continue;
+                if (text == null) {
+                    unowned List<string> history = History.getInstance().getHistory();
+                    if (history.length() == 0)
+                        continue;
+                    else {
+                        string selection = history.nth_data(0);
+                        c.real().set_text(selection, selection.length);
+                    }
+                }
                 if (c.text != text) {
                     Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                    //stdout.printf("Text changed for %s: %s\n", (c.type != tmp) ? "primary" : "clipboard", text);
                     c.text = text;
                     if (c.type == tmp)
                         History.getInstance().add(text);
