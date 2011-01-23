@@ -12,8 +12,8 @@ namespace GPaste {
         }
 
         public void add(string selection) {
-            History.getInstance().add(selection);
             ClipboardsManager.getInstance().select(selection);
+            History.getInstance().add(selection);
         }
 
         public void select(uint index) {
