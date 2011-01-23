@@ -30,6 +30,7 @@ namespace GPaste {
         }
 
         public void select(uint index) {
+            return_if_fail(index < history.length());
             string selection = history.nth_data(index);
             add(selection);
             ClipboardsManager.getInstance().select(selection);
