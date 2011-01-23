@@ -11,6 +11,10 @@ namespace GPaste {
             return (string[]) vb.end();
         }
 
+        public void add(string selection) {
+            History.getInstance().add(selection);
+        }
+
     }
 
     public class GPasted : Object {

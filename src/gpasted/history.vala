@@ -18,10 +18,10 @@ namespace GPaste {
             return singleton;
         }
 
-        public void add(string line) {
+        public void add(string selection) {
             foreach (string s in history)
-                if (s == line) return;
-            history.prepend(line);
+                if (s == selection) return;
+            history.prepend(selection);
             save();
         }
 
