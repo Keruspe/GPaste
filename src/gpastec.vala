@@ -4,6 +4,7 @@ namespace GPaste {
     interface GPastec : Object {
         public abstract string[] getHistory() throws IOError;
         public abstract void add(string selection) throws IOError;
+        public abstract void select (uint index) throws IOError;
     }
 
     public static int main(string[] args) {
@@ -12,7 +13,9 @@ namespace GPaste {
             if (args.length == 1) {
                 string[] history = gpastec.getHistory();
                 for (int i = 0 ; i < history.length ; ++i)
-                    stdout.printf("\n%d:\n%s\n\n", i+1, history[i]);
+                    stdout.printf("\n%d:\n%s\n\n", i, history[i]);
+            } else if (args.length == 3 && args[1] == "set") {
+                gpastec.select(args[2].to_int());
             } else {
                 gpastec.add(args[1]);
             }

@@ -19,10 +19,18 @@ namespace GPaste {
         }
 
         public void add(string selection) {
-            foreach (string s in history)
-                if (s == selection) return;
+            for (unowned List<string?> s = history ; s != null ; s = s.next) {
+                if (s.data == selection) {
+                    history.remove_link(s);
+                    break;
+                }
+            }
             history.prepend(selection);
             save();
+        }
+
+        public void select(uint index) {
+           add(history.nth_data(index));
         }
 
         public void load() {

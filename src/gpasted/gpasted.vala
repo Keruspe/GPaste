@@ -15,6 +15,10 @@ namespace GPaste {
             History.getInstance().add(selection);
         }
 
+        public void select(uint index) {
+            History.getInstance().select(index);
+        }
+
     }
 
     public class GPasted : Object {
