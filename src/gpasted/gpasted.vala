@@ -13,7 +13,7 @@ namespace GPaste {
 
     }
 
-    public class MainClass : Object {
+    public class GPasted : Object {
         private static MainLoop loop;
 
         private static void handle(int signal) {
