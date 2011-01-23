@@ -1,14 +1,15 @@
 namespace GPaste {
 
-    [DBus (name = "org.gnome.GPaste", signature = "as")]
+    [DBus (name = "org.gnome.GPaste")]
     public class GPasteServer : Object {
 
-        public string[] getHistory() {
+        [DBus (signature = "as")]
+        public Variant getHistory() {
             unowned List<string> history = History.getInstance().getHistory();
             var vb = new VariantBuilder(new VariantType.array(VariantType.STRING));
             foreach (string s in history)
                 vb.add_value(s);
-            return (string[]) vb.end();
+            return vb.end();
         }
 
         public void add(string selection) {
