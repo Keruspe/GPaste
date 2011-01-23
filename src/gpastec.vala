@@ -3,7 +3,7 @@ namespace GPaste {
     [DBus (name = "org.gnome.GPaste", signature = "as")]
     interface GPastec : Object {
         public abstract string[] getHistory() throws IOError;
-        public abstract void add(string selection, bool update_clipboards = false) throws IOError;
+        public abstract void add(string selection) throws IOError;
         public abstract void select (uint index) throws IOError;
     }
 
@@ -18,7 +18,7 @@ namespace GPaste {
                     sb.append_c('\n');
                     sb.append(s);
                 }
-                gpastec.add(sb.str, true);
+                gpastec.add(sb.str);
             } else if (args.length == 1) {
                 string[] history = gpastec.getHistory();
                 for (int i = 0 ; i < history.length ; ++i)

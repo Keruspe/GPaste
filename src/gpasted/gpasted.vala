@@ -11,10 +11,9 @@ namespace GPaste {
             return (string[]) vb.end();
         }
 
-        public void add(string selection, bool update_clipboards = false) {
+        public void add(string selection) {
             History.getInstance().add(selection);
-            if (update_clipboards)
-                ClipboardsManager.getInstance().select(selection);
+            ClipboardsManager.getInstance().select(selection);
         }
 
         public void select(uint index) {
