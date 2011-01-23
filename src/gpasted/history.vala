@@ -1,6 +1,7 @@
 namespace GPaste {
 
     public class History : Object {
+        private const int MAX_ITEMS = 20; /* TODO: make it configurable */
         private List<string> history;
         private static History singleton;
 
@@ -26,6 +27,16 @@ namespace GPaste {
                 }
             }
             history.prepend(selection);
+            if (history.length() > MAX_ITEMS) {
+                unowned List<string?> tmp = history;
+                for (int i = 0 ; i < MAX_ITEMS ; ++i)
+                    tmp = tmp.next;
+                do {
+                    unowned List<string?> next = tmp.next;
+                    history.remove_link(tmp);
+                    tmp = next;
+                } while(tmp != null);
+            }
             save();
         }
 
