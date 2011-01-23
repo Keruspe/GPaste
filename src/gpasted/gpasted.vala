@@ -4,7 +4,7 @@ namespace GPaste {
     public class GPasteServer : Object {
 
         public string[] getHistory() {
-            var history = History.getInstance().getHistory();
+            unowned List<string> history = History.getInstance().getHistory();
             var vb = new VariantBuilder(new VariantType.array(VariantType.STRING));
             foreach (string s in history)
                 vb.add_value(s);

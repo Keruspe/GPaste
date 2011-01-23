@@ -4,8 +4,8 @@ namespace GPaste {
         private List<string> history;
         private static History singleton;
 
-        public List<string> getHistory() {
-            return history.copy();
+        public unowned List<string> getHistory() {
+            return history;
         }
 
         private History() {
