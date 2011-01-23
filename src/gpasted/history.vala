@@ -4,6 +4,10 @@ namespace GPaste {
         private List<string> history;
         private static History singleton;
 
+        public List<string> getHistory() {
+            return history.copy();
+        }
+
         private History() {
             history = new List<string>();
         }
