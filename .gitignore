@@ -1,5 +1,19 @@
 gpasted
-gpaste
 !src/gpasted
+gpaste
+*.c
+Makefile
 gpasted.history
+.aux
+ABOUT-NLS
+Makefile.in
+aclocal.m4
+autom4te.cache
+config*
+!configure.ac
+intl
+m4
+po
+.deps
+*stamp*
 
