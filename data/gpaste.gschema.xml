@@ -1,0 +1,21 @@
+<schemalist>
+  <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="GPaste">
+
+    <key name="max-history-size" type="i">
+      <default>20</default>
+      <summary>Max history size</summary>
+      <description>
+        Maximum number of items in history
+      </description>
+    </key>
+
+    <key name="primary-to-history" type="b">
+      <default>false</default>
+      <summary>Does the primary selection affects history?</summary>
+      <description>
+        By default, only clipboard (ctrl+c) affects history.
+      </description>
+    </key>
+
+  </schema>
+</schemalist>
