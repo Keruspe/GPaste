@@ -53,6 +53,8 @@ namespace GPaste {
             History.getInstance().select(index);
         }
 
+        public signal void changed();
+
     }
 
     public class GPasted : Object {

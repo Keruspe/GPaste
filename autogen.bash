@@ -1,5 +1,5 @@
 #!/bin/bash
-mkdir m4
+mkdir -p m4
 autoreconf -i
 intltoolize --force --automake
 ./configure $@

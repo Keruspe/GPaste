@@ -33,7 +33,7 @@
 namespace GPaste {
 
     [DBus (name = "org.gnome.GPaste")]
-    interface GPaste : Object {
+    interface GPasteBusClient : Object {
         [DBus (signature = "as")]
         public abstract Variant getHistory() throws IOError;
         public abstract void add(string selection) throws IOError;
@@ -42,7 +42,7 @@ namespace GPaste {
 
     public static int main(string[] args) {
         try {
-            GPaste gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+            GPasteBusClient gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
             if (! Posix.isatty(stdin.fileno())) {
                 var sb = new StringBuilder();
                 sb.append(stdin.read_line());

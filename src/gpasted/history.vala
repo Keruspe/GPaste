@@ -32,10 +32,16 @@
 
 namespace GPaste {
 
+    [DBus (name = "org.gnome.GPaste")]
+    interface GPasteBusClient : Object {
+        public signal void changed();
+    }
+
     public class History : Object {
         private const int MAX_ITEMS = 20; /* TODO: make it configurable */
         private List<string> history;
         private static History singleton;
+        private GPasteBusClient bus_client;
 
         public unowned List<string> getHistory() {
             return history;
@@ -43,6 +49,8 @@ namespace GPaste {
 
         private History() {
             history = new List<string>();
+            bus_client = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+            bus_client.changed.connect(save);
         }
 
         public static History getInstance() {
@@ -69,7 +77,7 @@ namespace GPaste {
                     tmp = next;
                 } while(tmp != null);
             }
-            save();
+            bus_client.changed();
         }
 
         public void select(uint index) {
