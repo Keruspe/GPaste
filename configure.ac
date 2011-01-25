@@ -47,8 +47,6 @@ AC_SUBST(GTK_VALAFLAGS)
 
 AC_CONFIG_FILES([
   Makefile
-  src/Makefile
-  src/gpasted/Makefile
   po/Makefile.in
 ])
 AC_OUTPUT
