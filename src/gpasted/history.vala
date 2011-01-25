@@ -57,7 +57,7 @@ namespace GPaste {
 
         public void add(string selection) {
             for (unowned List<string?> s = history ; s != null ; s = s.next) {
-                if (s.data == selection || GPastedSettings.primaryToHistory()) {
+                if (s.data == selection) {
                     history.remove_link(s);
                     break;
                 }

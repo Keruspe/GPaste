@@ -94,7 +94,7 @@ namespace GPaste {
                 if (c.text != text) {
                     Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                     c.text = text;
-                    if (c.type == tmp)
+                    if (c.type == tmp || GPastedSettings.primaryToHistory())
                         History.getInstance().add(text);
                 }
             }
