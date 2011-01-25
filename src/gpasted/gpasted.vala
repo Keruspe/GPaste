@@ -33,7 +33,7 @@ namespace GPaste {
 
         private static void on_bus_aquired(DBusConnection conn) {
             try {
-                conn.register_object("/org/gnome/gpaste", new GPasteServer());
+                conn.register_object("/org/gnome/GPaste", new GPasteServer());
             } catch (IOError e) {
                 stderr.printf("Could not register DBus service.\n");
             }
