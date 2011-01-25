@@ -2,9 +2,11 @@ ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 
 CLEANFILES = 
 
+SUBDIRS = po
+
 VALAC = valac-0.12
 
-INCLUDES =\
+AM_CFLAGS =\
 	-include config.h
 
 bin_PROGRAMS = gpasted gpaste
