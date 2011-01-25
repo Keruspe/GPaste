@@ -32,16 +32,15 @@
 
 namespace GPaste {
 
-    [DBus (name = "org.gnome.GPaste")]
-    interface GPasteBusClient : Object {
-        public signal void changed();
-    }
-
     public class History : Object {
         private const int MAX_ITEMS = 20; /* TODO: make it configurable */
         private List<string> history;
         private static History singleton;
-        private bool save_on_dbus_event;
+
+        public virtual signal void changed() {
+            /* TODO: How to propagate over DBus ? */
+            save();
+        }
 
         public unowned List<string> getHistory() {
             return history;
@@ -49,14 +48,6 @@ namespace GPaste {
 
         private History() {
             history = new List<string>();
-            try {
-                GPasteBusClient bus_client = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
-                bus_client.changed.connect(save);
-                save_on_dbus_event = true;
-            } catch (IOError e) {
-                stderr.printf(_("Couldn't bind to \"changed\" DBus signal to save history."));
-                save_on_dbus_event = false;
-            }
         }
 
         public static History getInstance() {
@@ -83,14 +74,7 @@ namespace GPaste {
                     tmp = next;
                 } while(tmp != null);
             }
-            if (save_on_dbus_event) {
-                try {
-                    GPasteBusClient bus_client = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
-                    bus_client.changed();
-                } catch (IOError e) {
-                    save();
-                }
-            } else save();
+            changed();
         }
 
         public void select(uint index) {
