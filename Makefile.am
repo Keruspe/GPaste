@@ -4,11 +4,6 @@ CLEANFILES =
 
 SUBDIRS = po
 
-VALAC = valac-0.12
-
-AM_CFLAGS =\
-	-include config.h
-
 bin_PROGRAMS = gpasted gpaste
 
 gpasted_SOURCES = \
@@ -17,15 +12,19 @@ gpasted_SOURCES = \
 	src/gpasted/gpasted.vala
 
 gpasted_VALAFLAGS = \
+	--vapidir vapi \
 	$(GTK_VALAFLAGS) \
 	$(GIO_VALAFLAGS) \
 	$(GLIB_VALAFLAGS) \
+	--pkg config \
 	--pkg posix
 
 gpasted_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(GIO_CFLAGS) \
-	$(GLIB_CFLAGS)
+	$(GLIB_CFLAGS) \
+	--include config.h \
+	$(CFLAGS)
 
 CLEANFILES += \
 	${gpasted_SOURCES:.vala=.c}
@@ -45,7 +44,8 @@ gpaste_VALAFLAGS = \
 
 gpaste_CFLAGS = \
 	$(GIO_CFLAGS) \
-	$(GLIB_CFLAGS)
+	$(GLIB_CFLAGS) \
+	$(CFLAGS)
 
 gpaste_LDADD = \
 	$(GIO_LIBS) \

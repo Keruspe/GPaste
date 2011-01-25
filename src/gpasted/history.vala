@@ -82,7 +82,7 @@ namespace GPaste {
         public void load() {
             var history_file = File.new_for_path("gpasted.history");
             if (!history_file.query_exists()) {
-                stderr.printf("Could not read history file\n");
+                stderr.printf(_("Could not read history file\n"));
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace GPaste {
                     history.append(line.str);
                 }
             } catch (Error e) {
-                stderr.printf("Could not read history file\n");
+                stderr.printf(_("Could not read history file\n"));
             }
         }
 
@@ -107,7 +107,7 @@ namespace GPaste {
                     history_file.delete();
                 var history_file_stream = history_file.create(FileCreateFlags.NONE);
                 if (!history_file.query_exists()) {
-                    stderr.printf("Could not create history file\n");
+                    stderr.printf(_("Could not create history file\n"));
                     return;
                 }
                 var dos = new DataOutputStream(history_file_stream);
@@ -117,7 +117,7 @@ namespace GPaste {
                 }
                 dos.put_int64(0);
             } catch (Error e) {
-                stderr.printf("Could not create history file\n");
+                stderr.printf(_("Could not create history file\n"));
             }
         }
     }

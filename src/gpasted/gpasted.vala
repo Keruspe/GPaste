@@ -59,7 +59,7 @@ namespace GPaste {
         private static MainLoop loop;
 
         private static void handle(int signal) {
-            stdout.printf("Signal %d recieved, ", signal);
+            stdout.printf(_("Signal %d recieved, exiting\n"), signal);
             loop.quit();
         }
 
@@ -67,16 +67,18 @@ namespace GPaste {
             try {
                 conn.register_object("/org/gnome/GPaste", new GPasteServer());
             } catch (IOError e) {
-                stderr.printf("Could not register DBus service.\n");
+                stderr.printf(_("Could not register DBus service.\n"));
             }
         }
 
         private static void start_dbus() {
             Bus.own_name(BusType.SESSION, "org.gnome.GPaste", BusNameOwnerFlags.NONE,
-                on_bus_aquired, () => {}, () => stderr.printf("Could not aquire DBus name.\n"));
+                on_bus_aquired, () => {}, () => stderr.printf(_("Could not aquire DBus name.\n")));
         }
     
         public static int main(string[] args) {
+            Intl.bindtextdomain(Config.GETTEXT_PACKAGE, "po");
+            Intl.textdomain(Config.GETTEXT_PACKAGE);
             Gtk.init(ref args);
             History.getInstance().load();
             var clipboard = new Clipboard(Gdk.SELECTION_CLIPBOARD);
@@ -92,7 +94,6 @@ namespace GPaste {
             start_dbus();
             loop = new MainLoop(null, false);
             loop.run();
-            stdout.printf("exiting...\n");
             return 0;
         }
     }
