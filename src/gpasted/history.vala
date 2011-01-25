@@ -53,7 +53,7 @@ namespace GPaste {
                 GPasteBusClient bus_client = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 bus_client.changed.connect(save);
                 save_on_dbus_event = true;
-            } catch (IOError) {
+            } catch (IOError e) {
                 stderr.printf(_("Couldn't bind to \"changed\" DBus signal to save history."));
                 save_on_dbus_event = false;
             }
@@ -87,7 +87,7 @@ namespace GPaste {
                 try {
                     GPasteBusClient bus_client = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     bus_client.changed();
-                } ctach (IOError e) {
+                } catch (IOError e) {
                     save();
                 }
             } else save();
