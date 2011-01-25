@@ -4,7 +4,9 @@ CLEANFILES =
 
 SUBDIRS = po
 
-bin_PROGRAMS = gpasted gpaste
+bin_PROGRAMS = gpaste
+
+libexec_PROGRAMS = gpasted
 
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
