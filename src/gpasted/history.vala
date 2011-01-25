@@ -80,7 +80,13 @@ namespace GPaste {
         }
 
         public void load() {
-            var history_file = File.new_for_path("gpasted.history");
+            string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
+            var history_dir = File.new_for_path(history_dir_path);
+            if (!history_dir.query_exists()) {
+                Posix.mkdir(history_dir_path, 0700);
+                return;
+            }
+            var history_file = File.new_for_path(history_dir_path + "/history");
             if (!history_file.query_exists()) {
                 stderr.printf(_("Could not read history file\n"));
                 return;
@@ -100,8 +106,7 @@ namespace GPaste {
         }
 
         public void save() {
-            var history_file = File.new_for_path("gpasted.history");
-
+            var history_file = File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
             try {
                 if (history_file.query_exists())
                     history_file.delete();

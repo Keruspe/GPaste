@@ -3,7 +3,6 @@ gpasted
 gpaste
 *.c
 Makefile
-gpasted.history
 .aux
 ABOUT-NLS
 Makefile.in
