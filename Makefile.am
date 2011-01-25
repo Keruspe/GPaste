@@ -54,3 +54,13 @@ gpaste_LDADD = \
 CLEANFILES += \
 	${gpaste_SOURCES:.vala=.c}
 
+gsettings_SCHEMAS = data/gpaste.gschema.xml
+
+@GSETTINGS_RULES@
+
+gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
+	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
+
+CLEANFILES += \
+	$(gsettings_SCHEMAS) \
+	gschemas.compiled
