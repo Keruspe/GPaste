@@ -11,6 +11,7 @@ aclocal.m4
 autom4te.cache
 config*
 !configure.ac
+!config.vapi
 intl
 m4
 .deps
