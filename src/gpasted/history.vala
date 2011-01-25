@@ -3,29 +3,29 @@
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	This program is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *	
+ *
  *	Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
- *	
+ *
  *	This file is part of GPaste.
- *	
+ *
  *	GPaste is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	GPaste is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -33,26 +33,29 @@
 namespace GPaste {
 
     public class History : Object {
-        private List<string> history;
-        private static History singleton;
+        private List<string> _history;
+        public unowned List<string> history {
+            get {
+                return _history;
+            }
+        }
+
+        private static History _instance;
+        public static History instance {
+            get {
+                if (_instance == null)
+                    _instance = new History();
+                return _instance;
+            }
+        }
 
         public virtual signal void changed() {
             /* TODO: How to propagate over DBus ? */
             save();
         }
 
-        public unowned List<string> getHistory() {
-            return history;
-        }
-
         private History() {
-            history = new List<string>();
-        }
-
-        public static History getInstance() {
-            if (singleton == null)
-                singleton = new History();
-            return singleton;
+            _history = new List<string>();
         }
 
         public void add(string selection) {
@@ -80,7 +83,7 @@ namespace GPaste {
             if (index >= history.length()) return;
             string selection = history.nth_data(index);
             add(selection);
-            ClipboardsManager.getInstance().select(selection);
+            ClipboardsManager.instance.select(selection);
         }
 
         public void load() {
