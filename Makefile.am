@@ -9,6 +9,7 @@ bin_PROGRAMS = gpasted gpaste
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
 	src/gpasted/history.vala \
+	src/gpasted/settings.vala \
 	src/gpasted/gpasted.vala
 
 gpasted_VALAFLAGS = \

@@ -26,4 +26,5 @@ quot.sed
 remove-potcdate.sin
 POTFILES
 *.gmo
+*.gschema.valid
 
