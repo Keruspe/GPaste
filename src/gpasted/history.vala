@@ -58,23 +58,29 @@ namespace GPaste {
         private GPasteBusSignalClient gpaste_signal {
             get {
                 if (_gpaste_signal == null) {
-                    try {
-                        _gpaste_signal = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
-                    } catch (IOError e) {
-                        stderr.printf(_("Could not connect to self bus for sending signals\n"));
-                    }
+                    initialize_dbus.begin();
                 }
                 return _gpaste_signal;
             }
         }
 
-        public unowned List<string> get_unowned_history() {
+        private async void initialize_dbus() {
+            yield;
+            try {
+                _gpaste_signal = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+            } catch (IOError e) {
+                stderr.printf(_("Could not connect to self bus for sending signals\n"));
+            }
+        }
+
+        private unowned List<string> get_unowned_history() {
             return _history;
         }
 
         public virtual signal void changed() {
             save();
-            // gpaste_signal.changed(); /* FIXME */
+            if (gpaste_signal != null)
+                gpaste_signal.changed();
         }
 
         private History() {
