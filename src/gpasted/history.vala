@@ -39,9 +39,9 @@ namespace GPaste {
 
     public class History : Object {
         private List<string> _history;
-        public unowned List<string> history {
+        public List<string> history {
             get {
-                return _history;
+                return get_unowned_history();
             }
         }
 
@@ -68,6 +68,10 @@ namespace GPaste {
             }
         }
 
+        public unowned List<string> get_unowned_history() {
+            return _history;
+        }
+
         public virtual signal void changed() {
             save();
             // gpaste_signal.changed(); /* FIXME */
@@ -80,18 +84,18 @@ namespace GPaste {
         public void add(string selection) {
             for (unowned List<string?> s = history ; s != null ; s = s.next) {
                 if (s.data == selection) {
-                    history.remove_link(s);
+                    _history.remove_link(s);
                     break;
                 }
             }
-            history.prepend(selection);
-            if (history.length() > GPastedSettings.maxHistorySize()) {
+            _history.prepend(selection);
+            if (_history.length() > GPastedSettings.maxHistorySize()) {
                 unowned List<string?> tmp = history;
                 for (int i = 0 ; i < GPastedSettings.maxHistorySize() ; ++i)
                     tmp = tmp.next;
                 do {
                     unowned List<string?> next = tmp.next;
-                    history.remove_link(tmp);
+                    _history.remove_link(tmp);
                     tmp = next;
                 } while(tmp != null);
             }
@@ -99,8 +103,8 @@ namespace GPaste {
         }
 
         public void select(uint index) {
-            if (index >= history.length()) return;
-            string selection = history.nth_data(index);
+            if (index >= _history.length()) return;
+            string selection = _history.nth_data(index);
             add(selection);
             ClipboardsManager.instance.select(selection);
         }
@@ -125,7 +129,7 @@ namespace GPaste {
                 while((length = dis.read_int64()) != 0) {
                     var line = new StringBuilder();
                     for(int64 i = 0 ; i < length ; ++i) line.append_unichar(dis.read_byte());
-                    history.append(line.str);
+                    _history.append(line.str);
                 }
             } catch (Error e) {
                 stderr.printf(_("Could not read history file\n"));
@@ -143,7 +147,7 @@ namespace GPaste {
                     return;
                 }
                 var dos = new DataOutputStream(history_file_stream);
-                foreach(string line in history) {
+                foreach(string line in _history) {
                     dos.put_int64(line.length);
                     dos.put_string(line);
                 }
