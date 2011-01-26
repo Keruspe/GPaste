@@ -44,14 +44,17 @@ gpaste_SOURCES = \
 	src/gpaste.vala
 
 gpaste_VALAFLAGS = \
+	--vapidir vapi \
 	$(GIO_VALAFLAGS) \
 	$(GLIB_VALAFLAGS) \
+	--pkg config \
 	--pkg posix
 
 gpaste_CFLAGS = \
 	$(GIO_CFLAGS) \
 	$(GLIB_CFLAGS) \
 	--include config.h \
+	-DLOCALEDIR=\"${localedir}\" \
 	$(CFLAGS)
 
 gpaste_LDADD = \
