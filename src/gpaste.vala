@@ -61,22 +61,36 @@ namespace GPaste {
                         sb.append(s);
                     }
                     gpaste.add(sb.str);
-                } else if (args.length == 1) {
-                    string[] history = (string[]) gpaste.getHistory();
-                    for (int i = 0 ; i < history.length ; ++i)
-                        stdout.printf("%d: %s\n", i, history[i]);
-                } else if (args[1] == "help") { 
-                    usage(args[0]);
-                    return 0;
-                } else if (args.length == 3 && args[1] == "set") {
-                    gpaste.select(args[2].to_int());
                 } else {
-                    gpaste.add(args[1]);
+                    switch(args.length) {
+                    case 1:
+                        string[] history = (string[]) gpaste.getHistory();
+                        for (int i = 0 ; i < history.length ; ++i)
+                            stdout.printf("%d: %s\n", i, history[i]);
+                        break;
+                    case 2:
+                        if (args[1] == "help")
+                            usage(args[0]);
+                        else
+                            gpaste.add(args[1]);
+                        break;
+                    case 3:
+                        if (args[1] != "set") {
+                            usage(args[0]);
+                            return 1;
+                        }
+                        gpaste.select(args[2].to_int());
+                        break;
+                    default:
+                        usage(args[0]);
+                        return 1;
+                    }
                 }
+                return 0;
             } catch (IOError e) {
                 stderr.printf("%s\n", e.message);
+                return 1;
             }
-            return 0;
         }
     }
 
