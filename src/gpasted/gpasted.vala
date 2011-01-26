@@ -52,6 +52,10 @@ namespace GPaste {
             History.instance.select(index);
         }
 
+        public void notify_change() {
+            changed();
+        }
+
         public signal void changed();
     }
 
