@@ -28,4 +28,5 @@ POTFILES
 *.gmo
 *.gschema.valid
 *.pot
+*.gschema.xml
 

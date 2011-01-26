@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 
+CP = cp
+
 CLEANFILES = 
 
 SUBDIRS = po
@@ -63,8 +65,13 @@ gsettings_SCHEMAS = data/gpaste.gschema.xml
 
 @GSETTINGS_RULES@
 
+data/gpaste.gschema.xml : data/gpaste.gschema.xml.in
+	$(AM_V_GEN) $(CP) $^ $@
+
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
+
+EXTRA_DIST = gpaste.gschema.xml.in
 
 CLEANFILES += \
 	$(gsettings_SCHEMAS) \
