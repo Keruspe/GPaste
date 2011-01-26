@@ -83,6 +83,18 @@ namespace GPaste {
             changed();
         }
 
+        public void delete(uint index) {
+            if (index >= _history.length()) return;
+            unowned List<string?> tmp = history;
+            for (int i = 0 ; i < index ; ++i)
+                tmp = tmp.next;
+            _history.remove_link(tmp);
+            if (index == 0)
+                select(0);
+            else
+                changed();
+        }
+
         public void select(uint index) {
             if (index >= _history.length()) return;
             string selection = _history.nth_data(index);

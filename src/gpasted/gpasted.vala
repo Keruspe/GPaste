@@ -48,6 +48,10 @@ namespace GPaste {
             History.instance.add(selection);
         }
 
+        public void delete(uint index) {
+            History.instance.delete(index);
+        }
+
         public void select(uint index) {
             History.instance.select(index);
         }

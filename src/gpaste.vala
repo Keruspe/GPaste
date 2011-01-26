@@ -46,6 +46,7 @@ namespace GPaste {
             stdout.printf(_(caller + ": print the history\n"));
             stdout.printf(_(caller + " <text>: set text to clipboard\n"));
             stdout.printf(_(caller + "set <number>: set <number>th item in history to clipboard\n"));
+            stdout.printf(_(caller + "delete <number>: delete <number>th item in history\n"));
             stdout.printf(_("whatever | " + caller + ": set the output of whatever to clipboard\n"));
         }
 
@@ -62,7 +63,7 @@ namespace GPaste {
                     }
                     gpaste.add(sb.str);
                 } else {
-                    switch(args.length) {
+                    switch (args.length) {
                     case 1:
                         string[] history = (string[]) gpaste.getHistory();
                         for (int i = 0 ; i < history.length ; ++i)
@@ -75,11 +76,17 @@ namespace GPaste {
                             gpaste.add(args[1]);
                         break;
                     case 3:
-                        if (args[1] != "set") {
+                        switch (args[1]) {
+                        case "set":
+                            gpaste.select(args[2].to_int());
+                            break;
+                        case "delete"
+                            gpaste.delete(args[2].to_int());
+                            break;
+                        default:
                             usage(args[0]);
                             return 1;
                         }
-                        gpaste.select(args[2].to_int());
                         break;
                     default:
                         usage(args[0]);
