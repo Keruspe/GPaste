@@ -49,6 +49,7 @@ gpaste_VALAFLAGS = \
 gpaste_CFLAGS = \
 	$(GIO_CFLAGS) \
 	$(GLIB_CFLAGS) \
+	--include config.h \
 	$(CFLAGS)
 
 gpaste_LDADD = \
