@@ -77,7 +77,7 @@ namespace GPaste {
         }
 
         public static int main(string[] args) {
-            Intl.bindtextdomain(Config.GETTEXT_PACKAGE, "po");
+            Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
             Intl.textdomain(Config.GETTEXT_PACKAGE);
             Gtk.init(ref args);
             History.instance.load();

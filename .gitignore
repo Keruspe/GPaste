@@ -27,4 +27,5 @@ remove-potcdate.sin
 POTFILES
 *.gmo
 *.gschema.valid
+*.pot
 

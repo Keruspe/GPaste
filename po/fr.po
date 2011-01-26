@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-01-25 16:51+0100\n"
+"POT-Creation-Date: 2011-01-26 09:51+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@perennou.com>\n"
 "Language-Team: French\n"
@@ -32,12 +32,13 @@ msgstr "Impossible d'inscrire le service DBus au registre.\n"
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
 
-#: ../src/gpasted/history.vala:85 ../src/gpasted/history.vala:98
+#: ../src/gpasted/history.vala:93 ../src/gpasted/history.vala:99
+#: ../src/gpasted/history.vala:112
 #, fuzzy, c-format
 msgid "Could not read history file\n"
 msgstr "Impossible de lire le fichier d'historique\n"
 
-#: ../src/gpasted/history.vala:110 ../src/gpasted/history.vala:120
+#: ../src/gpasted/history.vala:123 ../src/gpasted/history.vala:133
 #, fuzzy, c-format
 msgid "Could not create history file\n"
 msgstr "Impossible d'écrire le fichier d'historique\n"

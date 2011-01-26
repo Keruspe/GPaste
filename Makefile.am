@@ -27,6 +27,7 @@ gpasted_CFLAGS = \
 	$(GIO_CFLAGS) \
 	$(GLIB_CFLAGS) \
 	--include config.h \
+	-DLOCALEDIR=\"${localedir}\" \
 	$(CFLAGS)
 
 CLEANFILES += \
