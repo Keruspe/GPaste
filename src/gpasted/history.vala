@@ -32,6 +32,11 @@
 
 namespace GPaste {
 
+    [DBus (name = "org.gnome.GPaste")]
+    interface GPasteBusSignalClient : Object {
+        public signal void changed();
+    }
+
     public class History : Object {
         private List<string> _history;
         public unowned List<string> history {
@@ -49,9 +54,23 @@ namespace GPaste {
             }
         }
 
+        private GPasteBusSignalClient _gpaste_signal;
+        private GPasteBusSignalClient gpaste_signal {
+            get {
+                if (_gpaste_signal == null) {
+                    try {
+                        _gpaste_signal = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+                    } catch (IOError e) {
+                        stderr.printf(_("Could not connect to self bus for sending signals\n"));
+                    }
+                }
+                return _gpaste_signal;
+            }
+        }
+
         public virtual signal void changed() {
-            /* TODO: How to propagate over DBus ? */
             save();
+            // gpaste_signal.changed(); /* FIXME */
         }
 
         private History() {
