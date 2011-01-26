@@ -44,11 +44,11 @@ namespace GPaste {
     public class GPaste : Object {
         public static void usage(string caller) {
             stdout.printf(_("Usage:\n"));
-            stdout.printf(_(caller + ": print the history\n"));
-            stdout.printf(_(caller + " <text>: set text to clipboard\n"));
-            stdout.printf(_(caller + "set <number>: set <number>th item in history to clipboard\n"));
-            stdout.printf(_(caller + "delete <number>: delete <number>th item in history\n"));
-            stdout.printf(_("whatever | " + caller + ": set the output of whatever to clipboard\n"));
+            stdout.printf(caller + _(": print the history\n"));
+            stdout.printf(caller + _(" <text>: set text to clipboard\n"));
+            stdout.printf(caller + _(" set <number>: set <number>th item of the history to clipboard\n"));
+            stdout.printf(caller + _(" delete <number>: delete <number>th item of the history\n"));
+            stdout.printf(_("whatever | ") + caller + _(": set the output of whatever to clipboard\n"));
         }
 
         public static int main(string[] args) {

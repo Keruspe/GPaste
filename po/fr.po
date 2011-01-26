@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.1\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-01-26 20:47+0100\n"
+"POT-Creation-Date: 2011-01-26 22:14+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@perennou.com>\n"
 "Language-Team: French\n"
@@ -17,28 +17,65 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:72
+#: ../src/gpasted/gpasted.vala:76
 #, c-format
 msgid "Signal %d recieved, exiting\n"
 msgstr "Signal %d reçu, arrêt\n"
 
-#: ../src/gpasted/gpasted.vala:80
+#: ../src/gpasted/gpasted.vala:84
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#: ../src/gpasted/gpasted.vala:86
+#: ../src/gpasted/gpasted.vala:90
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
 
-#: ../src/gpasted/history.vala:97 ../src/gpasted/history.vala:103
-#: ../src/gpasted/history.vala:116
+#: ../src/gpasted/history.vala:109 ../src/gpasted/history.vala:115
+#: ../src/gpasted/history.vala:128
 #, fuzzy, c-format
 msgid "Could not read history file\n"
 msgstr "Impossible de lire le fichier d'historique\n"
 
-#: ../src/gpasted/history.vala:127 ../src/gpasted/history.vala:137
+#: ../src/gpasted/history.vala:139 ../src/gpasted/history.vala:149
 #, fuzzy, c-format
 msgid "Could not create history file\n"
-msgstr "Impossible d'écrire le fichier d'historique\n"
+msgstr "Impossible de créer le fichier d'historique\n"
+
+#: ../src/gpaste.vala:46
+#, c-format
+msgid "Usage:\n"
+msgstr "Utilisation :\n"
+
+#: ../src/gpaste.vala:47
+#, fuzzy, c-format
+msgid ": print the history\n"
+msgstr " : affiche l'historique.\n"
+
+#: ../src/gpaste.vala:48
+#, c-format
+msgid " <text>: set text to clipboard\n"
+msgstr " <texte> : met le texte dans le presse-papier\n"
+
+#: ../src/gpaste.vala:49
+#, fuzzy, c-format
+msgid " set <number>: set <number>th item of the history to clipboard\n"
+msgstr ""
+" set <nombre> : met le <nombre>e élément de l'historique dans le presse-"
+"papier\n"
+
+#: ../src/gpaste.vala:50
+#, fuzzy, c-format
+msgid " delete <number>: delete <number>th item of the history\n"
+msgstr " delete <nombre> : supprime le <nombre>e élément de l'historique\n"
+
+#: ../src/gpaste.vala:51
+#, c-format
+msgid "whatever | "
+msgstr "quelquechose | "
+
+#: ../src/gpaste.vala:51
+#, fuzzy, c-format
+msgid ": set the output of whatever to clipboard\n"
+msgstr " : met la sortie de quelquechose dans le presse-papier\n"
