@@ -37,7 +37,8 @@ namespace GPaste {
         [DBus (signature = "as")]
         public abstract Variant getHistory() throws IOError;
         public abstract void add(string selection) throws IOError;
-        public abstract void select (uint index) throws IOError;
+        public abstract void delete(uint index) throws IOError;
+        public abstract void select(uint index) throws IOError;
     }
 
     public class GPaste : Object {
@@ -80,7 +81,7 @@ namespace GPaste {
                         case "set":
                             gpaste.select(args[2].to_int());
                             break;
-                        case "delete"
+                        case "delete":
                             gpaste.delete(args[2].to_int());
                             break;
                         default:
