@@ -61,7 +61,7 @@ namespace GPaste {
                     try {
                         _gpaste_signal = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     } catch (IOError e) {
-                        stderr.printf(_("Couldn't conext to self bus to notify for changes.\n"));
+                        stderr.printf(_("Couldn't conect to self bus to notify for changes.\n"));
                     }
                 }
                 return _gpaste_signal;

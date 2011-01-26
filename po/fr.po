@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.1\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-01-26 09:51+0100\n"
+"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
+"POT-Creation-Date: 2011-01-26 19:18+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@perennou.com>\n"
 "Language-Team: French\n"
@@ -17,28 +17,38 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:62
+#: ../src/gpasted/gpasted.vala:66
 #, c-format
 msgid "Signal %d recieved, exiting\n"
 msgstr "Signal %d reçu, arrêt\n"
 
-#: ../src/gpasted/gpasted.vala:70
+#: ../src/gpasted/gpasted.vala:74
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#: ../src/gpasted/gpasted.vala:76
+#: ../src/gpasted/gpasted.vala:80
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
 
-#: ../src/gpasted/history.vala:93 ../src/gpasted/history.vala:99
-#: ../src/gpasted/history.vala:112
+#: ../src/gpasted/history.vala:64
+#, c-format
+msgid "Couldn't conect to self bus to notify for changes.\n"
+msgstr "Impossible de se connecter à notre prore bus pour notifier des changements.\n"
+
+#: ../src/gpasted/history.vala:81
+#, fuzzy, c-format
+msgid "Couldn't notify change via DBus.\n"
+msgstr "Impossible de notifier des changements via DBus.\n"
+
+#: ../src/gpasted/history.vala:122 ../src/gpasted/history.vala:128
+#: ../src/gpasted/history.vala:141
 #, fuzzy, c-format
 msgid "Could not read history file\n"
 msgstr "Impossible de lire le fichier d'historique\n"
 
-#: ../src/gpasted/history.vala:123 ../src/gpasted/history.vala:133
+#: ../src/gpasted/history.vala:152 ../src/gpasted/history.vala:162
 #, fuzzy, c-format
 msgid "Could not create history file\n"
 msgstr "Impossible d'écrire le fichier d'historique\n"
