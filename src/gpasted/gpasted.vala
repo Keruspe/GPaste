@@ -52,11 +52,17 @@ namespace GPaste {
             History.instance.select(index);
         }
 
-        public void notify_change() {
-            changed();
-        }
-
         public signal void changed();
+
+        private GPasteServer() {}
+        private static GPasteServer _instance;
+        public static GPasteServer instance {
+            get {
+                if (_instance == null)
+                    _instance = new GPasteServer();
+                return _instance;
+            }
+        }
     }
 
     public class GPasted : Object {
@@ -69,7 +75,7 @@ namespace GPaste {
 
         private static void on_bus_aquired(DBusConnection conn) {
             try {
-                conn.register_object("/org/gnome/GPaste", new GPasteServer());
+                conn.register_object("/org/gnome/GPaste", GPasteServer.instance);
             } catch (IOError e) {
                 stderr.printf(_("Could not register DBus service.\n"));
             }

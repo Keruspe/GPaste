@@ -32,11 +32,6 @@
 
 namespace GPaste {
 
-    [DBus (name = "org.gnome.GPaste")]
-    interface GPasteBusSignalClient : Object {
-        public abstract void notify_change() throws IOError;
-    }
-
     public class History : Object {
         private List<string> _history;
         public List<string> history {
@@ -54,33 +49,13 @@ namespace GPaste {
             }
         }
 
-        private GPasteBusSignalClient _gpaste_signal;
-        private GPasteBusSignalClient gpaste_signal {
-            get {
-                if (_gpaste_signal == null) {
-                    try {
-                        _gpaste_signal = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
-                    } catch (IOError e) {
-                        stderr.printf(_("Couldn't conect to self bus to notify for changes.\n"));
-                    }
-                }
-                return _gpaste_signal;
-            }
-        }
-
         private unowned List<string> get_unowned_history() {
             return _history;
         }
 
         public virtual signal void changed() {
             save();
-            if (gpaste_signal != null) {
-                try {
-                    gpaste_signal.notify_change();
-                } catch (IOError e) {
-                    stdout.printf(_("Couldn't notify change via DBus.\n"));
-                }
-            }
+            GPasteServer.instance.changed();
         }
 
         private History() {
