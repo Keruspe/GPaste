@@ -1,15 +1,15 @@
 # French translations for GPaste package.
 # Copyright (C) 2011 THE GPaste'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the GPaste package.
-# Marc-Antoine Perennou <Marc-Antoine@perennou.com>, 2011.
+# Marc-Antoine Perennou <Marc-Antoine@Perennou.com>, 2011.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.1\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-01-27 11:33+0100\n"
+"POT-Creation-Date: 2011-01-27 12:45+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
-"Last-Translator: Marc-Antoine Perennou <Marc-Antoine@perennou.com>\n"
+"Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -50,32 +50,28 @@ msgstr "Utilisation :\n"
 
 #: ../src/gpaste.vala:47
 #, c-format
-msgid ": print the history\n"
-msgstr " : affiche l'historique.\n"
+msgid "%s: print the history\n"
+msgstr "%s : affiche l'historique.\n"
 
 #: ../src/gpaste.vala:48
 #, c-format
-msgid " <text>: set text to clipboard\n"
-msgstr " <texte> : met le texte dans le presse-papier\n"
+msgid "%s <text>: set text to clipboard\n"
+msgstr "%s <texte> : met le texte dans le presse-papier\n"
 
 #: ../src/gpaste.vala:49
 #, c-format
-msgid " set <number>: set <number>th item of the history to clipboard\n"
+msgid "%s set <number>: set <number>th item of the history to clipboard\n"
 msgstr ""
-" set <nombre> : met le <nombre>e élément de l'historique dans le presse-"
+"%s set <nombre> : met le <nombre>e élément de l'historique dans le presse-"
 "papier\n"
 
 #: ../src/gpaste.vala:50
 #, c-format
-msgid " delete <number>: delete <number>th item of the history\n"
-msgstr " delete <nombre> : supprime le <nombre>e élément de l'historique\n"
+msgid "%s delete <number>: delete <number>th item of the history\n"
+msgstr "%s delete <nombre> : supprime le <nombre>e élément de l'historique\n"
 
 #: ../src/gpaste.vala:51
 #, c-format
-msgid "whatever | "
-msgstr "quelquechose | "
-
-#: ../src/gpaste.vala:51
-#, c-format
-msgid ": set the output of whatever to clipboard\n"
-msgstr " : met la sortie de quelquechose dans le presse-papier\n"
+msgid "whatever | %s: set the output of whatever to clipboard\n"
+msgstr ""
+"quelquechose | %s : met la sortie de quelquechose dans le presse-papier\n"
