@@ -54,6 +54,7 @@ namespace GPaste {
         public static int main(string[] args) {
             Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
             Intl.textdomain(Config.GETTEXT_PACKAGE);
+            Intl.setlocale(LocaleCategory.ALL, "");
             try {
                 GPasteBusClient gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 if (! Posix.isatty(stdin.fileno())) {
