@@ -79,3 +79,14 @@ EXTRA_DIST = gpaste.gschema.xml.in
 CLEANFILES += \
 	$(gsettings_SCHEMAS) \
 	gschemas.compiled
+
+servicedir = $(datadir)/dbus-1/services
+service_DATA = data/org.gnome.GPaste.service
+
+data/org.gnome.GPaste.service: data/org.gnome.GPaste.service.in
+	$(AM_V_GEN) sed -e 's,[@]libexecdir[@],$(libexecdir),g' <$^ >$@
+
+EXTRA_DIST += org.gnome.GPaste.service.in
+
+CLEANFILES += $(service_DATA)
+

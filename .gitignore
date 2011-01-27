@@ -29,4 +29,5 @@ POTFILES
 *.gschema.valid
 *.pot
 *.gschema.xml
+*.service
 
