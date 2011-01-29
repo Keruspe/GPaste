@@ -17,12 +17,11 @@ gpasted_SOURCES = \
 	src/gpasted/gpasted.vala
 
 gpasted_VALAFLAGS = \
-	--vapidir vapi \
+	--vapidir=vapi \
 	$(GTK_VALAFLAGS) \
 	$(GIO_VALAFLAGS) \
-	$(GLIB_VALAFLAGS) \
-	--pkg config \
-	--pkg posix
+	--pkg=config \
+	--pkg=posix
 
 gpasted_CFLAGS = \
 	$(GTK_CFLAGS) \
@@ -44,11 +43,10 @@ gpaste_SOURCES = \
 	src/gpaste.vala
 
 gpaste_VALAFLAGS = \
-	--vapidir vapi \
+	--vapidir=vapi \
 	$(GIO_VALAFLAGS) \
-	$(GLIB_VALAFLAGS) \
-	--pkg config \
-	--pkg posix
+	--pkg=config \
+	--pkg=posix
 
 gpaste_CFLAGS = \
 	$(GIO_CFLAGS) \
@@ -68,10 +66,9 @@ gpaste_preferences_SOURCES = \
 	src/gpaste-preferences/gpaste-preferences.vala
 
 gpaste_preferences_VALAFLAGS = \
-	--vapidir vapi \
+	--vapidir=vapi \
 	$(GTK_VALAFLAGS) \
-	$(GLIB_VALAFLAGS) \
-	--pkg config
+	--pkg=config
 
 gpaste_preferences_CFLAGS = \
 	$(GTK_CFLAGS) \
