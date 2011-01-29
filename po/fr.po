@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.1\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-01-29 14:37+0100\n"
+"POT-Creation-Date: 2011-01-29 15:31+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -44,6 +44,7 @@ msgid "Could not create history file\n"
 msgstr "Impossible de créer le fichier d'historique\n"
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:9
+#: ../gpaste-preferences.desktop.in.in.h:1
 msgid "GPaste Preferences"
 msgstr "Préférences de GPaste"
 
@@ -103,3 +104,7 @@ msgstr "Taille maximale de l'historique"
 #: ../data/gpaste.gschema.xml.in.h:4
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
+
+#: ../gpaste-preferences.desktop.in.in.h:2
+msgid "Set your GPaste preferences"
+msgstr "Définir vos préférences pour GPaste"

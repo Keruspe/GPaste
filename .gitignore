@@ -32,4 +32,6 @@ POTFILES
 *.pot
 *.gschema.xml
 *.service
+*.desktop
+*.desktop.in
 

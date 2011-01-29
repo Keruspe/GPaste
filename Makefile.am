@@ -10,6 +10,22 @@ bin_PROGRAMS = gpaste gpaste-preferences
 
 libexec_PROGRAMS = gpasted
 
+desktopdir=$(datadir)/applications
+desktop_DATA = gpaste-preferences.desktop
+
+data/gpaste-preferences.desktop.in: data/gpaste-preferences.desktop.in.in
+	$(AM_V_GEN) sed "s|@bindir[@]|$(bindir)|" < $< > $@ || rm $@
+
+
+gpaste-preferences.desktop: data/gpaste-preferences.desktop.in
+	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
+
+EXTRA_DIST = gpaste-preferences.desktop.in.in
+
+CLEANFILES += \
+	gpaste-preferences.desktop.in \
+	$(desktop_DATA)
+
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
 	src/gpasted/history.vala \
@@ -92,7 +108,7 @@ gsettings_SCHEMAS = data/gpaste.gschema.xml
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
 
-EXTRA_DIST = gpaste.gschema.xml.in
+EXTRA_DIST += gpaste.gschema.xml.in
 
 CLEANFILES += \
 	$(gsettings_SCHEMAS) \

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+_Name=GPaste Preferences
+_Comment=Set your GPaste preferences
+Exec=@bindir@/gpaste-preferences
+Terminal=false
+Categories=GTK;GNOME;Settings;DesktopSettings;
+OnlyShowIn=GNOME;
+NoDisplay=true
