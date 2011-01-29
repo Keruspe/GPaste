@@ -68,12 +68,16 @@ gpaste_preferences_SOURCES = \
 	src/gpaste-preferences/gpaste-preferences.vala
 
 gpaste_preferences_VALAFLAGS = \
+	--vapidir vapi \
 	$(GTK_VALAFLAGS) \
-	$(GLIB_VALAFLAGS)
+	$(GLIB_VALAFLAGS) \
+	--pkg config
 
 gpaste_preferences_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(GLIB_CFLAGS) \
+	--include config.h \
+	-DLOCALEDIR=\"${localedir}\" \
 	$(CFLAGS)
 
 gpaste_preferences_LDADD = \

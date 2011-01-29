@@ -1,5 +1,6 @@
 src/gpasted/gpasted.vala
 src/gpasted/history.vala
+src/gpaste-preferences/gpaste-preferences.vala
 src/gpaste.vala
 data/gpaste.gschema.xml.in
 

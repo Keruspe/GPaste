@@ -6,7 +6,7 @@ namespace GPaste {
 
         public PreferencesWindow(Gtk.Application app) {
             Object(type: Gtk.WindowType.TOPLEVEL);
-            title = "GPaste Preferences";
+            title = _("GPaste Preferences");
             application = app;
             set_default_size(300, 70);
             set_position(Gtk.WindowPosition.CENTER);
@@ -15,7 +15,7 @@ namespace GPaste {
         }
 
         private void fill() {
-            primary_to_history = new Gtk.CheckButton.with_mnemonic("Primary selection affects history");
+            primary_to_history = new Gtk.CheckButton.with_mnemonic(_("Primary selection affects history"));
             primary_to_history.set_active((application as Preferences).primary_to_history);
             primary_to_history.toggled.connect(()=>{
                 (application as Preferences).primary_to_history = primary_to_history.get_active();
@@ -25,7 +25,7 @@ namespace GPaste {
             max_history_size.get_adjustment().value_changed.connect(()=>{
                 (application as Preferences).max_history_size = max_history_size.get_value_as_int();
             });
-            var history_size_label = new Gtk.Label("Max history size: ");
+            var history_size_label = new Gtk.Label(_("Max history size: "));
             var hbox = new Gtk.HBox(false, 10);
             hbox.add(history_size_label);
             hbox.add(max_history_size);
@@ -68,6 +68,8 @@ namespace GPaste {
         }
 
         public static int main(string[] args) {
+            Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
+            Intl.textdomain(Config.GETTEXT_PACKAGE);
             Gtk.init(ref args);
             var app = new Preferences();
             try {
