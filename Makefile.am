@@ -66,10 +66,8 @@ CLEANFILES += \
 
 gsettings_SCHEMAS = data/gpaste.gschema.xml
 
+@INTLTOOL_XML_NOMERGE_RULE@
 @GSETTINGS_RULES@
-
-data/gpaste.gschema.xml : data/gpaste.gschema.xml.in
-	$(AM_V_GEN) $(CP) $^ $@
 
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .

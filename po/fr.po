@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.1\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-01-27 12:45+0100\n"
+"POT-Creation-Date: 2011-01-29 11:26+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -75,3 +75,19 @@ msgstr "%s delete <nombre> : supprime le <nombre>e élément de l'historique\n"
 msgid "whatever | %s: set the output of whatever to clipboard\n"
 msgstr ""
 "quelquechose | %s : met la sortie de quelquechose dans le presse-papier\n"
+
+#: ../data/gpaste.gschema.xml.in.h:1
+msgid "By default, only clipboard (ctrl+c) affects history."
+msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
+
+#: ../data/gpaste.gschema.xml.in.h:2
+msgid "Does the primary selection affects history?"
+msgstr "La selection primaire doit-elle affecter l'historique?"
+
+#: ../data/gpaste.gschema.xml.in.h:3
+msgid "Max history size"
+msgstr "Taille maximale de l'historique"
+
+#: ../data/gpaste.gschema.xml.in.h:4
+msgid "Maximum number of items in history"
+msgstr "Nombre maximum d'éléments dans l'historique"
