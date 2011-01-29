@@ -6,7 +6,7 @@ CLEANFILES =
 
 SUBDIRS = po
 
-bin_PROGRAMS = gpaste
+bin_PROGRAMS = gpaste gpaste-preferences
 
 libexec_PROGRAMS = gpasted
 
@@ -63,6 +63,25 @@ gpaste_LDADD = \
 
 CLEANFILES += \
 	${gpaste_SOURCES:.vala=.c}
+
+gpaste_preferences_SOURCES = \
+	src/gpaste-preferences/gpaste-preferences.vala
+
+gpaste_preferences_VALAFLAGS = \
+	$(GTK_VALAFLAGS) \
+	$(GLIB_VALAFLAGS)
+
+gpaste_preferences_CFLAGS = \
+	$(GTK_CFLAGS) \
+	$(GLIB_CFLAGS) \
+	$(CFLAGS)
+
+gpaste_preferences_LDADD = \
+	$(GTK_LIBS) \
+	$(GLIB_LIBS)
+
+CLEANFILES += \
+	${gpaste_preferences_SOURCES:.vala=.c}
 
 gsettings_SCHEMAS = data/gpaste.gschema.xml
 

@@ -1,5 +1,7 @@
 gpasted
 !src/gpasted
+gpaste-preferences
+!src/gpaste-preferences
 gpaste
 *.c
 Makefile
