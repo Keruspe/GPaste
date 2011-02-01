@@ -1,3 +1,12 @@
+NEW in 0.6 (01/02/2011)
+=============
+
+- Now, we store the settings and we connect to the change
+signal to each one of them instead of retrieving them every time
+- Fix a bug with the '_' character which was interpreted as an
+underlinement when displaying the history from the applet
+- Add ability to synchronize the primary selection and the clipboard
+
 NEW in 0.5 (01/02/2011)
 =============
 
