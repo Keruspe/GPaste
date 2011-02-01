@@ -49,6 +49,7 @@ namespace GPaste {
             stdout.printf(_("%s set <number>: set <number>th item of the history to clipboard\n"), caller);
             stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
             stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
+            stdout.printf(_("%s help: display this help\n"), caller);
         }
 
         public static int main(string[] args) {
@@ -99,7 +100,7 @@ namespace GPaste {
                 }
                 return 0;
             } catch (IOError e) {
-                stderr.printf("%s\n", e.message);
+                stderr.printf(_("Couldn't connect to GPaste.\n"));
                 return 1;
             }
         }

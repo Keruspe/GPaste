@@ -75,7 +75,7 @@ namespace GPaste {
             try {
                 app.register();
             } catch (Error e) {
-                stderr.printf("Fail\n");
+                stderr.printf(_("Fail to register the gtk application.\n"));
                 return 1;
             }
             return app.run();

@@ -1,7 +1,9 @@
 src/gpasted/gpasted.vala
 src/gpasted/history.vala
 src/gpaste-preferences/gpaste-preferences.vala
+src/applet/gpaste-applet.vala
 src/gpaste.vala
 data/gpaste.gschema.xml.in
-gpaste-preferences.desktop.in.in
+data/gpaste-preferences.desktop.in.in
+data/gpaste-applet.desktop.in.in
 

@@ -73,7 +73,7 @@ namespace GPaste {
         private static MainLoop loop;
 
         private static void handle(int signal) {
-            stdout.printf(_("Signal %d recieved, exiting\n"), signal);
+            stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
             loop.quit();
         }
 

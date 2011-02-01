@@ -106,13 +106,13 @@ namespace GPaste {
             string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
             var history_dir = File.new_for_path(history_dir_path);
             if (!history_dir.query_exists()) {
-                stderr.printf(_("Could not read history file\n"));
+                stderr.printf(_("Could not read history file.\n"));
                 Posix.mkdir(history_dir_path, 0700);
                 return;
             }
             var history_file = File.new_for_path(history_dir_path + "/history");
             if (!history_file.query_exists()) {
-                stderr.printf(_("Could not read history file\n"));
+                stderr.printf(_("Could not read history file.\n"));
                 return;
             }
 
@@ -125,7 +125,7 @@ namespace GPaste {
                     _history.append(line.str);
                 }
             } catch (Error e) {
-                stderr.printf(_("Could not read history file\n"));
+                stderr.printf(_("Could not read history file.\n"));
             }
         }
 
@@ -136,7 +136,7 @@ namespace GPaste {
                     history_file.delete();
                 var history_file_stream = history_file.create(FileCreateFlags.NONE);
                 if (!history_file.query_exists()) {
-                    stderr.printf(_("Could not create history file\n"));
+                    stderr.printf(_("Could not create history file.\n"));
                     return;
                 }
                 var dos = new DataOutputStream(history_file_stream);
@@ -146,7 +146,7 @@ namespace GPaste {
                 }
                 dos.put_int64(0);
             } catch (Error e) {
-                stderr.printf(_("Could not create history file\n"));
+                stderr.printf(_("Could not create history file.\n"));
             }
         }
     }

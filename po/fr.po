@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.1\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-01-29 15:31+0100\n"
+"POT-Creation-Date: 2011-02-01 10:54+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -19,8 +19,8 @@ msgstr ""
 
 #: ../src/gpasted/gpasted.vala:76
 #, c-format
-msgid "Signal %d recieved, exiting\n"
-msgstr "Signal %d reçu, arrêt\n"
+msgid "Signal %d recieved, exiting.\n"
+msgstr "Signal %d reçu, arrêt.\n"
 
 #: ../src/gpasted/gpasted.vala:84
 #, c-format
@@ -35,16 +35,16 @@ msgstr "Impossible d'acquérir le nom DBus.\n"
 #: ../src/gpasted/history.vala:109 ../src/gpasted/history.vala:115
 #: ../src/gpasted/history.vala:128
 #, c-format
-msgid "Could not read history file\n"
-msgstr "Impossible de lire le fichier d'historique\n"
+msgid "Could not read history file.\n"
+msgstr "Impossible de lire le fichier d'historique.\n"
 
 #: ../src/gpasted/history.vala:139 ../src/gpasted/history.vala:149
 #, c-format
-msgid "Could not create history file\n"
-msgstr "Impossible de créer le fichier d'historique\n"
+msgid "Could not create history file.\n"
+msgstr "Impossible de créer le fichier d'historique.\n"
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:9
-#: ../gpaste-preferences.desktop.in.in.h:1
+#: ../data/gpaste-preferences.desktop.in.in.h:1
 msgid "GPaste Preferences"
 msgstr "Préférences de GPaste"
 
@@ -54,7 +54,36 @@ msgstr "La selection primaire affecte l'historique"
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:28
 msgid "Max history size: "
-msgstr "Taille maximale de l'historique: "
+msgstr "Taille maximale de l'historique : "
+
+#: ../src/gpaste-preferences/gpaste-preferences.vala:78
+#: ../src/applet/gpaste-applet.vala:145
+#, c-format
+msgid "Fail to register the gtk application.\n"
+msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
+
+#: ../src/applet/gpaste-applet.vala:92
+#, c-format
+msgid "Couldn't update history.\n"
+msgstr "Impossible de mettre à jour l'historique.\n"
+
+#: ../src/applet/gpaste-applet.vala:103
+msgid "Preferences"
+msgstr "Préférences"
+
+#: ../src/applet/gpaste-applet.vala:108
+#, c-format
+msgid "Couldn't spawn gpaste-preferences.\n"
+msgstr "Impossible de lancer gpaste-preferences.\n"
+
+#: ../src/applet/gpaste-applet.vala:112
+msgid "Quit"
+msgstr "Quitter"
+
+#: ../src/applet/gpaste-applet.vala:131 ../src/gpaste.vala:103
+#, c-format
+msgid "Couldn't connect to GPaste.\n"
+msgstr "Impossible de se connecter à GPaste.\n"
 
 #: ../src/gpaste.vala:46
 #, c-format
@@ -64,7 +93,7 @@ msgstr "Utilisation :\n"
 #: ../src/gpaste.vala:47
 #, c-format
 msgid "%s: print the history\n"
-msgstr "%s : affiche l'historique.\n"
+msgstr "%s : affiche l'historique\n"
 
 #: ../src/gpaste.vala:48
 #, c-format
@@ -89,6 +118,11 @@ msgid "whatever | %s: set the output of whatever to clipboard\n"
 msgstr ""
 "quelquechose | %s : met la sortie de quelquechose dans le presse-papier\n"
 
+#: ../src/gpaste.vala:52
+#, c-format
+msgid "%s help: display this help\n"
+msgstr "%s help : affiche cette aide\n"
+
 #: ../data/gpaste.gschema.xml.in.h:1
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
@@ -105,6 +139,14 @@ msgstr "Taille maximale de l'historique"
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
 
-#: ../gpaste-preferences.desktop.in.in.h:2
+#: ../data/gpaste-preferences.desktop.in.in.h:2
 msgid "Set your GPaste preferences"
 msgstr "Définir vos préférences pour GPaste"
+
+#: ../data/gpaste-applet.desktop.in.in.h:1
+msgid "GPaste Applet"
+msgstr "Applet GPaste"
+
+#: ../data/gpaste-applet.desktop.in.in.h:2
+msgid "Tray icon to manage GPaste"
+msgstr "Icone de notification pour gérer GPaste"

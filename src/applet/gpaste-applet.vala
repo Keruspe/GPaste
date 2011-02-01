@@ -1,3 +1,35 @@
+/*
+ *	This program is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License, or
+ *	(at your option) any later version.
+ *
+ *	This program is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ *
+ *	You should have received a copy of the GNU General Public License
+ *	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *	Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *
+ *	This file is part of GPaste.
+ *
+ *	GPaste is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License, or
+ *	(at your option) any later version.
+ *
+ *	GPaste is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ *
+ *	You should have received a copy of the GNU General Public License
+ *	along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 namespace GPaste {
 
     [DBus (name = "org.gnome.GPaste")]
@@ -57,7 +89,7 @@ namespace GPaste {
                                 break;
                             }
                         } catch (IOError e) {
-                            stderr.printf("Couldn't update history.\n");
+                            stderr.printf(_("Couldn't update history.\n"));
                         }
                     });
                     history.add(item);
@@ -68,16 +100,16 @@ namespace GPaste {
 
         private void fill_options() {
             options = new Gtk.Menu();
-            var preferences = new Gtk.ImageMenuItem.with_mnemonic("Preferences");
+            var preferences = new Gtk.ImageMenuItem.with_mnemonic(_("Preferences"));
             preferences.activate.connect(()=>{
                 try {
                     Process.spawn_command_line_async(Config.BINDIR + "/gpaste-preferences");
                 } catch(SpawnError e) {
-                    stderr.printf("Couldn't spawn gpaste-preferences.");
+                    stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
                 }
             });
             options.add(preferences);
-            var quit = new Gtk.ImageMenuItem.with_mnemonic("Quit");
+            var quit = new Gtk.ImageMenuItem.with_mnemonic(_("Quit"));
             quit.activate.connect(()=>(application as GLib.Application).quit_mainloop());
             options.add(quit);
             options.show_all();
@@ -96,21 +128,21 @@ namespace GPaste {
             try {
                 gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
             } catch (IOError e) {
-                stderr.printf("Couldn't connect to GPaste.\n");
+                stderr.printf(_("Couldn't connect to GPaste.\n"));
                 Posix.exit(1);
             }
             new AppletWindow(this).hide();
         }
 
         public static int main(string[] args) {
-            //Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
-            //Intl.textdomain(Config.GETTEXT_PACKAGE);
+            Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
+            Intl.textdomain(Config.GETTEXT_PACKAGE);
             Gtk.init(ref args);
             var app = new Applet();
             try {
                 app.register();
             } catch (Error e) {
-                stderr.printf("Fail\n");
+                stderr.printf(_("Fail to register the gtk application.\n"));
                 return 1;
             }
             return app.run();
