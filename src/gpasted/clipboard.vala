@@ -67,7 +67,7 @@ namespace GPaste {
                 case "primary-to-history":
                     primary_to_history = GPastedSettings.primary_to_history;
                     break;
-                case "synchronize_clipboards":
+                case "synchronize-clipboards":
                     synchronize_clipboards = GPastedSettings.synchronize_clipboards;
                     break;
                 }
@@ -79,7 +79,7 @@ namespace GPaste {
         }
 
         public void activate() {
-            var time = new TimeoutSource(500);
+            var time = new TimeoutSource(1000);
             time.set_callback(checkClipboards);
             time.attach(null);
         }
@@ -114,7 +114,10 @@ namespace GPaste {
             }
             if (synchronized_text != null) {
                 foreach(Clipboard c in clipboards) {
-                    c.text = synchronized_text;
+                    if (c.text != synchronized_text) {
+                        c.text = synchronized_text;
+                        c.real.set_text(synchronized_text, synchronized_text.length);
+                    }
                 }
             }
             return true;
