@@ -1,8 +1,26 @@
 namespace GPaste {
 
     public class PreferencesWindow : Gtk.Window {
-        private Gtk.CheckButton primary_to_history;
-        private Gtk.SpinButton max_history_size;
+        private Gtk.CheckButton primary_to_history_button;
+        private Gtk.SpinButton max_history_size_button;
+
+        public bool primary_to_history {
+            get {
+                return primary_to_history_button.get_active();
+            }
+            set {
+                primary_to_history_button.set_active(value);
+            }
+        }
+
+        public int max_history_size {
+            get {
+                return max_history_size_button.get_value_as_int();
+            }
+            set {
+                max_history_size_button.get_adjustment().value = value;
+            }
+        }
 
         public PreferencesWindow(Gtk.Application app) {
             Object(type: Gtk.WindowType.TOPLEVEL);
@@ -15,22 +33,22 @@ namespace GPaste {
         }
 
         private void fill() {
-            primary_to_history = new Gtk.CheckButton.with_mnemonic(_("Primary selection affects history"));
-            primary_to_history.set_active((application as Preferences).primary_to_history);
-            primary_to_history.toggled.connect(()=>{
-                (application as Preferences).primary_to_history = primary_to_history.get_active();
+            primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("Primary selection affects history"));
+            primary_to_history = (application as Preferences).primary_to_history;
+            primary_to_history_button.toggled.connect(()=>{
+                (application as Preferences).primary_to_history = primary_to_history;
             });
-            max_history_size = new Gtk.SpinButton.with_range(5, 100, 5);
-            max_history_size.get_adjustment().value = (application as Preferences).max_history_size;
-            max_history_size.get_adjustment().value_changed.connect(()=>{
-                (application as Preferences).max_history_size = max_history_size.get_value_as_int();
+            max_history_size_button = new Gtk.SpinButton.with_range(5, 100, 5);
+            max_history_size = (application as Preferences).max_history_size;
+            max_history_size_button.get_adjustment().value_changed.connect(()=>{
+                (application as Preferences).max_history_size = max_history_size;
             });
             var history_size_label = new Gtk.Label(_("Max history size: "));
             var hbox = new Gtk.HBox(false, 10);
             hbox.add(history_size_label);
-            hbox.add(max_history_size);
+            hbox.add(max_history_size_button);
             var vbox = new Gtk.VBox(false, 10);
-            vbox.add(primary_to_history);
+            vbox.add(primary_to_history_button);
             vbox.add(hbox);
             add(vbox);
         }
@@ -38,6 +56,7 @@ namespace GPaste {
 
     public class Preferences : Gtk.Application {
         private Settings settings;
+        private PreferencesWindow window;
 
         public int max_history_size {
             get {
@@ -59,12 +78,23 @@ namespace GPaste {
 
         public Preferences() {
             Object(application_id: "org.gnome.GPaste.Preferences");
+            settings = new Settings("org.gnome.GPaste");
             activate.connect(init);
+            settings.changed.connect((key)=>{
+                switch(key) {
+                case "max-history-size":
+                    window.max_history_size = max_history_size;
+                    break;
+                case "primary-to-history":
+                    window.primary_to_history = primary_to_history;
+                    break;
+                }
+            });
         }
 
         private void init() {
-            settings = new Settings("org.gnome.GPaste");
-            new PreferencesWindow(this).show_all();
+            window = new PreferencesWindow(this);
+            window.show_all();
         }
 
         public static int main(string[] args) {
