@@ -26,12 +26,13 @@ namespace GPaste {
             (application as Applet).gpaste.changed.connect(fill_history);
             fill_options();
             tray_icon.button_press_event.connect(()=>{
-                switch(Gtk.get_current_event().button.button) {
+                Gdk.Event e = Gtk.get_current_event();
+                switch(e.button.button) {
                 case 1:
-                    history.popup(null, null, tray_icon.position_menu, 1, 0);
+                    history.popup(null, null, tray_icon.position_menu, 1, e.get_time());
                     break;
                 case 3:
-                    options.popup(null, null, tray_icon.position_menu, 3, 0);
+                    options.popup(null, null, tray_icon.position_menu, 3, e.get_time());
                     break;
                 }
                 return false;
