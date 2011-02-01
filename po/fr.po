@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.5\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-01 12:06+0100\n"
+"POT-Creation-Date: 2011-02-01 17:17+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -32,31 +32,31 @@ msgstr "Impossible d'inscrire le service DBus au registre.\n"
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
 
-#: ../src/gpasted/history.vala:109 ../src/gpasted/history.vala:115
-#: ../src/gpasted/history.vala:128
+#: ../src/gpasted/history.vala:119 ../src/gpasted/history.vala:125
+#: ../src/gpasted/history.vala:138
 #, c-format
 msgid "Could not read history file.\n"
 msgstr "Impossible de lire le fichier d'historique.\n"
 
-#: ../src/gpasted/history.vala:139 ../src/gpasted/history.vala:149
+#: ../src/gpasted/history.vala:149 ../src/gpasted/history.vala:159
 #, c-format
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:9
+#: ../src/gpaste-preferences/gpaste-preferences.vala:27
 #: ../data/gpaste-preferences.desktop.in.in.h:1
 msgid "GPaste Preferences"
 msgstr "Préférences de GPaste"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:18
-msgid "Primary selection affects history"
-msgstr "La selection primaire affecte l'historique"
+#: ../src/gpaste-preferences/gpaste-preferences.vala:36
+msgid "_Primary selection affects history"
+msgstr "La selection _primaire affecte l'historique"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:28
+#: ../src/gpaste-preferences/gpaste-preferences.vala:46
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:78
+#: ../src/gpaste-preferences/gpaste-preferences.vala:108
 #: ../src/applet/gpaste-applet.vala:145
 #, c-format
 msgid "Fail to register the gtk application.\n"
@@ -124,18 +124,28 @@ msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
 #: ../data/gpaste.gschema.xml.in.h:1
+msgid "Are the primary selection and the clipboard synchronized?"
+msgstr ""
+"La séléction primaire et le presse-papier doivent-ils être synchronisés?"
+
+#: ../data/gpaste.gschema.xml.in.h:2
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
 
-#: ../data/gpaste.gschema.xml.in.h:2
+#: ../data/gpaste.gschema.xml.in.h:3
+msgid "By default, the primary selection and the clipboard are independent."
+msgstr ""
+"Par défaut, la séléction primaire et le presse-papier sont indépendents."
+
+#: ../data/gpaste.gschema.xml.in.h:4
 msgid "Does the primary selection affects history?"
 msgstr "La selection primaire doit-elle affecter l'historique?"
 
-#: ../data/gpaste.gschema.xml.in.h:3
+#: ../data/gpaste.gschema.xml.in.h:5
 msgid "Max history size"
 msgstr "Taille maximale de l'historique"
 
-#: ../data/gpaste.gschema.xml.in.h:4
+#: ../data/gpaste.gschema.xml.in.h:6
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
 
