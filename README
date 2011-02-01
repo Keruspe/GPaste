@@ -1,2 +1,5 @@
-gpasted will be a clipboard management daemon with dbus interface
+gpasted is a clipboard management daemon with DBus interface
+gpaste is its CLI client
+gpaste-preferences is a tool to edit gpasted preferences
+gpaste-applet is a tray icon to manage gpasted
 
