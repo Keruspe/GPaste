@@ -97,7 +97,7 @@ namespace GPaste {
                 return settings.get_boolean("synchronize-clipboards");
             }
             set {
-                settings.set_boolean("synchronize_clipboards", value);
+                settings.set_boolean("synchronize-clipboards", value);
             }
         }
 
