@@ -53,6 +53,8 @@ namespace GPaste {
             return _history;
         }
 
+        public int max_history_size;
+
         public virtual signal void changed() {
             save();
             GPasteServer.instance.changed();
@@ -60,6 +62,14 @@ namespace GPaste {
 
         private History() {
             _history = new List<string>();
+            max_history_size = GPastedSettings.max_history_size;
+            GPastedSettings.instance.changed.connect((key)=>{
+                switch(key) {
+                case "max-history-size":
+                    max_history_size = GPastedSettings.max_history_size;
+                    break;
+                }
+            });
         }
 
         public void add(string selection) {
@@ -70,9 +80,9 @@ namespace GPaste {
                 }
             }
             _history.prepend(selection);
-            if (_history.length() > GPastedSettings.maxHistorySize()) {
+            if (_history.length() > max_history_size) {
                 unowned List<string?> tmp = history;
-                for (int i = 0 ; i < GPastedSettings.maxHistorySize() ; ++i)
+                for (int i = 0 ; i < max_history_size ; ++i)
                     tmp = tmp.next;
                 do {
                     unowned List<string?> next = tmp.next;

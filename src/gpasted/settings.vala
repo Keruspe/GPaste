@@ -10,12 +10,16 @@ namespace GPaste {
             }
         }
 
-        public static bool primaryToHistory() {
-            return instance.get_boolean("primary-to-history");
+        public static bool primary_to_history {
+            get {
+                return instance.get_boolean("primary-to-history");
+            }
         }
 
-        public static int maxHistorySize() {
-            return instance.get_int("max-history-size");
+        public static int max_history_size {
+            get {
+                return instance.get_int("max-history-size");
+            }
         }
 
         private GPastedSettings() {}

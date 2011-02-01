@@ -46,6 +46,8 @@ namespace GPaste {
     public class ClipboardsManager : Object {
         private List<Clipboard> clipboards;
 
+        public bool primary_to_history;
+
         private static ClipboardsManager _instance;
         public static ClipboardsManager instance {
             get {
@@ -57,6 +59,14 @@ namespace GPaste {
 
         private ClipboardsManager() {
             clipboards = new List<Clipboard>();
+            primary_to_history = GPastedSettings.primary_to_history;
+            GPastedSettings.instance.changed.connect((key)=>{
+                switch (key) {
+                case "primary-to-history":
+                    primary_to_history = GPastedSettings.primary_to_history;
+                    break;
+                }
+            });
         }
 
         public void addClipboard(Clipboard clipboard) {
@@ -91,7 +101,7 @@ namespace GPaste {
                 if (c.text != text) {
                     Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                     c.text = text;
-                    if (c.selection == tmp || GPastedSettings.primaryToHistory())
+                    if (c.selection == tmp || primary_to_history)
                         History.instance.add(text);
                 }
             }
