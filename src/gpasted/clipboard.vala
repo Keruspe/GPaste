@@ -76,6 +76,12 @@ namespace GPaste {
 
         public void addClipboard(Clipboard clipboard) {
             clipboards.prepend(clipboard);
+            clipboard.text = clipboard.real.wait_for_text();
+            if (clipboard.text == null) {
+                string text = History.instance.history.data;
+                clipboard.text = text;
+                clipboard.real.set_text(text, text.length);
+            }
         }
 
         public void activate() {
