@@ -28,10 +28,10 @@ namespace GPaste {
             tray_icon.button_press_event.connect(()=>{
                 switch(Gtk.get_current_event().button.button) {
                 case 1:
-                    history.popup(null, null, null, 1, 0);
+                    history.popup(null, null, null, 1, 1);
                     break;
                 case 3:
-                    options.popup(null, null, null, 2, 0);
+                    options.popup(null, null, null, 3, 1);
                     break;
                 }
                 return false;

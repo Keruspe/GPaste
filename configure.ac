@@ -25,7 +25,7 @@ AC_SUBST(GETTEXT_PACKAGE)
 AM_GLIB_GNU_GETTEXT
 IT_PROG_INTLTOOL([0.35.0])
 
-AC_DEFINE_UNQUOTED([BINDIR], ["$bindir"], [Bin directory])
+AC_SUBST([bindir], ["$bindir"])
 AC_SUBST([localedir], ["$localedir"])
 
 AC_PROG_INSTALL
