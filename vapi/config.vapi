@@ -10,5 +10,6 @@ namespace Config {
         public const string PACKAGE_URL;
         public const string PACKAGE_VERSION;
         public const string VERSION;
+        public const string BINDIR;
 }
 

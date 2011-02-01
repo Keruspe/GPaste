@@ -6,7 +6,7 @@ CLEANFILES =
 
 SUBDIRS = po
 
-bin_PROGRAMS = gpaste gpaste-preferences
+bin_PROGRAMS = gpaste gpaste-preferences gpaste-applet
 
 libexec_PROGRAMS = gpasted
 
@@ -15,15 +15,23 @@ desktop_DATA = gpaste-preferences.desktop
 
 data/gpaste-preferences.desktop.in: data/gpaste-preferences.desktop.in.in
 	$(AM_V_GEN) sed "s|@bindir[@]|$(bindir)|" < $< > $@ || rm $@
-
-
 gpaste-preferences.desktop: data/gpaste-preferences.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
-EXTRA_DIST = gpaste-preferences.desktop.in.in
+autostartdir=$(sysconfdir)/xdg/autostart
+autostart_DATA = gpaste-applet.desktop
+
+data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
+	$(AM_V_GEN) sed "s|@bindir[@]|$(bindir)|" < $< > $@ || rm $@
+gpaste-applet.desktop: data/gpaste-applet.desktop.in
+	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
+
+EXTRA_DIST = gpaste-preferences.desktop.in.in \
+	gpaste-applet.desktop.in.in
 
 CLEANFILES += \
 	gpaste-preferences.desktop.in \
+	gpaste-applet.desktop.in \
 	$(desktop_DATA)
 
 gpasted_SOURCES = \
@@ -99,6 +107,31 @@ gpaste_preferences_LDADD = \
 
 CLEANFILES += \
 	${gpaste_preferences_SOURCES:.vala=.c}
+
+gpaste_applet_SOURCES = \
+	src/applet/gpaste-applet.vala
+
+gpaste_applet_VALAFLAGS = \
+	--vapidir=vapi \
+	$(GTK_VALAFLAGS) \
+	$(GIO_VALAFLAGS) \
+	--pkg=posix \
+	--pkg=config
+
+gpaste_applet_CFLAGS = \
+	$(GTK_CFLAGS) \
+	$(GIO_CFLAGS) \
+	$(GLIB_CFLAGS) \
+	--include config.h \
+	-DLOCALEDIR=\"${localedir}\" \
+	$(CFLAGS)
+
+gpaste_applet_LDADD = \
+	$(GTK_LIBS) \
+	$(GLIB_LIBS)
+
+CLEANFILES += \
+	${gpaste_applet_SOURCES:.vala=.c}
 
 gsettings_SCHEMAS = data/gpaste.gschema.xml
 
