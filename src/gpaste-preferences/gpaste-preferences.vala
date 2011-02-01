@@ -33,7 +33,7 @@ namespace GPaste {
         }
 
         private void fill() {
-            primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("Primary selection affects history"));
+            primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("_Primary selection affects history"));
             primary_to_history = (application as Preferences).primary_to_history;
             primary_to_history_button.toggled.connect(()=>{
                 (application as Preferences).primary_to_history = primary_to_history;

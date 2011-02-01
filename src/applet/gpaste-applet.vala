@@ -77,7 +77,7 @@ namespace GPaste {
                 var hist = (string[]) (application as Applet).gpaste.getHistory();
                 for (uint i = 0 ; i < hist.length ; ++i) {
                     uint current = i; // local, or weird closure behaviour
-                    var item = new Gtk.ImageMenuItem.with_mnemonic(hist[i]);
+                    var item = new Gtk.ImageMenuItem.with_label(hist[i]);
                     item.activate.connect(()=>{
                         try {
                             switch(Gtk.get_current_event().button.button) {
@@ -100,7 +100,7 @@ namespace GPaste {
 
         private void fill_options() {
             options = new Gtk.Menu();
-            var preferences = new Gtk.ImageMenuItem.with_mnemonic(_("Preferences"));
+            var preferences = new Gtk.ImageMenuItem.with_label(_("Preferences"));
             preferences.activate.connect(()=>{
                 try {
                     Process.spawn_command_line_async(Config.BINDIR + "/gpaste-preferences");
@@ -109,7 +109,7 @@ namespace GPaste {
                 }
             });
             options.add(preferences);
-            var quit = new Gtk.ImageMenuItem.with_mnemonic(_("Quit"));
+            var quit = new Gtk.ImageMenuItem.with_label(_("Quit"));
             quit.activate.connect(()=>(application as GLib.Application).quit_mainloop());
             options.add(quit);
             options.show_all();
