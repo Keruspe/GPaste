@@ -2,6 +2,7 @@ namespace GPaste {
 
     public class PreferencesWindow : Gtk.Window {
         private Gtk.CheckButton primary_to_history_button;
+        private Gtk.CheckButton synchronize_clipboards_button;
         private Gtk.SpinButton max_history_size_button;
 
         public bool primary_to_history {
@@ -10,6 +11,15 @@ namespace GPaste {
             }
             set {
                 primary_to_history_button.set_active(value);
+            }
+        }
+
+        public bool synchronize_clipboards {
+            get {
+                return synchronize_clipboards_button.get_active();
+            }
+            set {
+                synchronize_clipboards_button.set_active(value);
             }
         }
 
@@ -26,7 +36,7 @@ namespace GPaste {
             Object(type: Gtk.WindowType.TOPLEVEL);
             title = _("GPaste Preferences");
             application = app;
-            set_default_size(300, 70);
+            set_default_size(300, 100);
             set_position(Gtk.WindowPosition.CENTER);
             set_resizable(false);
             fill();
@@ -37,6 +47,11 @@ namespace GPaste {
             primary_to_history = (application as Preferences).primary_to_history;
             primary_to_history_button.toggled.connect(()=>{
                 (application as Preferences).primary_to_history = primary_to_history;
+            });
+            synchronize_clipboards_button = new Gtk.CheckButton.with_mnemonic(_("_Synchronize clipboard with primary selection"));
+            synchronize_clipboards = (application as Preferences).synchronize_clipboards;
+            synchronize_clipboards_button.toggled.connect(()=>{
+                (application as Preferences).synchronize_clipboards = synchronize_clipboards;
             });
             max_history_size_button = new Gtk.SpinButton.with_range(5, 100, 5);
             max_history_size = (application as Preferences).max_history_size;
@@ -49,6 +64,7 @@ namespace GPaste {
             hbox.add(max_history_size_button);
             var vbox = new Gtk.VBox(false, 10);
             vbox.add(primary_to_history_button);
+            vbox.add(synchronize_clipboards_button);
             vbox.add(hbox);
             add(vbox);
         }
@@ -73,6 +89,15 @@ namespace GPaste {
             }
             set {
                 settings.set_boolean("primary-to-history", value);
+            }
+        }
+
+        public bool synchronize_clipboards {
+            get {
+                return settings.get_boolean("synchronize-clipboards");
+            }
+            set {
+                settings.set_boolean("synchronize_clipboards", value);
             }
         }
 
