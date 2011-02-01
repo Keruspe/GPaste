@@ -47,6 +47,7 @@ namespace GPaste {
         private List<Clipboard> clipboards;
 
         public bool primary_to_history;
+        public bool synchronize_clipboards;
 
         private static ClipboardsManager _instance;
         public static ClipboardsManager instance {
@@ -60,10 +61,14 @@ namespace GPaste {
         private ClipboardsManager() {
             clipboards = new List<Clipboard>();
             primary_to_history = GPastedSettings.primary_to_history;
+            synchronize_clipboards = GPastedSettings.synchronize_clipboards;
             GPastedSettings.instance.changed.connect((key)=>{
                 switch (key) {
                 case "primary-to-history":
                     primary_to_history = GPastedSettings.primary_to_history;
+                    break;
+                case "synchronize_clipboards":
+                    synchronize_clipboards = GPastedSettings.synchronize_clipboards;
                     break;
                 }
             });
@@ -86,9 +91,9 @@ namespace GPaste {
         }
 
         private bool checkClipboards() {
-            string text;
+            string? synchronized_text = null;
             foreach(Clipboard c in clipboards) {
-                text = c.real.wait_for_text();
+                string text = c.real.wait_for_text();
                 if (text == null) {
                     unowned List<string> history = History.instance.history;
                     if (history.length() == 0)
@@ -103,6 +108,13 @@ namespace GPaste {
                     c.text = text;
                     if (c.selection == tmp || primary_to_history)
                         History.instance.add(text);
+                    if (synchronize_clipboards)
+                        synchronized_text = text;
+                }
+            }
+            if (synchronized_text != null) {
+                foreach(Clipboard c in clipboards) {
+                    c.text = synchronized_text;
                 }
             }
             return true;

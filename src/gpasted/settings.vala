@@ -22,6 +22,12 @@ namespace GPaste {
             }
         }
 
+        public static bool synchronize_clipboards {
+            get {
+                return instance.get_boolean("synchronize-clipboards");
+            }
+        }
+
         private GPastedSettings() {}
     }
 
