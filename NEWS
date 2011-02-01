@@ -1,0 +1,10 @@
+NEW in 0.5 (01/02/2011)
+=============
+
+First release !
+Content:
+  - gpasted: daemon with DBus interface
+  - gpaste: CLI client for gpasted
+  - gpaste-preferences: tool to edit preferences
+  - gpaste-applet: tray icon for managing gpasted
+
