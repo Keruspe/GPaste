@@ -1,5 +1,5 @@
 AC_PREREQ(2.63)
-AC_INIT([GPaste],[0.6],[Marc-Antoine@Perennou.com],[])
+AC_INIT([GPaste],[0.7],[Marc-Antoine@Perennou.com],[])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/])
