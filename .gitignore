@@ -35,4 +35,5 @@ POTFILES
 *.service
 *.desktop
 *.desktop.in
+*.tar.bz2
 

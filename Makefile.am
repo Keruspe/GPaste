@@ -5,6 +5,7 @@ CP = cp
 CLEANFILES = 
 
 SUBDIRS = po
+EXTRA_DIST = autogen.bash
 
 bin_PROGRAMS = gpaste gpaste-preferences gpaste-applet
 
@@ -26,8 +27,8 @@ data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
 gpaste-applet.desktop: data/gpaste-applet.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
-EXTRA_DIST = gpaste-preferences.desktop.in.in \
-	gpaste-applet.desktop.in.in
+EXTRA_DIST += data/gpaste-preferences.desktop.in.in \
+	data/gpaste-applet.desktop.in.in
 
 CLEANFILES += \
 	gpaste-preferences.desktop.in \
@@ -142,7 +143,7 @@ gsettings_SCHEMAS = data/gpaste.gschema.xml
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
 
-EXTRA_DIST += gpaste.gschema.xml.in
+EXTRA_DIST += data/gpaste.gschema.xml.in
 
 CLEANFILES += \
 	$(gsettings_SCHEMAS) \
@@ -154,7 +155,7 @@ service_DATA = data/org.gnome.GPaste.service
 data/org.gnome.GPaste.service: data/org.gnome.GPaste.service.in
 	$(AM_V_GEN) sed -e 's,[@]libexecdir[@],$(libexecdir),g' <$^ >$@
 
-EXTRA_DIST += org.gnome.GPaste.service.in
+EXTRA_DIST += data/org.gnome.GPaste.service.in
 
 CLEANFILES += $(service_DATA)
 
