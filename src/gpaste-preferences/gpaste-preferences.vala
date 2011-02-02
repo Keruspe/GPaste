@@ -138,6 +138,9 @@ namespace GPaste {
                 case "primary-to-history":
                     window.primary_to_history = primary_to_history;
                     break;
+                case "shutdown-on-exit":
+                    window.shutdown_on_exit = shutdown_on_exit;
+                    break;
                 }
             });
         }
