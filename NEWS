@@ -6,8 +6,8 @@ if they are empty at startup
 - You can now shutdown the daemon with "gpaste quit"
 - A preference has been added for the applet to shutdown the
 daemon when exiting
-- A preference has been added to set a maximum size of items
-when displaying it from the applet
+- A preference has been added to set a maximum size for each item
+when the applet displays them
 
 NEW in 0.6 (01/02/2011)
 =============
