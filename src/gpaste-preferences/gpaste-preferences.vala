@@ -63,6 +63,12 @@ namespace GPaste {
         }
 
         private void fill() {
+            var labels_vbox = new Gtk.VBox(true, 10);
+            var history_size_label = new Gtk.Label(_("Max history size: "));
+            var element_size_label = new Gtk.Label(_("Max element size: "));
+            labels_vbox.add(history_size_label);
+            labels_vbox.add(element_size_label);
+
             primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("_Primary selection affects history"));
             primary_to_history = (application as Preferences).primary_to_history;
             primary_to_history_button.toggled.connect(()=>{
@@ -88,20 +94,21 @@ namespace GPaste {
             element_size_button.get_adjustment().value_changed.connect(()=>{
                 (application as Preferences).element_size = element_size;
             });
-            var history_size_label = new Gtk.Label(_("Max history size: "));
-            var history_size_hbox = new Gtk.HBox(false, 10);
-            history_size_hbox.add(history_size_label);
-            history_size_hbox.add(max_history_size_button);
-            var element_size_label = new Gtk.Label(_("Max element size: "));
-            var element_size_hbox = new Gtk.HBox(false, 50);
-            element_size_hbox.add(element_size_label);
-            element_size_hbox.add(element_size_button);
+
+            var values_vbox = new Gtk.VBox(true, 10);
+            values_vbox.add(max_history_size_button);
+            values_vbox.add(element_size_button);
+
+            var values_hbox = new Gtk.HBox(false, 10);
+            values_hbox.add(labels_vbox);
+            values_hbox.add(values_vbox);
+
             var vbox = new Gtk.VBox(false, 10);
             vbox.add(primary_to_history_button);
             vbox.add(synchronize_clipboards_button);
             vbox.add(shutdown_on_exit_button);
-            vbox.add(history_size_hbox);
-            vbox.add(element_size_hbox);
+            vbox.add(values_hbox);
+
             add(vbox);
         }
     }
