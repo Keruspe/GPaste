@@ -39,6 +39,7 @@ namespace GPaste {
         public abstract void add(string selection) throws IOError;
         public abstract void delete(uint index) throws IOError;
         public abstract void select(uint index) throws IOError;
+        public abstract void quit() throws IOError;
     }
 
     public class GPaste : Object {
@@ -49,6 +50,7 @@ namespace GPaste {
             stdout.printf(_("%s set <number>: set <number>th item of the history to clipboard\n"), caller);
             stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
             stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
+            stdout.printf(_("%s quit: shutdown the daemon\n"), caller);
             stdout.printf(_("%s help: display this help\n"), caller);
         }
 
@@ -75,10 +77,17 @@ namespace GPaste {
                             stdout.printf("%d: %s\n", i, history[i]);
                         break;
                     case 2:
-                        if (args[1] == "help")
+                        switch (args[1]) {
+                        case "help":
                             usage(args[0]);
-                        else
+                            break;
+                        case "quit":
+                            gpaste.quit();
+                            break;
+                        default:
                             gpaste.add(args[1]);
+                            break;
+                        }
                         break;
                     case 3:
                         switch (args[1]) {

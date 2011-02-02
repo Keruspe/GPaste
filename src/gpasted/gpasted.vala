@@ -56,6 +56,10 @@ namespace GPaste {
             History.instance.select(index);
         }
 
+        public void quit() {
+            GPasted.loop.quit();
+        }
+
         public signal void changed();
 
         private GPasteServer() {}
@@ -70,7 +74,7 @@ namespace GPaste {
     }
 
     public class GPasted : Object {
-        private static MainLoop loop;
+        public static MainLoop loop { get; private set; }
 
         private static void handle(int signal) {
             stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
