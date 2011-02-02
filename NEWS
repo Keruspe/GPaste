@@ -1,4 +1,11 @@
-NEW in 0.7 (0/02/2011)
+NEW in 0.8 (XX/02/2011)
+=============
+
+- Fix behaviour of '\n' substitution with small string, and
+disable it with element-size = 0
+- Change default values to adapt to new behaviours
+
+NEW in 0.7 (02/02/2011)
 =============
 
 - The first element in history is now restored into clipboards

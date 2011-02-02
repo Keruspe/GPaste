@@ -2,7 +2,7 @@
   <schema id="org.gnome.GPaste" path="/apps/GPaste/" gettext-domain="@GETTEXT_PACKAGE@">
 
     <key name="max-history-size" type="i">
-      <default>20</default>
+      <default>30</default>
       <_summary>Max history size</_summary>
       <_description>
         Maximum number of items in history
@@ -10,7 +10,7 @@
     </key>
 
     <key name="element-size" type="i">
-      <default>50</default>
+      <default>60</default>
       <_summary>Max size of an element when displaying it</_summary>
       <_description>
         The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.

@@ -84,12 +84,12 @@ namespace GPaste {
             shutdown_on_exit_button.toggled.connect(()=>{
                 (application as Preferences).shutdown_on_exit = shutdown_on_exit;
             });
-            max_history_size_button = new Gtk.SpinButton.with_range(5, 100, 5);
+            max_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
             max_history_size = (application as Preferences).max_history_size;
             max_history_size_button.get_adjustment().value_changed.connect(()=>{
                 (application as Preferences).max_history_size = max_history_size;
             });
-            element_size_button = new Gtk.SpinButton.with_range(0, 100, 5);
+            element_size_button = new Gtk.SpinButton.with_range(0, 255, 5);
             element_size = (application as Preferences).element_size;
             element_size_button.get_adjustment().value_changed.connect(()=>{
                 (application as Preferences).element_size = element_size;
