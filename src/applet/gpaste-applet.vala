@@ -38,6 +38,7 @@ namespace GPaste {
         public abstract Variant getHistory() throws IOError;
         public abstract void delete(uint index) throws IOError;
         public abstract void select(uint index) throws IOError;
+        public abstract void quit() throws IOError;
         public abstract signal void changed();
     }
 
@@ -117,7 +118,14 @@ namespace GPaste {
     }
 
     public class Applet : Gtk.Application {
+        private Settings settings;
         public GPasteBusClient gpaste { get; private set; }
+
+        public bool shutdown_on_exit {
+            get {
+                return settings.get_boolean("shutdown-on-exit");
+            }
+        }
 
         public Applet() {
             Object(application_id: "org.gnome.GPaste.Applet");
@@ -131,6 +139,7 @@ namespace GPaste {
                 stderr.printf(_("Couldn't connect to GPaste.\n"));
                 Posix.exit(1);
             }
+            settings = new Settings("org.gnome.GPaste");
             new AppletWindow(this).hide();
         }
 
@@ -145,7 +154,15 @@ namespace GPaste {
                 stderr.printf(_("Fail to register the gtk application.\n"));
                 return 1;
             }
-            return app.run();
+            int ret = app.run();
+            if (app.shutdown_on_exit) {
+                try {
+                    app.gpaste.quit();
+                } catch (IOError e) {
+                    stderr.printf(_("Couldn't shutdown daemon.\n"));
+                }
+            }
+            return ret;
         }
     }
 
