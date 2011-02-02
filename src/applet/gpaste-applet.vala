@@ -76,9 +76,14 @@ namespace GPaste {
             history = new Gtk.Menu();
             try {
                 var hist = (string[]) (application as Applet).gpaste.getHistory();
+                int element_size = (application as Applet).element_size;
                 for (uint i = 0 ; i < hist.length ; ++i) {
                     uint current = i; // local, or weird closure behaviour
-                    var item = new Gtk.ImageMenuItem.with_label(hist[i]);
+                    string elem = hist[i];
+                    if (element_size != 0 && elem.length > element_size) {
+                        elem = elem.delimit("\n", ' ').substring(0, element_size-3) + "...";
+                    }
+                    var item = new Gtk.ImageMenuItem.with_label(elem);
                     item.activate.connect(()=>{
                         try {
                             switch(Gtk.get_current_event().button.button) {
@@ -120,16 +125,25 @@ namespace GPaste {
     public class Applet : Gtk.Application {
         private Settings settings;
         public GPasteBusClient gpaste { get; private set; }
-
-        public bool shutdown_on_exit {
-            get {
-                return settings.get_boolean("shutdown-on-exit");
-            }
-        }
+        public int element_size { get; private set; }
+        private bool shutdown_on_exit;
 
         public Applet() {
             Object(application_id: "org.gnome.GPaste.Applet");
+            settings = new Settings("org.gnome.GPaste");
+            shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
+            element_size = settings.get_int("element-size");
             activate.connect(init);
+            settings.changed.connect((key)=>{
+                switch(key) {
+                case "shutdown-on-exit":
+                    shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
+                    break;
+                case "element-size":
+                    element_size = settings.get_int("element-size");
+                    break;
+                }
+            });
         }
 
         private void init() {
@@ -139,7 +153,6 @@ namespace GPaste {
                 stderr.printf(_("Couldn't connect to GPaste.\n"));
                 Posix.exit(1);
             }
-            settings = new Settings("org.gnome.GPaste");
             new AppletWindow(this).hide();
         }
 
