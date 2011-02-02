@@ -3,6 +3,7 @@ namespace GPaste {
     public class PreferencesWindow : Gtk.Window {
         private Gtk.CheckButton primary_to_history_button;
         private Gtk.CheckButton synchronize_clipboards_button;
+        private Gtk.CheckButton shutdown_on_exit_button;
         private Gtk.SpinButton max_history_size_button;
 
         public bool primary_to_history {
@@ -20,6 +21,15 @@ namespace GPaste {
             }
             set {
                 synchronize_clipboards_button.set_active(value);
+            }
+        }
+
+        public bool shutdown_on_exit {
+            get {
+                return shutdown_on_exit_button.get_active();
+            }
+            set {
+                shutdown_on_exit_button.set_active(value);
             }
         }
 
@@ -53,6 +63,11 @@ namespace GPaste {
             synchronize_clipboards_button.toggled.connect(()=>{
                 (application as Preferences).synchronize_clipboards = synchronize_clipboards;
             });
+            shutdown_on_exit_button = new Gtk.CheckButton.with_mnemonic(_("Shutdown on _exit"));
+            shutdown_on_exit = (application as Preferences).shutdown_on_exit;
+            shutdown_on_exit_button.toggled.connect(()=>{
+                (application as Preferences).shutdown_on_exit = shutdown_on_exit;
+            });
             max_history_size_button = new Gtk.SpinButton.with_range(5, 100, 5);
             max_history_size = (application as Preferences).max_history_size;
             max_history_size_button.get_adjustment().value_changed.connect(()=>{
@@ -65,6 +80,7 @@ namespace GPaste {
             var vbox = new Gtk.VBox(false, 10);
             vbox.add(primary_to_history_button);
             vbox.add(synchronize_clipboards_button);
+            vbox.add(shutdown_on_exit_button);
             vbox.add(hbox);
             add(vbox);
         }
@@ -98,6 +114,15 @@ namespace GPaste {
             }
             set {
                 settings.set_boolean("synchronize-clipboards", value);
+            }
+        }
+
+        public bool shutdown_on_exit {
+            get {
+                return settings.get_boolean("shutdown-on-exit");
+            }
+            set {
+                settings.set_boolean("shutdown-on-exit", value);
             }
         }
 
