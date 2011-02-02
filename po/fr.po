@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.7\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-02 16:15+0100\n"
+"POT-Creation-Date: 2011-02-02 17:06+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -43,57 +43,61 @@ msgstr "Impossible de lire le fichier d'historique.\n"
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:47
+#: ../src/gpaste-preferences/gpaste-preferences.vala:57
 #: ../data/gpaste-preferences.desktop.in.in.h:1
 msgid "GPaste Preferences"
 msgstr "Préférences de GPaste"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:56
-msgid "_Primary selection affects history"
-msgstr "La selection _primaire affecte l'historique"
-
-#: ../src/gpaste-preferences/gpaste-preferences.vala:61
-msgid "_Synchronize clipboard with primary selection"
-msgstr "_Synchroniser le presse-papier avec la séléction primaire"
-
-#: ../src/gpaste-preferences/gpaste-preferences.vala:66
-msgid "Shutdown the daemon when _quitting the applet"
-msgstr "Éteindre le démon quand on _quitte l'applet"
-
-#: ../src/gpaste-preferences/gpaste-preferences.vala:76
+#: ../src/gpaste-preferences/gpaste-preferences.vala:67
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:161
-#: ../src/applet/gpaste-applet.vala:154
+#: ../src/gpaste-preferences/gpaste-preferences.vala:68
+msgid "Max element size: "
+msgstr "Taille maximale des éléments : "
+
+#: ../src/gpaste-preferences/gpaste-preferences.vala:72
+msgid "_Primary selection affects history"
+msgstr "La selection _primaire affecte l'historique"
+
+#: ../src/gpaste-preferences/gpaste-preferences.vala:77
+msgid "_Synchronize clipboard with primary selection"
+msgstr "_Synchroniser le presse-papier avec la séléction primaire"
+
+#: ../src/gpaste-preferences/gpaste-preferences.vala:82
+msgid "Shutdown the daemon when _quitting the applet"
+msgstr "Éteindre le démon quand on _quitte l'applet"
+
+#: ../src/gpaste-preferences/gpaste-preferences.vala:197
+#: ../src/applet/gpaste-applet.vala:167
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
 
-#: ../src/applet/gpaste-applet.vala:93
+#: ../src/applet/gpaste-applet.vala:98
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
-#: ../src/applet/gpaste-applet.vala:104
+#: ../src/applet/gpaste-applet.vala:109
 msgid "Preferences"
 msgstr "Préférences"
 
-#: ../src/applet/gpaste-applet.vala:109
+#: ../src/applet/gpaste-applet.vala:114
 #, c-format
 msgid "Couldn't spawn gpaste-preferences.\n"
 msgstr "Impossible de lancer gpaste-preferences.\n"
 
-#: ../src/applet/gpaste-applet.vala:113
+#: ../src/applet/gpaste-applet.vala:118
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applet/gpaste-applet.vala:139 ../src/gpaste.vala:112
+#: ../src/applet/gpaste-applet.vala:153 ../src/gpaste.vala:112
 #, c-format
 msgid "Couldn't connect to GPaste.\n"
 msgstr "Impossible de se connecter à GPaste.\n"
 
-#: ../src/applet/gpaste-applet.vala:162
+#: ../src/applet/gpaste-applet.vala:175
 #, c-format
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
@@ -172,8 +176,21 @@ msgid "Max history size"
 msgstr "Taille maximale de l'historique"
 
 #: ../data/gpaste.gschema.xml.in.h:8
+msgid "Max size of an element when displaying it"
+msgstr "Taille maximale d'un élément quand on l'affiche"
+
+#: ../data/gpaste.gschema.xml.in.h:9
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
+
+#: ../data/gpaste.gschema.xml.in.h:10
+msgid ""
+"The extra stuff of that element will be replaced by \"...\", and newlines by "
+"\" \" when displaying from the applet, 0 for no limit."
+msgstr ""
+"La partie de l'élément excédant la taille authorisée sera remplacée par \"..."
+"\", et les sauts de lognes par \" \" quand on affiche depuis l'applet, 0 "
+"pour aucune limite."
 
 #: ../data/gpaste-preferences.desktop.in.in.h:2
 msgid "Set your GPaste preferences"
