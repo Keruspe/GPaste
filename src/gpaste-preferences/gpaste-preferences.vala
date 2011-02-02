@@ -5,6 +5,7 @@ namespace GPaste {
         private Gtk.CheckButton synchronize_clipboards_button;
         private Gtk.CheckButton shutdown_on_exit_button;
         private Gtk.SpinButton max_history_size_button;
+        private Gtk.SpinButton element_size_button;
 
         public bool primary_to_history {
             get {
@@ -42,6 +43,15 @@ namespace GPaste {
             }
         }
 
+        public int element_size {
+            get {
+                return element_size_button.get_value_as_int();
+            }
+            set {
+                element_size_button.get_adjustment().value = value;
+            }
+        }
+
         public PreferencesWindow(Gtk.Application app) {
             Object(type: Gtk.WindowType.TOPLEVEL);
             title = _("GPaste Preferences");
@@ -73,15 +83,25 @@ namespace GPaste {
             max_history_size_button.get_adjustment().value_changed.connect(()=>{
                 (application as Preferences).max_history_size = max_history_size;
             });
+            element_size_button = new Gtk.SpinButton.with_range(0, 100, 5);
+            element_size = (application as Preferences).element_size;
+            element_size_button.get_adjustment().value_changed.connect(()=>{
+                (application as Preferences).element_size = element_size;
+            });
             var history_size_label = new Gtk.Label(_("Max history size: "));
-            var hbox = new Gtk.HBox(false, 10);
-            hbox.add(history_size_label);
-            hbox.add(max_history_size_button);
+            var history_size_hbox = new Gtk.HBox(false, 10);
+            history_size_hbox.add(history_size_label);
+            history_size_hbox.add(max_history_size_button);
+            var element_size_label = new Gtk.Label(_("Max element size: "));
+            var element_size_hbox = new Gtk.HBox(false, 50);
+            element_size_hbox.add(element_size_label);
+            element_size_hbox.add(element_size_button);
             var vbox = new Gtk.VBox(false, 10);
             vbox.add(primary_to_history_button);
             vbox.add(synchronize_clipboards_button);
             vbox.add(shutdown_on_exit_button);
-            vbox.add(hbox);
+            vbox.add(history_size_hbox);
+            vbox.add(element_size_hbox);
             add(vbox);
         }
     }
@@ -96,6 +116,15 @@ namespace GPaste {
             }
             set {
                 settings.set_int("max-history-size", value);
+            }
+        }
+
+        public int element_size {
+            get {
+                return settings.get_int("element-size");
+            }
+            set {
+                settings.set_int("element-size", value);
             }
         }
 
