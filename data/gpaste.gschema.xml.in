@@ -13,7 +13,7 @@
       <default>50</default>
       <_summary>Max size of an element when displaying it</_summary>
       <_description>
-        The extra stuff of that element will be replaced by "...", and newlines by " " when displaying from the applet, 0 for no limit.
+        The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.
       </_description>
     </key>
 

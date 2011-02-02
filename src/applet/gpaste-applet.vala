@@ -80,8 +80,10 @@ namespace GPaste {
                 for (uint i = 0 ; i < hist.length ; ++i) {
                     uint current = i; // local, or weird closure behaviour
                     string elem = hist[i];
-                    if (element_size != 0 && elem.length > element_size) {
-                        elem = elem.delimit("\n", ' ').substring(0, element_size-3) + "...";
+                    if (element_size != 0) {
+                        elem = elem.delimit("\n", ' ');
+                        if (elem.length > element_size)
+                            elem = elem.substring(0, element_size-1) + "…";
                     }
                     var item = new Gtk.ImageMenuItem.with_label(elem);
                     item.activate.connect(()=>{

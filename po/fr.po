@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.8\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-02 17:06+0100\n"
+"POT-Creation-Date: 2011-02-02 18:56+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -69,35 +69,35 @@ msgid "Shutdown the daemon when _quitting the applet"
 msgstr "Éteindre le démon quand on _quitte l'applet"
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:197
-#: ../src/applet/gpaste-applet.vala:167
+#: ../src/applet/gpaste-applet.vala:169
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
 
-#: ../src/applet/gpaste-applet.vala:98
+#: ../src/applet/gpaste-applet.vala:100
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
-#: ../src/applet/gpaste-applet.vala:109
+#: ../src/applet/gpaste-applet.vala:111
 msgid "Preferences"
 msgstr "Préférences"
 
-#: ../src/applet/gpaste-applet.vala:114
+#: ../src/applet/gpaste-applet.vala:116
 #, c-format
 msgid "Couldn't spawn gpaste-preferences.\n"
 msgstr "Impossible de lancer gpaste-preferences.\n"
 
-#: ../src/applet/gpaste-applet.vala:118
+#: ../src/applet/gpaste-applet.vala:120
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applet/gpaste-applet.vala:153 ../src/gpaste.vala:112
+#: ../src/applet/gpaste-applet.vala:155 ../src/gpaste.vala:112
 #, c-format
 msgid "Couldn't connect to GPaste.\n"
 msgstr "Impossible de se connecter à GPaste.\n"
 
-#: ../src/applet/gpaste-applet.vala:175
+#: ../src/applet/gpaste-applet.vala:177
 #, c-format
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
@@ -184,13 +184,14 @@ msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
 
 #: ../data/gpaste.gschema.xml.in.h:10
+#,
 msgid ""
-"The extra stuff of that element will be replaced by \"...\", and newlines by "
-"\" \" when displaying from the applet, 0 for no limit."
+"The extra stuff of that element will be replaced by \"…\", and newlines by "
+"\" \" when displaying from the applet, 0 to disable."
 msgstr ""
-"La partie de l'élément excédant la taille authorisée sera remplacée par \"..."
-"\", et les sauts de lognes par \" \" quand on affiche depuis l'applet, 0 "
-"pour aucune limite."
+"La partie de l'élément excédant la taille authorisée sera remplacée par \"…"
+"\", et les sauts de lignes par \" \" quand on affiche depuis l'applet, 0 "
+"pour désativer."
 
 #: ../data/gpaste-preferences.desktop.in.in.h:2
 msgid "Set your GPaste preferences"
