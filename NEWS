@@ -4,6 +4,7 @@ NEW in 0.9 (XX/02/2011)
 - Fix a segfault when trying to restore from an empty history
 into an empty clipboard at startup
 - Better output for empty history
+- gpaste version
 
 NEW in 0.8 (03/02/2011)
 =============

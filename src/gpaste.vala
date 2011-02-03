@@ -53,6 +53,7 @@ namespace GPaste {
             stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
             stdout.printf(_("%s empty: empty the history\n"), caller);
             stdout.printf(_("%s quit: shutdown the daemon\n"), caller);
+            stdout.printf(_("%s version: display the version\n"), caller);
             stdout.printf(_("%s help: display this help\n"), caller);
         }
 
@@ -88,6 +89,9 @@ namespace GPaste {
                             break;
                         case "empty":
                             gpaste.empty();
+                            break;
+                        case "version":
+                            stdout.printf(Config.PACKAGE_STRING+"\n");
                             break;
                         default:
                             gpaste.add(args[1]);
