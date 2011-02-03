@@ -9,7 +9,7 @@ EXTRA_DIST = autogen.bash
 
 bin_PROGRAMS = gpaste gpaste-preferences
 
-libexec_PROGRAMS = gpasted gpaste-applet
+libexec_PROGRAMS = gpasted
 
 desktopdir=$(datadir)/applications
 desktop_DATA = gpaste-preferences.desktop
@@ -19,20 +19,10 @@ data/gpaste-preferences.desktop.in: data/gpaste-preferences.desktop.in.in
 gpaste-preferences.desktop: data/gpaste-preferences.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
-autostartdir=$(sysconfdir)/xdg/autostart
-autostart_DATA = gpaste-applet.desktop
-
-data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
-	$(AM_V_GEN) sed "s|@libexecdir[@]|$(libexecdir)|" < $< > $@ || rm $@
-gpaste-applet.desktop: data/gpaste-applet.desktop.in
-	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
-
-EXTRA_DIST += data/gpaste-preferences.desktop.in.in \
-	data/gpaste-applet.desktop.in.in
+EXTRA_DIST += data/gpaste-preferences.desktop.in.in
 
 CLEANFILES += \
 	gpaste-preferences.desktop.in \
-	gpaste-applet.desktop.in \
 	$(desktop_DATA)
 
 gpasted_SOURCES = \
@@ -111,6 +101,18 @@ gpaste_preferences_LDADD = \
 CLEANFILES += \
 	${gpaste_preferences_SOURCES:.vala=.c}
 
+if ENABLE_APPLET
+
+libexec_PROGRAMS += gpaste-applet
+
+autostartdir=$(sysconfdir)/xdg/autostart
+autostart_DATA = gpaste-applet.desktop
+
+data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
+	$(AM_V_GEN) sed "s|@libexecdir[@]|$(libexecdir)|" < $< > $@ || rm $@
+gpaste-applet.desktop: data/gpaste-applet.desktop.in
+	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
+
 gpaste_applet_SOURCES = \
 	src/applet/gpaste-applet.vala
 
@@ -134,8 +136,14 @@ gpaste_applet_LDADD = \
 	$(GTK_LIBS) \
 	$(GLIB_LIBS)
 
+EXTRA_DIST += data/gpaste-applet.desktop.in.in
+
 CLEANFILES += \
+	gpaste-applet.desktop.in \
+	gpaste-applet.desktop \
 	${gpaste_applet_SOURCES:.vala=.c}
+
+endif
 
 gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 
