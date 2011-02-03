@@ -5,6 +5,7 @@ NEW in 0.9 (XX/02/2011)
 into an empty clipboard at startup
 - Better output for empty history
 - gpaste version
+- gpaste applet to spawn the applet
 
 NEW in 0.8 (03/02/2011)
 =============

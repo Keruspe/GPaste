@@ -93,6 +93,13 @@ namespace GPaste {
                         case "version":
                             stdout.printf(Config.PACKAGE_STRING+"\n");
                             break;
+                        case "applet":
+                            try {
+                                Process.spawn_command_line_async(Config.BINDIR + "/gpaste-applet");
+                            } catch(SpawnError e) {
+                                stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
+                            }
+                            break;
                         default:
                             gpaste.add(args[1]);
                             break;
