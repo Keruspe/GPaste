@@ -46,6 +46,7 @@ namespace GPaste {
     public class AppletWindow : Gtk.Window {
         private Gtk.StatusIcon tray_icon;
         private Gtk.Menu history;
+        private bool history_is_empty;
         private Gtk.Menu options;
 
         public AppletWindow(Gtk.Application app) {
@@ -63,7 +64,8 @@ namespace GPaste {
                 Gdk.Event e = Gtk.get_current_event();
                 switch(e.button.button) {
                 case 1:
-                    history.popup(null, null, tray_icon.position_menu, 1, e.get_time());
+                    if (!history_is_empty)
+                        history.popup(null, null, tray_icon.position_menu, 1, e.get_time());
                     break;
                 case 3:
                     options.popup(null, null, tray_icon.position_menu, 3, e.get_time());
@@ -77,6 +79,7 @@ namespace GPaste {
             history = new Gtk.Menu();
             try {
                 var hist = (string[]) (application as Applet).gpaste.getHistory();
+                history_is_empty = (hist.length == 0);
                 int element_size = (application as Applet).element_size;
                 for (uint i = 0 ; i < hist.length ; ++i) {
                     uint current = i; // local, or weird closure behaviour

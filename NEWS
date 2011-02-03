@@ -4,6 +4,9 @@ NEW in 0.8 (XX/02/2011)
 - Fix behaviour of '\n' substitution with small string, and
 disable it with element-size = 0
 - Change default values to adapt to new behaviours
+- Add ability to empty the history from the right clic on
+the applet or via "gpaste empty"
+- Do not display history when it is empty
 
 NEW in 0.7 (02/02/2011)
 =============
