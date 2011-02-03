@@ -95,7 +95,7 @@ namespace GPaste {
                             break;
                         case "applet":
                             try {
-                                Process.spawn_command_line_async(Config.BINDIR + "/gpaste-applet");
+                                Process.spawn_command_line_async(Config.LIBEXECDIR + "/gpaste-applet");
                             } catch(SpawnError e) {
                                 stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
                             }

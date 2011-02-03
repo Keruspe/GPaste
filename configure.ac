@@ -26,6 +26,7 @@ AM_GLIB_GNU_GETTEXT
 IT_PROG_INTLTOOL([0.35.0])
 
 AC_SUBST([bindir], ["$bindir"])
+AC_SUBST([libexecdir], ["$libexecdir"])
 AC_SUBST([localedir], ["$localedir"])
 
 AC_PROG_INSTALL
