@@ -136,7 +136,7 @@ gpaste_applet_LDADD = \
 CLEANFILES += \
 	${gpaste_applet_SOURCES:.vala=.c}
 
-gsettings_SCHEMAS = data/org.gnome.gpaste.gschema.xml
+gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 
 @INTLTOOL_XML_NOMERGE_RULE@
 @GSETTINGS_RULES@
@@ -144,7 +144,7 @@ gsettings_SCHEMAS = data/org.gnome.gpaste.gschema.xml
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
 
-EXTRA_DIST += data/org.gnome.gpaste.gschema.xml.in
+EXTRA_DIST += data/org.gnome.GPaste.gschema.xml.in
 
 CLEANFILES += \
 	$(gsettings_SCHEMAS) \

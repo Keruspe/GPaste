@@ -2,6 +2,7 @@
   <schema id="org.gnome.GPaste" path="/apps/GPaste/" gettext-domain="GPaste"> <!-- todo use @GETTEXT_PACKAGE@ -->
 
     <key name="max-history-size" type="i">
+      <range min="5" max="255"/>
       <default>30</default>
       <_summary>Max history size</_summary>
       <_description>
@@ -10,6 +11,7 @@
     </key>
 
     <key name="element-size" type="i">
+      <range min="0" max="255"/>
       <default>60</default>
       <_summary>Max size of an element when displaying it</_summary>
       <_description>
