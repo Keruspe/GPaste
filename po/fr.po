@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.9\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-03 10:13+0100\n"
+"POT-Creation-Date: 2011-02-03 14:14+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -74,44 +74,48 @@ msgid "Shutdown the daemon when _quitting the applet"
 msgstr "Éteindre le démon quand on _quitte l'applet"
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:197
-#: ../src/applet/gpaste-applet.vala:179
+#: ../src/applet/gpaste-applet.vala:185
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
 
-#: ../src/applet/gpaste-applet.vala:101
+#: ../src/applet/gpaste-applet.vala:103
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
-#: ../src/applet/gpaste-applet.vala:112
+#: ../src/applet/gpaste-applet.vala:110
+msgid "(Empty)"
+msgstr "(Vide)"
+
+#: ../src/applet/gpaste-applet.vala:118
 msgid "Preferences"
 msgstr "Préférences"
 
-#: ../src/applet/gpaste-applet.vala:117
+#: ../src/applet/gpaste-applet.vala:123
 #, c-format
 msgid "Couldn't spawn gpaste-preferences.\n"
 msgstr "Impossible de lancer gpaste-preferences.\n"
 
-#: ../src/applet/gpaste-applet.vala:121
+#: ../src/applet/gpaste-applet.vala:127
 msgid "Empty history"
 msgstr "Vider l'historique"
 
-#: ../src/applet/gpaste-applet.vala:126
+#: ../src/applet/gpaste-applet.vala:132
 #, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Impossible de vider l'historique.\n"
 
-#: ../src/applet/gpaste-applet.vala:130
+#: ../src/applet/gpaste-applet.vala:136
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applet/gpaste-applet.vala:165 ../src/gpaste.vala:117
+#: ../src/applet/gpaste-applet.vala:171 ../src/gpaste.vala:117
 #, c-format
 msgid "Couldn't connect to GPaste.\n"
 msgstr "Impossible de se connecter à GPaste.\n"
 
-#: ../src/applet/gpaste-applet.vala:187
+#: ../src/applet/gpaste-applet.vala:193
 #, c-format
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
