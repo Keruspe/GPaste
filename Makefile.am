@@ -78,6 +78,7 @@ gpaste_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
+	-DBINDIR=\"${bindir}\" \
 	$(CFLAGS)
 
 gpaste_LDADD = \
