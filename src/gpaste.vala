@@ -53,9 +53,7 @@ namespace GPaste {
             stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
             stdout.printf(_("%s empty: empty the history\n"), caller);
             stdout.printf(_("%s quit: shutdown the daemon\n"), caller);
-#ifdef ENABLE_APPLET
             stdout.printf(_("%s applet: launch the applet\n"), caller);
-#endif
             stdout.printf(_("%s preferences: launch the configuration tool\n"), caller);
             stdout.printf(_("%s version: display the version\n"), caller);
             stdout.printf(_("%s help: display this help\n"), caller);
@@ -97,7 +95,6 @@ namespace GPaste {
                         case "version":
                             stdout.printf(Config.PACKAGE_STRING+"\n");
                             break;
-#if ENABLE_APPLET
                         case "applet":
                             try {
                                 Process.spawn_command_line_async(Config.LIBEXECDIR + "/gpaste-applet");
@@ -105,7 +102,6 @@ namespace GPaste {
                                 stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
                             }
                             break;
-#endif
                         case "preferences":
                             try {
                                 Process.spawn_command_line_async(Config.BINDIR + "/gpaste-preferences");

@@ -51,9 +51,6 @@ AC_SUBST(GTK_VALAFLAGS)
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--disable-applet], [Disable gpaste-applet]), enable_applet=$enableval, enable_applet=yes)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
-if [[ "x$enable_applet" = "xyes" ]]; then
-    AC_DEFINE([ENABLE_APPLET], [1], [Define if we have to build the applet])
-fi
 
 AC_CONFIG_FILES([
   Makefile
