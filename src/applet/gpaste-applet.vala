@@ -38,6 +38,7 @@ namespace GPaste {
         public abstract Variant getHistory() throws IOError;
         public abstract void delete(uint index) throws IOError;
         public abstract void select(uint index) throws IOError;
+        public abstract void empty() throws IOError;
         public abstract void quit() throws IOError;
         public abstract signal void changed();
     }
@@ -117,6 +118,15 @@ namespace GPaste {
                 }
             });
             options.add(preferences);
+            var empty = new Gtk.ImageMenuItem.with_label(_("Empty history"));
+            empty.activate.connect(()=>{
+                try {
+                    (application as Applet).gpaste.empty();
+                } catch (IOError e) {
+                    stderr.printf(_("Couldn't empty history.\n"));
+                }
+            });
+            options.add(empty);
             var quit = new Gtk.ImageMenuItem.with_label(_("Quit"));
             quit.activate.connect(()=>(application as GLib.Application).quit_mainloop());
             options.add(quit);

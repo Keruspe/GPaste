@@ -39,6 +39,7 @@ namespace GPaste {
         public abstract void add(string selection) throws IOError;
         public abstract void delete(uint index) throws IOError;
         public abstract void select(uint index) throws IOError;
+        public abstract void empty() throws IOError;
         public abstract void quit() throws IOError;
     }
 
@@ -50,6 +51,7 @@ namespace GPaste {
             stdout.printf(_("%s set <number>: set <number>th item of the history to clipboard\n"), caller);
             stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
             stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
+            stdout.printf(_("%s empty: empty the history\n"), caller);
             stdout.printf(_("%s quit: shutdown the daemon\n"), caller);
             stdout.printf(_("%s help: display this help\n"), caller);
         }
@@ -83,6 +85,9 @@ namespace GPaste {
                             break;
                         case "quit":
                             gpaste.quit();
+                            break;
+                        case "empty":
+                            gpaste.empty();
                             break;
                         default:
                             gpaste.add(args[1]);

@@ -56,6 +56,10 @@ namespace GPaste {
             History.instance.select(index);
         }
 
+        public void empty() {
+            History.instance.empty();
+        }
+
         public void quit() {
             GPasted.loop.quit();
         }

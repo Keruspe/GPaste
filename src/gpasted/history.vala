@@ -112,6 +112,18 @@ namespace GPaste {
             ClipboardsManager.instance.select(selection);
         }
 
+        public void empty() {
+            var history_file = File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
+            try {
+                if (history_file.query_exists())
+                    history_file.delete();
+            } catch (Error e) {
+                stderr.printf(_("Could not delete history file.\n"));
+            }
+            _history = new List<string>();
+            changed();
+        }
+
         public void load() {
             string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
             var history_dir = File.new_for_path(history_dir_path);
