@@ -23,7 +23,7 @@ autostartdir=$(sysconfdir)/xdg/autostart
 autostart_DATA = gpaste-applet.desktop
 
 data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
-	$(AM_V_GEN) sed "s|@bindir[@]|$(bindir)|" < $< > $@ || rm $@
+	$(AM_V_GEN) sed "s|@libexecdir[@]|$(libexecdir)|" < $< > $@ || rm $@
 gpaste-applet.desktop: data/gpaste-applet.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
