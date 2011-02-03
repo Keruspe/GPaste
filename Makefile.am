@@ -79,6 +79,7 @@ gpaste_CFLAGS = \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DLIBEXECDIR=\"${libexecdir}\" \
+	-DBINDIR=\"${bindir}\" \
 	$(CFLAGS)
 
 gpaste_LDADD = \
