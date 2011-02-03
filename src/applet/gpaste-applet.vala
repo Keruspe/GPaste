@@ -185,6 +185,8 @@ namespace GPaste {
                 stderr.printf(_("Fail to register the gtk application.\n"));
                 return 1;
             }
+            if (app.get_is_remote())
+                return 0;
             int ret = app.run();
             if (app.shutdown_on_exit) {
                 try {
