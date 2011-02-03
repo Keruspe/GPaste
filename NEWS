@@ -1,4 +1,4 @@
-NEW in 0.8 (XX/02/2011)
+NEW in 0.8 (03/02/2011)
 =============
 
 - Fix behaviour of '\n' substitution with small string, and
