@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.9\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-03 17:24+0100\n"
+"POT-Creation-Date: 2011-02-03 18:31+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -92,7 +92,7 @@ msgstr "(Vide)"
 msgid "Preferences"
 msgstr "Préférences"
 
-#: ../src/applet/gpaste-applet.vala:123
+#: ../src/applet/gpaste-applet.vala:123 ../src/gpaste.vala:109
 #, c-format
 msgid "Couldn't spawn gpaste-preferences.\n"
 msgstr "Impossible de lancer gpaste-preferences.\n"
@@ -110,12 +110,12 @@ msgstr "Impossible de vider l'historique.\n"
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applet/gpaste-applet.vala:171 ../src/gpaste.vala:131
+#: ../src/applet/gpaste-applet.vala:171 ../src/gpaste.vala:140
 #, c-format
 msgid "Couldn't connect to GPaste.\n"
 msgstr "Impossible de se connecter à GPaste.\n"
 
-#: ../src/applet/gpaste-applet.vala:193
+#: ../src/applet/gpaste-applet.vala:195
 #, c-format
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
@@ -165,58 +165,68 @@ msgstr "%s quit : éteindre le démon\n"
 
 #: ../src/gpaste.vala:56
 #, c-format
+msgid "%s applet: launch the applet\n"
+msgstr "%s applet : lance l'applet\n"
+
+#: ../src/gpaste.vala:57
+#, c-format
+msgid "%s preferences: launch the configuration tool\n"
+msgstr "%s preferences : lance l'outil de configuration\n"
+
+#: ../src/gpaste.vala:58
+#, c-format
 msgid "%s version: display the version\n"
 msgstr "%s version : affiche la version\n"
 
-#: ../src/gpaste.vala:57
+#: ../src/gpaste.vala:59
 #, c-format
 msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
-#: ../src/gpaste.vala:100
+#: ../src/gpaste.vala:102
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Impossible de lancer gpaste-applet.\n"
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:1
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:1
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr ""
 "La séléction primaire et le presse-papier doivent-ils être synchronisés?"
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:2
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:2
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:3
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:3
 msgid "By default, the daemon doesn't keep running when you close the applet."
 msgstr "Par défaut, le démon ne s'éxécute plus après la fermeture de l'applet."
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:4
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:4
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Par défaut, la séléction primaire et le presse-papier sont indépendents."
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:5
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:5
 msgid "Does the daemon shutdown when closing the applet?"
 msgstr "Le démon soit-il s'éteindre quand on ferme l'applet?"
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:6
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:6
 msgid "Does the primary selection affects history?"
 msgstr "La selection primaire doit-elle affecter l'historique?"
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:7
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:7
 msgid "Max history size"
 msgstr "Taille maximale de l'historique"
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:8
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:8
 msgid "Max size of an element when displaying it"
 msgstr "Taille maximale d'un élément quand on l'affiche"
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:9
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:9
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
 
-#: ../data/org.gnome.gpaste.gschema.xml.in.h:10
+#: ../data/org.gnome.GPaste.gschema.xml.in.h:10
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
