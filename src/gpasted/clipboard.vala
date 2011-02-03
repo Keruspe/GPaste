@@ -79,8 +79,10 @@ namespace GPaste {
             clipboard.text = clipboard.real.wait_for_text();
             if (clipboard.text == null) {
                 string text = History.instance.history.data;
-                clipboard.text = text;
-                clipboard.real.set_text(text, text.length);
+                if (text != null) {
+                    clipboard.text = text;
+                    clipboard.real.set_text(text, text.length);
+                }
             }
         }
 
