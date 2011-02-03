@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.9\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-03 14:14+0100\n"
+"POT-Creation-Date: 2011-02-03 17:24+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -110,7 +110,7 @@ msgstr "Impossible de vider l'historique.\n"
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applet/gpaste-applet.vala:171 ../src/gpaste.vala:117
+#: ../src/applet/gpaste-applet.vala:171 ../src/gpaste.vala:131
 #, c-format
 msgid "Couldn't connect to GPaste.\n"
 msgstr "Impossible de se connecter à GPaste.\n"
@@ -132,8 +132,8 @@ msgstr "%s : affiche l'historique\n"
 
 #: ../src/gpaste.vala:50
 #, c-format
-msgid "%s <text>: set text to clipboard\n"
-msgstr "%s <texte> : met le texte dans le presse-papier\n"
+msgid "%s [add] <text>: set text to clipboard\n"
+msgstr "%s [add] <texte> : met le texte dans le presse-papier\n"
 
 #: ../src/gpaste.vala:51
 #, c-format
@@ -165,48 +165,58 @@ msgstr "%s quit : éteindre le démon\n"
 
 #: ../src/gpaste.vala:56
 #, c-format
+msgid "%s version: display the version\n"
+msgstr "%s version : affiche la version\n"
+
+#: ../src/gpaste.vala:57
+#, c-format
 msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
-#: ../data/gpaste.gschema.xml.in.h:1
+#: ../src/gpaste.vala:100
+#, c-format
+msgid "Couldn't spawn gpaste-applet.\n"
+msgstr "Impossible de lancer gpaste-applet.\n"
+
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:1
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr ""
 "La séléction primaire et le presse-papier doivent-ils être synchronisés?"
 
-#: ../data/gpaste.gschema.xml.in.h:2
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:2
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
 
-#: ../data/gpaste.gschema.xml.in.h:3
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:3
 msgid "By default, the daemon doesn't keep running when you close the applet."
 msgstr "Par défaut, le démon ne s'éxécute plus après la fermeture de l'applet."
 
-#: ../data/gpaste.gschema.xml.in.h:4
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:4
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Par défaut, la séléction primaire et le presse-papier sont indépendents."
 
-#: ../data/gpaste.gschema.xml.in.h:5
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:5
 msgid "Does the daemon shutdown when closing the applet?"
 msgstr "Le démon soit-il s'éteindre quand on ferme l'applet?"
 
-#: ../data/gpaste.gschema.xml.in.h:6
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:6
 msgid "Does the primary selection affects history?"
 msgstr "La selection primaire doit-elle affecter l'historique?"
 
-#: ../data/gpaste.gschema.xml.in.h:7
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:7
 msgid "Max history size"
 msgstr "Taille maximale de l'historique"
 
-#: ../data/gpaste.gschema.xml.in.h:8
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:8
 msgid "Max size of an element when displaying it"
 msgstr "Taille maximale d'un élément quand on l'affiche"
 
-#: ../data/gpaste.gschema.xml.in.h:9
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:9
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
 
-#: ../data/gpaste.gschema.xml.in.h:10
+#: ../data/org.gnome.gpaste.gschema.xml.in.h:10
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."

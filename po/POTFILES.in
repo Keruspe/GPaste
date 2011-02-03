@@ -3,7 +3,7 @@ src/gpasted/history.vala
 src/gpaste-preferences/gpaste-preferences.vala
 src/applet/gpaste-applet.vala
 src/gpaste.vala
-data/gpaste.gschema.xml.in
+data/org.gnome.gpaste.gschema.xml.in
 data/gpaste-preferences.desktop.in.in
 data/gpaste-applet.desktop.in.in
 
