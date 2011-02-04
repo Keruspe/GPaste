@@ -1,0 +1,105 @@
+=encoding utf8
+
+=head1 NAME
+
+GPaste - A lightweight clipboard manager for the Gnome desktop
+
+=head1 SYNOPSIS
+
+[command |] gpaste [options...]
+
+=head1 DESCRIPTION
+
+GPaste is a modular clipboard management system with a fully DBus-based daemon, a CLI client and a gtk+ tray icon.
+
+=head1 COMMANDS
+
+=over 8
+
+=item B<gpaste>
+
+Display the history
+
+=item B<gpaste [add] <text>>
+
+Add the text into the history
+
+=item B<gpaste set <number>>
+
+Put the <number>th item of the history into the clipboard
+
+=item B<gpaste delete <number>>
+
+Delete the <number>th item of the history
+
+=item B<command | gpaste>
+
+Put the output of the command into the history
+
+=item B<gpaste empty>
+
+Empty the history
+
+=item B<gpaste quit>
+
+Shutdown the daemon
+
+=item B<gpaste applet>
+
+Launch the applet
+
+=item B<gpaste preferences>
+
+Launch the configuration tool
+
+=item B<gpaste version>
+
+Display the version
+
+=item B<gpaste help>
+
+Display the help
+
+=back
+
+=head1 APPLET USAGE
+
+=over 8
+
+=back
+
+=head2 B<left clic>
+
+Display the history, the first element is the one in the clipboard
+
+=over 8
+
+=item B<left clic>
+
+Select the item
+
+=item B<right clic>
+
+Delete the item
+
+=back
+
+=head2 B<right clic>
+
+Display the options
+
+=over 8
+
+=item B<Preferences>
+
+Launch the configuration tool
+
+=item B<Empty history>
+
+Empty the history
+
+=item B<Quit>
+
+Exit the applet
+
+=cut

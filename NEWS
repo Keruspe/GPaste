@@ -11,7 +11,7 @@ into an empty clipboard at startup
 - Add gpaste preferences alias for gpaste-preferences
 - There can now only be one instance of the applet and daemon at a time
 - You can now avoid building the applet with --disable-applet
-- bash and zsh completions
+- bash and zsh completions, manual
 
 NEW in 0.8 (03/02/2011)
 =============

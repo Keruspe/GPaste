@@ -38,4 +38,5 @@ POTFILES
 *.desktop
 *.desktop.in
 *.tar.bz2
+gpaste.1
 
