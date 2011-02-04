@@ -32,6 +32,7 @@ POTFILES
 *.gschema.valid
 *.pot
 *.gschema.xml
+*.gschema.xml.in
 *.service
 *.desktop
 *.desktop.in

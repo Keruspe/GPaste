@@ -153,10 +153,11 @@ gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
 
-EXTRA_DIST += data/org.gnome.GPaste.gschema.xml.in
+EXTRA_DIST += data/org.gnome.GPaste.gschema.xml.in.in
 
 CLEANFILES += \
 	$(gsettings_SCHEMAS) \
+	$(gsettings_SCHEMAS:.xml=.xml.in) \
 	gschemas.compiled
 
 servicedir = $(datadir)/dbus-1/services

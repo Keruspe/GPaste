@@ -55,6 +55,7 @@ AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 AC_CONFIG_FILES([
   Makefile
   po/Makefile.in
+  data/org.gnome.GPaste.gschema.xml.in
 ])
 AC_OUTPUT
 
