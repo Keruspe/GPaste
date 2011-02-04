@@ -3,6 +3,7 @@ gpasted
 gpaste-preferences
 !src/gpaste-preferences
 gpaste
+!completions/gpaste
 gpaste-applet
 *.c
 Makefile

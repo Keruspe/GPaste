@@ -170,3 +170,5 @@ EXTRA_DIST += data/org.gnome.GPaste.service.in
 
 CLEANFILES += $(service_DATA)
 
+noinst_DATA = completions/_gpaste completions/gpaste
+EXTRA_DIST += $(noinst_DATA)

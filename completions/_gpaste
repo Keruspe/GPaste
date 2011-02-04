@@ -1,0 +1,14 @@
+#compdef gpaste
+
+_describe 'gpaste command' '(
+	add:set\ text\ to\ clipboard
+	set:select\ an\ element\ of\ the\ history
+	delete:delete\ an\ element\ of\ the\ history
+	empty:empty\ the\ history
+	quit:shutdown\ the\ daemon
+	applet:launch\ the\ applet
+	preferences:launch\ the\ configuration\ tool
+	version:display\ the\ version
+	help:display\ the\ help
+)' && ret=0
+
