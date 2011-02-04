@@ -104,7 +104,7 @@ namespace GPaste {
                             break;
                         case "preferences":
                             try {
-                                Process.spawn_command_line_async(Config.BINDIR + "/gpaste-preferences");
+                                Process.spawn_command_line_async(Config.LIBEXECDIR + "/gpaste-preferences");
                             } catch(SpawnError e) {
                                 stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
                             }

@@ -7,9 +7,9 @@ CLEANFILES =
 SUBDIRS = po
 EXTRA_DIST = autogen.bash
 
-bin_PROGRAMS = gpaste gpaste-preferences
+bin_PROGRAMS = gpaste
 
-libexec_PROGRAMS = gpasted
+libexec_PROGRAMS = gpasted gpaste-preferences
 
 desktopdir=$(datadir)/applications
 desktop_DATA = gpaste-preferences.desktop
@@ -69,7 +69,6 @@ gpaste_CFLAGS = \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DLIBEXECDIR=\"${libexecdir}\" \
-	-DBINDIR=\"${bindir}\" \
 	$(CFLAGS)
 
 gpaste_LDADD = \
@@ -129,7 +128,7 @@ gpaste_applet_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
-	-DBINDIR=\"${bindir}\" \
+	-DLIBEXECDIR=\"${libexecdir}\" \
 	$(CFLAGS)
 
 gpaste_applet_LDADD = \

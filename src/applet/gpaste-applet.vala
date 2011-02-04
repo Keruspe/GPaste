@@ -118,7 +118,7 @@ namespace GPaste {
             var preferences = new Gtk.ImageMenuItem.with_label(_("Preferences"));
             preferences.activate.connect(()=>{
                 try {
-                    Process.spawn_command_line_async(Config.BINDIR + "/gpaste-preferences");
+                    Process.spawn_command_line_async(Config.LIBEXECDIR + "/gpaste-preferences");
                 } catch(SpawnError e) {
                     stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
                 }
