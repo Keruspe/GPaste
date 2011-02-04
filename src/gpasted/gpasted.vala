@@ -95,7 +95,10 @@ namespace GPaste {
 
         private static void start_dbus() {
             Bus.own_name(BusType.SESSION, "org.gnome.GPaste", BusNameOwnerFlags.NONE,
-                on_bus_aquired, () => {}, () => stderr.printf(_("Could not aquire DBus name.\n")));
+                on_bus_aquired, () => {}, () => {
+                    stderr.printf(_("Could not aquire DBus name.\n"));
+                    Posix.exit(1);
+                });
         }
 
         public static int main(string[] args) {

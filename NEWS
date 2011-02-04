@@ -9,7 +9,7 @@ into an empty clipboard at startup
 - gpaste-applet is now installed into libexecdir
 - gpaste add foo is now an alias for gpaste foo (add foo to history)
 - Add gpaste preferences alias for gpaste-preferences
-- There can now only be one instance of the applet at a time
+- There can now only be one instance of the applet and daemon at a time
 - You can now avoid building the applet with --disable-applet
 
 NEW in 0.8 (03/02/2011)
