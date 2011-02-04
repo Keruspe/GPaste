@@ -65,7 +65,7 @@ namespace GPaste {
         private void fill() {
             var labels_vbox = new Gtk.VBox(true, 10);
             var history_size_label = new Gtk.Label(_("Max history size: "));
-            var element_size_label = new Gtk.Label(_("Max element size: "));
+            var element_size_label = new Gtk.Label(_("Max element size when displaying: "));
             labels_vbox.add(history_size_label);
             labels_vbox.add(element_size_label);
 

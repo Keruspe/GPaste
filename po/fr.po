@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 0.9\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-04 01:34+0100\n"
+"POT-Creation-Date: 2011-02-04 16:40+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -27,7 +27,7 @@ msgstr "Signal %d reçu, arrêt.\n"
 msgid "Could not register DBus service.\n"
 msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#: ../src/gpasted/gpasted.vala:98
+#: ../src/gpasted/gpasted.vala:99
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
@@ -57,8 +57,9 @@ msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:68
-msgid "Max element size: "
-msgstr "Taille maximale des éléments : "
+#,
+msgid "Max element size when displaying: "
+msgstr "Taille maximale d'un élément quand on l'affiche : "
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:72
 msgid "_Primary selection affects history"
@@ -73,7 +74,7 @@ msgid "Shutdown the daemon when _quitting the applet"
 msgstr "Éteindre le démon quand on _quitte l'applet"
 
 #: ../src/gpaste-preferences/gpaste-preferences.vala:197
-#: ../src/applet/gpaste-applet.vala:185
+#: ../src/applet/gpaste-applet.vala:188
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
@@ -109,12 +110,12 @@ msgstr "Impossible de vider l'historique.\n"
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applet/gpaste-applet.vala:171 ../src/gpaste.vala:140
+#: ../src/applet/gpaste-applet.vala:173 ../src/gpaste.vala:140
 #, c-format
 msgid "Couldn't connect to GPaste.\n"
 msgstr "Impossible de se connecter à GPaste.\n"
 
-#: ../src/applet/gpaste-applet.vala:195
+#: ../src/applet/gpaste-applet.vala:198
 #, c-format
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
