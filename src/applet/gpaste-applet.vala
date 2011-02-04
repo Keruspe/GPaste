@@ -73,7 +73,7 @@ namespace GPaste {
             });
         }
 
-        private void fill_history() {
+        public void fill_history() {
             history = new Gtk.Menu();
             bool history_is_empty;
             try {
@@ -145,6 +145,7 @@ namespace GPaste {
         public GPasteBusClient gpaste { get; private set; }
         public int element_size { get; private set; }
         private bool shutdown_on_exit;
+        private AppletWindow window;
 
         public Applet() {
             Object(application_id: "org.gnome.GPaste.Applet");
@@ -159,6 +160,7 @@ namespace GPaste {
                     break;
                 case "element-size":
                     element_size = settings.get_int("element-size");
+                    window.fill_history(); /* Keep diplayed history up to date */
                     break;
                 }
             });
@@ -171,7 +173,8 @@ namespace GPaste {
                 stderr.printf(_("Couldn't connect to GPaste.\n"));
                 Posix.exit(1);
             }
-            new AppletWindow(this).hide();
+            window = new AppletWindow(this);
+            window.hide();
         }
 
         public static int main(string[] args) {
