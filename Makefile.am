@@ -22,7 +22,7 @@ gpaste-preferences.desktop: data/gpaste-preferences.desktop.in
 EXTRA_DIST += data/gpaste-preferences.desktop.in.in
 
 CLEANFILES += \
-	gpaste-preferences.desktop.in \
+	data/gpaste-preferences.desktop.in \
 	$(desktop_DATA)
 
 gpasted_SOURCES = \
@@ -139,7 +139,7 @@ gpaste_applet_LDADD = \
 EXTRA_DIST += data/gpaste-applet.desktop.in.in
 
 CLEANFILES += \
-	gpaste-applet.desktop.in \
+	data/gpaste-applet.desktop.in \
 	gpaste-applet.desktop \
 	${gpaste_applet_SOURCES:.vala=.c}
 
