@@ -127,17 +127,10 @@ namespace GPaste {
         public void load() {
             string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
             var history_dir = File.new_for_path(history_dir_path);
-            if (!history_dir.query_exists()) {
-                stderr.printf(_("Could not read history file.\n"));
+            if (!history_dir.query_exists())
                 Posix.mkdir(history_dir_path, 0700);
-                return;
-            }
-            var history_file = File.new_for_path(history_dir_path + "/history");
-            if (!history_file.query_exists()) {
-                stderr.printf(_("Could not read history file.\n"));
-                return;
-            }
 
+            var history_file = File.new_for_path(history_dir_path + "/history");
             try {
                 int64 length;
                 var dis = new DataInputStream(history_file.read());
@@ -154,13 +147,7 @@ namespace GPaste {
         public void save() {
             var history_file = File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
             try {
-                if (history_file.query_exists())
-                    history_file.delete();
-                var history_file_stream = history_file.create(FileCreateFlags.NONE);
-                if (!history_file.query_exists()) {
-                    stderr.printf(_("Could not create history file.\n"));
-                    return;
-                }
+                var history_file_stream = history_file.replace(null, false, FileCreateFlags.REPLACE_DESTINATION);
                 var dos = new DataOutputStream(history_file_stream);
                 foreach(string line in _history) {
                     dos.put_int64(line.length);
