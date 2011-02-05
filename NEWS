@@ -1,4 +1,4 @@
-NEW in 0.9 (XX/02/2011)
+NEW in 0.9 (05/02/2011)
 =============
 
 - Fix a segfault when trying to restore from an empty history

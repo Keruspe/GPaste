@@ -5,7 +5,7 @@ CP = cp
 CLEANFILES = 
 
 SUBDIRS = po
-EXTRA_DIST = autogen.bash
+EXTRA_DIST = autogen.bash NEWS README
 
 bin_PROGRAMS = gpaste
 
