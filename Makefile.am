@@ -155,7 +155,7 @@ EXTRA_DIST += data/org.gnome.GPaste.service.in
 
 CLEANFILES += $(service_DATA)
 
-noinst_DATA = completions/_gpaste completions/gpaste
+noinst_DATA = completions/_gpaste completions/gpaste.sh
 EXTRA_DIST += $(noinst_DATA)
 
 gpastemandir = $(datadir)/man/man1
