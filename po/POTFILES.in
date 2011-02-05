@@ -4,6 +4,5 @@ src/gpaste-preferences/gpaste-preferences.vala
 src/applet/gpaste-applet.vala
 src/gpaste.vala
 data/org.gnome.GPaste.gschema.xml.in.in
-data/gpaste-preferences.desktop.in.in
 data/gpaste-applet.desktop.in.in
 

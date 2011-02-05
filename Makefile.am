@@ -11,20 +11,6 @@ bin_PROGRAMS = gpaste
 
 libexec_PROGRAMS = gpasted gpaste-preferences
 
-desktopdir=$(datadir)/applications
-desktop_DATA = gpaste-preferences.desktop
-
-data/gpaste-preferences.desktop.in: data/gpaste-preferences.desktop.in.in
-	$(AM_V_GEN) sed "s|@bindir[@]|$(bindir)|" < $< > $@ || rm $@
-gpaste-preferences.desktop: data/gpaste-preferences.desktop.in
-	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
-
-EXTRA_DIST += data/gpaste-preferences.desktop.in.in
-
-CLEANFILES += \
-	data/gpaste-preferences.desktop.in \
-	$(desktop_DATA)
-
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
 	src/gpasted/history.vala \
