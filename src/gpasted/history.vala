@@ -32,133 +32,136 @@
 
 namespace GPaste {
 
-    public class History : Object {
-        private List<string> _history;
-        public List<string> history {
-            get {
-                return get_unowned_history();
-            }
-        }
+    namespace Daemon {
 
-        private static History _instance;
-        public static History instance {
-            get {
-                if (_instance == null)
-                    _instance = new History();
-                return _instance;
-            }
-        }
-
-        private unowned List<string> get_unowned_history() {
-            return _history;
-        }
-
-        public int max_history_size;
-
-        public virtual signal void changed() {
-            save();
-            GPasteServer.instance.changed();
-        }
-
-        private History() {
-            _history = new List<string>();
-            max_history_size = GPastedSettings.max_history_size;
-            GPastedSettings.instance.changed.connect((key)=>{
-                switch(key) {
-                case "max-history-size":
-                    max_history_size = GPastedSettings.max_history_size;
-                    break;
-                }
-            });
-        }
-
-        public void add(string selection) {
-            for (unowned List<string?> s = history ; s != null ; s = s.next) {
-                if (s.data == selection) {
-                    _history.remove_link(s);
-                    break;
+        public class History : Object {
+            private List<string> _history;
+            public List<string> history {
+                get {
+                    return get_unowned_history();
                 }
             }
-            _history.prepend(selection);
-            if (_history.length() > max_history_size) {
-                unowned List<string?> tmp = history;
-                for (int i = 0 ; i < max_history_size ; ++i)
-                    tmp = tmp.next;
-                do {
-                    unowned List<string?> next = tmp.next;
-                    _history.remove_link(tmp);
-                    tmp = next;
-                } while(tmp != null);
-            }
-            changed();
-        }
 
-        public void delete(uint index) {
-            if (index >= _history.length()) return;
-            unowned List<string?> tmp = history;
-            for (int i = 0 ; i < index ; ++i)
-                tmp = tmp.next;
-            _history.remove_link(tmp);
-            if (index == 0)
-                select(0);
-            else
+            private static History _instance;
+            public static History instance {
+                get {
+                    if (_instance == null)
+                        _instance = new History();
+                    return _instance;
+                }
+            }
+
+            private unowned List<string> get_unowned_history() {
+                return _history;
+            }
+
+            public int max_history_size;
+
+            public virtual signal void changed() {
+                save();
+                DBusServer.instance.changed();
+            }
+
+            private History() {
+                _history = new List<string>();
+                max_history_size = Settings.max_history_size;
+                Settings.instance.changed.connect((key)=>{
+                    switch(key) {
+                    case "max-history-size":
+                        max_history_size = Settings.max_history_size;
+                        break;
+                    }
+                });
+            }
+
+            public void add(string selection) {
+                for (unowned List<string?> s = history ; s != null ; s = s.next) {
+                    if (s.data == selection) {
+                        _history.remove_link(s);
+                        break;
+                    }
+                }
+                _history.prepend(selection);
+                if (_history.length() > max_history_size) {
+                    unowned List<string?> tmp = history;
+                    for (int i = 0 ; i < max_history_size ; ++i)
+                        tmp = tmp.next;
+                    do {
+                        unowned List<string?> next = tmp.next;
+                        _history.remove_link(tmp);
+                        tmp = next;
+                    } while(tmp != null);
+                }
                 changed();
-        }
-
-        public void select(uint index) {
-            if (index >= _history.length()) return;
-            string selection = _history.nth_data(index);
-            add(selection);
-            ClipboardsManager.instance.select(selection);
-        }
-
-        public void empty() {
-            var history_file = File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
-            try {
-                if (history_file.query_exists())
-                    history_file.delete();
-            } catch (Error e) {
-                stderr.printf(_("Could not delete history file.\n"));
             }
-            _history = new List<string>();
-            changed();
-        }
 
-        public void load() {
-            string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
-            var history_dir = File.new_for_path(history_dir_path);
-            if (!history_dir.query_exists())
-                Posix.mkdir(history_dir_path, 0700);
+            public void delete(uint index) {
+                if (index >= _history.length()) return;
+                unowned List<string?> tmp = history;
+                for (int i = 0 ; i < index ; ++i)
+                    tmp = tmp.next;
+                _history.remove_link(tmp);
+                if (index == 0)
+                    select(0);
+                else
+                    changed();
+            }
 
-            var history_file = File.new_for_path(history_dir_path + "/history");
-            try {
-                int64 length;
-                var dis = new DataInputStream(history_file.read());
-                while((length = dis.read_int64()) != 0) {
-                    var line = new StringBuilder();
-                    for(int64 i = 0 ; i < length ; ++i) line.append_unichar(dis.read_byte());
-                    _history.append(line.str);
+            public void select(uint index) {
+                if (index >= _history.length()) return;
+                string selection = _history.nth_data(index);
+                add(selection);
+                ClipboardsManager.instance.select(selection);
+            }
+
+            public void empty() {
+                var history_file = File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
+                try {
+                    if (history_file.query_exists())
+                        history_file.delete();
+                } catch (Error e) {
+                    stderr.printf(_("Could not delete history file.\n"));
                 }
-            } catch (Error e) {
-                stderr.printf(_("Could not read history file.\n"));
+                _history = new List<string>();
+                changed();
+            }
+
+            public void load() {
+                string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
+                var history_dir = File.new_for_path(history_dir_path);
+                if (!history_dir.query_exists())
+                    Posix.mkdir(history_dir_path, 0700);
+
+                var history_file = File.new_for_path(history_dir_path + "/history");
+                try {
+                    int64 length;
+                    var dis = new DataInputStream(history_file.read());
+                    while((length = dis.read_int64()) != 0) {
+                        var line = new StringBuilder();
+                        for(int64 i = 0 ; i < length ; ++i) line.append_unichar(dis.read_byte());
+                        _history.append(line.str);
+                    }
+                } catch (Error e) {
+                    stderr.printf(_("Could not read history file.\n"));
+                }
+            }
+
+            public void save() {
+                var history_file = File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
+                try {
+                    var history_file_stream = history_file.replace(null, false, FileCreateFlags.REPLACE_DESTINATION);
+                    var dos = new DataOutputStream(history_file_stream);
+                    foreach(string line in _history) {
+                        dos.put_int64(line.length);
+                        dos.put_string(line);
+                    }
+                    dos.put_int64(0);
+                } catch (Error e) {
+                    stderr.printf(_("Could not create history file.\n"));
+                }
             }
         }
 
-        public void save() {
-            var history_file = File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
-            try {
-                var history_file_stream = history_file.replace(null, false, FileCreateFlags.REPLACE_DESTINATION);
-                var dos = new DataOutputStream(history_file_stream);
-                foreach(string line in _history) {
-                    dos.put_int64(line.length);
-                    dos.put_string(line);
-                }
-                dos.put_int64(0);
-            } catch (Error e) {
-                stderr.printf(_("Could not create history file.\n"));
-            }
-        }
     }
 
 }
-

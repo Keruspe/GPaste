@@ -32,96 +32,99 @@
 
 namespace GPaste {
 
-    [DBus (name = "org.gnome.GPaste")]
-    public class GPasteServer : Object {
-        [DBus (signature = "as")]
-        public Variant getHistory() {
-            unowned List<string> history = History.instance.history;
-            var vb = new VariantBuilder(new VariantType.array(VariantType.STRING));
-            foreach (string s in history)
-                vb.add_value(s);
-            return vb.end();
-        }
+    namespace Daemon {
 
-        public void add(string selection) {
-            ClipboardsManager.instance.select(selection);
-            History.instance.add(selection);
-        }
-
-        public void delete(uint index) {
-            History.instance.delete(index);
-        }
-
-        public void select(uint index) {
-            History.instance.select(index);
-        }
-
-        public void empty() {
-            History.instance.empty();
-        }
-
-        public void quit() {
-            GPasted.loop.quit();
-        }
-
-        public signal void changed();
-
-        private GPasteServer() {}
-        private static GPasteServer _instance;
-        public static GPasteServer instance {
-            get {
-                if (_instance == null)
-                    _instance = new GPasteServer();
-                return _instance;
+        [DBus (name = "org.gnome.GPaste")]
+        public class DBusServer : Object {
+            [DBus (signature = "as")]
+            public Variant getHistory() {
+                unowned List<string> history = History.instance.history;
+                var vb = new VariantBuilder(new VariantType.array(VariantType.STRING));
+                foreach (string s in history)
+                    vb.add_value(s);
+                return vb.end();
             }
-        }
-    }
 
-    public class GPasted : Object {
-        public static MainLoop loop { get; private set; }
+            public void add(string selection) {
+                ClipboardsManager.instance.select(selection);
+                History.instance.add(selection);
+            }
 
-        private static void handle(int signal) {
-            stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
-            loop.quit();
-        }
+            public void delete(uint index) {
+                History.instance.delete(index);
+            }
 
-        private static void on_bus_aquired(DBusConnection conn) {
-            try {
-                conn.register_object("/org/gnome/GPaste", GPasteServer.instance);
-            } catch (IOError e) {
-                stderr.printf(_("Could not register DBus service.\n"));
+            public void select(uint index) {
+                History.instance.select(index);
+            }
+
+            public void empty() {
+                History.instance.empty();
+            }
+
+            public void quit() {
+                Main.loop.quit();
+            }
+
+            public signal void changed();
+
+            private DBusServer() {}
+            private static DBusServer _instance;
+            public static DBusServer instance {
+                get {
+                    if (_instance == null)
+                        _instance = new DBusServer();
+                    return _instance;
+                }
             }
         }
 
-        private static void start_dbus() {
-            Bus.own_name(BusType.SESSION, "org.gnome.GPaste", BusNameOwnerFlags.NONE,
-                on_bus_aquired, () => {}, () => {
-                    stderr.printf(_("Could not aquire DBus name.\n"));
-                    Posix.exit(1);
-                });
+        public class Main : Object {
+            public static MainLoop loop { get; private set; }
+
+            private static void handle(int signal) {
+                stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
+                loop.quit();
+            }
+
+            private static void on_bus_aquired(DBusConnection conn) {
+                try {
+                    conn.register_object("/org/gnome/GPaste", DBusServer.instance);
+                } catch (IOError e) {
+                    stderr.printf(_("Could not register DBus service.\n"));
+                }
+            }
+
+            private static void start_dbus() {
+                Bus.own_name(BusType.SESSION, "org.gnome.GPaste", BusNameOwnerFlags.NONE,
+                    on_bus_aquired, () => {}, () => {
+                        stderr.printf(_("Could not aquire DBus name.\n"));
+                        Posix.exit(1);
+                    });
+            }
+
+            public static int main(string[] args) {
+                Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
+                Intl.textdomain(Config.GETTEXT_PACKAGE);
+                Gtk.init(ref args);
+                History.instance.load();
+                var clipboard = new Clipboard(Gdk.SELECTION_CLIPBOARD);
+                var primary = new Clipboard(Gdk.SELECTION_PRIMARY);
+                var cm = ClipboardsManager.instance;
+                cm.addClipboard(clipboard);
+                cm.addClipboard(primary);
+                cm.activate();
+                var handler = Posix.sigaction_t();
+                handler.sa_handler = handle;
+                Posix.sigaction(Posix.SIGTERM, handler, null);
+                Posix.sigaction(Posix.SIGINT, handler, null);
+                start_dbus();
+                loop = new MainLoop(null, false);
+                loop.run();
+                return 0;
+            }
         }
 
-        public static int main(string[] args) {
-            Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
-            Intl.textdomain(Config.GETTEXT_PACKAGE);
-            Gtk.init(ref args);
-            History.instance.load();
-            var clipboard = new Clipboard(Gdk.SELECTION_CLIPBOARD);
-            var primary = new Clipboard(Gdk.SELECTION_PRIMARY);
-            var cm = ClipboardsManager.instance;
-            cm.addClipboard(clipboard);
-            cm.addClipboard(primary);
-            cm.activate();
-            var handler = Posix.sigaction_t();
-            handler.sa_handler = handle;
-            Posix.sigaction(Posix.SIGTERM, handler, null);
-            Posix.sigaction(Posix.SIGINT, handler, null);
-            start_dbus();
-            loop = new MainLoop(null, false);
-            loop.run();
-            return 0;
-        }
     }
 
 }
-
