@@ -9,7 +9,8 @@ EXTRA_DIST = autogen.bash NEWS README
 
 bin_PROGRAMS = gpaste
 
-libexec_PROGRAMS = gpasted gpaste-preferences
+gpasteexecdir = $(libexecdir)/gpaste
+gpasteexec_PROGRAMS = gpasted gpaste-preferences
 
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
