@@ -35,11 +35,11 @@ namespace GPaste {
     namespace Daemon {
 
         [DBus (name = "org.gnome.GPaste")]
-        public class DBusServer : Object {
+        public class DBusServer : GLib.Object {
             [DBus (signature = "as")]
-            public Variant getHistory() {
-                unowned List<string> history = History.instance.history;
-                var vb = new VariantBuilder(new VariantType.array(VariantType.STRING));
+            public GLib.Variant getHistory() {
+                unowned GLib.SList<string> history = History.instance.history;
+                var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
                 foreach (string s in history)
                     vb.add_value(s);
                 return vb.end();
@@ -69,22 +69,23 @@ namespace GPaste {
             public signal void changed();
 
             private DBusServer() {}
+
             private static DBusServer _instance;
             public static DBusServer instance {
                 get {
-                    if (_instance == null)
-                        _instance = new DBusServer();
-                    return _instance;
+                    if (DBusServer._instance == null)
+                        DBusServer._instance = new DBusServer();
+                    return DBusServer._instance;
                 }
             }
         }
 
-        public class Main : Object {
-            public static MainLoop loop { get; private set; }
+        public class Main : GLib.Object {
+            public static GLib.MainLoop loop { get; private set; }
 
             private static void handle(int signal) {
                 stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
-                loop.quit();
+                Main.loop.quit();
             }
 
             private static void on_bus_aquired(DBusConnection conn) {
@@ -97,15 +98,17 @@ namespace GPaste {
 
             private static void start_dbus() {
                 Bus.own_name(BusType.SESSION, "org.gnome.GPaste", BusNameOwnerFlags.NONE,
-                    on_bus_aquired, () => {}, () => {
+                    Main.on_bus_aquired, () => {}, () => {
                         stderr.printf(_("Could not aquire DBus name.\n"));
                         Posix.exit(1);
-                    });
+                    }
+                );
             }
 
             public static int main(string[] args) {
-                Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
-                Intl.textdomain(Config.GETTEXT_PACKAGE);
+                GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
+                GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
+                GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
                 Gtk.init(ref args);
                 History.instance.load();
                 var clipboard = new Clipboard(Gdk.SELECTION_CLIPBOARD);
@@ -118,9 +121,9 @@ namespace GPaste {
                 handler.sa_handler = handle;
                 Posix.sigaction(Posix.SIGTERM, handler, null);
                 Posix.sigaction(Posix.SIGINT, handler, null);
-                start_dbus();
-                loop = new MainLoop(null, false);
-                loop.run();
+                Main.start_dbus();
+                Main.loop = new GLib.MainLoop(null, false);
+                Main.loop.run();
                 return 0;
             }
         }

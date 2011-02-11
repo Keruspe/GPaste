@@ -35,9 +35,9 @@ namespace GPaste {
     namespace Client {
 
         [DBus (name = "org.gnome.GPaste")]
-        interface DBusClient : Object {
+        interface DBusClient : GLib.Object {
             [DBus (signature = "as")]
-            public abstract Variant getHistory() throws IOError;
+            public abstract GLib.Variant getHistory() throws IOError;
             public abstract void add(string selection) throws IOError;
             public abstract void delete(uint index) throws IOError;
             public abstract void select(uint index) throws IOError;
@@ -45,7 +45,7 @@ namespace GPaste {
             public abstract void quit() throws IOError;
         }
 
-        public class Main : Object {
+        public class Main : GLib.Object {
             public static void usage(string caller) {
                 stdout.printf(_("Usage:\n"));
                 stdout.printf(_("%s: print the history\n"), caller);
@@ -62,12 +62,16 @@ namespace GPaste {
             }
 
             public static int main(string[] args) {
-                Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
-                Intl.textdomain(Config.GETTEXT_PACKAGE);
-                Intl.setlocale(LocaleCategory.ALL, "");
+                GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
+                GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
+                GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
+                GLib.Intl.setlocale(LocaleCategory.ALL, "");
                 try {
                     DBusClient gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     if (! Posix.isatty(stdin.fileno())) {
+                        /*
+                         * We are being piped !
+                         */
                         var sb = new StringBuilder();
                         sb.append(stdin.read_line());
                         string s;
@@ -79,13 +83,15 @@ namespace GPaste {
                     } else {
                         switch (args.length) {
                         case 1:
-                            string[] history = (string[]) gpaste.getHistory();
+                            string[] history = gpaste.getHistory() as string[];
                             for (int i = 0 ; i < history.length ; ++i)
                                 stdout.printf("%d: %s\n", i, history[i]);
                             break;
                         case 2:
                             switch (args[1]) {
                             case "help":
+                            case "-h":
+                            case "--help":
                                 usage(args[0]);
                                 break;
                             case "quit":
@@ -99,14 +105,14 @@ namespace GPaste {
                                 break;
                             case "applet":
                                 try {
-                                    Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-applet");
+                                    GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-applet");
                                 } catch(SpawnError e) {
                                     stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
                                 }
                                 break;
                             case "preferences":
                                 try {
-                                    Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-preferences");
+                                    GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-preferences");
                                 } catch(SpawnError e) {
                                     stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
                                 }
@@ -139,7 +145,7 @@ namespace GPaste {
                     }
                     return 0;
                 } catch (IOError e) {
-                    stderr.printf(_("Couldn't connect to GPaste.\n"));
+                    stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                     return 1;
                 }
             }

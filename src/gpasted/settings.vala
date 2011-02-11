@@ -2,35 +2,42 @@ namespace GPaste {
 
     namespace Daemon {
 
-        public class Settings : GLib.Settings {
-            private static GLib.Settings _instance;
-            public static GLib.Settings instance {
+        public class Settings : GLib.Object {
+            private GLib.Settings settings;
+
+            private static Settings _instance;
+            public static Settings instance {
                 get {
-                    if (_instance == null)
-                        _instance = new GLib.Settings("org.gnome.GPaste");
-                    return _instance;
+                    if (Settings._instance == null)
+                        Settings._instance = new Settings();
+                    return Settings._instance;
                 }
             }
 
-            public static bool primary_to_history {
+            public bool primary_to_history {
                 get {
-                    return instance.get_boolean("primary-to-history");
+                    return this.settings.get_boolean("primary-to-history");
                 }
             }
 
-            public static int max_history_size {
+            public int max_history_size {
                 get {
-                    return instance.get_int("max-history-size");
+                    return this.settings.get_int("max-history-size");
                 }
             }
 
-            public static bool synchronize_clipboards {
+            public bool synchronize_clipboards {
                 get {
-                    return instance.get_boolean("synchronize-clipboards");
+                    return this.settings.get_boolean("synchronize-clipboards");
                 }
             }
 
-            private Settings() {}
+            public signal void changed(string key);
+
+            private Settings() {
+                this.settings = new GLib.Settings("org.gnome.GPaste");
+                this.settings.changed.connect((key)=>this.changed(key));
+            }
         }
 
     }

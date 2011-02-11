@@ -34,7 +34,7 @@ namespace GPaste {
 
     namespace Daemon {
 
-        public class Clipboard : Object {
+        public class Clipboard : GLib.Object {
             public Gtk.Clipboard real { get; private set; }
             public Gdk.Atom selection;
             public string text;
@@ -45,8 +45,8 @@ namespace GPaste {
             }
         }
 
-        public class ClipboardsManager : Object {
-            private List<Clipboard> clipboards;
+        public class ClipboardsManager : GLib.Object {
+            private GLib.SList<Clipboard> clipboards;
 
             public bool primary_to_history;
             public bool synchronize_clipboards;
@@ -54,69 +54,68 @@ namespace GPaste {
             private static ClipboardsManager _instance;
             public static ClipboardsManager instance {
                 get {
-                    if (_instance == null)
-                        _instance = new ClipboardsManager();
-                    return _instance;
+                    if (ClipboardsManager._instance == null)
+                        ClipboardsManager._instance = new ClipboardsManager();
+                    return ClipboardsManager._instance;
                 }
             }
 
             private ClipboardsManager() {
-                clipboards = new List<Clipboard>();
-                primary_to_history = Settings.primary_to_history;
-                synchronize_clipboards = Settings.synchronize_clipboards;
-                Settings.instance.changed.connect((key)=>{
+                this.clipboards = new GLib.SList<Clipboard>();
+                Settings settings = Settings.instance;
+                this.primary_to_history = settings.primary_to_history;
+                this.synchronize_clipboards = settings.synchronize_clipboards;
+                settings.changed.connect((key)=>{
                     switch (key) {
                     case "primary-to-history":
-                        primary_to_history = Settings.primary_to_history;
+                        this.primary_to_history = settings.primary_to_history;
                         break;
                     case "synchronize-clipboards":
-                        synchronize_clipboards = Settings.synchronize_clipboards;
+                        this.synchronize_clipboards = settings.synchronize_clipboards;
                         break;
                     }
                 });
             }
 
             public void addClipboard(Clipboard clipboard) {
-                clipboards.prepend(clipboard);
+                this.clipboards.prepend(clipboard);
                 clipboard.text = clipboard.real.wait_for_text();
                 if (clipboard.text == null) {
-                    unowned List<string> history = History.instance.history;
+                    unowned GLib.SList<string> history = History.instance.history;
                     if (history.length() != 0) {
                         string text = history.data;
                         clipboard.text = text;
-                        clipboard.real.set_text(text, text.length);
+                        clipboard.real.set_text(text, -1);
                     }
                 }
             }
 
             public void activate() {
                 var time = new TimeoutSource(1000);
-                time.set_callback(checkClipboards);
+                time.set_callback(this.checkClipboards);
                 time.attach(null);
             }
 
             public void select(string selection) {
-                foreach(Clipboard c in clipboards) {
-                    c.real.set_text(selection, selection.length);
+                foreach(Clipboard c in this.clipboards) {
+                    c.real.set_text(selection, -1);
                 }
             }
 
             private bool checkClipboards() {
                 string? synchronized_text = null;
-                foreach(Clipboard c in clipboards) {
+                foreach(Clipboard c in this.clipboards) {
                     string text = c.real.wait_for_text();
                     if (text == null) {
-                        unowned List<string> history = History.instance.history;
+                        unowned GLib.SList<string> history = History.instance.history;
                         if (history.length() == 0)
                             continue;
-                        else {
-                            string selection = history.nth_data(0);
-                            c.real.set_text(selection, selection.length);
-                        }
+                        string selection = history.nth_data(0);
+                        c.real.set_text(selection, -1);
                     }
                     if (c.text != text) {
-                        Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                         c.text = text;
+                        Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                         if (c.selection == tmp || primary_to_history)
                             History.instance.add(text);
                         if (synchronize_clipboards)
@@ -124,10 +123,10 @@ namespace GPaste {
                     }
                 }
                 if (synchronized_text != null) {
-                    foreach(Clipboard c in clipboards) {
+                    foreach(Clipboard c in this.clipboards) {
                         if (c.text != synchronized_text) {
                             c.text = synchronized_text;
-                            c.real.set_text(synchronized_text, synchronized_text.length);
+                            c.real.set_text(synchronized_text, -1);
                         }
                     }
                 }

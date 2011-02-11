@@ -35,9 +35,9 @@ namespace GPaste {
     namespace Applet {
 
         [DBus (name = "org.gnome.GPaste")]
-        public interface DBusClient : Object {
+        public interface DBusClient : GLib.Object {
             [DBus (signature = "as")]
-            public abstract Variant getHistory() throws IOError;
+            public abstract GLib.Variant getHistory() throws IOError;
             public abstract void delete(uint index) throws IOError;
             public abstract void select(uint index) throws IOError;
             public abstract void empty() throws IOError;
@@ -49,26 +49,27 @@ namespace GPaste {
             private Gtk.StatusIcon tray_icon;
             private Gtk.Menu history;
             private Gtk.Menu options;
+            private bool needs_repaint;
 
             public Window(Gtk.Application app) {
-                Object(type: Gtk.WindowType.TOPLEVEL);
-                title = "GPaste";
-                application = app;
-                set_resizable(false);
-                tray_icon = new Gtk.StatusIcon.from_stock(Gtk.Stock.PASTE);
-                tray_icon.set_tooltip_text("GPaste");
-                tray_icon.set_visible(true);
-                fill_history();
-                (application as Main).gpaste.changed.connect(fill_history);
-                fill_options();
-                tray_icon.button_press_event.connect(()=>{
+                GLib.Object(type: Gtk.WindowType.TOPLEVEL);
+                this.application = app;
+                this.tray_icon = new Gtk.StatusIcon.from_stock(Gtk.Stock.PASTE);
+                this.tray_icon.set_tooltip_text("GPaste");
+                this.tray_icon.set_visible(true);
+                this.fill_history();
+                (this.application as Main).gpaste.changed.connect(()=>{
+                    this.needs_repaint = true;
+                });
+                this.fill_options();
+                this.tray_icon.button_press_event.connect(()=>{
                     Gdk.Event e = Gtk.get_current_event();
                     switch(e.button.button) {
                     case 1:
-                        history.popup(null, null, tray_icon.position_menu, 1, e.get_time());
+                        this.history.popup(null, null, this.tray_icon.position_menu, 1, e.get_time());
                         break;
                     case 3:
-                        options.popup(null, null, tray_icon.position_menu, 3, e.get_time());
+                        this.options.popup(null, null, this.tray_icon.position_menu, 3, e.get_time());
                         break;
                     }
                     return false;
@@ -76,12 +77,12 @@ namespace GPaste {
             }
 
             public void fill_history() {
-                history = new Gtk.Menu();
+                this.history = new Gtk.Menu();
                 bool history_is_empty;
                 try {
-                    var hist = (string[]) (application as Main).gpaste.getHistory();
+                    var hist = (this.application as Main).gpaste.getHistory() as string[];
                     history_is_empty = (hist.length == 0);
-                    int element_size = (application as Main).element_size;
+                    int element_size = (this.application as Main).element_size;
                     for (uint i = 0 ; i < hist.length ; ++i) {
                         uint current = i; // local, or weird closure behaviour
                         string elem = hist[i];
@@ -95,74 +96,77 @@ namespace GPaste {
                             try {
                                 switch(Gtk.get_current_event().button.button) {
                                 case 1:
-                                    (application as Main).gpaste.select(current);
+                                    if (this.needs_repaint)
+                                        this.fill_history();
+                                    (this.application as Main).gpaste.select(current);
                                     break;
                                 case 3:
-                                    (application as Main).gpaste.delete(current);
+                                    (this.application as Main).gpaste.delete(current);
                                     break;
                                 }
                             } catch (IOError e) {
                                 stderr.printf(_("Couldn't update history.\n"));
                             }
                         });
-                        history.add(item);
+                        this.history.add(item);
                     }
                 } catch (IOError e) {}
                 if (history_is_empty) {
                     var item = new Gtk.ImageMenuItem.with_label(_("(Empty)"));
-                    history.add(item);
+                    this.history.add(item);
                 }
-                history.show_all();
+                this.needs_repaint = false;
+                this.history.show_all();
             }
 
             private void fill_options() {
-                options = new Gtk.Menu();
+                this.options = new Gtk.Menu();
                 var preferences = new Gtk.ImageMenuItem.with_label(_("Preferences"));
                 preferences.activate.connect(()=>{
                     try {
-                        Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-preferences");
+                        GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-preferences");
                     } catch(SpawnError e) {
                         stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
                     }
                 });
-                options.add(preferences);
+                this.options.add(preferences);
                 var empty = new Gtk.ImageMenuItem.with_label(_("Empty history"));
                 empty.activate.connect(()=>{
                     try {
-                        (application as Main).gpaste.empty();
+                        (this.application as Main).gpaste.empty();
                     } catch (IOError e) {
                         stderr.printf(_("Couldn't empty history.\n"));
                     }
                 });
-                options.add(empty);
+                this.options.add(empty);
                 var quit = new Gtk.ImageMenuItem.with_label(_("Quit"));
-                quit.activate.connect(()=>(application as GLib.Application).quit_mainloop());
-                options.add(quit);
-                options.show_all();
+                quit.activate.connect(()=>(this.application as GLib.Application).quit_mainloop());
+                this.options.add(quit);
+                this.options.show_all();
             }
         }
 
         public class Main : Gtk.Application {
-            private Settings settings;
+            private GLib.Settings settings;
             public DBusClient gpaste { get; private set; }
             public int element_size { get; private set; }
             private bool shutdown_on_exit;
             private Window window;
 
             public Main() {
-                Object(application_id: "org.gnome.GPaste.Applet");
-                settings = new Settings("org.gnome.GPaste");
-                shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
-                element_size = settings.get_int("element-size");
-                activate.connect(init);
-                settings.changed.connect((key)=>{
+                GLib.Object(application_id: "org.gnome.GPaste.Applet");
+                this.settings = new GLib.Settings("org.gnome.GPaste");
+                this.shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
+                this.element_size = settings.get_int("element-size");
+                this.activate.connect(init);
+                this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "shutdown-on-exit":
-                        shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
+                        this.shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
                         break;
                     case "element-size":
-                        element_size = settings.get_int("element-size");
-                        window.fill_history(); /* Keep diplayed history up to date */
+                        this.element_size = settings.get_int("element-size");
+                        this.window.fill_history(); /* Keep diplayed history up to date */
                         break;
                     }
                 });
@@ -170,18 +174,19 @@ namespace GPaste {
 
             private void init() {
                 try {
-                    gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+                    this.gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 } catch (IOError e) {
                     stderr.printf(_("Couldn't connect to GPaste.\n"));
                     Posix.exit(1);
                 }
-                window = new Window(this);
-                window.hide();
+                this.window = new Window(this);
+                this.window.hide();
             }
 
             public static int main(string[] args) {
-                Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
-                Intl.textdomain(Config.GETTEXT_PACKAGE);
+                GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
+                GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
+                GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
                 Gtk.init(ref args);
                 var app = new Main();
                 try {

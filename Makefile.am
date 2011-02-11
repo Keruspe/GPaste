@@ -163,7 +163,7 @@ gpastemandir = $(datadir)/man/man1
 gpasteman_DATA = gpaste.1
 
 gpaste.1: data/gpaste.pod
-	$(POD2MAN) -u --section=1 --release=$(PACKAGE_VERSION) --center '' $^ $@
+	$(AM_V_GEN) $(POD2MAN) -u --section=1 --release=$(PACKAGE_VERSION) --center '' $^ $@
 
 CLEANFILES += $(gpasteman_DATA)
 EXTRA_DIST += data/gpaste.pod
