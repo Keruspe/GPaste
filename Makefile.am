@@ -55,7 +55,7 @@ gpaste_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
-	-DLIBEXECDIR=\"${libexecdir}\" \
+	-DGPASTEEXECDIR=\"${gpasteexecdir}\" \
 	$(CFLAGS)
 
 gpaste_LDADD = \
@@ -89,13 +89,13 @@ CLEANFILES += \
 
 if ENABLE_APPLET
 
-libexec_PROGRAMS += gpaste-applet
+gpasteexec_PROGRAMS += gpaste-applet
 
 autostartdir=$(sysconfdir)/xdg/autostart
 autostart_DATA = gpaste-applet.desktop
 
 data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
-	$(AM_V_GEN) sed "s|@libexecdir[@]|$(libexecdir)|" < $< > $@ || rm $@
+	$(AM_V_GEN) sed "s|@gpasteexecdir[@]|$(gpasteexecdir)|" < $< > $@ || rm $@
 gpaste-applet.desktop: data/gpaste-applet.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
@@ -115,7 +115,7 @@ gpaste_applet_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
-	-DLIBEXECDIR=\"${libexecdir}\" \
+	-DGPASTEEXECDIR=\"${gpasteexecdir}\" \
 	$(CFLAGS)
 
 gpaste_applet_LDADD = \
@@ -150,7 +150,7 @@ servicedir = $(datadir)/dbus-1/services
 service_DATA = data/org.gnome.GPaste.service
 
 data/org.gnome.GPaste.service: data/org.gnome.GPaste.service.in
-	$(AM_V_GEN) sed -e 's,[@]libexecdir[@],$(libexecdir),g' <$^ >$@
+	$(AM_V_GEN) sed -e 's,[@]gpasteexecdir[@],$(gpasteexecdir),g' <$^ >$@
 
 EXTRA_DIST += data/org.gnome.GPaste.service.in
 

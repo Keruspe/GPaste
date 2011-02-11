@@ -99,14 +99,14 @@ namespace GPaste {
                                 break;
                             case "applet":
                                 try {
-                                    Process.spawn_command_line_async(Config.LIBEXECDIR + "/gpaste-applet");
+                                    Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-applet");
                                 } catch(SpawnError e) {
                                     stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
                                 }
                                 break;
                             case "preferences":
                                 try {
-                                    Process.spawn_command_line_async(Config.LIBEXECDIR + "/gpaste-preferences");
+                                    Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-preferences");
                                 } catch(SpawnError e) {
                                     stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
                                 }
