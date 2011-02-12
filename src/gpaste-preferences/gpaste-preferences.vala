@@ -69,8 +69,6 @@ namespace GPaste {
                 var element_size_label = new Gtk.Label(_("Max element size when displaying: "));
                 labels_vbox.add(history_size_label);
                 labels_vbox.add(element_size_label);
-                history_size_label.justify = Gtk.Justification.LEFT;
-                element_size_label.justify = Gtk.Justification.LEFT;
 
                 primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("_Primary selection affects history"));
                 primary_to_history = (this.application as Main).primary_to_history;
