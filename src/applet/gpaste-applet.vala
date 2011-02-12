@@ -176,7 +176,7 @@ namespace GPaste {
                 try {
                     this.gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 } catch (IOError e) {
-                    stderr.printf(_("Couldn't connect to GPaste.\n"));
+                    stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                     Posix.exit(1);
                 }
                 this.window = new Window(this);
