@@ -39,8 +39,8 @@ namespace GPaste {
             [DBus (signature = "as")]
             public abstract GLib.Variant getHistory() throws IOError;
             public abstract void add(string selection) throws IOError;
-            public abstract void delete(uint index) throws IOError;
-            public abstract void select(uint index) throws IOError;
+            public abstract void delete(uint32 index) throws IOError;
+            public abstract void select(uint32 index) throws IOError;
             public abstract void empty() throws IOError;
             public abstract void quit() throws IOError;
         }

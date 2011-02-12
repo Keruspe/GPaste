@@ -20,9 +20,9 @@ namespace GPaste {
                 }
             }
 
-            public int max_history_size {
+            public uint32 max_history_size {
                 get {
-                    return this.settings.get_int("max-history-size");
+                    return this.settings.get_value("max-history-size").get_uint32();
                 }
             }
 

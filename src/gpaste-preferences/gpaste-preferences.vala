@@ -36,18 +36,18 @@ namespace GPaste {
                 }
             }
 
-            public int max_history_size {
+            public uint32 max_history_size {
                 get {
-                    return this.max_history_size_button.get_value_as_int();
+                    return (uint32)this.max_history_size_button.get_value_as_int();
                 }
                 set {
                     this.max_history_size_button.get_adjustment().value = value;
                 }
             }
 
-            public int element_size {
+            public uint32 element_size {
                 get {
-                    return this.element_size_button.get_value_as_int();
+                    return (uint32)this.element_size_button.get_value_as_int();
                 }
                 set {
                     this.element_size_button.get_adjustment().value = value;
@@ -120,21 +120,21 @@ namespace GPaste {
             private GLib.Settings settings;
             private Window window;
 
-            public int max_history_size {
+            public uint32 max_history_size {
                 get {
-                    return this.settings.get_int("max-history-size");
+                    return this.settings.get_value("max-history-size").get_uint32();
                 }
                 set {
-                    this.settings.set_int("max-history-size", value);
+                    this.settings.set_value("max-history-size", value);
                 }
             }
 
-            public int element_size {
+            public uint32 element_size {
                 get {
-                    return this.settings.get_int("element-size");
+                    return this.settings.get_value("element-size").get_uint32();
                 }
                 set {
-                    this.settings.set_int("element-size", value);
+                    this.settings.set_value("element-size", value);
                 }
             }
 

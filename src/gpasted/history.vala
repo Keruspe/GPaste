@@ -55,7 +55,7 @@ namespace GPaste {
                 return this._history;
             }
 
-            public int max_history_size;
+            public uint32 max_history_size;
 
             public virtual signal void changed() {
                 this.save();
@@ -87,7 +87,7 @@ namespace GPaste {
                 this._history.prepend(selection);
                 if (this._history.length() > this.max_history_size) {
                     unowned GLib.SList<string> tmp = this.history;
-                    for (int i = 0 ; i < this.max_history_size ; ++i)
+                    for (uint32 i = 0 ; i < this.max_history_size ; ++i)
                         tmp = tmp.next;
                     do {
                         unowned GLib.SList<string> next = tmp.next;
@@ -98,11 +98,11 @@ namespace GPaste {
                 this.changed();
             }
 
-            public void delete(uint index) {
+            public void delete(uint32 index) {
                 if (index >= this._history.length())
                     return;
                 unowned GLib.SList<string> tmp = this.history;
-                for (int i = 0 ; i < index ; ++i)
+                for (uint32 i = 0 ; i < index ; ++i)
                     tmp = tmp.next;
                 this._history.remove_link(tmp);
                 if (index == 0)
@@ -111,7 +111,7 @@ namespace GPaste {
                     this.changed();
             }
 
-            public void select(uint index) {
+            public void select(uint32 index) {
                 if (index >= this._history.length())
                     return;
                 string selection = this._history.nth_data(index);

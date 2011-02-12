@@ -38,8 +38,8 @@ namespace GPaste {
         public interface DBusClient : GLib.Object {
             [DBus (signature = "as")]
             public abstract GLib.Variant getHistory() throws IOError;
-            public abstract void delete(uint index) throws IOError;
-            public abstract void select(uint index) throws IOError;
+            public abstract void delete(uint32 index) throws IOError;
+            public abstract void select(uint32 index) throws IOError;
             public abstract void empty() throws IOError;
             public abstract void quit() throws IOError;
             public abstract signal void changed();
@@ -83,15 +83,15 @@ namespace GPaste {
                 try {
                     var hist = app.gpaste.getHistory() as string[];
                     history_is_empty = (hist.length == 0);
-                    int element_size = app.element_size;
-                    for (uint i = 0 ; i < hist.length ; ++i) {
-                        uint current = i; // local, or weird closure behaviour
+                    uint32 element_size = app.element_size;
+                    for (uint32 i = 0 ; i < hist.length ; ++i) {
+                        uint32 current = i; // local, or weird closure behaviour
                         string elem = hist[i];
                         var item = new Gtk.ImageMenuItem.with_label(elem);
                         if (element_size != 0) {
                             var label = item.get_child() as Gtk.Label;
                             label.set_label(label.get_text().delimit("\n", ' '));
-                            label.max_width_chars = element_size;
+                            label.max_width_chars = (int)element_size;
                             label.ellipsize = Pango.EllipsizeMode.END;
                         }
                         item.activate.connect(()=>{
@@ -153,7 +153,7 @@ namespace GPaste {
         public class Main : Gtk.Application {
             private GLib.Settings settings;
             public DBusClient gpaste { get; private set; }
-            public int element_size { get; private set; }
+            public uint32 element_size { get; private set; }
             private bool shutdown_on_exit;
             private Window window;
 
@@ -169,7 +169,7 @@ namespace GPaste {
                         this.shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
                         break;
                     case "element-size":
-                        this.element_size = settings.get_int("element-size");
+                        this.element_size = settings.get_value("element-size").get_uint32();
                         this.window.fill_history(); /* Keep diplayed history up to date */
                         break;
                     }
