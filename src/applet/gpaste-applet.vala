@@ -66,6 +66,8 @@ namespace GPaste {
                     Gdk.Event e = Gtk.get_current_event();
                     switch(e.button.button) {
                     case 1:
+                        if (this.needs_repaint)
+                            this.fill_history();
                         this.history.popup(null, null, this.tray_icon.position_menu, 1, e.get_time());
                         break;
                     case 3:
@@ -98,8 +100,6 @@ namespace GPaste {
                             try {
                                 switch(Gtk.get_current_event().button.button) {
                                 case 1:
-                                    if (this.needs_repaint)
-                                        this.fill_history();
                                     app.gpaste.select(current);
                                     break;
                                 case 3:
