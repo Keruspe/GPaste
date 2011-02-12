@@ -79,29 +79,31 @@ namespace GPaste {
             public void fill_history() {
                 this.history = new Gtk.Menu();
                 bool history_is_empty;
+                var app = this.application as Main;
                 try {
-                    var hist = (this.application as Main).gpaste.getHistory() as string[];
+                    var hist = app.gpaste.getHistory() as string[];
                     history_is_empty = (hist.length == 0);
-                    int element_size = (this.application as Main).element_size;
+                    int element_size = app.element_size;
                     for (uint i = 0 ; i < hist.length ; ++i) {
                         uint current = i; // local, or weird closure behaviour
                         string elem = hist[i];
-                        if (element_size != 0) {
-                            elem = elem.delimit("\n", ' ');
-                            if (elem.length > element_size)
-                                elem = elem.substring(0, element_size-1) + "…";
-                        }
                         var item = new Gtk.ImageMenuItem.with_label(elem);
+                        if (element_size != 0) {
+                            var label = item.get_child() as Gtk.Label;
+                            label.set_label(label.get_text().delimit("\n", ' '));
+                            label.max_width_chars = element_size;
+                            label.ellipsize = Pango.EllipsizeMode.END;
+                        }
                         item.activate.connect(()=>{
                             try {
                                 switch(Gtk.get_current_event().button.button) {
                                 case 1:
                                     if (this.needs_repaint)
                                         this.fill_history();
-                                    (this.application as Main).gpaste.select(current);
+                                    app.gpaste.select(current);
                                     break;
                                 case 3:
-                                    (this.application as Main).gpaste.delete(current);
+                                    app.gpaste.delete(current);
                                     break;
                                 }
                             } catch (IOError e) {
@@ -113,6 +115,8 @@ namespace GPaste {
                 } catch (IOError e) {}
                 if (history_is_empty) {
                     var item = new Gtk.ImageMenuItem.with_label(_("(Empty)"));
+                    var label = item.get_child() as Gtk.Label;
+                    label.set_selectable(false);
                     this.history.add(item);
                 }
                 this.needs_repaint = false;

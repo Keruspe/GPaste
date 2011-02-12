@@ -70,44 +70,46 @@ namespace GPaste {
                 labels_vbox.add(history_size_label);
                 labels_vbox.add(element_size_label);
 
-                primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("_Primary selection affects history"));
-                primary_to_history = (this.application as Main).primary_to_history;
-                primary_to_history_button.toggled.connect(()=>{
-                    (this.application as Main).primary_to_history = primary_to_history;
+                var app = this.application as Main;
+
+                this.primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("_Primary selection affects history"));
+                this.primary_to_history = app.primary_to_history;
+                this.primary_to_history_button.toggled.connect(()=>{
+                    app.primary_to_history = this.primary_to_history;
                 });
-                synchronize_clipboards_button = new Gtk.CheckButton.with_mnemonic(_("_Synchronize clipboard with primary selection"));
-                synchronize_clipboards = (this.application as Main).synchronize_clipboards;
-                synchronize_clipboards_button.toggled.connect(()=>{
-                    (this.application as Main).synchronize_clipboards = synchronize_clipboards;
+                this.synchronize_clipboards_button = new Gtk.CheckButton.with_mnemonic(_("_Synchronize clipboard with primary selection"));
+                this.synchronize_clipboards = app.synchronize_clipboards;
+                this.synchronize_clipboards_button.toggled.connect(()=>{
+                    app.synchronize_clipboards = this.synchronize_clipboards;
                 });
-                shutdown_on_exit_button = new Gtk.CheckButton.with_mnemonic(_("Shutdown the daemon when _quitting the applet"));
-                shutdown_on_exit = (this.application as Main).shutdown_on_exit;
-                shutdown_on_exit_button.toggled.connect(()=>{
-                    (this.application as Main).shutdown_on_exit = shutdown_on_exit;
+                this.shutdown_on_exit_button = new Gtk.CheckButton.with_mnemonic(_("Shutdown the daemon when _quitting the applet"));
+                this.shutdown_on_exit = app.shutdown_on_exit;
+                this.shutdown_on_exit_button.toggled.connect(()=>{
+                    app.shutdown_on_exit = this.shutdown_on_exit;
                 });
-                max_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
-                max_history_size = (this.application as Main).max_history_size;
-                max_history_size_button.get_adjustment().value_changed.connect(()=>{
-                    (this.application as Main).max_history_size = max_history_size;
+                this.max_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
+                this.max_history_size = app.max_history_size;
+                this.max_history_size_button.get_adjustment().value_changed.connect(()=>{
+                    app.max_history_size = this.max_history_size;
                 });
-                element_size_button = new Gtk.SpinButton.with_range(0, 255, 5);
-                element_size = (this.application as Main).element_size;
-                element_size_button.get_adjustment().value_changed.connect(()=>{
-                    (this.application as Main).element_size = element_size;
+                this.element_size_button = new Gtk.SpinButton.with_range(0, 255, 5);
+                this.element_size = app.element_size;
+                this.element_size_button.get_adjustment().value_changed.connect(()=>{
+                    app.element_size = this.element_size;
                 });
 
                 var values_vbox = new Gtk.VBox(true, 10);
-                values_vbox.add(max_history_size_button);
-                values_vbox.add(element_size_button);
+                values_vbox.add(this.max_history_size_button);
+                values_vbox.add(this.element_size_button);
 
                 var values_hbox = new Gtk.HBox(false, 10);
                 values_hbox.add(labels_vbox);
                 values_hbox.add(values_vbox);
 
                 var vbox = new Gtk.VBox(false, 10);
-                vbox.add(primary_to_history_button);
-                vbox.add(synchronize_clipboards_button);
-                vbox.add(shutdown_on_exit_button);
+                vbox.add(this.primary_to_history_button);
+                vbox.add(this.synchronize_clipboards_button);
+                vbox.add(this.shutdown_on_exit_button);
                 vbox.add(values_hbox);
 
                 this.add(vbox);

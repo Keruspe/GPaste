@@ -83,7 +83,7 @@ namespace GPaste {
                     } else {
                         switch (args.length) {
                         case 1:
-                            string[] history = gpaste.getHistory() as string[];
+                            var history = gpaste.getHistory() as string[];
                             for (int i = 0 ; i < history.length ; ++i)
                                 stdout.printf("%d: %s\n", i, history[i]);
                             break;
