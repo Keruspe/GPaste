@@ -161,7 +161,7 @@ namespace GPaste {
                 GLib.Object(application_id: "org.gnome.GPaste.Applet");
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
-                this.element_size = settings.get_int("element-size");
+                this.element_size = settings.get_value("element-size").get_uint32();
                 this.activate.connect(init);
                 this.settings.changed.connect((key)=>{
                     switch(key) {
