@@ -1,7 +1,7 @@
 <schemalist>
   <schema id="org.gnome.GPaste" path="/apps/GPaste/" gettext-domain="@GETTEXT_PACKAGE@">
 
-    <key name="max-history-size" type="i">
+    <key name="max-history-size" type="u">
       <range min="5" max="255"/>
       <default>30</default>
       <_summary>Max history size</_summary>
@@ -10,7 +10,7 @@
       </_description>
     </key>
 
-    <key name="element-size" type="i">
+    <key name="element-size" type="u">
       <range min="0" max="255"/>
       <default>60</default>
       <_summary>Max size of an element when displaying it</_summary>
