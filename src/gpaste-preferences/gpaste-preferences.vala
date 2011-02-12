@@ -166,10 +166,6 @@ namespace GPaste {
             public Main() {
                 GLib.Object(application_id: "org.gnome.GPaste.Preferences");
                 this.activate.connect(init);
-            }
-
-            private void init() {
-                this.window = new Window(this);
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.settings.changed.connect((key)=>{
                     switch(key) {
@@ -184,6 +180,10 @@ namespace GPaste {
                         break;
                     }
                 });
+            }
+
+            private void init() {
+                this.window = new Window(this);
                 this.window.show_all();
             }
 
