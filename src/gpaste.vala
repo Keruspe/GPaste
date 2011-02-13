@@ -36,12 +36,17 @@ namespace GPaste {
 
         [DBus (name = "org.gnome.GPaste")]
         interface DBusClient : GLib.Object {
-            [DBus (signature = "as")]
+            [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public abstract GLib.Variant getHistory() throws IOError;
+            [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws IOError;
-            public abstract void delete(uint32 index) throws IOError;
+            [DBus (name = "Select", inSignature = "u", outSignature = "")]
             public abstract void select(uint32 index) throws IOError;
+            [DBus (name = "Delete", inSignature = "u", outSignature = "")]
+            public abstract void delete(uint32 index) throws IOError;
+            [DBus (name = "Empty", signature = "")]
             public abstract void empty() throws IOError;
+            [DBus (name = "Quit", signature = "")]
             public abstract void quit() throws IOError;
         }
 

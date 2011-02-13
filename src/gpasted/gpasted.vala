@@ -36,7 +36,7 @@ namespace GPaste {
 
         [DBus (name = "org.gnome.GPaste")]
         public class DBusServer : GLib.Object {
-            [DBus (signature = "as")]
+            [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public GLib.Variant getHistory() {
                 unowned GLib.SList<string> history = History.instance.history;
                 var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
@@ -45,27 +45,33 @@ namespace GPaste {
                 return vb.end();
             }
 
+            [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public void add(string selection) {
                 ClipboardsManager.instance.select(selection);
                 History.instance.add(selection);
             }
 
-            public void delete(uint32 index) {
-                History.instance.delete(index);
-            }
-
+            [DBus (name = "Select", inSignature = "u", outSignature = "")]
             public void select(uint32 index) {
                 History.instance.select(index);
             }
 
+            [DBus (name = "Delete", inSignature = "u", outSignature = "")]
+            public void delete(uint32 index) {
+                History.instance.delete(index);
+            }
+
+            [DBus (name = "Empty", signature = "")]
             public void empty() {
                 History.instance.empty();
             }
 
+            [DBus (name = "Quit", signature = "")]
             public void quit() {
                 Main.loop.quit();
             }
 
+            [DBus (name = "Changed", signature = "")]
             public signal void changed();
 
             private DBusServer() {}
