@@ -61,17 +61,17 @@ namespace GPaste {
                 History.instance.delete(index);
             }
 
-            [DBus (name = "Empty", signature = "")]
+            [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public void empty() {
                 History.instance.empty();
             }
 
-            [DBus (name = "Quit", signature = "")]
+            [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public void quit() {
                 Main.loop.quit();
             }
 
-            [DBus (name = "Changed", signature = "")]
+            [DBus (name = "Changed", inSignature = "", outSignature = "")]
             public signal void changed();
 
             private DBusServer() {}

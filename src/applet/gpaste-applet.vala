@@ -42,11 +42,11 @@ namespace GPaste {
             public abstract void select(uint32 index) throws IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
             public abstract void delete(uint32 index) throws IOError;
-            [DBus (name = "Empty", signature = "")]
+            [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws IOError;
-            [DBus (name = "Quit", signature = "")]
+            [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public abstract void quit() throws IOError;
-            [DBus (name = "Changed", signature = "")]
+            [DBus (name = "Changed", inSignature = "", outSignature = "")]
             public abstract signal void changed();
         }
 
