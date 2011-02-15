@@ -5,6 +5,7 @@ _describe 'gpaste command' '(
 	set:select\ an\ element\ of\ the\ history
 	delete:delete\ an\ element\ of\ the\ history
 	empty:empty\ the\ history
+	start:start\ the\ daemon
 	quit:shutdown\ the\ daemon
 	applet:launch\ the\ applet
 	settings:launch\ the\ configuration\ tool

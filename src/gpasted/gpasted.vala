@@ -66,6 +66,11 @@ namespace GPaste {
                 History.instance.empty();
             }
 
+            [DBus (name = "Start", inSignature = "", outSignature = "")]
+            public void start() {
+                /* Dummy method just to start the daemon with a DBus request */
+            }
+
             [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public void quit() {
                 Main.loop.quit();

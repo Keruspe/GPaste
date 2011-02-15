@@ -40,6 +40,10 @@ Put the output of the command into the history
 
 Empty the history
 
+=item B<gpaste start>
+
+Start the daemon
+
 =item B<gpaste quit>
 
 Shutdown the daemon

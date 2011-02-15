@@ -46,6 +46,8 @@ namespace GPaste {
             public abstract void delete(uint32 index) throws IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws IOError;
+            [DBus (name = "Start", inSignature = "", outSignature = "")]
+            public abstract void start() {} throws IOError;
             [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public abstract void quit() throws IOError;
         }
@@ -74,9 +76,7 @@ namespace GPaste {
                 try {
                     DBusClient gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     if (! Posix.isatty(stdin.fileno())) {
-                        /*
-                         * We are being piped !
-                         */
+                        /* We are being piped ! */
                         var sb = new StringBuilder();
                         sb.append(stdin.read_line());
                         string s;
@@ -98,6 +98,9 @@ namespace GPaste {
                             case "-h":
                             case "--help":
                                 usage(args[0]);
+                                break;
+                            case "start":
+                                gpaste.start();
                                 break;
                             case "quit":
                                 gpaste.quit();
