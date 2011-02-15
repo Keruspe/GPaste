@@ -1,7 +1,7 @@
 gpasted
 !src/gpasted
-gpaste-preferences
-!src/gpaste-preferences
+gpaste-settings
+!src/gpaste-settings
 gpaste
 !completions/gpaste
 gpaste-applet
