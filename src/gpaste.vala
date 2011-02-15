@@ -47,7 +47,7 @@ namespace GPaste {
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws IOError;
             [DBus (name = "Start", inSignature = "", outSignature = "")]
-            public abstract void start() {} throws IOError;
+            public abstract void start() throws IOError;
             [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public abstract void quit() throws IOError;
         }
