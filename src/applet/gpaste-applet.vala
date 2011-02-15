@@ -130,15 +130,15 @@ namespace GPaste {
 
             private void fill_options() {
                 this.options = new Gtk.Menu();
-                var preferences = new Gtk.ImageMenuItem.with_label(_("Preferences"));
-                preferences.activate.connect(()=>{
+                var settings = new Gtk.ImageMenuItem.with_label(_("Settings"));
+                settings.activate.connect(()=>{
                     try {
-                        GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-preferences");
+                        GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-settings");
                     } catch(SpawnError e) {
-                        stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
+                        stderr.printf(_("Couldn't spawn gpaste-settings.\n"));
                     }
                 });
-                this.options.add(preferences);
+                this.options.add(settings);
                 var empty = new Gtk.ImageMenuItem.with_label(_("Empty history"));
                 empty.activate.connect(()=>{
                     try {

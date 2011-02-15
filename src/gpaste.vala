@@ -61,7 +61,7 @@ namespace GPaste {
                 stdout.printf(_("%s empty: empty the history\n"), caller);
                 stdout.printf(_("%s quit: shutdown the daemon\n"), caller);
                 stdout.printf(_("%s applet: launch the applet\n"), caller);
-                stdout.printf(_("%s preferences: launch the configuration tool\n"), caller);
+                stdout.printf(_("%s settings: launch the configuration tool\n"), caller);
                 stdout.printf(_("%s version: display the version\n"), caller);
                 stdout.printf(_("%s help: display this help\n"), caller);
             }
@@ -115,11 +115,12 @@ namespace GPaste {
                                     stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
                                 }
                                 break;
+                            case "settings":
                             case "preferences":
                                 try {
-                                    GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-preferences");
+                                    GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-settings");
                                 } catch(SpawnError e) {
-                                    stderr.printf(_("Couldn't spawn gpaste-preferences.\n"));
+                                    stderr.printf(_("Couldn't spawn gpaste-settings.\n"));
                                 }
                                 break;
                             default:

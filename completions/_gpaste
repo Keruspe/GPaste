@@ -7,8 +7,11 @@ _describe 'gpaste command' '(
 	empty:empty\ the\ history
 	quit:shutdown\ the\ daemon
 	applet:launch\ the\ applet
-	preferences:launch\ the\ configuration\ tool
+	settings:launch\ the\ configuration\ tool
+	preferences:alias\ for\ settings
 	version:display\ the\ version
 	help:display\ the\ help
+    -h:alias\ for\ help
+    --help:alias\ for\ help
 )' && ret=0
 

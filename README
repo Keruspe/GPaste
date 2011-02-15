@@ -1,5 +1,5 @@
 gpasted is a clipboard management daemon with DBus interface
 gpaste is its CLI client
-gpaste-preferences is a tool to edit gpasted preferences
+gpaste-settings is a tool to edit gpasted settings
 gpaste-applet is a tray icon to manage gpasted
 

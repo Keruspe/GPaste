@@ -1,6 +1,6 @@
 namespace GPaste {
 
-    namespace Preferences {
+    namespace Settings {
 
         public class Window : Gtk.Window {
             private Gtk.CheckButton primary_to_history_button;
@@ -56,7 +56,7 @@ namespace GPaste {
 
             public Window(Gtk.Application app) {
                 GLib.Object(type: Gtk.WindowType.TOPLEVEL);
-                this.title = _("GPaste Preferences");
+                this.title = _("GPaste Settings");
                 this.application = app;
                 this.set_position(Gtk.WindowPosition.CENTER);
                 this.resizable = false;
@@ -166,7 +166,7 @@ namespace GPaste {
             }
 
             public Main() {
-                GLib.Object(application_id: "org.gnome.GPaste.Preferences");
+                GLib.Object(application_id: "org.gnome.GPaste.Settings");
                 this.activate.connect(init);
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.settings.changed.connect((key)=>{

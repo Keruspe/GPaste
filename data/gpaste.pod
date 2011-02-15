@@ -48,7 +48,7 @@ Shutdown the daemon
 
 Launch the applet
 
-=item B<gpaste preferences>
+=item B<gpaste settings>
 
 Launch the configuration tool
 
@@ -90,7 +90,7 @@ Display the options
 
 =over 8
 
-=item B<Preferences>
+=item B<Settings>
 
 Launch the configuration tool
 

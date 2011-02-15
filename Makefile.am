@@ -10,7 +10,7 @@ EXTRA_DIST = autogen.bash NEWS README
 bin_PROGRAMS = gpaste
 
 gpasteexecdir = $(libexecdir)/gpaste
-gpasteexec_PROGRAMS = gpasted gpaste-preferences
+gpasteexec_PROGRAMS = gpasted gpaste-settings
 
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
@@ -65,27 +65,27 @@ gpaste_LDADD = \
 CLEANFILES += \
 	${gpaste_SOURCES:.vala=.c}
 
-gpaste_preferences_SOURCES = \
-	src/gpaste-preferences/gpaste-preferences.vala
+gpaste_settings_SOURCES = \
+	src/gpaste-settings/gpaste-settings.vala
 
-gpaste_preferences_VALAFLAGS = \
+gpaste_settings_VALAFLAGS = \
 	--vapidir=vapi \
 	$(GTK_VALAFLAGS) \
 	--pkg=config
 
-gpaste_preferences_CFLAGS = \
+gpaste_settings_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
 	$(CFLAGS)
 
-gpaste_preferences_LDADD = \
+gpaste_settings_LDADD = \
 	$(GTK_LIBS) \
 	$(GLIB_LIBS)
 
 CLEANFILES += \
-	${gpaste_preferences_SOURCES:.vala=.c}
+	${gpaste_settings_SOURCES:.vala=.c}
 
 if ENABLE_APPLET
 
