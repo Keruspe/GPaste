@@ -3,7 +3,7 @@ _gpaste()
     local cur opts
     COMPREPLY=()
     cur="${COMP_WORDS[${COMP_CWORD}]}"
-    opts="add set delete empty start quit applet preferences settings version help -h --help"
+    opts="add set delete empty start daemon quit applet preferences settings version help -h --help"
     COMPREPLY=( $(compgen -W "$opts" -- $cur ) )
 }
 

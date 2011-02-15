@@ -6,6 +6,7 @@ _describe 'gpaste command' '(
 	delete:delete\ an\ element\ of\ the\ history
 	empty:empty\ the\ history
 	start:start\ the\ daemon
+	daemon:alias\ for\ start
 	quit:shutdown\ the\ daemon
 	applet:launch\ the\ applet
 	settings:launch\ the\ configuration\ tool

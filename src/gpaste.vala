@@ -100,6 +100,7 @@ namespace GPaste {
                                 usage(args[0]);
                                 break;
                             case "start":
+                            case "daemon":
                                 gpaste.start();
                                 break;
                             case "quit":
