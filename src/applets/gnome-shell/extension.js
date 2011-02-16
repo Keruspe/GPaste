@@ -108,6 +108,7 @@ Indicator.prototype = {
 
 function main() {
     let indicator = new Indicator();
+    STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator();
     Main.panel._statusBox.add(indicator.actor);
     Main.panel._menus.addMenu(indicator.menu);
 }
