@@ -133,7 +133,7 @@ CLEANFILES += \
 
 endif
 
-if ENABLE_APPLET
+if ENABLE_EXTENSION
 
 gnomeshell_DATA = \
 	src/applets/gnome-shell/extension.js \
