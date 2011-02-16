@@ -109,7 +109,7 @@ Indicator.prototype = {
 
 function main() {
     let indicator = new Indicator();
-    Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste-applet'] = Indicator();
+    Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;
     Panel._statusBox.add(indicator.actor);
     Panel._menus.addMenu(indicator.menu);
 }
