@@ -73,11 +73,14 @@ namespace GPaste {
 
             [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public void quit() {
-                Main.loop.quit();
+                this.exit();
             }
 
             [DBus (name = "Changed", inSignature = "", outSignature = "")]
             public signal void changed();
+
+            [DBus (name = "Exit", inSignature = "", outSignature = "")]
+            public signal void exit();
 
             private DBusServer() {}
 
@@ -116,6 +119,11 @@ namespace GPaste {
                 );
             }
 
+            private static async void exit() {
+                GLib.Idle.add(Main.exit.callback);
+                Main.loop.quit();
+            }
+
             public static int main(string[] args) {
                 GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
                 GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
@@ -134,6 +142,7 @@ namespace GPaste {
                 Posix.sigaction(Posix.SIGINT, handler, null);
                 Main.start_dbus();
                 Main.loop = new GLib.MainLoop(null, false);
+                DBusServer.instance.exit.connect(()=>Main.exit.begin());
                 Main.loop.run();
                 return 0;
             }
