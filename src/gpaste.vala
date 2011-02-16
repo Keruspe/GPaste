@@ -138,10 +138,10 @@ namespace GPaste {
                                 gpaste.add(args[2]);
                                 break;
                             case "set":
-                                gpaste.select(args[2].to_int());
+                                gpaste.select(int.parse(args[2]));
                                 break;
                             case "delete":
-                                gpaste.delete(args[2].to_int());
+                                gpaste.delete(int.parse(args[2]));
                                 break;
                             default:
                                 usage(args[0]);
