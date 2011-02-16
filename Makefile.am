@@ -139,7 +139,7 @@ dist_gnomeshell_DATA = \
 	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/metadata.json
 
-gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@imagination-land.com
+gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome.org
 
 endif
 
