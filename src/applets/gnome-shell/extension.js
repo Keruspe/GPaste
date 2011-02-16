@@ -1,5 +1,6 @@
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
-const Main = imports.ui.main;
+
+const Panel = imports.ui.panel;
 const DBus = imports.dbus;
 const Lang = imports.lang;
 const St = imports.gi.St;
@@ -108,7 +109,7 @@ Indicator.prototype = {
 
 function main() {
     let indicator = new Indicator();
-    STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator();
-    Main.panel._statusBox.add(indicator.actor);
-    Main.panel._menus.addMenu(indicator.menu);
+    Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste-applet'] = Indicator();
+    Panel._statusBox.add(indicator.actor);
+    Panel._menus.addMenu(indicator.menu);
 }
