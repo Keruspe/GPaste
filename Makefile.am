@@ -1,3 +1,5 @@
+DISTCHECK_CONFIGURE_FLAGS = --enable-applet --enable-gnome-shell-extension
+
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 
 CP = cp
@@ -128,6 +130,16 @@ CLEANFILES += \
 	data/gpaste-applet.desktop.in \
 	gpaste-applet.desktop \
 	${gpaste_applet_SOURCES:.vala=.c}
+
+endif
+
+if ENABLE_APPLET
+
+gnomeshell_DATA = \
+	src/applets/gnome-shell/extension.js \
+	src/applets/gnome-shell/metadata.json
+
+gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@imagination-land.com
 
 endif
 
