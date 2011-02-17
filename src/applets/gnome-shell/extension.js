@@ -129,9 +129,9 @@ Indicator.prototype = {
                 this.menu.addMenuItem(emptyItem);
             }
         }));
-        let prefsItem = new PopupMenu.PopupMenuItem(_('GPaste Settings'));
-        prefsItem.connect('activate', Lang.bind(this, this._prefs));
-        this.menu.addMenuItem(prefsItem);
+        //let prefsItem = new PopupMenu.PopupMenuItem(_('GPaste Settings'));
+        //prefsItem.connect('activate', Lang.bind(this, this._prefs));
+        //this.menu.addMenuItem(prefsItem);
     }
 };
 
