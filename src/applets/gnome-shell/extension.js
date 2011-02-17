@@ -9,9 +9,9 @@ const Pango = imports.gi.Pango;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const Util = imports.misc.util;
-const Gettext = imports.gettext.domain('gnome-shell');
+const Gettext = imports.gettext;
 
-const _ = Gettext.gettext;
+const _ = Gettext.domain('gpaste').gettext;
 
 const BUS_NAME = 'org.gnome.GPaste';
 const OBJECT_PATH = '/org/gnome/GPaste';
@@ -93,13 +93,13 @@ Indicator.prototype = {
 
     _fillMenu: function() {
         this.menu.removeAll();
-        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_('GPaste daemon'), this._daemonIsStarted);
+        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("GPaste daemon"), this._daemonIsStarted);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this.menu.addMenuItem(this._killSwitch);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
             if (history.length == 0) {
-                let emptyItem = new PopupMenu.PopupMenuItem('(Empty)', {reactive: false});
+                let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), {reactive: false});
                 this.menu.addMenuItem(emptyItem);
             } else {
                 let index;
@@ -124,19 +124,21 @@ Indicator.prototype = {
                     this.menu.addMenuItem(selection);
                 }
                 this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-                let emptyItem = new PopupMenu.PopupMenuItem(_('Empty history'));
+                let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
                 emptyItem.connect('activate', Lang.bind(this, this._empty));
                 this.menu.addMenuItem(emptyItem);
             }
         }));
-        //let prefsItem = new PopupMenu.PopupMenuItem(_('GPaste Settings'));
+        //let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
         //prefsItem.connect('activate', Lang.bind(this, this._prefs));
         //this.menu.addMenuItem(prefsItem);
     }
 };
 
 function main() {
+    Gettext.bindtextdomain('gpaste', metadata.localedir);
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
     Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;
 }
+

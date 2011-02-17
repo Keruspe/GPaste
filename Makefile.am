@@ -135,11 +135,14 @@ endif
 
 if ENABLE_EXTENSION
 
+gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome.org
+
 dist_gnomeshell_DATA = \
 	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/metadata.json
 
-gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome.org
+src/applets/gnome-shell/metadata.json: src/applets/gnome-shell/metadata.json.in
+	$(AM_V_GEN)	sed "s|[@]localedir@|$(datadir)/locale|" $< > $@
 
 endif
 
