@@ -66,6 +66,11 @@ namespace GPaste {
                 History.instance.empty();
             }
 
+            [DBus (name = "Launch", inSignature = "", outSignature = "")]
+            public void launch() {
+                this.start();
+            }
+
             [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public void quit() {
                 this.exit();
@@ -97,7 +102,7 @@ namespace GPaste {
 
             private static void handle(int signal) {
                 stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
-                Main.loop.quit();
+                DBusServer.instance.exit();
             }
 
             private static void on_bus_aquired(DBusConnection conn) {
@@ -143,7 +148,6 @@ namespace GPaste {
                 Main.start_dbus();
                 Main.loop = new GLib.MainLoop(null, false);
                 DBusServer.instance.exit.connect(()=>Main.exit.begin());
-                DBusServer.instance.start();
                 Main.loop.run();
                 return 0;
             }

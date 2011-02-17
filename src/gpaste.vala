@@ -46,10 +46,10 @@ namespace GPaste {
             public abstract void delete(uint32 index) throws IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws IOError;
+            [DBus (name = "Launch", inSignature = "", outSignature = "")]
+            public abstract void launch() throws IOError;
             [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public abstract void quit() throws IOError;
-            [DBus (name = "Start", inSignature = "", outSignature = "")]
-            public abstract signal void start();
         }
 
         public class Main : GLib.Object {
@@ -101,7 +101,7 @@ namespace GPaste {
                                 break;
                             case "start":
                             case "daemon":
-                                gpaste.start();
+                                gpaste.launch();
                                 break;
                             case "quit":
                                 gpaste.quit();
