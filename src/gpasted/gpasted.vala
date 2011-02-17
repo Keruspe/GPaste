@@ -141,6 +141,7 @@ namespace GPaste {
                 Main.start_dbus();
                 Main.loop = new GLib.MainLoop(null, false);
                 DBusServer.instance.exit.connect(()=>Main.exit.begin());
+                DBusServer.instance.start();
                 Main.loop.run();
                 return 0;
             }
