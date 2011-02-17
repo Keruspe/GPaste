@@ -119,6 +119,8 @@ namespace GPaste {
 
             private static async void exit() {
                 GLib.Idle.add(Main.exit.callback);
+                yield;
+                Posix.sleep(1);
                 Main.loop.quit();
             }
 
