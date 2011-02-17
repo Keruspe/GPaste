@@ -1,7 +1,8 @@
 src/gpasted/gpasted.vala
 src/gpasted/history.vala
-src/gpaste-preferences/gpaste-preferences.vala
+src/gpaste-settings/gpaste-settings.vala
 src/applets/standard/gpaste-applet.vala
+src/applets/gnome-shell/extension.js
 src/gpaste.vala
 data/org.gnome.GPaste.gschema.xml.in.in
 data/gpaste-applet.desktop.in.in

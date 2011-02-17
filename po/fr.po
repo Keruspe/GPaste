@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 1.0\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-15 10:27+0100\n"
+"POT-Creation-Date: 2011-02-17 17:46+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -17,17 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:93
+#: ../src/gpasted/gpasted.vala:104
 #, c-format
 msgid "Signal %d recieved, exiting.\n"
 msgstr "Signal %d reçu, arrêt.\n"
 
-#: ../src/gpasted/gpasted.vala:101
+#: ../src/gpasted/gpasted.vala:112
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#: ../src/gpasted/gpasted.vala:108
+#: ../src/gpasted/gpasted.vala:119
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
@@ -47,142 +47,141 @@ msgstr "Impossible de lire le fichier d'historique.\n"
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:59
-#,
+#: ../src/gpaste-settings/gpaste-settings.vala:59
 msgid "GPaste Settings"
 msgstr "Préférences GPaste"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:68
+#: ../src/gpaste-settings/gpaste-settings.vala:68
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:69
+#: ../src/gpaste-settings/gpaste-settings.vala:69
 msgid "Max element size when displaying: "
 msgstr "Taille maximale d'un élément quand on l'affiche : "
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:75
+#: ../src/gpaste-settings/gpaste-settings.vala:75
 msgid "_Primary selection affects history"
 msgstr "La selection _primaire affecte l'historique"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:80
+#: ../src/gpaste-settings/gpaste-settings.vala:80
 msgid "_Synchronize clipboard with primary selection"
 msgstr "_Synchroniser le presse-papier avec la séléction primaire"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:85
+#: ../src/gpaste-settings/gpaste-settings.vala:85
 msgid "Shutdown the daemon when _quitting the applet"
 msgstr "Éteindre le démon quand on _quitte l'applet"
 
-#: ../src/gpaste-preferences/gpaste-preferences.vala:201
-#: ../src/applet/gpaste-applet.vala:204
+#: ../src/gpaste-settings/gpaste-settings.vala:201
+#: ../src/applets/standard/gpaste-applet.vala:204
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
 
-#: ../src/applet/gpaste-applet.vala:115
+#: ../src/applets/standard/gpaste-applet.vala:115
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
-#: ../src/applet/gpaste-applet.vala:122
+#: ../src/applets/standard/gpaste-applet.vala:122
 msgid "(Empty)"
 msgstr "(Vide)"
 
-#: ../src/applet/gpaste-applet.vala:133
+#: ../src/applets/standard/gpaste-applet.vala:133
 msgid "Settings"
 msgstr "Préférences"
 
-#: ../src/applet/gpaste-applet.vala:138 ../src/gpaste.vala:123
+#: ../src/applets/standard/gpaste-applet.vala:138 ../src/gpaste.vala:127
 #, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Impossible de lancer gpaste-settings.\n"
 
-#: ../src/applet/gpaste-applet.vala:142
+#: ../src/applets/standard/gpaste-applet.vala:142
 msgid "Empty history"
 msgstr "Vider l'historique"
 
-#: ../src/applet/gpaste-applet.vala:147
+#: ../src/applets/standard/gpaste-applet.vala:147
 #, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Impossible de vider l'historique.\n"
 
-#: ../src/applet/gpaste-applet.vala:151
+#: ../src/applets/standard/gpaste-applet.vala:151
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applet/gpaste-applet.vala:188 ../src/gpaste.vala:154
+#: ../src/applets/standard/gpaste-applet.vala:188 ../src/gpaste.vala:158
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
 
-#: ../src/applet/gpaste-applet.vala:214
+#: ../src/applets/standard/gpaste-applet.vala:214
 #, c-format
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
 
-#: ../src/gpaste.vala:55
+#: ../src/gpaste.vala:57
 #, c-format
 msgid "Usage:\n"
 msgstr "Utilisation :\n"
 
-#: ../src/gpaste.vala:56
+#: ../src/gpaste.vala:58
 #, c-format
 msgid "%s: print the history\n"
 msgstr "%s : affiche l'historique\n"
 
-#: ../src/gpaste.vala:57
+#: ../src/gpaste.vala:59
 #, c-format
 msgid "%s [add] <text>: set text to clipboard\n"
 msgstr "%s [add] <texte> : met le texte dans le presse-papier\n"
 
-#: ../src/gpaste.vala:58
+#: ../src/gpaste.vala:60
 #, c-format
 msgid "%s set <number>: set <number>th item of the history to clipboard\n"
 msgstr ""
 "%s set <nombre> : met le <nombre>e élément de l'historique dans le presse-"
 "papier\n"
 
-#: ../src/gpaste.vala:59
+#: ../src/gpaste.vala:61
 #, c-format
 msgid "%s delete <number>: delete <number>th item of the history\n"
 msgstr "%s delete <nombre> : supprime le <nombre>e élément de l'historique\n"
 
-#: ../src/gpaste.vala:60
+#: ../src/gpaste.vala:62
 #, c-format
 msgid "whatever | %s: set the output of whatever to clipboard\n"
 msgstr ""
 "quelquechose | %s : met la sortie de quelquechose dans le presse-papier\n"
 
-#: ../src/gpaste.vala:61
+#: ../src/gpaste.vala:63
 #, c-format
 msgid "%s empty: empty the history\n"
 msgstr "%s empty : vide l'historique\n"
 
-#: ../src/gpaste.vala:62
+#: ../src/gpaste.vala:64
 #, c-format
 msgid "%s quit: shutdown the daemon\n"
 msgstr "%s quit : éteindre le démon\n"
 
-#: ../src/gpaste.vala:63
+#: ../src/gpaste.vala:65
 #, c-format
 msgid "%s applet: launch the applet\n"
 msgstr "%s applet : lance l'applet\n"
 
-#: ../src/gpaste.vala:64
+#: ../src/gpaste.vala:66
 #, c-format
 msgid "%s settings: launch the configuration tool\n"
 msgstr "%s settings : lance l'outil de configuration\n"
 
-#: ../src/gpaste.vala:65
+#: ../src/gpaste.vala:67
 #, c-format
 msgid "%s version: display the version\n"
 msgstr "%s version : affiche la version\n"
 
-#: ../src/gpaste.vala:66
+#: ../src/gpaste.vala:68
 #, c-format
 msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
-#: ../src/gpaste.vala:115
+#: ../src/gpaste.vala:119
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Impossible de lancer gpaste-applet.\n"
