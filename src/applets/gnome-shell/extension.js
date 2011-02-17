@@ -43,6 +43,7 @@ Indicator.prototype = {
     _init: function() {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
+        this._textureCache = St.TextureCache.get_default();
         this._fillMenu();
         this._proxy.connect('Changed', Lang.bind(this, this._fillMenu));
     },
@@ -92,7 +93,7 @@ Indicator.prototype = {
                         this._select(inner_index);
                     }));
                     let deletor = new St.Button();
-                    deletor.child = St.TextureCache.get_default().load_file_simple(global.imagedir + 'close-black.svg');
+                    deletor.child = this._textureCache.load_file_simple(global.imagedir + 'close-black.svg');
                     deletor.connect('clicked', Lang.bind(this, function(actor, event) {
                         this._delete(inner_index);
                     }));
