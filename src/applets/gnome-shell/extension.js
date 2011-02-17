@@ -1,6 +1,6 @@
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Main = imports.ui.main;
+const StatusIconDispatcher = imports.ui.statusIconDispatcher;
 const Panel = imports.ui.panel;
 const DBus = imports.dbus;
 const Lang = imports.lang;
@@ -109,7 +109,7 @@ Indicator.prototype = {
 };
 
 function main() {
-    //Main.statusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
-    //Panel.STANDARD_TRAY_ICON_SHELL_ORDER.unshift('gpaste');
+    StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
+    Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
     Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;
 }
