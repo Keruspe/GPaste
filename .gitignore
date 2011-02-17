@@ -39,4 +39,6 @@ POTFILES
 *.desktop.in
 *.tar.bz2
 gpaste.1
+metadata.json
+extension.js
 

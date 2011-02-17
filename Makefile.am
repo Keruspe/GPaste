@@ -94,7 +94,7 @@ if ENABLE_APPLET
 gpasteexec_PROGRAMS += gpaste-applet
 
 autostartdir=$(sysconfdir)/xdg/autostart
-autostart_DATA = gpaste-applet.desktop
+nodist_autostart_DATA = gpaste-applet.desktop
 
 data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
 	$(AM_V_GEN) sed "s|@gpasteexecdir[@]|$(gpasteexecdir)|" < $< > $@ || rm $@
@@ -137,12 +137,20 @@ if ENABLE_EXTENSION
 
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome.org
 
-dist_gnomeshell_DATA = \
+nodist_gnomeshell_DATA = \
 	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/metadata.json
 
 src/applets/gnome-shell/metadata.json: src/applets/gnome-shell/metadata.json.in
-	$(AM_V_GEN)	sed "s|[@]localedir@|$(datadir)/locale|" $< > $@
+	$(AM_V_GEN) sed -e 's,[@]localedir[@],$(localedir),g' <$^ >$@
+
+EXTRA_DIST += \
+	src/applets/gnome-shell/extension.js.in \
+	src/applets/gnome-shell/metadata.json.in
+
+CLEANFILES += \
+	src/applets/gnome-shell/extension.js \
+	src/applets/gnome-shell/metadata.json
 
 endif
 

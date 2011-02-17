@@ -62,6 +62,7 @@ AC_CONFIG_FILES([
   Makefile
   po/Makefile.in
   data/org.gnome.GPaste.gschema.xml.in
+  src/applets/gnome-shell/extension.js
 ])
 AC_OUTPUT
 

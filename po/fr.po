@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 1.0\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-17 17:52+0100\n"
+"POT-Creation-Date: 2011-02-17 18:52+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -83,7 +83,7 @@ msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
 #: ../src/applets/standard/gpaste-applet.vala:122
-#: ../src/applets/gnome-shell/extension.js:102
+#: ../src/applets/gnome-shell/extension.js.in:102
 msgid "(Empty)"
 msgstr "(Vide)"
 
@@ -97,7 +97,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Impossible de lancer gpaste-settings.\n"
 
 #: ../src/applets/standard/gpaste-applet.vala:142
-#: ../src/applets/gnome-shell/extension.js:127
+#: ../src/applets/gnome-shell/extension.js.in:127
 msgid "Empty history"
 msgstr "Vider l'historique"
 
@@ -120,8 +120,7 @@ msgstr "Impossible de se connecter au démon GPaste.\n"
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
 
-#: ../src/applets/gnome-shell/extension.js:96
-#,
+#: ../src/applets/gnome-shell/extension.js.in:96
 msgid "GPaste daemon"
 msgstr "Démon GPaste"
 

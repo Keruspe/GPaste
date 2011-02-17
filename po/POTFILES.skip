@@ -1,7 +1,7 @@
 data/gpaste-applet.desktop.in
 data/org.gnome.GPaste.gschema.xml.in
-src/applet/gpaste-applet.c
-src/gpaste-preferences/gpaste-preferences.c
+src/applets/standard/gpaste-applet.c
+src/gpaste-settings/gpaste-settings.c
 src/gpaste.c
 src/gpasted/gpasted.c
 src/gpasted/history.c
