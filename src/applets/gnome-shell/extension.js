@@ -91,7 +91,8 @@ Indicator.prototype = {
                     selection.connect('activate', Lang.bind(this, function(actor, event) {
                         this._select(inner_index);
                     }));
-                    let deletor = new St.Button({label: 'x'});
+                    let deletor = new St.Button();
+                    deletor.child = St.TextureCache.get_default().load_file_simple(global.imagedir + 'close-black.svg');
                     deletor.connect('clicked', Lang.bind(this, function(actor, event) {
                         this._delete(inner_index);
                     }));
