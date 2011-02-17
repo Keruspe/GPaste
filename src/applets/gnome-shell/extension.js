@@ -135,7 +135,7 @@ Indicator.prototype = {
     }
 };
 
-function main() {
+function main(metadata) {
     Gettext.bindtextdomain('gpaste', metadata.localedir);
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
