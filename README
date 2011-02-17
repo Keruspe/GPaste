@@ -3,7 +3,5 @@ gpaste is its CLI client
 gpaste-settings is a tool to edit gpasted settings
 gpaste-applet is a tray icon to manage gpasted
 There is now an experimental gnome-shell native applet which
-can be actiavted with --enable-gnome-shell-extension but
-you will need to patch gnome-shell to use it, here is the patch:
-https://github.com/Keruspe/keruspe/blob/master/gnome-base/gnome-shell/files/0001-whitelist-notification-stuff.patch
+can be actiavted with --enable-gnome-shell-extension
 
