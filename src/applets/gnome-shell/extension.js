@@ -109,8 +109,7 @@ Indicator.prototype = {
 };
 
 function main() {
-    let indicator = new Indicator();
-    Main.statusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
-    Panel.STANDARD_TRAY_ICON_SHELL_ORDER.unshift('gpaste');
+    //Main.statusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
+    //Panel.STANDARD_TRAY_ICON_SHELL_ORDER.unshift('gpaste');
     Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;
 }
