@@ -48,10 +48,8 @@ namespace GPaste {
 
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public void add(string selection) {
-                if (this.active) {
-                    ClipboardsManager.instance.select(selection);
-                    History.instance.add(selection);
-                }
+                ClipboardsManager.instance.select(selection);
+                History.instance.add(selection);
             }
 
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
