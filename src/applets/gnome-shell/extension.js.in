@@ -44,7 +44,7 @@ Indicator.prototype = {
 
     _init: function() {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
-        Util.spawn(['gpaste', 'start']);
+        Util.spawn(['@libexecdir@/gpaste/gpasted']);
         this._daemonIsStarted = true;
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
         this._textureCache = St.TextureCache.get_default();
@@ -76,13 +76,9 @@ Indicator.prototype = {
         this._fillMenu();
     },
 
-    _prefs: function() {
-        Util.spawn(['gpaste', 'settings']);
-    },
-
     _toggleDaemon: function() {
         if (this._killSwitch.state) {
-            Util.spawn(['gpaste', 'start']);
+            Util.spawn(['@libexecdir@/gpaste/gpasted']);
             this._daemonIsStarted = true;
             this._fillMenu();
         }
@@ -91,47 +87,62 @@ Indicator.prototype = {
         }
     },
 
-    _fillMenu: function() {
-        this.menu.removeAll();
+    _fillHeader: function() {
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("GPaste daemon"), this._daemonIsStarted);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this.menu.addMenuItem(this._killSwitch);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
-            if (history.length == 0) {
-                let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), {reactive: false});
-                this.menu.addMenuItem(emptyItem);
-            } else {
-                let index;
-                let limit = 20;
-                if (history.length < 20) limit = history.length;
-                for (index = 0; index < limit; ++index) {
-                    let selection = new PopupMenu.PopupMenuItem(history[index].replace(/\n/g, ' '));
-                    let label = selection.label;
-                    let inner_index = index;
-                    label.clutter_text.max_length = 60;
-                    label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-                    selection.connect('activate', Lang.bind(this, function(actor, event) {
-                        this._select(inner_index);
-                    }));
-                    let deletor = new St.Button();
-                    deletor.child = this._textureCache.load_file_simple(global.imagedir + 'close-black.svg');
-                    deletor.connect('clicked', Lang.bind(this, function(actor, event) {
-                        this._delete(inner_index);
-                    }));
-                    selection.indicator = deletor;
-                    selection.addActor(deletor);
-                    this.menu.addMenuItem(selection);
-                }
-                this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-                let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
-                emptyItem.connect('activate', Lang.bind(this, this._empty));
-                this.menu.addMenuItem(emptyItem);
+    },
+
+    _fillHistory: function(history) {
+        if (history.length == 0) {
+            let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), {reactive: false});
+            this.menu.addMenuItem(emptyItem);
+        } else if (history != null) {
+            let index;
+            let limit = 20;
+            if (history.length < 20) limit = history.length;
+            for (index = 0; index < limit; ++index) {
+                print(index);
+                let selection = new PopupMenu.PopupMenuItem(history[index].replace(/\n/g, ' '));
+                let label = selection.label;
+                let inner_index = index;
+                label.clutter_text.max_length = 60;
+                label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+                selection.connect('activate', Lang.bind(this, function(actor, event) {
+                    this._select(inner_index);
+                }));
+                let deletor = new St.Button();
+                deletor.child = this._textureCache.load_file_simple(global.imagedir + 'close-black.svg');
+                deletor.connect('clicked', Lang.bind(this, function(actor, event) {
+                    this._delete(inner_index);
+                }));
+                selection.indicator = deletor;
+                selection.addActor(deletor);
+                this.menu.addMenuItem(selection);
             }
+            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
+            emptyItem.connect('activate', Lang.bind(this, this._empty));
+            this.menu.addMenuItem(emptyItem);
+        }
+    },
+
+    _fillFooter: function() {
+        let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
+        prefsItem.connect('activate', function() {
+            Util.spawn(['@libexecdir@/gpaste/gpaste-settings']);
+        });
+        this.menu.addMenuItem(prefsItem);
+    },
+
+    _fillMenu: function() {
+        this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
+            this.menu.removeAll();
+            this._fillHeader();
+            this._fillHistory(history);
+            this._fillFooter();
         }));
-        //let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
-        //prefsItem.connect('activate', Lang.bind(this, this._prefs));
-        //this.menu.addMenuItem(prefsItem);
     }
 };
 
@@ -141,4 +152,3 @@ function main(metadata) {
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
     Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;
 }
-

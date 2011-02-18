@@ -141,8 +141,13 @@ nodist_gnomeshell_DATA = \
 	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/metadata.json
 
-src/applets/gnome-shell/metadata.json: src/applets/gnome-shell/metadata.json.in
-	$(AM_V_GEN) sed -e 's,[@]localedir[@],$(localedir),g' <$^ >$@
+appletsdir:
+	@ mkdir -p src/applets/gnome-shell
+
+src/applets/gnome-shell/extension.js: src/applets/gnome-shell/extension.js.in appletsdir
+	$(AM_V_GEN) sed -e 's,[@]libexecdir[@],$(libexecdir),g' <$< >$@
+src/applets/gnome-shell/metadata.json: src/applets/gnome-shell/metadata.json.in appletsdir
+	$(AM_V_GEN) sed -e 's,[@]localedir[@],$(localedir),g' <$< >$@
 
 EXTRA_DIST += \
 	src/applets/gnome-shell/extension.js.in \
