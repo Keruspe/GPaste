@@ -47,6 +47,7 @@ namespace GPaste {
 
         public class ClipboardsManager : GLib.Object {
             private GLib.SList<Clipboard> clipboards;
+            private DBusServer gpasted = DBusServer.instance;
 
             public bool primary_to_history;
             public bool synchronize_clipboards;
@@ -103,6 +104,7 @@ namespace GPaste {
             }
 
             private bool checkClipboards() {
+                if (!gpasted.active) return true;
                 string? synchronized_text = null;
                 foreach(Clipboard c in this.clipboards) {
                     string text = c.real.wait_for_text();

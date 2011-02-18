@@ -23,15 +23,17 @@ const GPasteInterface = {
         { name: 'Select', inSignature: 'u', outSignature: '' },
         { name: 'Delete', inSignature: 'u', outSignature: '' },
         { name: 'Empty', inSignature: '', outSignature: '' },
+        { name: 'Launch', inSignature: '', outSignature: '' },
         { name: 'Quit', inSignature: '', outSignature: '' },
-        ],
+    ],
     signals: [
         { name: 'Changed', inSignature: '', outSignature: '' },
         { name: 'Start', inSignature: '', outSignature: '' },
         { name: 'Exit', inSignature: '', outSignature: '' },
-        ],
+    ],
     properties: [
-        ]
+        { name: 'Active', signature: 'b', access: 'readonly' },
+    ]
 };
 let GPasteProxy = DBus.makeProxyClass(GPasteInterface);
 
@@ -45,7 +47,6 @@ Indicator.prototype = {
     _init: function() {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
         Util.spawn(['@libexecdir@/gpaste/gpasted']);
-        this._daemonIsStarted = true;
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
         this._textureCache = St.TextureCache.get_default();
         this._proxy.connect('Changed', Lang.bind(this, this._fillMenu));
@@ -67,28 +68,22 @@ Indicator.prototype = {
     },
 
     _started: function() {
-        this._daemonIsStarted = true;
-        this._fillMenu();
+        this._killSwitch.setToggleState(true);
     },
 
     _exited: function() {
-        this._daemonIsStarted = false;
-        this._fillMenu();
+        this._killSwitch.setToggleState(false);
     },
 
     _toggleDaemon: function() {
-        if (this._killSwitch.state) {
-            Util.spawn(['@libexecdir@/gpaste/gpasted']);
-            this._daemonIsStarted = true;
-            this._fillMenu();
-        }
-        else {
+        if (this._killSwitch.state)
+            this._proxy.LaunchRemote();
+        else
             this._proxy.QuitRemote();
-        }
     },
 
-    _fillHeader: function() {
-        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("GPaste daemon"), this._daemonIsStarted);
+    _fillHeader: function(active) {
+        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), active);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this.menu.addMenuItem(this._killSwitch);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
@@ -103,7 +98,6 @@ Indicator.prototype = {
             let limit = 20;
             if (history.length < 20) limit = history.length;
             for (index = 0; index < limit; ++index) {
-                print(index);
                 let selection = new PopupMenu.PopupMenuItem(history[index].replace(/\n/g, ' '));
                 let label = selection.label;
                 let inner_index = index;
@@ -137,11 +131,13 @@ Indicator.prototype = {
     },
 
     _fillMenu: function() {
-        this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
-            this.menu.removeAll();
-            this._fillHeader();
-            this._fillHistory(history);
-            this._fillFooter();
+        this._proxy.GetRemote('Active', Lang.bind(this, function(active) {
+            this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
+                this.menu.removeAll();
+                this._fillHeader(active);
+                this._fillHistory(history);
+                this._fillFooter();
+            }));
         }));
     }
 };

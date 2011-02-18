@@ -38,6 +38,7 @@ namespace GPaste {
         public class DBusServer : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public GLib.Variant getHistory() {
+                stdout.printf("%s\n", this.active ? "True" : "False");
                 unowned GLib.SList<string> history = History.instance.history;
                 var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
                 foreach (string s in history)
@@ -47,8 +48,10 @@ namespace GPaste {
 
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public void add(string selection) {
-                ClipboardsManager.instance.select(selection);
-                History.instance.add(selection);
+                if (this.active) {
+                    ClipboardsManager.instance.select(selection);
+                    History.instance.add(selection);
+                }
             }
 
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
@@ -68,11 +71,13 @@ namespace GPaste {
 
             [DBus (name = "Launch", inSignature = "", outSignature = "")]
             public void launch() {
+                this.active = true;
                 this.start();
             }
 
             [DBus (name = "Quit", inSignature = "", outSignature = "")]
             public void quit() {
+                this.active = false;
                 this.exit();
             }
 
@@ -85,7 +90,12 @@ namespace GPaste {
             [DBus (name = "Exit", inSignature = "", outSignature = "")]
             public signal void exit();
 
-            private DBusServer() {}
+            [DBus (name = "Active", signature = "b", access = "readonly")]
+            public bool active { get; private set; }
+
+            private DBusServer() {
+                this.active = true;
+            }
 
             private static DBusServer _instance;
             public static DBusServer instance {
@@ -103,6 +113,7 @@ namespace GPaste {
             private static void handle(int signal) {
                 stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
                 DBusServer.instance.exit();
+                Main.loop.quit();
             }
 
             private static void on_bus_aquired(DBusConnection conn) {
@@ -120,13 +131,6 @@ namespace GPaste {
                         Posix.exit(1);
                     }
                 );
-            }
-
-            private static async void exit() {
-                GLib.Idle.add(Main.exit.callback);
-                yield;
-                Posix.sleep(1);
-                Main.loop.quit();
             }
 
             public static int main(string[] args) {
@@ -147,7 +151,6 @@ namespace GPaste {
                 Posix.sigaction(Posix.SIGINT, handler, null);
                 Main.start_dbus();
                 Main.loop = new GLib.MainLoop(null, false);
-                DBusServer.instance.exit.connect(()=>Main.exit.begin());
                 Main.loop.run();
                 return 0;
             }
