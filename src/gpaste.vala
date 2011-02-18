@@ -121,11 +121,7 @@ namespace GPaste {
                                 break;
                             case "settings":
                             case "preferences":
-                                try {
-                                    GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-settings");
-                                } catch(SpawnError e) {
-                                    stderr.printf(_("Couldn't spawn gpaste-settings.\n"));
-                                }
+                                Posix.execl(Config.GPASTEEXECDIR + "/gpaste-settings", "GPaste-Settings");
                                 break;
                             default:
                                 gpaste.add(args[1]);
