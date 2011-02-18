@@ -98,11 +98,14 @@ Indicator.prototype = {
             let limit = 20;
             if (history.length < 20) limit = history.length;
             for (index = 0; index < limit; ++index) {
-                let selection = new PopupMenu.PopupMenuItem(history[index].replace(/\n/g, ' '));
+                let displaystr = history[index].replace(/\n/g, ' ');
+                let selection = new PopupMenu.PopupMenuItem(displaystr);
                 let label = selection.label;
                 let inner_index = index;
                 label.clutter_text.max_length = 60;
                 label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+                if (index == 0)
+                    label.clutter_text.set_markup('<b>' + displaystr + '</b>');
                 selection.connect('activate', Lang.bind(this, function(actor, event) {
                     this._select(inner_index);
                 }));

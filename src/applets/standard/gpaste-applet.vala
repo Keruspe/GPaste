@@ -95,11 +95,13 @@ namespace GPaste {
                         uint32 current = i; // local, or weird closure behaviour
                         string elem = hist[i];
                         var item = new Gtk.ImageMenuItem.with_label(elem);
+                        var label = item.get_child() as Gtk.Label;
                         if (element_size != 0) {
-                            var label = item.get_child() as Gtk.Label;
-                            label.set_label(label.get_text().delimit("\n", ' '));
+                            label.set_markup("<b>" + label.get_text().delimit("\n", ' ') + "</b>");
                             label.max_width_chars = (int)element_size;
                             label.ellipsize = Pango.EllipsizeMode.END;
+                        } else {
+                            label.set_markup("<b>" + label.get_text() + "</b>");
                         }
                         item.activate.connect(()=>{
                             try {
