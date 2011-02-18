@@ -247,6 +247,3 @@ msgstr "Applet GPaste"
 #: ../data/gpaste-applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
-
-#~ msgid "GPaste daemon"
-#~ msgstr "Démon GPaste"
