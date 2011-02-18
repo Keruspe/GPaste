@@ -5,6 +5,7 @@ const Panel = imports.ui.panel;
 const DBus = imports.dbus;
 const Lang = imports.lang;
 const St = imports.gi.St;
+const GLib = imports.gi.GLib;
 const Pango = imports.gi.Pango;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
@@ -105,7 +106,7 @@ Indicator.prototype = {
                 label.clutter_text.max_length = 60;
                 label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
                 if (index == 0)
-                    label.clutter_text.set_markup('<b>' + displaystr + '</b>');
+                    label.clutter_text.set_markup('<b>' + GLib.markup_escape_text(displaystr, -1) + '</b>');
                 selection.connect('activate', Lang.bind(this, function(actor, event) {
                     this._select(inner_index);
                 }));

@@ -97,12 +97,12 @@ namespace GPaste {
                         var item = new Gtk.ImageMenuItem.with_label(elem);
                         var label = item.get_child() as Gtk.Label;
                         if (element_size != 0) {
-                            label.set_markup("<b>" + label.get_text().delimit("\n", ' ') + "</b>");
+                            label.set_label(label.get_text().delimit("\n", ' '));
                             label.max_width_chars = (int)element_size;
                             label.ellipsize = Pango.EllipsizeMode.END;
-                        } else {
-                            label.set_markup("<b>" + label.get_text() + "</b>");
                         }
+                        if (i == 0)
+                            label.set_markup("<b>" + GLib.Markup.escape_text(label.get_text()) + "</b>");
                         item.activate.connect(()=>{
                             try {
                                 switch(Gtk.get_current_event().button.button) {
