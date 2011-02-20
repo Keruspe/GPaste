@@ -63,7 +63,7 @@ namespace GPaste {
                 this.tray_icon.set_tooltip_text("GPaste");
                 this.tray_icon.set_visible(true);
                 this.fill_history();
-                (this.application as Main).gpaste.changed.connect(()=>{
+                (this.application as Main).gpasted.changed.connect(()=>{
                     this.needs_repaint = true;
                 });
                 this.fill_options();
@@ -88,12 +88,12 @@ namespace GPaste {
                 bool history_is_empty;
                 var app = this.application as Main;
                 try {
-                    var hist = app.gpaste.getHistory() as string[];
+                    var hist = app.gpasted.getHistory() as string[];
                     history_is_empty = (hist.length == 0);
                     uint32 element_size = app.element_size;
-                    for (uint32 i = 0 ; i < hist.length ; ++i) {
-                        uint32 current = i; // local, or weird closure behaviour
-                        string elem = hist[i];
+                    for (uint32 index = 0 ; index < hist.length ; ++index) {
+                        uint32 current = index; // local, or weird closure behaviour
+                        string elem = hist[index];
                         var item = new Gtk.ImageMenuItem.with_label(elem);
                         var label = item.get_child() as Gtk.Label;
                         if (element_size != 0) {
@@ -101,16 +101,16 @@ namespace GPaste {
                             label.max_width_chars = (int)element_size;
                             label.ellipsize = Pango.EllipsizeMode.END;
                         }
-                        if (i == 0)
+                        if (index == 0)
                             label.set_markup("<b>" + GLib.Markup.escape_text(label.get_text()) + "</b>");
                         item.activate.connect(()=>{
                             try {
                                 switch(Gtk.get_current_event().button.button) {
                                 case 1:
-                                    app.gpaste.select(current);
+                                    app.gpasted.select(current);
                                     break;
                                 case 3:
-                                    app.gpaste.delete(current);
+                                    app.gpasted.delete(current);
                                     break;
                                 }
                             } catch (IOError e) {
@@ -144,7 +144,7 @@ namespace GPaste {
                 var empty = new Gtk.ImageMenuItem.with_label(_("Empty history"));
                 empty.activate.connect(()=>{
                     try {
-                        (this.application as Main).gpaste.empty();
+                        (this.application as Main).gpasted.empty();
                     } catch (IOError e) {
                         stderr.printf(_("Couldn't empty history.\n"));
                     }
@@ -159,7 +159,7 @@ namespace GPaste {
 
         public class Main : Gtk.Application {
             private GLib.Settings settings;
-            public DBusClient gpaste { get; private set; }
+            public DBusClient gpasted { get; private set; }
             public uint32 element_size { get; private set; }
             private bool shutdown_on_exit;
             private Window window;
@@ -185,7 +185,7 @@ namespace GPaste {
 
             private void init() {
                 try {
-                    this.gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+                    this.gpasted = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 } catch (IOError e) {
                     stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                     Posix.exit(1);
@@ -211,7 +211,7 @@ namespace GPaste {
                 int ret = app.run();
                 if (app.shutdown_on_exit) {
                     try {
-                        app.gpaste.quit();
+                        app.gpasted.quit();
                     } catch (IOError e) {
                         stderr.printf(_("Couldn't shutdown daemon.\n"));
                     }
