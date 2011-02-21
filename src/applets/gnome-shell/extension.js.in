@@ -83,8 +83,8 @@ Indicator.prototype = {
     },
 
     _fillHistory: function(history) {
-        this._history.removeAll();
         this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
+            this._history.removeAll();
             if (history.length == 0) {
                 let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), {reactive: false});
                 this._history.addMenuItem(emptyItem);
