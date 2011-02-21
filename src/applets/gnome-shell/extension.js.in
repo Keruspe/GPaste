@@ -49,7 +49,6 @@ Indicator.prototype = {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
         Util.spawn(['@libexecdir@/gpaste/gpasted']);
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
-        this._textureCache = St.TextureCache.get_default();
         this._proxy.connect('Changed', Lang.bind(this, this._fillMenu));
         this._proxy.connect('Start', Lang.bind(this, this._started));
         this._proxy.connect('Exit', Lang.bind(this, this._exited));
@@ -111,7 +110,9 @@ Indicator.prototype = {
                     this._select(inner_index);
                 }));
                 let deletor = new St.Button();
-                deletor.child = this._textureCache.load_file_simple(global.imagedir + 'close-black.svg');
+                deletor.child = new St.Icon({ style_class: 'search-entry-icon',
+                                              icon_name: 'edit-clear',
+                                              icon_type: St.IconType.SYMBOLIC });
                 deletor.connect('clicked', Lang.bind(this, function(actor, event) {
                     this._delete(inner_index);
                 }));
