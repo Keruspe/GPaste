@@ -110,9 +110,10 @@ Indicator.prototype = {
                     this._select(inner_index);
                 }));
                 let deletor = new St.Button();
-                deletor.child = new St.Icon({ style_class: 'search-entry-icon',
-                                              icon_name: 'edit-clear',
-                                              icon_type: St.IconType.SYMBOLIC });
+                deletor.child = new St.Icon({
+                    icon_name: 'edit-clear',
+                    icon_type: St.IconType.SYMBOLIC
+                });
                 deletor.connect('clicked', Lang.bind(this, function(actor, event) {
                     this._delete(inner_index);
                 }));
