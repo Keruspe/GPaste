@@ -133,6 +133,7 @@ Indicator.prototype = {
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this._history = new PopupMenu.PopupMenuSection();
             this.menu.addMenuItem(this._history);
+            this._fillHistoy();
             let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
             prefsItem.connect('activate', function() {
                 Util.spawn(['@libexecdir@/gpaste/gpaste-settings']);
