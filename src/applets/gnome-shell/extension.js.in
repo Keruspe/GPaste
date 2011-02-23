@@ -88,7 +88,7 @@ Indicator.prototype = {
         this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
             this._history.removeAll();
             if (history.length == 0) {
-                let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), {reactive: false});
+                let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), { reactive: false });
                 this._history.addMenuItem(emptyItem);
             } else if (history != null) {
                 let index;
@@ -102,9 +102,6 @@ Indicator.prototype = {
                     let inner_index = index;
                     label.clutter_text.max_length = 60;
                     label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-                    selection.actor.add_style_class_name('gpaste-popup-alternating-menu-item');
-                    if (index == 0)
-                        selection.actor.add_style_class_name('gpaste-popup-alternating-menu-item-first');
                     selection.connect('activate', Lang.bind(this, function(actor, event) {
                         if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT)
                             this._select(inner_index);
@@ -127,6 +124,7 @@ Indicator.prototype = {
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this._history = new PopupMenu.PopupMenuSection();
+            this._history.box.name = 'gpaste-history';
             this.menu.addMenuItem(this._history);
             this._fillHistory();
             let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));

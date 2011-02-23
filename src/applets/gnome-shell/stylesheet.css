@@ -1,8 +1,8 @@
-.popup-alternating-menu-item.gpaste-popup-alternating-menu-item:alternate {
+#gpaste-history .popup-alternating-menu-item:alternate {
     font-weight: normal;
 }
 
-.gpaste-popup-alternating-menu-item-first {
+#gpaste-history .popup-alternating-menu-item:first-child {
     font-weight: bold;
 }
 
