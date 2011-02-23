@@ -52,6 +52,8 @@ Indicator.prototype = {
         this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
         this._proxy.connect('Start', Lang.bind(this, this._started));
         this._proxy.connect('Exit', Lang.bind(this, this._exited));
+        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
+        this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._fillMenu();
     },
 
@@ -125,8 +127,7 @@ Indicator.prototype = {
 
     _fillMenu: function() {
         this._proxy.GetRemote('Active', Lang.bind(this, function(active) {
-            this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), active);
-            this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
+            this._killSwitch.setToggleState(active);
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this._history = new PopupMenu.PopupMenuSection();
