@@ -102,7 +102,7 @@ Indicator.prototype = {
                     if (index == 0)
                         label.clutter_text.set_markup('<b>' + GLib.markup_escape_text(displaystr, -1) + '</b>');
                     selection.connect('activate', Lang.bind(this, function(actor, event) {
-                        if (selection.state == PopupAlternatingMenuItemState.DEFAULT)
+                        if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT)
                             this._select(inner_index);
                         else
                             this._delete(inner_index);
