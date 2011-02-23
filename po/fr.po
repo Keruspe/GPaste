@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 1.0\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-18 12:23+0100\n"
+"POT-Creation-Date: 2011-02-23 15:39+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -17,17 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:114
+#: ../src/gpasted/gpasted.vala:112
 #, c-format
 msgid "Signal %d recieved, exiting.\n"
 msgstr "Signal %d reçu, arrêt.\n"
 
-#: ../src/gpasted/gpasted.vala:123
+#: ../src/gpasted/gpasted.vala:121
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#: ../src/gpasted/gpasted.vala:130
+#: ../src/gpasted/gpasted.vala:128
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
@@ -48,7 +48,7 @@ msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:59
-#: ../src/applets/gnome-shell/extension.js.in:126
+#: ../src/applets/gnome-shell/extension.js.in:132
 msgid "GPaste Settings"
 msgstr "Préférences GPaste"
 
@@ -73,57 +73,61 @@ msgid "Shutdown the daemon when _quitting the applet"
 msgstr "Éteindre le démon quand on _quitte l'applet"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:201
-#: ../src/applets/standard/gpaste-applet.vala:204
+#: ../src/applets/standard/gpaste-applet.vala:206
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:115
+#: ../src/applets/standard/gpaste-applet.vala:117
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:122
-#: ../src/applets/gnome-shell/extension.js.in:94
+#: ../src/applets/standard/gpaste-applet.vala:124
+#: ../src/applets/gnome-shell/extension.js.in:91
 msgid "(Empty)"
 msgstr "(Vide)"
 
-#: ../src/applets/standard/gpaste-applet.vala:133
+#: ../src/applets/standard/gpaste-applet.vala:135
 msgid "Settings"
 msgstr "Préférences"
 
-#: ../src/applets/standard/gpaste-applet.vala:138
+#: ../src/applets/standard/gpaste-applet.vala:140
 #, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Impossible de lancer gpaste-settings.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:142
-#: ../src/applets/gnome-shell/extension.js.in:119
+#: ../src/applets/standard/gpaste-applet.vala:144
+#: ../src/applets/gnome-shell/extension.js.in:117
 msgid "Empty history"
 msgstr "Vider l'historique"
 
-#: ../src/applets/standard/gpaste-applet.vala:147
+#: ../src/applets/standard/gpaste-applet.vala:149
 #, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Impossible de vider l'historique.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:151
+#: ../src/applets/standard/gpaste-applet.vala:153
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applets/standard/gpaste-applet.vala:188 ../src/gpaste.vala:154
+#: ../src/applets/standard/gpaste-applet.vala:190 ../src/gpaste.vala:154
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:214
+#: ../src/applets/standard/gpaste-applet.vala:216
 #, c-format
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
 
-#: ../src/applets/gnome-shell/extension.js.in:86
+#: ../src/applets/gnome-shell/extension.js.in:55
 msgid "Track clipboard changes"
 msgstr "Suivre les changements du presse-papier"
+
+#: ../src/applets/gnome-shell/extension.js.in:99
+msgid "delete: "
+msgstr "supprimer : "
 
 #: ../src/gpaste.vala:57
 #, c-format
