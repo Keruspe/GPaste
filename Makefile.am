@@ -137,6 +137,9 @@ if ENABLE_EXTENSION
 
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome.org
 
+dist_gnomeshell_DATA = \
+	src/applets/gnome-shell/stylesheet.css
+
 nodist_gnomeshell_DATA = \
 	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/metadata.json
