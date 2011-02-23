@@ -94,7 +94,7 @@ Indicator.prototype = {
                 if (history.length < 20) limit = history.length;
                 for (index = 0; index < limit; ++index) {
                     let displaystr = history[index].replace(/\n/g, ' ');
-                    let selection = new PopupMenu.PopupMenuItem(displaystr);
+                    let selection = new PopupMenu.PopupAlternatingMenuItem(displaystr, _("delete: ") + displaystr);
                     let label = selection.label;
                     let inner_index = index;
                     label.clutter_text.max_length = 60;
@@ -102,19 +102,11 @@ Indicator.prototype = {
                     if (index == 0)
                         label.clutter_text.set_markup('<b>' + GLib.markup_escape_text(displaystr, -1) + '</b>');
                     selection.connect('activate', Lang.bind(this, function(actor, event) {
-                        this._select(inner_index);
+                        if (selection.state == PopupAlternatingMenuItemState.DEFAULT)
+                            this._select(inner_index);
+                        else
+                            this._delete(inner_index);
                     }));
-                    let deletor = new St.Button();
-                    deletor.child = new St.Icon({
-                        style_class: 'search-entry-icon',
-                        icon_name: 'edit-clear',
-                        icon_type: St.IconType.SYMBOLIC
-                    });
-                    deletor.connect('clicked', Lang.bind(this, function(actor, event) {
-                        this._delete(inner_index);
-                    }));
-                    selection.indicator = deletor;
-                    selection.addActor(deletor);
                     this._history.addMenuItem(selection);
                 }
                 this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
