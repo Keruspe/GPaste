@@ -94,13 +94,19 @@ Indicator.prototype = {
                 if (history.length < 20) limit = history.length;
                 for (index = 0; index < limit; ++index) {
                     let displaystr = history[index].replace(/\n/g, ' ');
-                    let selection = new PopupMenu.PopupAlternatingMenuItem(displaystr, _("delete: ") + displaystr);
+                    let altdisplaystr = _("delete: ") + displaystr;
+                    let selection = new PopupMenu.PopupAlternatingMenuItem(displaystr, altdisplaystr);
                     let label = selection.label;
                     let inner_index = index;
                     label.clutter_text.max_length = 60;
                     label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-                    if (index == 0)
-                        label.clutter_text.set_markup('<b>' + GLib.markup_escape_text(displaystr, -1) + '</b>');
+                    /*if (index == 0) {
+                        selection.updateText(
+                            '<b>' + GLib.markup_escape_text(displaystr, -1) + '</b>',
+                            '<b>' + GLib.markup_escape_text(altdisplaystr, -1) + '</b>'
+                        );
+                        label.use_markup = true;
+                    }*/
                     selection.connect('activate', Lang.bind(this, function(actor, event) {
                         if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT)
                             this._select(inner_index);
