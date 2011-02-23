@@ -1,8 +1,8 @@
-gpaste-popup-alternating-menu-item:alternate {
+.gpaste-popup-alternating-menu-item:alternate {
     font-weight: normal;
 }
 
-gpaste-popup-alternating-menu-item-first {
+.gpaste-popup-alternating-menu-item-first {
     font-weight: bold;
 }
 
