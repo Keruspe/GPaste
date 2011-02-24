@@ -73,8 +73,8 @@ namespace GPaste {
                 this.start();
             }
 
-            [DBus (name = "Quit", inSignature = "", outSignature = "")]
-            public void quit() {
+            [DBus (name = "Stop", inSignature = "", outSignature = "")]
+            public void stop() {
                 this.active = false;
                 this.exit();
             }

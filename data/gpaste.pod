@@ -44,7 +44,7 @@ Empty the history
 
 Start the daemon
 
-=item B<gpaste quit>
+=item B<gpaste stop>
 
 Shutdown the daemon
 

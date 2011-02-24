@@ -138,8 +138,10 @@ namespace GPaste {
                     var dis = new GLib.DataInputStream(history_file.read());
                     while((length = dis.read_int64()) != 0) {
                         var line = new GLib.StringBuilder();
+                        uint8[] str = new uint8[length];
+                        dis.read(str);
                         for(int64 i = 0 ; i < length ; ++i)
-                            line.append_unichar(dis.read_byte());
+                            line.append_c((char) str[i]);
                         this._history.append(line.str);
                     }
                 } catch (Error e) {

@@ -48,8 +48,8 @@ namespace GPaste {
             public abstract void empty() throws IOError;
             [DBus (name = "Launch", inSignature = "", outSignature = "")]
             public abstract void launch() throws IOError;
-            [DBus (name = "Quit", inSignature = "", outSignature = "")]
-            public abstract void quit() throws IOError;
+            [DBus (name = "Stop", inSignature = "", outSignature = "")]
+            public abstract void stop() throws IOError;
         }
 
         public class Main : GLib.Object {
@@ -61,7 +61,8 @@ namespace GPaste {
                 stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
                 stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
                 stdout.printf(_("%s empty: empty the history\n"), caller);
-                stdout.printf(_("%s quit: shutdown the daemon\n"), caller);
+                stdout.printf(_("%s stop: shutdown the daemon\n"), caller);
+                stdout.printf(_("%s quit: alias for quit\n"), caller);
                 stdout.printf(_("%s applet: launch the applet\n"), caller);
                 stdout.printf(_("%s settings: launch the configuration tool\n"), caller);
                 stdout.printf(_("%s version: display the version\n"), caller);
@@ -103,8 +104,9 @@ namespace GPaste {
                             case "daemon":
                                 gpaste.launch();
                                 break;
+                            case "stop":
                             case "quit":
-                                gpaste.quit();
+                                gpaste.stop();
                                 break;
                             case "empty":
                                 gpaste.empty();

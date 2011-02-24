@@ -25,7 +25,7 @@ const GPasteInterface = {
         { name: 'Delete', inSignature: 'u', outSignature: '' },
         { name: 'Empty', inSignature: '', outSignature: '' },
         { name: 'Launch', inSignature: '', outSignature: '' },
-        { name: 'Quit', inSignature: '', outSignature: '' },
+        { name: 'Stop', inSignature: '', outSignature: '' },
     ],
     signals: [
         { name: 'Changed', inSignature: '', outSignature: '' },
@@ -81,7 +81,7 @@ Indicator.prototype = {
         if (this._killSwitch.state)
             this._proxy.LaunchRemote();
         else
-            this._proxy.QuitRemote();
+            this._proxy.StopRemote();
     },
 
     _fillHistory: function(history) {

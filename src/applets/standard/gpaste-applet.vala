@@ -44,8 +44,8 @@ namespace GPaste {
             public abstract void delete(uint32 index) throws IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws IOError;
-            [DBus (name = "Quit", inSignature = "", outSignature = "")]
-            public abstract void quit() throws IOError;
+            [DBus (name = "Stop", inSignature = "", outSignature = "")]
+            public abstract void stop() throws IOError;
             [DBus (name = "Changed", inSignature = "", outSignature = "")]
             public abstract signal void changed();
         }
@@ -211,7 +211,7 @@ namespace GPaste {
                 int ret = app.run();
                 if (app.shutdown_on_exit) {
                     try {
-                        app.gpasted.quit();
+                        app.gpasted.stop();
                     } catch (IOError e) {
                         stderr.printf(_("Couldn't shutdown daemon.\n"));
                     }
