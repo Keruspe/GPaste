@@ -11,8 +11,7 @@ EXTRA_DIST = autogen.bash NEWS README
 
 bin_PROGRAMS = gpaste
 
-gpasteexecdir = $(libexecdir)/gpaste
-gpasteexec_PROGRAMS = gpasted gpaste-settings
+pkglibexec_PROGRAMS = gpasted gpaste-settings
 
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
@@ -57,7 +56,7 @@ gpaste_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
-	-DGPASTEEXECDIR=\"${gpasteexecdir}\" \
+	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(CFLAGS)
 
 gpaste_LDADD = \
@@ -91,13 +90,13 @@ CLEANFILES += \
 
 if ENABLE_APPLET
 
-gpasteexec_PROGRAMS += gpaste-applet
+pkglibexec_PROGRAMS += gpaste-applet
 
 autostartdir=$(sysconfdir)/xdg/autostart
 nodist_autostart_DATA = gpaste-applet.desktop
 
 data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
-	$(AM_V_GEN) sed "s|@gpasteexecdir[@]|$(gpasteexecdir)|" < $< > $@ || rm $@
+	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
 gpaste-applet.desktop: data/gpaste-applet.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
@@ -117,7 +116,7 @@ gpaste_applet_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
-	-DGPASTEEXECDIR=\"${gpasteexecdir}\" \
+	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(CFLAGS)
 
 gpaste_applet_LDADD = \
@@ -138,26 +137,21 @@ if ENABLE_EXTENSION
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome.org
 
 dist_gnomeshell_DATA = \
+	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/stylesheet.css
 
 nodist_gnomeshell_DATA = \
-	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/metadata.json
 
-extensiondir:
+src/applets/gnome-shell/metadata.json: src/applets/gnome-shell/metadata.json.in
 	@ mkdir -p src/applets/gnome-shell
-
-src/applets/gnome-shell/extension.js: src/applets/gnome-shell/extension.js.in extensiondir
-	$(AM_V_GEN) sed -e 's,[@]libexecdir[@],$(libexecdir),g' <$< >$@
-src/applets/gnome-shell/metadata.json: src/applets/gnome-shell/metadata.json.in extensiondir
-	$(AM_V_GEN) sed -e 's,[@]localedir[@],$(localedir),g' <$< >$@
+	$(AM_V_GEN) sed -e 's,[@]localedir[@],$(localedir),g' \
+		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
 
 EXTRA_DIST += \
-	src/applets/gnome-shell/extension.js.in \
 	src/applets/gnome-shell/metadata.json.in
 
 CLEANFILES += \
-	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/metadata.json
 
 endif
@@ -181,7 +175,7 @@ servicedir = $(datadir)/dbus-1/services
 service_DATA = data/org.gnome.GPaste.service
 
 data/org.gnome.GPaste.service: data/org.gnome.GPaste.service.in
-	$(AM_V_GEN) sed -e 's,[@]gpasteexecdir[@],$(gpasteexecdir),g' <$^ >$@
+	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 
 EXTRA_DIST += data/org.gnome.GPaste.service.in
 

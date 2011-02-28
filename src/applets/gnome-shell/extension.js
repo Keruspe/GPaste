@@ -17,6 +17,8 @@ const _ = Gettext.domain('GPaste').gettext;
 const BUS_NAME = 'org.gnome.GPaste';
 const OBJECT_PATH = '/org/gnome/GPaste';
 
+let pkglibexecdir = null;
+
 const GPasteInterface = {
     name: BUS_NAME,
     methods: [
@@ -138,6 +140,7 @@ Indicator.prototype = {
 
 function main(metadata) {
     Gettext.bindtextdomain('gpaste', metadata.localedir);
+    pkglibexecdir = metadata.pkglibexecdir;
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
     Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;

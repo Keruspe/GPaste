@@ -116,14 +116,14 @@ namespace GPaste {
                                 break;
                             case "applet":
                                 try {
-                                    GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-applet");
+                                    GLib.Process.spawn_command_line_async(Config.PKGLIBEXECDIR + "/gpaste-applet");
                                 } catch(SpawnError e) {
                                     stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
                                 }
                                 break;
                             case "settings":
                             case "preferences":
-                                Posix.execl(Config.GPASTEEXECDIR + "/gpaste-settings", "GPaste-Settings");
+                                Posix.execl(Config.PKGLIBEXECDIR + "/gpaste-settings", "GPaste-Settings");
                                 break;
                             default:
                                 gpaste.add(args[1]);

@@ -135,7 +135,7 @@ namespace GPaste {
                 var settings = new Gtk.ImageMenuItem.with_label(_("Settings"));
                 settings.activate.connect(()=>{
                     try {
-                        GLib.Process.spawn_command_line_async(Config.GPASTEEXECDIR + "/gpaste-settings");
+                        GLib.Process.spawn_command_line_async(Config.PKGLIBEXECDIR + "/gpaste-settings");
                     } catch(SpawnError e) {
                         stderr.printf(_("Couldn't spawn gpaste-settings.\n"));
                     }
