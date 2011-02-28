@@ -64,7 +64,9 @@ namespace GPaste {
                 stdout.printf(_("%s start: start tracking clipboard changes\n"), caller);
                 stdout.printf(_("%s stop: stop tracking clipboard changes\n"), caller);
                 stdout.printf(_("%s quit: alias for quit\n"), caller);
+#if ENABLE_APPLET
                 stdout.printf(_("%s applet: launch the applet\n"), caller);
+#endif
                 stdout.printf(_("%s settings: launch the configuration tool\n"), caller);
                 stdout.printf(_("%s version: display the version\n"), caller);
                 stdout.printf(_("%s help: display this help\n"), caller);
@@ -115,6 +117,7 @@ namespace GPaste {
                             case "version":
                                 stdout.printf(Config.PACKAGE_STRING+"\n");
                                 break;
+#if ENABLE_APPLET
                             case "applet":
                                 try {
                                     GLib.Process.spawn_command_line_async(Config.PKGLIBEXECDIR + "/gpaste-applet");
@@ -122,6 +125,7 @@ namespace GPaste {
                                     stderr.printf(_("Couldn't spawn gpaste-applet.\n"));
                                 }
                                 break;
+#endif
                             case "settings":
                             case "preferences":
                                 Posix.execl(Config.PKGLIBEXECDIR + "/gpaste-settings", "GPaste-Settings");

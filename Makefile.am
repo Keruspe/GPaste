@@ -90,6 +90,8 @@ CLEANFILES += \
 
 if ENABLE_APPLET
 
+gpaste_VALAFLAGS += --define=ENABLE_APPLET
+
 pkglibexec_PROGRAMS += gpaste-applet
 
 autostartdir=$(sysconfdir)/xdg/autostart
