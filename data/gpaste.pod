@@ -42,11 +42,11 @@ Empty the history
 
 =item B<gpaste start>
 
-Start the daemon
+Start tracking clipboard changes
 
 =item B<gpaste stop>
 
-Shutdown the daemon
+Stop tracking clipboard changes
 
 =item B<gpaste applet>
 
