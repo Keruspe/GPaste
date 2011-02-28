@@ -61,7 +61,8 @@ namespace GPaste {
                 stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
                 stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
                 stdout.printf(_("%s empty: empty the history\n"), caller);
-                stdout.printf(_("%s stop: shutdown the daemon\n"), caller);
+                stdout.printf(_("%s start: start tracking clipboard changes\n"), caller);
+                stdout.printf(_("%s stop: stop tracking clipboard changes\n"), caller);
                 stdout.printf(_("%s quit: alias for quit\n"), caller);
                 stdout.printf(_("%s applet: launch the applet\n"), caller);
                 stdout.printf(_("%s settings: launch the configuration tool\n"), caller);

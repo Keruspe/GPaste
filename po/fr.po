@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 1.0\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-23 16:13+0100\n"
+"POT-Creation-Date: 2011-02-28 16:33+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -37,18 +37,18 @@ msgstr "Impossible d'acquérir le nom DBus.\n"
 msgid "Could not delete history file.\n"
 msgstr "Impossible de supprimer le fichier d'historique.\n"
 
-#: ../src/gpasted/history.vala:146
+#: ../src/gpasted/history.vala:148
 #, c-format
 msgid "Could not read history file.\n"
 msgstr "Impossible de lire le fichier d'historique.\n"
 
-#: ../src/gpasted/history.vala:166
+#: ../src/gpasted/history.vala:168
 #, c-format
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:59
-#: ../src/applets/gnome-shell/extension.js.in:132
+#: ../src/applets/gnome-shell/extension.js:132
 msgid "GPaste Settings"
 msgstr "Préférences GPaste"
 
@@ -84,7 +84,7 @@ msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
 #: ../src/applets/standard/gpaste-applet.vala:124
-#: ../src/applets/gnome-shell/extension.js.in:91
+#: ../src/applets/gnome-shell/extension.js:93
 msgid "(Empty)"
 msgstr "(Vide)"
 
@@ -98,7 +98,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Impossible de lancer gpaste-settings.\n"
 
 #: ../src/applets/standard/gpaste-applet.vala:144
-#: ../src/applets/gnome-shell/extension.js.in:117
+#: ../src/applets/gnome-shell/extension.js:116
 msgid "Empty history"
 msgstr "Vider l'historique"
 
@@ -111,7 +111,7 @@ msgstr "Impossible de vider l'historique.\n"
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applets/standard/gpaste-applet.vala:190 ../src/gpaste.vala:154
+#: ../src/applets/standard/gpaste-applet.vala:190 ../src/gpaste.vala:157
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
@@ -121,11 +121,11 @@ msgstr "Impossible de se connecter au démon GPaste.\n"
 msgid "Couldn't shutdown daemon.\n"
 msgstr "Impossible d'éteindre le démon.\n"
 
-#: ../src/applets/gnome-shell/extension.js.in:55
+#: ../src/applets/gnome-shell/extension.js:57
 msgid "Track clipboard changes"
 msgstr "Suivre les changements du presse-papier"
 
-#: ../src/applets/gnome-shell/extension.js.in:99
+#: ../src/applets/gnome-shell/extension.js:101
 #, c-format
 msgid "delete: %s"
 msgstr "supprimer : %s"
@@ -170,30 +170,40 @@ msgstr "%s empty : vide l'historique\n"
 
 #: ../src/gpaste.vala:64
 #, c-format
-msgid "%s quit: shutdown the daemon\n"
-msgstr "%s quit : éteindre le démon\n"
+msgid "%s start: start tracking clipboard changes\n"
+msgstr "stop : suivre les changements du presse-papier\n"
 
 #: ../src/gpaste.vala:65
+#, c-format
+msgid "%s stop: stop tracking clipboard changes\n"
+msgstr "stop : arrêter de suivre les changements du presse-papier\n"
+
+#: ../src/gpaste.vala:66
+#, c-format
+msgid "%s quit: alias for quit\n"
+msgstr "%s quit : alias pour stop\n"
+
+#: ../src/gpaste.vala:67
 #, c-format
 msgid "%s applet: launch the applet\n"
 msgstr "%s applet : lance l'applet\n"
 
-#: ../src/gpaste.vala:66
+#: ../src/gpaste.vala:68
 #, c-format
 msgid "%s settings: launch the configuration tool\n"
 msgstr "%s settings : lance l'outil de configuration\n"
 
-#: ../src/gpaste.vala:67
+#: ../src/gpaste.vala:69
 #, c-format
 msgid "%s version: display the version\n"
 msgstr "%s version : affiche la version\n"
 
-#: ../src/gpaste.vala:68
+#: ../src/gpaste.vala:70
 #, c-format
 msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
-#: ../src/gpaste.vala:119
+#: ../src/gpaste.vala:122
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Impossible de lancer gpaste-applet.\n"
@@ -252,3 +262,6 @@ msgstr "Applet GPaste"
 #: ../data/gpaste-applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
+
+#~ msgid "%s stop: shutdown the daemon\n"
+#~ msgstr "%s stop : éteindre le démon\n"
