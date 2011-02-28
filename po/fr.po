@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: GPaste 1.0\n"
+"Project-Id-Version: GPaste 0.99\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-28 16:40+0100\n"
+"POT-Creation-Date: 2011-02-28 16:56+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -112,7 +112,7 @@ msgstr "Impossible de vider l'historique.\n"
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applets/standard/gpaste-applet.vala:190 ../src/gpaste.vala:157
+#: ../src/applets/standard/gpaste-applet.vala:190 ../src/gpaste.vala:161
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
@@ -184,27 +184,27 @@ msgstr "%s stop : arrêter de suivre les changements du presse-papier\n"
 msgid "%s quit: alias for quit\n"
 msgstr "%s quit : alias pour stop\n"
 
-#: ../src/gpaste.vala:67
+#: ../src/gpaste.vala:68
 #, c-format
 msgid "%s applet: launch the applet\n"
 msgstr "%s applet : lance l'applet\n"
 
-#: ../src/gpaste.vala:68
+#: ../src/gpaste.vala:70
 #, c-format
 msgid "%s settings: launch the configuration tool\n"
 msgstr "%s settings : lance l'outil de configuration\n"
 
-#: ../src/gpaste.vala:69
+#: ../src/gpaste.vala:71
 #, c-format
 msgid "%s version: display the version\n"
 msgstr "%s version : affiche la version\n"
 
-#: ../src/gpaste.vala:70
+#: ../src/gpaste.vala:72
 #, c-format
 msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
-#: ../src/gpaste.vala:122
+#: ../src/gpaste.vala:125
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Impossible de lancer gpaste-applet.\n"
@@ -265,11 +265,3 @@ msgstr "Applet GPaste"
 #: ../data/gpaste-applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
-
-#~ msgid ""
-#~ "By default, the daemon doesn't keep running when you close the applet."
-#~ msgstr ""
-#~ "Par défaut, le démon ne s'éxécute plus après la fermeture de l'applet."
-
-#~ msgid "Does the daemon shutdown when closing the applet?"
-#~ msgstr "Le démon soit-il s'éteindre quand on ferme l'applet?"

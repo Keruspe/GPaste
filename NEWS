@@ -1,3 +1,21 @@
+NEW in 0.99 (28/02/2011)
+=============
+
+- Depend on gtk+ 3.0.0
+- Really fix the segfault taht should have been fixed in 0.9
+- Namespace refactoring
+- Libexec stuff is now installed into a gpaste subdir
+- Code cleanup
+- Explicit DBus API (with breakage)
+- Rename gpaste-{preferences -> settings}
+- New "exit" signal
+- "start" is now a signal
+- Build the gnome-shell native extension with --enable-gnome-shell-extension
+- The daemon no longer exits, it just stop tracking clipboard changes
+- New DBus property: Active to see if the daemon is tracking
+- Fix an encoding issue
+- Quit is now Stop
+
 NEW in 0.9 (05/02/2011)
 =============
 
