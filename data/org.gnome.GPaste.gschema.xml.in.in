@@ -37,9 +37,9 @@
 
     <key name="shutdown-on-exit" type="b">
       <default>true</default>
-      <_summary>Does the daemon shutdown when closing the applet?</_summary>
+      <_summary>Do we still track clipboard changes after quitting the applet?</_summary>
       <_description>
-        By default, the daemon doesn't keep running when you close the applet.
+        By default, we're not tracking those changes anymore.
       </_description>
     </key>
 

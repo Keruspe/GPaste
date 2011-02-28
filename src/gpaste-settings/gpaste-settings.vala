@@ -82,7 +82,7 @@ namespace GPaste {
                 this.synchronize_clipboards_button.toggled.connect(()=>{
                     app.synchronize_clipboards = this.synchronize_clipboards;
                 });
-                this.shutdown_on_exit_button = new Gtk.CheckButton.with_mnemonic(_("Shutdown the daemon when _quitting the applet"));
+                this.shutdown_on_exit_button = new Gtk.CheckButton.with_mnemonic(_("Stop tracking clipboard changes when _quitting the applet"));
                 this.shutdown_on_exit = app.shutdown_on_exit;
                 this.shutdown_on_exit_button.toggled.connect(()=>{
                     app.shutdown_on_exit = this.shutdown_on_exit;

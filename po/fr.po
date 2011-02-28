@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 1.0\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-02-28 16:33+0100\n"
+"POT-Creation-Date: 2011-02-28 16:40+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -69,8 +69,9 @@ msgid "_Synchronize clipboard with primary selection"
 msgstr "_Synchroniser le presse-papier avec la séléction primaire"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:85
-msgid "Shutdown the daemon when _quitting the applet"
-msgstr "Éteindre le démon quand on _quitte l'applet"
+msgid "Stop tracking clipboard changes when _quitting the applet"
+msgstr ""
+"Arrêter de suivre les changements du presse-papier quand on _quitte l'applet"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:201
 #: ../src/applets/standard/gpaste-applet.vala:206
@@ -133,7 +134,7 @@ msgstr "supprimer : %s"
 #: ../src/gpaste.vala:57
 #, c-format
 msgid "Usage:\n"
-msgstr "Utilisation :\n"
+msgstr "Mode d'emploi :\n"
 
 #: ../src/gpaste.vala:58
 #, c-format
@@ -171,12 +172,12 @@ msgstr "%s empty : vide l'historique\n"
 #: ../src/gpaste.vala:64
 #, c-format
 msgid "%s start: start tracking clipboard changes\n"
-msgstr "stop : suivre les changements du presse-papier\n"
+msgstr "%s start : suivre les changements du presse-papier\n"
 
 #: ../src/gpaste.vala:65
 #, c-format
 msgid "%s stop: stop tracking clipboard changes\n"
-msgstr "stop : arrêter de suivre les changements du presse-papier\n"
+msgstr "%s stop : arrêter de suivre les changements du presse-papier\n"
 
 #: ../src/gpaste.vala:66
 #, c-format
@@ -218,17 +219,19 @@ msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:3
-msgid "By default, the daemon doesn't keep running when you close the applet."
-msgstr "Par défaut, le démon ne s'éxécute plus après la fermeture de l'applet."
-
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:4
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Par défaut, la séléction primaire et le presse-papier sont indépendents."
 
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:4
+msgid "By default, we're not tracking those changes anymore."
+msgstr "Par défaut, on ne suit plus ces changements."
+
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:5
-msgid "Does the daemon shutdown when closing the applet?"
-msgstr "Le démon soit-il s'éteindre quand on ferme l'applet?"
+msgid "Do we still track clipboard changes after quitting the applet?"
+msgstr ""
+"Suit-on toujours les changements du presse-papier après avoir quitté "
+"l'applet?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:6
 msgid "Does the primary selection affects history?"
@@ -263,5 +266,10 @@ msgstr "Applet GPaste"
 msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
 
-#~ msgid "%s stop: shutdown the daemon\n"
-#~ msgstr "%s stop : éteindre le démon\n"
+#~ msgid ""
+#~ "By default, the daemon doesn't keep running when you close the applet."
+#~ msgstr ""
+#~ "Par défaut, le démon ne s'éxécute plus après la fermeture de l'applet."
+
+#~ msgid "Does the daemon shutdown when closing the applet?"
+#~ msgstr "Le démon soit-il s'éteindre quand on ferme l'applet?"
