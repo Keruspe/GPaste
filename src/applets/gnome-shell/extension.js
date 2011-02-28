@@ -49,7 +49,7 @@ Indicator.prototype = {
 
     _init: function() {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
-        Util.spawn(['@libexecdir@/gpaste/gpasted']);
+        Util.spawn([pkglibexecdir + '/gpasted']);
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
         this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
         this._proxy.connect('Start', Lang.bind(this, this._started));
@@ -131,7 +131,7 @@ Indicator.prototype = {
             this._fillHistory();
             let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
             prefsItem.connect('activate', function() {
-                Util.spawn(['@libexecdir@/gpaste/gpaste-settings']);
+                Util.spawn([pkglibexecdir + '/gpaste-settings']);
             });
             this.menu.addMenuItem(prefsItem);
         }));
