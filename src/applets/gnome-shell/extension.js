@@ -107,8 +107,10 @@ Indicator.prototype = {
                     selection.connect('activate', Lang.bind(this, function(actor, event) {
                         if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT)
                             this._select(inner_index);
-                        else
+                        else {
                             this._delete(inner_index);
+                            return true;
+                        }
                     }));
                     this._history.addMenuItem(selection);
                 }
