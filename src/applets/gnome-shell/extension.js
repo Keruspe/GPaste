@@ -131,9 +131,10 @@ Indicator.prototype = {
         label.clutter_text.max_length = 60;
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         selection.connect('activate', Lang.bind(this, function(actor, event) {
-            if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT)
+            if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
                 this._select(index);
-            else {
+                return false;
+            } else {
                 this._delete(index);
                 return true;
             }
