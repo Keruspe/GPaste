@@ -86,44 +86,6 @@ Indicator.prototype = {
             this._proxy.StopRemote();
     },
 
-    _fillHistory: function(history) {
-        this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
-            this._history.removeAll();
-            if (history.length == 0) {
-                let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), { reactive: false });
-                this._history.addMenuItem(emptyItem);
-            } else if (history != null) {
-                let index;
-                let limit = 20;
-                if (history.length < 20) limit = history.length;
-                for (index = 0; index < limit; ++index) {
-                    let displaystr = history[index].replace(/\n/g, ' ');
-                    let altdisplaystr = _("delete: %s").format(displaystr);
-                    let selection = new PopupMenu.PopupAlternatingMenuItem(displaystr, altdisplaystr);
-                    selection.actor.style_class = 'my-alternating-menu-item';
-                    selection.actor.add_style_class_name('popup-menu-item');
-                    let label = selection.label;
-                    let inner_index = index;
-                    label.clutter_text.max_length = 60;
-                    label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-                    selection.connect('activate', Lang.bind(this, function(actor, event) {
-                        if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT)
-                            this._select(inner_index);
-                        else {
-                            this._delete(inner_index);
-                            return true;
-                        }
-                    }));
-                    this._history.addMenuItem(selection);
-                }
-                this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-                let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
-                emptyItem.connect('activate', Lang.bind(this, this._empty));
-                this._history.addMenuItem(emptyItem);
-            }
-        }));
-    },
-
     _fillMenu: function() {
         this._proxy.GetRemote('Active', Lang.bind(this, function(active) {
             if (active != null)
@@ -139,6 +101,44 @@ Indicator.prototype = {
             });
             this.menu.addMenuItem(prefsItem);
         }));
+    },
+
+    _fillHistory: function(history) {
+        this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
+            this._history.removeAll();
+            if (history.length == 0) {
+                let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), { reactive: false });
+                this._history.addMenuItem(emptyItem);
+            } else if (history != null) {
+                let limit = (history.length > 20) ? 20 : history.length;
+                for (let index = 0; index < limit; ++index)
+                    this._addSelection(index, history[index]);
+                this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+                let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
+                emptyItem.connect('activate', Lang.bind(this, this._empty));
+                this._history.addMenuItem(emptyItem);
+            }
+        }));
+    },
+
+    _addSelection: function(index, element) {
+        let displaystr = element.replace(/\n/g, ' ');
+        let altdisplaystr = _("delete: %s").format(displaystr);
+        let selection = new PopupMenu.PopupAlternatingMenuItem(displaystr, altdisplaystr);
+        selection.actor.style_class = 'my-alternating-menu-item';
+        selection.actor.add_style_class_name('popup-menu-item');
+        let label = selection.label;
+        label.clutter_text.max_length = 60;
+        label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        selection.connect('activate', Lang.bind(this, function(actor, event) {
+            if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT)
+                this._select(index);
+            else {
+                this._delete(index);
+                return true;
+            }
+        }));
+        this._history.addMenuItem(selection);
     }
 };
 
