@@ -1,8 +1,4 @@
-#gpaste-history .popup-alternating-menu-item:alternate {
-    font-weight: normal;
-}
-
-#gpaste-history .popup-alternating-menu-item:first-child {
+.my-alternating-menu-item:first-child {
     font-weight: bold;
 }
 

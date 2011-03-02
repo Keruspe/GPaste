@@ -100,6 +100,8 @@ Indicator.prototype = {
                     let displaystr = history[index].replace(/\n/g, ' ');
                     let altdisplaystr = _("delete: %s").format(displaystr);
                     let selection = new PopupMenu.PopupAlternatingMenuItem(displaystr, altdisplaystr);
+                    selection.actor.style_class = 'my-alternating-menu-item';
+                    selection.actor.add_style_class_name('popup-menu-item');
                     let label = selection.label;
                     let inner_index = index;
                     label.clutter_text.max_length = 60;
@@ -129,7 +131,6 @@ Indicator.prototype = {
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this._history = new PopupMenu.PopupMenuSection();
-            this._history.box.name = 'gpaste-history';
             this.menu.addMenuItem(this._history);
             this._fillHistory();
             let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
