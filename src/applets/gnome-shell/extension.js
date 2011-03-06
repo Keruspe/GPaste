@@ -56,6 +56,7 @@ Indicator.prototype = {
         this._proxy.connect('Exit', Lang.bind(this, this._exited));
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
+        this._history = new PopupMenu.PopupMenuSection();
         this._fillMenu();
     },
 
@@ -87,14 +88,13 @@ Indicator.prototype = {
     },
 
     _fillMenu: function() {
+        this._fillHistory();
         this._proxy.GetRemote('Active', Lang.bind(this, function(active) {
             if (active != null)
                 this._killSwitch.setToggleState(active);
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-            this._history = new PopupMenu.PopupMenuSection();
             this.menu.addMenuItem(this._history);
-            this._fillHistory();
             let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
             prefsItem.connect('activate', function() {
                 Util.spawn([pkglibexecdir + '/gpaste-settings']);
@@ -109,6 +109,7 @@ Indicator.prototype = {
             if (history.length == 0) {
                 let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), { reactive: false });
                 this._history.addMenuItem(emptyItem);
+                this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             } else if (history != null) {
                 let limit = (history.length > 20) ? 20 : history.length;
                 for (let index = 0; index < limit; ++index)
