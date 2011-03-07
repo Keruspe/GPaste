@@ -88,7 +88,6 @@ Indicator.prototype = {
     },
 
     _fillMenu: function() {
-        this._fillHistory();
         this._proxy.GetRemote('Active', Lang.bind(this, function(active) {
             if (active != null)
                 this._killSwitch.setToggleState(active);
@@ -100,6 +99,7 @@ Indicator.prototype = {
                 Util.spawn([pkglibexecdir + '/gpaste-settings']);
             });
             this.menu.addMenuItem(prefsItem);
+            this._fillHistory();
         }));
     },
 
