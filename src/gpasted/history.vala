@@ -76,7 +76,7 @@ namespace GPaste {
             }
 
             public void add(string selection) {
-                if (selection == "")
+                if (selection == null || selection == "")
                     return;
                 for (unowned GLib.SList<string> s = history ; s != null ; s = s.next) {
                     if (s.data == selection) {
