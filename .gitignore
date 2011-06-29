@@ -6,6 +6,7 @@ gpaste
 !completions/gpaste
 gpaste-applet
 *.c
+*.o
 Makefile
 .aux
 ABOUT-NLS
