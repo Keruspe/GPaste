@@ -39,7 +39,7 @@ POTFILES
 *.service
 *.desktop
 *.desktop.in
-*.tar.bz2
+*.tar.xz
 gpaste.1
 metadata.json
 extension.js
