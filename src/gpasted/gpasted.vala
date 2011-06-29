@@ -38,7 +38,6 @@ namespace GPaste {
         public class DBusServer : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public GLib.Variant getHistory() {
-                stdout.printf("%s\n", this.active ? "True" : "False");
                 unowned GLib.SList<string> history = History.instance.history;
                 var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
                 foreach (string s in history)
