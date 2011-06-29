@@ -10,6 +10,7 @@ gpaste-applet
 Makefile
 .aux
 ABOUT-NLS
+INSTALL
 Makefile.in
 aclocal.m4
 autom4te.cache
