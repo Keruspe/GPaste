@@ -5,6 +5,7 @@ NEW in 1.0
 - Various bug fixes
 - Silence some warnings
 - Get rid of the History.changed signal
+- Rework internal Settings handling
 
 NEW in 0.99 (28/02/2011)
 =============

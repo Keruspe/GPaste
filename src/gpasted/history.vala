@@ -55,19 +55,8 @@ namespace GPaste {
                 return this._history;
             }
 
-            public uint32 max_history_size;
-
             private History() {
                 this._history = new GLib.SList<string>();
-                Settings settings = Settings.instance;
-                this.max_history_size = settings.max_history_size;
-                settings.changed.connect((key)=>{
-                    switch(key) {
-                    case "max-history-size":
-                        this.max_history_size = settings.max_history_size;
-                        break;
-                    }
-                });
                 DBusServer.instance.changed.connect(()=>{
                     this.save();
                 });
@@ -83,9 +72,10 @@ namespace GPaste {
                     }
                 }
                 this._history.prepend(selection);
-                if (this._history.length() > this.max_history_size) {
+                uint32 max_history_size = Settings.instance.max_history_size;
+                if (this._history.length() > max_history_size) {
                     unowned GLib.SList<string> tmp = this.history;
-                    for (uint32 i = 0 ; i < this.max_history_size ; ++i)
+                    for (uint32 i = 0 ; i < max_history_size ; ++i)
                         tmp = tmp.next;
                     do {
                         unowned GLib.SList<string> next = tmp.next;

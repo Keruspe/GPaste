@@ -63,19 +63,6 @@ namespace GPaste {
 
             private ClipboardsManager() {
                 this.clipboards = new GLib.SList<Clipboard>();
-                Settings settings = Settings.instance;
-                this.primary_to_history = settings.primary_to_history;
-                this.synchronize_clipboards = settings.synchronize_clipboards;
-                settings.changed.connect((key)=>{
-                    switch (key) {
-                    case "primary-to-history":
-                        this.primary_to_history = settings.primary_to_history;
-                        break;
-                    case "synchronize-clipboards":
-                        this.synchronize_clipboards = settings.synchronize_clipboards;
-                        break;
-                    }
-                });
             }
 
             public void addClipboard(Clipboard clipboard) {
@@ -118,9 +105,9 @@ namespace GPaste {
                     if (c.text != text) {
                         c.text = text;
                         Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                        if (c.selection == tmp || primary_to_history)
+                        if (c.selection == tmp || Settings.instance.primary_to_history)
                             History.instance.add(text);
-                        if (synchronize_clipboards)
+                        if (Settings.instance.synchronize_clipboards)
                             synchronized_text = text;
                     }
                 }
