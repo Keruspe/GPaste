@@ -99,7 +99,6 @@ namespace GPaste {
                 if (index >= this._history.length())
                     return;
                 string selection = this._history.nth_data(index);
-                this.add(selection);
                 ClipboardsManager.instance.select(selection);
             }
 

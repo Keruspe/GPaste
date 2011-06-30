@@ -85,6 +85,7 @@ namespace GPaste {
             }
 
             public void select(string selection) {
+                History.instance.add(selection);
                 foreach(Clipboard c in this.clipboards) {
                     c.real.set_text(selection, -1);
                 }
