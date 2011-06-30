@@ -36,9 +36,9 @@ namespace GPaste {
 
         public class History : GLib.Object {
             private GLib.SList<string> _history;
-            public GLib.SList<string> history {
+            public unowned GLib.SList<string> history {
                 get {
-                    return get_unowned_history();
+                    return this._history;
                 }
             }
 
@@ -49,10 +49,6 @@ namespace GPaste {
                         History._instance = new History();
                     return History._instance;
                 }
-            }
-
-            private unowned GLib.SList<string> get_unowned_history() {
-                return this._history;
             }
 
             private History() {
