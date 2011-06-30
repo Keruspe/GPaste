@@ -57,11 +57,6 @@ namespace GPaste {
 
             public uint32 max_history_size;
 
-            public virtual signal void changed() {
-                this.save();
-                DBusServer.instance.changed();
-            }
-
             private History() {
                 this._history = new GLib.SList<string>();
                 Settings settings = Settings.instance;
@@ -72,6 +67,9 @@ namespace GPaste {
                         this.max_history_size = settings.max_history_size;
                         break;
                     }
+                });
+                DBusServer.instance.changed.connect(()=>{
+                    this.save();
                 });
             }
 
@@ -95,7 +93,7 @@ namespace GPaste {
                         tmp = next;
                     } while(tmp != null);
                 }
-                this.changed();
+                DBusServer.instance.changed();
             }
 
             public void delete(uint32 index) {
@@ -108,7 +106,7 @@ namespace GPaste {
                 if (index == 0)
                     this.select(0);
                 else
-                    this.changed();
+                    DBusServer.instance.changed();
             }
 
             public void select(uint32 index) {
@@ -128,7 +126,7 @@ namespace GPaste {
                     stderr.printf(_("Could not delete history file.\n"));
                 }
                 this._history = new GLib.SList<string>();
-                this.changed();
+                DBusServer.instance.changed();
             }
 
             public void load() {
