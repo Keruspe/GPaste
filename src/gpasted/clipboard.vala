@@ -49,9 +49,6 @@ namespace GPaste {
             private GLib.SList<Clipboard> clipboards;
             private DBusServer gpasted = DBusServer.instance;
 
-            public bool primary_to_history;
-            public bool synchronize_clipboards;
-
             private static ClipboardsManager _instance;
             public static ClipboardsManager instance {
                 get {
@@ -100,7 +97,7 @@ namespace GPaste {
                         unowned GLib.SList<string> history = History.instance.history;
                         if (history.length() == 0)
                             continue;
-                        string selection = history.nth_data(0);
+                        string selection = history.data;
                         c.real.set_text(selection, -1);
                     }
                     if (c.text != text) {
