@@ -121,8 +121,8 @@ Indicator.prototype = {
 
     _fillMenu: function() {
         this._proxy.GetRemote('Active', Lang.bind(this, function(active) {
-            if (active != null)
-                this._killSwitch.setToggleState(active);
+            //if (active != null) /* TODO: Why does it fail ? */
+            //    this._killSwitch.setToggleState(active);
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._history);
