@@ -44,6 +44,8 @@ namespace GPaste {
             public abstract void delete(uint32 index) throws IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws IOError;
+            [DBus (name = "Launch", inSignature = "", outSignature = "")]
+            public abstract void launch() throws IOError;
             [DBus (name = "Stop", inSignature = "", outSignature = "")]
             public abstract void stop() throws IOError;
             [DBus (name = "Changed", inSignature = "", outSignature = "")]
