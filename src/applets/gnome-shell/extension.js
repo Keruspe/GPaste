@@ -1,3 +1,34 @@
+/*
+ *      This program is free software: you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, either version 3 of the License, or
+ *      (at your option) any later version.
+ *
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ *
+ *      You should have received a copy of the GNU General Public License
+ *      along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *      Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *
+ *      This file is part of GPaste.
+ *
+ *      GPaste is free software: you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, either version 3 of the License, or
+ *      (at your option) any later version.
+ *
+ *      GPaste is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ *
+ *      You should have received a copy of the GNU General Public License
+ *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
+ */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const StatusIconDispatcher = imports.ui.statusIconDispatcher;
@@ -50,12 +81,12 @@ Indicator.prototype = {
     _init: function() {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
         Util.spawn([pkglibexecdir + '/gpasted']);
+        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
+        this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
         this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
         this._proxy.connect('Start', Lang.bind(this, this._started));
         this._proxy.connect('Exit', Lang.bind(this, this._exited));
-        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
-        this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._history = new PopupMenu.PopupMenuSection();
         this._fillMenu();
     },
