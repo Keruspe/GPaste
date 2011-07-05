@@ -177,7 +177,7 @@ namespace GPaste {
                         break;
                     case "element-size":
                         this.element_size = settings.get_value("element-size").get_uint32();
-                        this.window.fill_history(); /* Keep diplayed history up to date */
+                        this.window.fill_history(); /* Keep displayed history up to date */
                         break;
                     }
                 });
@@ -186,6 +186,7 @@ namespace GPaste {
             private void init() {
                 try {
                     this.gpasted = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+                    this.gpasted.launch(); /* In case we exited the applet and we're launching it back */
                 } catch (IOError e) {
                     stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                     Posix.exit(1);
