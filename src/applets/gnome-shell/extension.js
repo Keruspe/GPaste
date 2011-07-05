@@ -84,7 +84,7 @@ Indicator.prototype = {
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
-        this._proxy.launchRemote();
+        this._proxy.LaunchRemote();
         this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
         this._proxy.connect('Start', Lang.bind(this, this._started));
         this._proxy.connect('Exit', Lang.bind(this, this._exited));
