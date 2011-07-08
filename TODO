@@ -1,6 +1,5 @@
 2.0:
     Add support for images
     allow not saving history from one session to another
-    save if we're tracking clipboard changes from one session to another
     standard applet cleanup
     make it possible to stop tracking clipboard changes with standard applet
