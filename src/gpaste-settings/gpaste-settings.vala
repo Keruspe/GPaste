@@ -230,8 +230,14 @@ namespace GPaste {
                     case "max-history-size":
                         this.window.max_history_size = max_history_size;
                         break;
+                    case "element-size":
+                        this.window.element_size = element_size;
+                        break;
                     case "primary-to-history":
                         this.window.primary_to_history = primary_to_history;
+                        break;
+                    case "synchronize_clipboards":
+                        this.window.synchronize_clipboards = synchronize_clipboards;
                         break;
                     case "track-changes":
                         this.window.track_changes = track_changes;
