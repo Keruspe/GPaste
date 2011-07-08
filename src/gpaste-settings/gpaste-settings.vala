@@ -37,6 +37,7 @@ namespace GPaste {
         public class Window : Gtk.Window {
             private Gtk.CheckButton primary_to_history_button;
             private Gtk.CheckButton synchronize_clipboards_button;
+            private Gtk.CheckButton track_changes_button;
             private Gtk.CheckButton shutdown_on_exit_button;
             private Gtk.SpinButton max_history_size_button;
             private Gtk.SpinButton element_size_button;
@@ -56,6 +57,15 @@ namespace GPaste {
                 }
                 set {
                     this.synchronize_clipboards_button.set_active(value);
+                }
+            }
+
+            public bool track_changes {
+                get {
+                    return this.track_changes_button.get_active();
+                }
+                set {
+                    this.track_changes_button.set_active(value);
                 }
             }
 
@@ -113,6 +123,11 @@ namespace GPaste {
                 this.synchronize_clipboards = app.synchronize_clipboards;
                 this.synchronize_clipboards_button.toggled.connect(()=>{
                     app.synchronize_clipboards = this.synchronize_clipboards;
+                });
+                this.track_changes_button = new Gtk.CheckButton.with_mnemonic(_("_Track clipboard changes"));
+                this.track_changes = app.track_changes;
+                this.track_changes_button.toggled.connect(()=>{
+                    app.track_changes = this.track_changes;
                 });
                 this.shutdown_on_exit_button = new Gtk.CheckButton.with_mnemonic(_("Stop tracking clipboard changes when _quitting the applet"));
                 this.shutdown_on_exit = app.shutdown_on_exit;
@@ -188,6 +203,15 @@ namespace GPaste {
                 }
             }
 
+            public bool track_changes {
+                get {
+                    return this.settings.get_boolean("track-changes");
+                }
+                set {
+                    this.settings.set_boolean("track-changes", value);
+                }
+            }
+
             public bool shutdown_on_exit {
                 get {
                     return this.settings.get_boolean("shutdown-on-exit");
@@ -208,6 +232,9 @@ namespace GPaste {
                         break;
                     case "primary-to-history":
                         this.window.primary_to_history = primary_to_history;
+                        break;
+                    case "track-changes":
+                        this.window.track_changes = track_changes;
                         break;
                     case "shutdown-on-exit":
                         this.window.shutdown_on_exit = shutdown_on_exit;

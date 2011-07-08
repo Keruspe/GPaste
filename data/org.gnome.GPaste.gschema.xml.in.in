@@ -35,6 +35,14 @@
       </_description>
     </key>
 
+    <key name="track-changes" type="b">
+      <default>true</default>
+      <_summary>Do we track the clipboard changes?</_summary>
+      <_description>
+        By default, we're tracking those changes.
+      </_description>
+    </key>
+
     <key name="shutdown-on-exit" type="b">
       <default>true</default>
       <_summary>Do we still track clipboard changes after quitting the applet?</_summary>
