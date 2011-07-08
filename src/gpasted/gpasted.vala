@@ -87,11 +87,16 @@ namespace GPaste {
             public signal void exit();
 
             [DBus (name = "Active", signature = "b", access = "readonly")]
-            public bool active { get; private set; }
-
-            private DBusServer() {
-                this.active = true;
+            public bool active {
+                get {
+                    return Settings.instance.track_changes;
+                }
+                private set {
+                    Settings.instance.set_tracking_state(value);
+                }
             }
+
+            private DBusServer() {}
 
             private static DBusServer _instance;
             public static DBusServer instance {

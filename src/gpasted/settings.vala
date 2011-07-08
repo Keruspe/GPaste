@@ -64,6 +64,12 @@ namespace GPaste {
                 }
             }
 
+            private bool real_track_changes {
+                get {
+                    return this.settings.get_boolean("track-changes");
+                }
+            }
+
             public bool primary_to_history {
                 get; private set;
             }
@@ -74,6 +80,15 @@ namespace GPaste {
 
             public bool synchronize_clipboards {
                 get; private set;
+            }
+
+            public bool track_changes {
+                get; private set;
+            }
+
+            public void set_tracking_state(bool state) {
+                this.track_changes = state;
+                this.settings.set_boolean("track-changes", state);
             }
 
             public signal void changed(string key);
@@ -93,6 +108,9 @@ namespace GPaste {
                         break;
                     case "synchronize-clipboards":
                         this.synchronize_clipboards = real_synchronize_clipboards;
+                        break;
+                    case "track-changes":
+                        this.track_changes = real_track_changes;
                         break;
                     }
                 });
