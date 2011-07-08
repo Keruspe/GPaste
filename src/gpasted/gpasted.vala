@@ -96,7 +96,14 @@ namespace GPaste {
                 }
             }
 
-            private DBusServer() {}
+            private DBusServer() {
+                Settings.instance.track.connect(
+                    ()=>this.start()
+                );
+                Settings.instance.untrack.connect(
+                    ()=>this.exit()
+                );
+            }
 
             private static DBusServer _instance;
             public static DBusServer instance {
