@@ -156,6 +156,7 @@ namespace GPaste {
                 var vbox = new Gtk.VBox(false, 10);
                 vbox.add(this.primary_to_history_button);
                 vbox.add(this.synchronize_clipboards_button);
+                vbox.add(this.track_changes_button);
                 vbox.add(this.shutdown_on_exit_button);
                 vbox.add(values_hbox);
 
