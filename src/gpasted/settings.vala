@@ -95,6 +95,7 @@ namespace GPaste {
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.primary_to_history = real_primary_to_history;
                 this.max_history_size = real_max_history_size;
+                this.track_changes = real_track_changes;
                 this.synchronize_clipboards = real_synchronize_clipboards;
                 this.settings.changed.connect((key)=>{
                     switch(key) {
