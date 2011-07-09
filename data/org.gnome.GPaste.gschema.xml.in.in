@@ -1,5 +1,5 @@
 <schemalist>
-  <schema id="org.gnome.GPaste" path="/apps/GPaste/" gettext-domain="@GETTEXT_PACKAGE@">
+    <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="@GETTEXT_PACKAGE@">
 
     <key name="max-history-size" type="u">
       <range min="5" max="255"/>
