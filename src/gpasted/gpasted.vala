@@ -71,10 +71,10 @@ namespace GPaste {
                 this.tracking(tracking_state);
             }
 
-            [DBus (name = "Tracking", inSignature = "b", outSignature = "")]
+            [DBus (name = "Tracking", inSignature = "b")]
             public signal void tracking(bool tracking_state);
 
-            [DBus (name = "Changed", inSignature = "", outSignature = "")]
+            [DBus (name = "Changed", inSignature = "")]
             public signal void changed();
 
             [DBus (name = "Active", signature = "b", access = "readonly")]

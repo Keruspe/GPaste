@@ -60,8 +60,8 @@ const GPasteInterface = {
         { name: 'Track', inSignature: 'b', outSignature: '' },
     ],
     signals: [
-        { name: 'Changed', inSignature: '', outSignature: '' },
-        { name: 'Tracking', inSignature: 'b', outSignature: '' },
+        { name: 'Changed', inSignature: '' },
+        { name: 'Tracking', inSignature: 'b' },
     ],
     properties: [
         { name: 'Active', signature: 'b', access: 'readonly' },
