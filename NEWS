@@ -1,3 +1,11 @@
+NEW in 1.1 (09/07/2011)
+=============
+
+- Save whether we're tracking clipboard changes or not from a session to another
+- Only build gnome-shell applet by default
+- Launch and Quit DBus method are now Track(bool)
+- Start and Exit DBus signals are now Tracking(bool)
+
 NEW in 1.0 (05/07/2011)
 =============
 
