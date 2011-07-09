@@ -91,9 +91,6 @@ namespace GPaste {
                 this.settings.set_boolean("track-changes", state);
             }
 
-            public signal void track();
-            public signal void untrack();
-
             private Settings() {
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.primary_to_history = real_primary_to_history;
@@ -111,12 +108,8 @@ namespace GPaste {
                         this.synchronize_clipboards = real_synchronize_clipboards;
                         break;
                     case "track-changes":
-                        bool track = real_track_changes;
-                        this.track_changes = track;
-                        if (track)
-                            this.track();
-                        else
-                            this.untrack();
+                        this.track_changes = real_track_changes;
+                        DBusServer.instance.tracking(this.track_changes);
                         break;
                     }
                 });

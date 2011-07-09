@@ -65,26 +65,17 @@ namespace GPaste {
                 History.instance.empty();
             }
 
-            [DBus (name = "Launch", inSignature = "", outSignature = "")]
-            public void launch() {
-                this.active = true;
-                this.start();
+            [DBus (name = "Track", inSignature = "b", outSignature = "")]
+            public void track(bool tracking_state) {
+                this.active = tracking_state;
+                this.tracking(tracking_state);
             }
 
-            [DBus (name = "Stop", inSignature = "", outSignature = "")]
-            public void stop() {
-                this.active = false;
-                this.exit();
-            }
-
-            [DBus (name = "Start", inSignature = "", outSignature = "")]
-            public signal void start();
+            [DBus (name = "Tracking", inSignature = "b", outSignature = "")]
+            public signal void tracking(bool tracking_state);
 
             [DBus (name = "Changed", inSignature = "", outSignature = "")]
             public signal void changed();
-
-            [DBus (name = "Exit", inSignature = "", outSignature = "")]
-            public signal void exit();
 
             [DBus (name = "Active", signature = "b", access = "readonly")]
             public bool active {
@@ -96,14 +87,7 @@ namespace GPaste {
                 }
             }
 
-            private DBusServer() {
-                Settings.instance.track.connect(
-                    ()=>this.start()
-                );
-                Settings.instance.untrack.connect(
-                    ()=>this.exit()
-                );
-            }
+            private DBusServer() {}
 
             private static DBusServer _instance;
             public static DBusServer instance {
@@ -120,7 +104,6 @@ namespace GPaste {
 
             private static void handle(int signal) {
                 stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
-                DBusServer.instance.exit();
                 Main.loop.quit();
             }
 

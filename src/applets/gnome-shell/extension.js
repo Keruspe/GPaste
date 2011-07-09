@@ -57,13 +57,11 @@ const GPasteInterface = {
         { name: 'Select', inSignature: 'u', outSignature: '' },
         { name: 'Delete', inSignature: 'u', outSignature: '' },
         { name: 'Empty', inSignature: '', outSignature: '' },
-        { name: 'Launch', inSignature: '', outSignature: '' },
-        { name: 'Stop', inSignature: '', outSignature: '' },
+        { name: 'Track', inSignature: 'b', outSignature: '' },
     ],
     signals: [
         { name: 'Changed', inSignature: '', outSignature: '' },
-        { name: 'Start', inSignature: '', outSignature: '' },
-        { name: 'Exit', inSignature: '', outSignature: '' },
+        { name: 'Tracking', inSignature: 'b', outSignature: '' },
     ],
     properties: [
         { name: 'Active', signature: 'b', access: 'readonly' },
@@ -85,8 +83,9 @@ Indicator.prototype = {
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
         this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
-        this._proxy.connect('Start', Lang.bind(this, this._started));
-        this._proxy.connect('Exit', Lang.bind(this, this._exited));
+        this._proxy.connect('Tracking', Lang.bind(this, function(proxy, trackingState) {
+            this._trackingStateChanged(trackingState);
+        }));
         this._history = new PopupMenu.PopupMenuSection();
         this._fillMenu();
     },
@@ -103,19 +102,12 @@ Indicator.prototype = {
         this._proxy.EmptyRemote();
     },
 
-    _started: function() {
-        this._killSwitch.setToggleState(true);
-    },
-
-    _exited: function() {
-        this._killSwitch.setToggleState(false);
+    _trackingStateChanged: function(trackingState) {
+        this._killSwitch.setToggleState(trackingState);
     },
 
     _toggleDaemon: function() {
-        if (this._killSwitch.state)
-            this._proxy.LaunchRemote();
-        else
-            this._proxy.StopRemote();
+        this._proxy.TrackRemote(this._killSwitch.state);
     },
 
     _fillMenu: function() {

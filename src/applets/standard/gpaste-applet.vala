@@ -44,10 +44,8 @@ namespace GPaste {
             public abstract void delete(uint32 index) throws IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws IOError;
-            [DBus (name = "Launch", inSignature = "", outSignature = "")]
-            public abstract void launch() throws IOError;
-            [DBus (name = "Stop", inSignature = "", outSignature = "")]
-            public abstract void stop() throws IOError;
+            [DBus (name = "Track", inSignature = "b", outSignature = "")]
+            public abstract void track(bool tracking_state) throws IOError;
             [DBus (name = "Changed", inSignature = "", outSignature = "")]
             public abstract signal void changed();
         }
@@ -188,7 +186,7 @@ namespace GPaste {
             private void init() {
                 try {
                     this.gpasted = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
-                    this.gpasted.launch(); /* In case we exited the applet and we're launching it back */
+                    this.gpasted.track(true); /* In case we exited the applet and we're launching it back */
                 } catch (IOError e) {
                     stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                     Posix.exit(1);
@@ -214,7 +212,7 @@ namespace GPaste {
                 int ret = app.run();
                 if (app.shutdown_on_exit) {
                     try {
-                        app.gpasted.stop();
+                        app.gpasted.track(false);
                     } catch (IOError e) {
                         stderr.printf(_("Couldn't shutdown daemon.\n"));
                     }
