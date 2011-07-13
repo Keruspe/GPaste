@@ -51,12 +51,13 @@ namespace GPaste {
         }
 
         public class Main : GLib.Object {
-            public static void usage(string caller) {
+            private static void usage(string caller) {
                 stdout.printf(_("Usage:\n"));
                 stdout.printf(_("%s: print the history\n"), caller);
                 stdout.printf(_("%s [add] <text>: set text to clipboard\n"), caller);
                 stdout.printf(_("%s set <number>: set <number>th item of the history to clipboard\n"), caller);
                 stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
+                stdout.printf(_("%s -f/--file <path>: put the content of the file at <path> into the clipboard\n"), caller);
                 stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
                 stdout.printf(_("%s empty: empty the history\n"), caller);
                 stdout.printf(_("%s start: start tracking clipboard changes\n"), caller);
@@ -79,14 +80,13 @@ namespace GPaste {
                     DBusClient gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     if (! Posix.isatty(stdin.fileno())) {
                         /* We are being piped ! */
-                        var sb = new StringBuilder();
-                        sb.append(stdin.read_line());
-                        string s;
-                        while ((s = stdin.read_line()) != null) {
-                            sb.append_c('\n');
-                            sb.append(s);
-                        }
-                        gpaste.add(sb.str);
+                        var text = new StringBuilder();
+                        string line = stdin.read_line();
+                        if (line != null)
+                            text.append(line);
+                        while ((line = stdin.read_line()) != null)
+                            text.append_c('\n').append(line);
+                        gpaste.add(text.str);
                     } else {
                         switch (args.length) {
                         case 1:
@@ -143,6 +143,22 @@ namespace GPaste {
                                 break;
                             case "delete":
                                 gpaste.delete(int.parse(args[2]));
+                                break;
+                            case "-f":
+                            case "--file":
+                                var file = GLib.File.new_for_path(args[2]);
+                                try {
+                                    var dis = new GLib.DataInputStream(file.read());
+                                    var text = new GLib.StringBuilder();
+                                    string line = dis.read_line(null);
+                                    if (line != null)
+                                        text.append(line);
+                                    while ((line = dis.read_line(null)) != null)
+                                        text.append_c('\n').append(line);
+                                    gpaste.add(text.str);
+                                } catch(GLib.Error e) {
+                                    stderr.printf(_("Could not read file: %s\n"), args[2]);
+                                }
                                 break;
                             default:
                                 usage(args[0]);

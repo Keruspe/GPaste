@@ -32,6 +32,10 @@ Put the <number>th item of the history into the clipboard
 
 Delete the <number>th item of the history
 
+=item B<gpaste -f/--file <path>>
+
+Put the content of the file at <path> into the clipboard
+
 =item B<command | gpaste>
 
 Put the output of the command into the history
