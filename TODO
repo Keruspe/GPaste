@@ -5,3 +5,4 @@
     make it possible to stop tracking clipboard changes with standard applet
     Typesafe dconf key names
     don't close menu when deleting item
+    Shortcut to open history
