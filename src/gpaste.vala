@@ -71,10 +71,6 @@ namespace GPaste {
                 stdout.printf(_("%s help: display this help\n"), caller);
             }
 
-            private static void version() {
-                stdout.printf(Config.PACKAGE_STRING+"\n");
-            }
-
             public static int main(string[] args) {
                 GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
                 GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
@@ -94,17 +90,9 @@ namespace GPaste {
                     } else {
                         switch (args.length) {
                         case 1:
-                            switch (args[1]) {
-                            case "-v":
-                            case "--version":
-                                version();
-                                break;
-                            default:
-                                var history = gpaste.getHistory() as string[];
-                                for (int i = 0 ; i < history.length ; ++i)
-                                    stdout.printf("%d: %s\n", i, history[i]);
-                                break;
-                            }
+                            var history = gpaste.getHistory() as string[];
+                            for (int i = 0 ; i < history.length ; ++i)
+                                stdout.printf("%d: %s\n", i, history[i]);
                             break;
                         case 2:
                             switch (args[1]) {
@@ -125,7 +113,9 @@ namespace GPaste {
                                 gpaste.empty();
                                 break;
                             case "version":
-                                version();
+                            case "-v":
+                            case "--version":
+                                stdout.printf(Config.PACKAGE_STRING+"\n");
                                 break;
 #if ENABLE_APPLET
                             case "applet":
