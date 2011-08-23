@@ -1,6 +1,6 @@
 #!/bin/bash
 mkdir -p m4
-autoreconf -i
+autoreconf -i -Wall
 intltoolize --force --automake
 exit $?
 
