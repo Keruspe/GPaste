@@ -67,8 +67,12 @@ namespace GPaste {
                 stdout.printf(_("%s applet: launch the applet\n"), caller);
 #endif
                 stdout.printf(_("%s settings: launch the configuration tool\n"), caller);
-                stdout.printf(_("%s version: display the version\n"), caller);
+                stdout.printf(_("%s version/-v/--version: display the version\n"), caller);
                 stdout.printf(_("%s help: display this help\n"), caller);
+            }
+
+            private static void version() {
+                stdout.printf(Config.PACKAGE_STRING+"\n");
             }
 
             public static int main(string[] args) {
@@ -90,9 +94,17 @@ namespace GPaste {
                     } else {
                         switch (args.length) {
                         case 1:
-                            var history = gpaste.getHistory() as string[];
-                            for (int i = 0 ; i < history.length ; ++i)
-                                stdout.printf("%d: %s\n", i, history[i]);
+                            switch (args[1]) {
+                            case "-v":
+                            case "--version":
+                                version();
+                                break;
+                            default:
+                                var history = gpaste.getHistory() as string[];
+                                for (int i = 0 ; i < history.length ; ++i)
+                                    stdout.printf("%d: %s\n", i, history[i]);
+                                break;
+                            }
                             break;
                         case 2:
                             switch (args[1]) {
@@ -113,7 +125,7 @@ namespace GPaste {
                                 gpaste.empty();
                                 break;
                             case "version":
-                                stdout.printf(Config.PACKAGE_STRING+"\n");
+                                version();
                                 break;
 #if ENABLE_APPLET
                             case "applet":

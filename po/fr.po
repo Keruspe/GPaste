@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: GPaste 1.0\n"
+"Project-Id-Version: GPaste 1.3\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-07-14 01:02+0200\n"
+"POT-Creation-Date: 2011-08-23 12:42+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -37,12 +37,12 @@ msgstr "Impossible d'acquérir le nom DBus.\n"
 msgid "Could not delete history file.\n"
 msgstr "Impossible de supprimer le fichier d'historique.\n"
 
-#: ../src/gpasted/history.vala:131
+#: ../src/gpasted/history.vala:128
 #, c-format
 msgid "Could not read history file.\n"
 msgstr "Impossible de lire le fichier d'historique.\n"
 
-#: ../src/gpasted/history.vala:151
+#: ../src/gpasted/history.vala:148
 #, c-format
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
@@ -116,7 +116,7 @@ msgstr "Impossible de vider l'historique.\n"
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applets/standard/gpaste-applet.vala:191 ../src/gpaste.vala:175
+#: ../src/applets/standard/gpaste-applet.vala:191 ../src/gpaste.vala:187
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
@@ -209,20 +209,20 @@ msgstr "%s settings : lance l'outil de configuration\n"
 
 #: ../src/gpaste.vala:70
 #, c-format
-msgid "%s version: display the version\n"
-msgstr "%s version : affiche la version\n"
+msgid "%s version/-v/--version: display the version\n"
+msgstr "%s version/-v/--version : affiche la version\n"
 
 #: ../src/gpaste.vala:71
 #, c-format
 msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
-#: ../src/gpaste.vala:123
+#: ../src/gpaste.vala:135
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Impossible de lancer gpaste-applet.\n"
 
-#: ../src/gpaste.vala:160
+#: ../src/gpaste.vala:172
 #, c-format
 msgid "Could not read file: %s\n"
 msgstr "Impossible de lire le fichier : %s\n"
