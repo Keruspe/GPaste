@@ -146,6 +146,7 @@ namespace GPaste {
                             case "delete":
                                 gpaste.delete(int.parse(args[2]));
                                 break;
+                            case "file":
                             case "-f":
                             case "--file":
                                 var file = GLib.File.new_for_path(args[2]);
