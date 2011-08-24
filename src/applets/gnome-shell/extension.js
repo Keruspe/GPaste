@@ -129,11 +129,7 @@ Indicator.prototype = {
     _fillHistory: function(history) {
         this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
             this._history.removeAll();
-            if (history.length == 0) {
-                let emptyItem = new PopupMenu.PopupMenuItem(_("(Empty)"), { reactive: false });
-                this._history.addMenuItem(emptyItem);
-                this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-            } else if (history != null) {
+            if (history != null && history.length != 0) {
                 let limit = (history.length > 20) ? 20 : history.length;
                 for (let index = 0; index < limit; ++index)
                     this._addSelection(index, history[index]);
@@ -141,6 +137,11 @@ Indicator.prototype = {
                 let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
                 emptyItem.connect('activate', Lang.bind(this, this._empty));
                 this._history.addMenuItem(emptyItem);
+            } else {
+                let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
+                let emptyItem = new PopupMenu.PopupMenuItem(message, { reactive: false });
+                this._history.addMenuItem(emptyItem);
+                this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             }
         }));
     },
