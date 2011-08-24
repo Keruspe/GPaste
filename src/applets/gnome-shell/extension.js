@@ -32,6 +32,7 @@
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const StatusIconDispatcher = imports.ui.statusIconDispatcher;
+const Main = imports.ui.main;
 const Panel = imports.ui.panel;
 const DBus = imports.dbus;
 const Lang = imports.lang;
