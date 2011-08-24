@@ -184,12 +184,13 @@ function init(metadata) {
 }
 
 function enable() {
-    Main.panel.addToStatusArea('gpaste', new Indicator());
+    //Main.panel.addToStatusArea('gpaste', new Indicator());
+    Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;
 }
 
 function disable() {
 	for each (i in connectedSignals)
 		i.obj.disconnect(i.id);
 	connectedSignals = [ ];
-	Main.panel.removeFromStatusArea('gpaste');
+	//Main.panel.removeFromStatusArea('gpaste');
 }
