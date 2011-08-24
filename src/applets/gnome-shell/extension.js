@@ -49,6 +49,7 @@ const BUS_NAME = 'org.gnome.GPaste';
 const OBJECT_PATH = '/org/gnome/GPaste';
 
 let pkglibexecdir = null;
+let connectedSignals = [ ];
 
 const GPasteInterface = {
     name: BUS_NAME,
@@ -80,12 +81,15 @@ Indicator.prototype = {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
         Util.spawn([pkglibexecdir + '/gpasted']);
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
-        this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
+        let connectId = this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
+        connectedSignals.push({ obj: this._killSwitch, id: connectId });
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
-        this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
-        this._proxy.connect('Tracking', Lang.bind(this, function(proxy, trackingState) {
+        connectId = this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
+        connectedSignals.push({ obj: this._proxy, id: connectId });
+        connectId = this._proxy.connect('Tracking', Lang.bind(this, function(proxy, trackingState) {
             this._trackingStateChanged(trackingState);
         }));
+        connectedSignals.push({ obj: this._proxy, id: connectId });
         this._history = new PopupMenu.PopupMenuSection();
         this._fillMenu();
     },
@@ -118,9 +122,10 @@ Indicator.prototype = {
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._history);
             let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
-            prefsItem.connect('activate', function() {
+            let connectId = prefsItem.connect('activate', function() {
                 Util.spawn([pkglibexecdir + '/gpaste-settings']);
             });
+			connectedSignals.push({ obj: prefsItem, id: connectId });
             this.menu.addMenuItem(prefsItem);
             this._fillHistory();
         }));
@@ -135,7 +140,8 @@ Indicator.prototype = {
                     this._addSelection(index, history[index]);
                 this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
                 let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
-                emptyItem.connect('activate', Lang.bind(this, this._empty));
+                let connectId = emptyItem.connect('activate', Lang.bind(this, this._empty));
+				connectedSignals.push({ obj: emptyItem, id: connectId });
                 this._history.addMenuItem(emptyItem);
             } else {
                 let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
@@ -155,7 +161,7 @@ Indicator.prototype = {
         let label = selection.label;
         label.clutter_text.max_length = 60;
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        selection.connect('activate', Lang.bind(this, function(actor, event) {
+        let connectId = selection.connect('activate', Lang.bind(this, function(actor, event) {
             if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
                 this._select(index);
                 return false;
@@ -164,14 +170,25 @@ Indicator.prototype = {
                 return true;
             }
         }));
+        connectedSignals.push({ obj: selection, id: connectId });
         this._history.addMenuItem(selection);
     }
 };
 
-function main(metadata) {
+function init(metadata) {
     Gettext.bindtextdomain('gpaste', metadata.localedir);
     pkglibexecdir = metadata.pkglibexecdir;
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
-    Panel.STANDARD_TRAY_ICON_SHELL_IMPLEMENTATION['gpaste'] = Indicator;
+}
+
+function enable() {
+    Main.panel.addToStatusArea('gpaste', new Indicator());
+}
+
+function disable() {
+	for each (i in connectedSignals)
+		i.obj.disconnect(i.id);
+	connectedSignals = [ ];
+	Main.panel.removeFromStatusArea('gpaste');
 }
