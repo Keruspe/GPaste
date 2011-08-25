@@ -176,13 +176,13 @@ GPasteIndicator.prototype = {
     },
 
     enable: function() {
-        Main.panel._rightBox.insert_actor(this, 0);
+        Main.panel.Main.panel.addToStatusArea('gpaste', this);
     },
 
     disable: function() {
         for each (i in this._connectedSignals)
             i.obj.disconnect(i.id);
-        Main.panel._rightBox.remove_actor(this);
+        this.destroy();
     }
 };
 
