@@ -2,6 +2,7 @@ NEW in 1.3 (XX/08/2011)
 =============
 
 - New gpaste option: file/-f/--file <path>, same as cat <path> | gpaste
+- Adapt to new gnome-shell extension API
 
 NEW in 1.2 (10/07/2011)
 =============
