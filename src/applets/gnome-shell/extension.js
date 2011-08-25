@@ -126,7 +126,7 @@ Indicator.prototype = {
             let connectId = prefsItem.connect('activate', function() {
                 Util.spawn([pkglibexecdir + '/gpaste-settings']);
             });
-			connectedSignals.push({ obj: prefsItem, id: connectId });
+                        connectedSignals.push({ obj: prefsItem, id: connectId });
             this.menu.addMenuItem(prefsItem);
             this._fillHistory();
         }));
@@ -142,7 +142,7 @@ Indicator.prototype = {
                 this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
                 let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
                 let connectId = emptyItem.connect('activate', Lang.bind(this, this._empty));
-				connectedSignals.push({ obj: emptyItem, id: connectId });
+                                connectedSignals.push({ obj: emptyItem, id: connectId });
                 this._history.addMenuItem(emptyItem);
             } else {
                 let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
@@ -189,8 +189,13 @@ function enable() {
 }
 
 function disable() {
-	for each (i in connectedSignals)
-		i.obj.disconnect(i.id);
-	connectedSignals = [ ];
-	//Main.panel.removeFromStatusArea('gpaste');
+    for each (i in connectedSignals)
+        i.obj.disconnect(i.id);
+    connectedSignals = [ ];
+    //Main.panel.removeFromStatusArea('gpaste');
 }
+
+function main() {
+    init().enable();
+}
+
