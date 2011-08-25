@@ -80,7 +80,6 @@ GPasteIndicator.prototype = {
     _init: function() {
         this._connectedSignals = [ ];
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
-        Util.spawn([pkglibexecdir + '/gpasted']);
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
         let connectId = this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._connectedSignals.push({ obj: this._killSwitch, id: connectId });
@@ -191,6 +190,7 @@ function init(metadata) {
     pkglibexecdir = metadata.pkglibexecdir;
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
+    Util.spawn([pkglibexecdir + '/gpasted']);
     return new GPasteIndicator();
 }
 
