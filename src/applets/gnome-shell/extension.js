@@ -172,18 +172,10 @@ GPasteIndicator.prototype = {
         }));
         this._connectedSignals.push({ obj: selection, id: connectId });
         this._history.addMenuItem(selection);
-    },
-
-    enable: function() {
-        Main.panel.addToStatusArea('gpaste', this);
-    },
-
-    disable: function() {
-        for each (i in this._connectedSignals)
-            i.obj.disconnect(i.id);
-        this.destroy();
     }
 };
+
+let _indicator;
 
 function init(metadata) {
     Gettext.bindtextdomain('gpaste', metadata.localedir);
@@ -191,6 +183,16 @@ function init(metadata) {
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
     Util.spawn([pkglibexecdir + '/gpasted']);
-    return new GPasteIndicator();
+}
+
+function enable() {
+    _indicator = new GPasteIndicator();
+    Main.panel.addToStatusArea('gpaste', _indicator);
+}
+
+function disable() {
+    for each (i in _indicator._connectedSignals)
+        i.obj.disconnect(i.id);
+    _indicator.destroy();
 }
 
