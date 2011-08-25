@@ -175,7 +175,7 @@ GPasteIndicator.prototype = {
     },
 
     enable: function() {
-        Main.panel.Main.panel.addToStatusArea('gpaste', this);
+        Main.panel.addToStatusArea('gpaste', this);
     },
 
     disable: function() {
