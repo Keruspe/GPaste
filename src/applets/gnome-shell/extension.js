@@ -194,7 +194,3 @@ function init(metadata) {
     return new GPasteIndicator();
 }
 
-function main() {
-    init().enable();
-}
-
