@@ -1,2 +1,2 @@
-{"shell-version": ["3.0", "3.1.3", "3.1.4", "3.1.5"], "uuid": "GPaste@gnome.org", "name": "GPaste", "description": "Clipboard management system", "url": "http://github.com/Keruspe/GPaste", "localedir": "@localedir@", "pkglibexecdir": "@pkglibexecdir@"}
+{"shell-version": ["3.0", "3.1.3", "3.1.4", "3.1.5"], "uuid": "GPaste@gnome-shell-extensions.gnome.org", "name": "GPaste", "description": "Clipboard management system", "url": "http://github.com/Keruspe/GPaste", "localedir": "@localedir@", "pkglibexecdir": "@pkglibexecdir@"}
 
