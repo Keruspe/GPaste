@@ -117,11 +117,7 @@ GPasteIndicator.prototype = {
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._history);
-            let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
-            prefsItem.connect('activate', function() {
-                Util.spawn([pkglibexecdir + '/gpaste-settings']);
-            });
-            this.menu.addMenuItem(prefsItem);
+            this.menu.addSettingsAction(_("GPaste Settings"), 'gpaste-settings.desktop');
             this._fillHistory();
         }));
     },
