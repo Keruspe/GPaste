@@ -78,18 +78,14 @@ GPasteIndicator.prototype = {
     __proto__: PanelMenu.SystemStatusButton.prototype,
 
     _init: function() {
-        this._connectedSignals = [ ];
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
-        let connectId = this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
-        this._connectedSignals.push({ obj: this._killSwitch, id: connectId });
+        this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
-        connectId = this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
-        this._connectedSignals.push({ obj: this._proxy, id: connectId });
-        connectId = this._proxy.connect('Tracking', Lang.bind(this, function(proxy, trackingState) {
+        this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
+        this._proxy.connect('Tracking', Lang.bind(this, function(proxy, trackingState) {
             this._trackingStateChanged(trackingState);
         }));
-        this._connectedSignals.push({ obj: this._proxy, id: connectId });
         this._history = new PopupMenu.PopupMenuSection();
         this._fillMenu();
     },
@@ -122,10 +118,9 @@ GPasteIndicator.prototype = {
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._history);
             let prefsItem = new PopupMenu.PopupMenuItem(_("GPaste Settings"));
-            let connectId = prefsItem.connect('activate', function() {
+            prefsItem.connect('activate', function() {
                 Util.spawn([pkglibexecdir + '/gpaste-settings']);
             });
-            this._connectedSignals.push({ obj: prefsItem, id: connectId });
             this.menu.addMenuItem(prefsItem);
             this._fillHistory();
         }));
@@ -140,8 +135,7 @@ GPasteIndicator.prototype = {
                     this._addSelection(index, history[index]);
                 this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
                 let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
-                let connectId = emptyItem.connect('activate', Lang.bind(this, this._empty));
-                this._connectedSignals.push({ obj: emptyItem, id: connectId });
+                emptyItem.connect('activate', Lang.bind(this, this._empty));
                 this._history.addMenuItem(emptyItem);
             } else {
                 let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
@@ -161,7 +155,7 @@ GPasteIndicator.prototype = {
         let label = selection.label;
         label.clutter_text.max_length = 60;
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        let connectId = selection.connect('activate', Lang.bind(this, function(actor, event) {
+        selection.connect('activate', Lang.bind(this, function(actor, event) {
             if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
                 this._select(index);
                 return false;
@@ -170,7 +164,6 @@ GPasteIndicator.prototype = {
                 return true;
             }
         }));
-        this._connectedSignals.push({ obj: selection, id: connectId });
         this._history.addMenuItem(selection);
     }
 };
@@ -191,8 +184,6 @@ function enable() {
 }
 
 function disable() {
-    for each (i in _indicator._connectedSignals)
-        i.obj.disconnect(i.id);
     _indicator.destroy();
 }
 
