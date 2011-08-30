@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+_Name=GPaste Settings
+_Comment=Manage GPaste settings
+Icon=gtk-paste
+Exec=@pkglibexecdir@/gpaste-settings
+Terminal=false
+Categories=GTK;GNOME;Settings;DesktopSettings;

@@ -102,6 +102,14 @@ data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
 gpaste-applet.desktop: data/gpaste-applet.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
+applicationsdir=$(datadir)/applications
+nodist_applications_DATA = gpaste-settings.desktop
+
+data/gpaste-settings.desktop.in: data/gpaste-settings.desktop.in.in
+	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
+gpaste-settings.desktop: data/gpaste-settings.desktop.in
+	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
+
 gpaste_applet_SOURCES = \
 	src/applets/standard/gpaste-applet.vala
 
