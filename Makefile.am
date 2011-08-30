@@ -88,6 +88,14 @@ gpaste_settings_LDADD = \
 CLEANFILES += \
 	${gpaste_settings_SOURCES:.vala=.c}
 
+applicationsdir=$(datadir)/applications
+nodist_applications_DATA = gpaste-settings.desktop
+
+data/gpaste-settings.desktop.in: data/gpaste-settings.desktop.in.in
+	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
+gpaste-settings.desktop: data/gpaste-settings.desktop.in
+	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
+
 if ENABLE_APPLET
 
 gpaste_VALAFLAGS += --define=ENABLE_APPLET
@@ -100,14 +108,6 @@ nodist_autostart_DATA = gpaste-applet.desktop
 data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
 	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
 gpaste-applet.desktop: data/gpaste-applet.desktop.in
-	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
-
-applicationsdir=$(datadir)/applications
-nodist_applications_DATA = gpaste-settings.desktop
-
-data/gpaste-settings.desktop.in: data/gpaste-settings.desktop.in.in
-	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
-gpaste-settings.desktop: data/gpaste-settings.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
 gpaste_applet_SOURCES = \
