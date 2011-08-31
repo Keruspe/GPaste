@@ -1,4 +1,4 @@
-NEW in 1.3 (XX/08/2011)
+NEW in 1.3 (31/08/2011)
 =============
 
 - New gpaste option: file/-f/--file <path>, same as cat <path> | gpaste

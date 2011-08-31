@@ -133,11 +133,14 @@ gpaste_applet_LDADD = \
 	$(GTK_LIBS) \
 	$(GLIB_LIBS)
 
-EXTRA_DIST += data/gpaste-applet.desktop.in.in
+EXTRA_DIST += data/gpaste-applet.desktop.in.in \
+	      data/gpaste-settings.desktop.in.in
 
 CLEANFILES += \
 	data/gpaste-applet.desktop.in \
 	gpaste-applet.desktop \
+	data/gpaste-settings.desktop.in \
+	gpaste-settings.desktop \
 	${gpaste_applet_SOURCES:.vala=.c}
 
 endif
