@@ -54,9 +54,6 @@ AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
 AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 
-AC_CHECK_PROGS([POD2MAN], [pod2man])
-AC_SUBST(POD2MAN)
-
 AC_CONFIG_FILES([
   Makefile
   po/Makefile.in
