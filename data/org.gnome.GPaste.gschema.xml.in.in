@@ -43,6 +43,14 @@
       </_description>
     </key>
 
+    <key name="save-history" type="b">
+      <default>true</default>
+      <_summary>Do we save the history from one session to another?</_summary>
+      <_description>
+        By default, we're saving it
+      </_description>
+    </key>
+
     <key name="shutdown-on-exit" type="b">
       <default>true</default>
       <_summary>Do we still track clipboard changes after quitting the applet?</_summary>
