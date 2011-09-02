@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 1.4\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-09-02 17:16+0200\n"
+"POT-Creation-Date: 2011-09-02 17:42+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -42,43 +42,47 @@ msgstr "Impossible de supprimer le fichier d'historique.\n"
 msgid "Could not read history file.\n"
 msgstr "Impossible de lire le fichier d'historique.\n"
 
-#: ../src/gpasted/history.vala:148
+#: ../src/gpasted/history.vala:156
 #, c-format
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:101
+#: ../src/gpaste-settings/gpaste-settings.vala:111
 #: ../src/applets/gnome-shell/extension.js:120
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste Settings"
 msgstr "Préférences GPaste"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:110
+#: ../src/gpaste-settings/gpaste-settings.vala:120
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:111
+#: ../src/gpaste-settings/gpaste-settings.vala:121
 msgid "Max element size when displaying: "
 msgstr "Taille maximale d'un élément quand on l'affiche : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:117
+#: ../src/gpaste-settings/gpaste-settings.vala:127
 msgid "_Primary selection affects history"
 msgstr "La selection _primaire affecte l'historique"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:122
+#: ../src/gpaste-settings/gpaste-settings.vala:132
 msgid "_Synchronize clipboard with primary selection"
 msgstr "_Synchroniser le presse-papier avec la séléction primaire"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:127
+#: ../src/gpaste-settings/gpaste-settings.vala:137
 msgid "_Track clipboard changes"
 msgstr "Suivre les changemen_ts du presse-papier"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:132
+#: ../src/gpaste-settings/gpaste-settings.vala:142
+msgid "_Save history"
+msgstr "Sauvegarder l'historique"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:147
 msgid "Stop tracking clipboard changes when _quitting the applet"
 msgstr ""
 "Arrêter de suivre les changements du presse-papier quand on _quitte l'applet"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:267
+#: ../src/gpaste-settings/gpaste-settings.vala:295
 #: ../src/applets/standard/gpaste-applet.vala:207
 #, c-format
 msgid "Fail to register the gtk application.\n"
