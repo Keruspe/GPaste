@@ -54,8 +54,7 @@ namespace GPaste {
             private History() {
                 this._history = new GLib.SList<string>();
                 DBusServer.instance.changed.connect(()=>{
-					if (Settings.instance.save_history)
-                    	this.save();
+                    this.save();
                 });
             }
 
@@ -132,12 +131,20 @@ namespace GPaste {
 
             public void save() {
                 string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
+                var save_history = Settings.instance.save_history;
                 var history_dir = GLib.File.new_for_path(history_dir_path);
-                if (!history_dir.query_exists())
+                if (!history_dir.query_exists()) {
+                    if (!save_history)
+                        return;
                     Posix.mkdir(history_dir_path, 0700);
+                }
 
                 var history_file = GLib.File.new_for_path(history_dir_path + "/history");
                 try {
+                    if (!save_hitory) {
+                        history_file.delete();
+                        return;
+                    }
                     var history_file_stream = history_file.replace(null, false, GLib.FileCreateFlags.REPLACE_DESTINATION);
                     var dos = new GLib.DataOutputStream(history_file_stream);
                     foreach(string line in this._history) {
