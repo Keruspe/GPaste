@@ -38,6 +38,7 @@ namespace GPaste {
             private Gtk.CheckButton primary_to_history_button;
             private Gtk.CheckButton synchronize_clipboards_button;
             private Gtk.CheckButton track_changes_button;
+            private Gtk.CheckButton save_history_button;
             private Gtk.CheckButton shutdown_on_exit_button;
             private Gtk.SpinButton max_history_size_button;
             private Gtk.SpinButton element_size_button;
@@ -66,6 +67,15 @@ namespace GPaste {
                 }
                 set {
                     this.track_changes_button.set_active(value);
+                }
+            }
+
+            public bool save_history {
+                get {
+                    return this.save_history_button.get_active();
+                }
+                set {
+                    this.save_history_button.set_active(value);
                 }
             }
 
@@ -129,6 +139,11 @@ namespace GPaste {
                 this.track_changes_button.toggled.connect(()=>{
                     app.track_changes = this.track_changes;
                 });
+                this.save_history_button = new Gtk.CheckButton.with_mnemonic(_("_Save history"));
+                this.save_history = app.save_history;
+                this.save_history_button.toggled.connect(()=>{
+                    app.save_history = this.save_history;
+                });
                 this.shutdown_on_exit_button = new Gtk.CheckButton.with_mnemonic(_("Stop tracking clipboard changes when _quitting the applet"));
                 this.shutdown_on_exit = app.shutdown_on_exit;
                 this.shutdown_on_exit_button.toggled.connect(()=>{
@@ -157,6 +172,7 @@ namespace GPaste {
                 vbox.add(this.primary_to_history_button);
                 vbox.add(this.synchronize_clipboards_button);
                 vbox.add(this.track_changes_button);
+                vbox.add(this.save_history_button);
                 vbox.add(this.shutdown_on_exit_button);
                 vbox.add(values_hbox);
 
@@ -213,6 +229,15 @@ namespace GPaste {
                 }
             }
 
+            public bool save_history {
+                get {
+                    return this.settings.get_boolean("save-history");
+                }
+                set {
+                    this.settings.set_boolean("save-history", value);
+                }
+            }
+
             public bool shutdown_on_exit {
                 get {
                     return this.settings.get_boolean("shutdown-on-exit");
@@ -242,6 +267,9 @@ namespace GPaste {
                         break;
                     case "track-changes":
                         this.window.track_changes = track_changes;
+                        break;
+                    case "save-history":
+                        this.window.save_history = save_history;
                         break;
                     case "shutdown-on-exit":
                         this.window.shutdown_on_exit = shutdown_on_exit;
