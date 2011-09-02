@@ -198,7 +198,7 @@ noinst_DATA = completions/_gpaste completions/gpaste
 EXTRA_DIST += $(noinst_DATA)
 
 gpastemandir = $(datadir)/man/man1
-dist_gpasteman_DATA = gpaste.1
+dist_gpasteman_DATA = data/gpaste.1
 
 # Generate a ChangeLog file from 'git log'
 dist-hook:
