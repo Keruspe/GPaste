@@ -141,7 +141,7 @@ namespace GPaste {
 
                 var history_file = GLib.File.new_for_path(history_dir_path + "/history");
                 try {
-                    if (!save_hitory) {
+                    if (!save_history) {
                         history_file.delete();
                         return;
                     }
