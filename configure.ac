@@ -1,5 +1,5 @@
 AC_PREREQ([2.68])
-AC_INIT([GPaste],[1.3],[Marc-Antoine@Perennou.com])
+AC_INIT([GPaste],[1.4],[Marc-Antoine@Perennou.com])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/])
@@ -53,9 +53,6 @@ AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
 AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
-
-AC_CHECK_PROGS([POD2MAN], [pod2man])
-AC_SUBST(POD2MAN)
 
 AC_CONFIG_FILES([
   Makefile

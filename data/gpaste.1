@@ -1,0 +1,119 @@
+.\" Copyright (c) 2011, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 2 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, write to the Free
+.\" Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+.\" Boston, MA  02111-1301  USA.
+.TH GPASTE 1
+.SH NAME
+GPaste \- A lightweight clipboard manager for the Gnome desktop
+
+.SH "SYNOPSIS"
+.B [command |] gpaste [options...]
+
+.SH "DESCRIPTION"
+GPaste is a modular clipboard management system with a fully
+DBus-based daemon, a \s-1CLI\s0 client and a gtk+ tray icon.
+
+.SH "COMMANDS"
+
+.TP
+.B gpaste
+Display the history
+.br
+.TP
+.B gpaste [add] <text>
+Add the text into the history
+.br
+.TP
+.B gpaste set <number>
+Put the <number>th item of the history into the clipboard
+.br
+.TP
+.B gpaste delete <number>
+Delete the <number>th item of the history
+.br
+.TP
+.B gpaste file <path>
+Put the content of the file at <path> into the clipboard
+.br
+.TP
+.B command | gpaste
+Put the output of the command into the history
+.br
+.TP
+.B gpaste empty
+Empty the history
+.br
+.TP
+.B gpaste start
+Start tracking clipboard changes
+.br
+.TP
+.B gpaste stop
+Stop tracking clipboard changes
+.br
+.TP
+.B gpaste applet
+Launch the applet
+.br
+.TP
+.B gpaste settings
+Launch the configuration tool
+.br
+.TP
+.B gpaste version
+Display the version
+.br
+.TP
+.B gpaste help
+Display the help
+.br
+
+.SH "APPLET USAGE"
+
+.SS
+.B left clic
+Display the history, the first element is the one in the clipboard
+.br
+.TP
+.B left clic on an item
+Select the item
+.br
+.TP
+.B right clic on an item
+Delete the item
+.br
+
+.SS
+.B right clic
+Display the options
+.br
+.TP
+.B Settings
+Launch the configuration tool
+.br
+.TP
+.B Empty history
+Empty the history
+.br
+.TP
+.B Quit
+Exit the applet
+.br
+

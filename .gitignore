@@ -40,7 +40,6 @@ POTFILES
 *.desktop
 *.desktop.in
 *.tar.xz
-gpaste.1
 metadata.json
 extension.js
 *.anjuta*
