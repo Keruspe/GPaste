@@ -54,7 +54,8 @@ namespace GPaste {
             private History() {
                 this._history = new GLib.SList<string>();
                 DBusServer.instance.changed.connect(()=>{
-                    this.save();
+					if (Settings.instance.save_history)
+                    	this.save();
                 });
             }
 

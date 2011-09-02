@@ -70,6 +70,12 @@ namespace GPaste {
                 }
             }
 
+            private bool real_save_history {
+                get {
+                    return this.settings.get_boolean("save-history");
+                }
+            }
+
             public bool primary_to_history {
                 get; private set;
             }
@@ -86,6 +92,10 @@ namespace GPaste {
                 get; private set;
             }
 
+            public bool save_history {
+                get; private set;
+            }
+
             public void set_tracking_state(bool state) {
                 this.track_changes = state;
                 this.settings.set_boolean("track-changes", state);
@@ -96,6 +106,7 @@ namespace GPaste {
                 this.primary_to_history = real_primary_to_history;
                 this.max_history_size = real_max_history_size;
                 this.track_changes = real_track_changes;
+				this.save_history = real_save_history;
                 this.synchronize_clipboards = real_synchronize_clipboards;
                 this.settings.changed.connect((key)=>{
                     switch(key) {
@@ -111,6 +122,9 @@ namespace GPaste {
                     case "track-changes":
                         this.track_changes = real_track_changes;
                         DBusServer.instance.tracking(this.track_changes);
+                        break;
+                    case "save-history":
+                        this.save_history = real_save_history;
                         break;
                     }
                 });
