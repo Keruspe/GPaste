@@ -16,6 +16,7 @@ pkglibexec_PROGRAMS = gpasted gpaste-settings
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
 	src/gpasted/history.vala \
+	src/gpasted/items.vala \
 	src/gpasted/settings.vala \
 	src/gpasted/gpasted.vala
 

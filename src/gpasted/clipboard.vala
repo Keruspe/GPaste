@@ -66,9 +66,10 @@ namespace GPaste {
                 this.clipboards.prepend(clipboard);
                 clipboard.text = clipboard.real.wait_for_text();
                 if (clipboard.text == null) {
-                    unowned GLib.SList<string> history = History.instance.history;
+                    unowned GLib.SList<Item?> history = History.instance.history;
                     if (history.length() != 0) {
-                        string text = history.data;
+                        //TODO: Handle images
+                        string text = history.data.val;
                         clipboard.text = text;
                         clipboard.real.set_text(text, -1);
                     }
@@ -81,30 +82,32 @@ namespace GPaste {
                 time.attach(null);
             }
 
-            public void select(string selection) {
+            public void select(Item selection) {
                 History.instance.add(selection);
                 foreach(Clipboard c in this.clipboards) {
-                    c.real.set_text(selection, -1);
+                    // TODO: Handle images
+                    c.real.set_text(selection.val, -1);
                 }
             }
 
             private bool checkClipboards() {
+                // TODO: Handle images
                 if (!gpasted.active) return true;
                 string? synchronized_text = null;
                 foreach(Clipboard c in this.clipboards) {
                     string text = c.real.wait_for_text();
                     if (text == null) {
-                        unowned GLib.SList<string> history = History.instance.history;
+                        unowned GLib.SList<Item?> history = History.instance.history;
                         if (history.length() == 0)
                             continue;
-                        string selection = history.data;
-                        c.real.set_text(selection, -1);
+                        Item selection = history.data;
+                        c.real.set_text(selection.val, -1);
                     }
                     if (c.text != text) {
                         c.text = text;
                         Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                         if (c.selection == tmp || Settings.instance.primary_to_history)
-                            History.instance.add(text);
+                            History.instance.add(Item(ItemKind.STRING, text));
                         if (Settings.instance.synchronize_clipboards)
                             synchronized_text = text;
                     }
