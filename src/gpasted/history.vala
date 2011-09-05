@@ -115,8 +115,28 @@ namespace GPaste {
                 DBusServer.instance.changed();
             }
 
-            public void load() {
+            // TODO: Remove me for 2.0 once everyone'll have its history converted
+            private void convertHistory() {
                 var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
+                try {
+                    int64 length;
+                    var dis = new GLib.DataInputStream(history_file.read());
+                    while((length = dis.read_int64()) != 0) {
+                        uint8[] str = new uint8[length];
+                        dis.read(str);
+                        this._history.append(Item(ItemKind.STRING, (string) str));
+                    }
+                    this.save();
+                    history_file.delete();
+                    GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste").delete();
+                } catch (Error e) {
+                    // File do no longer exist, we don't care about that
+                }
+            }
+
+            public void load() {
+                this.convertHistory();
+                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/.gpaste_history");
                 try {
                     int64 length;
                     var dis = new GLib.DataInputStream(history_file.read());
@@ -132,18 +152,9 @@ namespace GPaste {
             }
 
             public void save() {
-                string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
-                var save_history = Settings.instance.save_history;
-                var history_dir = GLib.File.new_for_path(history_dir_path);
-                if (!history_dir.query_exists()) {
-                    if (!save_history)
-                        return;
-                    Posix.mkdir(history_dir_path, 0700);
-                }
-
-                var history_file = GLib.File.new_for_path(history_dir_path + "/history");
+                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/.gpaste_history");
                 try {
-                    if (!save_history) {
+                    if (!Settings.instance.save_history) {
                         history_file.delete();
                         return;
                     }
