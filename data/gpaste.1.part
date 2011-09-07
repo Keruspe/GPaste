@@ -69,10 +69,6 @@ Start tracking clipboard changes
 Stop tracking clipboard changes
 .br
 .TP
-.B gpaste applet
-Launch the applet
-.br
-.TP
 .B gpaste settings
 Launch the configuration tool
 .br
@@ -83,37 +79,5 @@ Display the version
 .TP
 .B gpaste help
 Display the help
-.br
-
-.SH "APPLET USAGE"
-
-.SS
-.B left clic
-Display the history, the first element is the one in the clipboard
-.br
-.TP
-.B left clic on an item
-Select the item
-.br
-.TP
-.B right clic on an item
-Delete the item
-.br
-
-.SS
-.B right clic
-Display the options
-.br
-.TP
-.B Settings
-Launch the configuration tool
-.br
-.TP
-.B Empty history
-Empty the history
-.br
-.TP
-.B Quit
-Exit the applet
 .br
 

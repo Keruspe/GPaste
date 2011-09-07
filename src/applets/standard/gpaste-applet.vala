@@ -161,20 +161,15 @@ namespace GPaste {
             private GLib.Settings settings;
             public DBusClient gpasted { get; private set; }
             public uint32 element_size { get; private set; }
-            private bool shutdown_on_exit;
             private Window window;
 
             public Main() {
                 GLib.Object(application_id: "org.gnome.GPaste.Applet");
                 this.settings = new GLib.Settings("org.gnome.GPaste");
-                this.shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
                 this.element_size = settings.get_value("element-size").get_uint32();
                 this.activate.connect(init);
                 this.settings.changed.connect((key)=>{
                     switch(key) {
-                    case "shutdown-on-exit":
-                        this.shutdown_on_exit = settings.get_boolean("shutdown-on-exit");
-                        break;
                     case "element-size":
                         this.element_size = settings.get_value("element-size").get_uint32();
                         this.window.fill_history(); /* Keep displayed history up to date */
@@ -209,15 +204,7 @@ namespace GPaste {
                 }
                 if (app.get_is_remote())
                     return 0;
-                int ret = app.run();
-                if (app.shutdown_on_exit) {
-                    try {
-                        app.gpasted.track(false);
-                    } catch (IOError e) {
-                        stderr.printf(_("Couldn't shutdown daemon.\n"));
-                    }
-                }
-                return ret;
+                return app.run();
             }
         }
 

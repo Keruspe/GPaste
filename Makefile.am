@@ -97,6 +97,8 @@ data/gpaste-settings.desktop.in: data/gpaste-settings.desktop.in.in
 gpaste-settings.desktop: data/gpaste-settings.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
+gpaste.1_parts = data/gpaste.1.part
+
 if ENABLE_APPLET
 
 gpaste_VALAFLAGS += --define=ENABLE_APPLET
@@ -145,7 +147,16 @@ CLEANFILES += \
 	gpaste-settings.desktop \
 	${gpaste_applet_SOURCES:.vala=.c}
 
+gpaste.1_parts += data/gpaste-applet.1.part
+
 endif
+
+gpastemandir = $(datadir)/man/man1
+nodist_gpasteman_DATA = gpaste.1
+EXTRA_DIST += data/gpaste.1.part data/gpaste-applet.1.part
+CLEANFILES += gpaste.1
+gpaste.1: $(gpaste.1_parts)
+	$(AM_V_GEN) cat $^ > $@
 
 if ENABLE_EXTENSION
 
@@ -198,9 +209,6 @@ CLEANFILES += $(service_DATA)
 
 noinst_DATA = completions/_gpaste completions/gpaste
 EXTRA_DIST += $(noinst_DATA)
-
-gpastemandir = $(datadir)/man/man1
-dist_gpasteman_DATA = data/gpaste.1
 
 # Generate a ChangeLog file from 'git log'
 dist-hook:
