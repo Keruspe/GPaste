@@ -10,3 +10,7 @@ problem comes from vala and has been fixed in git, wait for a
 vala 0.13.4 release :)
 http://git.gnome.org/browse/vala/commit/?id=3bfe468daa15fd19eebfbf3de8dc48a79810bb30
 
+"Could not connect to GPaste daemon" ?
+Vala bug, see https://bugzilla.gnome.org/show_bug.cgi?id=658442
+As a workaround you can "rm ~/.local/share/gpaste/history" for now
+

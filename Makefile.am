@@ -2,8 +2,6 @@ DISTCHECK_CONFIGURE_FLAGS = --enable-applet --enable-gnome-shell-extension
 
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 
-VALAFLAGS = --debug
-
 CLEANFILES = 
 
 SUBDIRS = po
