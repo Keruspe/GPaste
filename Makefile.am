@@ -2,7 +2,7 @@ DISTCHECK_CONFIGURE_FLAGS = --enable-applet --enable-gnome-shell-extension
 
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 
-CP = cp
+VALAFLAGS = --debug
 
 CLEANFILES = 
 
@@ -24,7 +24,8 @@ gpasted_VALAFLAGS = \
 	$(GTK_VALAFLAGS) \
 	$(GIO_VALAFLAGS) \
 	--pkg=config \
-	--pkg=posix
+	--pkg=posix \
+	$(VALAFLAGS)
 
 gpasted_CFLAGS = \
 	$(GTK_CFLAGS) \
@@ -49,7 +50,8 @@ gpaste_VALAFLAGS = \
 	--vapidir=vapi \
 	$(GIO_VALAFLAGS) \
 	--pkg=config \
-	--pkg=posix
+	--pkg=posix \
+	$(VALAFLAGS)
 
 gpaste_CFLAGS = \
 	$(GIO_CFLAGS) \
@@ -72,7 +74,8 @@ gpaste_settings_SOURCES = \
 gpaste_settings_VALAFLAGS = \
 	--vapidir=vapi \
 	$(GTK_VALAFLAGS) \
-	--pkg=config
+	--pkg=config \
+	$(VALAFLAGS)
 
 gpaste_settings_CFLAGS = \
 	$(GTK_CFLAGS) \
@@ -118,7 +121,8 @@ gpaste_applet_VALAFLAGS = \
 	$(GTK_VALAFLAGS) \
 	$(GIO_VALAFLAGS) \
 	--pkg=posix \
-	--pkg=config
+	--pkg=config \
+	$(VALAFLAGS)
 
 gpaste_applet_CFLAGS = \
 	$(GTK_CFLAGS) \
