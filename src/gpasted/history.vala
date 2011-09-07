@@ -104,7 +104,7 @@ namespace GPaste {
             }
 
             public void empty() {
-                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
+                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
                 try {
                     if (history_file.query_exists())
                         history_file.delete();
@@ -134,11 +134,12 @@ namespace GPaste {
                 } catch (Error e) {
                     // File do no longer exist, we don't care about that
                 }
+                this._history = new GLib.SList<Item?>();
             }
 
             public void load() {
                 this.convertHistory();
-                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/.gpaste_history");
+                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
                 try {
                     int64 length;
                     var dis = new GLib.DataInputStream(history_file.read());
@@ -156,7 +157,7 @@ namespace GPaste {
             }
 
             public void save() {
-                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/.gpaste_history");
+                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
                 try {
                     if (!Settings.instance.save_history) {
                         history_file.delete();
