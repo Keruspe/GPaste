@@ -126,7 +126,7 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this._history.append(Item(ItemKind.STRING, (string) str));
+                            this._history.append(Item(ItemKind.STRING, str));
                     }
                     this.save();
                     history_file.delete();
@@ -149,7 +149,7 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this._history.append(Item(kind, (string) str));
+                            this._history.append(Item(kind, str));
                     }
                 } catch (Error e) {
                     stderr.printf(_("Could not read history file.\n"));
