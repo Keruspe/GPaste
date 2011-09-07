@@ -36,18 +36,19 @@ namespace GPaste {
 
         [DBus (name = "org.gnome.GPaste")]
         public class DBusServer : GLib.Object {
+            // TODO: Handle images
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public GLib.Variant getHistory() {
-                unowned GLib.SList<string> history = History.instance.history;
+                unowned GLib.SList<Item?> history = History.instance.history;
                 var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
-                foreach (string s in history)
-                    vb.add_value(s);
+                foreach (Item i in history)
+                    vb.add_value(i.val);
                 return vb.end();
             }
 
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public void add(string selection) {
-                ClipboardsManager.instance.select(selection);
+                ClipboardsManager.instance.select(Item(ItemKind.STRING, selection));
             }
 
             [DBus (name = "Select", inSignature = "u", outSignature = "")]

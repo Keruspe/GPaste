@@ -35,8 +35,8 @@ namespace GPaste {
     namespace Daemon {
 
         public class History : GLib.Object {
-            private GLib.SList<string> _history;
-            public unowned GLib.SList<string> history {
+            private GLib.SList<Item?> _history;
+            public unowned GLib.SList<Item?> history {
                 get {
                     return this._history;
                 }
@@ -52,16 +52,17 @@ namespace GPaste {
             }
 
             private History() {
-                this._history = new GLib.SList<string>();
+                this._history = new GLib.SList<Item?>();
                 DBusServer.instance.changed.connect(()=>{
                     this.save();
                 });
             }
 
-            public void add(string selection) {
-                if (selection == null || selection == "")
+            public void add(Item selection) {
+                // TODO: Handle images
+                if (selection.val == null || selection.val /*.trim()*/ == "")
                     return;
-                for (unowned GLib.SList<string> s = history ; s != null ; s = s.next) {
+                for (unowned GLib.SList<Item?> s = history ; s != null ; s = s.next) {
                     if (s.data == selection) {
                         this._history.remove_link(s);
                         break;
@@ -70,11 +71,11 @@ namespace GPaste {
                 this._history.prepend(selection);
                 uint32 max_history_size = Settings.instance.max_history_size;
                 if (this._history.length() > max_history_size) {
-                    unowned GLib.SList<string> tmp = this.history;
+                    unowned GLib.SList<Item?> tmp = this.history;
                     for (uint32 i = 0 ; i < max_history_size ; ++i)
                         tmp = tmp.next;
                     do {
-                        unowned GLib.SList<string> next = tmp.next;
+                        unowned GLib.SList<Item?> next = tmp.next;
                         this._history.remove_link(tmp);
                         tmp = next;
                     } while(tmp != null);
@@ -85,7 +86,7 @@ namespace GPaste {
             public void delete(uint32 index) {
                 if (index >= this._history.length())
                     return;
-                unowned GLib.SList<string> tmp = this.history;
+                unowned GLib.SList<Item?> tmp = this.history;
                 for (uint32 i = 0 ; i < index ; ++i)
                     tmp = tmp.next;
                 this._history.remove_link(tmp);
@@ -98,7 +99,7 @@ namespace GPaste {
             public void select(uint32 index) {
                 if (index >= this._history.length())
                     return;
-                string selection = this._history.nth_data(index);
+                Item selection = this._history.nth_data(index);
                 ClipboardsManager.instance.select(selection);
             }
 
@@ -110,11 +111,12 @@ namespace GPaste {
                 } catch (Error e) {
                     stderr.printf(_("Could not delete history file.\n"));
                 }
-                this._history = new GLib.SList<string>();
+                this._history = new GLib.SList<Item?>();
                 DBusServer.instance.changed();
             }
 
-            public void load() {
+            // TODO: Remove me for 2.0 once everyone'll have its history converted
+            private void convertHistory() {
                 var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
                 try {
                     int64 length;
@@ -124,7 +126,29 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this._history.append(str);
+                            this._history.append(Item(ItemKind.STRING, (string) str));
+                    }
+                    this.save();
+                    history_file.delete();
+                    GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste").delete();
+                } catch (Error e) {
+                    // File do no longer exist, we don't care about that
+                }
+            }
+
+            public void load() {
+                this.convertHistory();
+                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/.gpaste_history");
+                try {
+                    int64 length;
+                    var dis = new GLib.DataInputStream(history_file.read());
+                    while((length = dis.read_int64()) != 0) {
+                        var kind = (ItemKind) dis.read_byte();
+                        var tmp_str = new uint8[length];
+                        dis.read(tmp_str);
+                        var str = (string) tmp_str;
+                        if (str.validate())
+                            this._history.append(Item(kind, (string) str));
                     }
                 } catch (Error e) {
                     stderr.printf(_("Could not read history file.\n"));
@@ -132,26 +156,18 @@ namespace GPaste {
             }
 
             public void save() {
-                string history_dir_path = Environment.get_user_data_dir() + "/gpaste";
-                var save_history = Settings.instance.save_history;
-                var history_dir = GLib.File.new_for_path(history_dir_path);
-                if (!history_dir.query_exists()) {
-                    if (!save_history)
-                        return;
-                    Posix.mkdir(history_dir_path, 0700);
-                }
-
-                var history_file = GLib.File.new_for_path(history_dir_path + "/history");
+                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/.gpaste_history");
                 try {
-                    if (!save_history) {
+                    if (!Settings.instance.save_history) {
                         history_file.delete();
                         return;
                     }
                     var history_file_stream = history_file.replace(null, false, GLib.FileCreateFlags.REPLACE_DESTINATION);
                     var dos = new GLib.DataOutputStream(history_file_stream);
-                    foreach(string line in this._history) {
-                        dos.put_int64(line.length);
-                        dos.put_string(line);
+                    foreach(Item i in this._history) {
+                        dos.put_int64(i.val.length);
+                        dos.put_byte(i.kind);
+                        dos.put_string(i.val);
                     }
                     dos.put_int64(0);
                 } catch (Error e) {
