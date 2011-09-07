@@ -1,8 +1,9 @@
-NEW in 1.4 (Not released yet)
+NEW in 1.4 (07/09/2011)
 =============
 
 - pod2man is no more needed
 - Add ability not to save the history from one session to another
+- Fix segfault at daemon startup with invalid utf8 string
 
 NEW in 1.3 (31/08/2011)
 =============
