@@ -4,9 +4,3 @@ gpaste settings is a tool to edit gpasted settings
 gpaste applet is a tray icon to manage gpasted
 There is also a gnome-shell native applet
 
-If you are experiencing problems about the primary selection
-affecting the history even with the option unchecked, this
-problem comes from vala and has been fixed in git, wait for a
-vala 0.13.4 release :)
-http://git.gnome.org/browse/vala/commit/?id=3bfe468daa15fd19eebfbf3de8dc48a79810bb30
-
