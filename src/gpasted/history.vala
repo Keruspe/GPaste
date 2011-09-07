@@ -120,9 +120,11 @@ namespace GPaste {
                     int64 length;
                     var dis = new GLib.DataInputStream(history_file.read());
                     while((length = dis.read_int64()) != 0) {
-                        uint8[] str = new uint8[length];
-                        dis.read(str);
-                        this._history.append((string) str);
+                        var tmp_str = new uint8[length];
+                        dis.read(tmp_str);
+                        var str = (string) tmp_str;
+                        if (str.validate())
+                            this._history.append(str);
                     }
                 } catch (Error e) {
                     stderr.printf(_("Could not read history file.\n"));
