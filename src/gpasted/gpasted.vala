@@ -40,8 +40,10 @@ namespace GPaste {
             public GLib.Variant getHistory() {
                 unowned GLib.SList<string> history = History.instance.history;
                 var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
-                foreach (string s in history)
-                    vb.add_value(s);
+                foreach (string s in history) {
+                    if (s.validate())
+                        vb.add_value(s);
+                }
                 return vb.end();
             }
 
