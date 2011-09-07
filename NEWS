@@ -1,6 +1,9 @@
 NEW in 1.5 (Not released yet)
 =============
 
+- No trace of the applet at all with --disable-applet
+- No more "shutdown-on-exit" key, just use the prefs or the command line
+
 NEW in 1.4 (07/09/2011)
 =============
 
