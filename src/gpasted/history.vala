@@ -96,6 +96,13 @@ namespace GPaste {
                     DBusServer.instance.changed();
             }
 
+            public string getElement(uint32 index) {
+                // TODO: support handling images
+                if (index >= this._history.length())
+                    return "";
+                return this._history.nth_data(index).val;
+            }
+
             public void select(uint32 index) {
                 if (index >= this._history.length())
                     return;

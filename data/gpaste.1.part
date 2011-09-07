@@ -41,6 +41,10 @@ Display the history
 Add the text into the history
 .br
 .TP
+.B gpaste get <number>
+Get the <number>th item from the history
+.br
+.TP
 .B gpaste set <number>
 Put the <number>th item of the history into the clipboard
 .br

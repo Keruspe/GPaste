@@ -40,6 +40,8 @@ namespace GPaste {
             public abstract GLib.Variant getHistory() throws IOError;
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws IOError;
+            [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
+            public abstract string getElement(uint32 index) throws IOError;
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
             public abstract void select(uint32 index) throws IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
@@ -55,7 +57,8 @@ namespace GPaste {
                 stdout.printf(_("Usage:\n"));
                 stdout.printf(_("%s: print the history\n"), caller);
                 stdout.printf(_("%s [add] <text>: set text to clipboard\n"), caller);
-                stdout.printf(_("%s set <number>: set <number>th item of the history to clipboard\n"), caller);
+                stdout.printf(_("%s get <number>: get the <number>th item from the history\n"), caller);
+                stdout.printf(_("%s set <number>: set the <number>th item from the history to the clipboard\n"), caller);
                 stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
                 stdout.printf(_("%s -f/--file <path>: put the content of the file at <path> into the clipboard\n"), caller);
                 stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
@@ -139,6 +142,9 @@ namespace GPaste {
                             switch (args[1]) {
                             case "add":
                                 gpaste.add(args[2]);
+                                break;
+                            case "get":
+                                stdout.printf("%s", gpaste.getElement(int.parse(args[2])));
                                 break;
                             case "set":
                                 gpaste.select(int.parse(args[2]));

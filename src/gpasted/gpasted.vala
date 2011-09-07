@@ -51,6 +51,11 @@ namespace GPaste {
                 ClipboardsManager.instance.select(Item(ItemKind.STRING, selection));
             }
 
+            [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
+            public string getElement(uint32 index) {
+                return History.instance.getElement(index);
+            }
+
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
             public void select(uint32 index) {
                 History.instance.select(index);
