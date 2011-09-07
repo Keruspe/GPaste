@@ -13,14 +13,16 @@ pkglibexec_PROGRAMS = gpasted gpaste-settings
 
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
+	src/gpasted/gpasted.vala \
 	src/gpasted/history.vala \
 	src/gpasted/item.vala \
-	src/gpasted/settings.vala \
-	src/gpasted/gpasted.vala
+	src/gpasted/keybinder.vala \
+	src/gpasted/settings.vala
 
 gpasted_VALAFLAGS = \
 	--vapidir=vapi \
 	$(GTK_VALAFLAGS) \
+	--pkg=gdk-x11-3.0 \
 	$(GIO_VALAFLAGS) \
 	--pkg=config \
 	--pkg=posix \

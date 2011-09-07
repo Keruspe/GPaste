@@ -1,0 +1,98 @@
+/*
+ *      This program is free software: you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, either version 3 of the License, or
+ *      (at your option) any later version.
+ *
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ *
+ *      You should have received a copy of the GNU General Public License
+ *      along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *      Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *
+ *      This file is part of GPaste.
+ *
+ *      GPaste is free software: you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, either version 3 of the License, or
+ *      (at your option) any later version.
+ *
+ *      GPaste is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ *
+ *      You should have received a copy of the GNU General Public License
+ *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+namespace GPaste {
+
+    namespace Daemon {
+
+        public class Keybinder : GLib.Object {
+            public static Keybinder instance {
+                get; private set;
+            }
+
+            public int keycode {
+                get; private set;
+            }
+
+            public Gdk.ModifierType modifiers {
+                get; private set;
+            }
+
+            public static void init(string accelerator) {
+                if (instance != null)
+                    return;
+                instance = new Keybinder(accelerator);
+                Gdk.Window rootwin = Gdk.get_default_root_window();
+                if(rootwin != null)
+                    rootwin.add_filter(instance.event_filter);
+            }
+
+            private Keybinder(string accelerator) {
+                activate(accelerator);
+            }
+
+            public void rebind(string accelerator) {
+                Gdk.Window rootwin = Gdk.get_default_root_window();
+                X.ID xid = Gdk.X11Window.get_xid(rootwin);
+                unowned X.Display display = Gdk.x11_get_default_xdisplay();
+                display.ungrab_key(keycode, modifiers, xid);
+                activate(accelerator);
+            }
+
+            private void activate(string accelerator) {
+                uint keysym;
+                Gdk.ModifierType mod;
+                Gtk.accelerator_parse(accelerator, out keysym, out mod);
+
+                unowned X.Display display = Gdk.x11_get_default_xdisplay();
+                keycode = display.keysym_to_keycode(keysym);
+                modifiers = mod;
+                if(keycode != 0) {
+                    Gdk.error_trap_push();
+                    Gdk.Window rootwin = Gdk.get_default_root_window();
+                    X.ID xid = Gdk.X11Window.get_xid(rootwin);
+                    display.grab_key(keycode, modifiers, xid, false, X.GrabMode.Async, X.GrabMode.Async);
+                    Gdk.flush();
+                }
+            }
+
+            private Gdk.FilterReturn event_filter(Gdk.XEvent gdk_xevent, Gdk.Event gdk_event) {
+                var xevent = *((X.Event*)(&gdk_xevent));
+                if(xevent.type == X.EventType.KeyPress && xevent.xkey.keycode == Keybinder.instance.keycode && xevent.xkey.state == Keybinder.instance.modifiers)
+                    History.instance.add(Item(GPaste.Daemon.ItemKind.STRING, "test"));
+                return Gdk.FilterReturn.CONTINUE;
+            }
+        }
+
+    }
+
+}

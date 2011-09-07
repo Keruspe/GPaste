@@ -141,6 +141,7 @@ namespace GPaste {
                 handler.sa_handler = handle;
                 Posix.sigaction(Posix.SIGTERM, handler, null);
                 Posix.sigaction(Posix.SIGINT, handler, null);
+                Keybinder.init("<Ctrl>H");
                 Main.start_dbus();
                 Main.loop = new GLib.MainLoop(null, false);
                 Main.loop.run();
