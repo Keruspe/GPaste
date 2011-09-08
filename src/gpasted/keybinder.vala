@@ -88,7 +88,7 @@ namespace GPaste {
             private Gdk.FilterReturn event_filter(Gdk.XEvent gdk_xevent, Gdk.Event gdk_event) {
                 var xevent = *((X.Event*)(&gdk_xevent));
                 if(xevent.type == X.EventType.KeyPress && xevent.xkey.keycode == Keybinder.instance.keycode && xevent.xkey.state == Keybinder.instance.modifiers)
-                    History.instance.add(Item(GPaste.Daemon.ItemKind.STRING, "test"));
+                    DBusServer.instance.toggleHistory();
                 return Gdk.FilterReturn.CONTINUE;
             }
         }

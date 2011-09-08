@@ -78,6 +78,9 @@ namespace GPaste {
             [DBus (name = "Changed", inSignature = "")]
             public signal void changed();
 
+            [DBus (name = "ToggleHistory", inSignature = "")]
+            public signal void toggleHistory();
+
             [DBus (name = "Active", signature = "b", access = "readonly")]
             public bool active {
                 get {
