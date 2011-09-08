@@ -11,7 +11,6 @@ AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
 
 AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
 AM_SILENT_RULES([yes])
-AM_MAINTAINER_MODE
 
 AC_PROG_CC
 AM_PROG_CC_C_O

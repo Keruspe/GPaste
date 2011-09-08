@@ -62,6 +62,7 @@ const GPasteInterface = {
     ],
     signals: [
         { name: 'Changed', inSignature: '' },
+        { name: 'ToggleHistory', inSignature: '' },
         { name: 'Tracking', inSignature: 'b' },
     ],
     properties: [
@@ -83,6 +84,7 @@ GPasteIndicator.prototype = {
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
         this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
+        this._proxy.connect('ToggleHistory', Lang.bind(this, this._toggleHistory));
         this._proxy.connect('Tracking', Lang.bind(this, function(proxy, trackingState) {
             this._trackingStateChanged(trackingState);
         }));
@@ -122,7 +124,7 @@ GPasteIndicator.prototype = {
         }));
     },
 
-    _fillHistory: function(history) {
+    _fillHistory: function() {
         this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
             this._history.removeAll();
             if (history != null && history.length != 0) {
@@ -140,6 +142,10 @@ GPasteIndicator.prototype = {
                 this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             }
         }));
+    },
+
+    _toggleHistory: function() {
+        this.menu.toggle();
     },
 
     _addSelection: function(index, element) {

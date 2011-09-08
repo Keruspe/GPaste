@@ -46,8 +46,10 @@ namespace GPaste {
             public abstract void empty() throws IOError;
             [DBus (name = "Track", inSignature = "b", outSignature = "")]
             public abstract void track(bool tracking_state) throws IOError;
-            [DBus (name = "Changed", inSignature = "", outSignature = "")]
+            [DBus (name = "Changed", inSignature = "")]
             public abstract signal void changed();
+            [DBus (name = "ToggleHistory", inSignature = "")]
+            public abstract signal void toggleHistory();
         }
 
         public class Window : Gtk.Window {
@@ -130,6 +132,10 @@ namespace GPaste {
                 this.history.show_all();
             }
 
+            public void toggleHistory() {
+                // TODO: Implement this
+            }
+
             private void fill_options() {
                 this.options = new Gtk.Menu();
                 var settings = new Gtk.ImageMenuItem.with_label(_("Settings"));
@@ -182,6 +188,9 @@ namespace GPaste {
                 try {
                     this.gpasted = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     this.gpasted.track(true); /* In case we exited the applet and we're launching it back */
+                    this.gpasted.toggleHistory.connect(()=>{
+                        this.window.toggleHistory();
+                    });
                 } catch (IOError e) {
                     stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                     Posix.exit(1);
