@@ -6,6 +6,7 @@ NEW in 1.5 (Not released yet)
 - Preparation for future images support
 - History file is now ~/.gpaste_history
 - Use AM_PROG_VALAC
+- Get rid of AM_MAINTAINER_MODE
 
 NEW in 1.4 (07/09/2011)
 =============
