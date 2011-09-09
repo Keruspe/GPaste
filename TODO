@@ -1,7 +1,6 @@
 2.0:
     Add support for images
     standard applet cleanup
-    make it possible to stop tracking clipboard changes with standard applet
-    Typesafe dconf key names
     don't close menu when deleting item
     Fix keyboard shortcut behaviour after shell reload
+    See TODO in the code
