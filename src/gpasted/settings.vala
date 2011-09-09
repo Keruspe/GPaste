@@ -76,6 +76,11 @@ namespace GPaste {
                 }
             }
 
+            /* Vala doesn't seem to like that as a property because of an ownership transfer mess */
+            private string real_keyboard_shortcut() {
+                return this.settings.get_string("keyboard-shortcut");
+            }
+
             public bool primary_to_history {
                 get; private set;
             }
@@ -96,6 +101,10 @@ namespace GPaste {
                 get; private set;
             }
 
+            public string keyboard_shortcut {
+                get; private set;
+            }
+
             public void set_tracking_state(bool state) {
                 this.track_changes = state;
                 this.settings.set_boolean("track-changes", state);
@@ -105,9 +114,10 @@ namespace GPaste {
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.primary_to_history = real_primary_to_history;
                 this.max_history_size = real_max_history_size;
+                this.synchronize_clipboards = real_synchronize_clipboards;
                 this.track_changes = real_track_changes;
                 this.save_history = real_save_history;
-                this.synchronize_clipboards = real_synchronize_clipboards;
+                this.keyboard_shortcut = real_keyboard_shortcut();
                 this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "primary-to-history":
@@ -125,6 +135,10 @@ namespace GPaste {
                         break;
                     case "save-history":
                         this.save_history = real_save_history;
+                        break;
+                    case "keyboard-shortcut":
+                        this.keyboard_shortcut = real_keyboard_shortcut();
+                        Keybinder.instance.rebind(this.keyboard_shortcut);
                         break;
                     }
                 });
