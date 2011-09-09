@@ -41,6 +41,7 @@ namespace GPaste {
             private Gtk.CheckButton save_history_button;
             private Gtk.SpinButton max_history_size_button;
             private Gtk.SpinButton element_size_button;
+            private Gtk.Entry keyboard_shortcut_entry;
 
             public bool primary_to_history {
                 get {
@@ -96,6 +97,15 @@ namespace GPaste {
                 }
             }
 
+            public string keyboard_shortcut {
+                get {
+                    return this.keyboard_shortcut_entry.get_text();
+                }
+                set {
+                    this.keyboard_shortcut_entry.set_text(value);
+                }
+            }
+
             public Window(Gtk.Application app) {
                 GLib.Object(type: Gtk.WindowType.TOPLEVEL);
                 this.title = _("GPaste Settings");
@@ -109,8 +119,10 @@ namespace GPaste {
                 var labels_vbox = new Gtk.VBox(false, 10);
                 var history_size_label = new Gtk.Label(_("Max history size: "));
                 var element_size_label = new Gtk.Label(_("Max element size when displaying: "));
+                var keyboard_shortcut_label = new Gtk.Label(_("Keyboard shortcut to display the history: "));
                 labels_vbox.add(history_size_label);
                 labels_vbox.add(element_size_label);
+                labels_vbox.add(keyboard_shortcut_label);
 
                 var app = this.application as Main;
 
@@ -144,10 +156,16 @@ namespace GPaste {
                 this.element_size_button.get_adjustment().value_changed.connect(()=>{
                     app.element_size = this.element_size;
                 });
+                this.keyboard_shortcut_entry = new Gtk.Entry();
+                this.keyboard_shortcut = app.get_keyboard_shortcut();
+                this.keyboard_shortcut_entry.editing_done.connect(()=>{
+                    app.keyboard_shortcut = this.keyboard_shortcut;
+                });
 
                 var values_vbox = new Gtk.VBox(true, 10);
                 values_vbox.add(this.max_history_size_button);
                 values_vbox.add(this.element_size_button);
+                values_vbox.add(this.keyboard_shortcut_entry);
 
                 var values_hbox = new Gtk.HBox(false, 10);
                 values_hbox.add(labels_vbox);
@@ -222,6 +240,17 @@ namespace GPaste {
                 }
             }
 
+            public string keyboard_shortcut {
+                set {
+                    this.settings.set_string("keyboard-shortcut", value);
+                }
+            }
+
+            /* Vala does not want this as a property */
+            public string get_keyboard_shortcut() {
+                return this.settings.get_string("keyboard-shortcut");
+            }
+
             public Main() {
                 GLib.Object(application_id: "org.gnome.GPaste.Settings");
                 this.activate.connect(init);
@@ -245,6 +274,9 @@ namespace GPaste {
                         break;
                     case "save-history":
                         this.window.save_history = save_history;
+                        break;
+                    case "keyboard-shortcut":
+                        this.window.keyboard_shortcut = get_keyboard_shortcut();
                         break;
                     }
                 });
