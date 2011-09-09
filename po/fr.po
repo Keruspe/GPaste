@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste 1.4\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-09-07 23:53+0200\n"
+"POT-Creation-Date: 2011-09-09 12:29+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -17,17 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:112
+#: ../src/gpasted/gpasted.vala:115
 #, c-format
 msgid "Signal %d recieved, exiting.\n"
 msgstr "Signal %d reçu, arrêt.\n"
 
-#: ../src/gpasted/gpasted.vala:120
+#: ../src/gpasted/gpasted.vala:123
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#: ../src/gpasted/gpasted.vala:127
+#: ../src/gpasted/gpasted.vala:130
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
@@ -47,89 +47,93 @@ msgstr "Impossible de lire le fichier d'historique.\n"
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:101
-#: ../src/applets/gnome-shell/extension.js:120
+#: ../src/gpaste-settings/gpaste-settings.vala:111
+#: ../src/applets/gnome-shell/extension.js:122
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste Settings"
 msgstr "Préférences GPaste"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:110
+#: ../src/gpaste-settings/gpaste-settings.vala:120
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:111
+#: ../src/gpaste-settings/gpaste-settings.vala:121
 msgid "Max element size when displaying: "
 msgstr "Taille maximale d'un élément quand on l'affiche : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:117
+#: ../src/gpaste-settings/gpaste-settings.vala:122
+msgid "Keyboard shortcut to display the history: "
+msgstr "Raccourcis clavier pour afficher l'historique : "
+
+#: ../src/gpaste-settings/gpaste-settings.vala:129
 msgid "_Primary selection affects history"
 msgstr "La selection _primaire affecte l'historique"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:122
+#: ../src/gpaste-settings/gpaste-settings.vala:134
 msgid "_Synchronize clipboard with primary selection"
 msgstr "_Synchroniser le presse-papier avec la séléction primaire"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:127
+#: ../src/gpaste-settings/gpaste-settings.vala:139
 msgid "_Track clipboard changes"
 msgstr "Suivre les changemen_ts du presse-papier"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:132
+#: ../src/gpaste-settings/gpaste-settings.vala:144
 msgid "_Save history"
 msgstr "Sauvegarder l'historique"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:267
-#: ../src/applets/standard/gpaste-applet.vala:202
+#: ../src/gpaste-settings/gpaste-settings.vala:299
+#: ../src/applets/standard/gpaste-applet.vala:211
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:117
+#: ../src/applets/standard/gpaste-applet.vala:119
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:124
-#: ../src/applets/gnome-shell/extension.js:137
+#: ../src/applets/standard/gpaste-applet.vala:126
+#: ../src/applets/gnome-shell/extension.js:139
 msgid "(Empty)"
 msgstr "(Vide)"
 
-#: ../src/applets/standard/gpaste-applet.vala:135
+#: ../src/applets/standard/gpaste-applet.vala:141
 msgid "Settings"
 msgstr "Préférences"
 
-#: ../src/applets/standard/gpaste-applet.vala:140
+#: ../src/applets/standard/gpaste-applet.vala:146
 #, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Impossible de lancer gpaste-settings.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:144
-#: ../src/applets/gnome-shell/extension.js:133
+#: ../src/applets/standard/gpaste-applet.vala:150
+#: ../src/applets/gnome-shell/extension.js:135
 msgid "Empty history"
 msgstr "Vider l'historique"
 
-#: ../src/applets/standard/gpaste-applet.vala:149
+#: ../src/applets/standard/gpaste-applet.vala:155
 #, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Impossible de vider l'historique.\n"
 
-#: ../src/applets/standard/gpaste-applet.vala:153
+#: ../src/applets/standard/gpaste-applet.vala:159
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applets/standard/gpaste-applet.vala:186 ../src/gpaste.vala:184
+#: ../src/applets/standard/gpaste-applet.vala:195 ../src/gpaste.vala:184
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
 
-#: ../src/applets/gnome-shell/extension.js:82
+#: ../src/applets/gnome-shell/extension.js:83
 msgid "Track clipboard changes"
 msgstr "Suivre les changements du presse-papier"
 
-#: ../src/applets/gnome-shell/extension.js:137
+#: ../src/applets/gnome-shell/extension.js:139
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(Impossible de se connecter au démon GPaste)"
 
-#: ../src/applets/gnome-shell/extension.js:147
+#: ../src/applets/gnome-shell/extension.js:153
 #, c-format
 msgid "delete: %s"
 msgstr "supprimer : %s"
@@ -238,47 +242,58 @@ msgstr ""
 "La séléction primaire et le presse-papier doivent-ils être synchronisés?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:2
+msgid ""
+"By default, hitting ctrl + h displays the menu (\"&lt;Ctrl&gt;H\"). You can "
+"also use other modifiers than ctrl (eg \"&lt;Ctrl&gt;&lt;Alt&gt;G\" would "
+"mean ctrl + alt + g). An empty string here disable this functionnality."
+msgstr ""
+"Par défaut, appuyer sur ctrl + h affiche le menu (\"&lt;Ctrl&gt;H\"). Vous "
+"pouvez aussi utiliser d'autres \"modifieurs\" que ctrl (par exemple \"&lt;"
+"Ctrl&gt;&lt;Alt&gt;G\" signifierait ctrl + alt + g). Une chaîne vide "
+"désactive cette fonctionnalité."
+
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:3
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:3
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:4
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Par défaut, la séléction primaire et le presse-papier sont indépendents."
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:4
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:5
 msgid "By default, we're saving it"
 msgstr "Par défaut, on le sauvegarde."
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:5
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:6
 msgid "By default, we're tracking those changes."
 msgstr "Par défaut, on suit ces changements."
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:6
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:7
 msgid "Do we save the history from one session to another?"
 msgstr "Sauvegarde-t-on l'historique d'une session à l'autre ?"
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:7
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:8
 msgid "Do we track the clipboard changes?"
 msgstr "Suit-on les changements du presse-papier?"
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:8
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:9
 msgid "Does the primary selection affects history?"
 msgstr "La selection primaire doit-elle affecter l'historique?"
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:9
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:10
 msgid "Max history size"
 msgstr "Taille maximale de l'historique"
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:10
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:11
 msgid "Max size of an element when displaying it"
 msgstr "Taille maximale d'un élément quand on l'affiche"
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:11
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:12
 msgid "Maximum number of items in history"
 msgstr "Nombre maximum d'éléments dans l'historique"
 
-#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:12
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:13
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
@@ -286,6 +301,10 @@ msgstr ""
 "La partie de l'élément excédant la taille authorisée sera remplacée par \"…"
 "\", et les sauts de lignes par \" \" quand on affiche depuis l'applet, 0 "
 "pour désativer."
+
+#: ../data/org.gnome.GPaste.gschema.xml.in.in.h:14
+msgid "The keyboard shortcut to display the menu"
+msgstr "Le raccourcis clavier pour afficher l'historique"
 
 #: ../data/gpaste-applet.desktop.in.in.h:1
 msgid "GPaste Applet"
