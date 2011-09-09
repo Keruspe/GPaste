@@ -7,6 +7,7 @@ NEW in 1.5 (Not released yet)
 - History file is now ~/.gpaste_history
 - Use AM_PROG_VALAC
 - Get rid of AM_MAINTAINER_MODE
+- Add possibility to have a keyboard shortcut to display the history
 
 NEW in 1.4 (07/09/2011)
 =============
