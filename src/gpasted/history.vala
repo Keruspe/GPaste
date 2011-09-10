@@ -35,11 +35,10 @@ namespace GPaste {
     namespace Daemon {
 
         public class History : GLib.Object {
-            private GLib.SList<Item?> _history;
+            //private GLib.SList<Item?> _history;
             public unowned GLib.SList<Item?> history {
-                get {
-                    return this._history;
-                }
+                get;
+                private set;
             }
 
             private static History _instance;
@@ -52,7 +51,7 @@ namespace GPaste {
             }
 
             private History() {
-                this._history = new GLib.SList<Item?>();
+                this.history = new GLib.SList<Item?>();
                 DBusServer.instance.changed.connect(()=>{
                     this.save();
                 });
@@ -62,21 +61,21 @@ namespace GPaste {
                 // TODO: Handle images
                 if (selection.val == null || selection.val /*.trim()*/ == "")
                     return;
-                for (unowned GLib.SList<Item?> s = history ; s != null ; s = s.next) {
+                for (unowned GLib.SList<Item?> s = this.history ; s != null ; s = s.next) {
                     if (s.data == selection) {
-                        this._history.remove_link(s);
+                        this.history.remove_link(s);
                         break;
                     }
                 }
-                this._history.prepend(selection);
+                this.history.prepend(selection);
                 uint32 max_history_size = Settings.instance.max_history_size;
-                if (this._history.length() > max_history_size) {
+                if (this.history.length() > max_history_size) {
                     unowned GLib.SList<Item?> tmp = this.history;
                     for (uint32 i = 0 ; i < max_history_size ; ++i)
                         tmp = tmp.next;
                     do {
                         unowned GLib.SList<Item?> next = tmp.next;
-                        this._history.remove_link(tmp);
+                        this.history.remove_link(tmp);
                         tmp = next;
                     } while(tmp != null);
                 }
@@ -84,29 +83,29 @@ namespace GPaste {
             }
 
             public void delete(uint32 index) {
-                if (index >= this._history.length())
+                if (index >= this.history.length())
                     return;
                 unowned GLib.SList<Item?> tmp = this.history;
                 for (uint32 i = 0 ; i < index ; ++i)
                     tmp = tmp.next;
-                this._history.remove_link(tmp);
+                this.history.remove_link(tmp);
                 if (index == 0)
                     this.select(0);
                 else
                     DBusServer.instance.changed();
             }
 
-            public string getElement(uint32 index) {
+            public string get_element(uint32 index) {
                 // TODO: support handling images
-                if (index >= this._history.length())
+                if (index >= this.history.length())
                     return "";
-                return this._history.nth_data(index).val;
+                return this.history.nth_data(index).val;
             }
 
             public void select(uint32 index) {
-                if (index >= this._history.length())
+                if (index >= this.history.length())
                     return;
-                Item selection = this._history.nth_data(index);
+                Item selection = this.history.nth_data(index);
                 ClipboardsManager.instance.select(selection);
             }
 
@@ -118,12 +117,12 @@ namespace GPaste {
                 } catch (Error e) {
                     stderr.printf(_("Could not delete history file.\n"));
                 }
-                this._history = new GLib.SList<Item?>();
+                this.history = new GLib.SList<Item?>();
                 DBusServer.instance.changed();
             }
 
             // TODO: Remove me for 2.0 once everyone'll have its history converted
-            private void convertHistory() {
+            private void convert_history() {
                 var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
                 try {
                     int64 length;
@@ -133,7 +132,7 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this._history.append(Item(ItemKind.STRING, str));
+                            this.history.append(Item(ItemKind.STRING, str));
                     }
                     this.save();
                     history_file.delete();
@@ -141,11 +140,11 @@ namespace GPaste {
                 } catch (Error e) {
                     // File do no longer exist, we don't care about that
                 }
-                this._history = new GLib.SList<Item?>();
+                this.history = new GLib.SList<Item?>();
             }
 
             public void load() {
-                this.convertHistory();
+                this.convert_history();
                 var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
                 try {
                     int64 length;
@@ -156,7 +155,7 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this._history.append(Item(kind, str));
+                            this.history.append(Item(kind, str));
                     }
                 } catch (Error e) {
                     stderr.printf(_("Could not read history file.\n"));
@@ -172,7 +171,7 @@ namespace GPaste {
                     }
                     var history_file_stream = history_file.replace(null, false, GLib.FileCreateFlags.REPLACE_DESTINATION);
                     var dos = new GLib.DataOutputStream(history_file_stream);
-                    foreach(Item i in this._history) {
+                    foreach(Item i in this.history) {
                         dos.put_int64(i.val.length);
                         dos.put_byte(i.kind);
                         dos.put_string(i.val);
@@ -187,3 +186,4 @@ namespace GPaste {
     }
 
 }
+

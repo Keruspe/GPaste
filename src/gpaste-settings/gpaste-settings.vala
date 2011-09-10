@@ -251,30 +251,30 @@ namespace GPaste {
 
             public Main() {
                 GLib.Object(application_id: "org.gnome.GPaste.Settings");
-                this.activate.connect(init);
+                this.activate.connect(this.init);
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "max-history-size":
-                        this.window.max_history_size = max_history_size;
+                        this.window.max_history_size = this.max_history_size;
                         break;
                     case "element-size":
-                        this.window.element_size = element_size;
+                        this.window.element_size = this.element_size;
                         break;
                     case "primary-to-history":
-                        this.window.primary_to_history = primary_to_history;
+                        this.window.primary_to_history = this.primary_to_history;
                         break;
                     case "synchronize_clipboards":
-                        this.window.synchronize_clipboards = synchronize_clipboards;
+                        this.window.synchronize_clipboards = this.synchronize_clipboards;
                         break;
                     case "track-changes":
-                        this.window.track_changes = track_changes;
+                        this.window.track_changes = this.track_changes;
                         break;
                     case "save-history":
-                        this.window.save_history = save_history;
+                        this.window.save_history = this.save_history;
                         break;
                     case "keyboard-shortcut":
-                        this.window.keyboard_shortcut = keyboard_shortcut;
+                        this.window.keyboard_shortcut = this.keyboard_shortcut;
                         break;
                     }
                 });
@@ -304,3 +304,4 @@ namespace GPaste {
     }
 
 }
+

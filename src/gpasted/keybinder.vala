@@ -36,36 +36,39 @@ namespace GPaste {
 
         public class Keybinder : GLib.Object {
             public static Keybinder instance {
-                get; private set;
+                get;
+                private set;
             }
 
             public int keycode {
-                get; private set;
+                get;
+                private set;
             }
 
             public Gdk.ModifierType modifiers {
-                get; private set;
+                get;
+                private set;
             }
 
             public static void init(string accelerator) {
-                if (instance != null)
+                if (Keybinder.instance != null)
                     return;
-                instance = new Keybinder(accelerator);
+                Keybinder.instance = new Keybinder(accelerator);
                 Gdk.Window rootwin = Gdk.get_default_root_window();
                 if(rootwin != null)
-                    rootwin.add_filter(instance.event_filter);
+                    rootwin.add_filter(Keybinder.instance.event_filter);
             }
 
             private Keybinder(string accelerator) {
-                activate(accelerator);
+                this.activate(accelerator);
             }
 
             public void rebind(string accelerator) {
                 Gdk.Window rootwin = Gdk.get_default_root_window();
                 X.ID xid = Gdk.X11Window.get_xid(rootwin);
                 unowned X.Display display = Gdk.x11_get_default_xdisplay();
-                display.ungrab_key(keycode, modifiers, xid);
-                activate(accelerator);
+                display.ungrab_key(this.keycode, this.modifiers, xid);
+                this.activate(accelerator);
             }
 
             private void activate(string accelerator) {
@@ -74,21 +77,21 @@ namespace GPaste {
                 Gtk.accelerator_parse(accelerator, out keysym, out mod);
 
                 unowned X.Display display = Gdk.x11_get_default_xdisplay();
-                keycode = display.keysym_to_keycode(keysym);
-                modifiers = mod;
-                if(keycode != 0) {
+                this.keycode = display.keysym_to_keycode(keysym);
+                this.modifiers = mod;
+                if(this.keycode != 0) {
                     Gdk.error_trap_push();
                     Gdk.Window rootwin = Gdk.get_default_root_window();
                     X.ID xid = Gdk.X11Window.get_xid(rootwin);
-                    display.grab_key(keycode, modifiers, xid, false, X.GrabMode.Async, X.GrabMode.Async);
+                    display.grab_key(this.keycode, this.modifiers, xid, false, X.GrabMode.Async, X.GrabMode.Async);
                     Gdk.flush();
                 }
             }
 
             private Gdk.FilterReturn event_filter(Gdk.XEvent gdk_xevent, Gdk.Event gdk_event) {
                 var xevent = *((X.Event*)(&gdk_xevent));
-                if(xevent.type == X.EventType.KeyPress && xevent.xkey.keycode == Keybinder.instance.keycode && xevent.xkey.state == Keybinder.instance.modifiers)
-                    DBusServer.instance.toggleHistory();
+                if(xevent.type == X.EventType.KeyPress && xevent.xkey.keycode == this.keycode && xevent.xkey.state == this.modifiers)
+                    DBusServer.instance.toggle_history();
                 return Gdk.FilterReturn.CONTINUE;
             }
         }
@@ -96,3 +99,4 @@ namespace GPaste {
     }
 
 }
+

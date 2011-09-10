@@ -37,7 +37,7 @@ namespace GPaste {
         [DBus (name = "org.gnome.GPaste")]
         public interface DBusClient : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public abstract GLib.Variant getHistory() throws IOError;
+            public abstract GLib.Variant get_history() throws IOError;
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
             public abstract void select(uint32 index) throws IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
@@ -49,7 +49,7 @@ namespace GPaste {
             [DBus (name = "Changed", inSignature = "")]
             public abstract signal void changed();
             [DBus (name = "ToggleHistory", inSignature = "")]
-            public abstract signal void toggleHistory();
+            public abstract signal void toggle_history();
         }
 
         public class Window : Gtk.Window {
@@ -90,7 +90,7 @@ namespace GPaste {
                 bool history_is_empty;
                 var app = this.application as Main;
                 try {
-                    var hist = app.gpasted.getHistory() as string[];
+                    var hist = app.gpasted.get_history() as string[];
                     history_is_empty = (hist.length == 0);
                     uint32 element_size = app.element_size;
                     for (uint32 index = 0 ; index < hist.length ; ++index) {
@@ -132,7 +132,7 @@ namespace GPaste {
                 this.history.show_all();
             }
 
-            public void toggleHistory() {
+            public void toggle_history() {
                 // TODO: Implement this
             }
 
@@ -164,20 +164,34 @@ namespace GPaste {
         }
 
         public class Main : Gtk.Application {
-            private GLib.Settings settings;
-            public DBusClient gpasted { get; private set; }
-            public uint32 element_size { get; private set; }
             private Window window;
+            private GLib.Settings settings;
+
+            private uint32 real_element_size {
+                get {
+                    return this.settings.get_value("element-size").get_uint32();
+                }
+            }
+
+            public uint32 element_size {
+                get;
+                private set;
+            }
+
+            public DBusClient gpasted {
+                get;
+                private set;
+            }
 
             public Main() {
                 GLib.Object(application_id: "org.gnome.GPaste.Applet");
                 this.settings = new GLib.Settings("org.gnome.GPaste");
-                this.element_size = settings.get_value("element-size").get_uint32();
+                this.element_size = this.real_element_size;
                 this.activate.connect(init);
                 this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "element-size":
-                        this.element_size = settings.get_value("element-size").get_uint32();
+                        this.element_size = this.real_element_size; 
                         this.window.fill_history(); /* Keep displayed history up to date */
                         break;
                     }
@@ -188,8 +202,8 @@ namespace GPaste {
                 try {
                     this.gpasted = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     this.gpasted.track(true); /* In case we exited the applet and we're launching it back */
-                    this.gpasted.toggleHistory.connect(()=>{
-                        this.window.toggleHistory();
+                    this.gpasted.toggle_history.connect(()=>{
+                        this.window.toggle_history();
                     });
                 } catch (IOError e) {
                     stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
@@ -220,3 +234,4 @@ namespace GPaste {
     }
 
 }
+

@@ -37,11 +37,11 @@ namespace GPaste {
         [DBus (name = "org.gnome.GPaste")]
         interface DBusClient : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public abstract GLib.Variant getHistory() throws IOError;
+            public abstract GLib.Variant get_history() throws IOError;
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws IOError;
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
-            public abstract string getElement(uint32 index) throws IOError;
+            public abstract string get_element(uint32 index) throws IOError;
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
             public abstract void select(uint32 index) throws IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
@@ -53,7 +53,7 @@ namespace GPaste {
         }
 
         public class Main : GLib.Object {
-            private static void usage(string caller) {
+            private void usage(string caller) {
                 stdout.printf(_("Usage:\n"));
                 stdout.printf(_("%s: print the history\n"), caller);
                 stdout.printf(_("%s [add] <text>: set text to clipboard\n"), caller);
@@ -79,9 +79,10 @@ namespace GPaste {
                 GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
                 GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
                 GLib.Intl.setlocale(LocaleCategory.ALL, "");
+                var app = new Main();
                 try {
                     DBusClient gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
-                    if (! Posix.isatty(stdin.fileno())) {
+                    if (!Posix.isatty(stdin.fileno())) {
                         /* We are being piped ! */
                         var text = new StringBuilder();
                         string line = stdin.read_line();
@@ -93,7 +94,7 @@ namespace GPaste {
                     } else {
                         switch (args.length) {
                         case 1:
-                            var history = gpaste.getHistory() as string[];
+                            var history = gpaste.get_history() as string[];
                             for (int i = 0 ; i < history.length ; ++i)
                                 stdout.printf("%d: %s\n", i, history[i]);
                             break;
@@ -102,7 +103,7 @@ namespace GPaste {
                             case "help":
                             case "-h":
                             case "--help":
-                                usage(args[0]);
+                                app.usage(args[0]);
                                 break;
                             case "start":
                             case "daemon":
@@ -144,7 +145,7 @@ namespace GPaste {
                                 gpaste.add(args[2]);
                                 break;
                             case "get":
-                                stdout.printf("%s", gpaste.getElement(int.parse(args[2])));
+                                stdout.printf("%s", gpaste.get_element(int.parse(args[2])));
                                 break;
                             case "set":
                                 gpaste.select(int.parse(args[2]));
@@ -170,12 +171,12 @@ namespace GPaste {
                                 }
                                 break;
                             default:
-                                usage(args[0]);
+                                app.usage(args[0]);
                                 return 1;
                             }
                             break;
                         default:
-                            usage(args[0]);
+                            app.usage(args[0]);
                             return 1;
                         }
                     }
@@ -190,3 +191,4 @@ namespace GPaste {
     }
 
 }
+

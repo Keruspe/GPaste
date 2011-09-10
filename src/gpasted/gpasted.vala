@@ -38,7 +38,7 @@ namespace GPaste {
         public class DBusServer : GLib.Object {
             // TODO: Handle images
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public GLib.Variant getHistory() {
+            public GLib.Variant get_history() {
                 unowned GLib.SList<Item?> history = History.instance.history;
                 var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
                 foreach (Item i in history)
@@ -52,8 +52,8 @@ namespace GPaste {
             }
 
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
-            public string getElement(uint32 index) {
-                return History.instance.getElement(index);
+            public string get_element(uint32 index) {
+                return History.instance.get_element(index);
             }
 
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
@@ -84,7 +84,7 @@ namespace GPaste {
             public signal void changed();
 
             [DBus (name = "ToggleHistory", inSignature = "")]
-            public signal void toggleHistory();
+            public signal void toggle_history();
 
             [DBus (name = "Active", signature = "b", access = "readonly")]
             public bool active {
@@ -109,14 +109,14 @@ namespace GPaste {
         }
 
         public class Main : GLib.Object {
-            public static GLib.MainLoop loop { get; private set; }
+            private static GLib.MainLoop loop;
 
             private static void handle(int signal) {
                 stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
                 Main.loop.quit();
             }
 
-            private static void on_bus_aquired(DBusConnection conn) {
+            private static void on_bus_acquired(DBusConnection conn) {
                 try {
                     conn.register_object("/org/gnome/GPaste", DBusServer.instance);
                 } catch (IOError e) {
@@ -126,7 +126,7 @@ namespace GPaste {
 
             private static void start_dbus() {
                 Bus.own_name(BusType.SESSION, "org.gnome.GPaste", BusNameOwnerFlags.NONE,
-                    Main.on_bus_aquired, () => {}, () => {
+                    Main.on_bus_acquired, () => {}, () => {
                         stderr.printf(_("Could not aquire DBus name.\n"));
                         Posix.exit(1);
                     }
@@ -146,7 +146,7 @@ namespace GPaste {
                 cm.addClipboard(primary);
                 cm.activate();
                 var handler = Posix.sigaction_t();
-                handler.sa_handler = handle;
+                handler.sa_handler = Main.handle;
                 Posix.sigaction(Posix.SIGTERM, handler, null);
                 Posix.sigaction(Posix.SIGINT, handler, null);
                 Keybinder.init(Settings.instance.keyboard_shortcut);
@@ -160,3 +160,4 @@ namespace GPaste {
     }
 
 }
+

@@ -35,9 +35,13 @@ namespace GPaste {
     namespace Daemon {
 
         public class Clipboard : GLib.Object {
-            public Gtk.Clipboard real { get; private set; }
             public Gdk.Atom selection;
             public string text;
+
+            public Gtk.Clipboard real {
+                get;
+                private set;
+            }
 
             public Clipboard(Gdk.Atom type) {
                 this.selection = type;
@@ -78,7 +82,7 @@ namespace GPaste {
 
             public void activate() {
                 var time = new TimeoutSource(1000);
-                time.set_callback(this.checkClipboards);
+                time.set_callback(this.check_clipboards);
                 time.attach(null);
             }
 
@@ -90,7 +94,7 @@ namespace GPaste {
                 }
             }
 
-            private bool checkClipboards() {
+            private bool check_clipboards() {
                 // TODO: Handle images
                 if (!gpasted.active) return true;
                 string? synchronized_text = null;
@@ -127,3 +131,4 @@ namespace GPaste {
     }
 
 }
+

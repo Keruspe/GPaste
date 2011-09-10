@@ -113,32 +113,32 @@ namespace GPaste {
 
             private Settings() {
                 this.settings = new GLib.Settings("org.gnome.GPaste");
-                this.primary_to_history = real_primary_to_history;
-                this.max_history_size = real_max_history_size;
-                this.synchronize_clipboards = real_synchronize_clipboards;
-                this.track_changes = real_track_changes;
-                this.save_history = real_save_history;
-                this.keyboard_shortcut = real_keyboard_shortcut;
+                this.primary_to_history = this.real_primary_to_history;
+                this.max_history_size = this.real_max_history_size;
+                this.synchronize_clipboards = this.real_synchronize_clipboards;
+                this.track_changes = this.real_track_changes;
+                this.save_history = this.real_save_history;
+                this.keyboard_shortcut = this.real_keyboard_shortcut;
                 this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "primary-to-history":
-                        this.primary_to_history = real_primary_to_history;
+                        this.primary_to_history = this.real_primary_to_history;
                         break;
                     case "max-history-size":
-                        this.max_history_size = real_max_history_size;
+                        this.max_history_size = this.real_max_history_size;
                         break;
                     case "synchronize-clipboards":
-                        this.synchronize_clipboards = real_synchronize_clipboards;
+                        this.synchronize_clipboards = this.real_synchronize_clipboards;
                         break;
                     case "track-changes":
-                        this.track_changes = real_track_changes;
+                        this.track_changes = this.real_track_changes;
                         DBusServer.instance.tracking(this.track_changes);
                         break;
                     case "save-history":
-                        this.save_history = real_save_history;
+                        this.save_history = this.real_save_history;
                         break;
                     case "keyboard-shortcut":
-                        this.keyboard_shortcut = real_keyboard_shortcut;
+                        this.keyboard_shortcut = this.real_keyboard_shortcut;
                         Keybinder.instance.rebind(this.keyboard_shortcut);
                         break;
                     }
@@ -149,3 +149,4 @@ namespace GPaste {
     }
 
 }
+
