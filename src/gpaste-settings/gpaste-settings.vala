@@ -157,7 +157,7 @@ namespace GPaste {
                     app.element_size = this.element_size;
                 });
                 this.keyboard_shortcut_entry = new Gtk.Entry();
-                this.keyboard_shortcut = app.get_keyboard_shortcut();
+                this.keyboard_shortcut = app.keyboard_shortcut;
                 this.keyboard_shortcut_entry.editing_done.connect(()=>{
                     app.keyboard_shortcut = this.keyboard_shortcut;
                 });
@@ -241,14 +241,12 @@ namespace GPaste {
             }
 
             public string keyboard_shortcut {
+                owned get {
+                    return this.settings.get_string("keyboard-shortcut");
+                }
                 set {
                     this.settings.set_string("keyboard-shortcut", value);
                 }
-            }
-
-            /* Vala does not want this as a property */
-            public string get_keyboard_shortcut() {
-                return this.settings.get_string("keyboard-shortcut");
             }
 
             public Main() {
@@ -276,7 +274,7 @@ namespace GPaste {
                         this.window.save_history = save_history;
                         break;
                     case "keyboard-shortcut":
-                        this.window.keyboard_shortcut = get_keyboard_shortcut();
+                        this.window.keyboard_shortcut = keyboard_shortcut;
                         break;
                     }
                 });

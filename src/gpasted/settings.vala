@@ -76,9 +76,10 @@ namespace GPaste {
                 }
             }
 
-            /* Vala doesn't seem to like that as a property because of an ownership transfer mess */
-            private string real_keyboard_shortcut() {
-                return this.settings.get_string("keyboard-shortcut");
+            private string real_keyboard_shortcut {
+                owned get {
+                    return this.settings.get_string("keyboard-shortcut");
+                }
             }
 
             public bool primary_to_history {
@@ -117,7 +118,7 @@ namespace GPaste {
                 this.synchronize_clipboards = real_synchronize_clipboards;
                 this.track_changes = real_track_changes;
                 this.save_history = real_save_history;
-                this.keyboard_shortcut = real_keyboard_shortcut();
+                this.keyboard_shortcut = real_keyboard_shortcut;
                 this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "primary-to-history":
@@ -137,7 +138,7 @@ namespace GPaste {
                         this.save_history = real_save_history;
                         break;
                     case "keyboard-shortcut":
-                        this.keyboard_shortcut = real_keyboard_shortcut();
+                        this.keyboard_shortcut = real_keyboard_shortcut;
                         Keybinder.instance.rebind(this.keyboard_shortcut);
                         break;
                     }
