@@ -133,7 +133,10 @@ namespace GPaste {
             }
 
             public void toggle_history() {
-                // TODO: Implement this
+                Gdk.Event e = Gtk.get_current_event();
+                if (this.needs_repaint)
+                    this.fill_history();
+                this.history.popup(null, null, this.tray_icon.position_menu, 1, e.get_time());
             }
 
             private void fill_options() {
