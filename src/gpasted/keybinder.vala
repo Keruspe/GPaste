@@ -63,11 +63,15 @@ namespace GPaste {
                 this.activate(accelerator);
             }
 
-            public void rebind(string accelerator) {
+            public void unbind() {
                 Gdk.Window rootwin = Gdk.get_default_root_window();
                 X.ID xid = Gdk.X11Window.get_xid(rootwin);
                 unowned X.Display display = Gdk.x11_get_default_xdisplay();
                 display.ungrab_key(this.keycode, this.modifiers, xid);
+            }
+
+            public void rebind(string accelerator) {
+                this.unbind();
                 this.activate(accelerator);
             }
 

@@ -153,6 +153,7 @@ namespace GPaste {
                 Main.start_dbus();
                 Main.loop = new GLib.MainLoop(null, false);
                 Main.loop.run();
+                Keybinder.instance.unbind();
                 return 0;
             }
         }
