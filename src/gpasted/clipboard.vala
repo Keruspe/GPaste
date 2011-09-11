@@ -96,7 +96,6 @@ namespace GPaste {
 
             private bool check_clipboards() {
                 // TODO: Handle images
-                if (!gpasted.active) return true;
                 string? synchronized_text = null;
                 foreach(Clipboard c in this.clipboards) {
                     string text = c.real.wait_for_text();
@@ -110,7 +109,7 @@ namespace GPaste {
                     if (c.text != text) {
                         c.text = text;
                         Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                        if (c.selection == tmp || Settings.instance.primary_to_history)
+                        if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
                             History.instance.add(Item(ItemKind.STRING, text));
                         if (Settings.instance.synchronize_clipboards)
                             synchronized_text = text;
