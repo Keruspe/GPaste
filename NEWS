@@ -1,4 +1,4 @@
-NEW in 1.5 (Not released yet)
+NEW in 1.5 (11/09/2011)
 =============
 
 - No trace of the applet at all with --disable-applet
@@ -9,6 +9,7 @@ NEW in 1.5 (Not released yet)
 - New "gpaste get <number>" command for subshell usage (And GetElement DBus method)
 - Get rid of AM_MAINTAINER_MODE
 - Add possibility to have a keyboard shortcut to display the history
+- Do not add to history the last selected item when re tracking for changes
 
 NEW in 1.4 (07/09/2011)
 =============
