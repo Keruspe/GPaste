@@ -22,7 +22,7 @@ gpasted_SOURCES = \
 gpasted_VALAFLAGS = \
 	--vapidir=vapi \
 	$(GTK_VALAFLAGS) \
-	--pkg=gdk-x11-3.0 \
+	$(GDK_VALAFLAGS) \
 	$(GIO_VALAFLAGS) \
 	--pkg=config \
 	--pkg=posix \
@@ -30,6 +30,7 @@ gpasted_VALAFLAGS = \
 
 gpasted_CFLAGS = \
 	$(GTK_CFLAGS) \
+	$(GDK_CFLAGS) \
 	$(GIO_CFLAGS) \
 	$(GLIB_CFLAGS) \
 	--include config.h \
@@ -41,6 +42,7 @@ CLEANFILES += \
 
 gpasted_LDADD = \
 	$(GTK_LIBS) \
+	$(GDK_LIBS) \
 	$(GIO_LIBS) \
 	$(GLIB_LIBS)
 

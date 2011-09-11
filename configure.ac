@@ -48,6 +48,12 @@ AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
 AC_SUBST(GTK_VALAFLAGS)
 
+PKG_CHECK_MODULES(GDK, [gdk-x11-3.0 >= 3.0.0])
+GDK_VALAFLAGS="--pkg=gdk-x11-3.0"
+AC_SUBST(GDK_CFLAGS)
+AC_SUBST(GDK_LIBS)
+AC_SUBST(GDK_VALAFLAGS)
+
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--disable-applet], [Disable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
