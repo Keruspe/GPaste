@@ -142,8 +142,8 @@ namespace GPaste {
                 var clipboard = new Clipboard(Gdk.SELECTION_CLIPBOARD);
                 var primary = new Clipboard(Gdk.SELECTION_PRIMARY);
                 var cm = ClipboardsManager.instance;
-                cm.addClipboard(clipboard);
-                cm.addClipboard(primary);
+                cm.add_clipboard(clipboard);
+                cm.add_clipboard(primary);
                 cm.activate();
                 var handler = Posix.sigaction_t();
                 handler.sa_handler = Main.handle;

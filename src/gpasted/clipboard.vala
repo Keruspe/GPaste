@@ -66,7 +66,7 @@ namespace GPaste {
                 this.clipboards = new GLib.SList<Clipboard>();
             }
 
-            public void addClipboard(Clipboard clipboard) {
+            public void add_clipboard(Clipboard clipboard) {
                 this.clipboards.prepend(clipboard);
                 clipboard.text = clipboard.real.wait_for_text();
                 if (clipboard.text == null) {

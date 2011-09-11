@@ -35,7 +35,6 @@ namespace GPaste {
     namespace Daemon {
 
         public class History : GLib.Object {
-            //private GLib.SList<Item?> _history;
             public unowned GLib.SList<Item?> history {
                 get;
                 private set;
