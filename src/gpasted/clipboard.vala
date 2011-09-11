@@ -81,9 +81,7 @@ namespace GPaste {
             }
 
             public void activate() {
-                var time = new TimeoutSource(1000);
-                time.set_callback(this.check_clipboards);
-                time.attach(null);
+                GLib.Timeout.add_seconds(1, this.check_clipboards);
             }
 
             public void select(Item selection) {
