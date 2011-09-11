@@ -119,7 +119,7 @@ gpaste-applet.desktop: data/gpaste-applet.desktop.in
 	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
 gpaste_applet_SOURCES = \
-	src/applets/standard/gpaste-applet.vala
+	src/applets/legacy/gpaste-applet.vala
 
 gpaste_applet_VALAFLAGS = \
 	--vapidir=vapi \
