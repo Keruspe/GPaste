@@ -58,7 +58,7 @@ namespace GPaste {
 
             public void add(Item selection) {
                 // TODO: Handle images
-                if (selection.val == null || selection.val /*.trim()*/ == "")
+                if (selection.val == null || selection.val.strip() == "")
                     return;
                 for (unowned GLib.SList<Item?> s = this.history ; s != null ; s = s.next) {
                     if (s.data == selection) {
