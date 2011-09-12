@@ -2,5 +2,4 @@
     Add support for images
     standard applet cleanup
     don't close menu when deleting item
-    Fix keyboard shortcut behaviour after shell reload
     See TODO in the code
