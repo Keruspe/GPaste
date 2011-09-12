@@ -211,7 +211,8 @@ EXTRA_DIST += data/org.gnome.GPaste.service.in
 
 CLEANFILES += $(service_DATA)
 
-noinst_DATA = completions/_gpaste completions/gpaste
+noinst_DATA = data/completions/_gpaste \
+	      data/completions/gpaste
 EXTRA_DIST += $(noinst_DATA)
 
 # Generate a ChangeLog file from 'git log'
