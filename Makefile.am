@@ -233,6 +233,9 @@ noinst_DATA = data/completions/_gpaste \
 	      data/completions/gpaste
 EXTRA_DIST += $(noinst_DATA)
 
+update-po:
+	$(MAKE) -C po $@
+
 # Generate a ChangeLog file from 'git log'
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \
