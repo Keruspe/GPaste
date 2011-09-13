@@ -120,6 +120,9 @@ namespace GPaste {
                 var history_size_label = new Gtk.Label(_("Max history size: "));
                 var element_size_label = new Gtk.Label(_("Max element size when displaying: "));
                 var keyboard_shortcut_label = new Gtk.Label(_("Keyboard shortcut to display the history: "));
+                history_size_label.xalign = 0;
+                element_size_label.xalign = 0;
+                keyboard_shortcut_label.xalign = 0;
                 labels_vbox.add(history_size_label);
                 labels_vbox.add(element_size_label);
                 labels_vbox.add(keyboard_shortcut_label);
