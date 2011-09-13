@@ -172,6 +172,7 @@ namespace GPaste {
                 values_hbox.add(values_vbox);
 
                 var vbox = new Gtk.VBox(false, 10);
+                vbox.margin = 12;
                 vbox.add(this.primary_to_history_button);
                 vbox.add(this.synchronize_clipboards_button);
                 vbox.add(this.track_changes_button);
