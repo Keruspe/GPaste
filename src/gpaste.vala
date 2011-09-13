@@ -37,6 +37,8 @@ namespace GPaste {
             public abstract void empty() throws IOError;
             [DBus (name = "Track", inSignature = "b", outSignature = "")]
             public abstract void track(bool tracking_state) throws IOError;
+            [DBus (name = "Reexecute", inSignature = "", outSignature = "")]
+            public abstract void reexec() throws IOError;
         }
 
         public class Main : GLib.Object {
@@ -52,7 +54,8 @@ namespace GPaste {
                 stdout.printf(_("%s empty: empty the history\n"), caller);
                 stdout.printf(_("%s start: start tracking clipboard changes\n"), caller);
                 stdout.printf(_("%s stop: stop tracking clipboard changes\n"), caller);
-                stdout.printf(_("%s quit: alias for quit\n"), caller);
+                stdout.printf(_("%s quit: alias for stop\n"), caller);
+                stdout.printf(_("%s daemon-reexec: reexecute the daemon (after upgrading...)\n"), caller);
 #if ENABLE_APPLET
                 stdout.printf(_("%s applet: launch the applet\n"), caller);
 #endif
@@ -120,6 +123,16 @@ namespace GPaste {
                             case "settings":
                             case "preferences":
                                 Posix.execl(Config.PKGLIBEXECDIR + "/gpaste-settings", "GPaste-Settings");
+                                break;
+                            case "daemon-reexec":
+                                try {
+                                    gpaste.reexec();
+                                } catch (GLib.Error e) {
+                                    if (e.code == 4) /* NoReply, but we do not expect one when doing this ! */
+                                        stdout.printf(_("Successfully reexecuted the daemon\n"));
+                                    else /* Forward critical error */
+                                        GLib.critical("%s (%s, %d)", e.message, e.domain.to_string(), e.code);
+                                }
                                 break;
                             default:
                                 gpaste.add(args[1]);

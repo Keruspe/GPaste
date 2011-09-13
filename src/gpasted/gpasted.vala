@@ -64,6 +64,11 @@ namespace GPaste {
                 this.tracking(tracking_state);
             }
 
+            [DBus (name = "Reexecute", inSignature = "", outSignature = "")]
+            public void reexec() {
+                Main.reexec();
+            }
+
             [DBus (name = "Tracking", inSignature = "b")]
             public signal void tracking(bool tracking_state);
 
@@ -100,7 +105,7 @@ namespace GPaste {
 
             private static void handle(int signal) {
                 stdout.printf(_("Signal %d recieved, exiting.\n"), signal);
-                Main.loop.quit();
+                Main.stop();
             }
 
             private static void on_bus_acquired(DBusConnection conn) {
@@ -118,6 +123,16 @@ namespace GPaste {
                         Posix.exit(1);
                     }
                 );
+            }
+
+            private static void stop() {
+                Keybinder.instance.unbind();
+                Main.loop.quit();
+            }
+
+            public static void reexec() {
+                Main.stop();
+                Posix.execl(Config.PKGLIBEXECDIR + "/gpasted");
             }
 
             public static int main(string[] args) {
@@ -140,7 +155,6 @@ namespace GPaste {
                 Main.start_dbus();
                 Main.loop = new GLib.MainLoop(null, false);
                 Main.loop.run();
-                Keybinder.instance.unbind();
                 return 0;
             }
         }

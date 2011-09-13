@@ -11,6 +11,7 @@ _describe 'gpaste command' '(
 	start:start\ the\ daemon
 	daemon:alias\ for\ start
 	quit:shutdown\ the\ daemon
+	daemon-reexec:reexecute\ the\ daemon
 	settings:launch\ the\ configuration\ tool
 	preferences:alias\ for\ settings
 	version:display\ the\ version

@@ -73,6 +73,10 @@ Start tracking clipboard changes
 Stop tracking clipboard changes
 .br
 .TP
+.B gpaste daemon-reexec
+Reexecute the daemon, for example after upgrading GPaste
+.br
+.TP
 .B gpaste settings
 Launch the configuration tool
 .br

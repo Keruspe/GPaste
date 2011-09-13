@@ -52,6 +52,7 @@ gpasted_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
+	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(CFLAGS)
 
 CLEANFILES += \
