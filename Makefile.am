@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-DISTCHECK_CONFIGURE_FLAGS = --enable-applet --enable-gnome-shell-extension
+DISTCHECK_CONFIGURE_FLAGS = --enable-applet
 
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 
@@ -161,10 +161,10 @@ EXTRA_DIST += data/gpaste-applet.desktop.in.in \
 	      data/gpaste-settings.desktop.in.in
 
 CLEANFILES += \
-	data/gpaste-applet.desktop.in \
-	gpaste-applet.desktop \
-	data/gpaste-settings.desktop.in \
-	gpaste-settings.desktop \
+	$(nodist_applications_in_files) \
+	$(nodist_applications_DATA) \
+	$(nodist_autostart_in_files) \
+	$(nodist_autostart_DATA) \
 	${gpaste_applet_SOURCES:.vala=.c}
 
 gpaste.1_parts += data/gpaste-applet.1.part
