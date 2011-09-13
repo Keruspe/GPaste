@@ -95,12 +95,11 @@ CLEANFILES += \
 	${gpaste_settings_SOURCES:.vala=.c}
 
 applicationsdir=$(datadir)/applications
-nodist_applications_DATA = gpaste-settings.desktop
+nodist_applications_in_files = data/gpaste-settings.desktop.in
+nodist_applications_DATA = $(nodist_applications_in_files:.desktop.in=.desktop)
 
 data/gpaste-settings.desktop.in: data/gpaste-settings.desktop.in.in
 	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
-gpaste-settings.desktop: data/gpaste-settings.desktop.in
-	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
 gpaste.1_parts = data/gpaste.1.part
 
@@ -111,12 +110,11 @@ gpaste_VALAFLAGS += --define=ENABLE_APPLET
 pkglibexec_PROGRAMS += gpaste-applet
 
 autostartdir=$(sysconfdir)/xdg/autostart
-nodist_autostart_DATA = gpaste-applet.desktop
+nodist_autostart_in_files = data/gpaste-applet.desktop.in
+nodist_autostart_DATA = $(nodist_autostart_in_files:.desktop.in=.desktop)
 
 data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
 	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
-gpaste-applet.desktop: data/gpaste-applet.desktop.in
-	$(AM_V_GEN) sed s/^_// < $< > $@ || rm $@
 
 gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala
@@ -189,6 +187,7 @@ endif
 
 gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 
+@INTLTOOL_DESKTOP_RULE@
 @INTLTOOL_XML_NOMERGE_RULE@
 @GSETTINGS_RULES@
 
@@ -212,7 +211,8 @@ EXTRA_DIST += data/org.gnome.GPaste.service.in
 
 CLEANFILES += $(service_DATA)
 
-noinst_DATA = completions/_gpaste completions/gpaste
+noinst_DATA = data/completions/_gpaste \
+	      data/completions/gpaste
 EXTRA_DIST += $(noinst_DATA)
 
 # Generate a ChangeLog file from 'git log'

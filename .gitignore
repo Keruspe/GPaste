@@ -44,3 +44,4 @@ gpaste.1
 metadata.json
 extension.js
 *.anjuta*
+.intltool-merge-cache
