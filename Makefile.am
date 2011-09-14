@@ -31,8 +31,6 @@ gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 
 dist_dbusservices_in_in_files = data/org.gnome.GPaste.service.in.in
 nodist_dbusservices_DATA = $(dist_dbusservices_in_in_files:.service.in.in=.service)
-%.service: %.service.in
-	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 
 noinst_DATA = data/completions/_gpaste \
 	      data/completions/gpaste
@@ -41,9 +39,6 @@ nodist_man_MANS = man/gpaste.1
 gpaste_1_parts = data/gpaste.1.part
 man/gpaste.1: $(gpaste_1_parts)
 	$(AM_V_GEN) $(MKDIR_P) man && cat $^ > $@
-
-%.desktop.in: %.desktop.in.in
-	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
 
 if ENABLE_APPLET
 gpaste_1_parts += data/gpaste-applet.1.part
@@ -59,11 +54,6 @@ dist_gnomeshell_DATA = \
 	src/applets/gnome-shell/extension.js \
 	src/applets/gnome-shell/stylesheet.css
 nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
-
-%.json: %.json.in
-	$(AM_V_GEN) $(MKDIR_P) src/applets/gnome-shell && \
-	    sed -e 's,[@]localedir[@],$(localedir),g' \
-		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
 endif
 
 # Binaries
@@ -203,6 +193,16 @@ CLEANFILES = \
 @INTLTOOL_DESKTOP_RULE@
 @INTLTOOL_XML_NOMERGE_RULE@
 @GSETTINGS_RULES@
+
+SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
+.service.in.service:
+	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
+.json.in.json:
+	$(AM_V_GEN) $(MKDIR_P) src/applets/gnome-shell && \
+	    sed -e 's,[@]localedir[@],$(localedir),g' \
+		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
+.desktop.in.in.desktop.in:
+	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
 
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
