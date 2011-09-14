@@ -24,21 +24,21 @@ namespace GPaste {
         [DBus (name = "org.gnome.GPaste")]
         interface DBusClient : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public abstract GLib.Variant get_history() throws IOError;
+            public abstract GLib.Variant get_history() throws GLib.IOError;
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
-            public abstract void add(string selection) throws IOError;
+            public abstract void add(string selection) throws GLib.IOError;
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
-            public abstract string get_element(uint32 index) throws IOError;
+            public abstract string get_element(uint32 index) throws GLib.IOError;
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
-            public abstract void select(uint32 index) throws IOError;
+            public abstract void select(uint32 index) throws GLib.IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
-            public abstract void delete(uint32 index) throws IOError;
+            public abstract void delete(uint32 index) throws GLib.IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
-            public abstract void empty() throws IOError;
+            public abstract void empty() throws GLib.IOError;
             [DBus (name = "Track", inSignature = "b", outSignature = "")]
-            public abstract void track(bool tracking_state) throws IOError;
+            public abstract void track(bool tracking_state) throws GLib.IOError;
             [DBus (name = "Reexecute", inSignature = "", outSignature = "")]
-            public abstract void reexec() throws IOError;
+            public abstract void reexec() throws GLib.IOError;
         }
 
         public class Main : GLib.Object {

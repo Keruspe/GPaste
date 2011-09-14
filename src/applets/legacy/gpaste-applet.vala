@@ -24,15 +24,15 @@ namespace GPaste {
         [DBus (name = "org.gnome.GPaste")]
         public interface DBusClient : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public abstract GLib.Variant get_history() throws IOError;
+            public abstract GLib.Variant get_history() throws GLib.IOError;
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
-            public abstract void select(uint32 index) throws IOError;
+            public abstract void select(uint32 index) throws GLib.IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
-            public abstract void delete(uint32 index) throws IOError;
+            public abstract void delete(uint32 index) throws GLib.IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
-            public abstract void empty() throws IOError;
+            public abstract void empty() throws GLib.IOError;
             [DBus (name = "Track", inSignature = "b", outSignature = "")]
-            public abstract void track(bool tracking_state) throws IOError;
+            public abstract void track(bool tracking_state) throws GLib.IOError;
             [DBus (name = "Changed", inSignature = "")]
             public abstract signal void changed();
             [DBus (name = "ToggleHistory", inSignature = "")]
