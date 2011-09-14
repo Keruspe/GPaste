@@ -171,7 +171,7 @@ gpaste_applet_LDADD = \
 	$(GTK_LIBS) \
 	$(AM_LIBS)
 
-# Distribuyion stuff
+# Distribution stuff
 
 EXTRA_DIST = \
 	$(noinst_DATA) \

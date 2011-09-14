@@ -30,6 +30,7 @@ AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz ta
 AM_SILENT_RULES([yes])
 
 AC_PROG_MKDIR_P
+AC_PROG_INSTALL
 AC_PROG_CC
 AM_PROG_CC_C_O
 AM_PROG_VALAC([0.13.4])
@@ -42,8 +43,6 @@ IT_PROG_INTLTOOL([0.40.0])
 AC_SUBST([bindir], ["$bindir"])
 AC_SUBST([libexecdir], ["$libexecdir"])
 AC_SUBST([localedir], ["$localedir"])
-
-AC_PROG_INSTALL
 
 GLIB_GSETTINGS
 
@@ -69,7 +68,8 @@ AC_SUBST(GDK_CFLAGS)
 AC_SUBST(GDK_LIBS)
 AC_SUBST(GDK_VALAFLAGS)
 
-PKG_CHECK_MODULES(DBUS, [dbus-1], dbusservicesdir=`pkg-config --variable=session_bus_services_dir dbus-1`)
+PKG_CHECK_MODULES(DBUS, [dbus-1])
+dbusservicesdir=`pkg-config --variable=session_bus_services_dir dbus-1`
 AC_SUBST([dbusservicesdir])
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--disable-applet], [Disable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
@@ -90,4 +90,3 @@ AC_MSG_RESULT([
         Legacy applet:         ${enable_applet}
         Gnome-Shell extension: ${enable_extension}
 ])
-
