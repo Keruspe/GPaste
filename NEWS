@@ -3,6 +3,8 @@ NEW in 1.6 (Not released yet)
 
 - Make hotkey work with legacy applet
 - New GPaste subcommand for upgrading facilities: gpaste daemon-reexec
+- Major autotools cleanup
+- Fix linkage of gpasted against X11
 
 NEW in 1.5 (11/09/2011)
 =============

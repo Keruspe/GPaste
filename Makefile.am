@@ -139,6 +139,7 @@ gpaste_CFLAGS = \
 gpasted_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(GDK_CFLAGS) \
+	$(X11_CFLAGS) \
 	$(AM_CFLAGS)
 
 gpaste_applet_CFLAGS = \
@@ -161,6 +162,7 @@ gpaste_LDADD = \
 gpasted_LDADD = \
 	$(GTK_LIBS) \
 	$(GDK_LIBS) \
+	$(X11_LIBS) \
 	$(AM_LIBS)
 
 gpaste_settings_LDADD = \

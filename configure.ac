@@ -68,6 +68,10 @@ AC_SUBST(GDK_CFLAGS)
 AC_SUBST(GDK_LIBS)
 AC_SUBST(GDK_VALAFLAGS)
 
+PKG_CHECK_MODULES(X11, [x11])
+AC_SUBST(X11_CFLAGS)
+AC_SUBST(X11_LIBS)
+
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 dbusservicesdir=`pkg-config --variable=session_bus_services_dir dbus-1`
 AC_SUBST([dbusservicesdir])
