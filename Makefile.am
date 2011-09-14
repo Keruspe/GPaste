@@ -30,7 +30,7 @@ gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.
 gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 
 dist_dbusservices_in_in_files = data/org.gnome.GPaste.service.in.in
-nodist_dbusservices_DATA = $(dist_dbusservices_in_files:.service.in.in=.service)
+nodist_dbusservices_DATA = $(dist_dbusservices_in_in_files:.service.in.in=.service)
 %.service: %.service.in
 	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 
@@ -51,7 +51,7 @@ nodist_autostart_in_files = data/gpaste-applet.desktop.in
 nodist_autostart_DATA = $(nodist_autostart_in_files:.desktop.in=.desktop)
 endif
 
-dist_applications_in_files = data/gpaste-settings.desktop.in
+nodist_applications_in_files = data/gpaste-settings.desktop.in
 nodist_applications_DATA = $(nodist_applications_in_files:.desktop.in=.desktop)
 
 if ENABLE_EXTENSION
@@ -194,7 +194,7 @@ CLEANFILES = \
 	$(nodist_man_MANS) \
 	$(gsettings_SCHEMAS:.xml=.xml.in) \
 	$(gsettings_SCHEMAS) \
-	$(service_DATA) \
+	$(nodist_dbusservices_DATA) \
 	src/applets/gnome-shell/metadata.json \
 	gschemas.compiled
 
