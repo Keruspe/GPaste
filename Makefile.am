@@ -16,17 +16,68 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-applet
-
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
-
-CLEANFILES = 
-
 SUBDIRS = po
-EXTRA_DIST = autogen.bash NEWS README
+
+# Directories
+
+applicationsdir = $(datadir)/applications
+autostartdir = $(sysconfdir)/xdg/autostart
+gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
+
+# Data stuff
+
+gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
+
+dist_dbusservices_in_in_files = data/org.gnome.GPaste.service.in.in
+nodist_dbusservices_DATA = $(dist_dbusservices_in_files:.service.in.in=.service)
+%.service: %.service.in
+	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
+
+noinst_DATA = data/completions/_gpaste \
+	      data/completions/gpaste
+
+nodist_man_MANS = man/gpaste.1
+gpaste_1_parts = data/gpaste.1.part
+man/gpaste.1: $(gpaste_1_parts)
+	$(AM_V_GEN) $(MKDIR_P) man && cat $^ > $@
+
+%.desktop.in: %.desktop.in.in
+	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
+
+if ENABLE_APPLET
+gpaste_1_parts += data/gpaste-applet.1.part
+nodist_autostart_in_files = data/gpaste-applet.desktop.in
+nodist_autostart_DATA = $(nodist_autostart_in_files:.desktop.in=.desktop)
+endif
+
+dist_applications_in_files = data/gpaste-settings.desktop.in
+nodist_applications_DATA = $(nodist_applications_in_files:.desktop.in=.desktop)
+
+if ENABLE_EXTENSION
+dist_gnomeshell_DATA = \
+	src/applets/gnome-shell/extension.js \
+	src/applets/gnome-shell/stylesheet.css
+nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
+
+%.json: %.json.in
+	$(AM_V_GEN) $(MKDIR_P) src/applets/gnome-shell && \
+	    sed -e 's,[@]localedir[@],$(localedir),g' \
+		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
+endif
+
+# Binaries
 
 bin_PROGRAMS = gpaste
-
 pkglibexec_PROGRAMS = gpasted gpaste-settings
+if ENABLE_APPLET
+pkglibexec_PROGRAMS += gpaste-applet
+endif
+
+# Sources
+
+gpaste_SOURCES = \
+	src/gpaste.vala
 
 gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
@@ -36,174 +87,118 @@ gpasted_SOURCES = \
 	src/gpasted/keybinder.vala \
 	src/gpasted/settings.vala
 
-gpasted_VALAFLAGS = \
-	--vapidir=vapi \
-	$(GTK_VALAFLAGS) \
-	$(GDK_VALAFLAGS) \
-	$(GIO_VALAFLAGS) \
-	--pkg=config \
-	--pkg=posix \
-	$(VALAFLAGS)
-
-gpasted_CFLAGS = \
-	$(GTK_CFLAGS) \
-	$(GDK_CFLAGS) \
-	$(GIO_CFLAGS) \
-	$(GLIB_CFLAGS) \
-	--include config.h \
-	-DLOCALEDIR=\"${localedir}\" \
-	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
-	$(CFLAGS)
-
-CLEANFILES += \
-	${gpasted_SOURCES:.vala=.c}
-
-gpasted_LDADD = \
-	$(GTK_LIBS) \
-	$(GDK_LIBS) \
-	$(GIO_LIBS) \
-	$(GLIB_LIBS)
-
-gpaste_SOURCES = \
-	src/gpaste.vala
-
-gpaste_VALAFLAGS = \
-	--vapidir=vapi \
-	$(GIO_VALAFLAGS) \
-	--pkg=config \
-	--pkg=posix \
-	$(VALAFLAGS)
-
-gpaste_CFLAGS = \
-	$(GIO_CFLAGS) \
-	$(GLIB_CFLAGS) \
-	--include config.h \
-	-DLOCALEDIR=\"${localedir}\" \
-	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
-	$(CFLAGS)
-
-gpaste_LDADD = \
-	$(GIO_LIBS) \
-	$(GLIB_LIBS)
-
-CLEANFILES += \
-	${gpaste_SOURCES:.vala=.c}
+gpaste_applet_SOURCES = \
+	src/applets/legacy/gpaste-applet.vala
 
 gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala
 
-gpaste_settings_VALAFLAGS = \
+# VALAFLAGS
+
+AM_VALAFLAGS = \
 	--vapidir=vapi \
-	$(GTK_VALAFLAGS) \
 	--pkg=config \
+	--pkg=posix \
+	$(GIO_VALAFLAGS) \
 	$(VALAFLAGS)
 
-gpaste_settings_CFLAGS = \
-	$(GTK_CFLAGS) \
-	$(GLIB_CFLAGS) \
-	--include config.h \
-	-DLOCALEDIR=\"${localedir}\" \
-	$(CFLAGS)
+gpaste_VALAFLAGS = \
+	$(AM_VALAFLAGS)
 
-gpaste_settings_LDADD = \
-	$(GTK_LIBS) \
-	$(GLIB_LIBS)
-
-CLEANFILES += \
-	${gpaste_settings_SOURCES:.vala=.c}
-
-applicationsdir=$(datadir)/applications
-nodist_applications_in_files = data/gpaste-settings.desktop.in
-nodist_applications_DATA = $(nodist_applications_in_files:.desktop.in=.desktop)
-
-data/gpaste-settings.desktop.in: data/gpaste-settings.desktop.in.in
-	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
-
-gpaste.1_parts = data/gpaste.1.part
-
-if ENABLE_APPLET
-
-gpaste_VALAFLAGS += --define=ENABLE_APPLET
-
-pkglibexec_PROGRAMS += gpaste-applet
-
-autostartdir=$(sysconfdir)/xdg/autostart
-nodist_autostart_in_files = data/gpaste-applet.desktop.in
-nodist_autostart_DATA = $(nodist_autostart_in_files:.desktop.in=.desktop)
-
-data/gpaste-applet.desktop.in: data/gpaste-applet.desktop.in.in
-	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
-
-gpaste_applet_SOURCES = \
-	src/applets/legacy/gpaste-applet.vala
+gpasted_VALAFLAGS = \
+	$(GTK_VALAFLAGS) \
+	$(GDK_VALAFLAGS) \
+	$(AM_VALAFLAGS)
 
 gpaste_applet_VALAFLAGS = \
-	--vapidir=vapi \
 	$(GTK_VALAFLAGS) \
-	$(GIO_VALAFLAGS) \
-	--pkg=posix \
-	--pkg=config \
-	$(VALAFLAGS)
+	$(AM_VALAFLAGS)
 
-gpaste_applet_CFLAGS = \
-	$(GTK_CFLAGS) \
-	$(GIO_CFLAGS) \
-	$(GLIB_CFLAGS) \
+gpaste_settings_VALAFLAGS = \
+	$(GTK_VALAFLAGS) \
+	$(AM_VALAFLAGS)
+
+if ENABLE_APPLET
+gpaste_VALAFLAGS += \
+	--define=ENABLE_APPLET
+endif
+
+# CFLAGS
+
+AM_CFLAGS = \
 	--include config.h \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
+	$(GLIB_CFLAGS) \
+	$(GIO_CFLAGS) \
 	$(CFLAGS)
+
+gpaste_CFLAGS = \
+	$(AM_CFLAGS)
+
+gpasted_CFLAGS = \
+	$(GTK_CFLAGS) \
+	$(GDK_CFLAGS) \
+	$(AM_CFLAGS)
+
+gpaste_applet_CFLAGS = \
+	$(GTK_CFLAGS) \
+	$(AM_CFLAGS)
+
+gpaste_settings_CFLAGS = \
+	$(GTK_CFLAGS) \
+	$(AM_CFLAGS)
+
+# LDADD
+
+AM_LIBS = \
+	$(GLIB_LIBS) \
+	$(GIO_LIBS)
+
+gpaste_LDADD = \
+	$(AM_LIBS)
+
+gpasted_LDADD = \
+	$(GTK_LIBS) \
+	$(GDK_LIBS) \
+	$(AM_LIBS)
+
+gpaste_settings_LDADD = \
+	$(GTK_LIBS) \
+	$(AM_LIBS)
 
 gpaste_applet_LDADD = \
 	$(GTK_LIBS) \
-	$(GLIB_LIBS)
+	$(AM_LIBS)
 
-EXTRA_DIST += data/gpaste-applet.desktop.in.in \
-	      data/gpaste-settings.desktop.in.in
+# Distribuyion stuff
 
-CLEANFILES += \
+EXTRA_DIST = \
+	$(noinst_DATA) \
+	autogen.bash FIXME \
+	data/org.gnome.GPaste.gschema.xml.in.in \
+	data/gpaste-applet.desktop.in.in \
+	data/gpaste-settings.desktop.in.in \
+	data/gpaste.1.part data/gpaste-applet.1.part \
+	src/applets/gnome-shell/metadata.json.in
+
+CLEANFILES = \
+	${gpaste_SOURCES:.vala=.c} \
+	${gpasted_SOURCES:.vala=.c} \
+	${gpaste_applet_SOURCES:.vala=.c} \
+	${gpaste_settings_SOURCES:.vala=.c} \
 	$(nodist_applications_in_files) \
 	$(nodist_applications_DATA) \
 	$(nodist_autostart_in_files) \
 	$(nodist_autostart_DATA) \
-	${gpaste_applet_SOURCES:.vala=.c}
+	$(nodist_man_MANS) \
+	$(gsettings_SCHEMAS:.xml=.xml.in) \
+	$(gsettings_SCHEMAS) \
+	$(service_DATA) \
+	src/applets/gnome-shell/metadata.json \
+	gschemas.compiled
 
-gpaste.1_parts += data/gpaste-applet.1.part
-
-endif
-
-gpastemandir = $(datadir)/man/man1
-nodist_gpasteman_DATA = gpaste.1
-EXTRA_DIST += data/gpaste.1.part data/gpaste-applet.1.part
-CLEANFILES += gpaste.1
-gpaste.1: $(gpaste.1_parts)
-	$(AM_V_GEN) cat $^ > $@
-
-if ENABLE_EXTENSION
-
-gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
-
-dist_gnomeshell_DATA = \
-	src/applets/gnome-shell/extension.js \
-	src/applets/gnome-shell/stylesheet.css
-
-nodist_gnomeshell_DATA = \
-	src/applets/gnome-shell/metadata.json
-
-src/applets/gnome-shell/metadata.json: src/applets/gnome-shell/metadata.json.in
-	@ mkdir -p src/applets/gnome-shell
-	$(AM_V_GEN) sed -e 's,[@]localedir[@],$(localedir),g' \
-		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
-
-EXTRA_DIST += \
-	src/applets/gnome-shell/metadata.json.in
-
-CLEANFILES += \
-	src/applets/gnome-shell/metadata.json
-
-endif
-
-gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
+# Special rules
 
 @INTLTOOL_DESKTOP_RULE@
 @INTLTOOL_XML_NOMERGE_RULE@
@@ -211,27 +206,6 @@ gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
-
-EXTRA_DIST += data/org.gnome.GPaste.gschema.xml.in.in
-
-CLEANFILES += \
-	$(gsettings_SCHEMAS) \
-	$(gsettings_SCHEMAS:.xml=.xml.in) \
-	gschemas.compiled
-
-servicedir = $(datadir)/dbus-1/services
-service_DATA = data/org.gnome.GPaste.service
-
-data/org.gnome.GPaste.service: data/org.gnome.GPaste.service.in
-	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
-
-EXTRA_DIST += data/org.gnome.GPaste.service.in
-
-CLEANFILES += $(service_DATA)
-
-noinst_DATA = data/completions/_gpaste \
-	      data/completions/gpaste
-EXTRA_DIST += $(noinst_DATA)
 
 update-po:
 	$(MAKE) -C po $@

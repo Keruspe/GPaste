@@ -29,12 +29,10 @@ AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
 AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
 AM_SILENT_RULES([yes])
 
+AC_PROG_MKDIR_P
 AC_PROG_CC
 AM_PROG_CC_C_O
-
 AM_PROG_VALAC([0.13.4])
-AC_SUBST(VALAC)
-AC_SUBST(VALAFLAGS)
 
 GETTEXT_PACKAGE=$PACKAGE_NAME
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [Gettext Package])
@@ -71,6 +69,9 @@ AC_SUBST(GDK_CFLAGS)
 AC_SUBST(GDK_LIBS)
 AC_SUBST(GDK_VALAFLAGS)
 
+PKG_CHECK_MODULES(DBUS, [dbus-1], dbusservicesdir=`pkg-config --variable=session_bus_services_dir dbus-1`)
+AC_SUBST([dbusservicesdir])
+
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--disable-applet], [Disable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
@@ -83,4 +84,10 @@ AC_CONFIG_FILES([
   data/org.gnome.GPaste.gschema.xml.in
 ])
 AC_OUTPUT
+AC_MSG_RESULT([
+        $PACKAGE_NAME $VERSION
+
+        Legacy applet:         ${enable_applet}
+        Gnome-Shell extension: ${enable_extension}
+])
 
