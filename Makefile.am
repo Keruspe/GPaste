@@ -99,8 +99,7 @@ AM_VALAFLAGS = \
 	--vapidir=vapi \
 	--pkg=config \
 	--pkg=posix \
-	$(GIO_VALAFLAGS) \
-	$(VALAFLAGS)
+	$(GIO_VALAFLAGS)
 
 gpaste_VALAFLAGS = \
 	$(AM_VALAFLAGS)
@@ -130,8 +129,7 @@ AM_CFLAGS = \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(GLIB_CFLAGS) \
-	$(GIO_CFLAGS) \
-	$(CFLAGS)
+	$(GIO_CFLAGS)
 
 gpaste_CFLAGS = \
 	$(AM_CFLAGS)
