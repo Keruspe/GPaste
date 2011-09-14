@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-DISTCHECK_CONFIGURE_FLAGS = --enable-applet
+DISTCHECK_CONFIGURE_FLAGS = \
+	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
+	--enable-applet
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 SUBDIRS = po
 
@@ -29,8 +31,7 @@ gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.
 
 gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 
-dist_dbusservices_in_in_files = data/org.gnome.GPaste.service.in.in
-nodist_dbusservices_DATA = $(dist_dbusservices_in_in_files:.service.in.in=.service)
+nodist_dbusservices_DATA = data/org.gnome.GPaste.service
 
 noinst_DATA = data/completions/_gpaste \
 	      data/completions/gpaste
@@ -167,6 +168,7 @@ EXTRA_DIST = \
 	$(noinst_DATA) \
 	autogen.bash FIXME \
 	data/org.gnome.GPaste.gschema.xml.in.in \
+	data/org.gnome.GPaste.service.in \
 	data/gpaste-applet.desktop.in.in \
 	data/gpaste-settings.desktop.in.in \
 	data/gpaste.1.part data/gpaste-applet.1.part \
@@ -202,7 +204,7 @@ SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
 	    sed -e 's,[@]localedir[@],$(localedir),g' \
 		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
 .desktop.in.in.desktop.in:
-	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@ || rm $@
+	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@
 
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
