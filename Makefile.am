@@ -166,7 +166,7 @@ gpaste_applet_LDADD = \
 
 EXTRA_DIST = \
 	$(noinst_DATA) \
-	autogen.bash FIXME \
+	autogen.sh FIXME \
 	data/org.gnome.GPaste.gschema.xml.in.in \
 	data/org.gnome.GPaste.service.in \
 	data/gpaste-applet.desktop.in.in \
