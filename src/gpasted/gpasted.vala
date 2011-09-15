@@ -132,7 +132,7 @@ namespace GPaste {
 
             public static void reexec() {
                 Main.stop();
-                Posix.execl(Config.PKGLIBEXECDIR + "/gpasted");
+                Posix.execl(Config.PKGLIBEXECDIR + "/gpasted", "gpasted");
             }
 
             public static int main(string[] args) {
