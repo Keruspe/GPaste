@@ -204,7 +204,7 @@ SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
 	    sed -e 's,[@]localedir[@],$(localedir),g' \
 		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
 .desktop.in.in.desktop.in:
-	$(AM_V_GEN) sed "s|@pkglibexecdir[@]|$(pkglibexecdir)|" < $< > $@
+	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
