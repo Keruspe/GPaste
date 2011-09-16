@@ -20,15 +20,11 @@
 
 const StatusIconDispatcher = imports.ui.statusIconDispatcher;
 const Main = imports.ui.main;
-const Panel = imports.ui.panel;
 const DBus = imports.dbus;
 const Lang = imports.lang;
-const St = imports.gi.St;
-const GLib = imports.gi.GLib;
 const Pango = imports.gi.Pango;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
-const Util = imports.misc.util;
 const Gettext = imports.gettext;
 
 const _ = Gettext.domain('GPaste').gettext;
@@ -160,7 +156,7 @@ let _indicator;
 function init(metadata) {
     Gettext.bindtextdomain('gpaste', metadata.localedir);
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
-    Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
+    Main.panel.STANDARD_STATUS_AREA_ORDER.unshift('gpaste');
 }
 
 function enable() {
