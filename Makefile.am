@@ -18,7 +18,7 @@
 DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
 	--enable-applet
-ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
+ACLOCAL_AMFLAGS  = -I m4
 SUBDIRS = po
 
 # Directories
@@ -201,13 +201,13 @@ CLEANFILES = \
 
 SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
 .service.in.service:
-	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
+	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 .json.in.json:
 	$(AM_V_GEN) $(MKDIR_P) src/applets/gnome-shell && \
-	    sed -e 's,[@]localedir[@],$(localedir),g' \
+	    $(SED) -e 's,[@]localedir[@],$(localedir),g' \
 		-e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$< >$@
 .desktop.in.in.desktop.in:
-	$(AM_V_GEN) sed -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
+	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
