@@ -5,4 +5,6 @@ _Comment=Manage GPaste settings
 Icon=gtk-paste
 Exec=@pkglibexecdir@/gpaste-settings
 Terminal=false
-Categories=GTK;GNOME;Settings;DesktopSettings;
+Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
+OnlyShowIn=GNOME;Unity;
+StartupNotify=true
