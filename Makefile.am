@@ -41,14 +41,16 @@ gpaste_1_parts = data/gpaste.1.part
 man/gpaste.1: $(gpaste_1_parts)
 	$(AM_V_GEN) $(MKDIR_P) man && cat $^ > $@
 
-if ENABLE_APPLET
-gpaste_1_parts += data/gpaste-applet.1.part
-nodist_autostart_in_files = data/gpaste-applet.desktop.in
-nodist_autostart_DATA = $(nodist_autostart_in_files:.desktop.in=.desktop)
-endif
-
 nodist_applications_in_files = data/gpaste-settings.desktop.in
 nodist_applications_DATA = $(nodist_applications_in_files:.desktop.in=.desktop)
+
+nodist_autostart_in_files = data/gpasted.desktop.in
+nodist_autostart_DATA = $(nodist_autostart_in_files:.desktop.in=.desktop)
+
+if ENABLE_APPLET
+gpaste_1_parts += data/gpaste-applet.1.part
+nodist_autostart_in_files += data/gpaste-applet.desktop.in
+endif
 
 if ENABLE_EXTENSION
 dist_gnomeshell_DATA = \
@@ -169,6 +171,7 @@ EXTRA_DIST = \
 	autogen.sh FIXME \
 	data/org.gnome.GPaste.gschema.xml.in.in \
 	data/org.gnome.GPaste.service.in \
+	data/gpasted.desktop.in.in \
 	data/gpaste-applet.desktop.in.in \
 	data/gpaste-settings.desktop.in.in \
 	data/gpaste.1.part data/gpaste-applet.1.part \

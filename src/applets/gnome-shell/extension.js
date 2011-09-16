@@ -164,7 +164,6 @@ function init(metadata) {
     pkglibexecdir = metadata.pkglibexecdir;
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_TRAY_ICON_ORDER.unshift('gpaste');
-    Util.spawn([pkglibexecdir + '/gpasted']);
 }
 
 function enable() {

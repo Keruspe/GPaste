@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+_Name=GPaste daemon
+_Comment=Clipboard management system
+Exec=@pkglibexecdir@/gpasted
+OnlyShowIn=GNOME;Unity;
+NoDisplay=true
+X-GNOME-Autostart-Phase=Initialization
+X-GNOME-Autostart-Notify=true
+X-GNOME-AutoRestart=true
