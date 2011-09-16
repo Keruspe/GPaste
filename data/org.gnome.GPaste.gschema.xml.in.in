@@ -52,11 +52,10 @@
     </key>
 
     <key name="keyboard-shortcut" type="s">
-      <default>'&lt;Ctrl&gt;H'</default>
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
       <_summary>The keyboard shortcut to display the menu</_summary>
       <_description>
-        By default, hitting ctrl + h displays the menu ("&lt;Ctrl&gt;H").
-        You can also use other modifiers than ctrl (eg "&lt;Ctrl&gt;&lt;Alt&gt;G" would mean ctrl + alt + g).
+        By default, hitting ctrl + alt + h displays the menu ("&lt;Ctrl&gt;&lt;Alt&gt;H").
         An empty string here disable this functionnality.
       </_description>
     </key>

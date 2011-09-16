@@ -148,7 +148,7 @@ namespace GPaste {
                 });
                 this.keyboard_shortcut_entry = new Gtk.Entry();
                 this.keyboard_shortcut = app.keyboard_shortcut;
-                this.keyboard_shortcut_entry.editing_done.connect(()=>{
+                this.keyboard_shortcut_entry.changed.connect(()=>{
                     app.keyboard_shortcut = this.keyboard_shortcut;
                 });
 
