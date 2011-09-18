@@ -1,5 +1,3 @@
 2.0:
     Add support for images
-    standard applet cleanup
     don't close menu when deleting item
-    See TODO in the code

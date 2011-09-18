@@ -5,6 +5,7 @@ NEW in 1.6 (Not released yet)
 - New GPaste subcommand for upgrading facilities: gpaste daemon-reexec
 - Major autotools cleanup
 - Fix linkage of gpasted against X11
+- Bugfixes
 
 NEW in 1.5 (11/09/2011)
 =============
