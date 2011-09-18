@@ -76,6 +76,7 @@ namespace GPaste {
                     X.ID xid = Gdk.X11Window.get_xid(rootwin);
                     display.grab_key(this.keycode, this.modifiers, xid, false, X.GrabMode.Async, X.GrabMode.Async);
                     Gdk.flush();
+                    Gdk.error_trap_pop_ignored();
                 }
             }
 
