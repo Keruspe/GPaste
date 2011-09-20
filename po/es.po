@@ -1,17 +1,17 @@
-# French translations for GPaste package.
+# Spanish translations for GPaste package.
 # Copyright (C) 2011 Listed translators
 # This file is distributed under the same license as the GPaste package.
-# Marc-Antoine Perennou <Marc-Antoine@Perennou.com>, 2011.
+# Antonio Trujillo <lunatc@gmail.com>, 2011.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2011-09-20 19:08+0200\n"
-"PO-Revision-Date: 2011-01-25 16:05+0100\n"
-"Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
-"Language-Team: French\n"
-"Language: fr\n"
+"PO-Revision-Date: 2011-11-20 16:30+0100\n"
+"Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -20,156 +20,159 @@ msgstr ""
 #: ../src/gpasted/gpasted.vala:107
 #, c-format
 msgid "Signal %d recieved, exiting.\n"
-msgstr "Signal %d reçu, arrêt.\n"
+msgstr "Recibida señal %d, saliendo\n"
 
 #: ../src/gpasted/gpasted.vala:115
 #, c-format
 msgid "Could not register DBus service.\n"
-msgstr "Impossible d'inscrire le service DBus au registre.\n"
+msgstr "No se pudo registrar el servicio DBus\n"
 
 #: ../src/gpasted/gpasted.vala:122
 #, c-format
 msgid "Could not aquire DBus name.\n"
-msgstr "Impossible d'acquérir le nom DBus.\n"
+msgstr "No se pudo obtener nombre en DBus\n"
 
 #: ../src/gpasted/history.vala:104
 #, c-format
 msgid "Could not delete history file.\n"
-msgstr "Impossible de supprimer le fichier d'historique.\n"
+msgstr "No se pudo borrar fichero de historial.\n"
 
 #: ../src/gpasted/history.vala:147
 #, c-format
 msgid "Could not read history file.\n"
-msgstr "Impossible de lire le fichier d'historique.\n"
+msgstr "No se pudo leer fichero de historial.\n"
 
 #: ../src/gpasted/history.vala:167
 #, c-format
 msgid "Could not create history file.\n"
-msgstr "Impossible de créer le fichier d'historique.\n"
+msgstr "No se pudo crear fichero de historial.\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
 #: ../src/applets/gnome-shell/extension.js:104
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste Settings"
-msgstr "Préférences GPaste"
+msgstr "Ajustes de GPaste"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:107
 msgid "Max history size: "
-msgstr "Taille maximale de l'historique : "
+msgstr "Tamaño máximo del historial: "
 
 #: ../src/gpaste-settings/gpaste-settings.vala:108
 msgid "Max element size when displaying: "
-msgstr "Taille maximale d'un élément quand on l'affiche : "
+msgstr "Tamaño máximo de los elementos al visualizarlos: "
 
 #: ../src/gpaste-settings/gpaste-settings.vala:109
 msgid "Keyboard shortcut to display the history: "
-msgstr "Raccourcis clavier pour afficher l'historique : "
+msgstr "Atajo de teclado para mostrar el historial: "
 
 #: ../src/gpaste-settings/gpaste-settings.vala:119
 msgid "_Primary selection affects history"
-msgstr "La selection _primaire affecte l'historique"
+msgstr "Selección _principal afecta al historial"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:124
 msgid "_Synchronize clipboard with primary selection"
-msgstr "_Synchroniser le presse-papier avec la séléction primaire"
+msgstr "_Sincronizar el portapapeles con selección principal"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:129
 msgid "_Track clipboard changes"
-msgstr "Suivre les changemen_ts du presse-papier"
+msgstr "Seguimiento de cambios en el portapapeles"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:134
 msgid "_Save history"
-msgstr "Sauvegarder l'historique"
+msgstr "_Guardar historial"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:288
 #: ../src/applets/legacy/gpaste-applet.vala:215
 #, c-format
 msgid "Fail to register the gtk application.\n"
-msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
+msgstr "Fallo al registrar la aplicación gtk\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:106
 #, c-format
 msgid "Couldn't update history.\n"
-msgstr "Impossible de mettre à jour l'historique.\n"
+msgstr "No se pudo actualizar el historial\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:113
 #: ../src/applets/gnome-shell/extension.js:121
 msgid "(Empty)"
-msgstr "(Vide)"
+msgstr "(Vacío)"
 
 #: ../src/applets/legacy/gpaste-applet.vala:131
 msgid "Settings"
-msgstr "Préférences"
+msgstr "Ajustes"
 
 #: ../src/applets/legacy/gpaste-applet.vala:136
 #, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
-msgstr "Impossible de lancer gpaste-settings.\n"
+msgstr "No se pudo iniciar gpaste-settings.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:140
 #: ../src/applets/gnome-shell/extension.js:117
 msgid "Empty history"
-msgstr "Vider l'historique"
+msgstr "Vaciar historial"
 
 #: ../src/applets/legacy/gpaste-applet.vala:145
 #, c-format
 msgid "Couldn't empty history.\n"
-msgstr "Impossible de vider l'historique.\n"
+msgstr "No se pudo vaciar el historial.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:149
 msgid "Quit"
-msgstr "Quitter"
+msgstr "Salir"
 
 #: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:185
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
-msgstr "Impossible de se connecter au démon GPaste.\n"
+msgstr "No se pudo conectar al servicio GPaste.\n"
 
 #: ../src/applets/gnome-shell/extension.js:65
 msgid "Track clipboard changes"
-msgstr "Suivre les changements du presse-papier"
+msgstr "Seguimiento de cambios en el portapapeles"
 
 #: ../src/applets/gnome-shell/extension.js:121
 msgid "(Couldn't connect to GPaste daemon)"
-msgstr "(Impossible de se connecter au démon GPaste)"
+msgstr "(No se pudo conectar al servicio GPaste)"
 
 #: ../src/applets/gnome-shell/extension.js:135
 #, c-format
 msgid "delete: %s"
-msgstr "supprimer : %s"
+msgstr "suprimir: %s"
 
 #: ../src/gpaste.vala:46
 #, c-format
 msgid "Usage:\n"
-msgstr "Mode d'emploi :\n"
+msgstr "Modo de empleo:\n"
 
 #: ../src/gpaste.vala:47
 #, c-format
 msgid "%s: print the history\n"
-msgstr "%s : affiche l'historique\n"
+msgstr "%s: imprimir el historial\n"
 
 #: ../src/gpaste.vala:48
 #, c-format
 msgid "%s [add] <text>: set text to clipboard\n"
-msgstr "%s [add] <texte> : met le texte dans le presse-papier\n"
+msgstr "%s [add] <texto>: enviar <texto> al portapapeles\n"
 
 #: ../src/gpaste.vala:49
 #, c-format
 msgid "%s get <number>: get the <number>th item from the history\n"
-msgstr "%s get <nombre> : renvoie le <nombre>e élément de l'historique\n"
+msgstr ""
+"%s get <número>: obtener el elemento número <número> del historial del "
+"portapapeles\n"
 
 #: ../src/gpaste.vala:50
 #, c-format
 msgid ""
 "%s set <number>: set the <number>th item from the history to the clipboard\n"
 msgstr ""
-"%s set <nombre> : met le <nombre>e élément de l'historique dans le presse-"
-"papier\n"
+"%s set <número>: enviar el elemento número <número> del historial al "
+"portapapeles\n"
 
 #: ../src/gpaste.vala:51
 #, c-format
 msgid "%s delete <number>: delete <number>th item of the history\n"
-msgstr "%s delete <nombre> : supprime le <nombre>e élément de l'historique\n"
+msgstr ""
+"%s delete <número>: suprimir el elemento número <número> del historial\n"
 
 #: ../src/gpaste.vala:52
 #, c-format
@@ -177,150 +180,147 @@ msgid ""
 "%s -f/--file <path>: put the content of the file at <path> into the "
 "clipboard\n"
 msgstr ""
-"%s -f/--file <chemin> : place le contenu du fichier situé à ce chemin dans "
-"le presse-papier\n"
+"%s -f/--file <ruta>: colocar el contenido del fichero indicado por <ruta>en "
+"el portapapeles\n"
 
 #: ../src/gpaste.vala:53
 #, c-format
 msgid "whatever | %s: set the output of whatever to clipboard\n"
-msgstr ""
-"quelquechose | %s : met la sortie de quelquechose dans le presse-papier\n"
+msgstr "loquesea | %s: enviar la salida de <loquesea> al portapapeles\n"
 
 #: ../src/gpaste.vala:54
 #, c-format
 msgid "%s empty: empty the history\n"
-msgstr "%s empty : vide l'historique\n"
+msgstr "%s empty: vaciar el historial\n"
 
 #: ../src/gpaste.vala:55
 #, c-format
 msgid "%s start: start tracking clipboard changes\n"
-msgstr "%s start : suivre les changements du presse-papier\n"
+msgstr "%s start: iniciar seguimiento de cambios en el portapapeles\n"
 
 #: ../src/gpaste.vala:56
 #, c-format
 msgid "%s stop: stop tracking clipboard changes\n"
-msgstr "%s stop : arrêter de suivre les changements du presse-papier\n"
+msgstr "%s stop: detener seguimiento de cambios en el portapapeles\n"
 
 #: ../src/gpaste.vala:57
 #, c-format
 msgid "%s quit: alias for stop\n"
-msgstr "%s quit : alias pour stop\n"
+msgstr "%s quit: alias de stop\n"
 
 #: ../src/gpaste.vala:58
 #, c-format
 msgid "%s daemon-reexec: reexecute the daemon (after upgrading...)\n"
-msgstr "%s daemon-reexec: reexecuter le démon (après une mise à jour...)\n"
+msgstr "%s daemon-reexec: vuelva a ejecutar el servicio (después de actualizar...)\n"
 
 #: ../src/gpaste.vala:60
 #, c-format
 msgid "%s applet: launch the applet\n"
-msgstr "%s applet : lance l'applet\n"
+msgstr "%s applet: iniciar el applet\n"
 
 #: ../src/gpaste.vala:62
 #, c-format
 msgid "%s settings: launch the configuration tool\n"
-msgstr "%s settings : lance l'outil de configuration\n"
+msgstr "%s settings: iniciar la herramienta de configuración\n"
 
 #: ../src/gpaste.vala:63
 #, c-format
 msgid "%s version/-v/--version: display the version\n"
-msgstr "%s version/-v/--version : affiche la version\n"
+msgstr "%s version/-v/--version: mostrar la versión\n"
 
 #: ../src/gpaste.vala:64
 #, c-format
 msgid "%s help: display this help\n"
-msgstr "%s help : affiche cette aide\n"
+msgstr "%s help: mostrar esta ayuda\n"
 
 #: ../src/gpaste.vala:119
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
-msgstr "Impossible de lancer gpaste-applet.\n"
+msgstr "No se pudo iniciar el applet de gpaste.\n"
 
 #. NoReply, but we do not expect one when doing this !
 #: ../src/gpaste.vala:132
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
-msgstr "Démon redémarré avec succès\n"
+msgstr "Servicio reiniciado con éxito\n"
 
 #: ../src/gpaste.vala:170
 #, c-format
 msgid "Could not read file: %s\n"
-msgstr "Impossible de lire le fichier : %s\n"
+msgstr "No se pudo leer el fichero: %s\n"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:1
 msgid "Are the primary selection and the clipboard synchronized?"
-msgstr ""
-"La séléction primaire et le presse-papier doivent-ils être synchronisés?"
+msgstr "¿Están sincronizadas la selección principal y el portapapeles?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:2
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). An empty string here disable this functionnality."
 msgstr ""
-"Par défaut, appuyer sur ctrl + alt + h affiche le menu (\"&lt;Ctrl&gt;&lt;"
-"Alt&gt;H\"). Vous Une chaîne vide désactive cette fonctionnalité."
+"Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;H\"). Una cadena vacíadesactivaría esta funcionalidad."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:3
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
+msgstr "Por omisión, solo el portapapeles (ctrl+c) afecta al historial."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:4
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
-"Par défaut, la séléction primaire et le presse-papier sont indépendents."
+"Por omisión, la selección principal y el portapapeles son independientes."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:5
 msgid "By default, we're saving it"
-msgstr "Par défaut, on le sauvegarde."
+msgstr "Por omisión se guarda"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:6
 msgid "By default, we're tracking those changes."
-msgstr "Par défaut, on suit ces changements."
+msgstr "Por omisión, se siguen esos cambios."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:7
 msgid "Do we save the history from one session to another?"
-msgstr "Sauvegarde-t-on l'historique d'une session à l'autre ?"
+msgstr "¿Se guarda el historial de una sesión a otra?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:8
 msgid "Do we track the clipboard changes?"
-msgstr "Suit-on les changements du presse-papier?"
+msgstr "¿Seguir los cambios en el portapapeles?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:9
 msgid "Does the primary selection affects history?"
-msgstr "La selection primaire doit-elle affecter l'historique?"
+msgstr "¿Afecta la selección principal al historial?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:10
 msgid "Max history size"
-msgstr "Taille maximale de l'historique"
+msgstr "Tamaño máximo del historial"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:11
 msgid "Max size of an element when displaying it"
-msgstr "Taille maximale d'un élément quand on l'affiche"
+msgstr "Tamaño máximo de un elemento al mostrarlo"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:12
 msgid "Maximum number of items in history"
-msgstr "Nombre maximum d'éléments dans l'historique"
+msgstr "Número máximo de elementos en el historial"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:13
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
 msgstr ""
-"La partie de l'élément excédant la taille authorisée sera remplacée par \"…"
-"\", et les sauts de lignes par \" \" quand on affiche depuis l'applet, 0 "
-"pour désativer."
+"La parte sobrante del elemento se reemplazará por \"…\",y los saltos de "
+"línea por \" \" cuando se muestren en el applet,0 para desactivar."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:14
 msgid "The keyboard shortcut to display the menu"
-msgstr "Le raccourcis clavier pour afficher l'historique"
+msgstr "Atajo de teclado para mostrar el menú"
 
 #: ../data/gpasted.desktop.in.in.h:1
 msgid "Clipboard management system"
-msgstr "Utilitaire de gestion de presse-papier"
+msgstr "Sistema de gestión del portapapeles"
 
 #: ../data/gpasted.desktop.in.in.h:2
 msgid "GPaste daemon"
-msgstr "Démon GPaste"
+msgstr "Servicio GPaste"
 
 #: ../data/gpaste-applet.desktop.in.in.h:1
 msgid "GPaste Applet"
@@ -328,8 +328,8 @@ msgstr "Applet GPaste"
 
 #: ../data/gpaste-applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
-msgstr "Icone de notification pour gérer GPaste"
+msgstr "Icono de notificación para GPaste"
 
 #: ../data/gpaste-settings.desktop.in.in.h:2
 msgid "Manage GPaste settings"
-msgstr "Gérer les préférences GPaste"
+msgstr "Gestionar ajustes de GPaste"
