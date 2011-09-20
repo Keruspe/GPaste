@@ -1,4 +1,4 @@
-NEW in 1.6 (Not released yet)
+NEW in 1.6 (20/09/2011)
 =============
 
 - Make hotkey work with legacy applet
@@ -6,6 +6,7 @@ NEW in 1.6 (Not released yet)
 - Major autotools cleanup
 - Fix linkage of gpasted against X11
 - Bugfixes
+- Espagnol translation by Antonio Trujillo
 
 NEW in 1.5 (11/09/2011)
 =============

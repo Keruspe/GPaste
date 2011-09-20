@@ -215,6 +215,11 @@ gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 update-po:
 	$(MAKE) -C po $@
 
+release:
+	git commit -asm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)"
+	git tag -sm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" v$(PACKAGE_VERSION)
+	$(MAKE) distcheck
+
 # Generate a ChangeLog file from 'git log'
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \

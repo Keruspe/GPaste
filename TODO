@@ -1,3 +1,5 @@
 2.0:
+    Rewrite daemon in pure C
+    libgpaste + introspection
+Future:
     Add support for images
-    don't close menu when deleting item
