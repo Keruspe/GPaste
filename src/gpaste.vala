@@ -182,6 +182,19 @@ namespace GPaste {
                     }
                     return 0;
                 } catch (IOError e) {
+                    if (args.length == 2) {
+                        switch (args[1]) {
+                        case "help":
+                        case "-h":
+                        case "--help":
+                            app.usage(args[0]);
+                            break;
+                        default:
+                            break;
+                        }
+                        return 0;
+
+                    }
                     stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                     return 1;
                 }
