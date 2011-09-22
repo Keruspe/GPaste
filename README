@@ -4,3 +4,9 @@ gpaste settings is a tool to edit gpasted settings
 gpaste applet is a tray icon to manage gpasted
 There is also a gnome-shell native applet
 
+Steps to install it after cloning:
+./autogen.sh
+./configure --prefix=/usr --sysconfdir=/etc
+make
+sudo make install
+
