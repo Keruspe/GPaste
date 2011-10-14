@@ -71,6 +71,10 @@ GPasteIndicator.prototype = {
             this._trackingStateChanged(trackingState);
         }));
         this._history = new PopupMenu.PopupMenuSection();
+        /* Message is set later, dinamically */
+        this._noHistory = new PopupMenu.PopupMenuItem("", { reactive: false });
+        this._emptyHistory = new PopupMenu.PopupMenuItem(_("Empty history"));
+        this._emptyHistory.connect('activate', Lang.bind(this, this._empty));
         this._fillMenu();
     },
 
@@ -101,6 +105,9 @@ GPasteIndicator.prototype = {
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._history);
+            this.menu.addMenuItem(this._noHistory);
+            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            this.menu.addMenuItem(this._emptyHistory);
             this.menu.addSettingsAction(_("GPaste Settings"), 'gpaste-settings.desktop');
             this._fillHistory();
         }));
@@ -113,15 +120,13 @@ GPasteIndicator.prototype = {
                 let limit = (history.length > 20) ? 20 : history.length;
                 for (let index = 0; index < limit; ++index)
                     this._addSelection(index, history[index]);
-                this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-                let emptyItem = new PopupMenu.PopupMenuItem(_("Empty history"));
-                emptyItem.connect('activate', Lang.bind(this, this._empty));
-                this._history.addMenuItem(emptyItem);
+                this._emptyHistory.actor.show();
+                this._noHistory.actor.hide();
             } else {
                 let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
-                let emptyItem = new PopupMenu.PopupMenuItem(message, { reactive: false });
-                this._history.addMenuItem(emptyItem);
-                this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+                this._noHistory.label.set_text(message);
+                this._noHistory.actor.show();
+                this._emptyHistory.actor.hide();
             }
         }));
     },
