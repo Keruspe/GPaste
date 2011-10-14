@@ -103,10 +103,8 @@ GPasteIndicator.prototype = {
             if (active != null)
                 this._killSwitch.setToggleState(active);
             this.menu.addMenuItem(this._killSwitch);
-            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._history);
             this.menu.addMenuItem(this._noHistory);
-            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._emptyHistory);
             this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
             this._fillHistory();
@@ -116,6 +114,7 @@ GPasteIndicator.prototype = {
     _fillHistory: function() {
         this._proxy.GetHistoryRemote(Lang.bind(this, function(history) {
             this._history.removeAll();
+            this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             if (history != null && history.length != 0) {
                 let limit = (history.length > 20) ? 20 : history.length;
                 for (let index = 0; index < limit; ++index)
@@ -128,6 +127,7 @@ GPasteIndicator.prototype = {
                 this._noHistory.actor.show();
                 this._emptyHistory.actor.hide();
             }
+            this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         }));
     },
 
