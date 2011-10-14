@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-10-14 16:53+0200\n"
+"POT-Creation-Date: 2011-10-14 17:17+0200\n"
 "PO-Revision-Date: 2011-10-05 21:09+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -49,7 +49,10 @@ msgid "Could not create history file.\n"
 msgstr "Historiatiedoston luonti epäonnistui.\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
-msgid "GPaste Settings"
+#: ../src/applets/gnome-shell/extension.js:106
+#: ../data/gpaste-settings.desktop.in.in.h:1
+#, fuzzy
+msgid "GPaste daemon settings"
 msgstr "GPasten asetukset"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:107
@@ -92,7 +95,7 @@ msgid "Couldn't update history.\n"
 msgstr "Historian päivittäminen epäonnistui.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:113
-#: ../src/applets/gnome-shell/extension.js:126
+#: ../src/applets/gnome-shell/extension.js:121
 msgid "(Empty)"
 msgstr "(Tyhjä)"
 
@@ -106,7 +109,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "GPaste-asetukset ikkunan esiintaikominen epäonnistui.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:140
-#: ../src/applets/gnome-shell/extension.js:76
+#: ../src/applets/gnome-shell/extension.js:74
 msgid "Empty history"
 msgstr "Tyhjennä historia"
 
@@ -129,17 +132,11 @@ msgstr "GPaste-palveluun ei saatu yhteyttä.\n"
 msgid "Track changes"
 msgstr "Pidä kirjaa leikepöydän tapahtumista"
 
-#: ../src/applets/gnome-shell/extension.js:111
-#: ../data/gpaste-settings.desktop.in.in.h:1
-#, fuzzy
-msgid "GPaste daemon settings"
-msgstr "GPasten asetukset"
-
-#: ../src/applets/gnome-shell/extension.js:126
+#: ../src/applets/gnome-shell/extension.js:121
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(GPaste-palveluun ei saatu yhteyttä)"
 
-#: ../src/applets/gnome-shell/extension.js:140
+#: ../src/applets/gnome-shell/extension.js:136
 #, c-format
 msgid "delete: %s"
 msgstr "poista: %s"

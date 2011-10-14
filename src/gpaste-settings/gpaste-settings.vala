@@ -95,7 +95,7 @@ namespace GPaste {
 
             public Window(Gtk.Application app) {
                 GLib.Object(type: Gtk.WindowType.TOPLEVEL);
-                this.title = _("GPaste Settings");
+                this.title = _("GPaste daemon settings");
                 this.application = app;
                 this.set_position(Gtk.WindowPosition.CENTER);
                 this.resizable = false;
