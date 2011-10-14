@@ -102,7 +102,6 @@ GPasteIndicator.prototype = {
                 this._killSwitch.setToggleState(active);
             this.menu.addMenuItem(this._killSwitch);
             this.menu.addMenuItem(this._history);
-            this.menu.addMenuItem(this._noHistory);
             this.menu.addMenuItem(this._emptyHistory);
             this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
             this._fillHistory();
