@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-10-05 20:07+0300\n"
+"POT-Creation-Date: 2011-10-14 16:53+0200\n"
 "PO-Revision-Date: 2011-10-05 21:09+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -49,8 +49,6 @@ msgid "Could not create history file.\n"
 msgstr "Historiatiedoston luonti epäonnistui.\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
-#: ../src/applets/gnome-shell/extension.js:104
-#: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste Settings"
 msgstr "GPasten asetukset"
 
@@ -94,7 +92,7 @@ msgid "Couldn't update history.\n"
 msgstr "Historian päivittäminen epäonnistui.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:113
-#: ../src/applets/gnome-shell/extension.js:121
+#: ../src/applets/gnome-shell/extension.js:126
 msgid "(Empty)"
 msgstr "(Tyhjä)"
 
@@ -108,7 +106,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "GPaste-asetukset ikkunan esiintaikominen epäonnistui.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:140
-#: ../src/applets/gnome-shell/extension.js:117
+#: ../src/applets/gnome-shell/extension.js:76
 msgid "Empty history"
 msgstr "Tyhjennä historia"
 
@@ -121,21 +119,27 @@ msgstr "Historian tyhjennys epäonnistui.\n"
 msgid "Quit"
 msgstr "Lopeta"
 
-#: ../src/applets/legacy/gpaste-applet.vala:199
-#: ../src/gpaste.vala:198
+#: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:198
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "GPaste-palveluun ei saatu yhteyttä.\n"
 
 #: ../src/applets/gnome-shell/extension.js:65
-msgid "Track clipboard changes"
+#, fuzzy
+msgid "Track changes"
 msgstr "Pidä kirjaa leikepöydän tapahtumista"
 
-#: ../src/applets/gnome-shell/extension.js:121
+#: ../src/applets/gnome-shell/extension.js:111
+#: ../data/gpaste-settings.desktop.in.in.h:1
+#, fuzzy
+msgid "GPaste daemon settings"
+msgstr "GPasten asetukset"
+
+#: ../src/applets/gnome-shell/extension.js:126
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(GPaste-palveluun ei saatu yhteyttä)"
 
-#: ../src/applets/gnome-shell/extension.js:135
+#: ../src/applets/gnome-shell/extension.js:140
 #, c-format
 msgid "delete: %s"
 msgstr "poista: %s"
@@ -162,7 +166,8 @@ msgstr "%s get <luku>: noutaa määritellyn leikkeen historiasta\n"
 
 #: ../src/gpaste.vala:50
 #, c-format
-msgid "%s set <number>: set the <number>th item from the history to the clipboard\n"
+msgid ""
+"%s set <number>: set the <number>th item from the history to the clipboard\n"
 msgstr "%s set <luku>: asettaa määritellyn leikkeen sisällön\n"
 
 #: ../src/gpaste.vala:51
@@ -172,7 +177,9 @@ msgstr "%s delete <luku>: poistaa määritellyn leikkeen historiasta\n"
 
 #: ../src/gpaste.vala:52
 #, c-format
-msgid "%s -f/--file <path>: put the content of the file at <path> into the clipboard\n"
+msgid ""
+"%s -f/--file <path>: put the content of the file at <path> into the "
+"clipboard\n"
 msgstr "%s -f/--file <tiedosto>: kopioi tiedoston sisällön leikepöydälle\n"
 
 #: ../src/gpaste.vala:53
@@ -203,7 +210,8 @@ msgstr "%s quit: sama kuin stop\n"
 #: ../src/gpaste.vala:58
 #, c-format
 msgid "%s daemon-reexec: reexecute the daemon (after upgrading...)\n"
-msgstr "%s daemon-reexec: käynnistää palvelun uudelleen (päivittämisen jälkeen...)\n"
+msgstr ""
+"%s daemon-reexec: käynnistää palvelun uudelleen (päivittämisen jälkeen...)\n"
 
 #: ../src/gpaste.vala:60
 #, c-format
@@ -246,8 +254,12 @@ msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "Synkronoidaanko leikepäytä ja maalaaminen toisiinsa?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:2
-msgid "By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;Alt&gt;H\"). An empty string here disable this functionnality."
-msgstr "Oletuksena näppäinyhdistelmä ctrl + alt + h avaa valikon (\"&lt;Ctrl&gt;&lt;Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
+msgid ""
+"By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;H\"). An empty string here disable this functionnality."
+msgstr ""
+"Oletuksena näppäinyhdistelmä ctrl + alt + h avaa valikon (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:3
 msgid "By default, only clipboard (ctrl+c) affects history."
@@ -290,8 +302,12 @@ msgid "Maximum number of items in history"
 msgstr "Suurin määrä leikkeitä, joita historissa säilytettään"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:13
-msgid "The extra stuff of that element will be replaced by \"…\", and newlines by \" \" when displaying from the applet, 0 to disable."
-msgstr "Leikkeen loppuosa korvataan \"...\" merkillä sekä rivin vaihdot \" \" merkillä härpäkeikkunassa, 0 poistaa käytöstä."
+msgid ""
+"The extra stuff of that element will be replaced by \"…\", and newlines by "
+"\" \" when displaying from the applet, 0 to disable."
+msgstr ""
+"Leikkeen loppuosa korvataan \"...\" merkillä sekä rivin vaihdot \" \" "
+"merkillä härpäkeikkunassa, 0 poistaa käytöstä."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:14
 msgid "The keyboard shortcut to display the menu"
@@ -314,6 +330,6 @@ msgid "Tray icon to manage GPaste"
 msgstr "Tehtäväpalkin kuvake"
 
 #: ../data/gpaste-settings.desktop.in.in.h:2
-msgid "Manage GPaste settings"
+#, fuzzy
+msgid "Manage the GPaste daemon settings"
 msgstr "Hallitse GPasten asetuksia"
-

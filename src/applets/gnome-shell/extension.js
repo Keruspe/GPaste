@@ -62,7 +62,7 @@ GPasteIndicator.prototype = {
 
     _init: function() {
         PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
-        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track clipboard changes"), true);
+        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(DBus.session, BUS_NAME, OBJECT_PATH);
         this._proxy.connect('Changed', Lang.bind(this, this._fillHistory));
@@ -108,7 +108,7 @@ GPasteIndicator.prototype = {
             this.menu.addMenuItem(this._noHistory);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(this._emptyHistory);
-            this.menu.addSettingsAction(_("GPaste Settings"), 'gpaste-settings.desktop');
+            this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
             this._fillHistory();
         }));
     },

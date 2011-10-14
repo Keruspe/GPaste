@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-_Name=GPaste Settings
-_Comment=Manage GPaste settings
+_Name=GPaste daemon settings
+_Comment=Manage the GPaste daemon settings
 Icon=gtk-paste
 Exec=@pkglibexecdir@/gpaste-settings
 Terminal=false

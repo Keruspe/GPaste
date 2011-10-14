@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-09-20 19:08+0200\n"
+"POT-Creation-Date: 2011-10-14 16:53+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -48,8 +48,6 @@ msgid "Could not create history file.\n"
 msgstr "No se pudo crear fichero de historial.\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
-#: ../src/applets/gnome-shell/extension.js:104
-#: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste Settings"
 msgstr "Ajustes de GPaste"
 
@@ -93,7 +91,7 @@ msgid "Couldn't update history.\n"
 msgstr "No se pudo actualizar el historial\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:113
-#: ../src/applets/gnome-shell/extension.js:121
+#: ../src/applets/gnome-shell/extension.js:126
 msgid "(Empty)"
 msgstr "(Vacío)"
 
@@ -107,7 +105,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "No se pudo iniciar gpaste-settings.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:140
-#: ../src/applets/gnome-shell/extension.js:117
+#: ../src/applets/gnome-shell/extension.js:76
 msgid "Empty history"
 msgstr "Vaciar historial"
 
@@ -120,20 +118,25 @@ msgstr "No se pudo vaciar el historial.\n"
 msgid "Quit"
 msgstr "Salir"
 
-#: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:185
+#: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:198
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "No se pudo conectar al servicio GPaste.\n"
 
 #: ../src/applets/gnome-shell/extension.js:65
-msgid "Track clipboard changes"
-msgstr "Seguimiento de cambios en el portapapeles"
+msgid "Track changes"
+msgstr "Seguimiento de cambios"
 
-#: ../src/applets/gnome-shell/extension.js:121
+#: ../src/applets/gnome-shell/extension.js:111
+#: ../data/gpaste-settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "Ajustes del servicio GPaste"
+
+#: ../src/applets/gnome-shell/extension.js:126
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(No se pudo conectar al servicio GPaste)"
 
-#: ../src/applets/gnome-shell/extension.js:135
+#: ../src/applets/gnome-shell/extension.js:140
 #, c-format
 msgid "delete: %s"
 msgstr "suprimir: %s"
@@ -211,7 +214,8 @@ msgstr "%s quit: alias de stop\n"
 #: ../src/gpaste.vala:58
 #, c-format
 msgid "%s daemon-reexec: reexecute the daemon (after upgrading...)\n"
-msgstr "%s daemon-reexec: vuelva a ejecutar el servicio (después de actualizar...)\n"
+msgstr ""
+"%s daemon-reexec: vuelva a ejecutar el servicio (después de actualizar...)\n"
 
 #: ../src/gpaste.vala:60
 #, c-format
@@ -331,5 +335,5 @@ msgid "Tray icon to manage GPaste"
 msgstr "Icono de notificación para GPaste"
 
 #: ../data/gpaste-settings.desktop.in.in.h:2
-msgid "Manage GPaste settings"
-msgstr "Gestionar ajustes de GPaste"
+msgid "Manage the GPaste daemon settings"
+msgstr "Gestionar los ajustes del servicio GPaste"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-09-20 19:08+0200\n"
+"POT-Creation-Date: 2011-10-14 16:53+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -48,8 +48,6 @@ msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
-#: ../src/applets/gnome-shell/extension.js:104
-#: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste Settings"
 msgstr "Préférences GPaste"
 
@@ -93,7 +91,7 @@ msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:113
-#: ../src/applets/gnome-shell/extension.js:121
+#: ../src/applets/gnome-shell/extension.js:126
 msgid "(Empty)"
 msgstr "(Vide)"
 
@@ -107,7 +105,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Impossible de lancer gpaste-settings.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:140
-#: ../src/applets/gnome-shell/extension.js:117
+#: ../src/applets/gnome-shell/extension.js:76
 msgid "Empty history"
 msgstr "Vider l'historique"
 
@@ -120,20 +118,25 @@ msgstr "Impossible de vider l'historique.\n"
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:185
+#: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:198
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
 
 #: ../src/applets/gnome-shell/extension.js:65
-msgid "Track clipboard changes"
-msgstr "Suivre les changements du presse-papier"
+msgid "Track changes"
+msgstr "Suivre les changements"
 
-#: ../src/applets/gnome-shell/extension.js:121
+#: ../src/applets/gnome-shell/extension.js:111
+#: ../data/gpaste-settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "Préférences du démon GPaste"
+
+#: ../src/applets/gnome-shell/extension.js:126
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(Impossible de se connecter au démon GPaste)"
 
-#: ../src/applets/gnome-shell/extension.js:135
+#: ../src/applets/gnome-shell/extension.js:140
 #, c-format
 msgid "delete: %s"
 msgstr "supprimer : %s"
@@ -331,5 +334,5 @@ msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
 
 #: ../data/gpaste-settings.desktop.in.in.h:2
-msgid "Manage GPaste settings"
-msgstr "Gérer les préférences GPaste"
+msgid "Manage the GPaste daemon settings"
+msgstr "Gérer les préférences du démon GPaste"
