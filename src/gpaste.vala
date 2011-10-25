@@ -42,6 +42,8 @@ namespace GPaste {
         }
 
         public class Main : GLib.Object {
+            private DBusClient gpaste;
+
             private void usage(string caller) {
                 stdout.printf(_("Usage:\n"));
                 stdout.printf(_("%s: print the history\n"), caller);
@@ -64,6 +66,15 @@ namespace GPaste {
                 stdout.printf(_("%s help: display this help\n"), caller);
             }
 
+            private void history(bool raw) throws GLib.IOError {
+                var history = this.gpaste.get_history() as string[];
+                for (int i = 0 ; i < history.length ; ++i) {
+                    if (!raw)
+                        stdout.printf("%d: ", i);
+                    stdout.printf("%s\n", history[i]);
+                }
+            }
+
             public static int main(string[] args) {
                 GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
                 GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
@@ -71,7 +82,7 @@ namespace GPaste {
                 GLib.Intl.setlocale(LocaleCategory.ALL, "");
                 var app = new Main();
                 try {
-                    DBusClient gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
+                    app.gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                     if (!Posix.isatty(stdin.fileno())) {
                         /* We are being piped ! */
                         var text = new StringBuilder();
@@ -80,13 +91,11 @@ namespace GPaste {
                             text.append(line);
                         while ((line = stdin.read_line()) != null)
                             text.append_c('\n').append(line);
-                        gpaste.add(text.str);
+                        app.gpaste.add(text.str);
                     } else {
                         switch (args.length) {
                         case 1:
-                            var history = gpaste.get_history() as string[];
-                            for (int i = 0 ; i < history.length ; ++i)
-                                stdout.printf("%d: %s\n", i, history[i]);
+                            app.history(false);
                             break;
                         case 2:
                             switch (args[1]) {
@@ -97,14 +106,14 @@ namespace GPaste {
                                 break;
                             case "start":
                             case "daemon":
-                                gpaste.track(true);
+                                app.gpaste.track(true);
                                 break;
                             case "stop":
                             case "quit":
-                                gpaste.track(false);
+                                app.gpaste.track(false);
                                 break;
                             case "empty":
-                                gpaste.empty();
+                                app.gpaste.empty();
                                 break;
                             case "version":
                             case "-v":
@@ -126,7 +135,7 @@ namespace GPaste {
                                 break;
                             case "daemon-reexec":
                                 try {
-                                    gpaste.reexec();
+                                    app.gpaste.reexec();
                                 } catch (GLib.Error e) {
                                     if (e.code == 4) /* NoReply, but we do not expect one when doing this ! */
                                         stdout.printf(_("Successfully reexecuted the daemon\n"));
@@ -134,24 +143,30 @@ namespace GPaste {
                                         GLib.critical("%s (%s, %d)", e.message, e.domain.to_string(), e.code);
                                 }
                                 break;
+                            case "history":
+                                app.history(false);
+                                break;
+                            case "raw-history":
+                                app.history(true);
+                                break;
                             default:
-                                gpaste.add(args[1]);
+                                app.gpaste.add(args[1]);
                                 break;
                             }
                             break;
                         case 3:
                             switch (args[1]) {
                             case "add":
-                                gpaste.add(args[2]);
+                                app.gpaste.add(args[2]);
                                 break;
                             case "get":
-                                stdout.printf("%s", gpaste.get_element(int.parse(args[2])));
+                                stdout.printf("%s", app.gpaste.get_element(int.parse(args[2])));
                                 break;
                             case "set":
-                                gpaste.select(int.parse(args[2]));
+                                app.gpaste.select(int.parse(args[2]));
                                 break;
                             case "delete":
-                                gpaste.delete(int.parse(args[2]));
+                                app.gpaste.delete(int.parse(args[2]));
                                 break;
                             case "file":
                             case "-f":
@@ -165,7 +180,7 @@ namespace GPaste {
                                         text.append(line);
                                     while ((line = dis.read_line(null)) != null)
                                         text.append_c('\n').append(line);
-                                    gpaste.add(text.str);
+                                    app.gpaste.add(text.str);
                                 } catch(GLib.Error e) {
                                     stderr.printf(_("Could not read file: %s\n"), args[2]);
                                 }

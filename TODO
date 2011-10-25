@@ -1,5 +1,5 @@
 2.0:
     Add support for images
+3.0:
     Rewrite daemon in pure C
     libgpaste + introspection
-    gpaste raw-history

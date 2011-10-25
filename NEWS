@@ -1,3 +1,10 @@
+NEW in 1.7 (Not released yet)
+=============
+
+- Finnish translation by Jesse Jaara
+- Be consistent with the shell applet menu structure
+- New gpaste subcommand: raw-history to display history without numbers
+
 NEW in 1.6 (20/09/2011)
 =============
 
