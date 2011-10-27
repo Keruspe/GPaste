@@ -46,12 +46,13 @@ namespace GPaste {
 
             private void usage(string caller) {
                 stdout.printf(_("Usage:\n"));
-                stdout.printf(_("%s: print the history\n"), caller);
-                stdout.printf(_("%s [add] <text>: set text to clipboard\n"), caller);
+                stdout.printf(_("%s [history]: print the history with indexes\n"), caller);
+                stdout.printf(_("%s raw-history: print the history without indexes\n"), caller);
+                stdout.printf(_("%s add <text>: set text to clipboard\n"), caller);
                 stdout.printf(_("%s get <number>: get the <number>th item from the history\n"), caller);
                 stdout.printf(_("%s set <number>: set the <number>th item from the history to the clipboard\n"), caller);
                 stdout.printf(_("%s delete <number>: delete <number>th item of the history\n"), caller);
-                stdout.printf(_("%s -f/--file <path>: put the content of the file at <path> into the clipboard\n"), caller);
+                stdout.printf(_("%s file <path>: put the content of the file at <path> into the clipboard\n"), caller);
                 stdout.printf(_("whatever | %s: set the output of whatever to clipboard\n"), caller);
                 stdout.printf(_("%s empty: empty the history\n"), caller);
                 stdout.printf(_("%s start: start tracking clipboard changes\n"), caller);
@@ -62,7 +63,7 @@ namespace GPaste {
                 stdout.printf(_("%s applet: launch the applet\n"), caller);
 #endif
                 stdout.printf(_("%s settings: launch the configuration tool\n"), caller);
-                stdout.printf(_("%s version/-v/--version: display the version\n"), caller);
+                stdout.printf(_("%s version: display the version\n"), caller);
                 stdout.printf(_("%s help: display this help\n"), caller);
             }
 
@@ -105,16 +106,20 @@ namespace GPaste {
                                 app.usage(args[0]);
                                 break;
                             case "start":
+                            case "d":
                             case "daemon":
                                 app.gpaste.track(true);
                                 break;
                             case "stop":
+                            case "q":
                             case "quit":
                                 app.gpaste.track(false);
                                 break;
+                            case "e":
                             case "empty":
                                 app.gpaste.empty();
                                 break;
+                            case "v":
                             case "version":
                             case "-v":
                             case "--version":
@@ -129,10 +134,13 @@ namespace GPaste {
                                 }
                                 break;
 #endif
+                            case "s":
                             case "settings":
+                            case "p":
                             case "preferences":
                                 Posix.execl(Config.PKGLIBEXECDIR + "/gpaste-settings", "GPaste-Settings");
                                 break;
+                            case "dr":
                             case "daemon-reexec":
                                 try {
                                     app.gpaste.reexec();
@@ -143,34 +151,43 @@ namespace GPaste {
                                         GLib.critical("%s (%s, %d)", e.message, e.domain.to_string(), e.code);
                                 }
                                 break;
+                            case "h":
                             case "history":
                                 app.history(false);
                                 break;
+                            case "rh":
                             case "raw-history":
                                 app.history(true);
                                 break;
                             default:
-                                app.gpaste.add(args[1]);
+                                app.usage(args[0]);
                                 break;
                             }
                             break;
                         case 3:
                             switch (args[1]) {
+                            case "a":
                             case "add":
                                 app.gpaste.add(args[2]);
                                 break;
+                            case "g":
                             case "get":
                                 stdout.printf("%s", app.gpaste.get_element(int.parse(args[2])));
                                 break;
+                            case "s":
                             case "set":
                                 app.gpaste.select(int.parse(args[2]));
                                 break;
+                            case "d":
                             case "delete":
                                 app.gpaste.delete(int.parse(args[2]));
                                 break;
-                            case "file":
                             case "-f":
                             case "--file":
+                                stderr.printf(_("%s %s is deprecated: use %s file instead\n"), args[0], args[1], args[0]);
+                                break;
+                            case "f":
+                            case "file":
                                 var file = GLib.File.new_for_path(args[2]);
                                 try {
                                     var dis = new GLib.DataInputStream(file.read());
@@ -197,6 +214,7 @@ namespace GPaste {
                     }
                     return 0;
                 } catch (IOError e) {
+                    /* Display help even if we cannot contact the daemon */
                     if (args.length == 2) {
                         switch (args[1]) {
                         case "help":
