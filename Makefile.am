@@ -182,7 +182,6 @@ CLEANFILES = \
 	$(nodist_applications_in_files) \
 	$(nodist_applications_DATA) \
 	$(nodist_autostart_in_files) \
-	$(nodist_autostart_DATA) \
 	$(nodist_man_MANS) \
 	$(gsettings_SCHEMAS:.xml=.xml.in) \
 	$(gsettings_SCHEMAS) \
