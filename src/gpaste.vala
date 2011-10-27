@@ -184,7 +184,7 @@ namespace GPaste {
                                 break;
                             case "-f":
                             case "--file":
-                                stderr.printf(_("%s %s is deprecated: use %s file instead\n"), args[0], args[1], args[0]);
+                                stderr.printf(_("%s %s is deprecated: use \"%s file\" instead\n"), args[0], args[1], args[0]);
                                 break;
                             case "f":
                             case "file":
