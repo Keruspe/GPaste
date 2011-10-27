@@ -25,12 +25,13 @@ namespace GPaste {
         public class DBusServer : GLib.Object {
             // TODO: Handle images
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public GLib.Variant get_history() {
+            public string[] get_history() {
                 unowned GLib.SList<Item?> history = History.instance.history;
-                var vb = new GLib.VariantBuilder(new GLib.VariantType.array(GLib.VariantType.STRING));
-                foreach (Item i in history)
-                    vb.add_value(i.val);
-                return vb.end();
+                var as = new string[history.length()];
+                int i = 0;
+                foreach (Item item in history)
+                    as[i++] = item.val;
+                return as;
             }
 
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
