@@ -24,7 +24,7 @@ namespace GPaste {
         [DBus (name = "org.gnome.GPaste")]
         public interface DBusClient : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public abstract GLib.Variant get_history() throws GLib.IOError;
+            public abstract string[] get_history() throws GLib.IOError;
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
             public abstract void select(uint32 index) throws GLib.IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
@@ -77,7 +77,7 @@ namespace GPaste {
                 bool history_is_empty;
                 var app = this.application as Main;
                 try {
-                    var hist = app.gpasted.get_history() as string[];
+                    var hist = app.gpasted.get_history();
                     history_is_empty = (hist.length == 0);
                     uint32 element_size = app.element_size;
                     for (uint32 index = 0 ; index < hist.length ; ++index) {
