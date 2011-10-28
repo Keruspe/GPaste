@@ -24,7 +24,7 @@ namespace GPaste {
         [DBus (name = "org.gnome.GPaste")]
         interface DBusClient : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
-            public abstract GLib.Variant get_history() throws GLib.IOError;
+            public abstract string[] get_history() throws GLib.IOError;
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws GLib.IOError;
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
@@ -68,7 +68,7 @@ namespace GPaste {
             }
 
             private void history(bool raw) throws GLib.IOError {
-                var history = this.gpaste.get_history() as string[];
+                var history = this.gpaste.get_history();
                 for (int i = 0 ; i < history.length ; ++i) {
                     if (!raw)
                         stdout.printf("%d: ", i);
