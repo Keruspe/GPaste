@@ -29,12 +29,29 @@ namespace GPaste {
         public struct Item {
             public ItemKind kind;
 
-            // This means either the String, or the path to the file.
-            public string val;
+            public string? str;
+            public Gdk.Pixbuf? img;
 
-            public Item (ItemKind kind, string val) {
-                this.kind = kind;
-                this.val = val;
+            public Item.string (string? str) {
+                this.kind = ItemKind.STRING;
+                this.str = str;
+                this.img = null;
+            }
+
+            public Item.image (Gdk.Pixbuf? img) {
+                this.kind = ItemKind.IMAGE;
+                this.str = "image";
+                this.img = img;
+            }
+
+            public bool has_value () {
+                switch (this.kind) {
+                case ItemKind.STRING:
+                    return (this.str != null && this.str.strip() != "");
+                case ItemKind.IMAGE:
+                    return (this.img != null);
+                }
+                return false;
             }
         }
 

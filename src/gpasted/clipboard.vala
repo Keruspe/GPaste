@@ -24,6 +24,7 @@ namespace GPaste {
         public class Clipboard : GLib.Object {
             public Gdk.Atom selection;
             public string text;
+            public Gdk.Pixbuf image;
 
             public Gtk.Clipboard real {
                 get;
@@ -60,7 +61,7 @@ namespace GPaste {
                     unowned GLib.SList<Item?> history = History.instance.history;
                     if (history.length() != 0) {
                         //TODO: Handle images
-                        string text = history.data.val;
+                        string text = history.data.str;
                         clipboard.text = text;
                         clipboard.real.set_text(text, -1);
                     }
@@ -75,29 +76,56 @@ namespace GPaste {
                 History.instance.add(selection);
                 foreach(Clipboard c in this.clipboards) {
                     // TODO: Handle images
-                    c.real.set_text(selection.val, -1);
+                    c.real.set_text(selection.str, -1);
                 }
             }
 
             private bool check_clipboards() {
                 // TODO: Handle images
                 string? synchronized_text = null;
+                Gdk.Pixbuf? synchronized_image = null;
                 foreach(Clipboard c in this.clipboards) {
-                    string text = c.real.wait_for_text();
-                    if (text == null) {
+                    var something_in_clipboard = false;
+                    if (c.real.wait_is_text_available()) {
+                        var text = c.real.wait_for_text();
+                        if (text != null) {
+                            something_in_clipboard = true;
+                            if (c.text != text) {
+                                c.text = text;
+                                Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
+                                if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
+                                    History.instance.add(Item.string(text));
+                                if (Settings.instance.synchronize_clipboards)
+                                    synchronized_text = text;
+                            }
+                        }
+                    } else if (c.real.wait_is_image_available()) {
+                        var image = c.real.wait_for_image();
+                        if (image != null) {
+                            something_in_clipboard = true;
+                            if (c.image != image) {
+                                c.image = image;
+                                Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
+                                if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
+                                    History.instance.add(Item.image(image));
+                                if (Settings.instance.synchronize_clipboards)
+                                    synchronized_image = image;
+                            }
+                        }
+                    }
+                    if (!something_in_clipboard) {
                         unowned GLib.SList<Item?> history = History.instance.history;
                         if (history.length() == 0)
                             continue;
                         Item selection = history.data;
-                        c.real.set_text(selection.val, -1);
-                    }
-                    if (c.text != text) {
-                        c.text = text;
-                        Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                        if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
-                            History.instance.add(Item(ItemKind.STRING, text));
-                        if (Settings.instance.synchronize_clipboards)
-                            synchronized_text = text;
+                        switch (selection.kind) {
+                        case ItemKind.STRING:
+                            c.real.set_text(selection.str, -1);
+                            break;
+                        case ItemKind.IMAGE:
+                            c.real.set_image(selection.img);
+                            break;
+                        }
                     }
                 }
                 if (synchronized_text != null) {
@@ -105,6 +133,13 @@ namespace GPaste {
                         if (c.text != synchronized_text) {
                             c.text = synchronized_text;
                             c.real.set_text(synchronized_text, -1);
+                        }
+                    }
+                } else if (synchronized_image != null) {
+                    foreach(Clipboard c in this.clipboards) {
+                        if (c.image != synchronized_image) {
+                            c.image = synchronized_image;
+                            c.real.set_image(synchronized_image);
                         }
                     }
                 }

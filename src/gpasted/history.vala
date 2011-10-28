@@ -45,7 +45,7 @@ namespace GPaste {
 
             public void add(Item selection) {
                 // TODO: Handle images
-                if (selection.val == null || selection.val.strip() == "")
+                if (!selection.has_value())
                     return;
                 for (unowned GLib.SList<Item?> s = this.history ; s != null ; s = s.next) {
                     if (s.data == selection) {
@@ -85,7 +85,7 @@ namespace GPaste {
                 // TODO: support handling images
                 if (index >= this.history.length())
                     return "";
-                return this.history.nth_data(index).val;
+                return this.history.nth_data(index).str;
             }
 
             public void select(uint32 index) {
@@ -118,7 +118,7 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this.history.append(Item(ItemKind.STRING, str));
+                            this.history.append(Item.string(str));
                     }
                     this.save();
                     history_file.delete();
@@ -137,11 +137,18 @@ namespace GPaste {
                     var dis = new GLib.DataInputStream(history_file.read());
                     while((length = dis.read_int64()) != 0) {
                         var kind = (ItemKind) dis.read_byte();
-                        var tmp_str = new uint8[length];
-                        dis.read(tmp_str);
-                        var str = (string) tmp_str;
-                        if (str.validate())
-                            this.history.append(Item(kind, str));
+                        switch (kind) {
+                        case ItemKind.STRING:
+                            var tmp_str = new uint8[length];
+                            dis.read(tmp_str);
+                            var str = (string) tmp_str;
+                            if (str.validate())
+                                this.history.append(Item.string(str));
+                            break;
+                        case ItemKind.IMAGE:
+                            //TODO
+                            break;
+                        }
                     }
                 } catch (Error e) {
                     stderr.printf(_("Could not read history file.\n"));
@@ -158,9 +165,16 @@ namespace GPaste {
                     var history_file_stream = history_file.replace(null, false, GLib.FileCreateFlags.REPLACE_DESTINATION);
                     var dos = new GLib.DataOutputStream(history_file_stream);
                     foreach(Item i in this.history) {
-                        dos.put_int64(i.val.length);
-                        dos.put_byte(i.kind);
-                        dos.put_string(i.val);
+                        switch (i.kind) {
+                        case ItemKind.STRING:
+                            dos.put_int64(i.str.length);
+                            dos.put_byte(i.kind);
+                            dos.put_string(i.str);
+                            break;
+                        case ItemKind.IMAGE:
+                            //TODO
+                            break;
+                        }
                     }
                     dos.put_int64(0);
                 } catch (Error e) {
