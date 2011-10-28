@@ -107,8 +107,8 @@ namespace GPaste {
                 DBusServer.instance.changed();
             }
 
-            // TODO: Remove me for 2.0 once everyone'll have its history converted
-            private void convert_history() {
+            // TODO: Remove me after 2.0, once everyone'll have its history converted
+            private void convert_old_history() {
                 var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
                 try {
                     int64 length;
@@ -118,11 +118,40 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this.history.append(Item.string(str));
+                            this.history.append(Item.text(str));
                     }
                     this.save();
                     history_file.delete();
-                    GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste").delete();
+                } catch (Error e) {
+                    // File do no longer exist, we don't care about that
+                }
+                this.history = new GLib.SList<Item?>();
+            }
+
+            // TODO: Remove me after 2.0, once everyone'll have its history converted
+            public void convert_history() {
+                this.convert_old_history();
+                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
+                try {
+                    int64 length;
+                    var dis = new GLib.DataInputStream(history_file.read());
+                    while((length = dis.read_int64()) != 0) {
+                        var kind = (ItemKind) dis.read_byte();
+                        switch (kind) {
+                        case ItemKind.TEXT:
+                            var tmp_str = new uint8[length];
+                            dis.read(tmp_str);
+                            var str = (string) tmp_str;
+                            if (str.validate())
+                                this.history.append(Item.text(str));
+                            break;
+                        case ItemKind.IMAGE:
+                            // Was never supported with this serialization 
+                            break;
+                        }
+                    }
+                    this.save();
+                    history_file.delete();
                 } catch (Error e) {
                     // File do no longer exist, we don't care about that
                 }
@@ -131,52 +160,62 @@ namespace GPaste {
 
             public void load() {
                 this.convert_history();
-                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
-                try {
-                    int64 length;
-                    var dis = new GLib.DataInputStream(history_file.read());
-                    while((length = dis.read_int64()) != 0) {
-                        var kind = (ItemKind) dis.read_byte();
-                        switch (kind) {
-                        case ItemKind.STRING:
-                            var tmp_str = new uint8[length];
-                            dis.read(tmp_str);
-                            var str = (string) tmp_str;
-                            if (str.validate())
-                                this.history.append(Item.string(str));
-                            break;
-                        case ItemKind.IMAGE:
-                            //TODO
-                            break;
-                        }
+                var history_file = GLib.Path.build_filename(Environment.get_user_data_dir(), "gpaste", "history.xml");
+                var reader = new Xml.TextReader.filename(history_file);
+                while (reader.read() == 1) {
+                    if (reader.node_type() != 1 || reader.name() != "item")
+                        continue;
+                    string kind = reader.get_attribute("kind");
+                    if (kind == null)
+                        kind = "Text";
+                    string value = reader.read_string();
+                    if (value == null || value.strip() == "" || !value.validate())
+                        continue;
+                    switch (kind) {
+                    case "Text":
+                        this.history.append(Item.text(value));
+                        break;
+                    case "Image":
+                        this.history.append(Item.image_from_filename(value));
+                        break;
                     }
-                } catch (Error e) {
-                    stderr.printf(_("Could not read history file.\n"));
                 }
             }
 
             public void save() {
-                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
+                string history_dir_path = GLib.Path.build_filename(Environment.get_user_data_dir(), "gpaste");
+                var save_history = Settings.instance.save_history;
+                if (!GLib.File.new_for_path(history_dir_path).query_exists()) {
+                    if (!save_history)
+                        return;
+                    Posix.mkdir(history_dir_path, 0700);
+                }
+
+                var history_file = GLib.Path.build_filename(history_dir_path, "history.xml");
                 try {
-                    if (!Settings.instance.save_history) {
-                        history_file.delete();
+                    if (!save_history) {
+                        GLib.File.new_for_path(history_file).delete();
                         return;
                     }
-                    var history_file_stream = history_file.replace(null, false, GLib.FileCreateFlags.REPLACE_DESTINATION);
-                    var dos = new GLib.DataOutputStream(history_file_stream);
-                    foreach(Item i in this.history) {
-                        switch (i.kind) {
-                        case ItemKind.STRING:
-                            dos.put_int64(i.str.length);
-                            dos.put_byte(i.kind);
-                            dos.put_string(i.str);
-                            break;
-                        case ItemKind.IMAGE:
-                            //TODO
-                            break;
-                        }
+                    var writer = new Xml.TextWriter.filename(history_file);
+                    writer.set_indent(true);
+                    writer.set_indent_string("  ");
+
+                    writer.start_document("1.0", "UTF-8");
+                    writer.start_element("history");
+
+                    foreach (Item i in this.history) {
+                        writer.start_element("item");
+                        writer.write_attribute("kind", i.kind);
+                        writer.start_cdata();
+                        writer.write_string(i.str);
+                        writer.end_cdata();
+                        writer.end_element();
                     }
-                    dos.put_int64(0);
+
+                    writer.end_element();
+                    writer.end_document();
+                    writer.flush();
                 } catch (Error e) {
                     stderr.printf(_("Could not create history file.\n"));
                 }

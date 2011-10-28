@@ -22,33 +22,39 @@ namespace GPaste {
     namespace Daemon {
 
         public enum ItemKind {
-            STRING,
+            TEXT,
             IMAGE
         }
 
         public struct Item {
-            public ItemKind kind;
-
+            public string kind;
             public string? str;
             public Gdk.Pixbuf? img;
 
-            public Item.string (string? str) {
-                this.kind = ItemKind.STRING;
+            public Item.text (string? str) {
+                this.kind = "Text";
                 this.str = str;
                 this.img = null;
             }
 
             public Item.image (Gdk.Pixbuf? img) {
-                this.kind = ItemKind.IMAGE;
+                this.kind = "Image";
                 this.str = "image";
                 this.img = img;
             }
 
+            public Item.image_from_filename (string filename) {
+                // TODO: separate str from display_str;
+                this.kind = "Image";
+                this.str = filename;
+                this.img = null;
+            }
+
             public bool has_value () {
                 switch (this.kind) {
-                case ItemKind.STRING:
+                case "Text":
                     return (this.str != null && this.str.strip() != "");
-                case ItemKind.IMAGE:
+                case "Image":
                     return (this.img != null);
                 }
                 return false;
