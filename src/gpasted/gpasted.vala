@@ -30,13 +30,13 @@ namespace GPaste {
                 var as = new string[history.length()];
                 int i = 0;
                 foreach (Item item in history)
-                    as[i++] = item.str;
+                    as[i++] = item.get_display_str ();
                 return as;
             }
 
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public void add(string selection) {
-                ClipboardsManager.instance.select(Item.text(selection));
+                ClipboardsManager.instance.select(new TextItem(selection));
             }
 
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]

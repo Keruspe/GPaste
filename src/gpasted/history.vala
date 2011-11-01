@@ -48,7 +48,7 @@ namespace GPaste {
                 if (!selection.has_value())
                     return;
                 for (unowned GLib.SList<Item?> s = this.history ; s != null ; s = s.next) {
-                    if (s.data == selection) {
+                    if (s.data.equals(selection)) {
                         this.history.remove_link(s);
                         break;
                     }
@@ -118,7 +118,7 @@ namespace GPaste {
                         dis.read(tmp_str);
                         var str = (string) tmp_str;
                         if (str.validate())
-                            this.history.append(Item.text(str));
+                            this.history.append(new TextItem(str));
                     }
                     this.save();
                     history_file.delete();
@@ -143,7 +143,7 @@ namespace GPaste {
                             dis.read(tmp_str);
                             var str = (string) tmp_str;
                             if (str.validate())
-                                this.history.append(Item.text(str));
+                                this.history.append(new TextItem(str));
                             break;
                         case ItemKind.IMAGE:
                             // Was never supported with this serialization 
@@ -173,10 +173,10 @@ namespace GPaste {
                         continue;
                     switch (kind) {
                     case "Text":
-                        this.history.append(Item.text(value));
+                        this.history.append(new TextItem(value));
                         break;
                     case "Image":
-                        this.history.append(Item.image_from_filename(value));
+                        this.history.append(new ImageItem.from_path(value));
                         break;
                     }
                 }
@@ -206,7 +206,7 @@ namespace GPaste {
 
                     foreach (Item i in this.history) {
                         writer.start_element("item");
-                        writer.write_attribute("kind", i.kind);
+                        writer.write_attribute("kind", i.get_kind ());
                         writer.start_cdata();
                         writer.write_string(i.str);
                         writer.end_cdata();

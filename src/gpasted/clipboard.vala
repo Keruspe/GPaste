@@ -94,7 +94,7 @@ namespace GPaste {
                                 c.text = text;
                                 Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                                 if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
-                                    History.instance.add(Item.text(text));
+                                    History.instance.add(new TextItem(text));
                                 if (Settings.instance.synchronize_clipboards)
                                     synchronized_text = text;
                             }
@@ -107,7 +107,7 @@ namespace GPaste {
                                 c.image = image;
                                 Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                                 if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
-                                    History.instance.add(Item.image(image));
+                                    History.instance.add(new ImageItem(image));
                                 if (Settings.instance.synchronize_clipboards)
                                     synchronized_image = image;
                             }
@@ -118,14 +118,10 @@ namespace GPaste {
                         if (history.length() == 0)
                             continue;
                         Item selection = history.data;
-                        switch (selection.kind) {
-                        case "Text":
+                        if (selection is ImageItem)
+                            c.real.set_image((selection as ImageItem).img);
+                        else /* TextItem */
                             c.real.set_text(selection.str, -1);
-                            break;
-                        case "Image":
-                            c.real.set_image(selection.img);
-                            break;
-                        }
                     }
                 }
                 if (synchronized_text != null) {

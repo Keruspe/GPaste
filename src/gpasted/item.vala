@@ -21,43 +21,79 @@ namespace GPaste {
 
     namespace Daemon {
 
+        /* Deprecated */
         public enum ItemKind {
             TEXT,
             IMAGE
         }
 
-        public struct Item {
-            public string kind;
-            public string? str;
-            public Gdk.Pixbuf? img;
-
-            public Item.text (string? str) {
-                this.kind = "Text";
-                this.str = str;
-                this.img = null;
+        public abstract class Item : GLib.Object {
+            public string? str {
+                get;
+                protected set;
             }
 
-            public Item.image (Gdk.Pixbuf? img) {
-                this.kind = "Image";
-                this.str = "image";
+            public abstract bool has_value ();
+            public abstract string get_display_str ();
+            public abstract string get_kind ();
+            public abstract bool equals (Item i);
+        }
+
+        public class TextItem : Item {
+            public TextItem (string? str) {
+                this.str = str;
+            }
+
+            public override string get_display_str () {
+                return this.str;
+            }
+
+            public override bool has_value () {
+                return this.str != null && this.str.strip () != "";
+            }
+
+            public override string get_kind () {
+                return "Text";
+            }
+
+            public override bool equals (Item i) {
+                return i is TextItem && i.str == this.str;
+            }
+        }
+
+        public class ImageItem : Item {
+            private string display_str;
+            public Gdk.Pixbuf? img {
+                get;
+                private set;
+            }
+
+            public ImageItem (Gdk.Pixbuf? img) {
+                this.display_str = "display_str";
+                this.str = "path";
                 this.img = img;
             }
 
-            public Item.image_from_filename (string filename) {
-                // TODO: separate str from display_str;
-                this.kind = "Image";
-                this.str = filename;
-                this.img = null;
+            public ImageItem.from_path (string path) {
+                this.display_str = "display_str";
+                this.str = path;
+                this.img = null; //TODO
             }
 
-            public bool has_value () {
-                switch (this.kind) {
-                case "Text":
-                    return (this.str != null && this.str.strip() != "");
-                case "Image":
-                    return (this.img != null);
-                }
-                return false;
+            public override string get_display_str () {
+                return this.display_str;
+            }
+
+            public override bool has_value () {
+                return this.img != null;
+            }
+
+            public override string get_kind () {
+                return "Image";
+            }
+
+            public override bool equals (Item i) {
+                return i is ImageItem && i.str == this.str;
             }
         }
 
