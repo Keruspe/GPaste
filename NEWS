@@ -5,6 +5,7 @@ NEW in 1.7 (Not released yet)
 - Be consistent with the shell applet menu structure
 - New gpaste subcommand: raw-history to display history without numbers
 - Switch to GDbus
+- New images support (feedback appreciated)
 
 NEW in 1.6 (20/09/2011)
 =============
