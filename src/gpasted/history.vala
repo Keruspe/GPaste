@@ -93,8 +93,7 @@ namespace GPaste {
                 this.remove (tmp);
                 if (index == 0)
                     this.select(0);
-                else
-                    DBusServer.instance.changed();
+                DBusServer.instance.changed();
             }
 
             public string get_element(uint32 index) {
