@@ -63,21 +63,42 @@ namespace GPaste {
 
         public class ImageItem : Item {
             private string display_str;
+            private string checksum;
+
             public Gdk.Pixbuf? img {
                 get;
                 private set;
             }
 
             public ImageItem (Gdk.Pixbuf? img) {
-                this.display_str = "display_str";
-                this.str = "path";
                 this.img = img;
+                if (img == null)
+                    this.display_str = _("[Image no longer exists]");
+                else {
+                    string images_dir = GLib.Path.build_filename (GLib.Environment.get_user_data_dir(), "gpaste", "images");
+                    if (!GLib.File.new_for_path(images_dir).query_exists())
+                        Posix.mkdir(images_dir, 0700);
+                    this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) img.get_pixels);
+                    this.str = GLib.Path.build_filename (images_dir, this.checksum + ".png");
+                    try {
+                        img.save (this.str, "png");
+                        this.display_str = _("[Image, %d x %d]").printf (this.img.get_width (), this.img.get_height ());
+                    } catch (GLib.Error e) {
+                        this.display_str = _("[Image no longer exists]");
+                        stderr.printf (_("Error while saving pixbuf: %s\n"), e.message);
+                    }
+                }
             }
 
             public ImageItem.from_path (string path) {
-                this.display_str = "display_str";
-                this.str = path;
-                this.img = null; //TODO
+                try {
+                    this.str = path;
+                    this.img = new Gdk.Pixbuf.from_file (this.str);
+                    this.display_str = _("[Image, %d x %d]").printf (this.img.get_width (), this.img.get_height ());
+                } catch (GLib.Error e) {
+                    this.display_str = _("[Image no longer exists]");
+                    stderr.printf (_("Error while loading pixbuf: %s\n"), e.message);
+                }
             }
 
             public override string get_display_str () {
@@ -93,7 +114,7 @@ namespace GPaste {
             }
 
             public override bool equals (Item i) {
-                return i is ImageItem && i.str == this.str;
+                return i is ImageItem && (i as ImageItem).checksum == this.checksum;
             }
         }
 

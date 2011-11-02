@@ -96,7 +96,7 @@ namespace GPaste {
             }
 
             public void empty() {
-                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
+                var history_file = GLib.File.new_for_path(GLib.Environment.get_home_dir() + "/.gpaste_history");
                 try {
                     if (history_file.query_exists())
                         history_file.delete();
@@ -109,7 +109,7 @@ namespace GPaste {
 
             // TODO: Remove me after 2.0, once everyone'll have its history converted
             private void convert_old_history() {
-                var history_file = GLib.File.new_for_path(Environment.get_user_data_dir() + "/gpaste/history");
+                var history_file = GLib.File.new_for_path(GLib.Environment.get_user_data_dir() + "/gpaste/history");
                 try {
                     int64 length;
                     var dis = new GLib.DataInputStream(history_file.read());
@@ -131,7 +131,7 @@ namespace GPaste {
             // TODO: Remove me after 2.0, once everyone'll have its history converted
             public void convert_history() {
                 this.convert_old_history();
-                var history_file = GLib.File.new_for_path(Environment.get_home_dir() + "/.gpaste_history");
+                var history_file = GLib.File.new_for_path(GLib.Environment.get_home_dir() + "/.gpaste_history");
                 try {
                     int64 length;
                     var dis = new GLib.DataInputStream(history_file.read());
@@ -160,7 +160,7 @@ namespace GPaste {
 
             public void load() {
                 this.convert_history();
-                var history_file = GLib.Path.build_filename(Environment.get_user_data_dir(), "gpaste", "history.xml");
+                var history_file = GLib.Path.build_filename(GLib.Environment.get_user_data_dir(), "gpaste", "history.xml");
                 var reader = new Xml.TextReader.filename(history_file);
                 while (reader.read() == 1) {
                     if (reader.node_type() != 1 || reader.name() != "item")
@@ -183,7 +183,7 @@ namespace GPaste {
             }
 
             public void save() {
-                string history_dir_path = GLib.Path.build_filename(Environment.get_user_data_dir(), "gpaste");
+                string history_dir_path = GLib.Path.build_filename(GLib.Environment.get_user_data_dir(), "gpaste");
                 var save_history = Settings.instance.save_history;
                 if (!GLib.File.new_for_path(history_dir_path).query_exists()) {
                     if (!save_history)
