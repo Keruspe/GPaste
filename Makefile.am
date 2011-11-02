@@ -98,6 +98,7 @@ gpaste_VALAFLAGS = \
 gpasted_VALAFLAGS = \
 	$(GTK_VALAFLAGS) \
 	$(GDK_VALAFLAGS) \
+	$(XML_VALAFLAGS) \
 	$(AM_VALAFLAGS)
 
 gpaste_applet_VALAFLAGS = \
@@ -129,6 +130,7 @@ gpasted_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(X11_CFLAGS) \
+	$(XML_CFLAGS) \
 	$(AM_CFLAGS)
 
 gpaste_applet_CFLAGS = \
@@ -152,6 +154,7 @@ gpasted_LDADD = \
 	$(GTK_LIBS) \
 	$(GDK_LIBS) \
 	$(X11_LIBS) \
+	$(XML_LIBS) \
 	$(AM_LIBS)
 
 gpaste_settings_LDADD = \

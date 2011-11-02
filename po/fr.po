@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-10-28 00:49+0200\n"
+"POT-Creation-Date: 2011-11-02 15:57+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -17,35 +17,54 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:108
+#: ../src/gpasted/gpasted.vala:107
 #, c-format
 msgid "Signal %d recieved, exiting.\n"
 msgstr "Signal %d reçu, arrêt.\n"
 
-#: ../src/gpasted/gpasted.vala:116
+#: ../src/gpasted/gpasted.vala:115
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#: ../src/gpasted/gpasted.vala:123
+#: ../src/gpasted/gpasted.vala:122
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
 
-#: ../src/gpasted/history.vala:104
+#: ../src/gpasted/history.vala:119
 #, c-format
 msgid "Could not delete history file.\n"
 msgstr "Impossible de supprimer le fichier d'historique.\n"
 
-#: ../src/gpasted/history.vala:147
-#, c-format
-msgid "Could not read history file.\n"
-msgstr "Impossible de lire le fichier d'historique.\n"
-
-#: ../src/gpasted/history.vala:167
+#: ../src/gpasted/history.vala:235
 #, c-format
 msgid "Could not create history file.\n"
 msgstr "Impossible de créer le fichier d'historique.\n"
+
+#: ../src/gpasted/item.vala:86 ../src/gpasted/item.vala:97
+#: ../src/gpasted/item.vala:110
+msgid "[Image no longer exists]"
+msgstr "[L'image n'existe plus]"
+
+#: ../src/gpasted/item.vala:95 ../src/gpasted/item.vala:108
+#, c-format
+msgid "[Image, %d x %d (%s)]"
+msgstr "[Image, %d x %d (%s)]"
+
+#: ../src/gpasted/item.vala:95 ../src/gpasted/item.vala:108
+msgid "%m/%d/%y %T"
+msgstr "%d/%m/%y %T"
+
+#: ../src/gpasted/item.vala:98
+#, c-format
+msgid "Error while saving pixbuf: %s\n"
+msgstr "Erreur lors de la sauvegarde de l'image: %s\n"
+
+#: ../src/gpasted/item.vala:111
+#, c-format
+msgid "Error while loading pixbuf: %s\n"
+msgstr "Erreur lors du chargement de l'image: %s\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
 #: ../src/applets/gnome-shell/extension.js:109

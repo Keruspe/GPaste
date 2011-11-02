@@ -22,8 +22,9 @@ namespace GPaste {
     namespace Daemon {
 
         public class Clipboard : GLib.Object {
+            public string? text;
+            public string? image_checksum;
             public Gdk.Atom selection;
-            public string text;
 
             public Gtk.Clipboard real {
                 get;
@@ -33,6 +34,8 @@ namespace GPaste {
             public Clipboard(Gdk.Atom type) {
                 this.selection = type;
                 this.real = Gtk.Clipboard.get(type);
+                this.text = null;
+                this.image_checksum = null;
             }
         }
 
@@ -55,14 +58,25 @@ namespace GPaste {
 
             public void add_clipboard(Clipboard clipboard) {
                 this.clipboards.prepend(clipboard);
-                clipboard.text = clipboard.real.wait_for_text();
-                if (clipboard.text == null) {
-                    unowned GLib.SList<Item?> history = History.instance.history;
+                if (clipboard.real.wait_is_text_available())
+                    clipboard.text = clipboard.real.wait_for_text();
+                else if (clipboard.real.wait_is_image_available()) {
+                    var image = clipboard.real.wait_for_image ();
+                    if (image != null)
+                        clipboard.image_checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) image.get_pixels ());
+                }
+                if (clipboard.text == null && clipboard.image_checksum == null) {
+                    unowned GLib.SList<Item> history = History.instance.history;
                     if (history.length() != 0) {
-                        //TODO: Handle images
-                        string text = history.data.val;
-                        clipboard.text = text;
-                        clipboard.real.set_text(text, -1);
+                        Item item = history.data;
+                        if (item is ImageItem) {
+                            var image = (item as ImageItem).img;
+                            clipboard.image_checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) image.get_pixels ());
+                            clipboard.real.set_image(image);
+                        } else { /* TextItem */
+                            clipboard.text = item.str;
+                            clipboard.real.set_text(clipboard.text, -1);
+                        }
                     }
                 }
             }
@@ -74,30 +88,66 @@ namespace GPaste {
             public void select(Item selection) {
                 History.instance.add(selection);
                 foreach(Clipboard c in this.clipboards) {
-                    // TODO: Handle images
-                    c.real.set_text(selection.val, -1);
+                    if (selection is ImageItem) {
+                        c.text = null;
+                        var item = selection as ImageItem;
+                        c.image_checksum = item.checksum;
+                        c.real.set_image(item.img);
+                    } else { /* TextItem */
+                        c.text = selection.str;
+                        c.image_checksum = null;
+                        c.real.set_text(c.text, -1);
+                    }
                 }
             }
 
             private bool check_clipboards() {
-                // TODO: Handle images
                 string? synchronized_text = null;
+                Gdk.Pixbuf? synchronized_image = null;
+                string? synchronized_image_checksum = null;
+
                 foreach(Clipboard c in this.clipboards) {
-                    string text = c.real.wait_for_text();
-                    if (text == null) {
-                        unowned GLib.SList<Item?> history = History.instance.history;
+                    var something_in_clipboard = false;
+                    if (c.real.wait_is_text_available()) {
+                        var text = c.real.wait_for_text();
+                        if (text != null) {
+                            something_in_clipboard = true;
+                            c.image_checksum = null;
+                            if (c.text != text) {
+                                Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
+                                if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
+                                    History.instance.add(new TextItem(text));
+                                if (Settings.instance.synchronize_clipboards)
+                                    synchronized_text = text;
+                            }
+                        }
+                    } else if (c.real.wait_is_image_available()) {
+                        var image = c.real.wait_for_image();
+                        if (image != null) {
+                            something_in_clipboard = true;
+                            c.text = null;
+                            var image_checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) image.get_pixels ());
+                            if (c.image_checksum != image_checksum) {
+                                c.image_checksum = image_checksum;
+                                Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
+                                if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
+                                    History.instance.add(new ImageItem(image));
+                                if (Settings.instance.synchronize_clipboards) {
+                                    synchronized_image = image;
+                                    synchronized_image_checksum = image_checksum;
+                                }
+                            }
+                        }
+                    }
+                    if (!something_in_clipboard) {
+                        unowned GLib.SList<Item> history = History.instance.history;
                         if (history.length() == 0)
                             continue;
                         Item selection = history.data;
-                        c.real.set_text(selection.val, -1);
-                    }
-                    if (c.text != text) {
-                        c.text = text;
-                        Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                        if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
-                            History.instance.add(Item(ItemKind.STRING, text));
-                        if (Settings.instance.synchronize_clipboards)
-                            synchronized_text = text;
+                        if (selection is ImageItem)
+                            c.real.set_image((selection as ImageItem).img);
+                        else /* TextItem */
+                            c.real.set_text(selection.str, -1);
                     }
                 }
                 if (synchronized_text != null) {
@@ -105,6 +155,13 @@ namespace GPaste {
                         if (c.text != synchronized_text) {
                             c.text = synchronized_text;
                             c.real.set_text(synchronized_text, -1);
+                        }
+                    }
+                } else if (synchronized_image != null) {
+                    foreach(Clipboard c in this.clipboards) {
+                        if (c.image_checksum != synchronized_image_checksum) {
+                            c.image_checksum = synchronized_image_checksum;
+                            c.real.set_image(synchronized_image);
                         }
                     }
                 }
