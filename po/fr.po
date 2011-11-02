@@ -54,7 +54,7 @@ msgstr "[Image, %d x %d (%s)]"
 
 #: ../src/gpasted/item.vala:95 ../src/gpasted/item.vala:108
 msgid "%m/%d/%y %T"
-msgstr "%m/%d/%y %T"
+msgstr "%d/%m/%y %T"
 
 #: ../src/gpasted/item.vala:98
 #, c-format
