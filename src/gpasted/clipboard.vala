@@ -58,7 +58,7 @@ namespace GPaste {
 
             public void add_clipboard(Clipboard clipboard) {
                 this.clipboards.prepend(clipboard);
-                if (clipboard.real.wait_is_text_available())
+                if (clipboard.real.wait_is_uris_available () || clipboard.real.wait_is_text_available())
                     clipboard.text = clipboard.real.wait_for_text();
                 else if (clipboard.real.wait_is_image_available()) {
                     var image = clipboard.real.wait_for_image ();
@@ -73,9 +73,12 @@ namespace GPaste {
                             var image = (item as ImageItem).img;
                             clipboard.image_checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) image.get_pixels ());
                             clipboard.real.set_image(image);
-                        } else { /* TextItem */
+                        } else {
                             clipboard.text = item.str;
-                            clipboard.real.set_text(clipboard.text, -1);
+                            if (item is UrisItem)
+                                clipboard.real.set_uris(clipboard.text);
+                            else /* TextItem */
+                                clipboard.real.set_text(clipboard.text, -1);
                         }
                     }
                 }
@@ -93,10 +96,13 @@ namespace GPaste {
                         var item = selection as ImageItem;
                         c.image_checksum = item.checksum;
                         c.real.set_image(item.img);
-                    } else { /* TextItem */
+                    } else {
                         c.text = selection.str;
                         c.image_checksum = null;
-                        c.real.set_text(c.text, -1);
+                        if (selection is UrisItem)
+                            c.real.set_uris(c.text);
+                        else /* TextItem */
+                            c.real.set_text(c.text, -1);
                     }
                 }
             }
@@ -106,15 +112,20 @@ namespace GPaste {
 
                 foreach(Clipboard c in this.clipboards) {
                     var something_in_clipboard = false;
-                    if (c.real.wait_is_text_available()) {
+                    var uris_available = c.real.wait_is_uris_available ();
+                    if (uris_available || c.real.wait_is_text_available()) {
                         var text = c.real.wait_for_text();
                         if (text != null) {
                             something_in_clipboard = true;
                             c.image_checksum = null;
                             if (c.text != text) {
                                 Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                                if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
-                                    History.instance.add(new TextItem(text));
+                                if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history)) {
+                                    if (uris_available)
+                                        History.instance.add(new UrisItem(text));
+                                    else
+                                        History.instance.add(new TextItem(text));
+                                }
                                 if (Settings.instance.synchronize_clipboards)
                                     synchronized_text = text;
                             }
@@ -140,11 +151,14 @@ namespace GPaste {
                         Item selection = history.data;
                         if (selection is ImageItem)
                             c.real.set_image((selection as ImageItem).img);
+                        else if (selection is UrisItem)
+                            c.real.set_uris(selection.str);
                         else /* TextItem */
                             c.real.set_text(selection.str, -1);
                     }
                 }
                 if (synchronized_text != null) {
+                    // TODO: handle uris
                     foreach(Clipboard c in this.clipboards) {
                         if (c.text != synchronized_text) {
                             c.text = synchronized_text;

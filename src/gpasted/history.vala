@@ -190,6 +190,9 @@ namespace GPaste {
                     case "Text":
                         this.history.append(new TextItem(value));
                         break;
+                    case "Uris":
+                        this.history.append(new UrisItem(value));
+                        break;
                     case "Image":
                         this.history.append(new ImageItem.load(value, new GLib.DateTime.from_unix_local (int64.parse (date))));
                         break;

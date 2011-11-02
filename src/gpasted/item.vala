@@ -61,6 +61,46 @@ namespace GPaste {
             }
         }
 
+        public class UrisItem : Item {
+            private string display_str;
+
+            public string[] paths {
+                get;
+                private set;
+            }
+
+            public string[] uris {
+                get;
+                private set;
+            }
+
+            public override string get_display_str () {
+                return this.display_str;
+            }
+
+            public UrisItem (string uris) {
+                this.str = uris;
+                this.display_str = uris.replace (GLib.Environment.get_home_dir (), "~");
+                this.paths = uris.split ("\n");
+                var length = this.paths.length;
+                this.uris = new string[length];
+                for (int i = 0; i < length; ++i)
+                    this.uris[i] = "file://" + this.paths[i];
+            }
+
+            public override bool has_value () {
+                return this.str != null && this.str.strip () != "";
+            }
+
+            public override string get_kind () {
+                return "Uris";
+            }
+
+            public override bool equals (Item i) {
+                return i is UrisItem && i.str == this.str;
+            }
+        }
+
         public class ImageItem : Item {
             private string display_str;
 
