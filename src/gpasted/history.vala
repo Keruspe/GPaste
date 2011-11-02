@@ -46,10 +46,15 @@ namespace GPaste {
             public void add(Item selection) {
                 if (!selection.has_value())
                     return;
-                for (unowned GLib.SList<Item> s = this.history ; s != null ; s = s.next) {
-                    if (s.data.equals(selection)) {
-                        this.history.remove_link(s);
-                        break;
+                unowned GLib.SList<Item> s = this.history;
+                if (s != null) {
+                    if (s.data.equals(selection))
+                        return;
+                    for (s = s.next; s != null ; s = s.next) {
+                        if (s.data.equals(selection)) {
+                            this.history.remove_link(s);
+                            break;
+                        }
                     }
                 }
                 this.history.prepend(selection);
