@@ -64,6 +64,11 @@ namespace GPaste {
         public class ImageItem : Item {
             private string display_str;
 
+            public GLib.DateTime date {
+                get;
+                private set;
+            }
+
             public string checksum {
                 get;
                 private set;
@@ -75,6 +80,7 @@ namespace GPaste {
             }
 
             public ImageItem (Gdk.Pixbuf? img) {
+                this.date = new GLib.DateTime.now_local ();
                 this.img = img;
                 if (img == null)
                     this.display_str = _("[Image no longer exists]");
@@ -86,7 +92,7 @@ namespace GPaste {
                     this.str = GLib.Path.build_filename (images_dir, this.checksum + ".png");
                     try {
                         img.save (this.str, "png");
-                        this.display_str = _("[Image, %d x %d]").printf (this.img.get_width (), this.img.get_height ());
+                        this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), this.date.format (_("%m/%d/%y %T")));
                     } catch (GLib.Error e) {
                         this.display_str = _("[Image no longer exists]");
                         stderr.printf (_("Error while saving pixbuf: %s\n"), e.message);
@@ -95,10 +101,11 @@ namespace GPaste {
             }
 
             public ImageItem.from_path (string path) {
+                this.date = new GLib.DateTime.now_local ();
+                this.str = path;
                 try {
-                    this.str = path;
                     this.img = new Gdk.Pixbuf.from_file (this.str);
-                    this.display_str = _("[Image, %d x %d]").printf (this.img.get_width (), this.img.get_height ());
+                    this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), this.date.format (_("%m/%d/%y %T")));
                 } catch (GLib.Error e) {
                     this.display_str = _("[Image no longer exists]");
                     stderr.printf (_("Error while loading pixbuf: %s\n"), e.message);
