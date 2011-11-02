@@ -75,8 +75,10 @@ namespace GPaste {
             public void select(Item selection) {
                 History.instance.add(selection);
                 foreach(Clipboard c in this.clipboards) {
-                    // TODO: Handle images
-                    c.real.set_text(selection.str, -1);
+                    if (selection is ImageItem)
+                        c.real.set_image((selection as ImageItem).img);
+                    else /* TextItem */
+                        c.real.set_text(selection.str, -1);
                 }
             }
 
