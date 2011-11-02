@@ -103,8 +103,6 @@ namespace GPaste {
 
             private bool check_clipboards() {
                 string? synchronized_text = null;
-                Gdk.Pixbuf? synchronized_image = null;
-                string? synchronized_image_checksum = null;
 
                 foreach(Clipboard c in this.clipboards) {
                     var something_in_clipboard = false;
@@ -132,10 +130,6 @@ namespace GPaste {
                                 Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                                 if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
                                     History.instance.add(new ImageItem(image));
-                                if (Settings.instance.synchronize_clipboards) {
-                                    synchronized_image = image;
-                                    synchronized_image_checksum = image_checksum;
-                                }
                             }
                         }
                     }
@@ -155,13 +149,6 @@ namespace GPaste {
                         if (c.text != synchronized_text) {
                             c.text = synchronized_text;
                             c.real.set_text(synchronized_text, -1);
-                        }
-                    }
-                } else if (synchronized_image != null) {
-                    foreach(Clipboard c in this.clipboards) {
-                        if (c.image_checksum != synchronized_image_checksum) {
-                            c.image_checksum = synchronized_image_checksum;
-                            c.real.set_image(synchronized_image);
                         }
                     }
                 }
