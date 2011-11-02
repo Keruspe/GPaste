@@ -181,6 +181,7 @@ namespace GPaste {
                     if (reader.node_type() != 1 || reader.name() != "item")
                         continue;
                     string kind = reader.get_attribute("kind");
+                    string date = reader.get_attribute("date");
                     if (kind == null)
                         kind = "Text";
                     string value = reader.read_string();
@@ -191,7 +192,7 @@ namespace GPaste {
                         this.history.append(new TextItem(value));
                         break;
                     case "Image":
-                        this.history.append(new ImageItem.from_path(value));
+                        this.history.append(new ImageItem.load(value, new GLib.DateTime.from_unix_local (int64.parse (date))));
                         break;
                     }
                 }
@@ -222,6 +223,8 @@ namespace GPaste {
                     foreach (Item i in this.history) {
                         writer.start_element("item");
                         writer.write_attribute("kind", i.get_kind ());
+                        if (i is ImageItem)
+                            writer.write_attribute("date", (i as ImageItem).date.to_unix ().to_string ());
                         writer.start_cdata();
                         writer.write_string(i.str);
                         writer.end_cdata();

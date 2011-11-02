@@ -100,8 +100,8 @@ namespace GPaste {
                 }
             }
 
-            public ImageItem.from_path (string path) {
-                this.date = new GLib.DateTime.now_local ();
+            public ImageItem.load (string path, GLib.DateTime date) {
+                this.date = date;
                 this.str = path;
                 try {
                     this.img = new Gdk.Pixbuf.from_file (this.str);
