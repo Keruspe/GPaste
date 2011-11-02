@@ -22,7 +22,7 @@ namespace GPaste {
     namespace Daemon {
 
         public class History : GLib.Object {
-            public unowned GLib.SList<Item?> history {
+            public unowned GLib.SList<Item> history {
                 get;
                 private set;
             }
@@ -37,17 +37,16 @@ namespace GPaste {
             }
 
             private History() {
-                this.history = new GLib.SList<Item?>();
+                this.history = new GLib.SList<Item>();
                 DBusServer.instance.changed.connect(()=>{
                     this.save();
                 });
             }
 
             public void add(Item selection) {
-                // TODO: Handle images
                 if (!selection.has_value())
                     return;
-                for (unowned GLib.SList<Item?> s = this.history ; s != null ; s = s.next) {
+                for (unowned GLib.SList<Item> s = this.history ; s != null ; s = s.next) {
                     if (s.data.equals(selection)) {
                         this.history.remove_link(s);
                         break;
@@ -56,11 +55,11 @@ namespace GPaste {
                 this.history.prepend(selection);
                 uint32 max_history_size = Settings.instance.max_history_size;
                 if (this.history.length() > max_history_size) {
-                    unowned GLib.SList<Item?> tmp = this.history;
+                    unowned GLib.SList<Item> tmp = this.history;
                     for (uint32 i = 0 ; i < max_history_size ; ++i)
                         tmp = tmp.next;
                     do {
-                        unowned GLib.SList<Item?> next = tmp.next;
+                        unowned GLib.SList<Item> next = tmp.next;
                         this.history.remove_link(tmp);
                         tmp = next;
                     } while(tmp != null);
@@ -71,7 +70,7 @@ namespace GPaste {
             public void delete(uint32 index) {
                 if (index >= this.history.length())
                     return;
-                unowned GLib.SList<Item?> tmp = this.history;
+                unowned GLib.SList<Item> tmp = this.history;
                 for (uint32 i = 0 ; i < index ; ++i)
                     tmp = tmp.next;
                 this.history.remove_link(tmp);
@@ -82,7 +81,6 @@ namespace GPaste {
             }
 
             public string get_element(uint32 index) {
-                // TODO: support handling images
                 if (index >= this.history.length())
                     return "";
                 return this.history.nth_data(index).str;
@@ -103,7 +101,7 @@ namespace GPaste {
                 } catch (Error e) {
                     stderr.printf(_("Could not delete history file.\n"));
                 }
-                this.history = new GLib.SList<Item?>();
+                this.history = new GLib.SList<Item>();
                 DBusServer.instance.changed();
             }
 
@@ -125,7 +123,7 @@ namespace GPaste {
                 } catch (Error e) {
                     // File do no longer exist, we don't care about that
                 }
-                this.history = new GLib.SList<Item?>();
+                this.history = new GLib.SList<Item>();
             }
 
             // TODO: Remove me after 2.0, once everyone'll have its history converted
@@ -155,7 +153,7 @@ namespace GPaste {
                 } catch (Error e) {
                     // File do no longer exist, we don't care about that
                 }
-                this.history = new GLib.SList<Item?>();
+                this.history = new GLib.SList<Item>();
             }
 
             public void load() {

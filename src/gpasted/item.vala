@@ -63,7 +63,11 @@ namespace GPaste {
 
         public class ImageItem : Item {
             private string display_str;
-            private string checksum;
+
+            public string checksum {
+                get;
+                private set;
+            }
 
             public Gdk.Pixbuf? img {
                 get;
@@ -78,7 +82,7 @@ namespace GPaste {
                     string images_dir = GLib.Path.build_filename (GLib.Environment.get_user_data_dir(), "gpaste", "images");
                     if (!GLib.File.new_for_path(images_dir).query_exists())
                         Posix.mkdir(images_dir, 0700);
-                    this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) img.get_pixels);
+                    this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) img.get_pixels ());
                     this.str = GLib.Path.build_filename (images_dir, this.checksum + ".png");
                     try {
                         img.save (this.str, "png");

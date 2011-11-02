@@ -23,10 +23,9 @@ namespace GPaste {
 
         [DBus (name = "org.gnome.GPaste")]
         public class DBusServer : GLib.Object {
-            // TODO: Handle images
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public string[] get_history() {
-                unowned GLib.SList<Item?> history = History.instance.history;
+                unowned GLib.SList<Item> history = History.instance.history;
                 var as = new string[history.length()];
                 int i = 0;
                 foreach (Item item in history)
