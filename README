@@ -4,6 +4,8 @@ gpaste settings is a tool to edit gpasted settings
 gpaste applet is a tray icon to manage gpasted
 There is also a gnome-shell native applet
 
+/!\ Don't forget to run "gpaste dr" aka "gpaste daemon-reexec" after upgrading gpaste to activate new functionalities ;)
+
 Steps to install it after cloning:
 ./autogen.sh
 ./configure --prefix=/usr --sysconfdir=/etc
