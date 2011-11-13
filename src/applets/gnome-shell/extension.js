@@ -74,6 +74,8 @@ GPasteIndicator.prototype = {
             this._trackingStateChanged(trackingState);
         }));
         this._createHistory();
+        this._noHistory = new PopupMenu.PopupMenuItem("");
+        this._noHistory.setSensitive(false);
         this._emptyHistory = new PopupMenu.PopupMenuItem(_("Empty history"));
         this._emptyHistory.connect('activate', Lang.bind(this, this._empty));
         this._fillMenu();
@@ -106,6 +108,7 @@ GPasteIndicator.prototype = {
         this.menu.addMenuItem(this._killSwitch);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._addHistoryItems();
+        this.menu.addMenuItem(this._noHistory);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addMenuItem(this._emptyHistory);
         this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
@@ -119,15 +122,14 @@ GPasteIndicator.prototype = {
                 let limit = Math.min(history.length, this._history.length);
                 for (let index = 0; index < limit; ++index)
                     this._updateHistoryItem(index, history[index]);
-                this._history[0].actor.reactive = true;
                 this._hideHistory(limit);
+                this._noHistory.actor.hide();
                 this._emptyHistory.actor.show();
             } else {
-                let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
-                this._history[0].updateText(message, message);
-                this._history[0].actor.reactive = false;
+                this._noHistory.label.text = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
                 this._hideHistory();
                 this._emptyHistory.actor.hide();
+                this._noHistory.actor.show();
             }
         }));
     },
@@ -137,7 +139,7 @@ GPasteIndicator.prototype = {
     },
 
     _createHistoryItem: function(index) {
-        let item = new PopupMenu.PopupAlternatingMenuItem("", "");
+        let item = new PopupMenu.PopupAlternatingMenuItem("");
         item.actor.style_class = 'my-alternating-menu-item';
         item.actor.add_style_class_name('popup-menu-item');
         let label = item.label;
@@ -174,7 +176,7 @@ GPasteIndicator.prototype = {
     },
 
     _hideHistory: function(startIndex) {
-        for (let index = startIndex || 1; index < this._history.length; ++index)
+        for (let index = startIndex || 0; index < this._history.length; ++index)
             this._history[index].actor.hide();
     }
 };
