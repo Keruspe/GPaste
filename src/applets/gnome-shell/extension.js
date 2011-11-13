@@ -119,11 +119,13 @@ GPasteIndicator.prototype = {
                 let limit = Math.min(history.length, this._history.length);
                 for (let index = 0; index < limit; ++index)
                     this._updateHistoryItem(index, history[index]);
+                this._history[0].actor.reactive = true;
                 this._hideHistory(limit);
                 this._emptyHistory.actor.show();
             } else {
                 let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
-                this._history[0].updateText(message, message); // TODO: reactive = false
+                this._history[0].updateText(message, message);
+                this._history[0].actor.reactive = false;
                 this._hideHistory();
                 this._emptyHistory.actor.hide();
             }
