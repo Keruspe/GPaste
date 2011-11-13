@@ -1,2 +1,3 @@
 gnome-shell menu doesn't always grab keyboard
 Don't close menu when deleting item
+SeparatorMenuItem cannot be used as first or last child or it disappears
