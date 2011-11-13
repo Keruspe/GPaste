@@ -73,7 +73,7 @@ GPasteIndicator.prototype = {
         this._proxy.connectSignal('Tracking', Lang.bind(this, function(proxy, sender, [trackingState]) {
             this._trackingStateChanged(trackingState);
         }));
-        this._history = new PopupMenu.PopupMenuSection();
+        this._createHistory();
         this._emptyHistory = new PopupMenu.PopupMenuItem(_("Empty history"));
         this._emptyHistory.connect('activate', Lang.bind(this, this._empty));
         this._fillMenu();
@@ -104,7 +104,9 @@ GPasteIndicator.prototype = {
         if (active != null)
             this._killSwitch.setToggleState(active);
         this.menu.addMenuItem(this._killSwitch);
-        this.menu.addMenuItem(this._history);
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._addHistoryItems();
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addMenuItem(this._emptyHistory);
         this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
         this._fillHistory();
@@ -113,20 +115,18 @@ GPasteIndicator.prototype = {
     _fillHistory: function() {
         this._proxy.GetHistoryRemote(Lang.bind(this, function(result, err) {
             let [history] = err ? [null] : result;
-            this._history.removeAll();
-            this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             if (history != null && history.length != 0) {
-                let limit = (history.length > 20) ? 20 : history.length;
+                let limit = Math.min(history.length, this._history.length);
                 for (let index = 0; index < limit; ++index)
-                    this._addSelection(index, history[index]);
+                    this._updateHistoryItem(index, history[index]);
+                this._hideHistory(limit);
                 this._emptyHistory.actor.show();
             } else {
                 let message = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
-                let noHistory = new PopupMenu.PopupMenuItem(message, { reactive: false });
-                this._history.addMenuItem(noHistory);
+                this._history[0].updateText(message, message); // TODO: reactive = false
+                this._hideHistory();
                 this._emptyHistory.actor.hide();
             }
-            this._history.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         }));
     },
 
@@ -134,17 +134,15 @@ GPasteIndicator.prototype = {
         this.menu.toggle();
     },
 
-    _addSelection: function(index, element) {
-        let displaystr = element.replace(/\n/g, ' ');
-        let altdisplaystr = _("delete: %s").format(displaystr);
-        let selection = new PopupMenu.PopupAlternatingMenuItem(displaystr, altdisplaystr);
-        selection.actor.style_class = 'my-alternating-menu-item';
-        selection.actor.add_style_class_name('popup-menu-item');
-        let label = selection.label;
+    _createHistoryItem: function(index) {
+        let item = new PopupMenu.PopupAlternatingMenuItem("", "");
+        item.actor.style_class = 'my-alternating-menu-item';
+        item.actor.add_style_class_name('popup-menu-item');
+        let label = item.label;
         label.clutter_text.max_length = 60;
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        selection.connect('activate', Lang.bind(this, function(actor, event) {
-            if (selection.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
+        item.connect('activate', Lang.bind(this, function(actor, event) {
+            if (item.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
                 this._select(index);
                 return false;
             } else {
@@ -152,7 +150,30 @@ GPasteIndicator.prototype = {
                 return true;
             }
         }));
-        this._history.addMenuItem(selection);
+        return item;
+    },
+
+    _createHistory: function() {
+        this._history = [];
+        for (let index = 0; index < 20; ++index)
+            this._history[index] = this._createHistoryItem(index);
+    },
+
+    _addHistoryItems: function() {
+        for (let index = 0; index < this._history.length; ++index)
+            this.menu.addMenuItem(this._history[index]);
+    },
+
+    _updateHistoryItem: function(index, element) {
+        let displayStr = element.replace(/\n/g, ' ');
+        let altDisplayStr = _("delete: %s").format(displayStr);
+        this._history[index].updateText(displayStr, altDisplayStr);
+        this._history[index].actor.show();
+    },
+
+    _hideHistory: function(startIndex) {
+        for (let index = startIndex || 1; index < this._history.length; ++index)
+            this._history[index].actor.hide();
     }
 };
 
