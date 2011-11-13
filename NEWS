@@ -1,3 +1,11 @@
+NEW in 2.0 (Not released yet)
+=============
+
+- Updated finnish translation
+- Cleanups
+- Fix separators disapearing in gnome-shell extension
+- Don't close menu when deleting items
+
 NEW in 1.99 (2.0 RC) (02/11/2011)
 =============
 
