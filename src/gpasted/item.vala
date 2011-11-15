@@ -64,11 +64,6 @@ namespace GPaste {
         public class UrisItem : Item {
             private string display_str;
 
-            public string[] paths {
-                get;
-                private set;
-            }
-
             public string[] uris {
                 get;
                 private set;
@@ -81,11 +76,11 @@ namespace GPaste {
             public UrisItem (string uris) {
                 this.str = uris;
                 this.display_str = uris.replace (GLib.Environment.get_home_dir (), "~").replace ("\n", " ");
-                this.paths = uris.split ("\n");
-                var length = this.paths.length;
+                var paths = uris.split ("\n");
+                var length = paths.length;
                 this.uris = new string[length];
                 for (int i = 0; i < length; ++i)
-                    this.uris[i] = "file://" + this.paths[i];
+                    this.uris[i] = "file://" + paths[i];
             }
 
             public override bool has_value () {

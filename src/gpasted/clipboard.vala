@@ -79,28 +79,24 @@ namespace GPaste {
             private static void clear_clipboard_data (Gtk.Clipboard clipboard, void *user_data_or_owner) {}
 
             private static void get_clipboard_data (Gtk.Clipboard clipboard, Gtk.SelectionData selection_data, uint info, void *user_data_or_owner) {
-                string data = (user_data_or_owner as UrisItem).str;
+                UrisItem item = user_data_or_owner as UrisItem;
 
                 Gdk.Atom[] targets = new Gdk.Atom[1];
                 targets[0] = selection_data.get_target ();
 
                 // set content according to requested target
                 if (Gtk.targets_include_text (targets)) {
-                    selection_data.set_text (data, -1);
+                    selection_data.set_text (item.str, -1);
                     return;
                 }
 
-                var uris = data.split ("\n");
-                for (var i = 0; i < uris.length; ++i)
-                    uris[i] = "file://" + uris[i];
-
                 if (Gtk.targets_include_uri (targets))
-                    selection_data.set_uris (uris);
+                    selection_data.set_uris (item.uris);
                 else {
                     // set special nautilus target which should copy the files, 8 number of bits in a unit are used
                     string copy_files_str = "copy";
-                    for (var i = 0; i < uris.length; ++i)
-                        copy_files_str += "\n" + uris[i];
+                    for (var i = 0; i < item.uris.length; ++i)
+                        copy_files_str += "\n" + item.uris[i];
 
                     var length = copy_files_str.length;
                     var copy_files_data = new uchar[length];
