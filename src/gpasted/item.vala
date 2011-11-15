@@ -80,7 +80,7 @@ namespace GPaste {
 
             public UrisItem (string uris) {
                 this.str = uris;
-                this.display_str = uris.replace (GLib.Environment.get_home_dir (), "~");
+                this.display_str = uris.replace (GLib.Environment.get_home_dir (), "~").replace ("\n", " ");
                 this.paths = uris.split ("\n");
                 var length = this.paths.length;
                 this.uris = new string[length];
