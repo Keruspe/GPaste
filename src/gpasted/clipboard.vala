@@ -66,6 +66,7 @@ namespace GPaste {
                 if (text != null) {
                     this.txt = text;
                     this.real.set_text (text, -1);
+                    this.real.store ();
                 }
             }
 
@@ -123,12 +124,18 @@ namespace GPaste {
 
                     // set data callbacks with a empty clear func as there is nothing to be cleared
                     this.real.set_with_owner(targets, (Gtk.ClipboardGetFunc) get_clipboard_data, (Gtk.ClipboardClearFunc) clear_clipboard_data, item);
+                    this.real.store ();
                 }
             }
 
             public void select_uris (UrisItem item) {
                 if (this.txt != item.str);
                     this.restore_uris (item);
+            }
+
+            private void real_set_image (Gdk.Pixbuf image) {
+                this.real.set_image (image);
+                this.real.store ();
             }
 
             private bool _set_image (Gdk.Pixbuf image) {
@@ -148,13 +155,13 @@ namespace GPaste {
 
             public void restore_image (Gdk.Pixbuf image) {
                 if (image != null && this._set_image (image))
-                    this.real.set_image (image);
+                    this.real_set_image (image);
             }
 
             public void select_image (ImageItem item) {
                 if (this.image_checksum != item.checksum) {
                     this.image_checksum = item.checksum;
-                    this.real.set_image (item.img);
+                    this.real_set_image (item.img);
                 }
             }
 
