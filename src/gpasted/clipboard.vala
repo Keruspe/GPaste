@@ -22,6 +22,9 @@ namespace GPaste {
     namespace Daemon {
 
         public class Clipboard : GLib.Object {
+            // For nautilus
+            private static Gdk.Atom copy_files = Gdk.Atom.intern_static_string ("x-special/gnome-copied-files");
+
             public Gdk.Atom selection;
 
             public Gtk.Clipboard real {
@@ -71,17 +74,65 @@ namespace GPaste {
                     this.restore_text (item.str);
             }
 
-            public void restore_uris (string uris) {
-                if (uris != null) {
-                    this.txt = uris;
-                    // TODO: this.real.set_uris (uris);
-                    this.real.set_text (uris, -1);
+            /* The two following callbacks are for restore_uris, adapted from diodon */
+
+            private static void clear_clipboard_data (Gtk.Clipboard clipboard, void *user_data_or_owner) {}
+
+            private static void get_clipboard_data (Gtk.Clipboard clipboard, Gtk.SelectionData selection_data, uint info, void *user_data_or_owner) {
+                string data = (user_data_or_owner as UrisItem).str;
+
+                Gdk.Atom[] targets = new Gdk.Atom[1];
+                targets[0] = selection_data.get_target ();
+
+                // set content according to requested target
+                if (Gtk.targets_include_text (targets)) {
+                    selection_data.set_text (data, -1);
+                    return;
+                }
+
+                var uris = data.split ("\n");
+                for (var i = 0; i < uris.length; ++i)
+                    uris[i] = "file://" + uris[i];
+
+                if (Gtk.targets_include_uri (targets))
+                    selection_data.set_uris (uris);
+                else {
+                    // set special nautilus target which should copy the files, 8 number of bits in a unit are used
+                    string copy_files_str = "copy";
+                    for (var i = 0; i < uris.length; ++i)
+                        copy_files_str += "\n" + uris[i];
+
+                    var length = copy_files_str.length;
+                    var copy_files_data = new uchar[length];
+                    for (var i = 0; i < length; ++i)
+                        copy_files_data[i] = (uchar) copy_files_str[i];
+
+                    selection_data.set (copy_files, 8, copy_files_data);
+                }
+            }
+
+            public void restore_uris (UrisItem item) {
+                if (item != null && item.str != null) {
+                    this.txt = item.str;
+
+                    // The following stuff for this function is stolen from diodon
+
+                    // create default uri target and text target
+                    Gtk.TargetEntry[] targets = null;
+                    Gtk.TargetList target_list = new Gtk.TargetList (targets);
+                    target_list.add_text_targets (0);
+                    target_list.add_uri_targets (0);
+                    target_list.add (copy_files, 0, 0); // add special nautilus target
+                    targets = Gtk.target_table_new_from_list (target_list);
+
+                    // set data callbacks with a empty clear func as there is nothing to be cleared
+                    this.real.set_with_owner(targets, (Gtk.ClipboardGetFunc) get_clipboard_data, (Gtk.ClipboardClearFunc) clear_clipboard_data, item);
                 }
             }
 
             public void select_uris (UrisItem item) {
                 if (this.txt != item.str);
-                    this.restore_uris (item.str);
+                    this.restore_uris (item);
             }
 
             private bool _set_image (Gdk.Pixbuf image) {
@@ -149,7 +200,7 @@ namespace GPaste {
                         if (item is ImageItem)
                             clipboard.restore_image ((item as ImageItem).img);
                         else if (item is UrisItem)
-                            clipboard.restore_uris (item.str);
+                            clipboard.restore_uris (item as UrisItem);
                         else /* TextItem */
                             clipboard.restore_text (item.str);
                     }
