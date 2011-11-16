@@ -63,11 +63,9 @@ namespace GPaste {
             }
 
             public void restore_text (string text) {
-                if (text != null) {
-                    this.txt = text;
-                    this.real.set_text (text, -1);
-                    this.real.store ();
-                }
+                this.txt = text;
+                this.real.set_text (text, -1);
+                this.real.store ();
             }
 
             public void select_text (Item item) {
@@ -109,23 +107,21 @@ namespace GPaste {
             }
 
             public void restore_uris (UrisItem item) {
-                if (item != null && item.str != null) {
-                    this.txt = item.str;
+                this.txt = item.str;
 
-                    // The following stuff for this function is stolen from diodon
+                // The following stuff for this function is stolen from diodon
 
-                    // create default uri target and text target
-                    Gtk.TargetEntry[] targets = null;
-                    Gtk.TargetList target_list = new Gtk.TargetList (targets);
-                    target_list.add_text_targets (0);
-                    target_list.add_uri_targets (0);
-                    target_list.add (copy_files, 0, 0); // add special nautilus target
-                    targets = Gtk.target_table_new_from_list (target_list);
+                // create default uri target and text target
+                Gtk.TargetEntry[] targets = null;
+                Gtk.TargetList target_list = new Gtk.TargetList (targets);
+                target_list.add_text_targets (0);
+                target_list.add_uri_targets (0);
+                target_list.add (copy_files, 0, 0); // add special nautilus target
+                targets = Gtk.target_table_new_from_list (target_list);
 
-                    // set data callbacks with a empty clear func as there is nothing to be cleared
-                    this.real.set_with_owner(targets, (Gtk.ClipboardGetFunc) get_clipboard_data, (Gtk.ClipboardClearFunc) clear_clipboard_data, item);
-                    this.real.store ();
-                }
+                // set data callbacks with a empty clear func as there is nothing to be cleared
+                this.real.set_with_owner(targets, (Gtk.ClipboardGetFunc) get_clipboard_data, (Gtk.ClipboardClearFunc) clear_clipboard_data, item);
+                this.real.store ();
             }
 
             public void select_uris (UrisItem item) {

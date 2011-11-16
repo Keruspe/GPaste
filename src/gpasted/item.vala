@@ -49,7 +49,7 @@ namespace GPaste {
             }
 
             public override bool has_value () {
-                return this.str != null && this.str.strip () != "";
+                return this.str.strip () != "";
             }
 
             public override string get_kind () {
@@ -110,24 +110,19 @@ namespace GPaste {
                 private set;
             }
 
-            public ImageItem (Gdk.Pixbuf? img) {
+            public ImageItem (Gdk.Pixbuf img) {
                 this.date = new GLib.DateTime.now_local ();
                 this.img = img;
-                if (img == null)
-                    this.display_str = _("[Image no longer exists]");
-                else {
-                    string images_dir = GLib.Path.build_filename (GLib.Environment.get_user_data_dir(), "gpaste", "images");
-                    if (!GLib.File.new_for_path(images_dir).query_exists())
-                        Posix.mkdir(images_dir, 0700);
-                    this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) img.get_pixels ());
-                    this.str = GLib.Path.build_filename (images_dir, this.checksum + ".png");
-                    try {
-                        img.save (this.str, "png");
-                        this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), this.date.format (_("%m/%d/%y %T")));
-                    } catch (GLib.Error e) {
-                        this.display_str = _("[Image no longer exists]");
-                        stderr.printf (_("Error while saving pixbuf: %s\n"), e.message);
-                    }
+                string images_dir = GLib.Path.build_filename (GLib.Environment.get_user_data_dir(), "gpaste", "images");
+                if (!GLib.File.new_for_path (images_dir).query_exists ())
+                    Posix.mkdir (images_dir, 0700);
+                this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) this.img.get_pixels ());
+                this.str = GLib.Path.build_filename (images_dir, this.checksum + ".png");
+                this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), this.date.format (_("%m/%d/%y %T")));
+                try {
+                    img.save (this.str, "png");
+                } catch (GLib.Error e) {
+                    stderr.printf (_("Error while saving pixbuf: %s\n"), e.message);
                 }
             }
 
@@ -137,8 +132,9 @@ namespace GPaste {
                 try {
                     this.img = new Gdk.Pixbuf.from_file (this.str);
                     this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), this.date.format (_("%m/%d/%y %T")));
+                    this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) this.img.get_pixels ());
                 } catch (GLib.Error e) {
-                    this.display_str = _("[Image no longer exists]");
+                    this.img = null; // Item will be ignored
                     stderr.printf (_("Error while loading pixbuf: %s\n"), e.message);
                 }
             }
@@ -148,7 +144,7 @@ namespace GPaste {
             }
 
             public override bool has_value () {
-                return this.img != null;
+                return true;
             }
 
             public override string get_kind () {
