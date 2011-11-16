@@ -70,7 +70,7 @@ namespace GPaste {
                 }
             }
 
-            public void select_text (TextItem item) {
+            public void select_text (Item item) {
                 if (this.txt != item.str);
                     this.restore_text (item.str);
             }
@@ -222,7 +222,7 @@ namespace GPaste {
                     else if (selection is UrisItem)
                         c.select_uris (selection as UrisItem);
                     else
-                        c.select_text (selection as TextItem);
+                        c.select_text (selection);
                 }
             }
 
@@ -265,7 +265,7 @@ namespace GPaste {
                         else if (selection is UrisItem)
                             c.select_uris (selection as UrisItem);
                         else
-                            c.select_text (selection as TextItem);
+                            c.select_text (selection);
                     }
                 }
                 if (synchronized_text != null) {

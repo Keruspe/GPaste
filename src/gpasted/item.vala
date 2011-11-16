@@ -61,7 +61,7 @@ namespace GPaste {
             }
         }
 
-        public class UrisItem : Item {
+        public class UrisItem : TextItem {
             private string display_str;
 
             public string[] uris {
@@ -74,17 +74,13 @@ namespace GPaste {
             }
 
             public UrisItem (string uris) {
-                this.str = uris;
+                base (uris);
                 this.display_str = uris.replace (GLib.Environment.get_home_dir (), "~").replace ("\n", " ");
                 var paths = uris.split ("\n");
                 var length = paths.length;
                 this.uris = new string[length];
                 for (int i = 0; i < length; ++i)
                     this.uris[i] = "file://" + paths[i];
-            }
-
-            public override bool has_value () {
-                return this.str != null && this.str.strip () != "";
             }
 
             public override string get_kind () {
