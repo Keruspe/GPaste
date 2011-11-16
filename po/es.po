@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-11-02 15:57+0100\n"
+"POT-Creation-Date: 2011-11-16 19:40+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -17,57 +17,53 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:107
+#: ../src/gpasted/gpasted.vala:108
 #, c-format
 msgid "Signal %d recieved, exiting.\n"
 msgstr "Recibida señal %d, saliendo\n"
 
-#: ../src/gpasted/gpasted.vala:115
+#: ../src/gpasted/gpasted.vala:116
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "No se pudo registrar el servicio DBus\n"
 
-#: ../src/gpasted/gpasted.vala:122
+#: ../src/gpasted/gpasted.vala:123
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "No se pudo obtener nombre en DBus\n"
 
-#: ../src/gpasted/history.vala:119
+#: ../src/gpasted/history.vala:118
 #, c-format
 msgid "Could not delete history file.\n"
 msgstr "No se pudo borrar fichero de historial.\n"
 
-#: ../src/gpasted/history.vala:235
+#: ../src/gpasted/history.vala:242
 #, c-format
 msgid "Could not create history file.\n"
 msgstr "No se pudo crear fichero de historial.\n"
 
-#: ../src/gpasted/item.vala:86 ../src/gpasted/item.vala:97
-#: ../src/gpasted/item.vala:110
-msgid "[Image no longer exists]"
-msgstr ""
-
-#: ../src/gpasted/item.vala:95 ../src/gpasted/item.vala:108
+#: ../src/gpasted/item.vala:121 ../src/gpasted/item.vala:134
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr ""
 
-#: ../src/gpasted/item.vala:95 ../src/gpasted/item.vala:108
+#: ../src/gpasted/item.vala:121 ../src/gpasted/item.vala:134
 msgid "%m/%d/%y %T"
 msgstr ""
 
-#: ../src/gpasted/item.vala:98
+#: ../src/gpasted/item.vala:125
 #, c-format
 msgid "Error while saving pixbuf: %s\n"
 msgstr ""
 
-#: ../src/gpasted/item.vala:111
+#. Item will be ignored
+#: ../src/gpasted/item.vala:138
 #, c-format
 msgid "Error while loading pixbuf: %s\n"
 msgstr ""
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
-#: ../src/applets/gnome-shell/extension.js:109
+#: ../src/applets/gnome-shell/extension.js:114
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Ajustes del servicio GPaste"
@@ -112,7 +108,7 @@ msgid "Couldn't update history.\n"
 msgstr "No se pudo actualizar el historial\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:113
-#: ../src/applets/gnome-shell/extension.js:124
+#: ../src/applets/gnome-shell/extension.js:129
 msgid "(Empty)"
 msgstr "(Vacío)"
 
@@ -126,7 +122,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "No se pudo iniciar gpaste-settings.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:140
-#: ../src/applets/gnome-shell/extension.js:77
+#: ../src/applets/gnome-shell/extension.js:79
 msgid "Empty history"
 msgstr "Vaciar historial"
 
@@ -148,11 +144,11 @@ msgstr "No se pudo conectar al servicio GPaste.\n"
 msgid "Track changes"
 msgstr "Seguimiento de cambios"
 
-#: ../src/applets/gnome-shell/extension.js:124
+#: ../src/applets/gnome-shell/extension.js:129
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(No se pudo conectar al servicio GPaste)"
 
-#: ../src/applets/gnome-shell/extension.js:139
+#: ../src/applets/gnome-shell/extension.js:173
 #, c-format
 msgid "delete: %s"
 msgstr "suprimir: %s"
