@@ -1,10 +1,23 @@
 _gpaste()
 {
-    local cur opts
     COMPREPLY=()
-    cur="${COMP_WORDS[${COMP_CWORD}]}"
-    opts="history raw-history add get set delete file empty start daemon daemon-reexec stop quit preferences settings version -v --version help -h --help"
-    COMPREPLY=( $(compgen -W "$opts" -- $cur ) )
+    local action cur
+    action="${COMP_WORDS[1]}"
+    cur="${COMP_WORDS[$COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+
+        local opts
+        opts="add daemon daemon-reexec delete empty file help --help -h history preferences quit raw-history set settings start stop version --version -v"
+        COMPREPLY=( $(compgen -W "$opts" -- $cur ) )
+
+    elif [[ $COMP_CWORD == 2 ]]; then
+
+        if [[ "${action}" == "file" ]]; then
+            COMPREPLY=( $(compgen -f ) )
+        fi
+
+    fi
 }
 
 complete -F _gpaste gpaste
