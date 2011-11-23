@@ -68,7 +68,7 @@ GPasteIndicator.prototype = {
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(Gio.DBus.session, BUS_NAME, OBJECT_PATH);
-        this._proxy.connectSignal('Changed', Lang.bind(this, this._fillHistory));
+        this._proxy.connectSignal('Changed', Lang.bind(this, this._updateHistory));
         this._proxy.connectSignal('ToggleHistory', Lang.bind(this, this._toggleHistory));
         this._proxy.connectSignal('Tracking', Lang.bind(this, function(proxy, sender, [trackingState]) {
             this._trackingStateChanged(trackingState);
@@ -115,7 +115,7 @@ GPasteIndicator.prototype = {
         this._fillHistory();
     },
 
-    _fillHistory: function() {
+    _updateHistory: function() {
         this._proxy.GetHistoryRemote(Lang.bind(this, function(result, err) {
             let [history] = err ? [null] : result;
             if (history != null && history.length != 0) {
@@ -140,8 +140,7 @@ GPasteIndicator.prototype = {
 
     _createHistoryItem: function(index) {
         let item = new PopupMenu.PopupAlternatingMenuItem("");
-        item.actor.style_class = 'my-alternating-menu-item';
-        item.actor.add_style_class_name('popup-menu-item');
+        item.actor.set_style_class_name('popup-menu-item');
         let label = item.label;
         label.clutter_text.max_length = 60;
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -161,6 +160,7 @@ GPasteIndicator.prototype = {
         this._history = [];
         for (let index = 0; index < 20; ++index)
             this._history[index] = this._createHistoryItem(index);
+        this._history[0].actor.set_style("font-weight: bold;");
     },
 
     _addHistoryItems: function() {

@@ -52,8 +52,7 @@ endif
 
 if ENABLE_EXTENSION
 dist_gnomeshell_DATA = \
-	src/applets/gnome-shell/extension.js \
-	src/applets/gnome-shell/stylesheet.css
+	src/applets/gnome-shell/extension.js
 nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
 endif
 
