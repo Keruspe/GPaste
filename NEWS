@@ -6,6 +6,7 @@ NEW in 2.0 (Not released yet)
 - Fix separators disapearing in gnome-shell extension
 - Don't close menu when deleting items
 - Uris support (files copying)
+- Rewrite of bash and zsh completions
 
 NEW in 1.99 (2.0 RC) (02/11/2011)
 =============
