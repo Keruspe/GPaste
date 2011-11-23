@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-11-02 15:57+0100\n"
+"POT-Creation-Date: 2011-11-16 19:40+0100\n"
 "PO-Revision-Date: 2011-11-05 18:28+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -18,60 +18,53 @@ msgstr ""
 "X-Poedit-Language: Finnish\n"
 "X-Poedit-Country: FINLAND\n"
 
-#: ../src/gpasted/gpasted.vala:107
+#: ../src/gpasted/gpasted.vala:108
 #, c-format
 msgid "Signal %d recieved, exiting.\n"
 msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
 
-#: ../src/gpasted/gpasted.vala:115
+#: ../src/gpasted/gpasted.vala:116
 #, c-format
 msgid "Could not register DBus service.\n"
 msgstr "DBus-palvelun rekisteröinti epäonnistui.\n"
 
-#: ../src/gpasted/gpasted.vala:122
+#: ../src/gpasted/gpasted.vala:123
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "DBus-nimen selvitys epäonnistui.\n"
 
-#: ../src/gpasted/history.vala:119
+#: ../src/gpasted/history.vala:118
 #, c-format
 msgid "Could not delete history file.\n"
 msgstr "Historiatiedoston poistaminen epäonnistui.\n"
 
-#: ../src/gpasted/history.vala:235
+#: ../src/gpasted/history.vala:242
 #, c-format
 msgid "Could not create history file.\n"
 msgstr "Historiatiedoston luonti epäonnistui.\n"
 
-#: ../src/gpasted/item.vala:86
-#: ../src/gpasted/item.vala:97
-#: ../src/gpasted/item.vala:110
-msgid "[Image no longer exists]"
-msgstr "[Kuva ei ole enää tallessa]"
-
-#: ../src/gpasted/item.vala:95
-#: ../src/gpasted/item.vala:108
+#: ../src/gpasted/item.vala:121 ../src/gpasted/item.vala:134
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Kuva, %d x %d (%s)]"
 
-#: ../src/gpasted/item.vala:95
-#: ../src/gpasted/item.vala:108
+#: ../src/gpasted/item.vala:121 ../src/gpasted/item.vala:134
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y %T"
 
-#: ../src/gpasted/item.vala:98
+#: ../src/gpasted/item.vala:125
 #, c-format
 msgid "Error while saving pixbuf: %s\n"
 msgstr "Pixbufin tallennus epäonnistui: %s\n"
 
-#: ../src/gpasted/item.vala:111
+#. Item will be ignored
+#: ../src/gpasted/item.vala:138
 #, c-format
 msgid "Error while loading pixbuf: %s\n"
 msgstr "Pixbufin lataus epäonnistui: %s\n"
 
 #: ../src/gpaste-settings/gpaste-settings.vala:98
-#: ../src/applets/gnome-shell/extension.js:109
+#: ../src/applets/gnome-shell/extension.js:114
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "GPaste palvelun asetukset"
@@ -116,7 +109,7 @@ msgid "Couldn't update history.\n"
 msgstr "Historian päivittäminen epäonnistui.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:113
-#: ../src/applets/gnome-shell/extension.js:124
+#: ../src/applets/gnome-shell/extension.js:129
 msgid "(Empty)"
 msgstr "(Tyhjä)"
 
@@ -130,7 +123,7 @@ msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "GPaste-asetukset ikkunan esiintaikominen epäonnistui.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:140
-#: ../src/applets/gnome-shell/extension.js:77
+#: ../src/applets/gnome-shell/extension.js:79
 msgid "Empty history"
 msgstr "Tyhjennä historia"
 
@@ -143,8 +136,7 @@ msgstr "Historian tyhjennys epäonnistui.\n"
 msgid "Quit"
 msgstr "Lopeta"
 
-#: ../src/applets/legacy/gpaste-applet.vala:199
-#: ../src/gpaste.vala:231
+#: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:231
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "GPaste-palveluun ei saatu yhteyttä.\n"
@@ -153,11 +145,11 @@ msgstr "GPaste-palveluun ei saatu yhteyttä.\n"
 msgid "Track changes"
 msgstr "Pidä kirjaa tapahtumista"
 
-#: ../src/applets/gnome-shell/extension.js:124
+#: ../src/applets/gnome-shell/extension.js:129
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(GPaste-palveluun ei saatu yhteyttä)"
 
-#: ../src/applets/gnome-shell/extension.js:139
+#: ../src/applets/gnome-shell/extension.js:173
 #, c-format
 msgid "delete: %s"
 msgstr "poista: %s"
@@ -189,7 +181,8 @@ msgstr "%s get <luku>: noutaa määritellyn leikkeen historiasta\n"
 
 #: ../src/gpaste.vala:53
 #, c-format
-msgid "%s set <number>: set the <number>th item from the history to the clipboard\n"
+msgid ""
+"%s set <number>: set the <number>th item from the history to the clipboard\n"
 msgstr "%s set <luku>: asettaa määritellyn leikkeen sisällön\n"
 
 #: ../src/gpaste.vala:54
@@ -199,7 +192,8 @@ msgstr "%s delete <luku>: poistaa määritellyn leikkeen historiasta\n"
 
 #: ../src/gpaste.vala:55
 #, c-format
-msgid "%s file <path>: put the content of the file at <path> into the clipboard\n"
+msgid ""
+"%s file <path>: put the content of the file at <path> into the clipboard\n"
 msgstr "%s file <tiedosto>: kopioi tiedoston sisällön leikepöydälle\n"
 
 #: ../src/gpaste.vala:56
@@ -230,7 +224,8 @@ msgstr "%s quit: sama kuin stop\n"
 #: ../src/gpaste.vala:61
 #, c-format
 msgid "%s daemon-reexec: reexecute the daemon (after upgrading...)\n"
-msgstr "%s daemon-reexec: käynnistää palvelun uudelleen (päivittämisen jälkeen...)\n"
+msgstr ""
+"%s daemon-reexec: käynnistää palvelun uudelleen (päivittämisen jälkeen...)\n"
 
 #: ../src/gpaste.vala:63
 #, c-format
@@ -278,8 +273,12 @@ msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "Synkronoidaanko leikepäytä ja maalaaminen toisiinsa?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:2
-msgid "By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;Alt&gt;H\"). An empty string here disable this functionnality."
-msgstr "Oletuksena näppäinyhdistelmä ctrl + alt + h avaa valikon (\"&lt;Ctrl&gt;&lt;Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
+msgid ""
+"By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;H\"). An empty string here disable this functionnality."
+msgstr ""
+"Oletuksena näppäinyhdistelmä ctrl + alt + h avaa valikon (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:3
 msgid "By default, only clipboard (ctrl+c) affects history."
@@ -322,8 +321,12 @@ msgid "Maximum number of items in history"
 msgstr "Suurin määrä leikkeitä, joita historissa säilytettään"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:13
-msgid "The extra stuff of that element will be replaced by \"…\", and newlines by \" \" when displaying from the applet, 0 to disable."
-msgstr "Leikkeen loppuosa korvataan \"...\" merkillä sekä rivin vaihdot \" \" merkillä härpäkeikkunassa, 0 poistaa käytöstä."
+msgid ""
+"The extra stuff of that element will be replaced by \"…\", and newlines by "
+"\" \" when displaying from the applet, 0 to disable."
+msgstr ""
+"Leikkeen loppuosa korvataan \"...\" merkillä sekä rivin vaihdot \" \" "
+"merkillä härpäkeikkunassa, 0 poistaa käytöstä."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:14
 msgid "The keyboard shortcut to display the menu"
@@ -340,4 +343,3 @@ msgstr "Tehtäväpalkin kuvake"
 #: ../data/gpaste-settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "Hallitse GPaste palvelun asetuksia"
-

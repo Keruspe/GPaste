@@ -1,26 +1,33 @@
 #compdef gpaste
 
-_describe 'gpaste command' '(
-	history:display\ the\ history\ with\ indexes
-	raw-history:display\ the\ history\ without\ indexes
-	add:set\ text\ to\ clipboard
-	set:select\ an\ element\ of\ the\ history
-	get:display\ an\ element\ of\ the\ history
-	delete:delete\ an\ element\ of\ the\ history
-	empty:empty\ the\ history
-        file:put\ content\ of\ file\ into\ clipboard
-	start:start\ the\ daemon
-	daemon:alias\ for\ start
-	stop:shutdown\ the\ daemon
-	quit:alias\ for\ stop
-	daemon-reexec:reexecute\ the\ daemon
-	settings:launch\ the\ configuration\ tool
-	preferences:alias\ for\ settings
-	version:display\ the\ version
-        -v:alias\ for\ version
-        --version:alias\ for\ version
-	help:display\ the\ help
-        -h:alias\ for\ help
-        --help:alias\ for\ help
-)' && ret=0
+if (( CURRENT == 2 )); then
 
+    local commands
+
+    commands=(
+        {add,a}:"Set text to clipboard"
+        {daemon-reexec,dr}:"Reexecute the daemon"
+        {delete,d}:"Delete an element of the history"
+        {empty,e}:"Empty the history"
+        {file,f}:"Put content of file into clipboard"
+        {get,g}:"Display an element of the history"
+        {help,--help,-h}:"Display the help"
+        {history,h}:"Display the history with indexes"
+        {raw-history,rh}:"Display the history without indexes"
+        {set,s}:"Select an element of the history"
+        {settings,s,preferences,p}:"Launch the configuration tool"
+        {start,daemon,d}:"Start the daemon"
+        {stop,quit,q}:"Shutdown the daemon"
+        {version,v,--version,-v}:"Display the version"
+    )
+
+    _describe -t commands command commands
+
+else if  (( CURRENT == 3 )); then
+
+    case "${words[2]}" in
+        "file"|"f")
+            _arguments -s : '*: :_files'
+    esac
+
+fi
