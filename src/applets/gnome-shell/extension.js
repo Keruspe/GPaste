@@ -112,7 +112,7 @@ GPasteIndicator.prototype = {
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addMenuItem(this._emptyHistory);
         this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
-        this._fillHistory();
+        this._updateHistory();
     },
 
     _updateHistory: function() {
