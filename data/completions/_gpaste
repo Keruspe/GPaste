@@ -23,7 +23,7 @@ if (( CURRENT == 2 )); then
 
     _describe -t commands command commands
 
-else if  (( CURRENT == 3 ))
+else if  (( CURRENT == 3 )); then
 
     case "${words[2]}" in
         "file"|"f")
