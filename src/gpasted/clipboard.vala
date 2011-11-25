@@ -230,8 +230,8 @@ namespace GPaste {
                     var uris_available = c.real.wait_is_uris_available ();
                     if (uris_available || c.real.wait_is_text_available()) {
                         var text = c.set_text ();
+                        something_in_clipboard = (c.txt != null);
                         if (text != null) {
-                            something_in_clipboard = true;
                             Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                             if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history)) {
                                 if (uris_available)
@@ -244,8 +244,8 @@ namespace GPaste {
                         }
                     } else if (c.real.wait_is_image_available()) {
                         var image = c.set_image ();
+                        something_in_clipboard = (c.img != null);
                         if (image != null) {
-                            something_in_clipboard = true;
                             Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                             if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
                                 History.instance.add(new ImageItem(image));
