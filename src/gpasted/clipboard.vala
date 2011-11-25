@@ -244,7 +244,7 @@ namespace GPaste {
                         }
                     } else if (c.real.wait_is_image_available()) {
                         var image = c.set_image ();
-                        something_in_clipboard = (c.img != null);
+                        something_in_clipboard = (c.image_checksum != null);
                         if (image != null) {
                             Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
                             if (this.gpasted.active && (c.selection == tmp || Settings.instance.primary_to_history))
