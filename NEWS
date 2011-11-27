@@ -1,4 +1,4 @@
-NEW in 2.0 (Not released yet)
+NEW in 2.0 (27/11/2011)
 =============
 
 - Updated finnish translation
@@ -7,6 +7,7 @@ NEW in 2.0 (Not released yet)
 - Don't close menu when deleting items
 - Uris support (files copying)
 - Rewrite of bash and zsh completions
+- Various fixes
 
 NEW in 1.99 (2.0 RC) (02/11/2011)
 =============
