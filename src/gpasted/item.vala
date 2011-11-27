@@ -75,7 +75,9 @@ namespace GPaste {
 
             public UrisItem (string uris) {
                 base (uris);
-                this.display_str = _("[Files] ") + uris.replace (GLib.Environment.get_home_dir (), "~").replace ("\n", " ");
+                // This is the prefix displayed in history to identify selected files
+                string prefix = _("[Files] ");
+                this.display_str = prefix + uris.replace (GLib.Environment.get_home_dir (), "~").replace ("\n", " ");
                 var paths = uris.split ("\n");
                 var length = paths.length;
                 this.uris = new string[length];
@@ -118,7 +120,10 @@ namespace GPaste {
                     Posix.mkdir (images_dir, 0700);
                 this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) this.img.get_pixels ());
                 this.str = GLib.Path.build_filename (images_dir, this.checksum + ".png");
-                this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), this.date.format (_("%m/%d/%y %T")));
+                // This is the date format "month/day/year time"
+                string formatted_date = this.date.format (_("%m/%d/%y %T"));
+                // This gets displayed in history when selecting an image
+                this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), formatted_date);
                 try {
                     img.save (this.str, "png");
                 } catch (GLib.Error e) {
@@ -134,7 +139,8 @@ namespace GPaste {
                     this.display_str = _("[Image, %d x %d (%s)]").printf (this.img.get_width (), this.img.get_height (), this.date.format (_("%m/%d/%y %T")));
                     this.checksum = GLib.Checksum.compute_for_data (GLib.ChecksumType.SHA256, (uchar[]) this.img.get_pixels ());
                 } catch (GLib.Error e) {
-                    this.img = null; // Item will be ignored
+                    // Item will be ignored
+                    this.img = null;
                     stderr.printf (_("Error while loading pixbuf: %s\n"), e.message);
                 }
             }

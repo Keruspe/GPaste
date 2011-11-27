@@ -56,15 +56,12 @@ const GPasteInterface =
     </interface>;
 const GPasteProxy = Gio.DBusProxy.makeProxyWrapper(GPasteInterface);
 
-function GPasteIndicator() {
-    this._init.apply(this, arguments);
-}
-
-GPasteIndicator.prototype = {
-    __proto__: PanelMenu.SystemStatusButton.prototype,
+const GPasteIndicator = new Lang.Class({
+    Name: 'GPasteIndicator',
+    Extends: PanelMenu.SystemStatusButton,
 
     _init: function() {
-        PanelMenu.SystemStatusButton.prototype._init.call(this, 'edit-paste-symbolic');
+        this.parent('edit-paste-symbolic');
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(Gio.DBus.session, BUS_NAME, OBJECT_PATH);
@@ -179,7 +176,7 @@ GPasteIndicator.prototype = {
         for (let index = startIndex || 0; index < this._history.length; ++index)
             this._history[index].actor.hide();
     }
-};
+});
 
 let _indicator;
 

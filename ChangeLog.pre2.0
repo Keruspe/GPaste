@@ -1,0 +1,5518 @@
+commit 24dd1006d124de12809cc3f57402aeb634db869e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 27 18:31:48 2011 +0100
+
+    Release GPaste 2.0
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit d6df1cf2b5d769952592f57b6ca3860018b24d9a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 27 18:30:29 2011 +0100
+
+    add comments for translators
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/es.po              |   22 ++++++++++++----------
+ po/fi.po              |   22 ++++++++++++----------
+ po/fr.po              |   22 ++++++++++++----------
+ src/gpasted/item.vala |   12 +++++++++---
+ 4 files changed, 45 insertions(+), 33 deletions(-)
+
+commit 5ea0e3b12377776705e69b54ec77d9abf57812c4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Nov 25 13:51:40 2011 +0100
+
+    oops
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit e4b69b2e5b0d702d441250f35e95bbe7209ce05e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Nov 25 11:21:00 2011 +0100
+
+    Fix logic for restoring clipboard
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 3be53a72c96fe444a7e71e34285935a65fdefe97
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Nov 24 16:39:14 2011 +0100
+
+    Revert "missing then"
+    
+    This reverts commit 13b32bbbe9cf0d4823bc01a3c8b979cfea5c13b5.
+
+ data/completions/_gpaste |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1ef7fdca077423f4aecdc15784b6df23214ad73b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 23 22:10:00 2011 +0100
+
+    Followup to last commit, fix _updateHistory call
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 5755b7138cf40eaf0821371eed48f10b764aaf5a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 23 22:05:35 2011 +0100
+
+    Make the first item of history bold again
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                            |    3 +--
+ src/applets/gnome-shell/extension.js   |    8 ++++----
+ src/applets/gnome-shell/stylesheet.css |    4 ----
+ 3 files changed, 5 insertions(+), 10 deletions(-)
+
+commit d2fdcdb892a6c0fe5f66a50ea863bcc082b5edfe
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 23 19:15:11 2011 +0100
+
+    improve uris items display
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/es.po              |    6 +++++-
+ po/fi.po              |    6 +++++-
+ po/fr.po              |    6 +++++-
+ src/gpasted/item.vala |    2 +-
+ 4 files changed, 16 insertions(+), 4 deletions(-)
+
+commit 0783f91101cf9a79873770e3d3bc5576ccf569fe
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 23 19:13:23 2011 +0100
+
+    Fix bash completion variable scopes
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                    |    1 +
+ data/completions/gpaste |   10 ++++++----
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+
+commit 037efa187d1b80dbe96b8141bde31c7675e3f31f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 23 19:05:16 2011 +0100
+
+    Be compatible with 3.3.2
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit e352dba8a9aa66ba9ae16bd00374571c3173fae3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 23 15:42:10 2011 +0100
+
+    rewrite bash completion
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/completions/gpaste |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
+
+commit 13b32bbbe9cf0d4823bc01a3c8b979cfea5c13b5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 23 15:07:33 2011 +0100
+
+    missing then
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/completions/_gpaste |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 4e3aa40d575305a2cf7f4503474ab394eee5dc9c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Nov 22 22:48:08 2011 +0100
+
+    rewrite zsh completion
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/completions/_gpaste |   53 ++++++++++++++++++++++++++--------------------
+ 1 files changed, 30 insertions(+), 23 deletions(-)
+
+commit da22aa58df8016213dff6e69eea07fdbdbf84134
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 16 19:41:55 2011 +0100
+
+    update translation files
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/es.po |   36 ++++++++++++++------------------
+ po/fi.po |   68 +++++++++++++++++++++++++++++++------------------------------
+ po/fr.po |   36 ++++++++++++++------------------
+ 3 files changed, 67 insertions(+), 73 deletions(-)
+
+commit 451fb9eaf68c340e1e3689718ca999f542fde7c6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 16 19:40:02 2011 +0100
+
+    move some checks to earlier in the process
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   40 ++++++++++++++++++----------------------
+ src/gpasted/gpasted.vala   |    3 ++-
+ src/gpasted/history.vala   |    8 +++++---
+ src/gpasted/item.vala      |   34 +++++++++++++++-------------------
+ 4 files changed, 40 insertions(+), 45 deletions(-)
+
+commit bce8355f4497e8f7e6dff0a8ff92da3ec752847a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 16 19:18:30 2011 +0100
+
+    make urisitem inherit textitem
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    6 +++---
+ src/gpasted/item.vala      |    8 ++------
+ 2 files changed, 5 insertions(+), 9 deletions(-)
+
+commit e5c7d704e504d358d0903dfab682bf3262d838ae
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 16 00:16:28 2011 +0100
+
+    store clipboard content to be accessible with gpaste exited
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+commit 63c836907d0df379d465caf69b453aaf540f59df
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Nov 15 15:37:31 2011 +0100
+
+    drop useless code
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   14 +++++---------
+ src/gpasted/item.vala      |   11 +++--------
+ 2 files changed, 8 insertions(+), 17 deletions(-)
+
+commit 91602503870b65f03cc62e16b54b9717c3f69d1a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Nov 15 15:33:53 2011 +0100
+
+    improve uris item display
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/item.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit c4b5d411e726c36b0503b18329a1ee71bbc52319
+Merge: 0cfa3ef 89101d3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Nov 15 11:52:40 2011 +0100
+
+    Merge branch '1.3' into gpaste-2
+    
+    * 1.3:
+      Release 1.3.1 (just to regen with no boggous vala)
+    
+    Conflicts:
+    	NEWS
+    	configure.ac
+
+commit 0cfa3ef6ae69d07a18e5da9dc415edfbda062d5c
+Merge: 816c91e 6a692ae
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Nov 15 11:51:19 2011 +0100
+
+    Merge branch 'wip/uris-support' into gpaste-2
+    
+    * wip/uris-support:
+      implement restore_uris
+      clipboard refactor
+      start implementing uris support
+
+commit 6a692ae97f6f210d7753a812c4816d249bb82758
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Nov 15 11:51:02 2011 +0100
+
+    implement restore_uris
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                       |    1 +
+ src/gpasted/clipboard.vala |   65 +++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 59 insertions(+), 7 deletions(-)
+
+commit 816c91edc6bb113f0216fe9c35e36ee4770e4720
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 19:58:28 2011 +0100
+
+    Followup to last commit, rework no history items
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
+
+commit f86d89825ebf4ff4dab2e27abb4c1498ccdfc784
+Merge: bb9968a bc288e4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 15:41:45 2011 +0100
+
+    Merge branch 'master' into wip/uris-support
+    
+    * master:
+      restore non reactiveness of false history items
+
+commit bc288e4d7e51de777b40cb281a19df24b8460c9b
+Merge: 70c48e1 39ab6a4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 15:41:37 2011 +0100
+
+    Merge branch 'gpaste-2'
+    
+    * gpaste-2:
+      restore non reactiveness of false history items
+
+commit 39ab6a48bd90a9687153a5052e249bff9adde476
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 15:40:36 2011 +0100
+
+    restore non reactiveness of false history items
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+commit bb9968a7791f154bd47457ba894d50e2ebb2b943
+Merge: 004db5a 70c48e1
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 15:32:16 2011 +0100
+
+    Merge branch 'master' into wip/uris-support
+    
+    * master:
+      avoid using submenus, fixing 2/3 of FIXME
+      update FIXME
+      update news
+      Update finnish translation to represent the latest changes.
+
+commit 70c48e1f842599d16a91c7f17ff2e06cf9642677
+Merge: 1962292 55a401e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 15:32:04 2011 +0100
+
+    Merge branch 'gpaste-2'
+    
+    * gpaste-2:
+      avoid using submenus, fixing 2/3 of FIXME
+      update FIXME
+      update news
+
+commit 55a401e47c177dd43b4cd8bc49121186fefb0497
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 15:18:27 2011 +0100
+
+    avoid using submenus, fixing 2/3 of FIXME
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ FIXME                                |    2 -
+ NEWS                                 |    2 +
+ src/applets/gnome-shell/extension.js |   59 +++++++++++++++++++++++-----------
+ 3 files changed, 42 insertions(+), 21 deletions(-)
+
+commit 3db04644c0b5047d061ed0deba11ecc2bf13a9c0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 14:29:32 2011 +0100
+
+    update FIXME
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ FIXME |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 10a84004970cda113e43c1b8500c8fe9b0e655a5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 00:16:11 2011 +0100
+
+    update news
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+commit 19622920469545d944f2d1e1e135b56da45a7caf
+Merge: aa62091 0c8d4d6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Nov 13 00:14:22 2011 +0100
+
+    Merge branch 'master' of git://github.com/Keruspe/GPaste
+    
+    * 'master' of git://github.com/Keruspe/GPaste:
+      Update finnish translation to represent the latest changes.
+
+commit 004db5afa9800b5909b526b944f0c0945e0384e2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Nov 12 11:36:47 2011 +0100
+
+    clipboard refactor
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |  184 ++++++++++++++++++++++++++++----------------
+ 1 files changed, 119 insertions(+), 65 deletions(-)
+
+commit c56f5a1e625ab94494146eb5edcd59f79689dc7a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 19:12:13 2011 +0100
+
+    start implementing uris support
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   30 ++++++++++++++++++++++--------
+ src/gpasted/history.vala   |    3 +++
+ src/gpasted/item.vala      |   40 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 65 insertions(+), 8 deletions(-)
+
+commit 0c8d4d619ff7b75e10bfc7e8d2c6b9ebd054893b
+Merge: aa62091 05d1ca5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Nov 5 09:36:10 2011 -0700
+
+    Merge pull request #9 from Huulivoide/master
+    
+    Minorish translation updates
+
+commit 05d1ca512fdfdee78a53e277b758453fc897a8ef
+Author: Jesse Jaara <jesse.jaara@gmail.com>
+Date:   Sat Nov 5 18:29:11 2011 +0200
+
+    Update finnish translation to represent the latest changes.
+
+ po/fi.po |   69 +++++++++++++++++++++++++++-----------------------------------
+ 1 files changed, 30 insertions(+), 39 deletions(-)
+
+commit aa62091bb13ea21afbed970e633b64ed3f0dc909
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Nov 3 13:15:32 2011 +0100
+
+    add advice about gpaste dr in readme
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ README |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit 307d27fa8ce938c7acd5232da999aef2203aeef1
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 19:14:23 2011 +0100
+
+    only text can be synced
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   13 -------------
+ 1 files changed, 0 insertions(+), 13 deletions(-)
+
+commit caa69d0008c2bf2ff9bbb3e926345b20999a6f86
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:31:48 2011 +0100
+
+    post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit f87565381a750f7783fab950b62053f131cf7d3e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:29:08 2011 +0100
+
+    Release GPaste 1.99
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS         |    2 +-
+ configure.ac |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 9b8c529f3d222fcc3f7dd826b5f978ffa33dd939
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:27:04 2011 +0100
+
+    update completions
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                     |    2 +-
+ data/completions/_gpaste |    8 +++++---
+ data/completions/gpaste  |    2 +-
+ 3 files changed, 7 insertions(+), 5 deletions(-)
+
+commit f46a8bd2f7874a1584565974b6dc17d00e8ea49e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:19:44 2011 +0100
+
+    update news
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    1 +
+ TODO |    2 --
+ 2 files changed, 1 insertions(+), 2 deletions(-)
+
+commit babc384a69f352eba49c7efc30894f21caf98b01
+Merge: 33d71c7 4bc9db7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:18:53 2011 +0100
+
+    Merge branch 'wip/images-support'
+    
+    * wip/images-support:
+      emit changed signal when deleting item at index 0 too
+      fix french translation
+      save image timestamp
+      update translations
+      improve imageitems display
+      remove image files with imageitems
+      Do not emit changed event when nothing changed
+      finalize images handling
+      allow selecting images
+      actually build imageitems
+      rework item structure
+      switch to xml for the history file
+      start supporting internally images
+
+commit 4bc9db7141c44af3ff646a6a8c4f9428c0fa4906
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:18:35 2011 +0100
+
+    emit changed signal when deleting item at index 0 too
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+commit 84ca639f9f740d45c45afdc316967856eaf96070
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:13:27 2011 +0100
+
+    fix french translation
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/fr.po |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 766f0f1d0dc407e1e8f8ec8fd7bdc097c3dc9dff
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 16:10:26 2011 +0100
+
+    save image timestamp
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    5 ++++-
+ src/gpasted/item.vala    |    4 ++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+commit a9955c5da35693acf82a43387da96b52a50081f6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 15:59:54 2011 +0100
+
+    update translations
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/POTFILES.in   |    1 +
+ po/POTFILES.skip |    2 +-
+ po/es.po         |   41 ++++++++++++++++++++++++++++++-----------
+ po/fi.po         |   41 ++++++++++++++++++++++++++++++-----------
+ po/fr.po         |   41 ++++++++++++++++++++++++++++++-----------
+ 5 files changed, 92 insertions(+), 34 deletions(-)
+
+commit e3d6cbe8f7638d1d348dd075233b680e14a1df94
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 15:06:51 2011 +0100
+
+    improve imageitems display
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/item.vala |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
+
+commit 21239b54a2b01c1eec3213e57c36a966d0c6366b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 15:18:12 2011 +0100
+
+    remove image files with imageitems
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
+
+commit 95ff28fa1599f7bf2d9b9730ae8bec4130574bce
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 14:49:30 2011 +0100
+
+    Do not emit changed event when nothing changed
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
+commit 2e4f8ef161cd3844b5a491faf5dfde01515462f5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 12:53:52 2011 +0100
+
+    finalize images handling
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   66 ++++++++++++++++++++++++++++++--------------
+ src/gpasted/gpasted.vala   |    3 +-
+ src/gpasted/history.vala   |   20 ++++++-------
+ src/gpasted/item.vala      |    8 ++++-
+ 4 files changed, 61 insertions(+), 36 deletions(-)
+
+commit a5a47b915657cf7de4bcb599c5dacbc9a8248474
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 12:11:35 2011 +0100
+
+    allow selecting images
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+commit 51c116e711cefb8a830625ae86155699084e490f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Nov 2 11:24:14 2011 +0100
+
+    actually build imageitems
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |   10 +++++-----
+ src/gpasted/item.vala    |   33 +++++++++++++++++++++++++++------
+ 2 files changed, 32 insertions(+), 11 deletions(-)
+
+commit ed2515fb49dde32b60a53207738bd6dd00767b92
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Nov 1 22:50:33 2011 +0100
+
+    rework item structure
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   14 +++-----
+ src/gpasted/gpasted.vala   |    4 +-
+ src/gpasted/history.vala   |   12 +++---
+ src/gpasted/item.vala      |   82 +++++++++++++++++++++++++++++++------------
+ 4 files changed, 72 insertions(+), 40 deletions(-)
+
+commit 33d71c7e34c5d1a455992f95a7a765cc9b89581c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 13:55:54 2011 +0200
+
+    fix legacy applet
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/legacy/gpaste-applet.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 3fec544a9fb5c9dbb05ea02c208a193cda69e04e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 13:00:39 2011 +0200
+
+    switch to xml for the history file
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                |    3 +
+ configure.ac               |    4 ++
+ src/gpasted/clipboard.vala |    6 +-
+ src/gpasted/gpasted.vala   |    2 +-
+ src/gpasted/history.vala   |   93 +++++++++++++++++++++++++++++++-------------
+ src/gpasted/item.vala      |   22 +++++++----
+ 6 files changed, 91 insertions(+), 39 deletions(-)
+
+commit d289f3d1d00910f8db38f0b3f403ee48d1f6becf
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 11:31:15 2011 +0200
+
+    start supporting internally images
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |   61 ++++++++++++++++++++++++++++++++++---------
+ src/gpasted/gpasted.vala   |    4 +-
+ src/gpasted/history.vala   |   36 ++++++++++++++++++--------
+ src/gpasted/item.vala      |   27 ++++++++++++++++---
+ 4 files changed, 97 insertions(+), 31 deletions(-)
+
+commit 0ddc49710e64f446f2fdfe32b13e6203fe92e84e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 13:08:58 2011 +0200
+
+    fix gpaste history
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit d00dd78ea37d0162a5ac90c9ad090f776d6073fb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 00:53:01 2011 +0200
+
+    Remove leftover
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+commit b9bfe30a1bdcb61e1d081b4f032298cf9d49c127
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 00:49:30 2011 +0200
+
+    update translations
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/es.po        |  101 ++++++++++++++++++++++++++++---------------------------
+ po/fi.po        |   99 +++++++++++++++++++++++++++--------------------------
+ po/fr.po        |   99 +++++++++++++++++++++++++++--------------------------
+ src/gpaste.vala |    2 +-
+ 4 files changed, 152 insertions(+), 149 deletions(-)
+
+commit 1d761c1f5a068146e50a8921e75078446fcd2937
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 00:39:55 2011 +0200
+
+    autostart gpasted no longer needed with gdbus (bus activation works)
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                |    5 +----
+ data/gpasted.desktop.in.in |    9 ---------
+ po/POTFILES.in             |    1 -
+ po/POTFILES.skip           |    1 -
+ 4 files changed, 1 insertions(+), 15 deletions(-)
+
+commit f402557abae70d3ebef4b27e7e075743c2665369
+Merge: 796e6bd 92a337a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 00:34:03 2011 +0200
+
+    Merge branch 'gdbus'
+    
+    * gdbus:
+      Fix getHistory to really send an (as)
+      switch to GDbus
+
+commit 92a337a3eafeea112856c8a24ac90ce6f081f072
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 00:32:28 2011 +0200
+
+    Fix getHistory to really send an (as)
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
+
+commit dfaf07ade46d5b13df982689094e7df56d1952d6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 28 00:18:38 2011 +0200
+
+    switch to GDbus
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                                 |    1 +
+ src/applets/gnome-shell/extension.js |   73 +++++++++++++++++----------------
+ 2 files changed, 39 insertions(+), 35 deletions(-)
+
+commit 796e6bdabfa3751bc9a0d0d68b2fb6820c1b2b46
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Oct 27 16:27:56 2011 +0200
+
+    gpaste cleanup
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/gpaste.1.part |   10 +++++++---
+ src/gpaste.vala    |   30 ++++++++++++++++++++++++------
+ 2 files changed, 31 insertions(+), 9 deletions(-)
+
+commit 3a26b12f381626b86bbe97f4b4e21270e85aca9b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Oct 25 12:39:17 2011 +0200
+
+    add gpaste raw-history
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS            |    7 +++++++
+ TODO            |    2 +-
+ src/gpaste.vala |   45 ++++++++++++++++++++++++++++++---------------
+ 3 files changed, 38 insertions(+), 16 deletions(-)
+
+commit 1b1c584e8298899d6bbdf2310b83b2c7ce25443b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 14 17:18:47 2011 +0200
+
+    missing string change
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/es.po                                 |   21 +++++++++------------
+ po/fi.po                                 |   21 +++++++++------------
+ po/fr.po                                 |   21 +++++++++------------
+ src/gpaste-settings/gpaste-settings.vala |    2 +-
+ 4 files changed, 28 insertions(+), 37 deletions(-)
+
+commit ed7fa9cbfd87c13208f473d65926f3408533389c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 14 17:11:36 2011 +0200
+
+    remove leftover
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+commit 5db5ee1af90bc07d0a8a8cbb5ac18efd7ff376d2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 14 17:05:28 2011 +0200
+
+    followup to last commit
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
+
+commit add78a40b9d6b42fad1acde9064b882540c4f343
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 14 16:58:49 2011 +0200
+
+    tweak for ElementaryOS theme convenience
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 30130a4c576a5ab5f5a737c7d75e7c0304a382d9
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 14 16:56:46 2011 +0200
+
+    slightly better look with empty history
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/gpaste-settings.desktop.in.in   |    4 +-
+ po/es.po                             |   30 ++++++++++--------
+ po/fi.po                             |   54 ++++++++++++++++++++++------------
+ po/fr.po                             |   27 +++++++++-------
+ src/applets/gnome-shell/extension.js |    4 +-
+ 5 files changed, 71 insertions(+), 48 deletions(-)
+
+commit 5908d1f04bdf938c94485721f94d12838054ba1a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 14 16:26:13 2011 +0200
+
+    update TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 5eef783c5da2037c2fe681bc08ac0e02b3a79c8d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Oct 14 16:26:05 2011 +0200
+
+    rework menu construction a bit
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |   19 ++++++++++++-------
+ 1 files changed, 12 insertions(+), 7 deletions(-)
+
+commit b7e3ebb232f599f141afe3dc230a83fb2dc33076
+Merge: 971b360 486cf9a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Oct 5 11:26:49 2011 -0700
+
+    Merge pull request #6 from Huulivoide/master
+    
+    Finnish translation
+
+commit 486cf9a8bc76b082dbcffe2fa1761ca1d1b08f63
+Author: Jesse Jaara <jesse.jaara@gmail.com>
+Date:   Wed Oct 5 21:09:39 2011 +0300
+
+    Add finnish translation.
+
+ po/LINGUAS |    1 +
+ po/fi.po   |  319 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 320 insertions(+), 0 deletions(-)
+
+commit 971b360007c8bb53ddb87e6548a5b548d1f8e6cb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 22 16:59:21 2011 +0200
+
+    update README
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ README |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+commit 130a3f0b700852c49fe48f7d8733b39f5aba22dc
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 21 16:41:35 2011 +0200
+
+    display help event if we cannot join gpasted
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste.vala |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+commit 638a43047df6a8332781d15d9b5baaa670136f78
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 21 16:38:45 2011 +0200
+
+    we're not compatible with old shell
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1c1f35aa02cf14b9ed772abcb47af62fcfc4581c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 20 19:32:25 2011 +0200
+
+    Post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 09bb687c67f1a32e1369bbfcd63dc6da0a5ce86b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 20 19:31:37 2011 +0200
+
+    Release GPaste 1.6
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ FIXME        |    1 +
+ Makefile.am  |    5 +++++
+ NEWS         |    3 ++-
+ TODO         |    4 +++-
+ configure.ac |    3 +++
+ 5 files changed, 14 insertions(+), 2 deletions(-)
+
+commit 1474c6168fee7925a933a5ebed7bddfffc6bc642
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 20 19:17:09 2011 +0200
+
+    Add espagnol translation (thanks to Antonio Trujillo)
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/LINGUAS          |    2 +-
+ po/{fr.po => es.po} |  172 +++++++++++++++++++++++++-------------------------
+ po/fr.po            |   18 +++---
+ 3 files changed, 96 insertions(+), 96 deletions(-)
+
+commit 09eab631a28fe8d87a4b4bbdc7f914d6c25a7e15
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 18 16:47:44 2011 +0200
+
+    remove useless AC_SUBSTs
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
+
+commit 861f65cd8c3dfa3f29c4dd6535d1c1f446a53859
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 18 14:33:02 2011 +0200
+
+    remove useless items from TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    1 +
+ TODO |    2 --
+ 2 files changed, 1 insertions(+), 2 deletions(-)
+
+commit 3fb27df779736bfd81e1f4b0eef95343054ef22c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 18 14:32:42 2011 +0200
+
+    pop error trap
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/keybinder.vala |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 7bf1e3ff3a879dea7020bd40ad7c2dcb54b25878
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Sep 17 00:38:16 2011 +0200
+
+    Fix panel accessing
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit b925d612c3ef6eee949732b4515435781bc132b5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Sep 17 00:32:45 2011 +0200
+
+    Fi hang at session start
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/gpasted.desktop.in.in |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+commit 60e587c0c5343823a2c74fae3ab21920678d16ed
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Sep 17 00:29:20 2011 +0200
+
+    adapt to rename in gnome-shell master
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js     |    6 +-----
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+commit fcf6057e0934f5dff6a3ddd3d30b73c065f59362
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 16 21:42:10 2011 +0200
+
+    pkglibexecdir no longer needed in extension
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js     |    3 ---
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 2 files changed, 1 insertions(+), 4 deletions(-)
+
+commit fde98a718ce2646e9d976ad2104e6cd2828a49e2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 16 18:25:41 2011 +0200
+
+    use AC_PROG_SED
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am  |    8 ++++----
+ configure.ac |    1 +
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+commit 4f9053ce408874e19cefea55b3ef701351028ac3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 16 11:35:40 2011 +0200
+
+    fix hotkey modification in gpaste-settings and make ctrl+alt+h the default
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/org.gnome.GPaste.gschema.xml.in.in  |    5 ++---
+ po/fr.po                                 |   13 +++++--------
+ src/gpaste-settings/gpaste-settings.vala |    2 +-
+ 3 files changed, 8 insertions(+), 12 deletions(-)
+
+commit 1ebd0ad3224f8e4fa9ff0a368554c9b2490d97c3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 16 10:43:08 2011 +0200
+
+    desktop files cleanup
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/gpaste-applet.desktop.in.in   |    5 ++---
+ data/gpaste-settings.desktop.in.in |    4 +++-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+commit 71485b4825334a1a49e082cec5da32e56eb07147
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 16 10:31:36 2011 +0200
+
+    add gpasted to autostart
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                          |   13 ++++++++-----
+ data/gpasted.desktop.in.in           |   10 ++++++++++
+ po/POTFILES.in                       |    1 +
+ po/POTFILES.skip                     |    1 +
+ po/fr.po                             |   10 +++++++++-
+ src/applets/gnome-shell/extension.js |    1 -
+ 6 files changed, 29 insertions(+), 7 deletions(-)
+
+commit 28cece4085e2e42dc6f41c1b61fe1ebd41c54cb8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 15 13:03:56 2011 +0200
+
+    autogen.bash -> autogen.sh
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                |    2 +-
+ autogen.bash => autogen.sh |    3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+commit 9ca2b18ca229c2ba3dd16d2a84417bf3787a3297
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 15 09:39:45 2011 +0200
+
+    Fix gpaste daemon-reexec
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 42f1efa1e0f1ec25b3ee0f2b735ff045d14827de
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 15 09:31:13 2011 +0200
+
+    homogeneify sed rules
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 464145a95f3ccb2cb03b8ce68ce2dd2b27adf097
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 15 01:09:50 2011 +0200
+
+    fix distcheck
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am  |   10 ++++++----
+ configure.ac |    7 +++++--
+ 2 files changed, 11 insertions(+), 6 deletions(-)
+
+commit a0aaf46cfabf5bf6dfe9bc166cc37aa45ef80fa9
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 15 00:42:47 2011 +0200
+
+    avoid non portable rules
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
+
+commit cb0e5648fe3bbbb449c79281bc2a9eb06d1c42af
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 15 00:33:00 2011 +0200
+
+    those are automatic
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+commit 5314033469ea9ac3a02052ac99a18a84d9a92e07
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 14 23:59:00 2011 +0200
+
+    Fix x11 linkage (to avoid fedora patch)
+
+ Makefile.am  |    2 ++
+ NEWS         |    2 ++
+ configure.ac |    4 ++++
+ 3 files changed, 8 insertions(+), 0 deletions(-)
+
+commit 0a95495482fe0285ad584a32ba8ec6676ff0ae69
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 14 17:19:08 2011 +0200
+
+    fix leftovers
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 3b23aaa605c914cc04e2ad31bd23b7f5b9bc9454
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 14 17:05:58 2011 +0200
+
+    little tweak
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am  |    2 +-
+ configure.ac |    7 +++----
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+commit be54a3e84ce786216914a4206a4b6c95d64a3e5c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 14 14:39:35 2011 +0200
+
+    Huge autotools cleanup
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am  |  290 ++++++++++++++++++++++++++-------------------------------
+ configure.ac |   13 ++-
+ 2 files changed, 142 insertions(+), 161 deletions(-)
+
+commit 260ec6a1aa674bb77404c841afb147c27d2f6019
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 14 09:29:49 2011 +0200
+
+    always specify namespaces
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/legacy/gpaste-applet.vala |   10 +++++-----
+ src/gpaste.vala                       |   16 ++++++++--------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
+
+commit e5f495b3e51a76a8e196a5d470d14a6d67876ac9
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 14 00:26:57 2011 +0200
+
+    add wrapper to update-po
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+commit 12bac5a4d59ffcb41845d10f4ff4231e21824075
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 13 16:28:52 2011 +0200
+
+    gpaste daemon-reexec
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am              |    1 +
+ NEWS                     |    1 +
+ data/completions/_gpaste |    1 +
+ data/completions/gpaste  |    2 +-
+ data/gpaste.1.part       |    4 ++
+ po/fr.po                 |  111 +++++++++++++++++++++++++---------------------
+ src/gpaste.vala          |   15 ++++++-
+ src/gpasted/gpasted.vala |   18 +++++++-
+ 8 files changed, 99 insertions(+), 54 deletions(-)
+
+commit 43dccc3a60c0e1fea25ecdb324c56b69b90b8d40
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 13 15:31:04 2011 +0200
+
+    Do not reinvent make update-po
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/update-po.bash |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
+
+commit b0fe26494e93f0a6f0b22008abf64f285fbcbf90
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 13 09:52:05 2011 +0200
+
+    fix distcheck
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+commit 5a539f28ef80f43e1f860eb2350df71c50109e27
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 13 09:47:08 2011 +0200
+
+    Fix copyright headers
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                              |   17 +++++++++++++++++
+ configure.ac                             |   17 +++++++++++++++++
+ src/applets/gnome-shell/extension.js     |   15 +--------------
+ src/applets/legacy/gpaste-applet.vala    |   15 +--------------
+ src/gpaste-settings/gpaste-settings.vala |   15 +--------------
+ src/gpaste.vala                          |   15 +--------------
+ src/gpasted/clipboard.vala               |   15 +--------------
+ src/gpasted/gpasted.vala                 |   15 +--------------
+ src/gpasted/history.vala                 |   15 +--------------
+ src/gpasted/item.vala                    |   15 +--------------
+ src/gpasted/keybinder.vala               |   15 +--------------
+ src/gpasted/settings.vala                |   15 +--------------
+ vapi/config.vapi                         |   19 +++++++++++++++++++
+ 13 files changed, 63 insertions(+), 140 deletions(-)
+
+commit 8d3b04a332b8b7505df453ed86de1bb4c64a4659
+Merge: ee1202f 9bd1a01
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Sep 13 07:34:34 2011 +0200
+
+    Merge git://github.com/garyvdm/GPaste
+    
+    * git://github.com/garyvdm/GPaste:
+      Allign labels in settings dialog.
+      Add a margin to the settings dialog.
+
+commit 9bd1a013fe1bd840139b5457f7f8361a7eacf3e4
+Merge: 7709a1c ee1202f
+Author: Gary van der Merwe <garyvdm@gmail.com>
+Date:   Tue Sep 13 03:05:40 2011 +0200
+
+    Merge branch 'master' of https://github.com/Keruspe/GPaste
+
+commit 7709a1cac8c3df065424519590a9b72b4fee69c7
+Author: Gary van der Merwe <garyvdm@gmail.com>
+Date:   Tue Sep 13 03:01:20 2011 +0200
+
+    Allign labels in settings dialog.
+
+ src/gpaste-settings/gpaste-settings.vala |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+commit 614a6a9ecbe2e2da7345cbaeb6b3d247c44a4485
+Author: Gary van der Merwe <garyvdm@gmail.com>
+Date:   Tue Sep 13 02:40:57 2011 +0200
+
+    Add a margin to the settings dialog.
+
+ src/gpaste-settings/gpaste-settings.vala |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit ee1202fff2953bc0e8d93f9576baa3b2506e0de8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Sep 12 19:25:19 2011 +0200
+
+    update gitignore
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ .gitignore |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit f11940e75d55824d79d894bb9e23e453c9d9e7c6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Sep 12 19:23:47 2011 +0200
+
+    move completions to data
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                               |    3 ++-
+ {completions => data/completions}/_gpaste |    0
+ {completions => data/completions}/gpaste  |    0
+ 3 files changed, 2 insertions(+), 1 deletions(-)
+
+commit 378690cf1ed8b51519077a44b0cc91a02adb1000
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Sep 12 19:22:59 2011 +0200
+
+    update schemas & desktop gettext stuff
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
+
+commit 478ce032675d034562b483b1354c8f3e5bf3f115
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Sep 12 10:16:05 2011 +0200
+
+    move bug to FIXME
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ FIXME |    1 +
+ TODO  |    1 -
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 2e886561c46ae171cd6075cd93b7a6c5b1d9adef
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 15:03:11 2011 +0200
+
+    support shell versions until 3.2
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1d5848c6ed9ec5bb2c61d8f114b21e44d5bd636a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:51:37 2011 +0200
+
+    don't store blank strings
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 5a5e0178fa0227473633932b468bca587b34e025
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:32:07 2011 +0200
+
+    fix distcheck
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/POTFILES.in   |    2 +-
+ po/POTFILES.skip |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 234210175457d3c4b88c22ad14ba90b60f322acb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:29:10 2011 +0200
+
+    update NEWS
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+commit 91142af64fbd569a8e0d9ec3f35bbc8f3319860c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:29:03 2011 +0200
+
+    rename standard applet to legacy
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                                        |    2 +-
+ .../{standard => legacy}/gpaste-applet.vala        |    0
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+
+commit bd0135e68d669e72920a30b4850654bf8c8c8c12
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:27:12 2011 +0200
+
+    implement toggle_history for legacy applet
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/standard/gpaste-applet.vala |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+commit dd889bba52e46d3c1cbc2c809cb5b3376f7a7521
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:25:44 2011 +0200
+
+    unbind keybinder when leaving
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala   |    1 +
+ src/gpasted/keybinder.vala |    6 +++++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
+
+commit b3a21effcdf48fbe561131b2f4f437df1c321f1c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:20:12 2011 +0200
+
+    use GLib.Timeout
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+commit 7a22554c97444c77d767bddbc3fb866abfd85297
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 13:16:17 2011 +0200
+
+    check for gdk-x11
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am  |    4 +++-
+ configure.ac |    6 ++++++
+ 2 files changed, 9 insertions(+), 1 deletions(-)
+
+commit eaf9d0a5dc6db183537a94cdaa65b30dd16b413b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 10:12:25 2011 +0200
+
+    post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 735f50fccacb4c163064ddbf5d567fb5f3308a91
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 10:10:43 2011 +0200
+
+    Release 1.5
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit ebe80357b4ccac4a9254695e54c87c9db422943b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 10:08:27 2011 +0200
+
+    don't add last selected item to historing when re-tracking
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+commit 44119b22c0d9aad63ad292f5f8c559f281596375
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 11 09:53:43 2011 +0200
+
+    leftovers
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    2 +-
+ src/gpasted/gpasted.vala   |    4 ++--
+ src/gpasted/history.vala   |    1 -
+ 3 files changed, 3 insertions(+), 4 deletions(-)
+
+commit ff773542e3482880c32ffb987bafa7ba77d1a4bc
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Sep 10 17:59:22 2011 +0200
+
+    coding style fixes
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/standard/gpaste-applet.vala  |   37 ++++++++++++++++-------
+ src/gpaste-settings/gpaste-settings.vala |   17 +++++-----
+ src/gpaste.vala                          |   20 +++++++-----
+ src/gpasted/clipboard.vala               |   11 +++++--
+ src/gpasted/gpasted.vala                 |   17 +++++-----
+ src/gpasted/history.vala                 |   48 +++++++++++++++---------------
+ src/gpasted/item.vala                    |    1 +
+ src/gpasted/keybinder.vala               |   34 ++++++++++++---------
+ src/gpasted/settings.vala                |   25 ++++++++-------
+ 9 files changed, 120 insertions(+), 90 deletions(-)
+
+commit b6a02b90888f262c7c39be00ac5757a2b2892371
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Sep 10 17:14:00 2011 +0200
+
+    fix ownership transfer mess
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste-settings/gpaste-settings.vala |   12 +++++-------
+ src/gpasted/settings.vala                |   11 ++++++-----
+ 2 files changed, 11 insertions(+), 12 deletions(-)
+
+commit b3dd6432158c5ea9084ab113a37c45dd5703d50a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 9 12:31:51 2011 +0200
+
+    remove garbage from TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+commit dd77bab969d993bd2f1c5e3571d4bfd76b27a4e6
+Merge: 6d90f6b 6210936
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 9 12:29:34 2011 +0200
+
+    Merge branch 'wip/hotkey'
+    
+    Conflicts:
+    	po/fr.po
+
+commit 6210936cdd539d7a971e4077491ac2aa32a37ed8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 9 12:24:44 2011 +0200
+
+    hotkey: add ability to configure in gpaste-settings
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/fr.po                                 |   99 ++++++++++++++++++------------
+ src/gpaste-settings/gpaste-settings.vala |   32 ++++++++++
+ 2 files changed, 91 insertions(+), 40 deletions(-)
+
+commit ec4776a7e83086422b1047f7b29c9aeed6ce63a4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 9 12:05:06 2011 +0200
+
+    update NEWS and TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    1 +
+ TODO |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+commit 6d90f6b1b432a7639d185eee4979f364a653d3e4
+Merge: 202d4c7 6ea591c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 9 12:02:26 2011 +0200
+
+    Merge branch 'wip/hotkey'
+
+commit 6ea591ccea362565d9c5434972ec9c26ef3d04e0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 9 11:52:13 2011 +0200
+
+    hotkey: Make keyboard shortcut customisable
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/org.gnome.GPaste.gschema.xml.in.in |   10 ++++++++++
+ src/gpasted/gpasted.vala                |    2 +-
+ src/gpasted/settings.vala               |   16 +++++++++++++++-
+ 3 files changed, 26 insertions(+), 2 deletions(-)
+
+commit 202d4c7b788962efcc2c81c09574e238fb6c85fa
+Merge: 1799c98 d0f3be2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 8 20:32:12 2011 +0200
+
+    Merge branch 'wip/hotkey'
+    
+    Conflicts:
+    	NEWS
+
+commit d0f3be233fcf5d6e5f7c490cdfadd6004482fbba
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 8 20:19:34 2011 +0200
+
+    get rid of AM_MAINTAINER_MODE
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS         |    1 +
+ configure.ac |    1 -
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+
+commit ebee682888828fec42f3a534a1a2c95ce422635c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Sep 8 17:49:19 2011 +0200
+
+    start making hotkey work
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js    |    8 +++++++-
+ src/applets/standard/gpaste-applet.vala |   11 ++++++++++-
+ src/gpasted/gpasted.vala                |    3 +++
+ src/gpasted/keybinder.vala              |    2 +-
+ 4 files changed, 21 insertions(+), 3 deletions(-)
+
+commit 1799c989cb6b0e7e193b36ac2d786865eb831578
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 23:54:22 2011 +0200
+
+    add gpaste get
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                     |    1 +
+ data/gpaste.1.part       |    4 +++
+ po/fr.po                 |   58 +++++++++++++++++++++++++--------------------
+ src/gpaste.vala          |    8 +++++-
+ src/gpasted/gpasted.vala |    5 ++++
+ src/gpasted/history.vala |    7 +++++
+ 6 files changed, 56 insertions(+), 27 deletions(-)
+
+commit 5cdad3a1858388ad4b7ae458aad1790ee6a44fe1
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 23:00:35 2011 +0200
+
+    Rough initial proof of concept of keybindings support
+    
+    Inspired by http://code.valaide.org/content/global-hotkeys
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                |    6 ++-
+ src/gpasted/gpasted.vala   |    1 +
+ src/gpasted/keybinder.vala |   98 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 103 insertions(+), 2 deletions(-)
+
+commit 4e637dcf81dda9b9afc144afe02a6c65400a796e
+Merge: 67a9fd1 96bbfcb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 18:39:08 2011 +0200
+
+    Merge branch 'autotools'
+
+commit 67a9fd11b58c6cd6b90c755b842ade10213474b2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 18:39:02 2011 +0200
+
+    vala 0.13.4 released
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ README |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
+
+commit 0126a34f5103d3bfa3fc349aab41907e260cec3d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 18:35:12 2011 +0200
+
+    Rename item{s,}
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                           |    2 +-
+ src/gpasted/{items.vala => item.vala} |    0
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+
+commit b90be3f47ce0656c7af9b6a779b7bd3213d587de
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 18:34:51 2011 +0200
+
+    unnecessary casts
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 3390fdd5605ed16144b755c6a47d4566bcd13cf1
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 18:26:43 2011 +0200
+
+    update NEWS
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit 122708fbdef5f83100f9f60c171d30455384798c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 18:25:42 2011 +0200
+
+    Fix path of new history file
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+commit 12e0b50d58571b016d50db4cfe0906bdc9d7b829
+Merge: 6654c44 44fd7d0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 18:15:23 2011 +0200
+
+    Merge branch 'wip/images-support'
+    
+    Conflicts:
+    	src/gpasted/history.vala
+
+commit 6654c44c5239fefd111caf804a238074d1bf621f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 14:38:51 2011 +0200
+
+    update NEWS
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+commit a25379a2200d3458199628dd95faa22884a5b081
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 14:05:09 2011 +0200
+
+    Remove unconditional references to applet
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ .gitignore                               |    1 +
+ Makefile.am                              |   14 +++++-
+ completions/_gpaste                      |    1 -
+ completions/gpaste                       |    2 +-
+ data/gpaste-applet.1.part                |   32 +++++++++++++++
+ data/{gpaste.1 => gpaste.1.part}         |   36 -----------------
+ data/org.gnome.GPaste.gschema.xml.in.in  |    8 ----
+ po/fr.po                                 |   62 ++++++++++--------------------
+ src/applets/standard/gpaste-applet.vala  |   15 +-------
+ src/gpaste-settings/gpaste-settings.vala |   28 -------------
+ 10 files changed, 67 insertions(+), 132 deletions(-)
+
+commit d8de5b5e89d194d8fc0878570007bdc73ec1f0d8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 13:33:40 2011 +0200
+
+    Post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS         |    3 +++
+ configure.ac |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+commit eef1e1626952754ce1f0f2a9eb6dca54f9f092f0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 13:31:52 2011 +0200
+
+    Release 1.4
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS   |    3 ++-
+ README |    4 ----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+commit 941fc504c2e89ce6e5739d2c763c29f0e2799504
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 13:29:09 2011 +0200
+
+    only perform check when loading
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala |    6 ++----
+ src/gpasted/history.vala |    8 +++++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+commit 0fcf2822cb94b9c93f01769a884b94c47b2854a7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 13:22:48 2011 +0200
+
+    Ignore invalid strings (fixes bug #1)
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+commit 24bb9cc26bba622138edf36f921c7d3011397701
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 12:02:48 2011 +0200
+
+    Add advice about daemon segfault because of vala
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    2 --
+ README      |    4 ++++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+commit 03e43008697dd38bae00495986d63d7b02384377
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 10:24:34 2011 +0200
+
+    Add --debug to VALAFLAGS for now
+    
+    It appears to solve the segmentation fault
+    which appears sometimes at the daemon startup
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
+
+commit 33a46ab96b36e6c84d8f46d71e37a6e9abfbaa81
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Sep 7 07:19:35 2011 +0200
+
+    gnome-shell version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 44fd7d09a1f777c882dffb261752a71269aa73a8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Sep 5 16:16:49 2011 +0200
+
+    change history file and convert to new format
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |   35 +++++++++++++++++++++++------------
+ 1 files changed, 23 insertions(+), 12 deletions(-)
+
+commit 4b3e74cad40ddecd7a155a1981fa804e52279c1b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Sep 4 22:08:25 2011 +0200
+
+    Add concept of Item in preparation to images handling
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                |    1 +
+ src/gpasted/clipboard.vala |   19 ++++++++------
+ src/gpasted/gpasted.vala   |    9 ++++---
+ src/gpasted/history.vala   |   33 ++++++++++++++-----------
+ src/gpasted/items.vala     |   56 ++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 91 insertions(+), 27 deletions(-)
+
+commit 96bbfcb41ba731d6fa9b3c7dfca9ed8c35e1addc
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Sep 3 13:01:33 2011 +0200
+
+    Use AM_PROG_VALAC
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am  |   12 ++++++++----
+ configure.ac |    5 +++--
+ 2 files changed, 11 insertions(+), 6 deletions(-)
+
+commit 89101d32157522e4d67278fe51bb39a6ef3f5d35
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Sep 3 13:02:44 2011 +0200
+
+    Release 1.3.1 (just to regen with no boggous vala)
+
+ NEWS         |    5 +++++
+ configure.ac |    2 +-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
+
+commit 88555f74643fa1ae9876fce9dba6b55c9a8be66f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:43:16 2011 +0200
+
+    typo
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit cebe2f49bcf072d0e6e4bc995d2db40a50624249
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:42:31 2011 +0200
+
+    update NEWS, TODO and french translation
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS     |    1 +
+ TODO     |    1 -
+ po/fr.po |   24 ++++++++++++++----------
+ 3 files changed, 15 insertions(+), 11 deletions(-)
+
+commit 5f09f78b12490b2d8c675a2e5785baedf5f67f1e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:41:23 2011 +0200
+
+    delete history file if not saving history
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala  |   13 ++++++++++---
+ src/gpasted/settings.vala |    2 +-
+ 2 files changed, 11 insertions(+), 4 deletions(-)
+
+commit d4a4ec010ff4e9110bb61cc8b73204dd886ce31c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:32:21 2011 +0200
+
+    use the save-history key
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala  |    3 ++-
+ src/gpasted/settings.vala |   14 ++++++++++++++
+ 2 files changed, 16 insertions(+), 1 deletions(-)
+
+commit f0299885d5a24c1e08ca9ec4ff4e15db48bd9b6f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:23:17 2011 +0200
+
+    allow setting the save-history key
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste-settings/gpaste-settings.vala |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
+
+commit a81c86fa26d6178f64868b8da7b0fbb04d6f44e3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:22:54 2011 +0200
+
+    fix man page installation
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 5e73e8f3aa5f14bf3a6c88667fcb1184f02a62d4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:17:07 2011 +0200
+
+    add key to allow not saving history
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/org.gnome.GPaste.gschema.xml.in.in |    8 ++++++++
+ po/fr.po                                |   24 ++++++++++++++++--------
+ 2 files changed, 24 insertions(+), 8 deletions(-)
+
+commit 2e94bf6847ef75afb4aa014406717449ad1ae7f7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:14:04 2011 +0200
+
+    update NEWS
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+commit 2b49cb02f4767d30ce14f39c60d4d949072d0d4f
+Merge: a91b75c 1968c72
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:11:51 2011 +0200
+
+    Merge branch 'wip/man'
+
+commit 1968c72b3670398ff6f794f430ca8d2d93c0b25c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 17:07:42 2011 +0200
+
+    better man page formatting
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/gpaste.1 |   22 +++-------------------
+ 1 files changed, 3 insertions(+), 19 deletions(-)
+
+commit a91b75c1fd1bf9e3ebed761c5bd1cb235627dc05
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Sep 2 12:45:38 2011 +0200
+
+    Add advice in README because of vala bug
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ README |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+commit 051afc2615fd131cd93b4b16cbc093233e7b87ab
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Aug 31 17:05:18 2011 +0200
+
+    don't require pod2man
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ .gitignore      |    1 -
+ Makefile.am     |    8 +---
+ configure.ac    |    3 -
+ data/gpaste.1   |  135 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ data/gpaste.pod |  113 ----------------------------------------------
+ 5 files changed, 136 insertions(+), 124 deletions(-)
+
+commit 7a21e69a72ccbaa3869b2066394d4739299ed5ec
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Aug 31 16:46:28 2011 +0200
+
+    post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ po/fr.po     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit d70b69dafd5328090726b9fe7088a2b13ba3f5c3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Aug 31 11:30:36 2011 +0200
+
+    release 1.3
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    5 ++++-
+ NEWS        |    2 +-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+commit 3f13a6be9f8ef18058a0a043ea2bcdb13165b562
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 30 02:15:56 2011 +0200
+
+    Fix Makefile
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
+
+commit dbc6726226e6aa2877b561358d798b5b1fcc4bf4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 30 02:13:38 2011 +0200
+
+    add gpaste-settings.desktop
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                        |    8 ++++++++
+ data/gpaste-settings.desktop.in.in |    8 ++++++++
+ po/POTFILES.in                     |    1 +
+ po/POTFILES.skip                   |    1 +
+ po/fr.po                           |   15 ++++++++++-----
+ 5 files changed, 28 insertions(+), 5 deletions(-)
+
+commit 6e97be7b29d9de48b2c2f0509e177eaf97a6735e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 30 01:51:45 2011 +0200
+
+    use new addSettingsAction
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
+
+commit d9a06f4b5a37612ab8d65c0baf011f4db91057a5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 30 01:49:35 2011 +0200
+
+    only be compatible with gnome-shell 3.1.90
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit ee168c75a2aee9e843e6f93835513bf2b2b0b2b5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 30 01:48:54 2011 +0200
+
+    update gitignore
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ .gitignore |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 823138da7b0419dd46bde10f68969b67d17dd159
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 30 01:47:20 2011 +0200
+
+    not needed since we destroy()
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |   21 ++++++---------------
+ 1 files changed, 6 insertions(+), 15 deletions(-)
+
+commit 2c6bb89168c3ce3e4f54dff364eeb4514c92d5ab
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 20:48:31 2011 +0200
+
+    Fix extension disabling + reenabling
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |   24 +++++++++++++-----------
+ 1 files changed, 13 insertions(+), 11 deletions(-)
+
+commit 101ddecb6cac81c26e4aa5a4f6f09562b8d241ab
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 20:39:33 2011 +0200
+
+    latest changes broke compatibility with older shell
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js     |    4 ----
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 2 files changed, 1 insertions(+), 5 deletions(-)
+
+commit 9f52f2811db16ace876911e29d62d96549bef33e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 20:35:41 2011 +0200
+
+    copy-paste fail
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1b6222e1380f65a598144723e7439c94c6e964ad
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 20:35:16 2011 +0200
+
+    move daemon spawn to init
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 34b9295b403d9301cb12300877982929d8ab7c31
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 19:43:33 2011 +0200
+
+    adapt to latest changes
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit e8f636298f5c70d1f18f96d2d3726d72e381a045
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 17:21:21 2011 +0200
+
+    change installation directory
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am                              |    2 +-
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 29c66ad0e8b96a57db8abb30939c30602a7af539
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 17:18:10 2011 +0200
+
+    cleaner adaptation to new gnome-shell API
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                                 |    1 +
+ src/applets/gnome-shell/extension.js |   41 ++++++++++++++++-----------------
+ 2 files changed, 21 insertions(+), 21 deletions(-)
+
+commit 5db5175ce09a12a22941a8dae4e778c352d2a05c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 16:44:09 2011 +0200
+
+    Be compatible again with previous shell versions
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js     |   17 +++++++++++------
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 2 files changed, 12 insertions(+), 7 deletions(-)
+
+commit 1033b3c91167336b140f46dba470aac011cc6b43
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 00:54:16 2011 +0200
+
+    move to init
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 9b7bc08ffbb9546c795b0d79582308fa4ebb5075
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 00:51:02 2011 +0200
+
+    revert a bit for now
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit ed29a65a5dae149afd5bcc047e77536631b2d71d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 00:46:59 2011 +0200
+
+    add missing import
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit ae0b41d7da7c05a134d8356783f1bb9c0d448a57
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 00:36:47 2011 +0200
+
+    Port to new gnome-shell extensions API
+    
+    At least this is a first try, maybe some destroy() are missing in disable()...
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js     |   33 ++++++++++++++++++++++-------
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 2 files changed, 26 insertions(+), 9 deletions(-)
+
+commit 10f98813b929c98bce44a844dcc199ad7c5fc904
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Aug 25 00:13:07 2011 +0200
+
+    port to vala-0.14
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 4f5d62ff44610a50a0a28b9d659b832dce5e6b5a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Aug 24 10:54:55 2011 +0200
+
+    be explicit when apple can't contact daemon
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/fr.po                             |   18 +++++++++++-------
+ src/applets/gnome-shell/extension.js |   11 ++++++-----
+ 2 files changed, 17 insertions(+), 12 deletions(-)
+
+commit 07e547b02f75bb54329d3eaf099753bd624a52e7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 23 14:13:53 2011 +0200
+
+    update completions
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ completions/_gpaste |   11 +++++++----
+ completions/gpaste  |    2 +-
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+commit dec3243e4c9170481b28e622229c597d6df5d2a2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 23 14:13:46 2011 +0200
+
+    add gpaste file alias
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS            |    2 +-
+ src/gpaste.vala |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+commit f9badf3b04cf97d8738404221a0fe36db47b8f40
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 23 12:47:20 2011 +0200
+
+    oops
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste.vala |   22 ++++++----------------
+ 1 files changed, 6 insertions(+), 16 deletions(-)
+
+commit 9a7e63b1b27c19b03035c011370200f3b20b31e4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 23 12:42:54 2011 +0200
+
+    add gpaste --version
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/fr.po        |   18 +++++++++---------
+ src/gpaste.vala |   22 +++++++++++++++++-----
+ 2 files changed, 26 insertions(+), 14 deletions(-)
+
+commit f5e83d3af9d277a655524948b7594fd9562d0cc4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 23 12:30:14 2011 +0200
+
+    Revert "Follow other gnome-shell extensions for naming"
+    
+    This reverts commit 5337c538a5a4f8d249b37a4079f9cc19b95ac859.
+    
+    Otherwise for now the applet isn't loaded ...
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 5751305b4d3571178f968ffa9ea94859ebc8742b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Aug 23 11:56:51 2011 +0200
+
+    autotools update
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ autogen.bash |    2 +-
+ configure.ac |    5 ++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+commit 5337c538a5a4f8d249b37a4079f9cc19b95ac859
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Aug 19 17:09:11 2011 +0200
+
+    Follow other gnome-shell extensions for naming
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit ce10b4d8d041311b62c649362f37aa46872b5198
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Aug 19 15:07:30 2011 +0200
+
+    update TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 3ef915f23101f676063e3d2e0dcc725a9e22a80a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Aug 19 14:54:09 2011 +0200
+
+    simplify history loading
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+commit 4c2e904867d477f4f019e2baba661b4ef48d7fa5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jul 28 10:35:19 2011 +0300
+
+    gnome-shell bump
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 2fece7f109d5b79b379b31879d2a2a08e219d919
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jul 14 01:35:35 2011 +0200
+
+    tweak zsh completion
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ completions/_gpaste |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit cd5fd5caf9bdb380f6c6d5d7c1e6b914b7f14cd4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jul 14 01:03:07 2011 +0200
+
+    update french translation
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/fr.po |   34 ++++++++++++++++++++++++----------
+ 1 files changed, 24 insertions(+), 10 deletions(-)
+
+commit 9e5438f6de3d19bc947702d4a131fb1e4ab86d0d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jul 14 01:00:49 2011 +0200
+
+    add gpaste -f/--file
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                |    5 +++++
+ completions/_gpaste |    2 ++
+ completions/gpaste  |    2 +-
+ data/gpaste.pod     |    4 ++++
+ src/gpaste.vala     |   34 +++++++++++++++++++++++++---------
+ 5 files changed, 37 insertions(+), 10 deletions(-)
+
+commit 61987bcc0e418f372834867decc066a45ac78a29
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 12 17:21:14 2011 +0200
+
+    Don't use GETTEXT macros, intltool is autosufficiant
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+commit 93fb36a4648b2772e69329fed271216c68adc41c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jul 10 18:08:48 2011 +0200
+
+    update README
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ README |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+commit 50d3b75c1185f2f9c64f0a6b975b62c95c15655f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jul 10 18:07:31 2011 +0200
+
+    fix release date in NEWS
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 598ad816c1104028dfe562d6f85db44ab856c870
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jul 10 00:37:15 2011 +0200
+
+    post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 209cd7588eba814cfab8ec4f24443b72a0e1874a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jul 10 00:34:18 2011 +0200
+
+    Release 1.2
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+commit 20be27abdbc5c51ce53b839aacc3fd43326bddc6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jul 10 00:32:59 2011 +0200
+
+    Really restore tracking state at startup
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/settings.vala |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 240db3268ccd0f177fc3df8f216c095b65c7804e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 14:54:39 2011 +0200
+
+    don't run configure in autogen.bash
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ autogen.bash |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+commit 87ec0c11b7b9874246f87a42fbd58546bd6526cd
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 14:46:22 2011 +0200
+
+    switch from glib gettext to native one
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+commit 7aac5f3bc29341cf5f2850398c8c85d78f21f922
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 14:33:04 2011 +0200
+
+    switch to automake 1.11
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 8c21f3f69847d1f57b2177972d473e93dd763ee6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 11:06:27 2011 +0200
+
+    Post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit e87e14bdaee741abbd2dbf9199c7e3bbced8d600
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 11:05:45 2011 +0200
+
+    Release 1.1
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS     |    8 +++++++
+ po/fr.po |   68 +++++++++++++++++++++++++++++++-------------------------------
+ 2 files changed, 42 insertions(+), 34 deletions(-)
+
+commit 5ef24bd0dae2f7aacd83f267c30bfa0c67efd29b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 11:01:40 2011 +0200
+
+    install dconf schema at /org/gnome/GPaste instead of /apps/GPaste
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/org.gnome.GPaste.gschema.xml.in.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 591d29bdd26993e4af56c48a20c6d1fb8376f27c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 11:00:27 2011 +0200
+
+    update TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+commit 4d9cf0ec0ac44d6c40d5521f8b550f0fbdfa400a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 10:59:28 2011 +0200
+
+    signals don't have an out signature
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    4 ++--
+ src/gpasted/gpasted.vala             |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+commit 794c48b9f4212dbd214316145de031b24a5f9bd6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 10:48:51 2011 +0200
+
+    Signals cleanup
+    
+    - Launch and Quit DBus method are now Track(bool)
+    - Start and Exit DBus signals are now Tracking(bool)
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js    |   24 ++++++++----------------
+ src/applets/standard/gpaste-applet.vala |   10 ++++------
+ src/gpaste.vala                         |   10 ++++------
+ src/gpasted/gpasted.vala                |   31 +++++++------------------------
+ src/gpasted/settings.vala               |   11 ++---------
+ 5 files changed, 25 insertions(+), 61 deletions(-)
+
+commit d0fa2a1141d30d667bf3f0cabe44c4fbf0b82b50
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 10:22:58 2011 +0200
+
+    disable legacy applet by default
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 8ba54bd14364704c2daac57db7e3cf674c9e930f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 10:21:07 2011 +0200
+
+    update TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+commit 15f490e1b6e061dc5ec2c7ec8fe6502b1b896c1b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 00:38:12 2011 +0200
+
+    update french translation
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ po/fr.po |   52 ++++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 32 insertions(+), 20 deletions(-)
+
+commit 567d427e3c8e816b70b0093caecae5ec33cbe6b5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 00:35:40 2011 +0200
+
+    emit signal when tracking/untracking
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala  |    9 ++++++++-
+ src/gpasted/settings.vala |   10 ++++++++--
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+commit 6713ba53d2192f90843e136b8f2f85aec8dc5acb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 00:31:28 2011 +0200
+
+    update TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+commit dd2c7c19742b7639f86228473ab883f06bc747e0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 00:29:16 2011 +0200
+
+    gpaste-settings: do add the button for (un)tracking
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste-settings/gpaste-settings.vala |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit faa9e37c114e3a0b6c49dc11d11c32bbb160f46b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 00:21:39 2011 +0200
+
+    save cipboard tracking state in dconf
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala  |   13 +++++++++----
+ src/gpasted/settings.vala |   18 ++++++++++++++++++
+ 2 files changed, 27 insertions(+), 4 deletions(-)
+
+commit 82fe556905f0a1ea086768891ee726b1524e57c4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 00:12:37 2011 +0200
+
+    gpaste-settings: track all dconf changes
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste-settings/gpaste-settings.vala |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+commit 3a39a37db7f12a0176f834f6ac1b05e2239fe052
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jul 9 00:10:41 2011 +0200
+
+    prepare saving of clipboard tracking state
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ data/org.gnome.GPaste.gschema.xml.in.in  |    8 ++++++++
+ src/gpaste-settings/gpaste-settings.vala |   27 +++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+), 0 deletions(-)
+
+commit 60e91994f45623eb1e79251bb02e6ca235dedc62
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Jul 8 21:21:35 2011 +0200
+
+    gnome-shell applet: don't force the daemon to track changes
+    
+    We were not able to set the switch state to the daemon tracking state
+    at startup, so we forced it to track (and it still displayed off ...)
+    This was actually caused by a regression in gnome-shell
+    https://bugzilla.gnome.org/show_bug.cgi?id=654267
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+commit fa61a2b8cbd1d71e87c5d2a8911b462312ff942a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:49:31 2011 +0200
+
+    Post release version bump
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 55127c8204407fbb45acf1b72fe5449159918a03
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:48:05 2011 +0200
+
+    Release 1.0
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS     |    2 +-
+ po/fr.po |   58 +++++++++++++++++++++++++++++-----------------------------
+ 2 files changed, 30 insertions(+), 30 deletions(-)
+
+commit dca51120524c439ee8b254f9fb3ce90b71d955d7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:47:18 2011 +0200
+
+    gnome-shell applet: disable active checking for now (not really used anyway)
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 5a377fd15fe0ceb7f806027d9b84a623459ab654
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:40:28 2011 +0200
+
+    typso
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 62c7314257e920f0e8b2ef49547db85e9e254b62
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:28:34 2011 +0200
+
+    update TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 15ae9c845c77aa216306798c49d6ca4656491fd1
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:18:27 2011 +0200
+
+    make a first DBus call earlier to initialize
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit f7a51c78815e7d1b48e4ac82782bb2d57004e2ff
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:07:03 2011 +0200
+
+    standard applet: missing DBus method
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/standard/gpaste-applet.vala |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit 22bf393057e18b46a84a2093c424378972606a75
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:05:54 2011 +0200
+
+    TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 277ef9b7a312da640748e023ea77f4fc482114b3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 10:05:07 2011 +0200
+
+    standard applet: tiny fix
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/standard/gpaste-applet.vala |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit 68e2a7f787d147f891028620a8d6eacb12d30bc0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jul 5 09:52:41 2011 +0200
+
+    gnome-shell applet: create killSwitch earlier
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/extension.js |   35 ++++++++++++++++++++++++++++++++-
+ 1 files changed, 33 insertions(+), 2 deletions(-)
+
+commit 49782fa1ff28db9697d6314d5fba7454c5b44e19
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jul 3 15:02:46 2011 +0200
+
+    be compatible with gnome-shell git master
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit bfafb3567ee0e3d8295f0448ca2c3107bed20e0c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 18:47:16 2011 +0200
+
+    Adding TODO
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ TODO |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+commit bd223303b728a5b460552ee692c3900e24d04e44
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 18:41:34 2011 +0200
+
+    Missing headings
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpaste-settings/gpaste-settings.vala |   32 ++++++++++++++++++++++++++++++
+ src/gpasted/settings.vala                |   32 ++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+), 0 deletions(-)
+
+commit f4cde5f296c97866878a435f1ad02105ca83a080
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 18:39:00 2011 +0200
+
+    retab
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/applets/standard/gpaste-applet.vala |   44 +++++++++++++++---------------
+ src/gpaste.vala                         |   44 +++++++++++++++---------------
+ src/gpasted/clipboard.vala              |   44 +++++++++++++++---------------
+ src/gpasted/gpasted.vala                |   44 +++++++++++++++---------------
+ src/gpasted/history.vala                |   44 +++++++++++++++---------------
+ 5 files changed, 110 insertions(+), 110 deletions(-)
+
+commit 3343ed45f80813beb1812b3935720fca0fc8f845
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 18:27:52 2011 +0200
+
+    leftover
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+commit dc0281d3e4283f862f4489d78fd0b6adac97c2ed
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 18:20:30 2011 +0200
+
+    little refactor
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/clipboard.vala |    1 +
+ src/gpasted/gpasted.vala   |    1 -
+ src/gpasted/history.vala   |    1 -
+ 3 files changed, 1 insertions(+), 2 deletions(-)
+
+commit 11af90485b7fcb93fc023e90f9c26fc5862854a5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 18:09:11 2011 +0200
+
+    little simplification
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/history.vala |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
+
+commit 19a7cd3ae30ae4d86c9ad8514491651ae971e016
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 18:06:52 2011 +0200
+
+    gpasted: Simplify Settings handling
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                       |    1 +
+ src/gpasted/clipboard.vala |   17 ++---------------
+ src/gpasted/history.vala   |   16 +++-------------
+ src/gpasted/settings.vala  |   35 +++++++++++++++++++++++++++++++----
+ 4 files changed, 37 insertions(+), 32 deletions(-)
+
+commit 56bb28ab2117ccbda1672aa24b3333128cf54bf6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jun 30 17:48:56 2011 +0200
+
+    gpasted: History.changed is not needed, use the DBus signal
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS                     |    1 +
+ src/gpasted/history.vala |   14 ++++++--------
+ 2 files changed, 7 insertions(+), 8 deletions(-)
+
+commit 1520d2a999352140b6c7a06dd1bdd9791c64b047
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:48:17 2011 +0200
+
+    small autotools fixes
+
+ .gitignore   |    2 +-
+ Makefile.am  |    4 ++--
+ configure.ac |    3 ++-
+ 3 files changed, 5 insertions(+), 4 deletions(-)
+
+commit 497093ddbc1f7ec3ced17ca2096707143c77b0df
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:46:54 2011 +0200
+
+    update gitignore
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ .gitignore |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 0dfe52705859bc7aa8c952850315150fb6db9cc0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:46:30 2011 +0200
+
+    autogenerate ChangeLog
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ ChangeLog   |    4 ++++
+ Makefile.am |   15 +++++++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
+
+commit f51cbcefcf29d9eb80cff87ba48ee85c31b915e6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:40:29 2011 +0200
+
+    start writing 1.0 NEWS
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ NEWS |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+commit d36055867766a064fd88101fe1efac08e4b45bfb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:40:15 2011 +0200
+
+    add AUTHORS
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ AUTHORS |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit c7d1e513bac7f25ff5fb815291e49c5c366c23ff
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:36:19 2011 +0200
+
+    switch to xz
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit a77bc9cb0cc367376cb84d90cbd54ee94b6f28bd
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:35:21 2011 +0200
+
+    update gitignore
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ .gitignore |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit b1c8cca9c7d5a63705fa75927860612f57c876a6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jun 29 21:34:37 2011 +0200
+
+    remove debug output
+    
+    Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+
+ src/gpasted/gpasted.vala |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+commit 17dd47ad36e76e2781f0d400b4c5c14cb85a2931
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Mar 29 14:26:24 2011 +0200
+
+    release gnome-shell
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1222eb4786cf60c06431553e08253cc9a1e3b8ad
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Mar 23 12:04:22 2011 +0100
+
+    shell released
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1010453ea810219d13597fe22159e7a205ef1ff0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Mar 12 13:42:41 2011 +0100
+
+    fix warning
+
+ src/gpasted/history.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit c497e3a531ad7a6e67d7030c22b336fa09730c04
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Mar 8 12:22:48 2011 +0100
+
+    bump gnme-shell compatibility
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 3ea3627f854f4cc7ace0be544db3fb63ff07ade9
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Mar 7 10:24:59 2011 +0100
+
+    fill history later
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1dced7d86ee6989ee11bcb4ae01ab11562aa30b5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Mar 6 13:54:47 2011 +0100
+
+    little fix for empty history
+
+ src/applets/gnome-shell/extension.js |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit b7e4c7ba24386dc3945125ba80e5391784254308
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Mar 2 17:31:20 2011 +0100
+
+    silence warning
+
+ src/applets/gnome-shell/extension.js |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit f17edd8da67ddf6829723a7b9428c2c517a412db
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Mar 2 01:29:15 2011 +0100
+
+    rework menu building
+
+ src/applets/gnome-shell/extension.js |   74 +++++++++++++++++-----------------
+ 1 files changed, 37 insertions(+), 37 deletions(-)
+
+commit c6802ec551f0dc4890bfe2f75d31bb0b944de5c9
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Mar 2 01:01:00 2011 +0100
+
+    tmp fix bold issue (thx to fmuellner)
+
+ src/applets/gnome-shell/extension.js   |    3 ++-
+ src/applets/gnome-shell/stylesheet.css |    6 +-----
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+
+commit 0a3ba1265adc0d136cec30c6cb55f21deb24401e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Mar 1 22:52:08 2011 +0100
+
+    don't close menu when deleting
+
+ src/applets/gnome-shell/extension.js |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+commit 3d699cbd5a5aea6867aad6ded6dc9cf3d31d8f14
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Mar 1 22:50:59 2011 +0100
+
+    only update switch state if we get an answer
+
+ src/applets/gnome-shell/extension.js |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit 98a0ad5d45a47100fbb668446f36f6d09e968cfb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 17:05:48 2011 +0100
+
+    post release version bump
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 0a7a0bd583d39a5459cc339c8997bd8b105a7281
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 17:05:22 2011 +0100
+
+    Fix silly leftover + re-release 0.99 - 1.0 RC
+
+ configure.ac                         |    2 +-
+ src/applets/gnome-shell/extension.js |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 48d52a629a11ee5782e06709fe16865133d8352e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 16:59:13 2011 +0100
+
+    post release version bump
+
+ configure.ac |    2 +-
+ po/fr.po     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 07b833c4a9cc21186cbdb4206f8a3dd1481b7f95
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 16:56:03 2011 +0100
+
+    Release 0.99 (1.0 RC)
+
+ NEWS         |   18 ++++++++++++++++++
+ configure.ac |    2 +-
+ po/fr.po     |   24 ++++++++----------------
+ 3 files changed, 27 insertions(+), 17 deletions(-)
+
+commit aacb623487720f3fdbf251d9e246d5fd1894cc94
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 16:54:50 2011 +0100
+
+    fix man
+
+ data/gpaste.pod |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit cf1fb56f0166e08e72cda51a16f952383f41a059
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 16:54:03 2011 +0100
+
+    don't print applet stuff when applet is disabled
+
+ Makefile.am     |    2 ++
+ src/gpaste.vala |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
+
+commit 16e9313bd7cf4e913dcb04148d61151d10d5c00c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 16:40:24 2011 +0100
+
+    tweaks
+
+ data/org.gnome.GPaste.gschema.xml.in.in  |    4 +-
+ po/fr.po                                 |   36 ++++++++++++++++++-----------
+ src/gpaste-settings/gpaste-settings.vala |    2 +-
+ 3 files changed, 25 insertions(+), 17 deletions(-)
+
+commit f80de999ade948a97e2e4125d1a76ebb393c9487
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 16:33:52 2011 +0100
+
+    update strings
+
+ po/POTFILES.in  |    2 +-
+ po/fr.po        |   43 ++++++++++++++++++++++++++++---------------
+ src/gpaste.vala |    3 ++-
+ 3 files changed, 31 insertions(+), 17 deletions(-)
+
+commit 2735e1a7733321909be0b9a94d15811b2d472872
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 28 16:27:13 2011 +0100
+
+    use pkglibexecdir (thx Sardem FF7)
+
+ Makefile.am                                        |   26 +++++++------------
+ data/gpaste-applet.desktop.in.in                   |    2 +-
+ data/org.gnome.GPaste.service.in                   |    2 +-
+ .../gnome-shell/{extension.js.in => extension.js}  |    3 ++
+ src/applets/gnome-shell/metadata.json.in           |    2 +-
+ src/applets/standard/gpaste-applet.vala            |    2 +-
+ src/gpaste.vala                                    |    4 +-
+ vapi/config.vapi                                   |    2 +-
+ 8 files changed, 20 insertions(+), 23 deletions(-)
+
+commit 3a2ab3b37c37374f8f68dfd79b10d0f199576dce
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 24 23:55:59 2011 +0100
+
+    fix distcheck
+
+ Makefile.am |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+commit 2093ff2499b40a11d0074663eede9d03e4a79c10
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 24 20:34:50 2011 +0100
+
+    quit -> stop
+
+ data/gpaste.pod                         |    2 +-
+ src/applets/gnome-shell/extension.js.in |    4 ++--
+ src/applets/standard/gpaste-applet.vala |    6 +++---
+ src/gpaste.vala                         |   10 ++++++----
+ src/gpasted/gpasted.vala                |    4 ++--
+ src/gpasted/history.vala                |    4 +++-
+ 6 files changed, 17 insertions(+), 13 deletions(-)
+
+commit c34b7ba7a3b863738b0465df3572d84e7304125f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 19:15:45 2011 +0100
+
+    cleaner css
+
+ src/applets/gnome-shell/extension.js.in |    6 ++----
+ src/applets/gnome-shell/stylesheet.css  |    4 ++--
+ 2 files changed, 4 insertions(+), 6 deletions(-)
+
+commit 5b0f61aac1e5bd202831d2851aa04bd5840765f5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 16:13:26 2011 +0100
+
+    get it translated
+
+ po/fr.po                                |    7 ++++---
+ src/applets/gnome-shell/extension.js.in |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+commit ac0c7708fa31a24486ee6fe0f59822ab5c9905e6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 15:40:38 2011 +0100
+
+    update french translation
+
+ po/fr.po |   40 ++++++++++++++++++++++------------------
+ 1 files changed, 22 insertions(+), 18 deletions(-)
+
+commit b5b5fa6266ac135753be138074e2a98259b1216f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 15:38:16 2011 +0100
+
+    try to override bold from :alternate
+
+ src/applets/gnome-shell/stylesheet.css |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 0e1b676fb0b9e06f3ea28e4b2fa05e87212e3aa7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 15:31:42 2011 +0100
+
+    typo
+
+ src/applets/gnome-shell/stylesheet.css |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit edbc41d488c46bda49a19fc4c9e0336c340133d1
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 15:26:28 2011 +0100
+
+    try to re-bold
+
+ Makefile.am                             |    3 +++
+ src/applets/gnome-shell/extension.js.in |   10 +++-------
+ src/applets/gnome-shell/stylesheet.css  |    8 ++++++++
+ 3 files changed, 14 insertions(+), 7 deletions(-)
+
+commit ed4f897e2b3ed8abf29e0e55ebae17fc5e6ea50e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 15:17:51 2011 +0100
+
+    try to fix initial switch state
+
+ src/applets/gnome-shell/extension.js.in |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit bbca2bd3689efc68c754a79cca54e0c438374142
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 13:22:44 2011 +0100
+
+    disable bolding for now
+
+ src/applets/gnome-shell/extension.js.in |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
+
+commit cac1f43b20b527b3e048417796f635a72e4a4f7d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 13:06:29 2011 +0100
+
+    fix scope
+
+ src/applets/gnome-shell/extension.js.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 99b963cf4d76bbb8c41d97b00fd5725863930d57
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 13:05:49 2011 +0100
+
+    bump gnome-shell requirement
+
+ src/applets/gnome-shell/metadata.json.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 1a27a2f4ee1c404872dbc171b23b7a7bd255fa01
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 23 13:00:39 2011 +0100
+
+    use new alternating menu item
+
+ src/applets/gnome-shell/extension.js.in |   18 +++++-------------
+ 1 files changed, 5 insertions(+), 13 deletions(-)
+
+commit 7d51de907d94a681414c366d4c07cbfe0165c431
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 21 23:32:20 2011 +0100
+
+    typso
+
+ src/applets/gnome-shell/extension.js.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit f189ac759b79418ccac7ed349072db1968f5e472
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 21 23:27:41 2011 +0100
+
+    fill history at starup
+
+ src/applets/gnome-shell/extension.js.in |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 169b4aecfcf6c6c9a919be6f92744dc8cf7e75bb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 21 23:26:54 2011 +0100
+
+    only empty history once we got an answer
+
+ src/applets/gnome-shell/extension.js.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit ca7de4543d8c32c07c7b02fed23d612428257606
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 21 21:42:40 2011 +0100
+
+    use new submenus
+
+ src/applets/gnome-shell/extension.js.in |  109 ++++++++++++++----------------
+ 1 files changed, 51 insertions(+), 58 deletions(-)
+
+commit 7a4c19e45fb18829942fa56347248fd3698c1e1b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 21 18:35:11 2011 +0100
+
+    ok, we actually do want that class
+
+ src/applets/gnome-shell/extension.js.in |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit f94e4c15312ae31469cfb5e905f8d84411e54d42
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 21 18:32:13 2011 +0100
+
+    don't add useless css class
+
+ src/applets/gnome-shell/extension.js.in |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+commit 8f8cce99c4b7800daafa5e3143c23294184a8cc8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Mon Feb 21 18:18:48 2011 +0100
+
+    adapt to latest gnome-shell changes
+
+ src/applets/gnome-shell/extension.js.in |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit df9e453c4a019b3bdd52c87bcab25b1ebc10ac41
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Feb 20 04:05:12 2011 +0100
+
+    refactor
+
+ src/applets/standard/gpaste-applet.vala |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
+
+commit 9dd36522a5da4f6190090b4678a3b55b9bc7213c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 14:06:29 2011 +0100
+
+    escape markup before bolding it
+
+ src/applets/gnome-shell/extension.js.in |    3 ++-
+ src/applets/standard/gpaste-applet.vala |    6 +++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+commit 99cedf39dfc473cd2957a0767c420708bb39c03d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 13:08:25 2011 +0100
+
+    display selected item bold
+
+ src/applets/gnome-shell/extension.js.in |    5 ++++-
+ src/applets/standard/gpaste-applet.vala |    6 ++++--
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+commit 8b940424003291e746be37db483a8db311412a10
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 12:52:26 2011 +0100
+
+    no need to be active to explicitely add
+
+ src/gpasted/gpasted.vala |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+commit 7903598cf600c5f12003fe4fe8a890047cf6dc5a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 12:25:08 2011 +0100
+
+    not used anymore
+
+ po/fr.po |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+commit 6e43bc1d2960982e5198a98e9a1e16055ade240d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 12:23:52 2011 +0100
+
+    Don't really quit, just stop tracking
+
+ po/fr.po                                |   26 +++++++++++--------
+ src/applets/gnome-shell/extension.js.in |   42 ++++++++++++++-----------------
+ src/gpasted/clipboard.vala              |    2 +
+ src/gpasted/gpasted.vala                |   25 ++++++++++--------
+ 4 files changed, 50 insertions(+), 45 deletions(-)
+
+commit 21749b7549ed8ff217176306ba64b5e9037465a2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 12:07:45 2011 +0100
+
+    don't rebuild each time
+
+ Makefile.am |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+commit b43d6b048d2641bed0279658141cb3fce5dd8893
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 11:03:52 2011 +0100
+
+    better menu handling
+
+ Makefile.am                             |    9 ++-
+ configure.ac                            |    1 -
+ src/applets/gnome-shell/extension.js.in |   94 +++++++++++++++++--------------
+ 3 files changed, 59 insertions(+), 45 deletions(-)
+
+commit 83cbb2837bdd9e6e68b6ca1361025a8f71a0b1f7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 18 10:44:47 2011 +0100
+
+    exec instead of spawn
+
+ src/gpaste.vala |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
+
+commit 4edd1881eb5c3e58ee38e5a801e97b7e43b77d56
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 19:06:30 2011 +0100
+
+    fix gettext domain name
+
+ src/applets/gnome-shell/extension.js.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit b02f9b5b3c22235f2f1c34313d9f64b063ee0d6c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 18:54:14 2011 +0100
+
+    fix distcheck
+
+ .gitignore                                         |    2 ++
+ Makefile.am                                        |   14 +++++++++++---
+ configure.ac                                       |    1 +
+ po/POTFILES.in                                     |    2 +-
+ po/POTFILES.skip                                   |    4 ++--
+ po/fr.po                                           |    9 ++++-----
+ .../gnome-shell/{extension.js => extension.js.in}  |    0
+ 7 files changed, 21 insertions(+), 11 deletions(-)
+
+commit e785e9c6be7ea522115fe7f92f6d7c107f12fc5c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 18:33:29 2011 +0100
+
+    missing arg
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 2a4349dcb5d64bc2f84db8855f5a971116f17b60
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 18:12:42 2011 +0100
+
+    fix gnome-shell extension i18n
+
+ Makefile.am                                        |    5 ++++-
+ src/applets/gnome-shell/extension.js               |   14 ++++++++------
+ .../{metadata.json => metadata.json.in}            |    3 ++-
+ 3 files changed, 14 insertions(+), 8 deletions(-)
+
+commit 4be4bef7ed6a661dfa5eb5aec21589bc145d571b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 17:55:16 2011 +0100
+
+    enable gnome-shell extension by default
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 3a6c014c25969b8a1459d2556cc093ee2f47e104
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 17:53:25 2011 +0100
+
+    update french translation
+
+ po/fr.po |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+commit 0686d56196ad4a32645309b7b29ac89eb66531c0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 17:46:32 2011 +0100
+
+    update POTFILES.in
+
+ po/POTFILES.in |    3 +-
+ po/fr.po       |   69 +++++++++++++++++++++++++++----------------------------
+ 2 files changed, 36 insertions(+), 36 deletions(-)
+
+commit 8cab9cea2ca4d68a4e73e9b57ba054cb9e9e07ac
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 14:28:17 2011 +0100
+
+    buggy
+
+ src/applets/gnome-shell/extension.js |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 06a91ce723689e2321255839aa654910c1a51681
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 14:22:46 2011 +0100
+
+    add a switch to start/shutdown the daemon in the native applet
+
+ src/applets/gnome-shell/extension.js |   57 ++++++++++++++++++++++++---------
+ 1 files changed, 41 insertions(+), 16 deletions(-)
+
+commit dd01075aa565c4c27e93f6da927feeca7f66892c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 14:22:24 2011 +0100
+
+    add a luanch method to throw the start signal
+
+ src/gpaste.vala          |    6 +++---
+ src/gpasted/gpasted.vala |    8 ++++++--
+ 2 files changed, 9 insertions(+), 5 deletions(-)
+
+commit 5ee4b8170d87302ff89483da429e85d3b901d571
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 13:23:38 2011 +0100
+
+    better async exit
+
+ src/gpasted/gpasted.vala |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit 9ac0c162e1b5089675010927352b16096aa78099
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 12:56:27 2011 +0100
+
+    be a bit less crazy
+
+ src/applets/gnome-shell/extension.js |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit b9e187bd18f0d77950936dbef47f5740fcc750b7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 12:46:49 2011 +0100
+
+    notify on startup
+
+ src/gpasted/gpasted.vala |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 54c126e082bb0c839737e4c956b0d76f6879f617
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 12:46:07 2011 +0100
+
+    pretty icon for deleting
+
+ src/applets/gnome-shell/extension.js |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit 4cbe78b9a9382d31694737a94cbe17cc0c28d585
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 11:45:30 2011 +0100
+
+    make it work
+
+ src/applets/gnome-shell/extension.js |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+commit c6dcfc6d7791957dbd4bbd9ce4794d88f24ff0b2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 11:27:50 2011 +0100
+
+    doesn't work yet
+
+ src/applets/gnome-shell/extension.js |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+commit 426a2e6c47b481af67371f57c01dd3ff72c0e193
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 11:23:03 2011 +0100
+
+    cleanly handle gnome-shell API
+
+ README                               |    4 +---
+ src/applets/gnome-shell/extension.js |    3 +++
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+commit 258c4ee1aa86256b8b2c5ff5d62a860dc797d780
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 17 09:18:42 2011 +0100
+
+    not needed
+
+ src/applets/gnome-shell/extension.js |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+commit 9566404523a078f3605b58055ef51cf38630b91d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 23:16:35 2011 +0100
+
+    fix multiline display
+
+ src/applets/gnome-shell/extension.js |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit ba288328ddc2214e18e64de43deb08ae14bd9e33
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 23:08:32 2011 +0100
+
+    make the gnome-shell extension work
+
+ README                               |    4 ++++
+ src/applets/gnome-shell/extension.js |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+commit faa8a27007a7964cb3f874f91246d4249f9237b6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 22:33:43 2011 +0100
+
+    simplify
+
+ src/applets/gnome-shell/extension.js |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
+
+commit 0b9306d2edfc1b702889835d81654ba3f21714c1
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 22:25:10 2011 +0100
+
+    change install dir and fix metadata
+
+ Makefile.am                           |    2 +-
+ src/applets/gnome-shell/metadata.json |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 7d47970d824cd0d28f42810eec6e9ff519bf5484
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 22:21:10 2011 +0100
+
+    fix dist
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit c01cae5d8cfdd0d259871555f5fbf8162dc6433e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 22:08:45 2011 +0100
+
+    try to fix gnome-shell extension
+
+ src/applets/gnome-shell/extension.js |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 260def60bcb76312e19d6ea47e340787e3cfadac
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 22:06:45 2011 +0100
+
+    Fix detection
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 2615e95e122a663e97310e76aa923a0c20fa7d03
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 21:59:36 2011 +0100
+
+    initial experimental gnome-shell extension
+
+ Makefile.am                           |   12 ++++
+ configure.ac                          |    3 +
+ src/applets/gnome-shell/extension.js  |  113 +++++++++++++++++++++++++++++++++
+ src/applets/gnome-shell/metadata.json |    1 +
+ 4 files changed, 129 insertions(+), 0 deletions(-)
+
+commit e063b295d6b9af96cf65d8fddffb27ed0809d747
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 21:16:35 2011 +0100
+
+    start preparing for native gnome-shell applet
+
+ Makefile.am                                        |    2 +-
+ po/POTFILES.in                                     |    2 +-
+ .../standard}/gpaste-applet.vala                   |    0
+ 3 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 0fca243b3d1f6c83b6032c68efe45d18b5016208
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 21:08:52 2011 +0100
+
+    make start a signal
+
+ src/gpaste.vala          |    4 ++--
+ src/gpasted/gpasted.vala |    8 +++-----
+ 2 files changed, 5 insertions(+), 7 deletions(-)
+
+commit 624a676f450cdbdff3c2c778d654dc52fe667e8a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 21:05:15 2011 +0100
+
+    silence warning
+
+ src/gpaste.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 3811d7af6ab57c2603d7bd6f56f1bd081316af08
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 16 21:00:52 2011 +0100
+
+    Respond before the daemon exit and introduce "exit" signal
+
+ src/gpasted/gpasted.vala |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+commit f49dfc46c982ebf511db787dfaa5d8cda636e2d9
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 15 23:12:32 2011 +0100
+
+    yet another alias
+
+ completions/_gpaste |    1 +
+ completions/gpaste  |    2 +-
+ src/gpaste.vala     |    1 +
+ 3 files changed, 3 insertions(+), 1 deletions(-)
+
+commit 9f1588420f1c0add54ab5093a2dead0da01861d2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 15 10:38:56 2011 +0100
+
+    typso
+
+ src/gpaste.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit d9824ebbb4dc0d34022267778fbf331bd0070e91
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 15 10:36:33 2011 +0100
+
+    forgot to rename that
+
+ .gitignore                                         |    4 ++--
+ .../gpaste-settings.vala}                          |    0
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit f3c86b3ca5af62e6b03ba1e40fa1e7e7d6abb58e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 15 10:33:53 2011 +0100
+
+    gpaste daemon
+
+ completions/_gpaste      |    1 +
+ completions/gpaste       |    2 +-
+ data/gpaste.pod          |    4 ++++
+ src/gpaste.vala          |    9 ++++++---
+ src/gpasted/gpasted.vala |    5 +++++
+ 5 files changed, 17 insertions(+), 4 deletions(-)
+
+commit a23f1442f383c3f973af8bc5ccc2e0dc831c6431
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 15 10:27:11 2011 +0100
+
+    rename gpaste-{preferences,settings}
+
+ Makefile.am                                    |   14 ++--
+ README                                         |    2 +-
+ completions/_gpaste                            |    5 +-
+ completions/gpaste                             |    2 +-
+ data/gpaste.pod                                |    4 +-
+ po/fr.po                                       |   77 ++++++++++++------------
+ src/applet/gpaste-applet.vala                  |   10 ++--
+ src/gpaste-preferences/gpaste-preferences.vala |    6 +-
+ src/gpaste.vala                                |    7 +-
+ 9 files changed, 66 insertions(+), 61 deletions(-)
+
+commit c183feca9daeef730115be4ddde35f671a3978cf
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Feb 13 21:16:05 2011 +0100
+
+    be even more specific
+
+ src/applet/gpaste-applet.vala |    6 +++---
+ src/gpaste.vala               |    4 ++--
+ src/gpasted/gpasted.vala      |    6 +++---
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+commit 101070254b5f4be888a10b4c939adf1daece3c86
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Feb 13 20:52:43 2011 +0100
+
+    explicit DBus API (breakages will occur)
+
+ src/applet/gpaste-applet.vala |    9 +++++++--
+ src/gpaste.vala               |    9 +++++++--
+ src/gpasted/gpasted.vala      |   16 +++++++++++-----
+ 3 files changed, 25 insertions(+), 9 deletions(-)
+
+commit 591a217f7d9525ced5a80341e2f3e9276f578751
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 12:15:21 2011 +0100
+
+    fix epicfail
+
+ src/applet/gpaste-applet.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 63a30d8cdc27411cb390f587a2035b19c9556569
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 12:10:48 2011 +0100
+
+    leftover
+
+ src/applet/gpaste-applet.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit f91afa82c6639be7b14ecd2d09db89994ec79a9d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 12:04:47 2011 +0100
+
+    Fix + uint cleanups
+
+ src/applet/gpaste-applet.vala                  |   16 ++++++++--------
+ src/gpaste-preferences/gpaste-preferences.vala |   20 ++++++++++----------
+ src/gpaste.vala                                |    4 ++--
+ src/gpasted/gpasted.vala                       |    4 ++--
+ src/gpasted/history.vala                       |   10 +++++-----
+ src/gpasted/settings.vala                      |    4 ++--
+ 6 files changed, 29 insertions(+), 29 deletions(-)
+
+commit d611c3c5a956cf96fafa71d8cdd1e66715583ebd
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 11:28:10 2011 +0100
+
+    more code cleanup
+
+ src/applet/gpaste-applet.vala                  |   20 +++++----
+ src/gpaste-preferences/gpaste-preferences.vala |   52 ++++++++++++-----------
+ src/gpaste.vala                                |    2 +-
+ 3 files changed, 40 insertions(+), 34 deletions(-)
+
+commit 89c6eabc621cbf47bb874a079c3efdbc7ab43b79
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 11:23:46 2011 +0100
+
+    make values in schema unsigned
+
+ data/org.gnome.GPaste.gschema.xml.in.in |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit ec8e533ed78bc476c69a080195e0f24c91161011
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 10:21:59 2011 +0100
+
+    unify strings
+
+ po/fr.po                      |   43 ++++++++++++++++++----------------------
+ src/applet/gpaste-applet.vala |    2 +-
+ 2 files changed, 20 insertions(+), 25 deletions(-)
+
+commit b0b32d0d09bb0657711461d741412652c4e279a5
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 10:19:28 2011 +0100
+
+    fix gpaste-preferences
+
+ src/gpaste-preferences/gpaste-preferences.vala |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+commit 3aa5c729c48ea44235d2fc0375e37dbab6f20c89
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 12 10:14:58 2011 +0100
+
+    doesn't work
+
+ src/gpaste-preferences/gpaste-preferences.vala |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+commit 2561cbeca7d5c6ed07250e8c772dccd94c2ed497
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 11 16:06:33 2011 +0100
+
+    code cleanup
+
+ Makefile.am                                    |    2 +-
+ po/fr.po                                       |   79 +++++++++--------
+ src/applet/gpaste-applet.vala                  |   97 +++++++++++----------
+ src/gpaste-preferences/gpaste-preferences.vala |  110 ++++++++++++------------
+ src/gpaste.vala                                |   26 ++++--
+ src/gpasted/clipboard.vala                     |   53 ++++++------
+ src/gpasted/gpasted.vala                       |   37 +++++----
+ src/gpasted/history.vala                       |  100 +++++++++++----------
+ src/gpasted/settings.vala                      |   33 +++++---
+ 9 files changed, 285 insertions(+), 252 deletions(-)
+
+commit 6c35b5d72a6e12cff20bef3d4458ac2bfabaf423
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 11 13:35:47 2011 +0100
+
+    Fix previous commit
+
+ Makefile.am                      |   10 +++++-----
+ data/gpaste-applet.desktop.in.in |    2 +-
+ data/org.gnome.GPaste.service.in |    2 +-
+ src/applet/gpaste-applet.vala    |    2 +-
+ src/gpaste.vala                  |    4 ++--
+ vapi/config.vapi                 |    2 +-
+ 6 files changed, 11 insertions(+), 11 deletions(-)
+
+commit 3f0c939bcffda4f90aaba4e059d826426332d1df
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 11 13:31:59 2011 +0100
+
+    install libexec stuff into gpaste subdir
+
+ Makefile.am |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+commit 39f4688cced0b20728a034e5202f528a4fcad193
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 11 13:28:19 2011 +0100
+
+    depend on gtk+ 3.0.0
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 18a310425e76089c0af028dfcb74f820b0492f84
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 11 12:04:00 2011 +0100
+
+    namespaces refactor
+
+ src/applet/gpaste-applet.vala                  |  303 ++++++++++----------
+ src/gpaste-preferences/gpaste-preferences.vala |  353 ++++++++++++------------
+ src/gpaste.vala                                |  190 +++++++-------
+ src/gpasted/clipboard.vala                     |  161 ++++++------
+ src/gpasted/gpasted.vala                       |  151 +++++-----
+ src/gpasted/history.vala                       |  211 +++++++-------
+ src/gpasted/settings.vala                      |   45 ++--
+ 7 files changed, 718 insertions(+), 696 deletions(-)
+
+commit 003ff211c598e7022bce7cd912fade30eacdeb19
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 20:08:28 2011 +0100
+
+    really fix the startup segfault
+
+ src/gpasted/clipboard.vala |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit ea2171f1ee20118c3fce81d102e3f3036789366f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 19:31:02 2011 +0100
+
+    post release version bump
+
+ configure.ac |    2 +-
+ po/fr.po     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit f4b5c351f59f0abdcc22eacebf9276eae23b6848
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 19:27:47 2011 +0100
+
+    Release 0.9
+
+ Makefile.am |    2 +-
+ NEWS        |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 955dc522f0e5b7894420d2fac23a907b2a8e0f26
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 14:04:17 2011 +0100
+
+    Revert "rename bash completion"
+    
+    This reverts commit c0e82b4dc21f3fe17c24386e7016d010c6589684.
+
+ Makefile.am                       |    2 +-
+ completions/{gpaste.sh => gpaste} |    0
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+
+commit c0e82b4dc21f3fe17c24386e7016d010c6589684
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 11:05:19 2011 +0100
+
+    rename bash completion
+
+ Makefile.am                       |    2 +-
+ completions/{gpaste => gpaste.sh} |    0
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 28485ff72784e5fafdf7ef6191d75dd9da6c83c8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 11:04:23 2011 +0100
+
+    Makefile.am has not to be executable
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+commit 89734f94abd7f50cc83d8779f89d93f2d1ab23c7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 11:03:10 2011 +0100
+
+    remove useless and broken gpaste-preferences.desktop
+
+ Makefile.am                           |   14 --------------
+ data/gpaste-preferences.desktop.in.in |    9 ---------
+ po/POTFILES.in                        |    1 -
+ po/POTFILES.skip                      |    1 -
+ po/fr.po                              |    8 +-------
+ 5 files changed, 1 insertions(+), 32 deletions(-)
+
+commit 13da2bae4a2f2bc7cce4d4608f7410d0bcb5c4c7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Feb 5 00:39:02 2011 +0100
+
+    add manual
+
+ .gitignore      |    1 +
+ Makefile.am     |   10 +++++
+ NEWS            |    2 +-
+ configure.ac    |    3 ++
+ data/gpaste.pod |  105 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 120 insertions(+), 1 deletions(-)
+
+commit bbe8817e47268241625b877bcb7553fb5031dcbf
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 23:43:11 2011 +0100
+
+    install gpaste-preferences into libexec
+
+ Makefile.am                   |    7 +++----
+ NEWS                          |    3 ++-
+ src/applet/gpaste-applet.vala |    2 +-
+ src/gpaste.vala               |    2 +-
+ vapi/config.vapi              |    1 -
+ 5 files changed, 7 insertions(+), 8 deletions(-)
+
+commit b82fed2077a9cda3283f5c6e45ef26a4f2a9654e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 18:11:19 2011 +0100
+
+    add bash and zsh completions
+
+ .gitignore          |    1 +
+ Makefile.am         |    2 ++
+ completions/_gpaste |   14 ++++++++++++++
+ completions/gpaste  |   10 ++++++++++
+ 4 files changed, 27 insertions(+), 0 deletions(-)
+
+commit 4ac897c4d027d99962650f1aae4620e17095dd44
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 16:41:05 2011 +0100
+
+    BeMoreSprecific
+
+ po/fr.po                                       |   15 ++++++++-------
+ src/gpaste-preferences/gpaste-preferences.vala |    2 +-
+ 2 files changed, 9 insertions(+), 8 deletions(-)
+
+commit af5d4d4023c52034e4c225b03edac29953f71d0f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 16:39:51 2011 +0100
+
+    refresh history display when resizing display element size
+
+ src/applet/gpaste-applet.vala |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+commit 87f8336637d6c938c35d831908a40ad827b6b9ee
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 13:26:55 2011 +0100
+
+    prevent daemon from running twice
+
+ NEWS                     |    2 +-
+ src/gpasted/gpasted.vala |    5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+commit d7f7f92a6e9e582de033cd1ff12ae3c6ab5c6c63
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 01:34:51 2011 +0100
+
+    fix distcheck
+
+ Makefile.am      |    4 ++--
+ TODO             |    5 -----
+ po/POTFILES.in   |    2 +-
+ po/POTFILES.skip |   10 ++++++++--
+ po/fr.po         |   27 +++++++++++++--------------
+ 5 files changed, 24 insertions(+), 24 deletions(-)
+
+commit 7651a1f08e2caa2f84c5fce8e2ac2af3f647c3ae
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 01:33:29 2011 +0100
+
+    fix gschema
+
+ .gitignore                                         |    1 +
+ Makefile.am                                        |    3 ++-
+ TODO                                               |    5 +++++
+ configure.ac                                       |    1 +
+ ...a.xml.in => org.gnome.GPaste.gschema.xml.in.in} |    2 +-
+ 5 files changed, 10 insertions(+), 2 deletions(-)
+
+commit 616a740afc9b4abbc0aa871f8beb40e41b77f471
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Fri Feb 4 01:15:58 2011 +0100
+
+    avoid stupid hack
+
+ NEWS                     |    1 +
+ src/gpasted/history.vala |   19 +++----------------
+ 2 files changed, 4 insertions(+), 16 deletions(-)
+
+commit c5adf789166a3c2cb0901d3ca6fe8ca4e2545e55
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 18:32:37 2011 +0100
+
+    update french translation
+
+ NEWS           |    3 ++-
+ po/POTFILES.in |    2 +-
+ po/fr.po       |   42 ++++++++++++++++++++++++++----------------
+ 3 files changed, 29 insertions(+), 18 deletions(-)
+
+commit e4c4d869df98c92bc52242dc199db271c9870d1d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 18:29:56 2011 +0100
+
+    gpaste-applet must be running only once
+
+ src/applet/gpaste-applet.vala |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit 21a56d58795a04f5d9f27569b5f263b333e5ac3a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 18:20:00 2011 +0100
+
+    tmp fix
+
+ configure.ac    |    3 ---
+ src/gpaste.vala |    4 ----
+ 2 files changed, 0 insertions(+), 7 deletions(-)
+
+commit 73ac4cab6265ced92b4eacd9a61ca3741ec22885
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 18:16:38 2011 +0100
+
+    make applet optional
+
+ Makefile.am     |   32 ++++++++++++++++++++------------
+ configure.ac    |    6 ++++++
+ src/gpaste.vala |    4 ++++
+ 3 files changed, 30 insertions(+), 12 deletions(-)
+
+commit 240d5eb5c3053e080dab29a6a88563d410875d99
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 18:00:56 2011 +0100
+
+    add gpaste preferences alias
+
+ Makefile.am     |    1 +
+ NEWS            |    1 +
+ src/gpaste.vala |    9 +++++++++
+ 3 files changed, 11 insertions(+), 0 deletions(-)
+
+commit bb22fb29b7d2e897528e010fd906acc66d200522
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 17:56:13 2011 +0100
+
+    fix gpaste-applet.desktop
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit d9b5ddda508abce463237cf4b7bf925e435d95b4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 17:53:08 2011 +0100
+
+    securize schemas
+
+ Makefile.am                                        |    4 ++--
+ ...hema.xml.in => org.gnome.GPaste.gschema.xml.in} |    2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+commit cc58f9503270268cf44268d876edad03a0677133
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 17:24:20 2011 +0100
+
+    update french translation
+
+ po/POTFILES.in |    2 +-
+ po/fr.po       |   38 ++++++++++++++++++++++++--------------
+ 2 files changed, 25 insertions(+), 15 deletions(-)
+
+commit 1cce00a8cbc1767ce3e5baa099ecfc46aabfe551
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:54:21 2011 +0100
+
+    install gapste-applet into libexec
+
+ Makefile.am                      |    6 +++---
+ NEWS                             |    1 +
+ configure.ac                     |    1 +
+ data/gpaste-applet.desktop.in.in |    2 +-
+ src/gpaste.vala                  |    2 +-
+ vapi/config.vapi                 |    1 +
+ 6 files changed, 8 insertions(+), 5 deletions(-)
+
+commit 8ad450d4c5a184033a32ab30686c8cec77649e6f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:34:09 2011 +0100
+
+    fix build
+
+ Makefile.am |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 67aef46283bf3d718026580ebabb84c835bb6aa3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:33:33 2011 +0100
+
+    rename gschema file
+
+ Makefile.am                                        |    4 ++--
+ ...hema.xml.in => org.gnome.gpaste.gschema.xml.in} |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 6b57ef6c32c552ae9a6d32fb2adce8a77bc4a72c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:28:11 2011 +0100
+
+    add gpaste add alias
+
+ NEWS            |    1 +
+ src/gpaste.vala |    5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+commit 83d05511022a0afdf155029759ceb5d31bd44636
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:26:39 2011 +0100
+
+    add gpaste applet
+
+ NEWS            |    1 +
+ src/gpaste.vala |    7 +++++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+
+commit 8e44bc483707661021dd6e863b87cd0fa7eab5eb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:23:27 2011 +0100
+
+    Add gpaste version
+
+ NEWS            |    1 +
+ src/gpaste.vala |    4 ++++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
+
+commit 1f61a082c54d226a83203fb675529602ce8300d8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:14:06 2011 +0100
+
+    Better output for empty history
+
+ NEWS                          |    1 +
+ po/fr.po                      |   24 ++++++++++++++----------
+ src/applet/gpaste-applet.vala |    9 ++++++---
+ 3 files changed, 21 insertions(+), 13 deletions(-)
+
+commit 39a3c1e067c000d4bade6e6f61c092ecad083389
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 14:13:40 2011 +0100
+
+    Fix segfault
+    
+    At startup, we try to restore history[0] into the clipboard
+    if it's empty. Do not try to do that if history is empty too.
+
+ NEWS                       |    6 ++++++
+ src/gpasted/clipboard.vala |    6 ++++--
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+commit 0b4611cc20133ff028829744d13f58e0538764a2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 12:32:48 2011 +0100
+
+    post release version bump
+
+ configure.ac |    2 +-
+ po/fr.po     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 92c671d0b15dcdd60267d5f8fea7be6796647d0f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 12:31:23 2011 +0100
+
+    Release 0.8
+
+ NEWS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit facc4ebb22a4f31a4b29de14a615eb59c81e7930
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 10:29:02 2011 +0100
+
+    handle empty history
+
+ NEWS                          |    3 +++
+ src/applet/gpaste-applet.vala |    5 ++++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
+
+commit 9fb302722a7ebfc0628643428fc5b24bd0f83ae6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Feb 3 10:22:40 2011 +0100
+
+    allow to empty history
+
+ po/fr.po                      |   64 ++++++++++++++++++++++++++--------------
+ src/applet/gpaste-applet.vala |   10 ++++++
+ src/gpaste.vala               |    5 +++
+ src/gpasted/gpasted.vala      |    4 ++
+ src/gpasted/history.vala      |   12 +++++++
+ 5 files changed, 72 insertions(+), 23 deletions(-)
+
+commit 35eb0fc6eceeb4990a2f5d0d01a433bf4c82c82a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 21:42:49 2011 +0100
+
+    autoupdate
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 41160f3884f5ce58f1e16aa67d74b30fe33e12eb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 19:00:17 2011 +0100
+
+    change defaults
+
+ NEWS                                           |    9 ++++++++-
+ data/gpaste.gschema.xml.in                     |    4 ++--
+ src/gpaste-preferences/gpaste-preferences.vala |    4 ++--
+ 3 files changed, 12 insertions(+), 5 deletions(-)
+
+commit 81e15586e2d886fd3715815e89edf6ed9c25606c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 18:57:32 2011 +0100
+
+    fix behaviour with short strings
+
+ data/gpaste.gschema.xml.in    |    2 +-
+ po/fr.po                      |   27 ++++++++++++++-------------
+ src/applet/gpaste-applet.vala |    6 ++++--
+ 3 files changed, 19 insertions(+), 16 deletions(-)
+
+commit 079425a1e1509b5b82d5544eac718def39b118e8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 17:12:05 2011 +0100
+
+    rephrase
+
+ NEWS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 43a66694f2e16fda8f6a16d96b5c3e94a349fd69
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 17:10:46 2011 +0100
+
+    fix date in news
+
+ NEWS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit b5d01da47c7253a839a61548e7181c63c9bd215e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 17:08:54 2011 +0100
+
+    post release version bump
+
+ configure.ac |    2 +-
+ po/fr.po     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit d1ed4101caa1b9568564118672a845cb14d69f48
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 17:08:10 2011 +0100
+
+    release 0.7
+
+ NEWS     |   11 +++++++++++
+ po/fr.po |   51 ++++++++++++++++++++++++++++++++++-----------------
+ 2 files changed, 45 insertions(+), 17 deletions(-)
+
+commit b110a4466eaf2518f256ab35157e69908a23ae57
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 17:03:47 2011 +0100
+
+    cosmetics
+
+ src/gpaste-preferences/gpaste-preferences.vala |   27 +++++++++++++++--------
+ 1 files changed, 17 insertions(+), 10 deletions(-)
+
+commit c7f52f0f32e08a42272986f01f324dbe8ce70c39
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 16:49:19 2011 +0100
+
+    try to limit display size of elements in the applet
+
+ src/applet/gpaste-applet.vala |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
+
+commit 283eb5918b37141d0a846a7c514a66b81d8c1cd4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 16:33:35 2011 +0100
+
+    add pref for max element size when displaying
+
+ data/gpaste.gschema.xml.in                     |    8 +++++
+ src/gpaste-preferences/gpaste-preferences.vala |   37 +++++++++++++++++++++--
+ 2 files changed, 41 insertions(+), 4 deletions(-)
+
+commit a5e3d28067458da8394d11aa9c8de79259c3388e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 16:16:03 2011 +0100
+
+    update french translation
+
+ po/fr.po                                       |   72 +++++++++++++++--------
+ src/gpaste-preferences/gpaste-preferences.vala |    2 +-
+ 2 files changed, 48 insertions(+), 26 deletions(-)
+
+commit 3684e5aaa3ce0de4b3e3570b16f68834281f525a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 16:00:20 2011 +0100
+
+    track shutdown_on_exit changes in gpaste-preferences
+
+ src/gpaste-preferences/gpaste-preferences.vala |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+commit c4311b0321bce1b46a9f844c7cecab3995d18dfd
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 15:59:02 2011 +0100
+
+    use shutdown_on_exit in the applet
+
+ src/applet/gpaste-applet.vala |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
+
+commit 705a4c99c8a843bb58c8e8f4b8ed4555051a8721
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 15:47:49 2011 +0100
+
+    add pref for choosing whether the daemon quit with the applet or not
+
+ data/gpaste.gschema.xml.in                     |    8 +++++++
+ src/gpaste-preferences/gpaste-preferences.vala |   25 ++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 0 deletions(-)
+
+commit de5417354c3d53324db3b1e3f517851b28bdff6c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Feb 2 15:39:37 2011 +0100
+
+    add ability to stop daemon from gpaste
+
+ src/gpaste.vala          |   13 +++++++++++--
+ src/gpasted/gpasted.vala |    6 +++++-
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+commit 30f4c0e4e18dd20cb1ad2a6c8e2a245e3cf76996
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 20:23:05 2011 +0100
+
+    when clipboard has no text, put history[0] in it
+
+ src/gpasted/clipboard.vala |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+commit 724e49c5780720e5d8f50509bef0a2c3655c8014
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 19:52:09 2011 +0100
+
+    post release version bump
+
+ configure.ac |    2 +-
+ po/fr.po     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 25176501f3a61e30908cd8093990c6c6df840a84
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 19:48:57 2011 +0100
+
+    Release 0.6
+
+ NEWS         |    9 +++++++++
+ configure.ac |    2 +-
+ po/fr.po     |   16 ++++++++++------
+ 3 files changed, 20 insertions(+), 7 deletions(-)
+
+commit cd4cba4c9ef779f5ab6c7debe8333e8fd768a7fb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 19:35:35 2011 +0100
+
+    fix clipboards synchronization
+
+ src/gpasted/clipboard.vala |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+commit ff2a261c7ee320ea3944d50fb1a272f725092151
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 19:05:21 2011 +0100
+
+    typso
+
+ src/gpaste-preferences/gpaste-preferences.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit db56961f6c93c491dd2adfdf23b30a6acda77c6d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 17:35:30 2011 +0100
+
+    add ability to set clipboards synchronization in gpaste-preferences
+
+ src/gpaste-preferences/gpaste-preferences.vala |   27 +++++++++++++++++++++++-
+ 1 files changed, 26 insertions(+), 1 deletions(-)
+
+commit e55f632f8ed5b088feb078f19af0b4cf3a339a0f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 17:28:33 2011 +0100
+
+    add ability to synchronize clipboard with primary selection
+
+ src/gpasted/clipboard.vala |   16 ++++++++++++++--
+ src/gpasted/settings.vala  |    6 ++++++
+ 2 files changed, 20 insertions(+), 2 deletions(-)
+
+commit 99dc855ab2eaf316563bdb11b53a42dce5110406
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 17:19:16 2011 +0100
+
+    add another key to dconf
+
+ data/gpaste.gschema.xml.in |   10 +++++++++-
+ po/fr.po                   |   36 +++++++++++++++++++++++-------------
+ 2 files changed, 32 insertions(+), 14 deletions(-)
+
+commit 473c827cb635cfe67099ecec18534cf430cf2275
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 17:13:46 2011 +0100
+
+    update README
+
+ README |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+commit 7b4c7e9cf86d4b367d4ee2faa53c972feabadf3c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 17:12:37 2011 +0100
+
+    add NEWS
+
+ NEWS |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+commit ed8975fd03b44cf2b36ba01b9910ea66069ac997
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 16:44:18 2011 +0100
+
+    fix display of _
+
+ src/applet/gpaste-applet.vala                  |    6 +++---
+ src/gpaste-preferences/gpaste-preferences.vala |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+commit be0f774686f0a72d46082aa590aba14e9e5f8fdb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 16:34:53 2011 +0100
+
+    store and watch settings in gpasted
+
+ src/gpasted/clipboard.vala |   12 +++++++++++-
+ src/gpasted/history.vala   |   14 ++++++++++++--
+ src/gpasted/settings.vala  |   12 ++++++++----
+ 3 files changed, 31 insertions(+), 7 deletions(-)
+
+commit 75590f22a580f6523fdebc1e8f0b4f92130c043c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 15:57:09 2011 +0100
+
+    prefs: track settings changes while running
+
+ src/gpaste-preferences/gpaste-preferences.vala |   58 ++++++++++++++++++------
+ 1 files changed, 44 insertions(+), 14 deletions(-)
+
+commit 574954cdcd2de8aeeea4d9473ef1395891c1fd6d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 12:08:17 2011 +0100
+
+    release 0.5
+
+ configure.ac |    2 +-
+ po/fr.po     |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+commit b695e50c35602e0a89c389369ca0b25cc9cf7645
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 12:05:53 2011 +0100
+
+    fix dist
+
+ .gitignore  |    1 +
+ Makefile.am |    9 +++++----
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+commit 5281e1fa2a9feb8bcf3eb7d10b0cdd526cd1478c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 10:55:05 2011 +0100
+
+    Update french translation
+
+ po/POTFILES.in                                 |    4 +-
+ po/POTFILES.skip                               |    1 +
+ po/fr.po                                       |   64 +++++++++++++++++++----
+ src/applet/gpaste-applet.vala                  |   48 +++++++++++++++---
+ src/gpaste-preferences/gpaste-preferences.vala |    2 +-
+ src/gpaste.vala                                |    3 +-
+ src/gpasted/gpasted.vala                       |    2 +-
+ src/gpasted/history.vala                       |   10 ++--
+ 8 files changed, 106 insertions(+), 28 deletions(-)
+
+commit 535d1f06fa0b84753315120e56dd1d9c6f14bb7e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 10:31:08 2011 +0100
+
+    fix timeout
+
+ src/applet/gpaste-applet.vala |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+commit 0c5dc7a997bccbe80588f5f66e589b0e40a03c1b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 10:25:01 2011 +0100
+
+    Position menus the right way
+
+ src/applet/gpaste-applet.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit b82ae26dc0e4f5adff948e438e429bcc9ad22d1f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 10:22:44 2011 +0100
+
+    fix
+
+ src/applet/gpaste-applet.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit d73fad8e8e829b74ed5b4ee26e04bdef6a9e7312
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 10:17:46 2011 +0100
+
+    applet tweak
+
+ src/applet/gpaste-applet.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 0ed207d5e67b0aae864c86fa03283561cc1af534
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 10:16:13 2011 +0100
+
+    applet tweak
+
+ Makefile.am                   |    1 +
+ configure.ac                  |    2 +-
+ src/applet/gpaste-applet.vala |    4 ++--
+ 3 files changed, 4 insertions(+), 3 deletions(-)
+
+commit d0a0535341e1e54780db5ba1bbbdca1e5b4d341c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Feb 1 10:10:53 2011 +0100
+
+    add applet
+
+ .gitignore                       |    1 +
+ Makefile.am                      |   39 +++++++++++-
+ configure.ac                     |    1 +
+ data/gpaste-applet.desktop.in.in |   11 ++++
+ src/applet/gpaste-applet.vala    |  120 ++++++++++++++++++++++++++++++++++++++
+ vapi/config.vapi                 |    1 +
+ 6 files changed, 170 insertions(+), 3 deletions(-)
+
+commit 0d9a3f5c7bd5b6cdcf0d2210f8f8229ab7cc3a93
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jan 29 14:58:37 2011 +0100
+
+    add gpaste-preferences.desktop
+
+ .gitignore                            |    2 ++
+ Makefile.am                           |   18 +++++++++++++++++-
+ data/gpaste-preferences.desktop.in.in |    9 +++++++++
+ po/POTFILES.in                        |    1 +
+ po/POTFILES.skip                      |    2 ++
+ po/fr.po                              |    7 ++++++-
+ 6 files changed, 37 insertions(+), 2 deletions(-)
+
+commit b61cd753c569688f7398fa0e41836d51f40b66cf
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jan 29 14:58:37 2011 +0100
+
+    fix autotools
+
+ Makefile.am  |   19 ++++++++-----------
+ configure.ac |    6 ++----
+ 2 files changed, 10 insertions(+), 15 deletions(-)
+
+commit f02f4f8a500b29b97f0bc3b5d5e67cfcec72ed21
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jan 29 14:40:24 2011 +0100
+
+    gettextize gpaste-preferences
+
+ Makefile.am                                    |    6 +++++-
+ po/POTFILES.in                                 |    1 +
+ po/fr.po                                       |   14 +++++++++++++-
+ src/gpaste-preferences/gpaste-preferences.vala |    8 +++++---
+ 4 files changed, 24 insertions(+), 5 deletions(-)
+
+commit ea917f7469cecd594754be11e49bc5dfc21d61ad
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jan 29 14:34:36 2011 +0100
+
+    add gpaste-preferences
+
+ .gitignore                                     |    2 +
+ Makefile.am                                    |   21 ++++++-
+ src/gpaste-preferences/gpaste-preferences.vala |   84 ++++++++++++++++++++++++
+ 3 files changed, 106 insertions(+), 1 deletions(-)
+
+commit c5f1c8ea1b16efc45314941cb95741d35a2f7503
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jan 29 11:27:53 2011 +0100
+
+    gettextize gschema
+
+ Makefile.am                |    4 +---
+ data/gpaste.gschema.xml.in |   14 +++++++-------
+ po/POTFILES.in             |    1 +
+ po/fr.po                   |   18 +++++++++++++++++-
+ 4 files changed, 26 insertions(+), 11 deletions(-)
+
+commit eb02464eaf21f230d0dfb1137735b7601e23f958
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jan 27 14:50:14 2011 +0100
+
+    add DBus service file
+
+ .gitignore                       |    1 +
+ Makefile.am                      |   11 +++++++++++
+ data/org.gnome.GPaste.service.in |    3 +++
+ 3 files changed, 15 insertions(+), 0 deletions(-)
+
+commit 007920511901fd41a4f637b0433576f862466678
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jan 27 14:32:37 2011 +0100
+
+    Finally fix gpaste i18n
+
+ src/gpaste.vala |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit d9ad72dd077ed1181abc62a496b30a3f114bde4b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jan 27 12:45:24 2011 +0100
+
+    simplify strings
+
+ po/fr.po        |   32 ++++++++++++++------------------
+ src/gpaste.vala |   10 +++++-----
+ 2 files changed, 19 insertions(+), 23 deletions(-)
+
+commit 1c140db81bc8a77b9eea7776db64b391c715b9c0
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jan 27 11:34:34 2011 +0100
+
+    try to fix french gpaste translation
+
+ po/fr.po |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
+
+commit ee2eb59cf25e3bd5c1ea37e19c548a882c4ffb34
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 22:18:44 2011 +0100
+
+    gettextize gpaste
+
+ Makefile.am     |    3 +++
+ src/gpaste.vala |    2 ++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
+
+commit 528995f96af1eb74d1d540821f23d4b93aa6259f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 22:15:11 2011 +0100
+
+    update french translation
+
+ po/POTFILES.in  |    1 +
+ po/fr.po        |   53 +++++++++++++++++++++++++++++++++++++++++++++--------
+ src/gpaste.vala |   10 +++++-----
+ 3 files changed, 51 insertions(+), 13 deletions(-)
+
+commit e0567afb490bcd31559eee251e7acf25387e1172
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 21:45:27 2011 +0100
+
+    typso
+
+ src/gpaste.vala |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit adc611dd83791446ca8c77c520dcdff7157a5755
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 21:43:17 2011 +0100
+
+    add ability to delete item from history
+
+ src/gpaste.vala          |   13 ++++++++++---
+ src/gpasted/gpasted.vala |    4 ++++
+ src/gpasted/history.vala |   12 ++++++++++++
+ 3 files changed, 26 insertions(+), 3 deletions(-)
+
+commit 692c20c5a9461479abb1812de0cd147d2681bb71
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 21:34:21 2011 +0100
+
+    gpaste cleanup
+
+ src/gpaste.vala |   36 +++++++++++++++++++++++++-----------
+ 1 files changed, 25 insertions(+), 11 deletions(-)
+
+commit a301860c6e64fb703ff1be988f51c64c403cd14b
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 20:48:04 2011 +0100
+
+    Make GPasteServer a Singleton and do not use DBus internally to contact it
+
+ po/fr.po                 |   24 +++++++-----------------
+ src/gpasted/gpasted.vala |   16 +++++++++++-----
+ src/gpasted/history.vala |   27 +--------------------------
+ 3 files changed, 19 insertions(+), 48 deletions(-)
+
+commit 248561bf9f237926719bd26c7dd21f4752c30f54
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 20:46:34 2011 +0100
+
+    add translation tool
+
+ po/update-po.bash |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+commit a35ffd665142c223ba4e3891bdfcc1239d89d044
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 19:29:24 2011 +0100
+
+    tweak
+
+ .gitignore                                         |    1 +
+ Makefile.am                                        |    7 +++++++
+ data/{gpaste.gschema.xml => gpaste.gschema.xml.in} |    0
+ 3 files changed, 8 insertions(+), 0 deletions(-)
+
+commit cbbd54033ffb0d92ce775021714506cd08a5b38c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 19:19:59 2011 +0100
+
+    update french translation
+
+ po/fr.po                 |   26 ++++++++++++++++++--------
+ src/gpasted/history.vala |    2 +-
+ 2 files changed, 19 insertions(+), 9 deletions(-)
+
+commit 3256d9636b4268068e8c946d5d3b1c2fea814bc7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 19:17:37 2011 +0100
+
+    no async dbus for now
+
+ src/gpasted/gpasted.vala |    4 ++++
+ src/gpasted/history.vala |   26 +++++++++++++-------------
+ 2 files changed, 17 insertions(+), 13 deletions(-)
+
+commit 1a279d4b96ddefc1028a646cf7db1b8994466125
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 18:23:47 2011 +0100
+
+    Emit dbus signal
+
+ src/gpasted/history.vala |   20 +++++++++++++-------
+ 1 files changed, 13 insertions(+), 7 deletions(-)
+
+commit b83826feb9ee78371843bfb255e7e9cd1b12e863
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 17:57:16 2011 +0100
+
+    fix gpasted (was broken by properties cleanup)
+
+ src/gpasted/history.vala |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
+
+commit 86e46bd2e0fc166bc99d4c076b56ef5281eda1ff
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 15:57:34 2011 +0100
+
+    fix
+
+ Makefile.am |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 78351f96987afe89055c5d4f38d1d59aff71e0fe
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 15:54:55 2011 +0100
+
+    add gpaste help
+
+ src/gpaste.vala |   71 ++++++++++++++++++++++++++++++++----------------------
+ 1 files changed, 42 insertions(+), 29 deletions(-)
+
+commit adde9794bf18c118275fe72ae9b3a622d3f506a4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 15:49:26 2011 +0100
+
+    use self dbus (and fail)
+
+ src/gpasted/history.vala |   21 ++++++++++++++++++++-
+ 1 files changed, 20 insertions(+), 1 deletions(-)
+
+commit 4d5838b3ad5fa368c1aba82424a111b382fc62ee
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Wed Jan 26 10:03:07 2011 +0100
+
+    fix & update gettext
+
+ .gitignore               |    1 +
+ Makefile.am              |    1 +
+ configure.ac             |    2 ++
+ po/GPaste.pot            |   43 -------------------------------------------
+ po/Makevars              |    2 +-
+ po/fr.po                 |    7 ++++---
+ src/gpasted/gpasted.vala |    2 +-
+ vapi/config.vapi         |    1 +
+ 8 files changed, 11 insertions(+), 48 deletions(-)
+
+commit 66961b7604c2a25c92d2ebbc5fc9887e1f46b2a3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 22:40:36 2011 +0100
+
+    properties cleanup
+
+ src/gpasted/clipboard.vala |   55 ++++++++++++++++++++-----------------------
+ src/gpasted/gpasted.vala   |   31 ++++++++++++------------
+ src/gpasted/history.vala   |   45 +++++++++++++++++++----------------
+ src/gpasted/settings.vala  |   17 +++++++------
+ 4 files changed, 74 insertions(+), 74 deletions(-)
+
+commit 4f68244b983c375c9d2a02d95d4d91f9cab2fcff
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 22:17:10 2011 +0100
+
+    remove undefined macro
+
+ configure.ac |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+commit d3d9b2132d17426842fd294e9f533f12653e0040
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 22:15:55 2011 +0100
+
+    try to install daemon to libexec
+
+ Makefile.am  |    4 +++-
+ configure.ac |    2 ++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+commit 79dc2d3ffd1df573d1ce9593bc4e2db0e591303c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 22:03:32 2011 +0100
+
+    oops
+
+ src/gpasted/clipboard.vala |    2 +-
+ src/gpasted/history.vala   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit ccac87f95b26fa7e316405ba87d96abd5d8b9f2e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 21:56:11 2011 +0100
+
+    make things configurable
+
+ .gitignore                |    1 +
+ Makefile.am               |    1 +
+ src/gpasted/history.vala  |    7 +++----
+ src/gpasted/settings.vala |   24 ++++++++++++++++++++++++
+ 4 files changed, 29 insertions(+), 4 deletions(-)
+
+commit 5b3c9ca06643a60cbabd248c2e259a1d6b38534d
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 21:36:47 2011 +0100
+
+    autotoolize gsettings schema
+
+ Makefile.am  |   10 ++++++++++
+ configure.ac |    2 ++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
+
+commit 7ede4d12aaab7238faa19060cc02b14a72e22dae
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 19:12:07 2011 +0100
+
+    add first try of gschema
+
+ data/gpaste.gschema.xml |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+commit 4deb258b0482070f893d59dd18ce5fe2376fbdeb
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 18:30:35 2011 +0100
+
+    don't connect to self signal
+
+ src/gpasted/history.vala |   28 ++++++----------------------
+ 1 files changed, 6 insertions(+), 22 deletions(-)
+
+commit 2d2a4525db84edc7dad420aebdd5fa1d23725618
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 18:21:18 2011 +0100
+
+    oops
+
+ src/gpasted/history.vala |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 93fd362ed43fd0843ece300c76b7c0d5a1a49213
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 18:17:42 2011 +0100
+
+    silent warning
+
+ src/gpasted/history.vala |   22 ++++++++++++++++++----
+ 1 files changed, 18 insertions(+), 4 deletions(-)
+
+commit df90ee0cc55a2a7dbc8a5713f6f62b8522ddbfad
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 17:45:39 2011 +0100
+
+    changed signal
+
+ autogen.bash             |    2 +-
+ src/gpaste.vala          |    4 ++--
+ src/gpasted/gpasted.vala |    2 ++
+ src/gpasted/history.vala |   10 +++++++++-
+ 4 files changed, 14 insertions(+), 4 deletions(-)
+
+commit 9fa3115e0e1733e4bc0fe68620eed1ca009c5767
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 17:41:35 2011 +0100
+
+    good path for history file
+
+ .gitignore               |    1 -
+ src/gpasted/history.vala |   11 ++++++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+commit 2f4cd83a199bc3205f9ae201bead07d01594b1f8
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 17:03:14 2011 +0100
+
+    fix configure.ac
+
+ .gitignore   |    1 +
+ configure.ac |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
+
+commit ddcac8645398304eda1657e1736b7173477cb461
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 17:00:03 2011 +0100
+
+    missing file
+
+ .gitignore       |    1 +
+ vapi/config.vapi |   13 +++++++++++++
+ 2 files changed, 14 insertions(+), 0 deletions(-)
+
+commit 39b7d8a8f4c63e01732420b30232afbc29bc52d2
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 16:54:26 2011 +0100
+
+    add autogen.bash
+
+ autogen.bash |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+commit 6a8929446b02500a7365e7e08deddeba725ec765
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 16:12:01 2011 +0100
+
+    add french translation
+
+ .gitignore               |   12 ++++++++++--
+ Makefile.am              |   14 +++++++-------
+ configure.ac             |    5 ++---
+ po/GPaste.pot            |   43 +++++++++++++++++++++++++++++++++++++++++++
+ po/LINGUAS               |    2 ++
+ po/POTFILES.in           |    3 +++
+ po/fr.po                 |   43 +++++++++++++++++++++++++++++++++++++++++++
+ src/gpasted/gpasted.vala |    9 +++++----
+ src/gpasted/history.vala |    8 ++++----
+ 9 files changed, 119 insertions(+), 20 deletions(-)
+
+commit 1e5ef9dcba47baa2e3e1d85fbf60d9856eb8cf67
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 11:36:32 2011 +0100
+
+    silent warning
+
+ .gitignore  |    1 +
+ Makefile.am |    4 +++-
+ po/Makevars |   41 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 45 insertions(+), 1 deletions(-)
+
+commit d7d164bef4bb91fa6cddeeabc8edc37fc68a74e6
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 10:51:25 2011 +0100
+
+    add GPL copy
+
+ COPYING                    |  674 ++++++++++++++++++++++++++++++++++++++++++++
+ src/gpaste.vala            |   32 ++
+ src/gpasted/clipboard.vala |   32 ++
+ src/gpasted/gpasted.vala   |   32 ++
+ src/gpasted/history.vala   |   32 ++
+ 5 files changed, 802 insertions(+), 0 deletions(-)
+
+commit b6c53ec75c18efe179e6c057bb7815378b8ece7c
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 10:39:58 2011 +0100
+
+    Merge Makefile.amS
+
+ Makefile.am             |   53 ++++++++++++++++++++++++++++++++++++++++++++++-
+ configure.ac            |    2 -
+ src/Makefile.am         |   30 --------------------------
+ src/gpasted/Makefile.am |   33 -----------------------------
+ 4 files changed, 52 insertions(+), 66 deletions(-)
+
+commit 26f10f6e123d0bf8d5b19602dfa3892ff34092bc
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 10:33:09 2011 +0100
+
+    switch to autotools
+
+ .gitignore              |   16 ++++++++++++-
+ Makefile                |   10 --------
+ Makefile.am             |    3 ++
+ configure.ac            |   55 +++++++++++++++++++++++++++++++++++++++++++++++
+ src/Makefile.am         |   30 +++++++++++++++++++++++++
+ src/gpasted/Makefile.am |   33 ++++++++++++++++++++++++++++
+ 6 files changed, 136 insertions(+), 11 deletions(-)
+
+commit d7080eca085981aee712bad6fdc3758b320d899f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 25 09:43:11 2011 +0100
+
+    refactor
+
+ .gitignore                        |    2 +-
+ Makefile                          |    6 +++---
+ src/{gpastec.vala => gpaste.vala} |   14 +++++++-------
+ src/gpasted/gpasted.vala          |    2 +-
+ 4 files changed, 12 insertions(+), 12 deletions(-)
+
+commit 244d12c583130b13c3764da820d7f5828f567db9
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 22:36:27 2011 +0100
+
+    clean dbus stuff
+
+ src/gpastec.vala         |    7 ++++---
+ src/gpasted/gpasted.vala |    7 ++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+commit aff28f0705203295ef1063303b898b6af3c0755a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 22:28:27 2011 +0100
+
+    ad max history sized
+
+ src/gpasted/history.vala |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+commit b0c5f9a271e3640426f08f8f799f418854d81a3a
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 22:17:04 2011 +0100
+
+    update clipboards before
+
+ src/gpasted/gpasted.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit eda16ff70a6802d9e5d434d932762bcc544eca5f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 22:15:03 2011 +0100
+
+    always update clipboards
+
+ src/gpastec.vala         |    4 ++--
+ src/gpasted/gpasted.vala |    5 ++---
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+commit 2b2ae7ee78b3771dcea6e439fe9e32feb619f550
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 18:46:13 2011 +0100
+
+    allow piping selection to gpastec
+
+ Makefile                 |    2 +-
+ src/gpastec.vala         |   13 +++++++++++--
+ src/gpasted/gpasted.vala |    4 +++-
+ 3 files changed, 15 insertions(+), 4 deletions(-)
+
+commit 4f0bf5687827cd791709eb968bfce2754f9d5da3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 17:57:45 2011 +0100
+
+    silent warning
+
+ src/gpasted/history.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 99b2c63551590640358663bf949f6ba7a670d717
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 17:45:41 2011 +0100
+
+    bounds control
+
+ src/gpasted/history.vala |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 0148ec693948370e16959c9370418751816a2105
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 17:42:02 2011 +0100
+
+    actually update clipboard
+
+ src/gpasted/clipboard.vala |   17 +++++++++++++++--
+ src/gpasted/history.vala   |    4 +++-
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+commit 4e75fa36d0e723b9f3838e2bca0446e1e7380820
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 17:28:02 2011 +0100
+
+    allow reordering history
+
+ src/gpastec.vala         |    5 ++++-
+ src/gpasted/gpasted.vala |    4 ++++
+ src/gpasted/history.vala |   12 ++++++++++--
+ 3 files changed, 18 insertions(+), 3 deletions(-)
+
+commit 8d789c8eee11a04de7272d40453991022fa44b90
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 16:47:37 2011 +0100
+
+    add ability to add things to history via gpastec
+
+ src/gpastec.vala         |   13 +++++++++----
+ src/gpasted/gpasted.vala |    4 ++++
+ src/gpasted/history.vala |    6 +++---
+ 3 files changed, 16 insertions(+), 7 deletions(-)
+
+commit d91fe739b0e7f69b16197da912c415c0ff6298c7
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 16:36:59 2011 +0100
+
+    refactor
+
+ src/gpasted/gpasted.vala |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 6d876783d6ed95244d0591ee1164e12529b1115f
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 16:35:17 2011 +0100
+
+    refactor
+
+ src/gpastec.vala |   22 ++++++++++------------
+ 1 files changed, 10 insertions(+), 12 deletions(-)
+
+commit 22417081f2937df3e6cdb45206dffc771b297596
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 16:15:18 2011 +0100
+
+    fix segfault after 2 requests
+
+ src/gpasted/gpasted.vala |    2 +-
+ src/gpasted/history.vala |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 4d300016a095486fe0d038ddcf9fa541b6bf4b35
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 15:54:33 2011 +0100
+
+    build gpastec
+
+ Makefile |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 2a68b3c615e19a05c8b0984047a7a159f94feb0e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 15:48:40 2011 +0100
+
+    remove debug output
+
+ src/gpasted/history.vala |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+commit 94064c0073f021b2a4e7647e594ce4f1a8f25833
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 15:47:40 2011 +0100
+
+    add gpastec
+
+ .gitignore       |    1 +
+ Makefile         |    3 +++
+ src/gpastec.vala |   22 ++++++++++++++++++++++
+ 3 files changed, 26 insertions(+), 0 deletions(-)
+
+commit 27307fcb4e64f801e8916a6b9232ce618dd8dfd3
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 15:45:49 2011 +0100
+
+    DBus interface !
+
+ src/gpasted/gpasted.vala |   27 +++++++++++++++++++++++++++
+ src/gpasted/history.vala |    4 ++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
+
+commit 2fa68761b0602e0478ecc38583a9c4b04533b58e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sun Jan 23 13:57:39 2011 +0100
+
+    split daemon
+
+ .gitignore                 |    1 +
+ Makefile                   |    4 +-
+ src/gpasted.vala           |  155 --------------------------------------------
+ src/gpasted/clipboard.vala |   61 +++++++++++++++++
+ src/gpasted/gpasted.vala   |   31 +++++++++
+ src/gpasted/history.vala   |   70 ++++++++++++++++++++
+ 6 files changed, 165 insertions(+), 157 deletions(-)
+
+commit f0597f4298b7cdcc1399e3a6616b65f060912c75
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Sat Jan 22 12:39:51 2011 +0100
+
+    allow newlines in history
+
+ src/gpasted.vala |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+commit 2330a7ab29a6d00f1232f53b7064dc38d9a167b4
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Thu Jan 20 16:27:11 2011 +0100
+
+    start implementing history
+
+ .gitignore       |    2 +
+ Makefile         |    2 +-
+ src/gpasted.vala |   71 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 72 insertions(+), 3 deletions(-)
+
+commit 9c4dd7c0b60875bc023e26a4873385cbf43e3f3e
+Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date:   Tue Jan 18 21:42:01 2011 +0100
+
+    initial proof of concept
+
+ .gitignore       |    1 +
+ Makefile         |    7 ++++
+ README           |    2 +
+ src/gpasted.vala |   85 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 95 insertions(+), 0 deletions(-)

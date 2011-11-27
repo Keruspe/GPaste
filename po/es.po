@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-11-23 19:15+0100\n"
+"POT-Creation-Date: 2011-11-27 18:28+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -42,26 +42,28 @@ msgstr "No se pudo borrar fichero de historial.\n"
 msgid "Could not create history file.\n"
 msgstr "No se pudo crear fichero de historial.\n"
 
-#: ../src/gpasted/item.vala:78
+#. This is the prefix displayed in history to identify selected files
+#: ../src/gpasted/item.vala:79
 msgid "[Files] "
 msgstr ""
 
-#: ../src/gpasted/item.vala:121 ../src/gpasted/item.vala:134
+#. This is the date format "month/day/year time"
+#: ../src/gpasted/item.vala:124 ../src/gpasted/item.vala:139
+msgid "%m/%d/%y %T"
+msgstr ""
+
+#. This gets displayed in history when selecting an image
+#: ../src/gpasted/item.vala:126 ../src/gpasted/item.vala:139
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr ""
 
-#: ../src/gpasted/item.vala:121 ../src/gpasted/item.vala:134
-msgid "%m/%d/%y %T"
-msgstr ""
-
-#: ../src/gpasted/item.vala:125
+#: ../src/gpasted/item.vala:130
 #, c-format
 msgid "Error while saving pixbuf: %s\n"
 msgstr ""
 
-#. Item will be ignored
-#: ../src/gpasted/item.vala:138
+#: ../src/gpasted/item.vala:144
 #, c-format
 msgid "Error while loading pixbuf: %s\n"
 msgstr ""

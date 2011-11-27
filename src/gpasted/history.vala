@@ -121,59 +121,7 @@ namespace GPaste {
                 DBusServer.instance.changed();
             }
 
-            // TODO: Remove me after 2.0, once everyone'll have its history converted
-            private void convert_old_history() {
-                var history_file = GLib.File.new_for_path(GLib.Environment.get_user_data_dir() + "/gpaste/history");
-                try {
-                    int64 length;
-                    var dis = new GLib.DataInputStream(history_file.read());
-                    while((length = dis.read_int64()) != 0) {
-                        var tmp_str = new uint8[length];
-                        dis.read(tmp_str);
-                        var str = (string) tmp_str;
-                        if (str != null && str.validate())
-                            this.history.append(new TextItem(str));
-                    }
-                    this.save();
-                    history_file.delete();
-                } catch (Error e) {
-                    // File do no longer exist, we don't care about that
-                }
-                this.history = new GLib.SList<Item>();
-            }
-
-            // TODO: Remove me after 2.0, once everyone'll have its history converted
-            public void convert_history() {
-                this.convert_old_history();
-                var history_file = GLib.File.new_for_path(GLib.Environment.get_home_dir() + "/.gpaste_history");
-                try {
-                    int64 length;
-                    var dis = new GLib.DataInputStream(history_file.read());
-                    while((length = dis.read_int64()) != 0) {
-                        var kind = (ItemKind) dis.read_byte();
-                        switch (kind) {
-                        case ItemKind.TEXT:
-                            var tmp_str = new uint8[length];
-                            dis.read(tmp_str);
-                            var str = (string) tmp_str;
-                            if (str != null && str.validate())
-                                this.history.append(new TextItem(str));
-                            break;
-                        case ItemKind.IMAGE:
-                            // Was never supported with this serialization 
-                            break;
-                        }
-                    }
-                    this.save();
-                    history_file.delete();
-                } catch (Error e) {
-                    // File do no longer exist, we don't care about that
-                }
-                this.history = new GLib.SList<Item>();
-            }
-
             public void load() {
-                this.convert_history();
                 var history_file = GLib.Path.build_filename(GLib.Environment.get_user_data_dir(), "gpaste", "history.xml");
                 var reader = new Xml.TextReader.filename(history_file);
                 while (reader.read() == 1) {
