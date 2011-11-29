@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.68])
-AC_INIT([GPaste],[2.1],[Marc-Antoine@Perennou.com])
+AC_INIT([GPaste],[2.5],[Marc-Antoine@Perennou.com])
 
 AC_SUBST([PACKAGE_NAME], ["$PACKAGE_NAME"])
 AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
@@ -24,8 +24,10 @@ AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_AUX_DIR([.aux])
+AC_CONFIG_AUX_DIR([build-aux])
+AC_PREFIX_DEFAULT([/usr])
 
+LT_INIT([disable-static pic-only])
 AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
 AM_SILENT_RULES([yes])
 
@@ -33,6 +35,7 @@ AC_PROG_SED
 AC_PROG_MKDIR_P
 AC_PROG_INSTALL
 AC_PROG_CC
+AC_PROG_CC_STDC
 AM_PROG_CC_C_O
 AM_PROG_VALAC([0.13.4])
 
@@ -52,6 +55,7 @@ PKG_CHECK_MODULES(GTK, [gtk+-3.0 >= 3.0.0])
 GTK_VALAFLAGS="--pkg=gtk+-3.0"
 AC_SUBST(GTK_VALAFLAGS)
 
+PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0])
 PKG_CHECK_MODULES(GDK, [gdk-x11-3.0 >= 3.0.0])
 GDK_VALAFLAGS="--pkg=gdk-x11-3.0"
 AC_SUBST(GDK_VALAFLAGS)
@@ -79,11 +83,23 @@ AC_CONFIG_FILES([
   Makefile
   po/Makefile.in
   data/org.gnome.GPaste.gschema.xml.in
+  libgpaste/gpaste.pc
 ])
 AC_OUTPUT
 AC_MSG_RESULT([
         $PACKAGE_NAME $VERSION
+        ========
 
-        Legacy applet:         ${enable_applet}
-        Gnome-Shell extension: ${enable_extension}
+        prefix:                 ${prefix}
+        exec_prefix:            ${exec_prefix}
+        sysconfdir:             ${sysconfdir}
+        libdir:                 ${libdir}
+        includedir:             ${includedir}
+
+        compiler:               ${CC}
+        cflags:                 ${CFLAGS}
+        ldflags:                ${LDFLAGS}
+
+        Legacy applet:          ${enable_applet}
+        Gnome-Shell extension:  ${enable_extension}
 ])

@@ -1,0 +1,22 @@
+LIBGPASTE_0 {
+global:
+    g_paste_item_get_type;
+    g_paste_item_get_value;
+    g_paste_item_get_display_string;
+    g_paste_item_equals;
+    g_paste_item_has_value;
+    g_paste_item_get_kind;
+    g_paste_text_item_get_type;
+    g_paste_text_item_new;
+    g_paste_uris_item_get_type;
+    g_paste_uris_item_new;
+    g_paste_uris_item_get_uris;
+    g_paste_image_item_get_type;
+    g_paste_image_item_new;
+    g_paste_image_item_new_from_file;
+    g_paste_image_item_get_checksum;
+    g_paste_image_item_get_image;
+    g_paste_image_item_get_date;
+local:
+    *;
+};

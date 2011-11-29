@@ -18,8 +18,13 @@
 DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
 	--enable-applet
-ACLOCAL_AMFLAGS  = -I m4
+ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
+AM_MAKEFLAGS = --no-print-directory
 SUBDIRS = po
+
+LIBGPASTE_CURRENT=0
+LIBGPASTE_REVISION=0
+LIBGPASTE_AGE=0
 
 # Directories
 
@@ -56,6 +61,10 @@ dist_gnomeshell_DATA = \
 nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
 endif
 
+pkginclude_HEADERS = libgpaste/gpaste-item.h
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libgpaste/gpaste.pc
+
 # Binaries
 
 bin_PROGRAMS = gpaste
@@ -63,6 +72,7 @@ pkglibexec_PROGRAMS = gpasted gpaste-settings
 if ENABLE_APPLET
 pkglibexec_PROGRAMS += gpaste-applet
 endif
+lib_LTLIBRARIES = libgpaste/libgpaste.la
 
 # Sources
 
@@ -82,6 +92,9 @@ gpaste_applet_SOURCES = \
 
 gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala
+
+libgpaste_libgpaste_la_SOURCES = \
+	libgpaste/gpaste-item.c
 
 # VALAFLAGS
 
@@ -116,11 +129,15 @@ endif
 # CFLAGS
 
 AM_CFLAGS = \
-	--include config.h \
+	-include $(top_builddir)/config.h \
+	-I$(top_srcdir)/libgpaste \
+	-ffunction-sections \
+	-fdata-sections \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(GLIB_CFLAGS) \
 	$(GIO_CFLAGS)
+#	-fvisibility=hidden
 
 gpaste_CFLAGS = \
 	$(AM_CFLAGS)
@@ -140,11 +157,19 @@ gpaste_settings_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
+libgpaste_libgpaste_la_CFLAGS = \
+	$(GDK_PIXBUF_CFLAGS) \
+	$(AM_CFLAGS)
+
 # LDADD
 
 AM_LIBS = \
 	$(GLIB_LIBS) \
 	$(GIO_LIBS)
+
+AM_LDFLAGS = \
+	-Wl,--gc-sections \
+	-Wl,--as-needed
 
 gpaste_LDADD = \
 	$(AM_LIBS)
@@ -164,6 +189,18 @@ gpaste_applet_LDADD = \
 	$(GTK_LIBS) \
 	$(AM_LIBS)
 
+libgpaste_libgpaste_la_LIBADD = \
+	$(GDK_PIXBUF_LIBS) \
+	$(AM_LIBS)
+
+# LDFLAGS
+
+libgpaste_libgpaste_la_LDFLAGS = \
+	$(AM_LDFLAGS) \
+	-version-info $(LIBGPASTE_CURRENT):$(LIBGPASTE_REVISION):$(LIBGPASTE_AGE) \
+	-Wl,--version-script=$(top_srcdir)/libgpaste/libgpaste.sym
+libgpaste_libgpaste_la_DEPENDENCIES = ${top_srcdir}/libgpaste/libgpaste.sym
+
 # Distribution stuff
 
 EXTRA_DIST = \
@@ -174,7 +211,8 @@ EXTRA_DIST = \
 	data/gpaste-applet.desktop.in.in \
 	data/gpaste-settings.desktop.in.in \
 	data/gpaste.1.part data/gpaste-applet.1.part \
-	src/applets/gnome-shell/metadata.json.in
+	src/applets/gnome-shell/metadata.json.in \
+	libgpaste/libgpaste.sym
 
 CLEANFILES = \
 	${gpaste_SOURCES:.vala=.c} \

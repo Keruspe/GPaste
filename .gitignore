@@ -6,9 +6,10 @@ gpaste
 !completions/gpaste
 gpaste-applet
 *.c
+!libgpaste/*.c
 *.o
 Makefile
-.aux
+build-aux
 ABOUT-NLS
 INSTALL
 Makefile.in
@@ -18,7 +19,6 @@ config*
 !configure.ac
 !config.vapi
 intl
-m4
 .deps
 *stamp*
 Makefile.in.in
@@ -45,3 +45,8 @@ metadata.json
 extension.js
 *.anjuta*
 .intltool-merge-cache
+libtool
+*.pc
+.libs
+*.la
+*.lo
