@@ -61,8 +61,9 @@ dist_gnomeshell_DATA = \
 nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
 endif
 
-libgpaste_libgpaste_la_headers = libgpaste/gpaste.h libgpaste/gpaste-item.h
-pkginclude_HEADERS = $(libgpaste_libgpaste_la_headers)
+libgpaste_libgpaste_la_public_headers = libgpaste/gpaste.h libgpaste/gpaste-item.h
+libgpaste_libgpaste_la_private_headers = libgpaste/gpaste-item-private.h
+pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgpaste/gpaste.pc
 
@@ -216,6 +217,7 @@ EXTRA_DIST = \
 	data/gpaste-settings.desktop.in.in \
 	data/gpaste.1.part data/gpaste-applet.1.part \
 	src/applets/gnome-shell/metadata.json.in \
+	$(libgpaste_libgpaste_la_private_headers) \
 	libgpaste/libgpaste.sym
 
 CLEANFILES = \
@@ -286,8 +288,8 @@ INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
 
 introspection_sources = \
 	$(libgpaste_libgpaste_la_SOURCES) \
-	$(libgpaste_libgpaste_la_headers) \
-	libgpaste/gpaste-item-private.h
+	$(libgpaste_libgpaste_la_public_headers) \
+	$(libgpaste_libgpaste_la_private_headers)
 
 GPaste-1.0.gir: libgpaste/libgpaste.la
 GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 GObject-2.0
@@ -308,6 +310,7 @@ CLEANFILES += $(gir_DATA) $(typelib_DATA)
 # Vapi
 
 vapi/gpaste-1.0.deps:
+	$(MKDIR_P) vapi
 	$(AM_V_GEN) echo -e "gdk-pixbuf-2.0\ngobject-2.0" > $@
 vapi/gpaste-1.0.vapi: GPaste-1.0.gir vapi/gpaste-1.0.deps
 	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $<
