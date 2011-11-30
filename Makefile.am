@@ -218,7 +218,8 @@ EXTRA_DIST = \
 	data/gpaste.1.part data/gpaste-applet.1.part \
 	src/applets/gnome-shell/metadata.json.in \
 	$(libgpaste_libgpaste_la_private_headers) \
-	libgpaste/libgpaste.sym
+	libgpaste/libgpaste.sym \
+	vapi/config.vapi
 
 CLEANFILES = \
 	${gpaste_SOURCES:.vala=.c} \
