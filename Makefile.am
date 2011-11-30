@@ -101,7 +101,7 @@ libgpaste_libgpaste_la_SOURCES = \
 # VALAFLAGS
 
 AM_VALAFLAGS = \
-	--vapidir=vapi \
+	--vapidir=$(top_srcdir)/vapi \
 	--pkg=config \
 	--pkg=posix \
 	$(GIO_VALAFLAGS)
