@@ -36,6 +36,14 @@ struct _GPasteItemPrivate
     gchar *display_string;
 };
 
+/**
+ * g_paste_item_get_value:
+ * @self: a GPasteItem instance
+ *
+ * Get the value of the given item (text, uris or path to the image)
+ *
+ * Returns: read-only string containing the value
+ */
 const gchar *
 g_paste_item_get_value (GPasteItem *self)
 {
@@ -44,6 +52,14 @@ g_paste_item_get_value (GPasteItem *self)
     return self->priv->value;
 }
 
+/**
+ * g_paste_item_get_display_string:
+ * @self: a GPasteItem instance
+ *
+ * Get the string we should use to display the GPasteItem
+ *
+ * Returns: read-only display string
+ */
 const gchar *
 g_paste_item_get_display_string (GPasteItem *self)
 {
@@ -52,6 +68,15 @@ g_paste_item_get_display_string (GPasteItem *self)
     return self->priv->display_string;
 }
 
+/**
+ * g_paste_item_equals:
+ * @self: a GPasteItem instance
+ * @other: another GPasteItem instance
+ *
+ * Compare the two instances
+ *
+ * Returns: true if equals, false otherwise
+ */
 gboolean
 g_paste_item_equals (GPasteItem *self,
                      GPasteItem *other)
@@ -62,6 +87,14 @@ g_paste_item_equals (GPasteItem *self,
     return G_PASTE_ITEM_GET_CLASS (self)->equals (self, other);
 }
 
+/**
+ * g_paste_item_has_value:
+ * @self: a GPasteItem instance
+ *
+ * Tell if the GPasteItem has a value or not
+ *
+ * Returns: true if it has value, false if it's a dummy one
+ */
 gboolean 
 g_paste_item_has_value (GPasteItem *self)
 {
@@ -70,6 +103,15 @@ g_paste_item_has_value (GPasteItem *self)
     return G_PASTE_ITEM_GET_CLASS (self)->has_value (self);
 }
 
+/**
+ * g_paste_item_get_kind:
+ * @self: a GPasteItem instance
+ *
+ * Get the kind of GPasteItem as string (for serialization)
+ *
+ * Returns: read-only string containing the kind of GPasteItem
+ *          can be "Text", "Uris" or "Image"
+ */
 const gchar *
 g_paste_item_get_kind (GPasteItem *self)
 {
@@ -180,6 +222,15 @@ _g_paste_text_item_new (GType        type,
     return self;
 }
 
+/**
+ * g_paste_text_item_new:
+ * @text: the content of the desired GPasteTextItem
+ *
+ * Create a new instance of GPasteTextItem
+ *
+ * Returns: a newly allocated GPasteTextItem
+ *          free it with g_object_unref
+ */
 GPasteTextItem *
 g_paste_text_item_new (const gchar *text)
 {
@@ -197,6 +248,14 @@ struct _GPasteUrisItemPrivate
     gchar **uris;
 };
 
+/**
+ * g_paste_uris_item_get_uris:
+ * @self: a GPasteUrisItem instance
+ *
+ * Get the list of uris contained in the GPasteUrisItem
+ *
+ * Returns: (transfer none): read-only array of read-only uris (strings)
+ */
 const gchar const **
 g_paste_uris_item_get_uris (GPasteUrisItem *self)
 {
@@ -260,6 +319,15 @@ g_paste_uris_item_init (GPasteUrisItem *self)
     self->priv = G_PASTE_URIS_ITEM_GET_PRIVATE (self);
 }
 
+/**
+ * g_paste_uris_item_new:
+ * @uris: a string containing the paths separated by "\n" (as returned by gtk_clipboard_wait_for_uris)
+ *
+ * Create a new instance of GPasteUrisItem
+ *
+ * Returns: a newly allocated GPasteUrisItem
+ *          free it with g_object_unref
+ */
 GPasteUrisItem *
 g_paste_uris_item_new (const gchar *uris)
 {
@@ -325,6 +393,14 @@ struct _GPasteImageItemPrivate
     GdkPixbuf *image;
 };
 
+/**
+ * g_paste_image_item_get_checksum:
+ * @self: a GPasteImageItem instance
+ *
+ * Get the checksum of the GdkPixbuf contained in the GPasteImageItem
+ *
+ * Returns: read-only string representatig the SHA256 checksum of the image
+ */
 const gchar *
 g_paste_image_item_get_checksum (GPasteImageItem *self)
 {
@@ -333,6 +409,14 @@ g_paste_image_item_get_checksum (GPasteImageItem *self)
     return self->priv->checksum;
 }
 
+/**
+ * g_paste_image_item_get_date:
+ * @self: a GPasteImageItem instance
+ *
+ * Get the date at which the image was created
+ *
+ * Returns: read-only GDateTime containing the image's creation date
+ */
 const GDateTime *
 g_paste_image_item_get_date (GPasteImageItem *self)
 {
@@ -341,6 +425,14 @@ g_paste_image_item_get_date (GPasteImageItem *self)
     return self->priv->date;
 }
 
+/**
+ * g_paste_image_item_get_image:
+ * @self: a GPasteImageItem instance
+ *
+ * Get the image contained in the GPasteImageItem
+ *
+ * Returns: read-only GdkPixbuf of the image
+ */
 const GdkPixbuf *
 g_paste_image_item_get_image (GPasteImageItem *self)
 {
@@ -449,10 +541,19 @@ _g_paste_image_item_new (const gchar *path,
     return self;
 }
 
+/**
+ * g_paste_image_item_new:
+ * @img: (transfer none): the GdkPixbuf we want to be contained in the GPasteImageItem
+ *
+ * Create a new instance of GPasteImageItem
+ *
+ * Returns: a newly allocated GPasteImageItem
+ *          free it with g_object_unref
+ */
 GPasteImageItem *
-g_paste_image_item_new (GdkPixbuf *image)
+g_paste_image_item_new (GdkPixbuf *img)
 {
-    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, (guchar *) gdk_pixbuf_get_pixels (image), -1);
+    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, (guchar *) gdk_pixbuf_get_pixels (img), -1);
     gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
     GFile *images_dir = g_file_new_for_path (images_dir_path);
 
@@ -463,14 +564,14 @@ g_paste_image_item_new (GdkPixbuf *image)
     gchar *filename = g_strconcat (checksum, ".png", NULL);
     gchar *path = g_build_filename (images_dir_path, filename, NULL);
     GPasteImageItem *self = _g_paste_image_item_new (path,
-                                                     gdk_pixbuf_ref (image),
+                                                     gdk_pixbuf_ref (img),
                                                      g_date_time_new_now_local (),
                                                      checksum);
     g_free (images_dir_path);
     g_free (filename);
     g_free (path);
 
-    gdk_pixbuf_save (image,
+    gdk_pixbuf_save (img,
                      G_PASTE_ITEM (self)->priv->value,
                      "png",
                      NULL, /* Error */
@@ -479,6 +580,16 @@ g_paste_image_item_new (GdkPixbuf *image)
     return self;
 }
 
+/**
+ * g_paste_image_item_new_from_file:
+ * @path: the path to the image we want to be contained in the GPasteImageItem
+ * @date: (transfer none): the date at which the image was created
+ *
+ * Create a new instance of GPasteImageItem
+ *
+ * Returns: a newly allocated GPasteImageItem
+ *          free it with g_object_unref
+ */
 GPasteImageItem *
 g_paste_image_item_new_from_file (const gchar *path,
                                   GDateTime   *date)

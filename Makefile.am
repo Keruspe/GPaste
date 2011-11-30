@@ -61,7 +61,8 @@ dist_gnomeshell_DATA = \
 nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
 endif
 
-pkginclude_HEADERS = libgpaste/gpaste-item.h
+libgpaste_libgpaste_la_headers = libgpaste/gpaste.h libgpaste/gpaste-item.h
+pkginclude_HEADERS = $(libgpaste_libgpaste_la_headers)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgpaste/gpaste.pc
 
@@ -136,6 +137,7 @@ AM_CFLAGS = \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(GLIB_CFLAGS) \
+	$(GOBJECT_CFLAGS) \
 	$(GIO_CFLAGS)
 #	-fvisibility=hidden
 
@@ -165,6 +167,7 @@ libgpaste_libgpaste_la_CFLAGS = \
 
 AM_LIBS = \
 	$(GLIB_LIBS) \
+	$(GOBJECT_LIBS) \
 	$(GIO_LIBS)
 
 AM_LDFLAGS = \
@@ -271,3 +274,32 @@ dist-hook:
         else \
                 echo A git clone is required to generate a ChangeLog >&2; \
         fi
+
+# Introspection
+
+-include $(INTROSPECTION_MAKEFILE)
+
+INTROSPECTION_GIRS =
+INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --c-include=gpaste.h
+INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
+
+introspection_sources = \
+	$(libgpaste_libgpaste_la_SOURCES) \
+	$(libgpaste_libgpaste_la_headers) \
+	libgpaste/gpaste-item-private.h
+
+GPaste-1.0.gir: libgpaste/libgpaste.la
+GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 GObject-2.0
+GPaste_1_0_gir_CFLAGS = $(INCLUDES)
+GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
+GPaste_1_0_gir_SCANNERFLAGS = --warn-all
+GPaste_1_0_gir_FILES = $(introspection_sources)
+INTROSPECTION_GIRS += GPaste-1.0.gir
+
+girdir = $(datadir)/gir-1.0
+gir_DATA = $(INTROSPECTION_GIRS)
+
+typelibdir = $(libdir)/girepository-1.0
+typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+
+CLEANFILES += $(gir_DATA) $(typelib_DATA)
