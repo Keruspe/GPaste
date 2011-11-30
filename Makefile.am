@@ -310,14 +310,16 @@ CLEANFILES += $(gir_DATA) $(typelib_DATA)
 
 # Vapi
 
-vapi/gpaste-1.0.deps:
-	$(MKDIR_P) vapi
-	$(AM_V_GEN) echo -e "gdk-pixbuf-2.0\ngobject-2.0" > $@
-vapi/gpaste-1.0.vapi: GPaste-1.0.gir vapi/gpaste-1.0.deps
-	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $<
 VAPI_FILES = vapi/gpaste-1.0.vapi vapi/gpaste-1.0.deps
 
 vapidir = $(datadir)/vala/vapi
-vapi_DATA = $(VAPI_FILES)
+dist_vapi_DATA = $(VAPI_FILES)
+
+if ENABLE_VALA
+vapi/gpaste-1.0.deps:
+	$(AM_V_GEN) $(MKDIR_P) vapi && echo -e "gdk-pixbuf-2.0\ngobject-2.0" > $@
+vapi/gpaste-1.0.vapi: GPaste-1.0.gir vapi/gpaste-1.0.deps
+	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $<
 
 CLEANFILES += $(VAPI_FILES)
+endif

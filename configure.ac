@@ -81,11 +81,14 @@ AC_ARG_WITH([dbusservicesdir],
         [with_dbusservicesdir=`pkg-config --variable=session_bus_services_dir dbus-1`])
 AC_SUBST([dbusservicesdir], [$with_dbusservicesdir])
 
-AC_ARG_ENABLE(applet, AS_HELP_STRING([--disable-applet], [Disable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
+AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
 AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
+
+AC_ARG_ENABLE(vala, AS_HELP_STRING([--enable-vala], [Enable vapi generation]), enable_vala=$enableval, enable_vala=no)
+AM_CONDITIONAL(ENABLE_VALA, test x$enable_vala != xno)
 
 AC_CONFIG_FILES([
   Makefile
@@ -108,6 +111,10 @@ AC_MSG_RESULT([
         cflags:                 ${CFLAGS}
         ldflags:                ${LDFLAGS}
 
+        vala compiler:          ${VALAC}
+        vapi generator:         ${VAPIGEN}
+
         Legacy applet:          ${enable_applet}
         Gnome-Shell extension:  ${enable_extension}
+        Rebuild vapi:           ${enable_vala}
 ])
