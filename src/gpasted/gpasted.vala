@@ -29,7 +29,7 @@ namespace GPaste {
                 var as = new string[history.length()];
                 int i = 0;
                 foreach (Item item in history)
-                    as[i++] = item.get_display_str ();
+                    as[i++] = item.get_display_string ();
                 return as;
             }
 

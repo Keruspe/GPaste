@@ -69,8 +69,8 @@ namespace GPaste {
             }
 
             public void select_text (Item item) {
-                if (this.txt != item.str);
-                    this.restore_text (item.str);
+                if (this.txt != item.get_value ());
+                    this.restore_text (item.get_value ());
             }
 
             /* The two following callbacks are for restore_uris, adapted from diodon */
@@ -85,17 +85,17 @@ namespace GPaste {
 
                 // set content according to requested target
                 if (Gtk.targets_include_text (targets)) {
-                    selection_data.set_text (item.str, -1);
+                    selection_data.set_text (item.get_value (), -1);
                     return;
                 }
 
                 if (Gtk.targets_include_uri (targets))
-                    selection_data.set_uris (item.uris);
+                    selection_data.set_uris (item.get_uris ());
                 else {
                     // set special nautilus target which should copy the files, 8 number of bits in a unit are used
                     string copy_files_str = "copy";
-                    for (var i = 0; i < item.uris.length; ++i)
-                        copy_files_str += "\n" + item.uris[i];
+                    for (var i = 0; i < item.get_uris ().length; ++i)
+                        copy_files_str += "\n" + item.get_uris ()[i];
 
                     var length = copy_files_str.length;
                     var copy_files_data = new uchar[length];
@@ -107,7 +107,7 @@ namespace GPaste {
             }
 
             public void restore_uris (UrisItem item) {
-                this.txt = item.str;
+                this.txt = item.get_value ();
 
                 // The following stuff for this function is stolen from diodon
 
@@ -125,7 +125,7 @@ namespace GPaste {
             }
 
             public void select_uris (UrisItem item) {
-                if (this.txt != item.str);
+                if (this.txt != item.get_value ());
                     this.restore_uris (item);
             }
 
@@ -155,9 +155,9 @@ namespace GPaste {
             }
 
             public void select_image (ImageItem item) {
-                if (this.image_checksum != item.checksum) {
-                    this.image_checksum = item.checksum;
-                    this.real_set_image (item.img);
+                if (this.image_checksum != item.get_checksum ()) {
+                    this.image_checksum = item.get_checksum ();
+                    this.real_set_image (item.get_image ());
                 }
             }
 
@@ -197,11 +197,11 @@ namespace GPaste {
                     if (history.length() != 0) {
                         Item item = history.data;
                         if (item is ImageItem)
-                            clipboard.restore_image ((item as ImageItem).img);
+                            clipboard.restore_image ((item as ImageItem).get_image ());
                         else if (item is UrisItem)
                             clipboard.restore_uris (item as UrisItem);
                         else /* TextItem */
-                            clipboard.restore_text (item.str);
+                            clipboard.restore_text (item.get_value ());
                     }
                 }
             }

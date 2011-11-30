@@ -81,10 +81,10 @@ gpaste_SOURCES = \
 	src/gpaste.vala
 
 gpasted_SOURCES = \
+	vapi/gpaste-1.0.vapi \
 	src/gpasted/clipboard.vala \
 	src/gpasted/gpasted.vala \
 	src/gpasted/history.vala \
-	src/gpasted/item.vala \
 	src/gpasted/keybinder.vala \
 	src/gpasted/settings.vala
 
@@ -182,7 +182,8 @@ gpasted_LDADD = \
 	$(GDK_LIBS) \
 	$(X11_LIBS) \
 	$(XML_LIBS) \
-	$(AM_LIBS)
+	$(AM_LIBS) \
+	libgpaste/libgpaste.la
 
 gpaste_settings_LDADD = \
 	$(GTK_LIBS) \
@@ -308,8 +309,8 @@ CLEANFILES += $(gir_DATA) $(typelib_DATA)
 
 vapi/gpaste-1.0.deps:
 	$(AM_V_GEN) echo -e "gdk-pixbuf-2.0\ngobject-2.0" > $@
-vapi/gpaste-1.0.vapi: GPaste-1.0.gir
-	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $^
+vapi/gpaste-1.0.vapi: GPaste-1.0.gir vapi/gpaste-1.0.deps
+	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $<
 VAPI_FILES = vapi/gpaste-1.0.vapi vapi/gpaste-1.0.deps
 
 vapidir = $(datadir)/vala/vapi

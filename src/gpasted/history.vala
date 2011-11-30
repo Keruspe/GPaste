@@ -47,7 +47,7 @@ namespace GPaste {
                 var item = link.data;
                 if (item is ImageItem) {
                     try {
-                        GLib.File.new_for_path ((item as ImageItem).str).delete ();
+                        GLib.File.new_for_path ((item as ImageItem).get_value ()).delete ();
                     } catch (GLib.Error e) {
                         stderr.printf ("Couldn't delete image file: %s\n", e.message);
                     }
@@ -60,10 +60,11 @@ namespace GPaste {
                     return;
                 unowned GLib.SList<Item> s = this.history;
                 if (s != null) {
-                    if (s.data.equals(selection))
+                    string kind = selection.get_kind ();
+                    if (s.data.get_kind () == kind && s.data.equals(selection))
                         return;
                     for (s = s.next; s != null ; s = s.next) {
-                        if (s.data.equals(selection)) {
+                        if (s.data.get_kind () == kind && s.data.equals(selection)) {
                             this.remove (s);
                             break;
                         }
@@ -99,7 +100,7 @@ namespace GPaste {
             public string get_element(uint32 index) {
                 if (index >= this.history.length())
                     return "";
-                return this.history.nth_data(index).str;
+                return this.history.nth_data(index).get_value ();
             }
 
             public void select(uint32 index) {
@@ -142,8 +143,8 @@ namespace GPaste {
                         this.history.append(new UrisItem(value));
                         break;
                     case "Image":
-                        ImageItem item = new ImageItem.load(value, new GLib.DateTime.from_unix_local (int64.parse (date)));
-                        if (item.img != null)
+                        ImageItem item = new ImageItem.from_file (value, new GLib.DateTime.from_unix_local (int64.parse (date)));
+                        if (item.get_image () != null)
                             history.append (item);
                         break;
                     }
@@ -172,13 +173,13 @@ namespace GPaste {
                     writer.start_document("1.0", "UTF-8");
                     writer.start_element("history");
 
-                    foreach (Item i in this.history) {
+                    foreach (Item item in this.history) {
                         writer.start_element("item");
-                        writer.write_attribute("kind", i.get_kind ());
-                        if (i is ImageItem)
-                            writer.write_attribute("date", (i as ImageItem).date.to_unix ().to_string ());
+                        writer.write_attribute("kind", item.get_kind ());
+                        if (item is ImageItem)
+                            writer.write_attribute("date", (item as ImageItem).get_date ().to_unix ().to_string ());
                         writer.start_cdata();
-                        writer.write_string(i.str);
+                        writer.write_string(item.get_value ());
                         writer.end_cdata();
                         writer.end_element();
                     }
