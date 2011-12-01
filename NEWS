@@ -1,5 +1,8 @@
-NEW in 2.1 (Not released yet)
+NEW in 2.1 (01/12/2011)
 =============
+
+- Fix a bug which was "randomly" deleting image files
+- Generate tarball with sane vala to unbreak keybindings
 
 NEW in 2.0 (27/11/2011)
 =============
