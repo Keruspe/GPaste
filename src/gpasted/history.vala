@@ -43,13 +43,15 @@ namespace GPaste {
                 });
             }
 
-            private void remove (GLib.SList<Item> link) {
-                var item = link.data;
-                if (item is ImageItem) {
-                    try {
-                        GLib.File.new_for_path ((item as ImageItem).get_value ()).delete ();
-                    } catch (GLib.Error e) {
-                        stderr.printf ("Couldn't delete image file: %s\n", e.message);
+            private void remove (GLib.SList<Item> link, bool remove_leftovers) {
+                if (remove_leftovers) {
+                    var item = link.data;
+                    if (item is ImageItem) {
+                        try {
+                            GLib.File.new_for_path ((item as ImageItem).get_value ()).delete ();
+                        } catch (GLib.Error e) {
+                            stderr.printf ("Couldn't delete image file: %s\n", e.message);
+                        }
                     }
                 }
                 this.history.remove_link(link);
@@ -65,7 +67,7 @@ namespace GPaste {
                         return;
                     for (s = s.next; s != null ; s = s.next) {
                         if (s.data.get_kind () == kind && s.data.equals(selection)) {
-                            this.remove (s);
+                            this.remove (s, false);
                             break;
                         }
                     }
@@ -78,7 +80,7 @@ namespace GPaste {
                         tmp = tmp.next;
                     do {
                         unowned GLib.SList<Item> next = tmp.next;
-                        this.remove(tmp);
+                        this.remove(tmp, true);
                         tmp = next;
                     } while(tmp != null);
                 }
@@ -91,7 +93,7 @@ namespace GPaste {
                 unowned GLib.SList<Item> tmp = this.history;
                 for (uint32 i = 0 ; i < index ; ++i)
                     tmp = tmp.next;
-                this.remove (tmp);
+                this.remove (tmp, true);
                 if (index == 0)
                     this.select(0);
                 DBusServer.instance.changed();
