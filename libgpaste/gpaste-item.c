@@ -45,7 +45,7 @@ struct _GPasteItemPrivate
  * Returns: read-only string containing the value
  */
 const gchar *
-g_paste_item_get_value (GPasteItem *self)
+g_paste_item_get_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
@@ -61,7 +61,7 @@ g_paste_item_get_value (GPasteItem *self)
  * Returns: read-only display string
  */
 const gchar *
-g_paste_item_get_display_string (GPasteItem *self)
+g_paste_item_get_display_string (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
@@ -78,8 +78,8 @@ g_paste_item_get_display_string (GPasteItem *self)
  * Returns: true if equals, false otherwise
  */
 gboolean
-g_paste_item_equals (GPasteItem *self,
-                     GPasteItem *other)
+g_paste_item_equals (const GPasteItem *self,
+                     const GPasteItem *other)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
     g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
@@ -96,7 +96,7 @@ g_paste_item_equals (GPasteItem *self,
  * Returns: true if it has value, false if it's a dummy one
  */
 gboolean 
-g_paste_item_has_value (GPasteItem *self)
+g_paste_item_has_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
 
@@ -113,7 +113,7 @@ g_paste_item_has_value (GPasteItem *self)
  *          can be "Text", "Uris" or "Image"
  */
 const gchar *
-g_paste_item_get_kind (GPasteItem *self)
+g_paste_item_get_kind (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
@@ -129,14 +129,14 @@ g_paste_item_finalize (GObject *object)
 }
 
 static gboolean
-g_paste_item_default_equals (GPasteItem *self,
-                             GPasteItem *other)
+g_paste_item_default_equals (const GPasteItem *self,
+                             const GPasteItem *other)
 {
     return (g_strcmp0 (self->priv->value, other->priv->value) == 0);
 }
 
 static gboolean
-g_paste_item_default_has_value (GPasteItem *self)
+g_paste_item_default_has_value (const GPasteItem *self)
 {
     return FALSE;
 }
@@ -175,8 +175,8 @@ g_paste_item_new (GType        type,
 G_DEFINE_TYPE (GPasteTextItem, g_paste_text_item, G_PASTE_TYPE_ITEM)
 
 static gboolean
-g_paste_text_item_equals (GPasteItem *self,
-                          GPasteItem *other)
+g_paste_text_item_equals (const GPasteItem *self,
+                          const GPasteItem *other)
 {
     g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (self), FALSE);
     g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (other), FALSE);
@@ -185,7 +185,7 @@ g_paste_text_item_equals (GPasteItem *self,
 }
 
 static const gchar *
-g_paste_text_item_get_kind (GPasteItem *self)
+g_paste_text_item_get_kind (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (self), NULL);
 
@@ -193,7 +193,7 @@ g_paste_text_item_get_kind (GPasteItem *self)
 }
 
 static gboolean
-g_paste_text_item_has_value (GPasteItem *self)
+g_paste_text_item_has_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (self), FALSE);
 
@@ -263,7 +263,7 @@ struct _GPasteUrisItemPrivate
  * Returns: (transfer none): read-only array of read-only uris (strings)
  */
 const gchar const **
-g_paste_uris_item_get_uris (GPasteUrisItem *self)
+g_paste_uris_item_get_uris (const GPasteUrisItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
 
@@ -271,8 +271,8 @@ g_paste_uris_item_get_uris (GPasteUrisItem *self)
 }
 
 static gboolean
-g_paste_uris_item_equals (GPasteItem *self,
-                          GPasteItem *other)
+g_paste_uris_item_equals (const GPasteItem *self,
+                          const GPasteItem *other)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (other), FALSE);
@@ -281,7 +281,7 @@ g_paste_uris_item_equals (GPasteItem *self,
 }
 
 static const gchar *
-g_paste_uris_item_get_kind (GPasteItem *self)
+g_paste_uris_item_get_kind (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), NULL);
 
@@ -289,7 +289,7 @@ g_paste_uris_item_get_kind (GPasteItem *self)
 }
 
 static gboolean
-g_paste_uris_item_has_value (GPasteItem *self)
+g_paste_uris_item_has_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
 
@@ -408,7 +408,7 @@ struct _GPasteImageItemPrivate
  * Returns: read-only string representatig the SHA256 checksum of the image
  */
 const gchar *
-g_paste_image_item_get_checksum (GPasteImageItem *self)
+g_paste_image_item_get_checksum (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
@@ -424,7 +424,7 @@ g_paste_image_item_get_checksum (GPasteImageItem *self)
  * Returns: read-only GDateTime containing the image's creation date
  */
 const GDateTime *
-g_paste_image_item_get_date (GPasteImageItem *self)
+g_paste_image_item_get_date (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
@@ -440,7 +440,7 @@ g_paste_image_item_get_date (GPasteImageItem *self)
  * Returns: read-only GdkPixbuf of the image
  */
 const GdkPixbuf *
-g_paste_image_item_get_image (GPasteImageItem *self)
+g_paste_image_item_get_image (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
@@ -448,8 +448,8 @@ g_paste_image_item_get_image (GPasteImageItem *self)
 }
 
 static gboolean
-g_paste_image_item_equals (GPasteItem *self,
-                           GPasteItem *other)
+g_paste_image_item_equals (const GPasteItem *self,
+                           const GPasteItem *other)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (other), FALSE);
@@ -458,7 +458,7 @@ g_paste_image_item_equals (GPasteItem *self,
 }
 
 static const gchar *
-g_paste_image_item_get_kind (GPasteItem *self)
+g_paste_image_item_get_kind (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
@@ -466,7 +466,7 @@ g_paste_image_item_get_kind (GPasteItem *self)
 }
 
 static gboolean
-g_paste_image_item_has_value (GPasteItem *self)
+g_paste_image_item_has_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
 

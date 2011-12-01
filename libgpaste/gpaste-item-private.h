@@ -38,11 +38,12 @@ struct _GPasteItemClass
     GObjectClass parent_class;
 
     /*< virtual >*/
-    gboolean (*equals) (GPasteItem *self, GPasteItem *other);
+    gboolean (*equals) (const GPasteItem *self,
+                        const GPasteItem *other);
 
     /*< pure virtual >*/
-    gboolean (*has_value) (GPasteItem *self);
-    const gchar *(*get_kind) (GPasteItem *self);
+    gboolean (*has_value) (const GPasteItem *self);
+    const gchar *(*get_kind) (const GPasteItem *self);
 };
 
 /* GPaste TextItem */
