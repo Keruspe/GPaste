@@ -135,13 +135,19 @@ g_paste_item_default_equals (GPasteItem *self,
     return (g_strcmp0 (self->priv->value, other->priv->value) == 0);
 }
 
+static gboolean
+g_paste_item_default_has_value (GPasteItem *self)
+{
+    return FALSE;
+}
+
 static void
 g_paste_item_class_init (GPasteItemClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteItemPrivate));
     
     klass->equals = g_paste_item_default_equals;
-    klass->has_value = NULL;
+    klass->has_value = g_paste_item_default_has_value;
     klass->get_kind = NULL;
     
     G_OBJECT_CLASS (klass)->finalize = g_paste_item_finalize;
