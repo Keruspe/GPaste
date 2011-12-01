@@ -17,10 +17,22 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_H__
-#define __G_PASTE_H__
+#ifndef __G_PASTE_CLIPBOARD_PRIVATE_H__
+#define __G_PASTE_CLIPBOARD_PRIVATE_H__
 
-#include "gpaste-item.h"
 #include "gpaste-clipboard.h"
 
-#endif /*__G_PASTE_H__*/
+struct _GPasteClipboard
+{
+    GObject parent_instance;
+
+    /*< protected >*/
+    GPasteClipboardPrivate *priv;
+};
+
+struct _GPasteClipboardClass
+{
+    GObjectClass parent_class;
+};
+
+#endif /*__G_PASTE_CLIPBOARD_PRIVATE_H__*/

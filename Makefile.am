@@ -61,8 +61,13 @@ dist_gnomeshell_DATA = \
 nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
 endif
 
-libgpaste_libgpaste_la_public_headers = libgpaste/gpaste.h libgpaste/gpaste-item.h
-libgpaste_libgpaste_la_private_headers = libgpaste/gpaste-item-private.h
+libgpaste_libgpaste_la_public_headers = \
+	libgpaste/gpaste.h \
+	libgpaste/gpaste-clipboard.h \
+	libgpaste/gpaste-item.h
+libgpaste_libgpaste_la_private_headers = \
+	libgpaste/gpaste-clipboard-private.h \
+	libgpaste/gpaste-item-private.h
 pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgpaste/gpaste.pc
@@ -96,6 +101,7 @@ bin_gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala
 
 libgpaste_libgpaste_la_SOURCES = \
+	libgpaste/gpaste-clipboard.c \
 	libgpaste/gpaste-item.c
 
 # VALAFLAGS
@@ -162,6 +168,7 @@ bin_gpaste_settings_CFLAGS = \
 
 libgpaste_libgpaste_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
+	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
 # LDADD
@@ -196,6 +203,7 @@ bin_gpaste_applet_LDADD = \
 
 libgpaste_libgpaste_la_LIBADD = \
 	$(GDK_PIXBUF_LIBS) \
+	$(GTK_LIBS) \
 	$(AM_LIBS)
 
 # LDFLAGS
@@ -299,7 +307,7 @@ introspection_sources = \
 	$(libgpaste_libgpaste_la_private_headers)
 
 gi/GPaste-1.0.gir: libgpaste/libgpaste.la
-gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 GObject-2.0
+gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 GObject-2.0 Gtk-3.0
 gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES)
 gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
@@ -318,8 +326,8 @@ vapidir = $(datadir)/vala/vapi
 dist_vapi_DATA = $(VAPI_FILES) $(VAPI_DEPS)
 
 if ENABLE_VALA
-vapi/gpaste-1.0.vapi: GPaste-1.0.gir
-	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $^
+vapi/gpaste-1.0.vapi: gi/GPaste-1.0.gir
+	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
 
 CLEANFILES += $(VAPI_FILES)
 endif

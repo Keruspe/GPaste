@@ -375,10 +375,10 @@ g_paste_uris_item_new (const gchar *uris)
     g_free (display_string);
 
     gchar **paths = g_strsplit (uris, "\n", 0);
-    gint length = g_strv_length (paths);
+    guint length = g_strv_length (paths);
 
     priv->uris = g_new (gchar *, length + 1);
-    for (gint i = 0; i < length; ++i)
+    for (guint i = 0; i < length; ++i)
         priv->uris[i] = g_strconcat ("file://", paths[i], NULL);
     priv->uris[length] = NULL;
     g_strfreev (paths);
