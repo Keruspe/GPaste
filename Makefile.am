@@ -69,19 +69,19 @@ pkgconfig_DATA = libgpaste/gpaste.pc
 
 # Binaries
 
-bin_PROGRAMS = gpaste
-pkglibexec_PROGRAMS = gpasted gpaste-settings
+bin_PROGRAMS = bin/gpaste
+pkglibexec_PROGRAMS = bin/gpasted bin/gpaste-settings
 if ENABLE_APPLET
-pkglibexec_PROGRAMS += gpaste-applet
+pkglibexec_PROGRAMS += bin/gpaste-applet
 endif
 lib_LTLIBRARIES = libgpaste/libgpaste.la
 
 # Sources
 
-gpaste_SOURCES = \
+bin_gpaste_SOURCES = \
 	src/gpaste.vala
 
-gpasted_SOURCES = \
+bin_gpasted_SOURCES = \
 	vapi/gpaste-1.0.vapi \
 	src/gpasted/clipboard.vala \
 	src/gpasted/gpasted.vala \
@@ -89,10 +89,10 @@ gpasted_SOURCES = \
 	src/gpasted/keybinder.vala \
 	src/gpasted/settings.vala
 
-gpaste_applet_SOURCES = \
+bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala
 
-gpaste_settings_SOURCES = \
+bin_gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala
 
 libgpaste_libgpaste_la_SOURCES = \
@@ -106,25 +106,25 @@ AM_VALAFLAGS = \
 	--pkg=posix \
 	$(GIO_VALAFLAGS)
 
-gpaste_VALAFLAGS = \
+bin_gpaste_VALAFLAGS = \
 	$(AM_VALAFLAGS)
 
-gpasted_VALAFLAGS = \
+bin_gpasted_VALAFLAGS = \
 	$(GTK_VALAFLAGS) \
 	$(GDK_VALAFLAGS) \
 	$(XML_VALAFLAGS) \
 	$(AM_VALAFLAGS)
 
-gpaste_applet_VALAFLAGS = \
+bin_gpaste_applet_VALAFLAGS = \
 	$(GTK_VALAFLAGS) \
 	$(AM_VALAFLAGS)
 
-gpaste_settings_VALAFLAGS = \
+bin_gpaste_settings_VALAFLAGS = \
 	$(GTK_VALAFLAGS) \
 	$(AM_VALAFLAGS)
 
 if ENABLE_APPLET
-gpaste_VALAFLAGS += \
+bin_gpaste_VALAFLAGS += \
 	--define=ENABLE_APPLET
 endif
 
@@ -142,21 +142,21 @@ AM_CFLAGS = \
 	$(GIO_CFLAGS)
 #	-fvisibility=hidden
 
-gpaste_CFLAGS = \
+bin_gpaste_CFLAGS = \
 	$(AM_CFLAGS)
 
-gpasted_CFLAGS = \
+bin_gpasted_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(X11_CFLAGS) \
 	$(XML_CFLAGS) \
 	$(AM_CFLAGS)
 
-gpaste_applet_CFLAGS = \
+bin_gpaste_applet_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
-gpaste_settings_CFLAGS = \
+bin_gpaste_settings_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
@@ -175,10 +175,10 @@ AM_LDFLAGS = \
 	-Wl,--gc-sections \
 	-Wl,--as-needed
 
-gpaste_LDADD = \
+bin_gpaste_LDADD = \
 	$(AM_LIBS)
 
-gpasted_LDADD = \
+bin_gpasted_LDADD = \
 	$(GTK_LIBS) \
 	$(GDK_LIBS) \
 	$(X11_LIBS) \
@@ -186,11 +186,11 @@ gpasted_LDADD = \
 	$(AM_LIBS) \
 	libgpaste/libgpaste.la
 
-gpaste_settings_LDADD = \
+bin_gpaste_settings_LDADD = \
 	$(GTK_LIBS) \
 	$(AM_LIBS)
 
-gpaste_applet_LDADD = \
+bin_gpaste_applet_LDADD = \
 	$(GTK_LIBS) \
 	$(AM_LIBS)
 
@@ -287,24 +287,24 @@ INTROSPECTION_GIRS =
 INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --c-include=gpaste.h
 INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
 
-introspection_sources = \
-	$(libgpaste_libgpaste_la_SOURCES) \
-	$(libgpaste_libgpaste_la_public_headers) \
-	$(libgpaste_libgpaste_la_private_headers)
-
-GPaste-1.0.gir: libgpaste/libgpaste.la
-GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 GObject-2.0
-GPaste_1_0_gir_CFLAGS = $(INCLUDES)
-GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
-GPaste_1_0_gir_SCANNERFLAGS = --warn-all
-GPaste_1_0_gir_FILES = $(introspection_sources)
-INTROSPECTION_GIRS += GPaste-1.0.gir
-
 girdir = $(datadir)/gir-1.0
 gir_DATA = $(INTROSPECTION_GIRS)
 
 typelibdir = $(libdir)/girepository-1.0
 typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+
+introspection_sources = \
+	$(libgpaste_libgpaste_la_SOURCES) \
+	$(libgpaste_libgpaste_la_public_headers) \
+	$(libgpaste_libgpaste_la_private_headers)
+
+gi/GPaste-1.0.gir: libgpaste/libgpaste.la
+gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 GObject-2.0
+gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES)
+gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
+gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
+gi_GPaste_1_0_gir_FILES = $(introspection_sources)
+INTROSPECTION_GIRS += gi/GPaste-1.0.gir
 
 CLEANFILES += $(gir_DATA) $(typelib_DATA)
 
@@ -316,10 +316,10 @@ vapidir = $(datadir)/vala/vapi
 dist_vapi_DATA = $(VAPI_FILES)
 
 if ENABLE_VALA
-vapi/gpaste-1.0.deps:
-	$(AM_V_GEN) $(MKDIR_P) vapi && echo -e "gdk-pixbuf-2.0\ngobject-2.0" > $@
-vapi/gpaste-1.0.vapi: GPaste-1.0.gir vapi/gpaste-1.0.deps
-	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $<
+vapi/gpaste-1.0.vapi: GPaste-1.0.gir
+	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 $^
+vapi/gpaste-1.0.deps: vapi/gpaste-1.0.vapi
+	$(AM_V_GEN) echo -e "gdk-pixbuf-2.0\ngobject-2.0" > $@
 
 CLEANFILES += $(VAPI_FILES)
 endif
