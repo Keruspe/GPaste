@@ -160,11 +160,13 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard *clipboard, GtkSelectionData 
 
     GPasteUrisItem *item = G_PASTE_URIS_ITEM (user_data_or_owner);
 
+    GdkAtom targets[1] = { gtk_selection_data_get_target (selection_data) };
+
     /* The content is requested as text */
-    if (gtk_selection_data_targets_include_text (selection_data))
+    if (gtk_targets_include_text (targets, 1))
         gtk_selection_data_set_text (selection_data, g_paste_item_get_value (G_PASTE_ITEM (item)), -1);
     /* The content is requested as uris */
-    else if (gtk_selection_data_targets_include_uri (selection_data))
+    else if (gtk_targets_include_uri (targets, 1))
         gtk_selection_data_set_uris (selection_data, (gchar **) g_paste_uris_item_get_uris (item));
     /* The content is requested as special gnome-copied-files by nautilus */
     else
