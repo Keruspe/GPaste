@@ -53,4 +53,3 @@ libtool
 *.gir
 *.typelib
 *.vapi
-*.deps
