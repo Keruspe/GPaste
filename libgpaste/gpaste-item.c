@@ -81,9 +81,6 @@ gboolean
 g_paste_item_equals (const GPasteItem *self,
                      const GPasteItem *other)
 {
-    g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
-
     return G_PASTE_ITEM_GET_CLASS (self)->equals (self, other);
 }
 
@@ -132,6 +129,9 @@ static gboolean
 g_paste_item_default_equals (const GPasteItem *self,
                              const GPasteItem *other)
 {
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
+
     return (g_strcmp0 (self->priv->value, other->priv->value) == 0);
 }
 
@@ -179,9 +179,9 @@ g_paste_text_item_equals (const GPasteItem *self,
                           const GPasteItem *other)
 {
     g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (self), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (other), FALSE);
 
-    return G_PASTE_ITEM_CLASS (g_paste_text_item_parent_class)->equals (self, other);
+    return (G_PASTE_IS_TEXT_ITEM (other) &&
+            G_PASTE_ITEM_CLASS (g_paste_text_item_parent_class)->equals (self, other));
 }
 
 static const gchar *
@@ -275,9 +275,9 @@ g_paste_uris_item_equals (const GPasteItem *self,
                           const GPasteItem *other)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (other), FALSE);
 
-    return G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->equals (self, other);
+    return (G_PASTE_IS_URIS_ITEM (other) &&
+            G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->equals (self, other));
 }
 
 static const gchar *
@@ -452,9 +452,9 @@ g_paste_image_item_equals (const GPasteItem *self,
                            const GPasteItem *other)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (other), FALSE);
 
-    return (g_strcmp0 (G_PASTE_IMAGE_ITEM (self)->priv->checksum, G_PASTE_IMAGE_ITEM (other)->priv->checksum) == 0);
+    return (G_PASTE_IS_IMAGE_ITEM (other) &&
+            (g_strcmp0 (G_PASTE_IMAGE_ITEM (self)->priv->checksum, G_PASTE_IMAGE_ITEM (other)->priv->checksum) == 0));
 }
 
 static const gchar *
