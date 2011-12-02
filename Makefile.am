@@ -304,6 +304,7 @@ gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES)
 gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
 gi_GPaste_1_0_gir_FILES = $(introspection_sources)
+gi_GPaste_1_0_gir_NAMESPACE = GPaste  # Temporary fix
 INTROSPECTION_GIRS += gi/GPaste-1.0.gir
 
 CLEANFILES += $(gir_DATA) $(typelib_DATA)
