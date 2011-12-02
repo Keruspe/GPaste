@@ -235,16 +235,7 @@ g_paste_clipboard_get_image_checksum (const GPasteClipboard *self)
     return self->priv->image_checksum;
 }
 
-/**
- * g_paste_clipboard_set_image_checksum:
- * @self: a GPasteClipboard instance
- * @image_checksum: the new image checksum to put in the GPasteClipboard
- *
- * Put the image checksum into the GPasteClipboard
- *
- * Returns:
- */
-void
+static void
 g_paste_clipboard_set_image_checksum (GPasteClipboard *self,
                                       const gchar     *image_checksum)
 {
