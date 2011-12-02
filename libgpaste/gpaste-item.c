@@ -532,7 +532,9 @@ _g_paste_image_item_new (const gchar *path,
     if (image)
     {
         if (!checksum)
-            checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, (guchar *) gdk_pixbuf_get_pixels (image), -1);
+            checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
+                                                    (guchar *) gdk_pixbuf_get_pixels (image),
+                                                    -1);
         priv->checksum = checksum;
         /* This is the date format "month/day/year time" */
         gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
@@ -559,7 +561,9 @@ _g_paste_image_item_new (const gchar *path,
 GPasteImageItem *
 g_paste_image_item_new (GdkPixbuf *img)
 {
-    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, (guchar *) gdk_pixbuf_get_pixels (img), -1);
+    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
+                                                   (guchar *) gdk_pixbuf_get_pixels (img),
+                                                   -1);
     gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
     GFile *images_dir = g_file_new_for_path (images_dir_path);
 
