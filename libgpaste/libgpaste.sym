@@ -26,7 +26,6 @@ global:
     g_paste_clipboard_get_image_checksum;
     g_paste_clipboard_set_image_checksum;
     g_paste_clipboard_set_image;
-    g_paste_clipboard_select_image;
     g_paste_clipboard_select_item;
     g_paste_clipboard_new;
 local:

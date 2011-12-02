@@ -46,8 +46,6 @@ const gchar *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);
 void g_paste_clipboard_set_image_checksum (GPasteClipboard *self,
                                            const gchar     *image_checksum);
 const GdkPixbuf *g_paste_clipboard_set_image (GPasteClipboard *self);
-void g_paste_clipboard_select_image (GPasteClipboard *self,
-                                     GdkPixbuf       *image);
 void g_paste_clipboard_select_item (GPasteClipboard  *self,
                                     const GPasteItem *item);
 GPasteClipboard *g_paste_clipboard_new (GdkAtom target);

@@ -55,7 +55,7 @@ g_paste_clipboard_get_target (const GPasteClipboard *self)
  *
  * Get the GtkClipboard linked to the GPasteClipboard
  *
- * Returns: (transfer none): the GtkClipboard used in the GPasteClipboard
+ * Returns: the GtkClipboard used in the GPasteClipboard
  */
 const GtkClipboard *
 g_paste_clipboard_get_real (const GPasteClipboard *self)
@@ -308,35 +308,6 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
     }
 
     return ret;
-}
-
-/**
- * g_paste_clipboard_select_image:
- * @self: a GPasteClipboard instance
- * @image: the GdkPixbuf to select
- *
- * Put the image into the GPasteClipbaord and the intern GtkClipboard
- *
- * Returns:
- */
-void
-g_paste_clipboard_select_image (GPasteClipboard *self,
-                                GdkPixbuf       *image)
-{
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
-    g_return_if_fail (image != NULL);
-
-    GtkClipboard *real = self->priv->real;
-    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                   (guchar *) gdk_pixbuf_get_pixels (image),
-                                                   -1);
-
-    if (g_strcmp0 (checksum, self->priv->image_checksum) != 0)
-        _g_paste_clipboard_select_image (self,
-                                         image,
-                                         checksum);
-
-    g_free (checksum);
 }
 
 /**
