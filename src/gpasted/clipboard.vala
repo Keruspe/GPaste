@@ -23,18 +23,15 @@ namespace GPaste {
 
         public class ClipboardsManager : GLib.Object {
             private GLib.SList<Clipboard> clipboards;
-            private DBusServer gpasted = DBusServer.instance;
+            private History history;
+            private Settings settings;
 
-            private static ClipboardsManager _instance;
-            public static ClipboardsManager instance {
-                get {
-                    if (ClipboardsManager._instance == null)
-                        ClipboardsManager._instance = new ClipboardsManager();
-                    return ClipboardsManager._instance;
-                }
-            }
-
-            private ClipboardsManager() {
+            public ClipboardsManager(History history, Settings settings) {
+                this.history = history;
+                this.settings = settings;
+                this.history.selected.connect ((selection) =>{
+                    this.select (selection);
+                });
                 this.clipboards = new GLib.SList<Clipboard>();
             }
 
@@ -45,7 +42,7 @@ namespace GPaste {
                 else if (clipboard.get_real ().wait_is_image_available())
                     clipboard.set_image ();
                 if (clipboard.get_text () == null && clipboard.get_image_checksum () == null) {
-                    unowned GLib.SList<Item> history = History.instance.history;
+                    unowned GLib.SList<Item> history = this.history.history;
                     if (history.length() != 0)
                         clipboard.select_item (history.data);
                 }
@@ -56,7 +53,7 @@ namespace GPaste {
             }
 
             public void select(Item selection) {
-                History.instance.add(selection);
+                this.history.add(selection);
                 foreach(Clipboard c in this.clipboards) {
                     c.select_item (selection);
                 }
@@ -73,13 +70,13 @@ namespace GPaste {
                         something_in_clipboard = (c.get_text () != null);
                         if (text != null) {
                             Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                            if (this.gpasted.active && (c.get_target () == tmp || Settings.instance.primary_to_history)) {
+                            if (this.settings.track_changes && (c.get_target () == tmp || this.settings.primary_to_history)) {
                                 if (uris_available)
-                                    History.instance.add(new UrisItem(text));
+                                    this.history.add(new UrisItem(text));
                                 else
-                                    History.instance.add(new TextItem(text));
+                                    this.history.add(new TextItem(text));
                             }
-                            if (Settings.instance.synchronize_clipboards)
+                            if (this.settings.synchronize_clipboards)
                                 synchronized_text = text;
                         }
                     } else if (c.get_real ().wait_is_image_available()) {
@@ -87,12 +84,12 @@ namespace GPaste {
                         something_in_clipboard = (c.get_image_checksum () != null);
                         if (image != null) {
                             Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                            if (this.gpasted.active && (c.get_target () == tmp || Settings.instance.primary_to_history))
-                                History.instance.add(new ImageItem(image));
+                            if (this.settings.track_changes && (c.get_target () == tmp || this.settings.primary_to_history))
+                                this.history.add(new ImageItem(image));
                         }
                     }
                     if (!something_in_clipboard) {
-                        unowned GLib.SList<Item> history = History.instance.history;
+                        unowned GLib.SList<Item> history = this.history.history;
                         if (history.length() == 0)
                             continue;
                         c.select_item (history.data);

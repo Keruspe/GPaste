@@ -22,10 +22,6 @@ namespace GPaste {
     namespace Daemon {
 
         public class Keybinder : GLib.Object {
-            public static Keybinder instance {
-                get;
-                private set;
-            }
 
             public int keycode {
                 get;
@@ -37,17 +33,14 @@ namespace GPaste {
                 private set;
             }
 
-            public static void init(string accelerator) {
-                if (Keybinder.instance != null)
-                    return;
-                Keybinder.instance = new Keybinder(accelerator);
+            public Keybinder(Settings settings) {
+                this.activate(settings.keyboard_shortcut);
+                settings.rebind.connect ((binding)=>{
+                    this.rebind(binding);
+                });
                 Gdk.Window rootwin = Gdk.get_default_root_window();
                 if(rootwin != null)
-                    rootwin.add_filter(Keybinder.instance.event_filter);
-            }
-
-            private Keybinder(string accelerator) {
-                this.activate(accelerator);
+                    rootwin.add_filter(this.event_filter);
             }
 
             public void unbind() {
@@ -83,9 +76,11 @@ namespace GPaste {
             private Gdk.FilterReturn event_filter(Gdk.XEvent gdk_xevent, Gdk.Event gdk_event) {
                 var xevent = *((X.Event*)(&gdk_xevent));
                 if(xevent.type == X.EventType.KeyPress && xevent.xkey.keycode == this.keycode && xevent.xkey.state == this.modifiers)
-                    DBusServer.instance.toggle_history();
+                    this.toggle ();
                 return Gdk.FilterReturn.CONTINUE;
             }
+
+            public signal void toggle ();
         }
 
     }

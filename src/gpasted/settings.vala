@@ -24,15 +24,6 @@ namespace GPaste {
         public class Settings : GLib.Object {
             private GLib.Settings settings;
 
-            private static Settings _instance;
-            public static Settings instance {
-                get {
-                    if (Settings._instance == null)
-                        Settings._instance = new Settings();
-                    return Settings._instance;
-                }
-            }
-
             private bool real_primary_to_history {
                 get {
                     return this.settings.get_boolean("primary-to-history");
@@ -98,7 +89,10 @@ namespace GPaste {
                 this.settings.set_boolean("track-changes", state);
             }
 
-            private Settings() {
+            public signal void rebind (string binding);
+            public signal void track (bool tracking_state);
+
+            public Settings () {
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.primary_to_history = this.real_primary_to_history;
                 this.max_history_size = this.real_max_history_size;
@@ -119,14 +113,14 @@ namespace GPaste {
                         break;
                     case "track-changes":
                         this.track_changes = this.real_track_changes;
-                        DBusServer.instance.tracking(this.track_changes);
+                        this.track (this.track_changes);
                         break;
                     case "save-history":
                         this.save_history = this.real_save_history;
                         break;
                     case "keyboard-shortcut":
                         this.keyboard_shortcut = this.real_keyboard_shortcut;
-                        Keybinder.instance.rebind(this.keyboard_shortcut);
+                        this.rebind (this.keyboard_shortcut);
                         break;
                     }
                 });

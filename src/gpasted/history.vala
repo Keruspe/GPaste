@@ -27,18 +27,12 @@ namespace GPaste {
                 private set;
             }
 
-            private static History _instance;
-            public static History instance {
-                get {
-                    if (History._instance == null)
-                        History._instance = new History();
-                    return History._instance;
-                }
-            }
+            private Settings settings;
 
-            private History() {
+            public History (Settings settings) {
                 this.history = new GLib.SList<Item>();
-                DBusServer.instance.changed.connect(()=>{
+                this.settings = settings;
+                this.changed.connect(()=>{
                     this.save();
                 });
             }
@@ -57,6 +51,8 @@ namespace GPaste {
                 this.history.remove_link(link);
             }
 
+            public signal void changed ();
+
             public void add(Item selection) {
                 if (!selection.has_value())
                     return;
@@ -73,7 +69,7 @@ namespace GPaste {
                     }
                 }
                 this.history.prepend(selection);
-                uint32 max_history_size = Settings.instance.max_history_size;
+                uint32 max_history_size = this.settings.max_history_size;
                 if (this.history.length() > max_history_size) {
                     unowned GLib.SList<Item> tmp = this.history;
                     for (uint32 i = 0 ; i < max_history_size ; ++i)
@@ -84,7 +80,7 @@ namespace GPaste {
                         tmp = next;
                     } while(tmp != null);
                 }
-                DBusServer.instance.changed();
+                this.changed();
             }
 
             public void delete(uint32 index) {
@@ -96,7 +92,7 @@ namespace GPaste {
                 this.remove (tmp, true);
                 if (index == 0)
                     this.select(0);
-                DBusServer.instance.changed();
+                this.changed();
             }
 
             public string get_element(uint32 index) {
@@ -105,11 +101,13 @@ namespace GPaste {
                 return this.history.nth_data(index).get_value ();
             }
 
+            public signal void selected (Item selection);
+
             public void select(uint32 index) {
                 if (index >= this.history.length())
                     return;
                 Item selection = this.history.nth_data(index);
-                ClipboardsManager.instance.select(selection);
+                this.selected (selection);
             }
 
             public void empty() {
@@ -121,7 +119,7 @@ namespace GPaste {
                     stderr.printf(_("Could not delete history file.\n"));
                 }
                 this.history = new GLib.SList<Item>();
-                DBusServer.instance.changed();
+                this.changed();
             }
 
             public void load() {
@@ -153,9 +151,9 @@ namespace GPaste {
                 }
             }
 
-            public void save() {
+            public void save () {
                 string history_dir_path = GLib.Path.build_filename(GLib.Environment.get_user_data_dir(), "gpaste");
-                var save_history = Settings.instance.save_history;
+                var save_history = this.settings.save_history;
                 if (!GLib.File.new_for_path(history_dir_path).query_exists()) {
                     if (!save_history)
                         return;
