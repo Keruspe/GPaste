@@ -17,11 +17,17 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (GPASTE_COMPILATION)
+#error "Only <gpaste.h> can be included directly."
+#endif
+
 #ifndef __G_PASTE_ITEM_H__
 #define __G_PASTE_ITEM_H__
 
 #include <glib-object.h>
 #include <gdk-pixbuf/gdk-pixdata.h>
+
+G_BEGIN_DECLS
 
 /* GPaste Item */
 
@@ -96,5 +102,7 @@ GPasteImageItem *g_paste_image_item_new_from_file (const gchar *path,
 const gchar *g_paste_image_item_get_checksum (const GPasteImageItem *self);
 const GDateTime *g_paste_image_item_get_date (const GPasteImageItem *self);
 const GdkPixbuf *g_paste_image_item_get_image (const GPasteImageItem *self);
+
+G_END_DECLS
 
 #endif /*__G_PASTE_ITEM_H__*/

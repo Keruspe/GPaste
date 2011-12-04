@@ -141,6 +141,7 @@ AM_CFLAGS = \
 	-I$(top_srcdir)/libgpaste \
 	-ffunction-sections \
 	-fdata-sections \
+	-DGPASTE_COMPILATION \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(GLIB_CFLAGS) \
@@ -307,8 +308,8 @@ introspection_sources = \
 	$(libgpaste_libgpaste_la_private_headers)
 
 gi/GPaste-1.0.gir: libgpaste/libgpaste.la
-gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 GObject-2.0 Gtk-3.0
-gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES)
+gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0
+gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DGPASTE_COMPILATION
 gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
 gi_GPaste_1_0_gir_FILES = $(introspection_sources)
@@ -327,7 +328,7 @@ dist_vapi_DATA = $(VAPI_FILES) $(VAPI_DEPS)
 
 if ENABLE_VALA
 vapi/gpaste-1.0.vapi: gi/GPaste-1.0.gir
-	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
+	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
 
 CLEANFILES += $(VAPI_FILES)
 endif

@@ -17,12 +17,18 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (GPASTE_COMPILATION)
+#error "Only <gpaste.h> can be included directly."
+#endif
+
 #ifndef __G_PASTE_CLIPBOARD_H__
 #define __G_PASTE_CLIPBOARD_H__
 
 #include "gpaste-item.h"
 
 #include <gtk/gtk.h>
+
+G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_CLIPBOARD            (g_paste_clipboard_get_type ())
 #define G_PASTE_CLIPBOARD(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_CLIPBOARD, GPasteClipboard))
@@ -47,5 +53,7 @@ const GdkPixbuf *g_paste_clipboard_set_image (GPasteClipboard *self);
 void g_paste_clipboard_select_item (GPasteClipboard  *self,
                                     const GPasteItem *item);
 GPasteClipboard *g_paste_clipboard_new (GdkAtom target);
+
+G_END_DECLS
 
 #endif /*__G_PASTE_CLIPBOARD_H__*/

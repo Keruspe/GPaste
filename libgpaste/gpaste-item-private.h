@@ -22,6 +22,8 @@
 
 #include "gpaste-item.h"
 
+G_BEGIN_DECLS
+
 /* GPaste Item */
 
 /*< abstract >*/
@@ -87,5 +89,7 @@ struct _GPasteImageItemClass
 {
     GPasteItemClass parent_class;
 };
+
+G_END_DECLS
 
 #endif /*__G_PASTE_ITEM_PRIVATE_H__*/

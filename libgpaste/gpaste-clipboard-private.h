@@ -22,6 +22,8 @@
 
 #include "gpaste-clipboard.h"
 
+G_BEGIN_DECLS
+
 struct _GPasteClipboard
 {
     GObject parent_instance;
@@ -34,5 +36,7 @@ struct _GPasteClipboardClass
 {
     GObjectClass parent_class;
 };
+
+G_END_DECLS
 
 #endif /*__G_PASTE_CLIPBOARD_PRIVATE_H__*/

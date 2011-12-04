@@ -20,7 +20,11 @@
 #ifndef __G_PASTE_H__
 #define __G_PASTE_H__
 
+#define __G_PASTE_H_INSIDE__
+
 #include "gpaste-item.h"
 #include "gpaste-clipboard.h"
+
+#undef __G_PASTE_H_INSIDE__
 
 #endif /*__G_PASTE_H__*/
