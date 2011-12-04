@@ -27,6 +27,15 @@ global:
     g_paste_clipboard_set_image;
     g_paste_clipboard_select_item;
     g_paste_clipboard_new;
+    g_paste_settings_get_type;
+    g_paste_settings_get_primary_to_history;
+    g_paste_settings_get_max_history_size;
+    g_paste_settings_get_synchronize_clipboards;
+    g_paste_settings_set_tracking_state;
+    g_paste_settings_get_track_changes;
+    g_paste_settings_get_save_history;
+    g_paste_settings_get_keyboard_shortcut;
+    g_paste_settings_new;
 local:
     *;
 };

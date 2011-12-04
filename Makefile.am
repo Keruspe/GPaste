@@ -64,10 +64,12 @@ endif
 libgpaste_libgpaste_la_public_headers = \
 	libgpaste/gpaste.h \
 	libgpaste/gpaste-clipboard.h \
-	libgpaste/gpaste-item.h
+	libgpaste/gpaste-item.h \
+	libgpaste/gpaste-settings.h
 libgpaste_libgpaste_la_private_headers = \
 	libgpaste/gpaste-clipboard-private.h \
-	libgpaste/gpaste-item-private.h
+	libgpaste/gpaste-item-private.h \
+	libgpaste/gpaste-settings-private.h
 pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgpaste/gpaste.pc
@@ -102,7 +104,8 @@ bin_gpaste_settings_SOURCES = \
 
 libgpaste_libgpaste_la_SOURCES = \
 	libgpaste/gpaste-clipboard.c \
-	libgpaste/gpaste-item.c
+	libgpaste/gpaste-item.c \
+	libgpaste/gpaste-settings.c
 
 # VALAFLAGS
 
