@@ -283,6 +283,9 @@ g_paste_settings_settings_changed (GSettings   *settings,
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = self->priv;
 
+    /* Silence warning */
+    settings = settings;
+
     if (g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ) == 0)
         g_paste_settings_set_primary_to_history (self);
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
@@ -295,7 +298,7 @@ g_paste_settings_settings_changed (GSettings   *settings,
         g_signal_emit (self,
                        signals[TRACK],
                        0, /* detail */
-                       self->priv->track_changes);
+                       priv->track_changes);
     }
     else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
         g_paste_settings_set_save_history (self);
@@ -305,7 +308,7 @@ g_paste_settings_settings_changed (GSettings   *settings,
         g_signal_emit (self,
                        signals[REBIND],
                        0, /* detail */
-                       self->priv->keyboard_shortcut);
+                       priv->keyboard_shortcut);
     }
 }
 

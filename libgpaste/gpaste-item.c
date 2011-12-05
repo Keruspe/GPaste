@@ -138,6 +138,9 @@ g_paste_item_default_equals (const GPasteItem *self,
 static gboolean
 g_paste_item_default_has_value (const GPasteItem *self)
 {
+    /* Silence warning */
+    self = self;
+
     return FALSE;
 }
 

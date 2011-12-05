@@ -42,7 +42,7 @@ typedef struct _GPasteClipboardClass GPasteClipboardClass;
 typedef struct _GPasteClipboardPrivate GPasteClipboardPrivate;
 
 GType g_paste_clipboard_get_type (void);
-const GdkAtom g_paste_clipboard_get_target (const GPasteClipboard *self);
+GdkAtom g_paste_clipboard_get_target (const GPasteClipboard *self);
 const GtkClipboard *g_paste_clipboard_get_real (const GPasteClipboard *self);
 const gchar *g_paste_clipboard_get_text (const GPasteClipboard *self);
 const gchar *g_paste_clipboard_set_text (GPasteClipboard *self);

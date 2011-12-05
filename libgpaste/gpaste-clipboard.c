@@ -41,7 +41,7 @@ static GdkAtom g_paste_clipboard_copy_files_target;
  *
  * Returns: (transfer none): the GdkAtom representing the target (Primary, Clipboard, ...)
  */
-const GdkAtom
+GdkAtom
 g_paste_clipboard_get_target (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
@@ -159,6 +159,10 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard *clipboard, GtkSelectionData 
     g_return_if_fail (G_PASTE_IS_URIS_ITEM (user_data_or_owner));
 
     GPasteUrisItem *item = G_PASTE_URIS_ITEM (user_data_or_owner);
+
+    /* Silence warnings */
+    clipboard = clipboard;
+    info = info;
 
     GdkAtom targets[1] = { gtk_selection_data_get_target (selection_data) };
 
