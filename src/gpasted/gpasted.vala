@@ -158,7 +158,10 @@ namespace GPaste {
                 GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
                 Gtk.init(ref args);
                 var settings = new Settings ();
-                var keybinder = new Keybinder (settings);
+                var keybinder = new Keybinder (settings.get_keyboard_shortcut ());
+                settings.rebind.connect ((binding)=>{
+                    keybinder.rebind(binding);
+                });
                 var history = new History (settings);
                 var cm = new ClipboardsManager (history, settings);
                 var gpasted = new DBusServer (history, settings, cm, keybinder);

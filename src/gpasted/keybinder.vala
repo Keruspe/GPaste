@@ -33,11 +33,8 @@ namespace GPaste {
                 private set;
             }
 
-            public Keybinder(Settings settings) {
-                this.activate(settings.get_keyboard_shortcut ());
-                settings.rebind.connect ((binding)=>{
-                    this.rebind(binding);
-                });
+            public Keybinder(string binding) {
+                this.activate(binding);
                 Gdk.Window rootwin = Gdk.get_default_root_window();
                 if(rootwin != null)
                     rootwin.add_filter(this.event_filter);
