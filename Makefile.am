@@ -309,7 +309,9 @@ introspection_sources = \
 	$(libgpaste_libgpaste_la_public_headers) \
 	$(libgpaste_libgpaste_la_private_headers)
 
-gi/GPaste-1.0.gir: libgpaste/libgpaste.la
+gi/.tmp:
+	@ $(MKDIR_P) gi && touch gi/.tmp
+gi/GPaste-1.0.gir: libgpaste/libgpaste.la gi/.tmp
 gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0
 gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DGPASTE_COMPILATION
 gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
@@ -318,7 +320,7 @@ gi_GPaste_1_0_gir_FILES = $(introspection_sources)
 gi_GPaste_1_0_gir_NAMESPACE = GPaste  # Temporary fix
 INTROSPECTION_GIRS += gi/GPaste-1.0.gir
 
-CLEANFILES += $(gir_DATA) $(typelib_DATA)
+CLEANFILES += $(gir_DATA) $(typelib_DATA) gi/.tmp
 
 # Vapi
 

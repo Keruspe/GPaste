@@ -50,6 +50,5 @@ libtool
 .libs
 *.la
 *.lo
-*.gir
-*.typelib
+gi/
 *.vapi
