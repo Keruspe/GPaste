@@ -332,6 +332,7 @@ dist_vapi_DATA = $(VAPI_FILES) $(VAPI_DEPS)
 
 if ENABLE_VALA
 vapi/gpaste-1.0.vapi: gi/GPaste-1.0.gir
+	@ $(MKDIR_P) vapi
 	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
 
 CLEANFILES += $(VAPI_FILES)

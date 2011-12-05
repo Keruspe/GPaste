@@ -25,7 +25,7 @@
 #define __G_PASTE_ITEM_H__
 
 #include <glib-object.h>
-#include <gdk-pixbuf/gdk-pixdata.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 G_BEGIN_DECLS
 

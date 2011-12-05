@@ -18,6 +18,9 @@
 AC_PREREQ([2.68])
 AC_INIT([GPaste],[2.5],[Marc-Antoine@Perennou.com])
 
+GLIB_REQUIRED="2.30.0"
+GTK_REQUIRED="3.0.0"
+
 AC_SUBST([PACKAGE_NAME], ["$PACKAGE_NAME"])
 AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
 
@@ -52,9 +55,6 @@ IT_PROG_INTLTOOL([0.40.0])
 GLIB_GSETTINGS
 
 PKG_PROG_PKG_CONFIG([0.22])
-
-GLIB_REQUIRED="2.30.0"
-GTK_REQUIRED="3.0.0"
 
 PKG_CHECK_MODULES(GLIB, [glib-2.0 >= $GLIB_REQUIRED])
 PKG_CHECK_MODULES(GOBJECT, [gobject-2.0 >= $GLIB_REQUIRED])
@@ -94,10 +94,10 @@ AC_ARG_ENABLE(vala, AS_HELP_STRING([--enable-vala], [Enable vapi generation]), e
 AM_CONDITIONAL(ENABLE_VALA, test x$enable_vala != xno)
 
 AC_CONFIG_FILES([
-  Makefile
-  po/Makefile.in
-  data/org.gnome.GPaste.gschema.xml.in
-  libgpaste/gpaste.pc
+    Makefile
+    po/Makefile.in
+    data/org.gnome.GPaste.gschema.xml.in
+    libgpaste/gpaste.pc
 ])
 AC_OUTPUT
 AC_MSG_RESULT([
