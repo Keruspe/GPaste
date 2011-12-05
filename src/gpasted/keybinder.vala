@@ -34,7 +34,7 @@ namespace GPaste {
             }
 
             public Keybinder(Settings settings) {
-                this.activate(settings.keyboard_shortcut);
+                this.activate(settings.get_keyboard_shortcut ());
                 settings.rebind.connect ((binding)=>{
                     this.rebind(binding);
                 });

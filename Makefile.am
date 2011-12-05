@@ -93,8 +93,7 @@ bin_gpasted_SOURCES = \
 	src/gpasted/clipboard.vala \
 	src/gpasted/gpasted.vala \
 	src/gpasted/history.vala \
-	src/gpasted/keybinder.vala \
-	src/gpasted/settings.vala
+	src/gpasted/keybinder.vala
 
 bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala

@@ -69,7 +69,7 @@ namespace GPaste {
                     }
                 }
                 this.history.prepend(selection);
-                uint32 max_history_size = this.settings.max_history_size;
+                uint32 max_history_size = this.settings.get_max_history_size ();
                 if (this.history.length() > max_history_size) {
                     unowned GLib.SList<Item> tmp = this.history;
                     for (uint32 i = 0 ; i < max_history_size ; ++i)
@@ -153,7 +153,7 @@ namespace GPaste {
 
             public void save () {
                 string history_dir_path = GLib.Path.build_filename(GLib.Environment.get_user_data_dir(), "gpaste");
-                var save_history = this.settings.save_history;
+                var save_history = this.settings.get_save_history ();
                 if (!GLib.File.new_for_path(history_dir_path).query_exists()) {
                     if (!save_history)
                         return;

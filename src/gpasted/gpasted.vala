@@ -80,7 +80,7 @@ namespace GPaste {
             [DBus (name = "Active", signature = "b", access = "readonly")]
             public bool active {
                 get {
-                    return this.settings.track_changes;
+                    return this.settings.get_track_changes ();
                 }
                 private set {
                     this.settings.set_tracking_state(value);

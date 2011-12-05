@@ -70,13 +70,13 @@ namespace GPaste {
                         something_in_clipboard = (c.get_text () != null);
                         if (text != null) {
                             Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                            if (this.settings.track_changes && (c.get_target () == tmp || this.settings.primary_to_history)) {
+                            if (this.settings.get_track_changes () && (c.get_target () == tmp || this.settings.get_primary_to_history ())) {
                                 if (uris_available)
                                     this.history.add(new UrisItem(text));
                                 else
                                     this.history.add(new TextItem(text));
                             }
-                            if (this.settings.synchronize_clipboards)
+                            if (this.settings.get_synchronize_clipboards ())
                                 synchronized_text = text;
                         }
                     } else if (c.get_real ().wait_is_image_available()) {
@@ -84,7 +84,7 @@ namespace GPaste {
                         something_in_clipboard = (c.get_image_checksum () != null);
                         if (image != null) {
                             Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                            if (this.settings.track_changes && (c.get_target () == tmp || this.settings.primary_to_history))
+                            if (this.settings.get_track_changes () && (c.get_target () == tmp || this.settings.get_primary_to_history ()))
                                 this.history.add(new ImageItem(image));
                         }
                     }
