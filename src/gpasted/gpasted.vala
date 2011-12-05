@@ -66,7 +66,12 @@ namespace GPaste {
             }
 
             [DBus (name = "Reexecute", inSignature = "", outSignature = "")]
-            public signal void reexec();
+            public void reexec () {
+                this.reexecute_self ();
+            }
+
+            [DBus (name = "Reexecute-Self", inSignature = "")]
+            public signal void reexecute_self ();
 
             [DBus (name = "Tracking", inSignature = "b")]
             public signal void tracking(bool tracking_state);
@@ -119,6 +124,9 @@ namespace GPaste {
 
             public Main (DBusServer gpasted, Keybinder keybinder) {
                 this.gpasted = gpasted;
+                this.gpasted.reexecute_self.connect (() => {
+                    this.reexec ();
+                });
                 this.keybinder = keybinder;
                 this.loop = new GLib.MainLoop (null, false);
                 Bus.own_name(BusType.SESSION, "org.gnome.GPaste", BusNameOwnerFlags.NONE,
