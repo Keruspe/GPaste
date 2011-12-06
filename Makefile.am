@@ -141,15 +141,12 @@ endif
 AM_CFLAGS = \
 	-include $(top_builddir)/config.h \
 	-I$(top_srcdir)/libgpaste \
-	-ffunction-sections \
-	-fdata-sections \
 	-DGPASTE_COMPILATION \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(GLIB_CFLAGS) \
 	$(GOBJECT_CFLAGS) \
 	$(GIO_CFLAGS)
-#	-fvisibility=hidden
 
 bin_gpaste_CFLAGS = \
 	$(AM_CFLAGS)
