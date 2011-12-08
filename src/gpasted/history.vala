@@ -54,8 +54,6 @@ namespace GPaste {
             public signal void changed ();
 
             public void add(Item selection) {
-                if (!selection.has_value())
-                    return;
                 unowned GLib.SList<Item> s = this.history;
                 if (s != null) {
                     string kind = selection.get_kind ();

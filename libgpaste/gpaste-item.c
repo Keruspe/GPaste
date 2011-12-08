@@ -85,22 +85,6 @@ g_paste_item_equals (const GPasteItem *self,
 }
 
 /**
- * g_paste_item_has_value:
- * @self: a GPasteItem instance
- *
- * Tell if the GPasteItem has a value or not
- *
- * Returns: true if it has value, false if it's a dummy one
- */
-gboolean 
-g_paste_item_has_value (const GPasteItem *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
-
-    return G_PASTE_ITEM_GET_CLASS (self)->has_value (self);
-}
-
-/**
  * g_paste_item_get_kind:
  * @self: a GPasteItem instance
  *
@@ -135,22 +119,12 @@ g_paste_item_default_equals (const GPasteItem *self,
     return (g_strcmp0 (self->priv->value, other->priv->value) == 0);
 }
 
-static gboolean
-g_paste_item_default_has_value (const GPasteItem *self)
-{
-    /* Silence warning */
-    self = self;
-
-    return FALSE;
-}
-
 static void
 g_paste_item_class_init (GPasteItemClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteItemPrivate));
     
     klass->equals = g_paste_item_default_equals;
-    klass->has_value = g_paste_item_default_has_value;
     klass->get_kind = NULL;
     
     G_OBJECT_CLASS (klass)->finalize = g_paste_item_finalize;
@@ -195,21 +169,12 @@ g_paste_text_item_get_kind (const GPasteItem *self)
     return "Text";
 }
 
-static gboolean
-g_paste_text_item_has_value (const GPasteItem *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (self), FALSE);
-
-    return (g_strcmp0 ("", g_strstrip (self->priv->value)) != 0);
-}
-
 static void
 g_paste_text_item_class_init (GPasteTextItemClass *klass)
 {
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
     
     item_class->equals = g_paste_text_item_equals;
-    item_class->has_value = g_paste_text_item_has_value;
     item_class->get_kind = g_paste_text_item_get_kind;
 }
 
@@ -291,14 +256,6 @@ g_paste_uris_item_get_kind (const GPasteItem *self)
     return "Uris";
 }
 
-static gboolean
-g_paste_uris_item_has_value (const GPasteItem *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
-
-    return G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->has_value (self);
-}
-
 static void
 g_paste_uris_item_finalize (GObject *object)
 {
@@ -316,7 +273,6 @@ g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
     
     item_class->equals = g_paste_uris_item_equals;
-    item_class->has_value = g_paste_uris_item_has_value;
     item_class->get_kind = g_paste_uris_item_get_kind;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_uris_item_finalize;
@@ -468,14 +424,6 @@ g_paste_image_item_get_kind (const GPasteItem *self)
     return "Image";
 }
 
-static gboolean
-g_paste_image_item_has_value (const GPasteItem *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
-
-    return TRUE;
-}
-
 static void
 g_paste_image_item_dispose (GObject *object)
 {
@@ -504,7 +452,6 @@ g_paste_image_item_class_init (GPasteImageItemClass *klass)
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
     
     item_class->equals = g_paste_image_item_equals;
-    item_class->has_value = g_paste_image_item_has_value;
     item_class->get_kind = g_paste_image_item_get_kind;
 
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);

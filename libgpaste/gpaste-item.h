@@ -47,7 +47,6 @@ const gchar *g_paste_item_get_value (const GPasteItem *self);
 const gchar *g_paste_item_get_display_string (const GPasteItem *self);
 gboolean g_paste_item_equals (const GPasteItem *self,
                               const GPasteItem *other);
-gboolean g_paste_item_has_value (const GPasteItem *self);
 const gchar *g_paste_item_get_kind (const GPasteItem *self);
 
 /* GPaste TextItem */
