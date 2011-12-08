@@ -61,7 +61,7 @@ namespace GPaste {
                 text = text.strip ();
                 if (this.txt == text)
                     return null;
-                this.txt = text;
+                this.restore_text (text);
                 return text;
             }
 
