@@ -118,6 +118,7 @@ bin_gpaste_VALAFLAGS = \
 	$(AM_VALAFLAGS)
 
 bin_gpasted_VALAFLAGS = \
+	--pkg=x11 \
 	$(GTK_VALAFLAGS) \
 	$(GDK_VALAFLAGS) \
 	$(XML_VALAFLAGS) \
