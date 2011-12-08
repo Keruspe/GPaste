@@ -51,4 +51,3 @@ libtool
 *.la
 *.lo
 gi/
-*.vapi
