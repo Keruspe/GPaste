@@ -83,7 +83,12 @@ namespace GPaste {
             private Gdk.FilterReturn event_filter(Gdk.XEvent gdk_xevent, Gdk.Event gdk_event) {
                 var xevent = *((X.Event*)(&gdk_xevent));
                 if(xevent.type == X.EventType.KeyPress && xevent.xkey.keycode == this.keycode && xevent.xkey.state == this.modifiers)
+                {
+                    unowned X.Display display = Gdk.x11_get_default_xdisplay();
+                    display.ungrab_keyboard (Gdk.CURRENT_TIME);
+                    display.x_sync (false);
                     DBusServer.instance.toggle_history();
+                }
                 return Gdk.FilterReturn.CONTINUE;
             }
         }
