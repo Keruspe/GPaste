@@ -58,8 +58,6 @@ namespace GPaste {
             }
 
             public void add(Item selection) {
-                if (!selection.has_value())
-                    return;
                 unowned GLib.SList<Item> s = this.history;
                 if (s != null) {
                     if (s.data.equals(selection))

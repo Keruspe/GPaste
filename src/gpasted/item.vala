@@ -33,7 +33,6 @@ namespace GPaste {
                 protected set;
             }
 
-            public abstract bool has_value ();
             public abstract string get_display_str ();
             public abstract string get_kind ();
             public abstract bool equals (Item i);
@@ -46,10 +45,6 @@ namespace GPaste {
 
             public override string get_display_str () {
                 return this.str;
-            }
-
-            public override bool has_value () {
-                return this.str.strip () != "";
             }
 
             public override string get_kind () {
@@ -147,10 +142,6 @@ namespace GPaste {
 
             public override string get_display_str () {
                 return this.display_str;
-            }
-
-            public override bool has_value () {
-                return true;
             }
 
             public override string get_kind () {
