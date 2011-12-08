@@ -21,8 +21,8 @@ global:
     g_paste_clipboard_get_target;
     g_paste_clipboard_get_real;
     g_paste_clipboard_get_text;
-    g_paste_clipboard_set_text;
     g_paste_clipboard_select_text;
+    g_paste_clipboard_set_text;
     g_paste_clipboard_get_image_checksum;
     g_paste_clipboard_set_image;
     g_paste_clipboard_select_item;

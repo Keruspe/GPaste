@@ -45,9 +45,9 @@ GType g_paste_clipboard_get_type (void);
 GdkAtom g_paste_clipboard_get_target (const GPasteClipboard *self);
 const GtkClipboard *g_paste_clipboard_get_real (const GPasteClipboard *self);
 const gchar *g_paste_clipboard_get_text (const GPasteClipboard *self);
-const gchar *g_paste_clipboard_set_text (GPasteClipboard *self);
 void g_paste_clipboard_select_text (GPasteClipboard *self,
                                     const gchar     *text);
+const gchar *g_paste_clipboard_set_text (GPasteClipboard *self);
 const gchar *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);
 const GdkPixbuf *g_paste_clipboard_set_image (GPasteClipboard *self);
 void g_paste_clipboard_select_item (GPasteClipboard  *self,
