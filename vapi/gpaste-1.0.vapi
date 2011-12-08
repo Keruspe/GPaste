@@ -15,6 +15,21 @@ namespace GPaste {
 		public unowned Gdk.Pixbuf set_image ();
 		public unowned string set_text ();
 	}
+	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_history_get_type ()")]
+	public class History : GLib.Object {
+		[CCode (has_construct_function = false)]
+		public History (GPaste.Settings settings);
+		public void add (GPaste.Item item);
+		public void empty ();
+		public unowned string get_element_value (uint index);
+		public unowned GLib.SList<GPaste.Item> get_history ();
+		public void load ();
+		public void remove (uint index);
+		public void save ();
+		public void select (uint index);
+		public signal void changed ();
+		public signal void selected (GPaste.Item object);
+	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_image_item_get_type ()")]
 	public class ImageItem : GPaste.Item {
 		[CCode (has_construct_function = false)]

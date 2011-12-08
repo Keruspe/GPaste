@@ -64,10 +64,12 @@ endif
 libgpaste_libgpaste_la_public_headers = \
 	libgpaste/gpaste.h \
 	libgpaste/gpaste-clipboard.h \
+	libgpaste/gpaste-history.h \
 	libgpaste/gpaste-item.h \
 	libgpaste/gpaste-settings.h
 libgpaste_libgpaste_la_private_headers = \
 	libgpaste/gpaste-clipboard-private.h \
+	libgpaste/gpaste-history-private.h \
 	libgpaste/gpaste-item-private.h \
 	libgpaste/gpaste-settings-private.h
 pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
@@ -103,6 +105,7 @@ bin_gpaste_settings_SOURCES = \
 
 libgpaste_libgpaste_la_SOURCES = \
 	libgpaste/gpaste-clipboard.c \
+	libgpaste/gpaste-history.c \
 	libgpaste/gpaste-item.c \
 	libgpaste/gpaste-settings.c
 
@@ -170,6 +173,7 @@ bin_gpaste_settings_CFLAGS = \
 libgpaste_libgpaste_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
 	$(GTK_CFLAGS) \
+	$(XML_CFLAGS) \
 	$(AM_CFLAGS)
 
 # LDADD
@@ -180,7 +184,6 @@ AM_LIBS = \
 	$(GIO_LIBS)
 
 AM_LDFLAGS = \
-	-Wl,--gc-sections \
 	-Wl,--as-needed
 
 bin_gpaste_LDADD = \
@@ -205,6 +208,7 @@ bin_gpaste_applet_LDADD = \
 libgpaste_libgpaste_la_LIBADD = \
 	$(GDK_PIXBUF_LIBS) \
 	$(GTK_LIBS) \
+	$(XML_LIBS) \
 	$(AM_LIBS)
 
 # LDFLAGS
@@ -310,8 +314,8 @@ introspection_sources = \
 gi/.tmp:
 	@ $(MKDIR_P) gi && touch gi/.tmp
 gi/GPaste-1.0.gir: libgpaste/libgpaste.la gi/.tmp
-gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0
-gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DGPASTE_COMPILATION
+gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0 libxml2-2.0
+gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DGPASTE_COMPILATION -I$(srcdir)/libgpaste
 gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
 gi_GPaste_1_0_gir_FILES = $(introspection_sources)

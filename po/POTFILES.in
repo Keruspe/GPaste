@@ -8,3 +8,4 @@ data/org.gnome.GPaste.gschema.xml.in.in
 data/gpaste-applet.desktop.in.in
 data/gpaste-settings.desktop.in.in
 libgpaste/gpaste-item.c
+libgpaste/gpaste-history.c

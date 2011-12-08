@@ -35,6 +35,17 @@ global:
     g_paste_settings_get_save_history;
     g_paste_settings_get_keyboard_shortcut;
     g_paste_settings_new;
+    g_paste_history_get_type;
+    g_paste_history_add;
+    g_paste_history_remove;
+    g_paste_history_get_element_value;
+    g_paste_history_select;
+    g_paste_history_empty;
+    g_paste_history_save;
+    g_paste_history_load;
+    g_paste_history_get_history;
+    g_paste_history_new;
+
 local:
     *;
 };
