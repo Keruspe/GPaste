@@ -58,11 +58,14 @@ namespace GPaste {
                 string text = this.real.wait_for_text ();
                 if (text == null)
                     return null;
-                text = text.strip ();
-                if (text == "" || this.txt == text)
+                string stripped = text.strip ();
+                if (stripped == "" || this.txt == stripped)
                     return null;
-                this.restore_text (text);
-                return text;
+                if (text != stripped)
+                    this.restore_text (stripped);
+                else
+                    this.txt = stripped;
+                return stripped;
             }
 
             public void restore_text (string text) {
