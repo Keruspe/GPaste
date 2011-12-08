@@ -237,7 +237,7 @@ g_paste_settings_dispose (GObject *object)
 
     g_object_unref (priv->settings);
 
-    G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
+    G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
 }
 
 static void
