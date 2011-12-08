@@ -56,7 +56,10 @@ namespace GPaste {
 
             public string? set_text () {
                 string text = this.real.wait_for_text ();
-                if (text == null || this.txt == text)
+                if (text == null)
+                    return null;
+                text = text.strip ();
+                if (this.txt == text)
                     return null;
                 this.txt = text;
                 return text;
