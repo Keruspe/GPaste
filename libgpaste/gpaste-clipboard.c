@@ -112,7 +112,7 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     GPasteClipboardPrivate *priv = self->priv;
     gchar *text = gtk_clipboard_wait_for_text (priv->real);
 
-    if (!text || (g_strcmp0 (text, priv->text) == 0))
+    if (!text || g_strcmp0 (g_strstrip (text), priv->text) == 0)
         return NULL;
 
     _g_paste_clipboard_set_text (self, text);

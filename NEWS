@@ -3,6 +3,11 @@ NEW in 2.5 (Not released yet)
 
 - Reexecute has now a signal: ReexecuteSelf
 
+NEW in 2.2 (Not released yet)
+=============
+
+- Content is now stripped before being added to clipboard
+
 NEW in 2.1 (01/12/2011)
 =============
 

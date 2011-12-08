@@ -36,7 +36,7 @@ namespace GPaste {
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public void add(string selection) {
                 if (selection != null && selection.validate ())
-                    this.clipboards_manager.select(new TextItem(selection));
+                    this.clipboards_manager.select(new TextItem(selection.strip ()));
             }
 
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
