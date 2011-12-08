@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.68])
-AC_INIT([GPaste],[2.1],[Marc-Antoine@Perennou.com])
+AC_INIT([GPaste],[2.2],[Marc-Antoine@Perennou.com])
 
 AC_SUBST([PACKAGE_NAME], ["$PACKAGE_NAME"])
 AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
