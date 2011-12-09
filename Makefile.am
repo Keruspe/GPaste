@@ -94,7 +94,6 @@ bin_gpasted_SOURCES = \
 	vapi/gpaste-1.0.vapi \
 	src/gpasted/clipboard.vala \
 	src/gpasted/gpasted.vala \
-	src/gpasted/history.vala \
 	src/gpasted/keybinder.vala
 
 bin_gpaste_applet_SOURCES = \

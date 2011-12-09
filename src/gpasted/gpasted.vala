@@ -25,7 +25,7 @@ namespace GPaste {
         public class DBusServer : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public string[] get_history() {
-                unowned GLib.SList<Item> history = this.history.history;
+                unowned GLib.SList<Item> history = this.history.get_history ();
                 var as = new string[history.length()];
                 int i = 0;
                 foreach (Item item in history)
@@ -45,7 +45,10 @@ namespace GPaste {
 
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
             public string get_element(uint32 index) {
-                return this.history.get_element(index);
+                string value = this.history.get_element_value (index);
+                if (value == null)
+                    return "";
+                return value;
             }
 
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
@@ -55,7 +58,7 @@ namespace GPaste {
 
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
             public void delete(uint32 index) {
-                this.history.delete(index);
+                this.history.remove (index);
             }
 
             [DBus (name = "Empty", inSignature = "", outSignature = "")]

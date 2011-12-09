@@ -42,7 +42,7 @@ namespace GPaste {
                 else if (clipboard.get_real ().wait_is_image_available())
                     clipboard.set_image ();
                 if (clipboard.get_text () == null && clipboard.get_image_checksum () == null) {
-                    unowned GLib.SList<Item> history = this.history.history;
+                    unowned GLib.SList<Item> history = this.history.get_history ();
                     if (history.length() != 0)
                         clipboard.select_item (history.data);
                 }
@@ -89,7 +89,7 @@ namespace GPaste {
                         }
                     }
                     if (!something_in_clipboard) {
-                        unowned GLib.SList<Item> history = this.history.history;
+                        unowned GLib.SList<Item> history = this.history.get_history ();
                         if (history.length() == 0)
                             continue;
                         c.select_item (history.data);

@@ -1,5 +1,4 @@
 src/gpasted/gpasted.vala
-src/gpasted/history.vala
 src/gpaste-settings/gpaste-settings.vala
 src/applets/legacy/gpaste-applet.vala
 src/applets/gnome-shell/extension.js
