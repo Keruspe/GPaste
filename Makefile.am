@@ -170,6 +170,7 @@ bin_gpaste_settings_CFLAGS = \
 	$(AM_CFLAGS)
 
 libgpaste_libgpaste_la_CFLAGS = \
+	-Wall -Wextra \
 	$(GDK_PIXBUF_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(XML_CFLAGS) \

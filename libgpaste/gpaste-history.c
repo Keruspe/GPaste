@@ -269,7 +269,7 @@ g_paste_history_save (GPasteHistory *self)
         xmlTextWriterPtr writer = xmlNewTextWriterFilename (history_file_path, 0);
 
         xmlTextWriterSetIndent (writer, TRUE);
-        xmlTextWriterSetIndentString (writer, "  ");
+        xmlTextWriterSetIndentString (writer, BAD_CAST "  ");
 
         xmlTextWriterStartDocument (writer, "1.0", "UTF-8", NULL);
         xmlTextWriterStartElement (writer, BAD_CAST "history");
@@ -332,13 +332,13 @@ g_paste_history_load (GPasteHistory *self)
         {
             if (xmlTextReaderNodeType (reader) != 1)
                 continue;
-            const gchar *name = xmlTextReaderConstName (reader);
+            const gchar *name = (const gchar *) xmlTextReaderConstName (reader);
             if (!name || g_strcmp0 (name, "item") != 0)
                 continue;
 
-            gchar *kind = xmlTextReaderGetAttribute (reader, "kind");
-            gchar *date = xmlTextReaderGetAttribute (reader, "date");
-            gchar *value = xmlTextReaderReadString (reader);
+            gchar *kind = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "kind");
+            gchar *date = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "date");
+            gchar *value = (gchar *) xmlTextReaderReadString (reader);
 
             if (g_strcmp0 (kind, "Text") == 0)
                 priv->history = g_slist_append (priv->history, g_paste_text_item_new (value));
