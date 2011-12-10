@@ -61,7 +61,8 @@ namespace GPaste {
                 string stripped = text.strip ();
                 if (stripped == "" || this.txt == stripped)
                     return null;
-                if (text != stripped)
+                Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
+                if (this.selection == tmp && text != stripped)
                     this.restore_text (stripped);
                 else
                     this.txt = stripped;
