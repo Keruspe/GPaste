@@ -96,8 +96,7 @@ bin_gpaste_SOURCES = \
 
 bin_gpasted_SOURCES = \
 	vapi/gpaste-1.0.vapi \
-	src/gpasted/gpasted.vala \
-	src/gpasted/keybinder.vala
+	src/gpasted/gpasted.vala
 
 bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala
@@ -125,10 +124,7 @@ bin_gpaste_VALAFLAGS = \
 	$(AM_VALAFLAGS)
 
 bin_gpasted_VALAFLAGS = \
-	--pkg=x11 \
 	$(GTK_VALAFLAGS) \
-	$(GDK_VALAFLAGS) \
-	$(XML_VALAFLAGS) \
 	$(AM_VALAFLAGS)
 
 bin_gpaste_applet_VALAFLAGS = \
