@@ -59,9 +59,6 @@ namespace GPaste {
                 stdout.printf(_("%s stop: stop tracking clipboard changes\n"), caller);
                 stdout.printf(_("%s quit: alias for stop\n"), caller);
                 stdout.printf(_("%s daemon-reexec: reexecute the daemon (after upgrading...)\n"), caller);
-#if ENABLE_APPLET
-                stdout.printf(_("%s applet: launch the applet\n"), caller);
-#endif
                 stdout.printf(_("%s settings: launch the configuration tool\n"), caller);
                 stdout.printf(_("%s version: display the version\n"), caller);
                 stdout.printf(_("%s help: display this help\n"), caller);
