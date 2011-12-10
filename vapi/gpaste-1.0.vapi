@@ -12,8 +12,16 @@ namespace GPaste {
 		public unowned string get_text ();
 		public void select_item (GPaste.Item item);
 		public void select_text (string text);
-		public unowned Gdk.Pixbuf set_image ();
+		public Gdk.Pixbuf set_image ();
 		public unowned string set_text ();
+	}
+	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_clipboards_manager_get_type ()")]
+	public class ClipboardsManager : GLib.Object {
+		[CCode (has_construct_function = false)]
+		public ClipboardsManager (GPaste.History history, GPaste.Settings settings);
+		public void activate ();
+		public void add_clipboard (GPaste.Clipboard clipboard);
+		public void select (GPaste.Item item);
 	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_history_get_type ()")]
 	public class History : GLib.Object {
