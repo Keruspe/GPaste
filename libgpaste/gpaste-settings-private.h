@@ -18,7 +18,7 @@
  */
 
 #ifndef __G_PASTE_SETTINGS_PRIVATE_H__
-#define __G_PASTE_SETTIGNS_PRIVATE_H__
+#define __G_PASTE_SETTINGS_PRIVATE_H__
 
 #include "gpaste-settings.h"
 
