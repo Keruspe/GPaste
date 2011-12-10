@@ -67,12 +67,14 @@ libgpaste_libgpaste_la_public_headers = \
 	libgpaste/gpaste-clipboards-manager.h \
 	libgpaste/gpaste-history.h \
 	libgpaste/gpaste-item.h \
+	libgpaste/gpaste-keybinder.h \
 	libgpaste/gpaste-settings.h
 libgpaste_libgpaste_la_private_headers = \
 	libgpaste/gpaste-clipboard-private.h \
 	libgpaste/gpaste-clipboards-manager-private.h \
 	libgpaste/gpaste-history-private.h \
 	libgpaste/gpaste-item-private.h \
+	libgpaste/gpaste-keybinder-private.h \
 	libgpaste/gpaste-settings-private.h
 pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
 pkgconfigdir = $(libdir)/pkgconfig
@@ -108,6 +110,7 @@ libgpaste_libgpaste_la_SOURCES = \
 	libgpaste/gpaste-clipboards-manager.c \
 	libgpaste/gpaste-history.c \
 	libgpaste/gpaste-item.c \
+	libgpaste/gpaste-keybinder.c \
 	libgpaste/gpaste-settings.c
 
 # VALAFLAGS

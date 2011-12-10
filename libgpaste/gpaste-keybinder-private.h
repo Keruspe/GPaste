@@ -17,18 +17,26 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_H__
-#define __G_PASTE_H__
+#ifndef __G_PASTE_KEYBINDER_PRIVATE_H__
+#define __G_PASTE_KEYBINDER_PRIVATE_H__
 
-#define __G_PASTE_H_INSIDE__
+#include "gpaste-keybinder.h"
 
-#include <gpaste-clipboard.h>
-#include <gpaste-clipboards-manager.h>
-#include <gpaste-history.h>
-#include <gpaste-item.h>
-#include <gpaste-keybinder.h>
-#include <gpaste-settings.h>
+G_BEGIN_DECLS
 
-#undef __G_PASTE_H_INSIDE__
+struct _GPasteKeybinder
+{
+    GObject parent_instance;
 
-#endif /*__G_PASTE_H__*/
+    /*< protected >*/
+    GPasteKeybinderPrivate *priv;
+};
+
+struct _GPasteKeybinderClass
+{
+    GObjectClass parent_class;
+};
+
+G_END_DECLS
+
+#endif /*__G_PASTE_KEYBINDER_PRIVATE_H__*/

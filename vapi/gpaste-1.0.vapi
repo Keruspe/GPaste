@@ -59,6 +59,15 @@ namespace GPaste {
 		[NoWrapper]
 		public virtual bool has_value ();
 	}
+	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_keybinder_get_type ()")]
+	public class Keybinder : GLib.Object {
+		[CCode (has_construct_function = false)]
+		public Keybinder (string binding);
+		public void activate (string binding);
+		public void rebind (string binding);
+		public void unbind ();
+		public signal void toggle ();
+	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_settings_get_type ()")]
 	public class Settings : GLib.Object {
 		[CCode (has_construct_function = false)]
