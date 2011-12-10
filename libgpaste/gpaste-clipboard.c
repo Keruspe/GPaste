@@ -122,10 +122,11 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
             (g_strcmp0 (stripped, priv->text) == 0)))
                 return NULL;
 
-    if (g_strcmp0 (text, stripped) == 0)
-        _g_paste_clipboard_set_text (self, stripped);
+    if (priv->target == GDK_SELECTION_CLIPBOARD &&
+        g_strcmp0 (text, stripped) != 0)
+            g_paste_clipboard_select_text (self, stripped);
     else
-        g_paste_clipboard_select_text (self, stripped);
+        _g_paste_clipboard_set_text (self, stripped);
 
     g_free (stripped);
     g_free (text);
