@@ -321,7 +321,7 @@ g_paste_settings_settings_changed (GSettings   *settings,
  *          free it with g_object_unref
  */
 GPasteSettings *
-g_paste_settings_new ()
+g_paste_settings_new (void)
 {
     GPasteSettings *self = g_object_new (G_PASTE_TYPE_SETTINGS, NULL);
 
