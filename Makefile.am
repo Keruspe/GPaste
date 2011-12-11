@@ -156,10 +156,12 @@ bin_gpaste_CFLAGS = \
 	$(AM_CFLAGS)
 
 bin_gpasted_CFLAGS = \
+	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
 bin_gpaste_applet_CFLAGS = \
+	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
@@ -170,6 +172,7 @@ bin_gpaste_settings_CFLAGS = \
 libgpaste_libgpaste_la_CFLAGS = \
 	-Wall -Wextra \
 	$(GDK_PIXBUF_CFLAGS) \
+	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(XCB_CFLAGS) \
 	$(XML_CFLAGS) \
@@ -189,6 +192,7 @@ bin_gpaste_LDADD = \
 	$(AM_LIBS)
 
 bin_gpasted_LDADD = \
+	$(GDK_LIBS) \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \
 	libgpaste/libgpaste.la
@@ -198,11 +202,13 @@ bin_gpaste_settings_LDADD = \
 	$(AM_LIBS)
 
 bin_gpaste_applet_LDADD = \
+	$(GDK_LIBS) \
 	$(GTK_LIBS) \
 	$(AM_LIBS)
 
 libgpaste_libgpaste_la_LIBADD = \
 	$(GDK_PIXBUF_LIBS) \
+	$(GDK_LIBS) \
 	$(GTK_LIBS) \
 	$(XCB_LIBS) \
 	$(XML_LIBS) \
