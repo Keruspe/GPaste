@@ -61,7 +61,7 @@ g_paste_keybinder_thread (gpointer data)
             (event->response_type & ~0x80) == XCB_KEY_PRESS)
         {
             xcb_ungrab_keyboard (priv->connection, GDK_CURRENT_TIME);
-            g_free (xcb_get_input_focus_reply (priv->connection, xcb_get_input_focus (priv->connection), NULL)); /* XSync (); */
+            xcb_flush (priv->connection);
             g_signal_emit (self,
                            signals[TOGGLE],
                            0); /* detail */
