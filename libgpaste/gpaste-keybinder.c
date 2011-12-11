@@ -35,8 +35,6 @@ struct _GPasteKeybinderPrivate
     xcb_key_symbols_t *keysyms;
     xcb_keycode_t *keycodes;
     guint16 modifiers;
-    GThread *thread;
-    gboolean keep_looping;
 };
 
 enum
@@ -48,29 +46,26 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-static gpointer
-g_paste_keybinder_thread (gpointer data)
+static gboolean
+g_paste_keybinder_source (gpointer data)
 {
     GPasteKeybinder *self = G_PASTE_KEYBINDER (data);
     GPasteKeybinderPrivate *priv = self->priv;
     xcb_generic_event_t *event;
 
-    while (priv->keep_looping)
+    if ((event = xcb_poll_for_event (priv->connection)) &&
+        (event->response_type & ~0x80) == XCB_KEY_PRESS)
     {
-        if ((event = xcb_poll_for_event (priv->connection)) &&
-            (event->response_type & ~0x80) == XCB_KEY_PRESS)
-        {
-            xcb_ungrab_keyboard (priv->connection, GDK_CURRENT_TIME);
-            xcb_flush (priv->connection);
-            g_signal_emit (self,
-                           signals[TOGGLE],
-                           0); /* detail */
-        }
-        g_free (event);
-        g_usleep (100000);
+        xcb_ungrab_keyboard (priv->connection, GDK_CURRENT_TIME);
+        xcb_flush (priv->connection);
+        g_signal_emit (self,
+                       signals[TOGGLE],
+                       0); /* detail */
     }
 
-    return NULL;
+    g_free (event);
+
+    return TRUE;
 }
 
 static void
@@ -90,11 +85,6 @@ g_paste_keybinder_activate (GPasteKeybinder *self)
         xcb_grab_key (priv->connection, FALSE, priv->screen->root, priv->modifiers, *keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     xcb_flush (priv->connection);
     gdk_error_trap_pop_ignored ();
-
-    priv->keep_looping = TRUE;
-    priv->thread = g_thread_new ("GPasteKeybinder thread",
-                                 g_paste_keybinder_thread,
-                                 self);
 }
 
 /**
@@ -112,8 +102,6 @@ g_paste_keybinder_unbind (GPasteKeybinder *self)
 
     GPasteKeybinderPrivate *priv = self->priv;
 
-    priv->keep_looping = FALSE;
-    g_thread_join (priv->thread);
     for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
         xcb_ungrab_key (priv->connection, *keycode, priv->screen->root, priv->modifiers);
 }
@@ -225,6 +213,7 @@ g_paste_keybinder_new (const gchar *binding)
     priv->keysyms = xcb_key_symbols_alloc (priv->connection);
     priv->binding = g_strdup (binding);
     g_paste_keybinder_activate (self);
+    g_timeout_add (100, g_paste_keybinder_source, self);
 
     return self;
 }
