@@ -19,10 +19,9 @@
 
 #include "gpaste-keybinder-private.h"
 
-#include <gdk/gdk.h>
-#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
-#include <X11/Xlib.h>
+#include <xcb/xcb.h>
+#include <xcb/xcb_keysyms.h>
 
 #define G_PASTE_KEYBINDER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_KEYBINDER, GPasteKeybinderPrivate))
 
@@ -30,10 +29,14 @@ G_DEFINE_TYPE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 
 struct _GPasteKeybinderPrivate
 {
-    KeyCode keycode;
-    GdkModifierType modifiers;
-    Display *display;
-    GdkWindow *root_window;
+    gchar *binding;
+    xcb_connection_t *connection;
+    xcb_screen_t *screen;
+    xcb_key_symbols_t *keysyms;
+    xcb_keycode_t *keycodes;
+    guint16 modifiers;
+    GThread *thread;
+    gboolean keep_looping;
 };
 
 enum
@@ -59,9 +62,11 @@ g_paste_keybinder_unbind (GPasteKeybinder *self)
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
     GPasteKeybinderPrivate *priv = self->priv;
-    XID xid = gdk_x11_window_get_xid (priv->root_window);
 
-    XUngrabKey (priv->display, priv->keycode, (guint) priv->modifiers, (Window) xid);
+    priv->keep_looping = FALSE;
+    g_thread_join (priv->thread);
+    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
+        xcb_ungrab_key (priv->connection, *keycode, priv->screen->root, priv->modifiers);
 }
 
 /**
@@ -79,75 +84,104 @@ g_paste_keybinder_rebind (GPasteKeybinder *self,
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
+    GPasteKeybinderPrivate *priv = self->priv;
+
+    g_free (priv->binding);
+    priv->binding = g_strdup (binding);
     g_paste_keybinder_unbind (self);
-    g_paste_keybinder_activate (self, binding);
+    g_paste_keybinder_activate (self);
 }
 
-static GdkFilterReturn
-g_paste_keybinder_event_filter (GdkXEvent *xevent,
-                                GdkEvent  *event,
-                                gpointer   user_data)
+static gpointer
+g_paste_keybinder_thread (gpointer data)
 {
-    /* silence warning */
-    event = event;
-
-    GPasteKeybinder *self = G_PASTE_KEYBINDER (user_data);
+    GPasteKeybinder *self = G_PASTE_KEYBINDER (data);
     GPasteKeybinderPrivate *priv = self->priv;
-    XEvent *xev = (XEvent *) xevent;
+    xcb_generic_event_t *event;
 
-    if (xev->type == KeyPress &&
-        xev->xkey.keycode == priv->keycode &&
-        xev->xkey.state == priv->modifiers)
+    while (priv->keep_looping)
     {
-        Display *display = priv->display;
-
-        XUngrabKeyboard (display, GDK_CURRENT_TIME);
-        XSync (display, FALSE);
-        g_signal_emit (self,
-                       signals[TOGGLE],
-                       0); /* detail */
+        if ((event = xcb_poll_for_event (priv->connection)) &&
+            (event->response_type & ~0x80) == XCB_KEY_PRESS)
+        {
+            xcb_ungrab_keyboard (priv->connection, GDK_CURRENT_TIME);
+            g_free (xcb_get_input_focus_reply (priv->connection, xcb_get_input_focus (priv->connection), NULL)); /* XSync (); */
+            g_signal_emit (self,
+                           signals[TOGGLE],
+                           0); /* detail */
+        }
+        g_free (event);
+        g_usleep (100000);
     }
 
-    return GDK_FILTER_CONTINUE; 
+    return NULL;
 }
 
 /**
  * g_paste_keybinder_activate:
  * @self: a GPasteKeybinder instance
- * @binding: the keybinding
  *
  * Bind to a keybinding
  *
  * Returns:
  */
 void
-g_paste_keybinder_activate (GPasteKeybinder *self,
-                            const gchar     *binding)
+g_paste_keybinder_activate (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
     GPasteKeybinderPrivate *priv = self->priv;
     guint keysym;
 
-    gtk_accelerator_parse (binding, &keysym, &priv->modifiers);
-    priv->keycode = XKeysymToKeycode (priv->display, keysym);
+    gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
+    g_free (priv->keycodes);
+    priv->keycodes = xcb_key_symbols_get_keycode (priv->keysyms, keysym);
 
-    if (priv->keycode)
-    {
-        XID xid = gdk_x11_window_get_xid (priv->root_window);
-        
-        gdk_error_trap_push ();
-        XGrabKey (priv->display, priv->keycode, priv->modifiers, xid, FALSE, GrabModeAsync, GrabModeAsync);
-        gdk_flush ();
-        gdk_error_trap_pop_ignored ();
-    }
+    gdk_error_trap_push ();
+    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
+        xcb_grab_key (priv->connection, FALSE, priv->screen->root, priv->modifiers, *keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    xcb_flush (priv->connection);
+    gdk_error_trap_pop_ignored ();
+
+    priv->keep_looping = TRUE;
+    priv->thread = g_thread_new ("GPasteKeybinder thread",
+                                 g_paste_keybinder_thread,
+                                 self);
+}
+
+static void
+g_paste_keybinder_dispose (GObject *object)
+{
+    GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
+
+    g_paste_keybinder_unbind (self);
+    xcb_disconnect (self->priv->connection);
+
+    G_OBJECT_CLASS (g_paste_keybinder_parent_class)->dispose (object);
+}
+
+static void
+g_paste_keybinder_finalize (GObject *object)
+{
+    GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (object)->priv;
+
+    xcb_key_symbols_free (priv->keysyms);
+    g_free (priv->keycodes);
+    g_free (priv->binding);
+
+    G_OBJECT_CLASS (g_paste_keybinder_parent_class)->finalize (object);
 }
 
 static void
 g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteKeybinderPrivate));
+
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     
+    object_class->dispose = g_paste_keybinder_dispose;
+    object_class->finalize = g_paste_keybinder_finalize;
+
     signals[TOGGLE] = g_signal_new ("toggle",
                                     G_PASTE_TYPE_KEYBINDER,
                                     G_SIGNAL_RUN_LAST,
@@ -178,13 +212,27 @@ g_paste_keybinder_new (const gchar *binding)
 {
     GPasteKeybinder *self = g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);
     GPasteKeybinderPrivate *priv = self->priv;
-    GdkWindow *root_window;
+    int connection_screen;
+    const xcb_setup_t *setup;
 
-    priv->display = gdk_x11_get_default_xdisplay ();
-    priv->root_window = root_window = gdk_get_default_root_window ();
-    if (root_window)
-        gdk_window_add_filter (root_window, g_paste_keybinder_event_filter, self);
-    g_paste_keybinder_activate (self, binding);
+    priv->connection = xcb_connect (NULL, &connection_screen);
+
+    if ((setup = xcb_get_setup (priv->connection))) {
+        xcb_screen_iterator_t iter = xcb_setup_roots_iterator (setup);
+        for (; iter.rem; --connection_screen, xcb_screen_next (&iter))
+            if (0 == connection_screen)
+                priv->screen = iter.data;
+    }
+
+    if (!priv->screen)
+    {
+        g_object_unref (self);
+        return NULL;
+    }
+
+    priv->keysyms = xcb_key_symbols_alloc (priv->connection);
+    priv->binding = g_strdup (binding);
+    g_paste_keybinder_activate (self);
 
     return self;
 }

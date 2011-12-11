@@ -43,8 +43,7 @@ GType g_paste_keybinder_get_type (void);
 void g_paste_keybinder_unbind (GPasteKeybinder *self);
 void g_paste_keybinder_rebind (GPasteKeybinder *self,
                                const gchar     *binding);
-void g_paste_keybinder_activate (GPasteKeybinder *self,
-                                 const gchar     *binding);
+void g_paste_keybinder_activate (GPasteKeybinder *self);
 GPasteKeybinder *g_paste_keybinder_new (const gchar *binding);
 
 G_END_DECLS

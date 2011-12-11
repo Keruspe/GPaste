@@ -71,7 +71,7 @@ PKG_CHECK_MODULES(GDK, [gdk-x11-3.0 >= $GTK_REQUIRED])
 
 PKG_CHECK_MODULES(XML, [libxml-2.0])
 
-PKG_CHECK_MODULES(X11, [x11])
+PKG_CHECK_MODULES(XCB, [xcb xcb-keysyms])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 AC_ARG_WITH([dbusservicesdir],
