@@ -53,7 +53,6 @@ global:
     g_paste_keybinder_get_type;
     g_paste_keybinder_unbind;
     g_paste_keybinder_rebind;
-    g_paste_keybinder_activate;
     g_paste_keybinder_new;
 local:
     *;

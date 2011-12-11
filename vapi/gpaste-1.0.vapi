@@ -63,7 +63,6 @@ namespace GPaste {
 	public class Keybinder : GLib.Object {
 		[CCode (has_construct_function = false)]
 		public Keybinder (string binding);
-		public void activate ();
 		public void rebind (string binding);
 		public void unbind ();
 		public signal void toggle ();

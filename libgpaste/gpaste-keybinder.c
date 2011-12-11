@@ -48,6 +48,55 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+static gpointer
+g_paste_keybinder_thread (gpointer data)
+{
+    GPasteKeybinder *self = G_PASTE_KEYBINDER (data);
+    GPasteKeybinderPrivate *priv = self->priv;
+    xcb_generic_event_t *event;
+
+    while (priv->keep_looping)
+    {
+        if ((event = xcb_poll_for_event (priv->connection)) &&
+            (event->response_type & ~0x80) == XCB_KEY_PRESS)
+        {
+            xcb_ungrab_keyboard (priv->connection, GDK_CURRENT_TIME);
+            g_free (xcb_get_input_focus_reply (priv->connection, xcb_get_input_focus (priv->connection), NULL)); /* XSync (); */
+            g_signal_emit (self,
+                           signals[TOGGLE],
+                           0); /* detail */
+        }
+        g_free (event);
+        g_usleep (100000);
+    }
+
+    return NULL;
+}
+
+static void
+g_paste_keybinder_activate (GPasteKeybinder *self)
+{
+    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
+
+    GPasteKeybinderPrivate *priv = self->priv;
+    guint keysym;
+
+    gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
+    g_free (priv->keycodes);
+    priv->keycodes = xcb_key_symbols_get_keycode (priv->keysyms, keysym);
+
+    gdk_error_trap_push ();
+    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
+        xcb_grab_key (priv->connection, FALSE, priv->screen->root, priv->modifiers, *keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    xcb_flush (priv->connection);
+    gdk_error_trap_pop_ignored ();
+
+    priv->keep_looping = TRUE;
+    priv->thread = g_thread_new ("GPasteKeybinder thread",
+                                 g_paste_keybinder_thread,
+                                 self);
+}
+
 /**
  * g_paste_keybinder_unbind:
  * @self: a GPasteKeybinder instance
@@ -90,63 +139,6 @@ g_paste_keybinder_rebind (GPasteKeybinder *self,
     priv->binding = g_strdup (binding);
     g_paste_keybinder_unbind (self);
     g_paste_keybinder_activate (self);
-}
-
-static gpointer
-g_paste_keybinder_thread (gpointer data)
-{
-    GPasteKeybinder *self = G_PASTE_KEYBINDER (data);
-    GPasteKeybinderPrivate *priv = self->priv;
-    xcb_generic_event_t *event;
-
-    while (priv->keep_looping)
-    {
-        if ((event = xcb_poll_for_event (priv->connection)) &&
-            (event->response_type & ~0x80) == XCB_KEY_PRESS)
-        {
-            xcb_ungrab_keyboard (priv->connection, GDK_CURRENT_TIME);
-            g_free (xcb_get_input_focus_reply (priv->connection, xcb_get_input_focus (priv->connection), NULL)); /* XSync (); */
-            g_signal_emit (self,
-                           signals[TOGGLE],
-                           0); /* detail */
-        }
-        g_free (event);
-        g_usleep (100000);
-    }
-
-    return NULL;
-}
-
-/**
- * g_paste_keybinder_activate:
- * @self: a GPasteKeybinder instance
- *
- * Bind to a keybinding
- *
- * Returns:
- */
-void
-g_paste_keybinder_activate (GPasteKeybinder *self)
-{
-    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
-
-    GPasteKeybinderPrivate *priv = self->priv;
-    guint keysym;
-
-    gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
-    g_free (priv->keycodes);
-    priv->keycodes = xcb_key_symbols_get_keycode (priv->keysyms, keysym);
-
-    gdk_error_trap_push ();
-    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
-        xcb_grab_key (priv->connection, FALSE, priv->screen->root, priv->modifiers, *keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    xcb_flush (priv->connection);
-    gdk_error_trap_pop_ignored ();
-
-    priv->keep_looping = TRUE;
-    priv->thread = g_thread_new ("GPasteKeybinder thread",
-                                 g_paste_keybinder_thread,
-                                 self);
 }
 
 static void
