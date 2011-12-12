@@ -146,7 +146,7 @@ namespace GPaste {
                 this.save_history_button.toggled.connect(()=>{
                     app.save_history = this.save_history;
                 });
-                this.trim_items_button = new Gtk.CheckButton.with_mnemonic(_("_Save history"));
+                this.trim_items_button = new Gtk.CheckButton.with_mnemonic(_("_Trim items"));
                 this.trim_items = app.trim_items;
                 this.trim_items_button.toggled.connect(()=>{
                     app.trim_items = this.trim_items;
