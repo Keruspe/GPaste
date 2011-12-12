@@ -39,7 +39,7 @@ namespace GPaste {
                 {
                     string stripped = selection.strip ();
                     if (stripped != "")
-                        this.clipboards_manager.select (new TextItem (stripped));
+                        this.clipboards_manager.select (new TextItem (this.settings.get_trim_items () ? stripped : selection));
                 }
             }
 
@@ -182,8 +182,8 @@ namespace GPaste {
                 var gpasted = new DBusServer (history, settings, cm, keybinder);
                 Main.instance = new Main (gpasted, keybinder);
                 history.load();
-                var clipboard = new Clipboard(Gdk.SELECTION_CLIPBOARD);
-                var primary = new Clipboard(Gdk.SELECTION_PRIMARY);
+                var clipboard = new Clipboard(Gdk.SELECTION_CLIPBOARD, settings);
+                var primary = new Clipboard(Gdk.SELECTION_PRIMARY, settings);
                 cm.add_clipboard(clipboard);
                 cm.add_clipboard(primary);
                 cm.activate();

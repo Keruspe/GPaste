@@ -47,6 +47,7 @@ void g_paste_settings_set_tracking_state (GPasteSettings *self,
                                           gboolean        value);
 gboolean g_paste_settings_get_track_changes (GPasteSettings *self);
 gboolean g_paste_settings_get_save_history (GPasteSettings *self);
+gboolean g_paste_settings_get_trim_items (GPasteSettings *self);
 const gchar *g_paste_settings_get_keyboard_shortcut (GPasteSettings *self);
 GPasteSettings *g_paste_settings_new (void);
 

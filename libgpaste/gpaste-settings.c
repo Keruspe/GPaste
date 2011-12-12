@@ -28,6 +28,7 @@
 #define SYNCHRONIZE_CLIPBOARDS_KEY "synchronize-clipboards"
 #define TRACK_CHANGES_KEY          "track-changes"
 #define SAVE_HISTORY_KEY           "save-history"
+#define TRIM_ITEMS_KEY             "trim-items"
 #define KEYBOARD_SHORTCUT_KEY      "keyboard-shortcut"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
@@ -40,6 +41,7 @@ struct _GPasteSettingsPrivate
     gboolean synchronize_clipboards;
     gboolean track_changes;
     gboolean save_history;
+    gboolean trim_items;
     gchar *keyboard_shortcut;
 };
 
@@ -205,6 +207,32 @@ g_paste_settings_get_save_history (GPasteSettings *self)
 }
 
 static void
+g_paste_settings_set_trim_items (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->trim_items = g_settings_get_boolean (priv->settings, TRIM_ITEMS_KEY);
+}
+
+/**
+ * g_paste_settings_get_trim_items:
+ * @self: a GPasteSettings instance
+ *
+ * Get the TRIM_ITEMS_KEY setting
+ *
+ * Returns: the value of the TRIM_ITEMS_KEY setting
+ */
+gboolean
+g_paste_settings_get_trim_items (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+
+    return self->priv->trim_items;
+}
+
+static void
 g_paste_settings_set_keyboard_shortcut (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
@@ -302,6 +330,8 @@ g_paste_settings_settings_changed (GSettings   *settings,
     }
     else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
         g_paste_settings_set_save_history (self);
+    else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
+        g_paste_settings_set_trim_items (self);
     else if (g_strcmp0 (key, KEYBOARD_SHORTCUT_KEY) == 0)
     {
         g_paste_settings_set_keyboard_shortcut (self);
@@ -332,6 +362,7 @@ g_paste_settings_new (void)
     g_paste_settings_set_synchronize_clipboards (self);
     g_paste_settings_set_track_changes (self);
     g_paste_settings_set_save_history (self);
+    g_paste_settings_set_trim_items (self);
     g_paste_settings_set_keyboard_shortcut (self);
 
     g_signal_connect (G_OBJECT (settings),

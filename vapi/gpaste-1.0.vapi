@@ -5,7 +5,7 @@ namespace GPaste {
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_clipboard_get_type ()")]
 	public class Clipboard : GLib.Object {
 		[CCode (has_construct_function = false)]
-		public Clipboard (Gdk.Atom target);
+		public Clipboard (Gdk.Atom target, GPaste.Settings settings);
 		public unowned string get_image_checksum ();
 		public unowned Gtk.Clipboard get_real ();
 		public Gdk.Atom get_target ();
@@ -77,6 +77,7 @@ namespace GPaste {
 		public bool get_save_history ();
 		public bool get_synchronize_clipboards ();
 		public bool get_track_changes ();
+		public bool get_trim_items ();
 		public void set_tracking_state (bool value);
 		public signal void rebind (string object);
 		public signal void track (bool object);

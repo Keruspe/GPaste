@@ -51,6 +51,15 @@
       </_description>
     </key>
 
+    <key name="trim-items" type="b">
+      <default>false</default>
+      <_summary>Do we trim the textual items before adding them to history?</_summary>
+      <_description>
+        Trimming means removing all trailing and ending spaces.
+        By default, we're letting them as-is.
+      </_description>
+    </key>
+
     <key name="keyboard-shortcut" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
       <_summary>The keyboard shortcut to display the menu</_summary>

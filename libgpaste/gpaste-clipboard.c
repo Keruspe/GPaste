@@ -27,6 +27,7 @@ struct _GPasteClipboardPrivate
 {
     GdkAtom target;
     GtkClipboard *real;
+    GPasteSettings *settings;
     gchar *text;
     gchar *image_checksum;
 };
@@ -115,12 +116,19 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     if (!text)
         return NULL;
 
+    gboolean trim_items = g_paste_settings_get_trim_items (priv->settings);
     gchar *stripped = g_strstrip (g_strdup (text));
 
     if ((g_strcmp0 (stripped, "") == 0) ||
         (priv->text &&
-            (g_strcmp0 (stripped, priv->text) == 0)))
+            (g_strcmp0 (priv->text, (trim_items ? stripped : text)) == 0)))
                 return NULL;
+
+    if (!stripped)
+    {
+        _g_paste_clipboard_set_text (self, text);
+        goto out;
+    }
 
     if (priv->target == GDK_SELECTION_CLIPBOARD &&
         g_strcmp0 (text, stripped) != 0)
@@ -128,6 +136,7 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     else
         _g_paste_clipboard_set_text (self, stripped);
 
+out:
     g_free (stripped);
     g_free (text);
 
@@ -360,6 +369,16 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
 }
 
 static void
+g_paste_clipboard_dispose (GObject *object)
+{
+    GPasteClipboardPrivate *priv = G_PASTE_CLIPBOARD (object)->priv;
+
+    g_object_unref (priv->settings);
+
+    G_OBJECT_CLASS (g_paste_clipboard_parent_class)->dispose (object);
+}
+
+static void
 g_paste_clipboard_finalize (GObject *object)
 {
     GPasteClipboardPrivate *priv = G_PASTE_CLIPBOARD (object)->priv;
@@ -377,7 +396,10 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 
     g_paste_clipboard_copy_files_target  = gdk_atom_intern_static_string ("x-special/gnome-copied-files");
 
-    G_OBJECT_CLASS (klass)->finalize = g_paste_clipboard_finalize;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_clipboard_dispose;
+    object_class->finalize = g_paste_clipboard_finalize;
 }
 
 static void
@@ -388,7 +410,8 @@ g_paste_clipboard_init (GPasteClipboard *self)
 
 /**
  * g_paste_clipboard_new:
- * @target: The GdkAtom representating the GtkClipboard we're abstracting
+ * @target: the GdkAtom representating the GtkClipboard we're abstracting
+ * @settings: a GPasteSettings instance
  *
  * Create a new instance of GPasteClipboard
  *
@@ -396,13 +419,15 @@ g_paste_clipboard_init (GPasteClipboard *self)
  *          free it with g_object_unref
  */
 GPasteClipboard *
-g_paste_clipboard_new (GdkAtom target)
+g_paste_clipboard_new (GdkAtom         target,
+                       GPasteSettings *settings)
 {
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
     GPasteClipboardPrivate *priv = self->priv;
 
     priv->target = target;
     priv->real = gtk_clipboard_get (target);
+    priv->settings = g_object_ref (settings);
     priv->text = NULL;
     priv->image_checksum = NULL;
 

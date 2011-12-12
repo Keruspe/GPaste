@@ -25,6 +25,7 @@
 #define __G_PASTE_CLIPBOARD_H__
 
 #include "gpaste-item.h"
+#include "gpaste-settings.h"
 
 #include <gtk/gtk.h>
 
@@ -52,7 +53,8 @@ const gchar *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);
 GdkPixbuf *g_paste_clipboard_set_image (GPasteClipboard *self);
 void g_paste_clipboard_select_item (GPasteClipboard  *self,
                                     const GPasteItem *item);
-GPasteClipboard *g_paste_clipboard_new (GdkAtom target);
+GPasteClipboard *g_paste_clipboard_new (GdkAtom         target,
+                                        GPasteSettings *settings);
 
 G_END_DECLS
 
