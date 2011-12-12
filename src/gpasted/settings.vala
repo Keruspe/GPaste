@@ -63,6 +63,12 @@ namespace GPaste {
                 }
             }
 
+            private bool real_trim_items {
+                get {
+                    return this.settings.get_boolean("trim-items");
+                }
+            }
+
             private string real_keyboard_shortcut {
                 owned get {
                     return this.settings.get_string("keyboard-shortcut");
@@ -89,6 +95,10 @@ namespace GPaste {
                 get; private set;
             }
 
+            public bool trim_items {
+                get; private set;
+            }
+
             public string keyboard_shortcut {
                 get; private set;
             }
@@ -105,6 +115,7 @@ namespace GPaste {
                 this.synchronize_clipboards = this.real_synchronize_clipboards;
                 this.track_changes = this.real_track_changes;
                 this.save_history = this.real_save_history;
+                this.trim_items = this.real_trim_items;
                 this.keyboard_shortcut = this.real_keyboard_shortcut;
                 this.settings.changed.connect((key)=>{
                     switch(key) {
@@ -123,6 +134,9 @@ namespace GPaste {
                         break;
                     case "save-history":
                         this.save_history = this.real_save_history;
+                        break;
+                    case "trim-items":
+                        this.trim_items = this.real_trim_items;
                         break;
                     case "keyboard-shortcut":
                         this.keyboard_shortcut = this.real_keyboard_shortcut;

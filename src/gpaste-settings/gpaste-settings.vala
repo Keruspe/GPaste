@@ -26,6 +26,7 @@ namespace GPaste {
             private Gtk.CheckButton synchronize_clipboards_button;
             private Gtk.CheckButton track_changes_button;
             private Gtk.CheckButton save_history_button;
+            private Gtk.CheckButton trim_items_button;
             private Gtk.SpinButton max_history_size_button;
             private Gtk.SpinButton element_size_button;
             private Gtk.Entry keyboard_shortcut_entry;
@@ -63,6 +64,15 @@ namespace GPaste {
                 }
                 set {
                     this.save_history_button.set_active(value);
+                }
+            }
+
+            public bool trim_items {
+                get {
+                    return this.trim_items_button.get_active();
+                }
+                set {
+                    this.trim_items_button.set_active(value);
                 }
             }
 
@@ -136,6 +146,11 @@ namespace GPaste {
                 this.save_history_button.toggled.connect(()=>{
                     app.save_history = this.save_history;
                 });
+                this.trim_items_button = new Gtk.CheckButton.with_mnemonic(_("_Save history"));
+                this.trim_items = app.trim_items;
+                this.trim_items_button.toggled.connect(()=>{
+                    app.trim_items = this.trim_items;
+                });
                 this.max_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
                 this.max_history_size = app.max_history_size;
                 this.max_history_size_button.get_adjustment().value_changed.connect(()=>{
@@ -167,6 +182,7 @@ namespace GPaste {
                 vbox.add(this.synchronize_clipboards_button);
                 vbox.add(this.track_changes_button);
                 vbox.add(this.save_history_button);
+                vbox.add(this.trim_items_button);
                 vbox.add(values_hbox);
 
                 this.add(vbox);
@@ -231,6 +247,15 @@ namespace GPaste {
                 }
             }
 
+            public bool trim_items {
+                get {
+                    return this.settings.get_boolean("trim-items");
+                }
+                set {
+                    this.settings.set_boolean("trim-items", value);
+                }
+            }
+
             public string keyboard_shortcut {
                 owned get {
                     return this.settings.get_string("keyboard-shortcut");
@@ -263,6 +288,9 @@ namespace GPaste {
                         break;
                     case "save-history":
                         this.window.save_history = this.save_history;
+                        break;
+                    case "trim-items":
+                        this.window.trim_items = this.trim_items;
                         break;
                     case "keyboard-shortcut":
                         this.window.keyboard_shortcut = this.keyboard_shortcut;

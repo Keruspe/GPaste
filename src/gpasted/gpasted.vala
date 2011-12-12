@@ -39,7 +39,7 @@ namespace GPaste {
                 {
                     string stripped = selection.strip ();
                     if (stripped != "")
-                        ClipboardsManager.instance.select (new TextItem (stripped));
+                        ClipboardsManager.instance.select (new TextItem (Settings.instance.trim_items ? stripped : selection));
                 }
             }
 
