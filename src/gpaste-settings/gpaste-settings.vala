@@ -19,6 +19,8 @@
 
 namespace GPaste {
 
+    static const string gettext_package = Config.GETTEXT_PACKAGE;
+
     namespace Settings {
 
         public class Window : Gtk.Window {
@@ -305,9 +307,9 @@ namespace GPaste {
             }
 
             public static int main(string[] args) {
-                GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
-                GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
-                GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
+                GLib.Intl.bindtextdomain(gettext_package, Config.LOCALEDIR);
+                GLib.Intl.bind_textdomain_codeset(gettext_package, "UTF-8");
+                GLib.Intl.textdomain(gettext_package);
                 Gtk.init(ref args);
                 var app = new Main();
                 try {

@@ -143,7 +143,6 @@ endif
 # CFLAGS
 
 AM_CFLAGS = \
-	-include $(top_builddir)/config.h \
 	-I$(top_srcdir)/libgpaste \
 	-DGPASTE_COMPILATION \
 	-DLOCALEDIR=\"${localedir}\" \
