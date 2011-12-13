@@ -329,13 +329,15 @@ g_paste_history_load (GPasteHistory *self)
         GPasteHistoryPrivate *priv = self->priv;
         guint max_history_size = g_paste_settings_get_max_history_size (priv->settings);
 
-        for (guint i = 0; i < max_history_size && xmlTextReaderRead (reader) == 1; ++i)
+        for (guint i = 0; i < max_history_size && xmlTextReaderRead (reader) == 1;)
         {
             if (xmlTextReaderNodeType (reader) != 1)
                 continue;
             const gchar *name = (const gchar *) xmlTextReaderConstName (reader);
             if (!name || g_strcmp0 (name, "item") != 0)
                 continue;
+
+            ++i;
 
             gchar *kind = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "kind");
             gchar *date = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "date");
