@@ -26,9 +26,9 @@ namespace GPaste {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public string[] get_history() {
                 unowned GLib.SList<Item> history = History.instance.history;
-                uint32 length = uint32.max (history.length (), Settings.instance.max_displayed_history_size);
+                uint32 length = uint32.min (history.length (), Settings.instance.max_displayed_history_size);
                 var as = new string[length];
-                int i = 0;
+                uint32 i = 0;
                 foreach (Item item in history)
                 {
                     as[i] = item.get_display_str ();
