@@ -52,7 +52,7 @@
       </_description>
     </key>
 
-    <key name="sync-state-with-extension" type="b">
+    <key name="track-extension-state" type="b">
       <default>false</default>
       <_summary>Do we sync the daemon state with the gnome-shell extension's one? (disable the daemon when disabling the extension)</_summary>
       <_description>

@@ -47,7 +47,7 @@ gboolean g_paste_settings_get_synchronize_clipboards (GPasteSettings *self);
 void g_paste_settings_set_tracking_state (GPasteSettings *self,
                                           gboolean        value);
 gboolean g_paste_settings_get_track_changes (GPasteSettings *self);
-gboolean g_paste_settings_get_sync_state_with_extension (GPasteSettings *self);
+gboolean g_paste_settings_get_track_extension_state (GPasteSettings *self);
 gboolean g_paste_settings_get_save_history (GPasteSettings *self);
 gboolean g_paste_settings_get_trim_items (GPasteSettings *self);
 const gchar *g_paste_settings_get_keyboard_shortcut (GPasteSettings *self);

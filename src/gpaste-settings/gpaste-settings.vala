@@ -27,7 +27,7 @@ namespace GPaste {
             private Gtk.CheckButton primary_to_history_button;
             private Gtk.CheckButton synchronize_clipboards_button;
             private Gtk.CheckButton track_changes_button;
-            private Gtk.CheckButton sync_state_with_extension_button;
+            private Gtk.CheckButton track_extension_state_button;
             private Gtk.CheckButton save_history_button;
             private Gtk.CheckButton trim_items_button;
             private Gtk.SpinButton max_history_size_button;
@@ -62,12 +62,12 @@ namespace GPaste {
                 }
             }
 
-            public bool sync_state_with_extension {
+            public bool track_extension_state {
                 get {
-                    return this.sync_state_with_extension_button.get_active();
+                    return this.track_extension_state_button.get_active();
                 }
                 set {
-                    this.sync_state_with_extension_button.set_active(value);
+                    this.track_extension_state_button.set_active(value);
                 }
             }
 
@@ -166,10 +166,10 @@ namespace GPaste {
                 this.track_changes_button.toggled.connect(()=>{
                     app.track_changes = this.track_changes;
                 });
-                this.sync_state_with_extension_button = new Gtk.CheckButton.with_mnemonic(_("Sync the daemon state with the _extension's one"));
-                this.sync_state_with_extension = app.sync_state_with_extension;
-                this.sync_state_with_extension_button.toggled.connect(()=>{
-                    app.sync_state_with_extension = this.sync_state_with_extension;
+                this.track_extension_state_button = new Gtk.CheckButton.with_mnemonic(_("Sync the daemon state with the _extension's one"));
+                this.track_extension_state = app.track_extension_state;
+                this.track_extension_state_button.toggled.connect(()=>{
+                    app.track_extension_state = this.track_extension_state;
                 });
                 this.save_history_button = new Gtk.CheckButton.with_mnemonic(_("_Save history"));
                 this.save_history = app.save_history;
@@ -217,7 +217,7 @@ namespace GPaste {
                 vbox.add(this.primary_to_history_button);
                 vbox.add(this.synchronize_clipboards_button);
                 vbox.add(this.track_changes_button);
-                vbox.add(this.sync_state_with_extension_button);
+                vbox.add(this.track_extension_state_button);
                 vbox.add(this.save_history_button);
                 vbox.add(this.trim_items_button);
                 vbox.add(values_hbox);
@@ -284,12 +284,12 @@ namespace GPaste {
                 }
             }
 
-            public bool sync_state_with_extension {
+            public bool track_extension_state {
                 get {
-                    return this.settings.get_boolean("sync-state-with-extension");
+                    return this.settings.get_boolean("track-extension-state");
                 }
                 set {
-                    this.settings.set_boolean("sync-state-with-extension", value);
+                    this.settings.set_boolean("track-extension-state", value);
                 }
             }
 
@@ -344,8 +344,8 @@ namespace GPaste {
                     case "track-changes":
                         this.window.track_changes = this.track_changes;
                         break;
-                    case "sync-state-with-extension":
-                        this.window.sync_state_with_extension = this.sync_state_with_extension;
+                    case "track-extension-state":
+                        this.window.track_extension_state = this.track_extension_state;
                         break;
                     case "save-history":
                         this.window.save_history = this.save_history;

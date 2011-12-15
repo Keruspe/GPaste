@@ -28,7 +28,7 @@
 #define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
 #define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
 #define TRACK_CHANGES_KEY              "track-changes"
-#define SYNC_STATE_WITH_EXTENSION_KEY  "sync-state-with-extension"
+#define TRACK_EXTENTION_STATE_KEY      "track-extension-state"
 #define SAVE_HISTORY_KEY               "save-history"
 #define TRIM_ITEMS_KEY                 "trim-items"
 #define KEYBOARD_SHORTCUT_KEY          "keyboard-shortcut"
@@ -43,7 +43,7 @@ struct _GPasteSettingsPrivate
     guint max_displayed_history_size;
     gboolean synchronize_clipboards;
     gboolean track_changes;
-    gboolean sync_state_with_extension;
+    gboolean track_extension_state;
     gboolean save_history;
     gboolean trim_items;
     gchar *keyboard_shortcut;
@@ -211,29 +211,29 @@ g_paste_settings_get_track_changes (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_sync_state_with_extension (GPasteSettings *self)
+g_paste_settings_set_track_extension_state (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
     GPasteSettingsPrivate *priv = self->priv;
 
-    priv->sync_state_with_extension = g_settings_get_boolean (priv->settings, SYNC_STATE_WITH_EXTENSION_KEY);
+    priv->track_extension_state = g_settings_get_boolean (priv->settings, TRACK_EXTENTION_STATE_KEY);
 }
 
 /**
- * g_paste_settings_get_sync_state_with_extension:
+ * g_paste_settings_get_track_extension_state:
  * @self: a GPasteSettings instance
  *
- * Get the SYNC_STATE_WITH_EXTENSION_KEY setting
+ * Get the TRACK_EXTENTION_STATE_KEY setting
  *
- * Returns: the value of the SYNC_STATE_WITH_EXTENSION_KEY setting
+ * Returns: the value of the TRACK_EXTENTION_STATE_KEY setting
  */
 gboolean
-g_paste_settings_get_sync_state_with_extension (GPasteSettings *self)
+g_paste_settings_get_track_extension_state (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
 
-    return self->priv->sync_state_with_extension;
+    return self->priv->track_extension_state;
 }
 
 static void
@@ -386,8 +386,8 @@ g_paste_settings_settings_changed (GSettings   *settings,
                        0, /* detail */
                        priv->track_changes);
     }
-    else if (g_strcmp0 (key, SYNC_STATE_WITH_EXTENSION_KEY) == 0)
-        g_paste_settings_set_sync_state_with_extension (self);
+    else if (g_strcmp0 (key, TRACK_EXTENTION_STATE_KEY) == 0)
+        g_paste_settings_set_track_extension_state (self);
     else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
         g_paste_settings_set_save_history (self);
     else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
@@ -422,7 +422,7 @@ g_paste_settings_new (void)
     g_paste_settings_set_max_displayed_history_size (self);
     g_paste_settings_set_synchronize_clipboards (self);
     g_paste_settings_set_track_changes (self);
-    g_paste_settings_set_sync_state_with_extension (self);
+    g_paste_settings_set_track_extension_state (self);
     g_paste_settings_set_save_history (self);
     g_paste_settings_set_trim_items (self);
     g_paste_settings_set_keyboard_shortcut (self);

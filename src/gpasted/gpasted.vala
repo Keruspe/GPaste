@@ -81,7 +81,7 @@ namespace GPaste {
 
             [DBus (name = "OnExtensionStateChanged", inSignature = "b", outSignature = "")]
             public void on_extension_state_changed (bool extension_state) {
-                if (this.settings.get_sync_state_with_extension ())
+                if (this.settings.get_track_extension_state ())
                     this.active = extension_state;
             }
 
