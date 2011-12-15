@@ -44,6 +44,10 @@ namespace GPaste {
             public void add(string selection) {
                 if (selection != null && selection.validate ())
                 {
+                    if (selection.length < this.settings.get_min_text_item_size() ||
+                        selection.length > this.settings.get_max_text_item_size())
+                            return;
+
                     string stripped = selection.strip ();
                     if (stripped != "")
                         this.clipboards_manager.select (new TextItem (this.settings.get_trim_items () ? stripped : selection));

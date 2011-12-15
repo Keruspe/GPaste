@@ -32,6 +32,8 @@
 #define SAVE_HISTORY_KEY               "save-history"
 #define TRIM_ITEMS_KEY                 "trim-items"
 #define KEYBOARD_SHORTCUT_KEY          "keyboard-shortcut"
+#define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
+#define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
@@ -47,6 +49,8 @@ struct _GPasteSettingsPrivate
     gboolean save_history;
     gboolean trim_items;
     gchar *keyboard_shortcut;
+    guint max_text_item_size;
+    guint min_text_item_size;
 };
 
 enum
@@ -135,6 +139,58 @@ g_paste_settings_get_max_displayed_history_size (GPasteSettings *self)
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
 
     return self->priv->max_displayed_history_size;
+}
+
+static void
+g_paste_settings_set_min_text_item_size_from_dconf (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->min_text_item_size = g_settings_get_uint (priv->settings, MIN_TEXT_ITEM_SIZE_KEY);
+}
+
+/**
+ * g_paste_settings_get_min_text_item_size:
+ * @self: a GPasteSettings instance
+ *
+ * Get the MIN_TEXT_ITEM_SIZE_KEY setting
+ *
+ * Returns: the value of the MIN_TEXT_ITEM_SIZE_KEY setting
+ */
+guint
+g_paste_settings_get_min_text_item_size (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
+
+    return self->priv->min_text_item_size;
+}
+
+static void
+g_paste_settings_set_max_text_item_size_from_dconf (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->max_text_item_size = g_settings_get_uint (priv->settings, MAX_TEXT_ITEM_SIZE_KEY);
+}
+
+/**
+ * g_paste_settings_get_max_text_item_size:
+ * @self: a GPasteSettings instance
+ *
+ * Get the MAX_TEXT_ITEM_SIZE_KEY setting
+ *
+ * Returns: the value of the MAX_TEXT_ITEM_SIZE_KEY setting
+ */
+guint
+g_paste_settings_get_max_text_item_size (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
+
+    return self->priv->max_text_item_size;
 }
 
 static void
@@ -374,6 +430,10 @@ g_paste_settings_settings_changed (GSettings   *settings,
         g_paste_settings_set_primary_to_history_from_dconf (self);
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
         g_paste_settings_set_max_history_size_from_dconf (self);
+    else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
+        g_paste_settings_set_max_text_item_size_from_dconf (self);
+    else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)
+        g_paste_settings_set_min_text_item_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
         g_paste_settings_set_max_displayed_history_size_from_dconf (self);
     else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
@@ -426,6 +486,8 @@ g_paste_settings_new (void)
     g_paste_settings_set_save_history_from_dconf (self);
     g_paste_settings_set_trim_items_from_dconf (self);
     g_paste_settings_set_keyboard_shortcut_from_dconf (self);
+    g_paste_settings_set_max_text_item_size_from_dconf(self);
+    g_paste_settings_set_min_text_item_size_from_dconf(self);
 
     g_signal_connect (G_OBJECT (settings),
                       "changed",
