@@ -60,7 +60,7 @@ enum
 static guint signals[LAST_SIGNAL] = { 0 };
 
 static void
-g_paste_settings_set_primary_to_history (GPasteSettings *self)
+g_paste_settings_set_primary_to_history_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -86,7 +86,7 @@ g_paste_settings_get_primary_to_history (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_max_history_size (GPasteSettings *self)
+g_paste_settings_set_max_history_size_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -112,7 +112,7 @@ g_paste_settings_get_max_history_size (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_max_displayed_history_size (GPasteSettings *self)
+g_paste_settings_set_max_displayed_history_size_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -138,7 +138,7 @@ g_paste_settings_get_max_displayed_history_size (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_synchronize_clipboards (GPasteSettings *self)
+g_paste_settings_set_synchronize_clipboards_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -164,7 +164,7 @@ g_paste_settings_get_synchronize_clipboards (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_track_changes (GPasteSettings *self)
+g_paste_settings_set_track_changes_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -211,7 +211,7 @@ g_paste_settings_get_track_changes (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_track_extension_state (GPasteSettings *self)
+g_paste_settings_set_track_extension_state_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -237,7 +237,7 @@ g_paste_settings_get_track_extension_state (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_save_history (GPasteSettings *self)
+g_paste_settings_set_save_history_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -263,7 +263,7 @@ g_paste_settings_get_save_history (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_trim_items (GPasteSettings *self)
+g_paste_settings_set_trim_items_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -289,7 +289,7 @@ g_paste_settings_get_trim_items (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_set_keyboard_shortcut (GPasteSettings *self)
+g_paste_settings_set_keyboard_shortcut_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
@@ -371,30 +371,30 @@ g_paste_settings_settings_changed (GSettings   *settings,
     settings = settings;
 
     if (g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ) == 0)
-        g_paste_settings_set_primary_to_history (self);
+        g_paste_settings_set_primary_to_history_from_dconf (self);
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
-        g_paste_settings_set_max_history_size (self);
+        g_paste_settings_set_max_history_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
-        g_paste_settings_set_max_displayed_history_size (self);
+        g_paste_settings_set_max_displayed_history_size_from_dconf (self);
     else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
-        g_paste_settings_set_synchronize_clipboards (self);
+        g_paste_settings_set_synchronize_clipboards_from_dconf (self);
     else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
     {
-        g_paste_settings_set_track_changes (self);
+        g_paste_settings_set_track_changes_from_dconf (self);
         g_signal_emit (self,
                        signals[TRACK],
                        0, /* detail */
                        priv->track_changes);
     }
     else if (g_strcmp0 (key, TRACK_EXTENTION_STATE_KEY) == 0)
-        g_paste_settings_set_track_extension_state (self);
+        g_paste_settings_set_track_extension_state_from_dconf (self);
     else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
-        g_paste_settings_set_save_history (self);
+        g_paste_settings_set_save_history_from_dconf (self);
     else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
-        g_paste_settings_set_trim_items (self);
+        g_paste_settings_set_trim_items_from_dconf (self);
     else if (g_strcmp0 (key, KEYBOARD_SHORTCUT_KEY) == 0)
     {
-        g_paste_settings_set_keyboard_shortcut (self);
+        g_paste_settings_set_keyboard_shortcut_from_dconf (self);
         g_signal_emit (self,
                        signals[REBIND],
                        0, /* detail */
@@ -417,15 +417,15 @@ g_paste_settings_new (void)
 
     GSettings *settings = self->priv->settings = g_settings_new ("org.gnome.GPaste");
 
-    g_paste_settings_set_primary_to_history (self);
-    g_paste_settings_set_max_history_size (self);
-    g_paste_settings_set_max_displayed_history_size (self);
-    g_paste_settings_set_synchronize_clipboards (self);
-    g_paste_settings_set_track_changes (self);
-    g_paste_settings_set_track_extension_state (self);
-    g_paste_settings_set_save_history (self);
-    g_paste_settings_set_trim_items (self);
-    g_paste_settings_set_keyboard_shortcut (self);
+    g_paste_settings_set_primary_to_history_from_dconf (self);
+    g_paste_settings_set_max_history_size_from_dconf (self);
+    g_paste_settings_set_max_displayed_history_size_from_dconf (self);
+    g_paste_settings_set_synchronize_clipboards_from_dconf (self);
+    g_paste_settings_set_track_changes_from_dconf (self);
+    g_paste_settings_set_track_extension_state_from_dconf (self);
+    g_paste_settings_set_save_history_from_dconf (self);
+    g_paste_settings_set_trim_items_from_dconf (self);
+    g_paste_settings_set_keyboard_shortcut_from_dconf (self);
 
     g_signal_connect (G_OBJECT (settings),
                       "changed",

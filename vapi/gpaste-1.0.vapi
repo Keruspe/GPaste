@@ -76,9 +76,9 @@ namespace GPaste {
 		public uint get_max_history_size ();
 		public bool get_primary_to_history ();
 		public bool get_save_history ();
-		public bool get_sync_state_with_extension ();
 		public bool get_synchronize_clipboards ();
 		public bool get_track_changes ();
+		public bool get_track_extension_state ();
 		public bool get_trim_items ();
 		public void set_tracking_state (bool value);
 		public signal void rebind (string object);
