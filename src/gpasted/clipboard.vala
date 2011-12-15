@@ -60,19 +60,19 @@ namespace GPaste {
                     return null;
                 string stripped = text.strip ();
                 bool trim_items = Settings.instance.trim_items;
-                if (stripped == "" || this.txt == (trim_items ? stripped : text))
-                    return null;
+                string to_add = trim_items ? stripped : text;
+                uint length = to_add.length;
+                if (length < Settings.instance.min_text_item_size ||
+                    length > Settings.instance.max_text_item_size ||
+                    stripped.length == 0 ||
+                    (this.txt != null && this.txt == to_add))
+                        return null;
                 Gdk.Atom tmp = Gdk.SELECTION_CLIPBOARD; // Or valac will fail
-                if (!trim_items)
-                {
-                    this.txt = text;
-                    return text;
-                }
-                if (this.selection == tmp && text != stripped)
+                if (trim_items && this.selection == tmp && text != stripped)
                     this.restore_text (stripped);
                 else
-                    this.txt = stripped;
-                return stripped;
+                    this.txt = to_add;
+                return this.txt;
             }
 
             public void restore_text (string text) {

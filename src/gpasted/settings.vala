@@ -85,6 +85,18 @@ namespace GPaste {
                 }
             }
 
+            private uint32 real_min_text_item_size {
+                get {
+                    return this.settings.get_value("min-text-item-size").get_uint32();
+                }
+            }
+
+            private uint32 real_max_text_item_size {
+                get {
+                    return this.settings.get_value("max-text-item-size").get_uint32();
+                }
+            }
+
             public bool primary_to_history {
                 get; private set;
             }
@@ -121,6 +133,14 @@ namespace GPaste {
                 get; private set;
             }
 
+            public uint32 min_text_item_size {
+                get; private set;
+            }
+
+            public uint32 max_text_item_size {
+                get; private set;
+            }
+
             public void set_tracking_state(bool state) {
                 this.track_changes = state;
                 this.settings.set_boolean("track-changes", state);
@@ -129,7 +149,7 @@ namespace GPaste {
             private Settings() {
                 this.settings = new GLib.Settings("org.gnome.GPaste");
                 this.primary_to_history = this.real_primary_to_history;
-                this.max_history_size = this.real_max_displayed_history_size;
+                this.max_history_size = this.real_max_history_size;
                 this.max_displayed_history_size = this.real_max_displayed_history_size;
                 this.synchronize_clipboards = this.real_synchronize_clipboards;
                 this.track_changes = this.real_track_changes;
@@ -137,6 +157,8 @@ namespace GPaste {
                 this.save_history = this.real_save_history;
                 this.trim_items = this.real_trim_items;
                 this.keyboard_shortcut = this.real_keyboard_shortcut;
+                this.min_text_item_size = this.real_min_text_item_size;
+                this.max_text_item_size = this.real_max_text_item_size;
                 this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "primary-to-history":
@@ -167,6 +189,12 @@ namespace GPaste {
                     case "keyboard-shortcut":
                         this.keyboard_shortcut = this.real_keyboard_shortcut;
                         Keybinder.instance.rebind(this.keyboard_shortcut);
+                        break;
+                    case "min-text-item-size":
+                        this.min_text_item_size = this.real_min_text_item_size;
+                        break;
+                    case "max-text-item-size":
+                        this.max_text_item_size = this.real_max_text_item_size;
                         break;
                     }
                 });
