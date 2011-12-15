@@ -10,6 +10,15 @@
       </_description>
     </key>
 
+    <key name="max-displayed-history-size" type="u">
+      <range min="5" max="255"/>
+      <default>20</default>
+      <_summary>Max displayed history size</_summary>
+      <_description>
+        Maximum number of items displayed in the history
+      </_description>
+    </key>
+
     <key name="element-size" type="u">
       <range min="0" max="255"/>
       <default>60</default>
@@ -40,6 +49,14 @@
       <_summary>Do we track the clipboard changes?</_summary>
       <_description>
         By default, we're tracking those changes.
+      </_description>
+    </key>
+
+    <key name="sync-state-with-extension" type="b">
+      <default>false</default>
+      <_summary>Do we sync the daemon state with the gnome-shell extension's one? (disable the daemon when disabling the extension)</_summary>
+      <_description>
+        By default, the daemon state keeps unchanged
       </_description>
     </key>
 

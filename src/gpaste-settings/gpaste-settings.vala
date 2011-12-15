@@ -27,9 +27,11 @@ namespace GPaste {
             private Gtk.CheckButton primary_to_history_button;
             private Gtk.CheckButton synchronize_clipboards_button;
             private Gtk.CheckButton track_changes_button;
+            private Gtk.CheckButton sync_state_with_extension_button;
             private Gtk.CheckButton save_history_button;
             private Gtk.CheckButton trim_items_button;
             private Gtk.SpinButton max_history_size_button;
+            private Gtk.SpinButton max_displayed_history_size_button;
             private Gtk.SpinButton element_size_button;
             private Gtk.Entry keyboard_shortcut_entry;
 
@@ -60,6 +62,15 @@ namespace GPaste {
                 }
             }
 
+            public bool sync_state_with_extension {
+                get {
+                    return this.sync_state_with_extension_button.get_active();
+                }
+                set {
+                    this.sync_state_with_extension_button.set_active(value);
+                }
+            }
+
             public bool save_history {
                 get {
                     return this.save_history_button.get_active();
@@ -84,6 +95,15 @@ namespace GPaste {
                 }
                 set {
                     this.max_history_size_button.get_adjustment().value = value;
+                }
+            }
+
+            public uint32 max_displayed_history_size {
+                get {
+                    return (uint32)this.max_displayed_history_size_button.get_value_as_int();
+                }
+                set {
+                    this.max_displayed_history_size_button.get_adjustment().value = value;
                 }
             }
 
@@ -117,12 +137,15 @@ namespace GPaste {
             private void fill() {
                 var labels_vbox = new Gtk.VBox(false, 10);
                 var history_size_label = new Gtk.Label(_("Max history size: "));
+                var displayed_history_size_label = new Gtk.Label(_("Max displayed history size: "));
                 var element_size_label = new Gtk.Label(_("Max element size when displaying: "));
                 var keyboard_shortcut_label = new Gtk.Label(_("Keyboard shortcut to display the history: "));
                 history_size_label.xalign = 0;
+                displayed_history_size_label.xalign = 0;
                 element_size_label.xalign = 0;
                 keyboard_shortcut_label.xalign = 0;
                 labels_vbox.add(history_size_label);
+                labels_vbox.add(displayed_history_size_label);
                 labels_vbox.add(element_size_label);
                 labels_vbox.add(keyboard_shortcut_label);
 
@@ -143,6 +166,11 @@ namespace GPaste {
                 this.track_changes_button.toggled.connect(()=>{
                     app.track_changes = this.track_changes;
                 });
+                this.sync_state_with_extension_button = new Gtk.CheckButton.with_mnemonic(_("Sync the daemon state with the _extension's one"));
+                this.sync_state_with_extension = app.sync_state_with_extension;
+                this.sync_state_with_extension_button.toggled.connect(()=>{
+                    app.sync_state_with_extension = this.sync_state_with_extension;
+                });
                 this.save_history_button = new Gtk.CheckButton.with_mnemonic(_("_Save history"));
                 this.save_history = app.save_history;
                 this.save_history_button.toggled.connect(()=>{
@@ -158,6 +186,11 @@ namespace GPaste {
                 this.max_history_size_button.get_adjustment().value_changed.connect(()=>{
                     app.max_history_size = this.max_history_size;
                 });
+                this.max_displayed_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
+                this.max_displayed_history_size = app.max_displayed_history_size;
+                this.max_displayed_history_size_button.get_adjustment().value_changed.connect(()=>{
+                    app.max_displayed_history_size = this.max_displayed_history_size;
+                });
                 this.element_size_button = new Gtk.SpinButton.with_range(0, 255, 5);
                 this.element_size = app.element_size;
                 this.element_size_button.get_adjustment().value_changed.connect(()=>{
@@ -171,6 +204,7 @@ namespace GPaste {
 
                 var values_vbox = new Gtk.VBox(true, 10);
                 values_vbox.add(this.max_history_size_button);
+                values_vbox.add(this.max_displayed_history_size_button);
                 values_vbox.add(this.element_size_button);
                 values_vbox.add(this.keyboard_shortcut_entry);
 
@@ -183,6 +217,7 @@ namespace GPaste {
                 vbox.add(this.primary_to_history_button);
                 vbox.add(this.synchronize_clipboards_button);
                 vbox.add(this.track_changes_button);
+                vbox.add(this.sync_state_with_extension_button);
                 vbox.add(this.save_history_button);
                 vbox.add(this.trim_items_button);
                 vbox.add(values_hbox);
@@ -201,6 +236,15 @@ namespace GPaste {
                 }
                 set {
                     this.settings.set_value("max-history-size", value);
+                }
+            }
+
+            public uint32 max_displayed_history_size {
+                get {
+                    return this.settings.get_value("max-displayed-history-size").get_uint32();
+                }
+                set {
+                    this.settings.set_value("max-displayed-history-size", value);
                 }
             }
 
@@ -240,6 +284,15 @@ namespace GPaste {
                 }
             }
 
+            public bool sync_state_with_extension {
+                get {
+                    return this.settings.get_boolean("sync-state-with-extension");
+                }
+                set {
+                    this.settings.set_boolean("sync-state-with-extension", value);
+                }
+            }
+
             public bool save_history {
                 get {
                     return this.settings.get_boolean("save-history");
@@ -276,6 +329,9 @@ namespace GPaste {
                     case "max-history-size":
                         this.window.max_history_size = this.max_history_size;
                         break;
+                    case "max-displayed-history-size":
+                        this.window.max_displayed_history_size = this.max_displayed_history_size;
+                        break;
                     case "element-size":
                         this.window.element_size = this.element_size;
                         break;
@@ -287,6 +343,9 @@ namespace GPaste {
                         break;
                     case "track-changes":
                         this.window.track_changes = this.track_changes;
+                        break;
+                    case "sync-state-with-extension":
+                        this.window.sync_state_with_extension = this.sync_state_with_extension;
                         break;
                     case "save-history":
                         this.window.save_history = this.save_history;

@@ -72,9 +72,11 @@ namespace GPaste {
 		[CCode (has_construct_function = false)]
 		public Settings ();
 		public unowned string get_keyboard_shortcut ();
+		public uint get_max_displayed_history_size ();
 		public uint get_max_history_size ();
 		public bool get_primary_to_history ();
 		public bool get_save_history ();
+		public bool get_sync_state_with_extension ();
 		public bool get_synchronize_clipboards ();
 		public bool get_track_changes ();
 		public bool get_trim_items ();

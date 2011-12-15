@@ -23,13 +23,15 @@
 
 #define G_PASTE_SETTINGS_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_SETTINGS, GPasteSettingsPrivate))
 
-#define PRIMARY_TO_HISTORY_KEY     "primary-to-history"
-#define MAX_HISTORY_SIZE_KEY       "max-history-size"
-#define SYNCHRONIZE_CLIPBOARDS_KEY "synchronize-clipboards"
-#define TRACK_CHANGES_KEY          "track-changes"
-#define SAVE_HISTORY_KEY           "save-history"
-#define TRIM_ITEMS_KEY             "trim-items"
-#define KEYBOARD_SHORTCUT_KEY      "keyboard-shortcut"
+#define PRIMARY_TO_HISTORY_KEY         "primary-to-history"
+#define MAX_HISTORY_SIZE_KEY           "max-history-size"
+#define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
+#define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
+#define TRACK_CHANGES_KEY              "track-changes"
+#define SYNC_STATE_WITH_EXTENSION_KEY  "sync-state-with-extension"
+#define SAVE_HISTORY_KEY               "save-history"
+#define TRIM_ITEMS_KEY                 "trim-items"
+#define KEYBOARD_SHORTCUT_KEY          "keyboard-shortcut"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
@@ -38,8 +40,10 @@ struct _GPasteSettingsPrivate
     GSettings *settings;
     gboolean primary_to_history;
     guint max_history_size;
+    guint max_displayed_history_size;
     gboolean synchronize_clipboards;
     gboolean track_changes;
+    gboolean sync_state_with_extension;
     gboolean save_history;
     gboolean trim_items;
     gchar *keyboard_shortcut;
@@ -105,6 +109,32 @@ g_paste_settings_get_max_history_size (GPasteSettings *self)
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
 
     return self->priv->max_history_size;
+}
+
+static void
+g_paste_settings_set_max_displayed_history_size (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->max_displayed_history_size = g_settings_get_uint (priv->settings, MAX_DISPLAYED_HISTORY_SIZE_KEY);
+}
+
+/**
+ * g_paste_settings_get_max_displayed_history_size:
+ * @self: a GPasteSettings instance
+ *
+ * Get the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ *
+ * Returns: the value of the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ */
+guint
+g_paste_settings_get_max_displayed_history_size (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
+
+    return self->priv->max_displayed_history_size;
 }
 
 static void
@@ -178,6 +208,32 @@ g_paste_settings_get_track_changes (GPasteSettings *self)
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
 
     return self->priv->track_changes;
+}
+
+static void
+g_paste_settings_set_sync_state_with_extension (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->sync_state_with_extension = g_settings_get_boolean (priv->settings, SYNC_STATE_WITH_EXTENSION_KEY);
+}
+
+/**
+ * g_paste_settings_get_sync_state_with_extension:
+ * @self: a GPasteSettings instance
+ *
+ * Get the SYNC_STATE_WITH_EXTENSION_KEY setting
+ *
+ * Returns: the value of the SYNC_STATE_WITH_EXTENSION_KEY setting
+ */
+gboolean
+g_paste_settings_get_sync_state_with_extension (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+
+    return self->priv->sync_state_with_extension;
 }
 
 static void
@@ -318,6 +374,8 @@ g_paste_settings_settings_changed (GSettings   *settings,
         g_paste_settings_set_primary_to_history (self);
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
         g_paste_settings_set_max_history_size (self);
+    else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
+        g_paste_settings_set_max_displayed_history_size (self);
     else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
         g_paste_settings_set_synchronize_clipboards (self);
     else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
@@ -328,6 +386,8 @@ g_paste_settings_settings_changed (GSettings   *settings,
                        0, /* detail */
                        priv->track_changes);
     }
+    else if (g_strcmp0 (key, SYNC_STATE_WITH_EXTENSION_KEY) == 0)
+        g_paste_settings_set_sync_state_with_extension (self);
     else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
         g_paste_settings_set_save_history (self);
     else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
@@ -359,8 +419,10 @@ g_paste_settings_new (void)
 
     g_paste_settings_set_primary_to_history (self);
     g_paste_settings_set_max_history_size (self);
+    g_paste_settings_set_max_displayed_history_size (self);
     g_paste_settings_set_synchronize_clipboards (self);
     g_paste_settings_set_track_changes (self);
+    g_paste_settings_set_sync_state_with_extension (self);
     g_paste_settings_set_save_history (self);
     g_paste_settings_set_trim_items (self);
     g_paste_settings_set_keyboard_shortcut (self);

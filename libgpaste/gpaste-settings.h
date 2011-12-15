@@ -42,10 +42,12 @@ typedef struct _GPasteSettingsPrivate GPasteSettingsPrivate;
 GType g_paste_settings_get_type (void);
 gboolean g_paste_settings_get_primary_to_history (GPasteSettings *self);
 guint g_paste_settings_get_max_history_size (GPasteSettings *self);
+guint g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
 gboolean g_paste_settings_get_synchronize_clipboards (GPasteSettings *self);
 void g_paste_settings_set_tracking_state (GPasteSettings *self,
                                           gboolean        value);
 gboolean g_paste_settings_get_track_changes (GPasteSettings *self);
+gboolean g_paste_settings_get_sync_state_with_extension (GPasteSettings *self);
 gboolean g_paste_settings_get_save_history (GPasteSettings *self);
 gboolean g_paste_settings_get_trim_items (GPasteSettings *self);
 const gchar *g_paste_settings_get_keyboard_shortcut (GPasteSettings *self);

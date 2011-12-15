@@ -28,10 +28,15 @@ namespace GPaste {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public string[] get_history() {
                 unowned GLib.SList<Item> history = this.history.get_history ();
-                var as = new string[history.length()];
+                uint32 length = uint32.max (history.length (), this.settings.get_max_displayed_history_size ());
+                var as = new string[length];
                 int i = 0;
                 foreach (Item item in history)
-                    as[i++] = item.get_display_string ();
+                {
+                    as[i] = item.get_display_string ();
+                    if (++i == length)
+                        break;
+                }
                 return as;
             }
 
@@ -72,6 +77,12 @@ namespace GPaste {
             public void track (bool tracking_state) {
                 this.active = tracking_state;
                 this.tracking (tracking_state);
+            }
+
+            [DBus (name = "OnExtensionStateChanged", inSignature = "b", outSignature = "")]
+            public void on_extension_state_changed (bool extension_state) {
+                if (this.settings.get_sync_state_with_extension ())
+                    this.active = extension_state;
             }
 
             [DBus (name = "Reexecute", inSignature = "", outSignature = "")]
