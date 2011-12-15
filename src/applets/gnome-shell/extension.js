@@ -47,6 +47,9 @@ const GPasteInterface =
         <method name="Track">
             <arg type="b" direction="in" />
         </method>
+        <method name="OnExtensionStateChanged">
+            <arg type="b" direction="in" />
+        </method>
         <signal name="Changed" />
         <signal name="ToggleHistory" />
         <signal name="Tracking">
@@ -178,6 +181,10 @@ GPasteIndicator.prototype = {
     _hideHistory: function(startIndex) {
         for (let index = startIndex || 0; index < this._history.length; ++index)
             this._history[index].actor.hide();
+    },
+
+    _onStateChanged: function (state) {
+        this._proxy.OnExtensionStateChanged (state);
     }
 };
 
@@ -191,10 +198,12 @@ function init(metadata) {
 
 function enable() {
     _indicator = new GPasteIndicator();
+    _indicator._onStateChanged (true);
     Main.panel.addToStatusArea('gpaste', _indicator);
 }
 
 function disable() {
+    _indicator._onStateChanged (false);
     _indicator.destroy();
 }
 

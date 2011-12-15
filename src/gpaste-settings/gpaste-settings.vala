@@ -25,6 +25,7 @@ namespace GPaste {
             private Gtk.CheckButton primary_to_history_button;
             private Gtk.CheckButton synchronize_clipboards_button;
             private Gtk.CheckButton track_changes_button;
+            private Gtk.CheckButton sync_state_with_extension_button;
             private Gtk.CheckButton save_history_button;
             private Gtk.CheckButton trim_items_button;
             private Gtk.SpinButton max_history_size_button;
@@ -55,6 +56,15 @@ namespace GPaste {
                 }
                 set {
                     this.track_changes_button.set_active(value);
+                }
+            }
+
+            public bool sync_state_with_extension {
+                get {
+                    return this.sync_state_with_extension_button.get_active();
+                }
+                set {
+                    this.sync_state_with_extension_button.set_active(value);
                 }
             }
 
@@ -141,6 +151,11 @@ namespace GPaste {
                 this.track_changes_button.toggled.connect(()=>{
                     app.track_changes = this.track_changes;
                 });
+                this.sync_state_with_extension_button = new Gtk.CheckButton.with_mnemonic(_("Sync the daemon state with the _extension's one"));
+                this.sync_state_with_extension = app.sync_state_with_extension;
+                this.sync_state_with_extension_button.toggled.connect(()=>{
+                    app.sync_state_with_extension = this.sync_state_with_extension;
+                });
                 this.save_history_button = new Gtk.CheckButton.with_mnemonic(_("_Save history"));
                 this.save_history = app.save_history;
                 this.save_history_button.toggled.connect(()=>{
@@ -181,6 +196,7 @@ namespace GPaste {
                 vbox.add(this.primary_to_history_button);
                 vbox.add(this.synchronize_clipboards_button);
                 vbox.add(this.track_changes_button);
+                vbox.add(this.sync_state_with_extension_button);
                 vbox.add(this.save_history_button);
                 vbox.add(this.trim_items_button);
                 vbox.add(values_hbox);
@@ -238,6 +254,15 @@ namespace GPaste {
                 }
             }
 
+            public bool sync_state_with_extension {
+                get {
+                    return this.settings.get_boolean("sync-state-with-extension");
+                }
+                set {
+                    this.settings.set_boolean("sync-state-with-extension", value);
+                }
+            }
+
             public bool save_history {
                 get {
                     return this.settings.get_boolean("save-history");
@@ -285,6 +310,9 @@ namespace GPaste {
                         break;
                     case "track-changes":
                         this.window.track_changes = this.track_changes;
+                        break;
+                    case "sync-state-with-extension":
+                        this.window.sync_state_with_extension = this.sync_state_with_extension;
                         break;
                     case "save-history":
                         this.window.save_history = this.save_history;

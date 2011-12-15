@@ -57,6 +57,11 @@ namespace GPaste {
                 }
             }
 
+            private bool real_sync_state_with_extension {
+                get {
+                    return this.settings.get_boolean("sync-state-with-extension");
+                }
+            }
             private bool real_save_history {
                 get {
                     return this.settings.get_boolean("save-history");
@@ -91,6 +96,10 @@ namespace GPaste {
                 get; private set;
             }
 
+            public bool sync_state_with_extension {
+                get; private set;
+            }
+
             public bool save_history {
                 get; private set;
             }
@@ -114,6 +123,7 @@ namespace GPaste {
                 this.max_history_size = this.real_max_history_size;
                 this.synchronize_clipboards = this.real_synchronize_clipboards;
                 this.track_changes = this.real_track_changes;
+                this.sync_state_with_extension = this.real_sync_state_with_extension;
                 this.save_history = this.real_save_history;
                 this.trim_items = this.real_trim_items;
                 this.keyboard_shortcut = this.real_keyboard_shortcut;
@@ -131,6 +141,9 @@ namespace GPaste {
                     case "track-changes":
                         this.track_changes = this.real_track_changes;
                         DBusServer.instance.tracking(this.track_changes);
+                        break;
+                    case "sync-state-with-extension":
+                        this.sync_state_with_extension = this.real_sync_state_with_extension;
                         break;
                     case "save-history":
                         this.save_history = this.real_save_history;

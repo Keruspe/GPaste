@@ -69,6 +69,12 @@ namespace GPaste {
                 this.tracking(tracking_state);
             }
 
+            [DBus (name = "OnExtensionStateChanged", inSignature = "b", outSignature = "")]
+            public void on_extension_state_changed (bool extension_state) {
+                if (Settings.instance.sync_state_with_extension)
+                    this.active = extension_state;
+            }
+
             [DBus (name = "Reexecute", inSignature = "", outSignature = "")]
             public void reexec() {
                 Main.reexec();
