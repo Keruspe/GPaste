@@ -118,11 +118,12 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
 
     gboolean trim_items = g_paste_settings_get_trim_items (priv->settings);
     gchar *stripped = g_strstrip (g_strdup (text));
+    const gchar *ret = NULL;
 
     if ((g_strcmp0 (stripped, "") == 0) ||
         (priv->text &&
             (g_strcmp0 (priv->text, (trim_items ? stripped : text)) == 0)))
-                return NULL;
+                goto ignore;
 
     if (!stripped)
     {
@@ -137,10 +138,13 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
         _g_paste_clipboard_set_text (self, stripped);
 
 out:
+    ret = priv->text;
+
+ignore:
     g_free (stripped);
     g_free (text);
 
-    return priv->text;
+    return ret;
 }
 
 /**
