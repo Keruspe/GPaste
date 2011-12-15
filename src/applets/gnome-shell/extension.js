@@ -184,7 +184,7 @@ GPasteIndicator.prototype = {
     },
 
     _onStateChanged: function (state) {
-        this._proxy.OnExtensionStateChanged (state);
+        this._proxy.OnExtensionStateChangedRemote(state);
     }
 };
 
