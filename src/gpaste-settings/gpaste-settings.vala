@@ -29,6 +29,7 @@ namespace GPaste {
             private Gtk.CheckButton save_history_button;
             private Gtk.CheckButton trim_items_button;
             private Gtk.SpinButton max_history_size_button;
+            private Gtk.SpinButton max_displayed_history_size_button;
             private Gtk.SpinButton element_size_button;
             private Gtk.Entry keyboard_shortcut_entry;
 
@@ -95,6 +96,15 @@ namespace GPaste {
                 }
             }
 
+            public uint32 max_displayed_history_size {
+                get {
+                    return (uint32)this.max_displayed_history_size_button.get_value_as_int();
+                }
+                set {
+                    this.max_displayed_history_size_button.get_adjustment().value = value;
+                }
+            }
+
             public uint32 element_size {
                 get {
                     return (uint32)this.element_size_button.get_value_as_int();
@@ -125,12 +135,15 @@ namespace GPaste {
             private void fill() {
                 var labels_vbox = new Gtk.VBox(false, 10);
                 var history_size_label = new Gtk.Label(_("Max history size: "));
+                var displayed_history_size_label = new Gtk.Label(_("Max displayed history size: "));
                 var element_size_label = new Gtk.Label(_("Max element size when displaying: "));
                 var keyboard_shortcut_label = new Gtk.Label(_("Keyboard shortcut to display the history: "));
                 history_size_label.xalign = 0;
+                displayed_history_size_label.xalign = 0;
                 element_size_label.xalign = 0;
                 keyboard_shortcut_label.xalign = 0;
                 labels_vbox.add(history_size_label);
+                labels_vbox.add(displayed_history_size_label);
                 labels_vbox.add(element_size_label);
                 labels_vbox.add(keyboard_shortcut_label);
 
@@ -171,6 +184,11 @@ namespace GPaste {
                 this.max_history_size_button.get_adjustment().value_changed.connect(()=>{
                     app.max_history_size = this.max_history_size;
                 });
+                this.max_displayed_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
+                this.max_displayed_history_size = app.max_displayed_history_size;
+                this.max_displayed_history_size_button.get_adjustment().value_changed.connect(()=>{
+                    app.max_displayed_history_size = this.max_displayed_history_size;
+                });
                 this.element_size_button = new Gtk.SpinButton.with_range(0, 255, 5);
                 this.element_size = app.element_size;
                 this.element_size_button.get_adjustment().value_changed.connect(()=>{
@@ -184,6 +202,7 @@ namespace GPaste {
 
                 var values_vbox = new Gtk.VBox(true, 10);
                 values_vbox.add(this.max_history_size_button);
+                values_vbox.add(this.max_displayed_history_size_button);
                 values_vbox.add(this.element_size_button);
                 values_vbox.add(this.keyboard_shortcut_entry);
 
@@ -215,6 +234,15 @@ namespace GPaste {
                 }
                 set {
                     this.settings.set_value("max-history-size", value);
+                }
+            }
+
+            public uint32 max_displayed_history_size {
+                get {
+                    return this.settings.get_value("max-displayed-history-size").get_uint32();
+                }
+                set {
+                    this.settings.set_value("max-displayed-history-size", value);
                 }
             }
 
@@ -298,6 +326,9 @@ namespace GPaste {
                     switch(key) {
                     case "max-history-size":
                         this.window.max_history_size = this.max_history_size;
+                        break;
+                    case "max-displayed-history-size":
+                        this.window.max_displayed_history_size = this.max_displayed_history_size;
                         break;
                     case "element-size":
                         this.window.element_size = this.element_size;

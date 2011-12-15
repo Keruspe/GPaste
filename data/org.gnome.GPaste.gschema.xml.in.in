@@ -10,6 +10,15 @@
       </_description>
     </key>
 
+    <key name="max-displayed-history-size" type="u">
+      <range min="5" max="255"/>
+      <default>20</default>
+      <_summary>Max displayed history size</_summary>
+      <_description>
+        Maximum number of items displayed in the history
+      </_description>
+    </key>
+
     <key name="element-size" type="u">
       <range min="0" max="255"/>
       <default>60</default>
