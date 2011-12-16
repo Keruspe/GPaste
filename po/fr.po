@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-12-16 11:12+0100\n"
+"POT-Creation-Date: 2011-12-16 11:25+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -17,186 +17,150 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpasted/gpasted.vala:127
-#, c-format
-msgid "Signal %d recieved, exiting.\n"
-msgstr "Signal %d reçu, arrêt.\n"
-
-#: ../src/gpasted/gpasted.vala:135
-#, c-format
-msgid "Could not register DBus service.\n"
-msgstr "Impossible d'inscrire le service DBus au registre.\n"
-
-#: ../src/gpasted/gpasted.vala:142
+#: ../src/gpasted/gpasted.vala:158
 #, c-format
 msgid "Could not aquire DBus name.\n"
 msgstr "Impossible d'acquérir le nom DBus.\n"
 
-#: ../src/gpasted/history.vala:118
+#: ../src/gpasted/gpasted.vala:165
 #, c-format
-msgid "Could not delete history file.\n"
-msgstr "Impossible de supprimer le fichier d'historique.\n"
+msgid "Signal %d recieved, exiting.\n"
+msgstr "Signal %d reçu, arrêt.\n"
 
-#: ../src/gpasted/history.vala:242
+#: ../src/gpasted/gpasted.vala:173
 #, c-format
-msgid "Could not create history file.\n"
-msgstr "Impossible de créer le fichier d'historique.\n"
+msgid "Could not register DBus service.\n"
+msgstr "Impossible d'inscrire le service DBus au registre.\n"
 
-#. This is the prefix displayed in history to identify selected files
-#: ../src/gpasted/item.vala:74
-msgid "[Files] "
-msgstr "[Fichiers] "
-
-#. This is the date format "month/day/year time"
-#: ../src/gpasted/item.vala:119 ../src/gpasted/item.vala:134
-msgid "%m/%d/%y %T"
-msgstr "%d/%m/%y %T"
-
-#. This gets displayed in history when selecting an image
-#: ../src/gpasted/item.vala:121 ../src/gpasted/item.vala:134
-#, c-format
-msgid "[Image, %d x %d (%s)]"
-msgstr "[Image, %d x %d (%s)]"
-
-#: ../src/gpasted/item.vala:125
-#, c-format
-msgid "Error while saving pixbuf: %s\n"
-msgstr "Erreur lors de la sauvegarde de l'image: %s\n"
-
-#: ../src/gpasted/item.vala:139
-#, c-format
-msgid "Error while loading pixbuf: %s\n"
-msgstr "Erreur lors du chargement de l'image: %s\n"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:128
-#: ../src/applets/gnome-shell/extension.js:117
+#: ../src/gpaste-settings/gpaste-settings.vala:130
+#: ../src/applets/gnome-shell/extension.js:114
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Préférences du démon GPaste"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:137
+#: ../src/gpaste-settings/gpaste-settings.vala:139
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:138
+#: ../src/gpaste-settings/gpaste-settings.vala:140
 msgid "Max displayed history size: "
 msgstr "Taille maximale de l'historique affiché : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:139
+#: ../src/gpaste-settings/gpaste-settings.vala:141
 msgid "Max element size when displaying: "
 msgstr "Taille maximale d'un élément quand on l'affiche : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:140
+#: ../src/gpaste-settings/gpaste-settings.vala:142
 msgid "Keyboard shortcut to display the history: "
 msgstr "Raccourcis clavier pour afficher l'historique : "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:152
+#: ../src/gpaste-settings/gpaste-settings.vala:154
 msgid "_Primary selection affects history"
 msgstr "La selection _primaire affecte l'historique"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:157
+#: ../src/gpaste-settings/gpaste-settings.vala:159
 msgid "_Synchronize clipboard with primary selection"
 msgstr "_Synchroniser le presse-papier avec la séléction primaire"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:162
+#: ../src/gpaste-settings/gpaste-settings.vala:164
 msgid "_Track clipboard changes"
 msgstr "Suivre les changemen_ts du presse-papier"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:167
+#: ../src/gpaste-settings/gpaste-settings.vala:169
 msgid "Sync the daemon state with the _extension's one"
 msgstr "Synchroniser l'état du démon avec celui de l'_extension"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:172
+#: ../src/gpaste-settings/gpaste-settings.vala:174
 msgid "_Save history"
 msgstr "Sauvegarder l'historique"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:177
+#: ../src/gpaste-settings/gpaste-settings.vala:179
 msgid "_Trim items"
 msgstr "_Tronquer les éléments (éliminer les espaces au début et à la fin)"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:375
-#: ../src/applets/legacy/gpaste-applet.vala:215
+#: ../src/gpaste-settings/gpaste-settings.vala:377
+#: ../src/applets/legacy/gpaste-applet.vala:217
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Impossible d'enregistrer l'application gtk au registre.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:106
+#: ../src/applets/legacy/gpaste-applet.vala:108
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Impossible de mettre à jour l'historique.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:113
-#: ../src/applets/gnome-shell/extension.js:132
+#: ../src/applets/legacy/gpaste-applet.vala:115
+#: ../src/applets/gnome-shell/extension.js:129
 msgid "(Empty)"
 msgstr "(Vide)"
 
-#: ../src/applets/legacy/gpaste-applet.vala:131
+#: ../src/applets/legacy/gpaste-applet.vala:133
 msgid "Settings"
 msgstr "Préférences"
 
-#: ../src/applets/legacy/gpaste-applet.vala:136
+#: ../src/applets/legacy/gpaste-applet.vala:138
 #, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Impossible de lancer gpaste-settings.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:140
-#: ../src/applets/gnome-shell/extension.js:82
+#: ../src/applets/legacy/gpaste-applet.vala:142
+#: ../src/applets/gnome-shell/extension.js:79
 msgid "Empty history"
 msgstr "Vider l'historique"
 
-#: ../src/applets/legacy/gpaste-applet.vala:145
+#: ../src/applets/legacy/gpaste-applet.vala:147
 #, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Impossible de vider l'historique.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:149
+#: ../src/applets/legacy/gpaste-applet.vala:151
 msgid "Quit"
 msgstr "Quitter"
 
-#: ../src/applets/legacy/gpaste-applet.vala:199 ../src/gpaste.vala:228
+#: ../src/applets/legacy/gpaste-applet.vala:201 ../src/gpaste.vala:230
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Impossible de se connecter au démon GPaste.\n"
 
-#: ../src/applets/gnome-shell/extension.js:71
+#: ../src/applets/gnome-shell/extension.js:68
 msgid "Track changes"
 msgstr "Suivre les changements"
 
-#: ../src/applets/gnome-shell/extension.js:132
+#: ../src/applets/gnome-shell/extension.js:129
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(Impossible de se connecter au démon GPaste)"
 
-#: ../src/applets/gnome-shell/extension.js:176
+#: ../src/applets/gnome-shell/extension.js:173
 #, c-format
 msgid "delete: %s"
 msgstr "supprimer : %s"
 
-#: ../src/gpaste.vala:48
+#: ../src/gpaste.vala:50
 #, c-format
 msgid "Usage:\n"
 msgstr "Mode d'emploi :\n"
 
-#: ../src/gpaste.vala:49
+#: ../src/gpaste.vala:51
 #, c-format
 msgid "%s [history]: print the history with indexes\n"
 msgstr "%s [history] : affiche l'historique avec les indices\n"
 
-#: ../src/gpaste.vala:50
+#: ../src/gpaste.vala:52
 #, c-format
 msgid "%s raw-history: print the history without indexes\n"
 msgstr "%s raw-history : affiche l'historique sans les indices\n"
 
-#: ../src/gpaste.vala:51
+#: ../src/gpaste.vala:53
 #, c-format
 msgid "%s add <text>: set text to clipboard\n"
 msgstr "%s add <texte> : met le texte dans le presse-papier\n"
 
-#: ../src/gpaste.vala:52
+#: ../src/gpaste.vala:54
 #, c-format
 msgid "%s get <number>: get the <number>th item from the history\n"
 msgstr "%s get <nombre> : renvoie le <nombre>e élément de l'historique\n"
 
-#: ../src/gpaste.vala:53
+#: ../src/gpaste.vala:55
 #, c-format
 msgid ""
 "%s set <number>: set the <number>th item from the history to the clipboard\n"
@@ -204,12 +168,12 @@ msgstr ""
 "%s set <nombre> : met le <nombre>e élément de l'historique dans le presse-"
 "papier\n"
 
-#: ../src/gpaste.vala:54
+#: ../src/gpaste.vala:56
 #, c-format
 msgid "%s delete <number>: delete <number>th item of the history\n"
 msgstr "%s delete <nombre> : supprime le <nombre>e élément de l'historique\n"
 
-#: ../src/gpaste.vala:55
+#: ../src/gpaste.vala:57
 #, c-format
 msgid ""
 "%s file <path>: put the content of the file at <path> into the clipboard\n"
@@ -217,69 +181,69 @@ msgstr ""
 "%s file <chemin> : place le contenu du fichier situé à ce chemin dans le "
 "presse-papier\n"
 
-#: ../src/gpaste.vala:56
+#: ../src/gpaste.vala:58
 #, c-format
 msgid "whatever | %s: set the output of whatever to clipboard\n"
 msgstr ""
 "quelquechose | %s : met la sortie de quelquechose dans le presse-papier\n"
 
-#: ../src/gpaste.vala:57
+#: ../src/gpaste.vala:59
 #, c-format
 msgid "%s empty: empty the history\n"
 msgstr "%s empty : vide l'historique\n"
 
-#: ../src/gpaste.vala:58
+#: ../src/gpaste.vala:60
 #, c-format
 msgid "%s start: start tracking clipboard changes\n"
 msgstr "%s start : suivre les changements du presse-papier\n"
 
-#: ../src/gpaste.vala:59
+#: ../src/gpaste.vala:61
 #, c-format
 msgid "%s stop: stop tracking clipboard changes\n"
 msgstr "%s stop : arrêter de suivre les changements du presse-papier\n"
 
-#: ../src/gpaste.vala:60
+#: ../src/gpaste.vala:62
 #, c-format
 msgid "%s quit: alias for stop\n"
 msgstr "%s quit : alias pour stop\n"
 
-#: ../src/gpaste.vala:61
+#: ../src/gpaste.vala:63
 #, c-format
 msgid "%s daemon-reexec: reexecute the daemon (after upgrading...)\n"
 msgstr "%s daemon-reexec: reexecuter le démon (après une mise à jour...)\n"
 
-#: ../src/gpaste.vala:62
+#: ../src/gpaste.vala:64
 #, c-format
 msgid "%s settings: launch the configuration tool\n"
 msgstr "%s settings : lance l'outil de configuration\n"
 
-#: ../src/gpaste.vala:63
+#: ../src/gpaste.vala:65
 #, c-format
 msgid "%s version: display the version\n"
 msgstr "%s version : affiche la version\n"
 
-#: ../src/gpaste.vala:64
+#: ../src/gpaste.vala:66
 #, c-format
 msgid "%s help: display this help\n"
 msgstr "%s help : affiche cette aide\n"
 
-#: ../src/gpaste.vala:130
+#: ../src/gpaste.vala:132
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Impossible de lancer gpaste-applet.\n"
 
 #. NoReply, but we do not expect one when doing this !
-#: ../src/gpaste.vala:146
+#: ../src/gpaste.vala:148
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Démon redémarré avec succès\n"
 
-#: ../src/gpaste.vala:184
+#: ../src/gpaste.vala:186
 #, c-format
 msgid "%s %s is deprecated: use \"%s file\" instead\n"
 msgstr "%s %s est déprécié : utilisez \"%s file\" à la place\n"
 
-#: ../src/gpaste.vala:199
+#: ../src/gpaste.vala:201
 #, c-format
 msgid "Could not read file: %s\n"
 msgstr "Impossible de lire le fichier : %s\n"
@@ -415,6 +379,35 @@ msgstr "Icone de notification pour gérer GPaste"
 #: ../data/gpaste-settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "Gérer les préférences du démon GPaste"
+
+#. This is the prefix displayed in history to identify selected files
+#: ../libgpaste/gpaste-item.c:333
+msgid "[Files] "
+msgstr "[Fichiers] "
+
+#. This is the date format "month/day/year time"
+#: ../libgpaste/gpaste-item.c:490
+msgid "%m/%d/%y %T"
+msgstr "%d/%m/%y %T"
+
+#. This gets displayed in history when selecting an image
+#: ../libgpaste/gpaste-item.c:492
+#, c-format
+msgid "[Image, %d x %d (%s)]"
+msgstr "[Image, %d x %d (%s)]"
+
+#: ../libgpaste/gpaste-history.c:253
+msgid "Could not create history dir"
+msgstr "Impossible de créer le dossier d'historique"
+
+#~ msgid "Could not delete history file.\n"
+#~ msgstr "Impossible de supprimer le fichier d'historique.\n"
+
+#~ msgid "Error while saving pixbuf: %s\n"
+#~ msgstr "Erreur lors de la sauvegarde de l'image: %s\n"
+
+#~ msgid "Error while loading pixbuf: %s\n"
+#~ msgstr "Erreur lors du chargement de l'image: %s\n"
 
 #~ msgid "%s applet: launch the applet\n"
 #~ msgstr "%s applet : lance l'applet\n"
