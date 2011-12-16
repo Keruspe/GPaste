@@ -118,23 +118,23 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     if (!text)
         return NULL;
 
-    guint max_size = g_paste_settings_get_max_text_item_size (priv->settings);
-    guint min_size = g_paste_settings_get_min_text_item_size (priv->settings);
-    guint length = (guint) strlen (text);
-
-    if ((length < min_size) || (length > max_size))
-        return NULL;
-
-    gboolean trim_items = g_paste_settings_get_trim_items (priv->settings);
+    GPasteSettings *settings = priv->settings;
     gchar *stripped = g_strstrip (g_strdup (text));
     const gchar *ret = NULL;
+    guint length = strlen (text);
+
+    if (length < g_paste_settings_get_min_text_item_size (settings) ||
+        length > g_paste_settings_get_max_text_item_size (settings))
+            goto ignore;
+
+    gboolean trim_items = g_paste_settings_get_trim_items (settings);
 
     if ((g_strcmp0 (stripped, "") == 0) ||
         (priv->text &&
             (g_strcmp0 (priv->text, (trim_items ? stripped : text)) == 0)))
                 goto ignore;
 
-    if (!stripped)
+    if (!trim_items)
     {
         _g_paste_clipboard_set_text (self, text);
         goto out;

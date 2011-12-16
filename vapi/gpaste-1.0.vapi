@@ -74,6 +74,8 @@ namespace GPaste {
 		public unowned string get_keyboard_shortcut ();
 		public uint get_max_displayed_history_size ();
 		public uint get_max_history_size ();
+		public uint get_max_text_item_size ();
+		public uint get_min_text_item_size ();
 		public bool get_primary_to_history ();
 		public bool get_save_history ();
 		public bool get_synchronize_clipboards ();
