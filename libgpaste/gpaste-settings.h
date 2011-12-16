@@ -42,6 +42,8 @@ typedef struct _GPasteSettingsPrivate GPasteSettingsPrivate;
 GType g_paste_settings_get_type (void);
 gboolean g_paste_settings_get_primary_to_history (GPasteSettings *self);
 guint g_paste_settings_get_max_history_size (GPasteSettings *self);
+guint g_paste_settings_get_min_text_item_size (GPasteSettings *self);
+guint g_paste_settings_get_max_text_item_size (GPasteSettings *self);
 guint g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
 gboolean g_paste_settings_get_synchronize_clipboards (GPasteSettings *self);
 void g_paste_settings_set_tracking_state (GPasteSettings *self,

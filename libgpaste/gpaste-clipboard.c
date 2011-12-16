@@ -19,6 +19,8 @@
 
 #include "gpaste-clipboard-private.h"
 
+#include <string.h>
+
 #define G_PASTE_CLIPBOARD_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_CLIPBOARD, GPasteClipboardPrivate))
 
 G_DEFINE_TYPE (GPasteClipboard, g_paste_clipboard, G_TYPE_OBJECT)
@@ -114,6 +116,13 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     gchar *text = gtk_clipboard_wait_for_text (priv->real);
 
     if (!text)
+        return NULL;
+
+    guint max_size = g_paste_settings_get_max_text_item_size (priv->settings);
+    guint min_size = g_paste_settings_get_min_text_item_size (priv->settings);
+    guint length = (guint) strlen (text);
+
+    if ((length < min_size) || (length > max_size))
         return NULL;
 
     gboolean trim_items = g_paste_settings_get_trim_items (priv->settings);
