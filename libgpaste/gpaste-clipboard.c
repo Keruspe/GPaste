@@ -120,33 +120,25 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
 
     GPasteSettings *settings = priv->settings;
     gchar *stripped = g_strstrip (g_strdup (text));
+    gboolean trim_items = g_paste_settings_get_trim_items (settings);
+    const gchar *to_add = trim_items ? stripped : text;
     const gchar *ret = NULL;
-    guint length = strlen (text);
+    guint length = strlen (to_add);
 
     if (length < g_paste_settings_get_min_text_item_size (settings) ||
-        length > g_paste_settings_get_max_text_item_size (settings))
-            goto ignore;
-
-    gboolean trim_items = g_paste_settings_get_trim_items (settings);
-
-    if ((g_strcmp0 (stripped, "") == 0) ||
+        length > g_paste_settings_get_max_text_item_size (settings) ||
+        strlen (stripped) == 0 ||
         (priv->text &&
-            (g_strcmp0 (priv->text, (trim_items ? stripped : text)) == 0)))
+            g_strcmp0 (priv->text, to_add) == 0))
                 goto ignore;
 
-    if (!trim_items)
-    {
-        _g_paste_clipboard_set_text (self, text);
-        goto out;
-    }
-
-    if (priv->target == GDK_SELECTION_CLIPBOARD &&
+    if (trim_items &&
+        priv->target == GDK_SELECTION_CLIPBOARD &&
         g_strcmp0 (text, stripped) != 0)
             g_paste_clipboard_select_text (self, stripped);
     else
-        _g_paste_clipboard_set_text (self, stripped);
+        _g_paste_clipboard_set_text (self, to_add);
 
-out:
     ret = priv->text;
 
 ignore:
