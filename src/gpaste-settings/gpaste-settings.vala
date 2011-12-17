@@ -133,94 +133,107 @@ namespace GPaste {
             }
 
             private void fill() {
-                var labels_vbox = new Gtk.VBox(false, 10);
-                var history_size_label = new Gtk.Label(_("Max history size: "));
-                var displayed_history_size_label = new Gtk.Label(_("Max displayed history size: "));
-                var element_size_label = new Gtk.Label(_("Max element size when displaying: "));
-                var keyboard_shortcut_label = new Gtk.Label(_("Keyboard shortcut to display the history: "));
-                history_size_label.xalign = 0;
-                displayed_history_size_label.xalign = 0;
-                element_size_label.xalign = 0;
-                keyboard_shortcut_label.xalign = 0;
-                labels_vbox.add(history_size_label);
-                labels_vbox.add(displayed_history_size_label);
-                labels_vbox.add(element_size_label);
-                labels_vbox.add(keyboard_shortcut_label);
-
+                var grid = new Gtk.Grid ();
                 var app = this.application as Main;
+                int current_line = 0;
+
+                grid.margin = 12;
+                grid.set_column_spacing (10);
+                grid.set_row_spacing (10);
+
+                this.track_changes_button = new Gtk.CheckButton.with_mnemonic(_("_Track clipboard changes"));
+                this.track_changes = app.track_changes;
+                this.track_changes_button.toggled.connect(()=>{
+                    app.track_changes = this.track_changes;
+                });
+                grid.attach (track_changes_button, 0, current_line++, 2, 1);
+
+                this.track_extension_state_button = new Gtk.CheckButton.with_mnemonic(_("Sync the daemon state with the _extension's one"));
+                this.track_extension_state = app.track_extension_state;
+                this.track_extension_state_button.toggled.connect(()=>{
+                    app.track_extension_state = this.track_extension_state;
+                });
+                grid.attach (track_extension_state_button, 0, current_line++, 2, 1);
+
+                grid.attach (new Gtk.Separator (Gtk.Orientation.HORIZONTAL), 0, current_line++, 2, 1);
 
                 this.primary_to_history_button = new Gtk.CheckButton.with_mnemonic(_("_Primary selection affects history"));
                 this.primary_to_history = app.primary_to_history;
                 this.primary_to_history_button.toggled.connect(()=>{
                     app.primary_to_history = this.primary_to_history;
                 });
+                grid.attach (primary_to_history_button, 0, current_line++, 2, 1);
+
                 this.synchronize_clipboards_button = new Gtk.CheckButton.with_mnemonic(_("_Synchronize clipboard with primary selection"));
                 this.synchronize_clipboards = app.synchronize_clipboards;
                 this.synchronize_clipboards_button.toggled.connect(()=>{
                     app.synchronize_clipboards = this.synchronize_clipboards;
                 });
-                this.track_changes_button = new Gtk.CheckButton.with_mnemonic(_("_Track clipboard changes"));
-                this.track_changes = app.track_changes;
-                this.track_changes_button.toggled.connect(()=>{
-                    app.track_changes = this.track_changes;
-                });
-                this.track_extension_state_button = new Gtk.CheckButton.with_mnemonic(_("Sync the daemon state with the _extension's one"));
-                this.track_extension_state = app.track_extension_state;
-                this.track_extension_state_button.toggled.connect(()=>{
-                    app.track_extension_state = this.track_extension_state;
-                });
+                grid.attach (synchronize_clipboards_button, 0, current_line++, 2, 1);
+
+                grid.attach (new Gtk.Separator (Gtk.Orientation.HORIZONTAL), 0, current_line++, 2, 1);
+
                 this.save_history_button = new Gtk.CheckButton.with_mnemonic(_("_Save history"));
                 this.save_history = app.save_history;
                 this.save_history_button.toggled.connect(()=>{
                     app.save_history = this.save_history;
                 });
+                grid.attach (save_history_button, 0, current_line++, 2, 1);
+
                 this.trim_items_button = new Gtk.CheckButton.with_mnemonic(_("_Trim items"));
                 this.trim_items = app.trim_items;
                 this.trim_items_button.toggled.connect(()=>{
                     app.trim_items = this.trim_items;
                 });
+                grid.attach (trim_items_button, 0, current_line++, 2, 1);
+
+                grid.attach (new Gtk.Separator (Gtk.Orientation.HORIZONTAL), 0, current_line++, 2, 1);
+
+                var max_history_size_label = new Gtk.Label (_("Max history size: "));
+                max_history_size_label.xalign = 0;
+                grid.attach (max_history_size_label, 0, current_line++, 1, 1);
+
                 this.max_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
                 this.max_history_size = app.max_history_size;
                 this.max_history_size_button.get_adjustment().value_changed.connect(()=>{
                     app.max_history_size = this.max_history_size;
                 });
+                grid.attach_next_to (this.max_history_size_button, max_history_size_label, Gtk.PositionType.RIGHT, 1, 1);
+
+                var max_displayed_history_size_label = new Gtk.Label (_("Max displayed history size: "));
+                max_displayed_history_size_label.xalign = 0;
+                grid.attach (max_displayed_history_size_label, 0, current_line++, 1, 1);
+
                 this.max_displayed_history_size_button = new Gtk.SpinButton.with_range(5, 255, 5);
                 this.max_displayed_history_size = app.max_displayed_history_size;
                 this.max_displayed_history_size_button.get_adjustment().value_changed.connect(()=>{
                     app.max_displayed_history_size = this.max_displayed_history_size;
                 });
+                grid.attach_next_to (this.max_displayed_history_size_button, max_displayed_history_size_label, Gtk.PositionType.RIGHT, 1, 1);
+
+                var element_size_label = new Gtk.Label (_("Max element size when displaying: "));
+                element_size_label.xalign = 0;
+                grid.attach (element_size_label, 0, current_line++, 1, 1);
+
                 this.element_size_button = new Gtk.SpinButton.with_range(0, 255, 5);
                 this.element_size = app.element_size;
                 this.element_size_button.get_adjustment().value_changed.connect(()=>{
                     app.element_size = this.element_size;
                 });
+                grid.attach_next_to (this.element_size_button, element_size_label, Gtk.PositionType.RIGHT, 1, 1);
+
+                var keyboard_shortcut_label = new Gtk.Label (_("Keyboard shortcut to display the history: "));
+                keyboard_shortcut_label.xalign = 0;
+                grid.attach (keyboard_shortcut_label, 0, current_line++, 1, 1);
+
                 this.keyboard_shortcut_entry = new Gtk.Entry();
                 this.keyboard_shortcut = app.keyboard_shortcut;
                 this.keyboard_shortcut_entry.changed.connect(()=>{
                     app.keyboard_shortcut = this.keyboard_shortcut;
                 });
+                grid.attach_next_to (this.keyboard_shortcut_entry, keyboard_shortcut_label, Gtk.PositionType.RIGHT, 1, 1);
 
-                var values_vbox = new Gtk.VBox(true, 10);
-                values_vbox.add(this.max_history_size_button);
-                values_vbox.add(this.max_displayed_history_size_button);
-                values_vbox.add(this.element_size_button);
-                values_vbox.add(this.keyboard_shortcut_entry);
-
-                var values_hbox = new Gtk.HBox(false, 10);
-                values_hbox.add(labels_vbox);
-                values_hbox.add(values_vbox);
-
-                var vbox = new Gtk.VBox(false, 10);
-                vbox.margin = 12;
-                vbox.add(this.primary_to_history_button);
-                vbox.add(this.synchronize_clipboards_button);
-                vbox.add(this.track_changes_button);
-                vbox.add(this.track_extension_state_button);
-                vbox.add(this.save_history_button);
-                vbox.add(this.trim_items_button);
-                vbox.add(values_hbox);
-
-                this.add(vbox);
+                this.add (grid);
             }
         }
 
@@ -368,6 +381,8 @@ namespace GPaste {
                 GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
                 GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
                 Gtk.init(ref args);
+                Gtk.Settings.get_default ().gtk_application_prefer_dark_theme = true;
+
                 var app = new Main();
                 try {
                     app.register();
