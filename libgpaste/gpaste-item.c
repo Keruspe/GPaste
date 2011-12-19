@@ -105,7 +105,7 @@ static void
 g_paste_item_finalize (GObject *object)
 {
     g_free (G_PASTE_ITEM (object)->priv->value);
-    
+
     G_OBJECT_CLASS (g_paste_item_parent_class)->finalize (object);
 }
 
@@ -123,10 +123,10 @@ static void
 g_paste_item_class_init (GPasteItemClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteItemPrivate));
-    
+
     klass->equals = g_paste_item_default_equals;
     klass->get_kind = NULL;
-    
+
     G_OBJECT_CLASS (klass)->finalize = g_paste_item_finalize;
 }
 
@@ -141,9 +141,9 @@ g_paste_item_new (GType        type,
                   const gchar *value)
 {
     GPasteItem *self = g_object_new (type, NULL);
-    
+
     self->priv->value = g_strdup (value);
-    
+
     return self;
 }
 
@@ -173,7 +173,7 @@ static void
 g_paste_text_item_class_init (GPasteTextItemClass *klass)
 {
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
-    
+
     item_class->equals = g_paste_text_item_equals;
     item_class->get_kind = g_paste_text_item_get_kind;
 }
@@ -190,9 +190,9 @@ _g_paste_text_item_new (GType        type,
                         const gchar *text)
 {
     GPasteItem *self = g_paste_item_new (type, text);
-    
+
     self->priv->display_string = self->priv->value;
-    
+
     return self;
 }
 
@@ -269,9 +269,9 @@ static void
 g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteUrisItemPrivate));
-    
+
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
-    
+
     item_class->equals = g_paste_uris_item_equals;
     item_class->get_kind = g_paste_uris_item_get_kind;
 
@@ -448,14 +448,14 @@ static void
 g_paste_image_item_class_init (GPasteImageItemClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteImageItemPrivate));
-    
+
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
-    
+
     item_class->equals = g_paste_image_item_equals;
     item_class->get_kind = g_paste_image_item_get_kind;
 
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-   
+
     gobject_class->dispose = g_paste_image_item_dispose;
     gobject_class->finalize = g_paste_image_item_finalize;
 }

@@ -49,7 +49,7 @@ man/gpaste.1: $(gpaste_1_parts)
 nodist_applications_in_files = data/gpaste-settings.desktop.in
 nodist_applications_DATA = $(nodist_applications_in_files:.desktop.in=.desktop)
 
-nodist_autostart_in_files = 
+nodist_autostart_in_files =
 if ENABLE_APPLET
 gpaste_1_parts += data/gpaste-applet.1.part
 nodist_autostart_in_files += data/gpaste-applet.desktop.in

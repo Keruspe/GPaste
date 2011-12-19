@@ -158,7 +158,7 @@ g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
     g_type_class_add_private (klass, sizeof (GPasteKeybinderPrivate));
 
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
-    
+
     object_class->dispose = g_paste_keybinder_dispose;
     object_class->finalize = g_paste_keybinder_finalize;
 

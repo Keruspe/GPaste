@@ -3,7 +3,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 27 18:31:48 2011 +0100
 
     Release GPaste 2.0
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    3 ++-
@@ -14,7 +14,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 27 18:30:29 2011 +0100
 
     add comments for translators
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/es.po              |   22 ++++++++++++----------
@@ -28,7 +28,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Nov 25 13:51:40 2011 +0100
 
     oops
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    2 +-
@@ -39,7 +39,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Nov 25 11:21:00 2011 +0100
 
     Fix logic for restoring clipboard
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    4 ++--
@@ -50,7 +50,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Nov 24 16:39:14 2011 +0100
 
     Revert "missing then"
-    
+
     This reverts commit 13b32bbbe9cf0d4823bc01a3c8b979cfea5c13b5.
 
  data/completions/_gpaste |    2 +-
@@ -61,7 +61,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 23 22:10:00 2011 +0100
 
     Followup to last commit, fix _updateHistory call
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    2 +-
@@ -72,7 +72,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 23 22:05:35 2011 +0100
 
     Make the first item of history bold again
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                            |    3 +--
@@ -85,7 +85,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 23 19:15:11 2011 +0100
 
     improve uris items display
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/es.po              |    6 +++++-
@@ -99,7 +99,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 23 19:13:23 2011 +0100
 
     Fix bash completion variable scopes
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                    |    1 +
@@ -111,7 +111,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 23 19:05:16 2011 +0100
 
     Be compatible with 3.3.2
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/metadata.json.in |    2 +-
@@ -122,7 +122,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 23 15:42:10 2011 +0100
 
     rewrite bash completion
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/completions/gpaste |   21 +++++++++++++++++----
@@ -133,7 +133,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 23 15:07:33 2011 +0100
 
     missing then
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/completions/_gpaste |    2 +-
@@ -144,7 +144,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Nov 22 22:48:08 2011 +0100
 
     rewrite zsh completion
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/completions/_gpaste |   53 ++++++++++++++++++++++++++--------------------
@@ -155,7 +155,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 16 19:41:55 2011 +0100
 
     update translation files
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/es.po |   36 ++++++++++++++------------------
@@ -168,7 +168,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 16 19:40:02 2011 +0100
 
     move some checks to earlier in the process
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   40 ++++++++++++++++++----------------------
@@ -182,7 +182,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 16 19:18:30 2011 +0100
 
     make urisitem inherit textitem
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    6 +++---
@@ -194,7 +194,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 16 00:16:28 2011 +0100
 
     store clipboard content to be accessible with gpaste exited
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   11 +++++++++--
@@ -205,7 +205,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Nov 15 15:37:31 2011 +0100
 
     drop useless code
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   14 +++++---------
@@ -217,7 +217,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Nov 15 15:33:53 2011 +0100
 
     improve uris item display
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/item.vala |    2 +-
@@ -229,10 +229,10 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Nov 15 11:52:40 2011 +0100
 
     Merge branch '1.3' into gpaste-2
-    
+
     * 1.3:
       Release 1.3.1 (just to regen with no boggous vala)
-    
+
     Conflicts:
     	NEWS
     	configure.ac
@@ -243,7 +243,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Nov 15 11:51:19 2011 +0100
 
     Merge branch 'wip/uris-support' into gpaste-2
-    
+
     * wip/uris-support:
       implement restore_uris
       clipboard refactor
@@ -254,7 +254,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Nov 15 11:51:02 2011 +0100
 
     implement restore_uris
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                       |    1 +
@@ -266,7 +266,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 19:58:28 2011 +0100
 
     Followup to last commit, rework no history items
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |   14 ++++++++------
@@ -278,7 +278,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 15:41:45 2011 +0100
 
     Merge branch 'master' into wip/uris-support
-    
+
     * master:
       restore non reactiveness of false history items
 
@@ -288,7 +288,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 15:41:37 2011 +0100
 
     Merge branch 'gpaste-2'
-    
+
     * gpaste-2:
       restore non reactiveness of false history items
 
@@ -297,7 +297,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 15:40:36 2011 +0100
 
     restore non reactiveness of false history items
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    4 +++-
@@ -309,7 +309,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 15:32:16 2011 +0100
 
     Merge branch 'master' into wip/uris-support
-    
+
     * master:
       avoid using submenus, fixing 2/3 of FIXME
       update FIXME
@@ -322,7 +322,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 15:32:04 2011 +0100
 
     Merge branch 'gpaste-2'
-    
+
     * gpaste-2:
       avoid using submenus, fixing 2/3 of FIXME
       update FIXME
@@ -333,7 +333,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 15:18:27 2011 +0100
 
     avoid using submenus, fixing 2/3 of FIXME
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  FIXME                                |    2 -
@@ -346,7 +346,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 14:29:32 2011 +0100
 
     update FIXME
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  FIXME |    1 +
@@ -357,7 +357,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 00:16:11 2011 +0100
 
     update news
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    6 ++++++
@@ -369,7 +369,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Nov 13 00:14:22 2011 +0100
 
     Merge branch 'master' of git://github.com/Keruspe/GPaste
-    
+
     * 'master' of git://github.com/Keruspe/GPaste:
       Update finnish translation to represent the latest changes.
 
@@ -378,7 +378,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Nov 12 11:36:47 2011 +0100
 
     clipboard refactor
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |  184 ++++++++++++++++++++++++++++----------------
@@ -389,7 +389,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 19:12:13 2011 +0100
 
     start implementing uris support
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   30 ++++++++++++++++++++++--------
@@ -403,7 +403,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Nov 5 09:36:10 2011 -0700
 
     Merge pull request #9 from Huulivoide/master
-    
+
     Minorish translation updates
 
 commit 05d1ca512fdfdee78a53e277b758453fc897a8ef
@@ -420,7 +420,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Nov 3 13:15:32 2011 +0100
 
     add advice about gpaste dr in readme
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  README |    2 ++
@@ -431,7 +431,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 19:14:23 2011 +0100
 
     only text can be synced
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   13 -------------
@@ -442,7 +442,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:31:48 2011 +0100
 
     post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -453,7 +453,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:29:08 2011 +0100
 
     Release GPaste 1.99
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS         |    2 +-
@@ -465,7 +465,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:27:04 2011 +0100
 
     update completions
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                     |    2 +-
@@ -478,7 +478,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:19:44 2011 +0100
 
     update news
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    1 +
@@ -491,7 +491,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:18:53 2011 +0100
 
     Merge branch 'wip/images-support'
-    
+
     * wip/images-support:
       emit changed signal when deleting item at index 0 too
       fix french translation
@@ -512,7 +512,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:18:35 2011 +0100
 
     emit changed signal when deleting item at index 0 too
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    3 +--
@@ -523,7 +523,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:13:27 2011 +0100
 
     fix french translation
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/fr.po |    2 +-
@@ -534,7 +534,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 16:10:26 2011 +0100
 
     save image timestamp
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    5 ++++-
@@ -546,7 +546,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 15:59:54 2011 +0100
 
     update translations
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/POTFILES.in   |    1 +
@@ -561,7 +561,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 15:06:51 2011 +0100
 
     improve imageitems display
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/item.vala |   13 ++++++++++---
@@ -572,7 +572,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 15:18:12 2011 +0100
 
     remove image files with imageitems
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |   18 +++++++++++++++---
@@ -583,7 +583,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 14:49:30 2011 +0100
 
     Do not emit changed event when nothing changed
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |   13 +++++++++----
@@ -594,7 +594,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 12:53:52 2011 +0100
 
     finalize images handling
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   66 ++++++++++++++++++++++++++++++--------------
@@ -608,7 +608,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 12:11:35 2011 +0100
 
     allow selecting images
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    6 ++++--
@@ -619,7 +619,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Nov 2 11:24:14 2011 +0100
 
     actually build imageitems
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |   10 +++++-----
@@ -631,7 +631,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Nov 1 22:50:33 2011 +0100
 
     rework item structure
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   14 +++-----
@@ -645,7 +645,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 13:55:54 2011 +0200
 
     fix legacy applet
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/legacy/gpaste-applet.vala |    4 ++--
@@ -656,7 +656,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 13:00:39 2011 +0200
 
     switch to xml for the history file
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                |    3 +
@@ -672,7 +672,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 11:31:15 2011 +0200
 
     start supporting internally images
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |   61 ++++++++++++++++++++++++++++++++++---------
@@ -686,7 +686,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 13:08:58 2011 +0200
 
     fix gpaste history
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste.vala |    4 ++--
@@ -697,7 +697,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 00:53:01 2011 +0200
 
     Remove leftover
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    1 -
@@ -708,7 +708,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 00:49:30 2011 +0200
 
     update translations
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/es.po        |  101 ++++++++++++++++++++++++++++---------------------------
@@ -722,7 +722,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 00:39:55 2011 +0200
 
     autostart gpasted no longer needed with gdbus (bus activation works)
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                |    5 +----
@@ -737,7 +737,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 00:34:03 2011 +0200
 
     Merge branch 'gdbus'
-    
+
     * gdbus:
       Fix getHistory to really send an (as)
       switch to GDbus
@@ -747,7 +747,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 00:32:28 2011 +0200
 
     Fix getHistory to really send an (as)
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala |   11 ++++++-----
@@ -758,7 +758,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 28 00:18:38 2011 +0200
 
     switch to GDbus
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                                 |    1 +
@@ -770,7 +770,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Oct 27 16:27:56 2011 +0200
 
     gpaste cleanup
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/gpaste.1.part |   10 +++++++---
@@ -782,7 +782,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Oct 25 12:39:17 2011 +0200
 
     add gpaste raw-history
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS            |    7 +++++++
@@ -795,7 +795,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 14 17:18:47 2011 +0200
 
     missing string change
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/es.po                                 |   21 +++++++++------------
@@ -809,7 +809,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 14 17:11:36 2011 +0200
 
     remove leftover
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    1 -
@@ -820,7 +820,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 14 17:05:28 2011 +0200
 
     followup to last commit
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    7 ++-----
@@ -831,7 +831,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 14 16:58:49 2011 +0200
 
     tweak for ElementaryOS theme convenience
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    4 ++--
@@ -842,7 +842,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 14 16:56:46 2011 +0200
 
     slightly better look with empty history
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/gpaste-settings.desktop.in.in   |    4 +-
@@ -857,7 +857,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 14 16:26:13 2011 +0200
 
     update TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    4 ++--
@@ -868,7 +868,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Oct 14 16:26:05 2011 +0200
 
     rework menu construction a bit
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |   19 ++++++++++++-------
@@ -880,7 +880,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Oct 5 11:26:49 2011 -0700
 
     Merge pull request #6 from Huulivoide/master
-    
+
     Finnish translation
 
 commit 486cf9a8bc76b082dbcffe2fa1761ca1d1b08f63
@@ -898,7 +898,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 22 16:59:21 2011 +0200
 
     update README
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  README |    6 ++++++
@@ -909,7 +909,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 21 16:41:35 2011 +0200
 
     display help event if we cannot join gpasted
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste.vala |   13 +++++++++++++
@@ -920,7 +920,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 21 16:38:45 2011 +0200
 
     we're not compatible with old shell
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/metadata.json.in |    2 +-
@@ -931,7 +931,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 20 19:32:25 2011 +0200
 
     Post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -942,7 +942,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 20 19:31:37 2011 +0200
 
     Release GPaste 1.6
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  FIXME        |    1 +
@@ -957,7 +957,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 20 19:17:09 2011 +0200
 
     Add espagnol translation (thanks to Antonio Trujillo)
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/LINGUAS          |    2 +-
@@ -970,7 +970,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 18 16:47:44 2011 +0200
 
     remove useless AC_SUBSTs
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |   18 ------------------
@@ -981,7 +981,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 18 14:33:02 2011 +0200
 
     remove useless items from TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    1 +
@@ -993,7 +993,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 18 14:32:42 2011 +0200
 
     pop error trap
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/keybinder.vala |    1 +
@@ -1004,7 +1004,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Sep 17 00:38:16 2011 +0200
 
     Fix panel accessing
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    3 ++-
@@ -1015,7 +1015,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Sep 17 00:32:45 2011 +0200
 
     Fi hang at session start
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/gpasted.desktop.in.in |    1 -
@@ -1026,7 +1026,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Sep 17 00:29:20 2011 +0200
 
     adapt to rename in gnome-shell master
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js     |    6 +-----
@@ -1038,7 +1038,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 16 21:42:10 2011 +0200
 
     pkglibexecdir no longer needed in extension
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js     |    3 ---
@@ -1050,7 +1050,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 16 18:25:41 2011 +0200
 
     use AC_PROG_SED
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am  |    8 ++++----
@@ -1062,7 +1062,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 16 11:35:40 2011 +0200
 
     fix hotkey modification in gpaste-settings and make ctrl+alt+h the default
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/org.gnome.GPaste.gschema.xml.in.in  |    5 ++---
@@ -1075,7 +1075,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 16 10:43:08 2011 +0200
 
     desktop files cleanup
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/gpaste-applet.desktop.in.in   |    5 ++---
@@ -1087,7 +1087,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 16 10:31:36 2011 +0200
 
     add gpasted to autostart
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                          |   13 ++++++++-----
@@ -1103,7 +1103,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 15 13:03:56 2011 +0200
 
     autogen.bash -> autogen.sh
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                |    2 +-
@@ -1115,7 +1115,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 15 09:39:45 2011 +0200
 
     Fix gpaste daemon-reexec
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala |    2 +-
@@ -1126,7 +1126,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 15 09:31:13 2011 +0200
 
     homogeneify sed rules
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    2 +-
@@ -1137,7 +1137,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 15 01:09:50 2011 +0200
 
     fix distcheck
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am  |   10 ++++++----
@@ -1149,7 +1149,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 15 00:42:47 2011 +0200
 
     avoid non portable rules
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |   20 ++++++++++----------
@@ -1160,7 +1160,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 15 00:33:00 2011 +0200
 
     those are automatic
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    6 ++----
@@ -1182,7 +1182,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 14 17:19:08 2011 +0200
 
     fix leftovers
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    6 +++---
@@ -1193,7 +1193,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 14 17:05:58 2011 +0200
 
     little tweak
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am  |    2 +-
@@ -1205,7 +1205,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 14 14:39:35 2011 +0200
 
     Huge autotools cleanup
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am  |  290 ++++++++++++++++++++++++++-------------------------------
@@ -1217,7 +1217,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 14 09:29:49 2011 +0200
 
     always specify namespaces
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/legacy/gpaste-applet.vala |   10 +++++-----
@@ -1229,7 +1229,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 14 00:26:57 2011 +0200
 
     add wrapper to update-po
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    3 +++
@@ -1240,7 +1240,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 13 16:28:52 2011 +0200
 
     gpaste daemon-reexec
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am              |    1 +
@@ -1258,7 +1258,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 13 15:31:04 2011 +0200
 
     Do not reinvent make update-po
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/update-po.bash |    8 --------
@@ -1269,7 +1269,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 13 09:52:05 2011 +0200
 
     fix distcheck
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |   10 +++++-----
@@ -1280,7 +1280,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 13 09:47:08 2011 +0200
 
     Fix copyright headers
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                              |   17 +++++++++++++++++
@@ -1304,7 +1304,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Sep 13 07:34:34 2011 +0200
 
     Merge git://github.com/garyvdm/GPaste
-    
+
     * git://github.com/garyvdm/GPaste:
       Allign labels in settings dialog.
       Add a margin to the settings dialog.
@@ -1339,7 +1339,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Mon Sep 12 19:25:19 2011 +0200
 
     update gitignore
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  .gitignore |    1 +
@@ -1350,7 +1350,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Mon Sep 12 19:23:47 2011 +0200
 
     move completions to data
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                               |    3 ++-
@@ -1363,7 +1363,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Mon Sep 12 19:22:59 2011 +0200
 
     update schemas & desktop gettext stuff
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |   11 +++++------
@@ -1374,7 +1374,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Mon Sep 12 10:16:05 2011 +0200
 
     move bug to FIXME
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  FIXME |    1 +
@@ -1386,7 +1386,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 15:03:11 2011 +0200
 
     support shell versions until 3.2
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/metadata.json.in |    2 +-
@@ -1397,7 +1397,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:51:37 2011 +0200
 
     don't store blank strings
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    2 +-
@@ -1408,7 +1408,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:32:07 2011 +0200
 
     fix distcheck
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/POTFILES.in   |    2 +-
@@ -1420,7 +1420,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:29:10 2011 +0200
 
     update NEWS
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    5 +++++
@@ -1431,7 +1431,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:29:03 2011 +0200
 
     rename standard applet to legacy
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                                        |    2 +-
@@ -1443,7 +1443,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:27:12 2011 +0200
 
     implement toggle_history for legacy applet
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/standard/gpaste-applet.vala |    5 ++++-
@@ -1454,7 +1454,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:25:44 2011 +0200
 
     unbind keybinder when leaving
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala   |    1 +
@@ -1466,7 +1466,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:20:12 2011 +0200
 
     use GLib.Timeout
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    4 +---
@@ -1477,7 +1477,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 13:16:17 2011 +0200
 
     check for gdk-x11
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am  |    4 +++-
@@ -1489,7 +1489,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 10:12:25 2011 +0200
 
     post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -1500,7 +1500,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 10:10:43 2011 +0200
 
     Release 1.5
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    3 ++-
@@ -1511,7 +1511,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 10:08:27 2011 +0200
 
     don't add last selected item to historing when re-tracking
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    3 +--
@@ -1522,7 +1522,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 11 09:53:43 2011 +0200
 
     leftovers
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    2 +-
@@ -1535,7 +1535,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Sep 10 17:59:22 2011 +0200
 
     coding style fixes
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/standard/gpaste-applet.vala  |   37 ++++++++++++++++-------
@@ -1554,7 +1554,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Sep 10 17:14:00 2011 +0200
 
     fix ownership transfer mess
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste-settings/gpaste-settings.vala |   12 +++++-------
@@ -1566,7 +1566,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 9 12:31:51 2011 +0200
 
     remove garbage from TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    3 +--
@@ -1578,7 +1578,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 9 12:29:34 2011 +0200
 
     Merge branch 'wip/hotkey'
-    
+
     Conflicts:
     	po/fr.po
 
@@ -1587,7 +1587,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 9 12:24:44 2011 +0200
 
     hotkey: add ability to configure in gpaste-settings
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/fr.po                                 |   99 ++++++++++++++++++------------
@@ -1599,7 +1599,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 9 12:05:06 2011 +0200
 
     update NEWS and TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    1 +
@@ -1618,7 +1618,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 9 11:52:13 2011 +0200
 
     hotkey: Make keyboard shortcut customisable
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/org.gnome.GPaste.gschema.xml.in.in |   10 ++++++++++
@@ -1632,7 +1632,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 8 20:32:12 2011 +0200
 
     Merge branch 'wip/hotkey'
-    
+
     Conflicts:
     	NEWS
 
@@ -1641,7 +1641,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 8 20:19:34 2011 +0200
 
     get rid of AM_MAINTAINER_MODE
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS         |    1 +
@@ -1653,7 +1653,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Sep 8 17:49:19 2011 +0200
 
     start making hotkey work
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js    |    8 +++++++-
@@ -1667,7 +1667,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 23:54:22 2011 +0200
 
     add gpaste get
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                     |    1 +
@@ -1683,9 +1683,9 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 23:00:35 2011 +0200
 
     Rough initial proof of concept of keybindings support
-    
+
     Inspired by http://code.valaide.org/content/global-hotkeys
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                |    6 ++-
@@ -1705,7 +1705,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 18:39:02 2011 +0200
 
     vala 0.13.4 released
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  README |    6 ------
@@ -1716,7 +1716,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 18:35:12 2011 +0200
 
     Rename item{s,}
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                           |    2 +-
@@ -1728,7 +1728,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 18:34:51 2011 +0200
 
     unnecessary casts
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    4 ++--
@@ -1739,7 +1739,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 18:26:43 2011 +0200
 
     update NEWS
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    2 ++
@@ -1750,7 +1750,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 18:25:42 2011 +0200
 
     Fix path of new history file
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    7 ++++---
@@ -1762,7 +1762,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 18:15:23 2011 +0200
 
     Merge branch 'wip/images-support'
-    
+
     Conflicts:
     	src/gpasted/history.vala
 
@@ -1771,7 +1771,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 14:38:51 2011 +0200
 
     update NEWS
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    3 +++
@@ -1782,7 +1782,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 14:05:09 2011 +0200
 
     Remove unconditional references to applet
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  .gitignore                               |    1 +
@@ -1802,7 +1802,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 13:33:40 2011 +0200
 
     Post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS         |    3 +++
@@ -1814,7 +1814,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 13:31:52 2011 +0200
 
     Release 1.4
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS   |    3 ++-
@@ -1826,7 +1826,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 13:29:09 2011 +0200
 
     only perform check when loading
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala |    6 ++----
@@ -1838,7 +1838,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 13:22:48 2011 +0200
 
     Ignore invalid strings (fixes bug #1)
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala |    6 ++++--
@@ -1849,7 +1849,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 12:02:48 2011 +0200
 
     Add advice about daemon segfault because of vala
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    2 --
@@ -1861,10 +1861,10 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 10:24:34 2011 +0200
 
     Add --debug to VALAFLAGS for now
-    
+
     It appears to solve the segmentation fault
     which appears sometimes at the daemon startup
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |   14 +++++++++-----
@@ -1875,7 +1875,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Sep 7 07:19:35 2011 +0200
 
     gnome-shell version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/metadata.json.in |    2 +-
@@ -1886,7 +1886,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Mon Sep 5 16:16:49 2011 +0200
 
     change history file and convert to new format
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |   35 +++++++++++++++++++++++------------
@@ -1897,7 +1897,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Sep 4 22:08:25 2011 +0200
 
     Add concept of Item in preparation to images handling
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                |    1 +
@@ -1912,7 +1912,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Sep 3 13:01:33 2011 +0200
 
     Use AM_PROG_VALAC
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am  |   12 ++++++++----
@@ -1934,7 +1934,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:43:16 2011 +0200
 
     typo
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    2 +-
@@ -1945,7 +1945,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:42:31 2011 +0200
 
     update NEWS, TODO and french translation
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS     |    1 +
@@ -1958,7 +1958,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:41:23 2011 +0200
 
     delete history file if not saving history
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala  |   13 ++++++++++---
@@ -1970,7 +1970,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:32:21 2011 +0200
 
     use the save-history key
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala  |    3 ++-
@@ -1982,7 +1982,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:23:17 2011 +0200
 
     allow setting the save-history key
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste-settings/gpaste-settings.vala |   28 ++++++++++++++++++++++++++++
@@ -1993,7 +1993,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:22:54 2011 +0200
 
     fix man page installation
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    2 +-
@@ -2004,7 +2004,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:17:07 2011 +0200
 
     add key to allow not saving history
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/org.gnome.GPaste.gschema.xml.in.in |    8 ++++++++
@@ -2016,7 +2016,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:14:04 2011 +0200
 
     update NEWS
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    5 +++++
@@ -2034,7 +2034,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 17:07:42 2011 +0200
 
     better man page formatting
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/gpaste.1 |   22 +++-------------------
@@ -2045,7 +2045,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Sep 2 12:45:38 2011 +0200
 
     Add advice in README because of vala bug
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  README |    6 ++++++
@@ -2056,7 +2056,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Aug 31 17:05:18 2011 +0200
 
     don't require pod2man
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  .gitignore      |    1 -
@@ -2071,7 +2071,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Aug 31 16:46:28 2011 +0200
 
     post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -2083,7 +2083,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Aug 31 11:30:36 2011 +0200
 
     release 1.3
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    5 ++++-
@@ -2095,7 +2095,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 30 02:15:56 2011 +0200
 
     Fix Makefile
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |   16 ++++++++--------
@@ -2106,7 +2106,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 30 02:13:38 2011 +0200
 
     add gpaste-settings.desktop
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                        |    8 ++++++++
@@ -2121,7 +2121,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 30 01:51:45 2011 +0200
 
     use new addSettingsAction
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    6 +-----
@@ -2132,7 +2132,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 30 01:49:35 2011 +0200
 
     only be compatible with gnome-shell 3.1.90
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/metadata.json.in |    2 +-
@@ -2143,7 +2143,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 30 01:48:54 2011 +0200
 
     update gitignore
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  .gitignore |    2 +-
@@ -2154,7 +2154,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 30 01:47:20 2011 +0200
 
     not needed since we destroy()
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |   21 ++++++---------------
@@ -2165,7 +2165,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 20:48:31 2011 +0200
 
     Fix extension disabling + reenabling
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |   24 +++++++++++++-----------
@@ -2176,7 +2176,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 20:39:33 2011 +0200
 
     latest changes broke compatibility with older shell
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js     |    4 ----
@@ -2188,7 +2188,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 20:35:41 2011 +0200
 
     copy-paste fail
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    2 +-
@@ -2199,7 +2199,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 20:35:16 2011 +0200
 
     move daemon spawn to init
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    2 +-
@@ -2210,7 +2210,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 19:43:33 2011 +0200
 
     adapt to latest changes
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    4 ++--
@@ -2221,7 +2221,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 17:21:21 2011 +0200
 
     change installation directory
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am                              |    2 +-
@@ -2233,7 +2233,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 17:18:10 2011 +0200
 
     cleaner adaptation to new gnome-shell API
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                                 |    1 +
@@ -2245,7 +2245,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 16:44:09 2011 +0200
 
     Be compatible again with previous shell versions
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js     |   17 +++++++++++------
@@ -2257,7 +2257,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 00:54:16 2011 +0200
 
     move to init
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    2 +-
@@ -2268,7 +2268,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 00:51:02 2011 +0200
 
     revert a bit for now
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    5 +++--
@@ -2279,7 +2279,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 00:46:59 2011 +0200
 
     add missing import
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    1 +
@@ -2290,9 +2290,9 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 00:36:47 2011 +0200
 
     Port to new gnome-shell extensions API
-    
+
     At least this is a first try, maybe some destroy() are missing in disable()...
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js     |   33 ++++++++++++++++++++++-------
@@ -2304,7 +2304,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Aug 25 00:13:07 2011 +0200
 
     port to vala-0.14
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -2315,7 +2315,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Aug 24 10:54:55 2011 +0200
 
     be explicit when apple can't contact daemon
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/fr.po                             |   18 +++++++++++-------
@@ -2327,7 +2327,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 23 14:13:53 2011 +0200
 
     update completions
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  completions/_gpaste |   11 +++++++----
@@ -2339,7 +2339,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 23 14:13:46 2011 +0200
 
     add gpaste file alias
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS            |    2 +-
@@ -2351,7 +2351,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 23 12:47:20 2011 +0200
 
     oops
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste.vala |   22 ++++++----------------
@@ -2362,7 +2362,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 23 12:42:54 2011 +0200
 
     add gpaste --version
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/fr.po        |   18 +++++++++---------
@@ -2374,9 +2374,9 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 23 12:30:14 2011 +0200
 
     Revert "Follow other gnome-shell extensions for naming"
-    
+
     This reverts commit 5337c538a5a4f8d249b37a4079f9cc19b95ac859.
-    
+
     Otherwise for now the applet isn't loaded ...
 
  Makefile.am |    2 +-
@@ -2387,7 +2387,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Aug 23 11:56:51 2011 +0200
 
     autotools update
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  autogen.bash |    2 +-
@@ -2399,7 +2399,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Aug 19 17:09:11 2011 +0200
 
     Follow other gnome-shell extensions for naming
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  Makefile.am |    2 +-
@@ -2410,7 +2410,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Aug 19 15:07:30 2011 +0200
 
     update TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    1 +
@@ -2421,7 +2421,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Aug 19 14:54:09 2011 +0200
 
     simplify history loading
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    5 +----
@@ -2441,7 +2441,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jul 14 01:35:35 2011 +0200
 
     tweak zsh completion
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  completions/_gpaste |    2 +-
@@ -2452,7 +2452,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jul 14 01:03:07 2011 +0200
 
     update french translation
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/fr.po |   34 ++++++++++++++++++++++++----------
@@ -2463,7 +2463,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jul 14 01:00:49 2011 +0200
 
     add gpaste -f/--file
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                |    5 +++++
@@ -2478,7 +2478,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 12 17:21:14 2011 +0200
 
     Don't use GETTEXT macros, intltool is autosufficiant
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    5 +----
@@ -2489,7 +2489,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Jul 10 18:08:48 2011 +0200
 
     update README
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  README |    7 +++----
@@ -2500,7 +2500,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Jul 10 18:07:31 2011 +0200
 
     fix release date in NEWS
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    2 +-
@@ -2511,7 +2511,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Jul 10 00:37:15 2011 +0200
 
     post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -2522,7 +2522,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Jul 10 00:34:18 2011 +0200
 
     Release 1.2
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    7 +++++++
@@ -2533,7 +2533,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Jul 10 00:32:59 2011 +0200
 
     Really restore tracking state at startup
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/settings.vala |    1 +
@@ -2544,7 +2544,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 14:54:39 2011 +0200
 
     don't run configure in autogen.bash
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  autogen.bash |    1 -
@@ -2555,7 +2555,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 14:46:22 2011 +0200
 
     switch from glib gettext to native one
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    6 ++++--
@@ -2566,7 +2566,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 14:33:04 2011 +0200
 
     switch to automake 1.11
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -2577,7 +2577,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 11:06:27 2011 +0200
 
     Post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -2588,7 +2588,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 11:05:45 2011 +0200
 
     Release 1.1
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS     |    8 +++++++
@@ -2600,7 +2600,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 11:01:40 2011 +0200
 
     install dconf schema at /org/gnome/GPaste instead of /apps/GPaste
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/org.gnome.GPaste.gschema.xml.in.in |    2 +-
@@ -2611,7 +2611,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 11:00:27 2011 +0200
 
     update TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    2 --
@@ -2622,7 +2622,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 10:59:28 2011 +0200
 
     signals don't have an out signature
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    4 ++--
@@ -2634,10 +2634,10 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 10:48:51 2011 +0200
 
     Signals cleanup
-    
+
     - Launch and Quit DBus method are now Track(bool)
     - Start and Exit DBus signals are now Tracking(bool)
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js    |   24 ++++++++----------------
@@ -2652,7 +2652,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 10:22:58 2011 +0200
 
     disable legacy applet by default
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -2663,7 +2663,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 10:21:07 2011 +0200
 
     update TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    4 ++++
@@ -2674,7 +2674,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 00:38:12 2011 +0200
 
     update french translation
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  po/fr.po |   52 ++++++++++++++++++++++++++++++++--------------------
@@ -2685,7 +2685,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 00:35:40 2011 +0200
 
     emit signal when tracking/untracking
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala  |    9 ++++++++-
@@ -2697,7 +2697,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 00:31:28 2011 +0200
 
     update TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    1 -
@@ -2708,7 +2708,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 00:29:16 2011 +0200
 
     gpaste-settings: do add the button for (un)tracking
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste-settings/gpaste-settings.vala |    1 +
@@ -2719,7 +2719,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 00:21:39 2011 +0200
 
     save cipboard tracking state in dconf
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala  |   13 +++++++++----
@@ -2731,7 +2731,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 00:12:37 2011 +0200
 
     gpaste-settings: track all dconf changes
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste-settings/gpaste-settings.vala |    6 ++++++
@@ -2742,7 +2742,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Jul 9 00:10:41 2011 +0200
 
     prepare saving of clipboard tracking state
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  data/org.gnome.GPaste.gschema.xml.in.in  |    8 ++++++++
@@ -2754,12 +2754,12 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Fri Jul 8 21:21:35 2011 +0200
 
     gnome-shell applet: don't force the daemon to track changes
-    
+
     We were not able to set the switch state to the daemon tracking state
     at startup, so we forced it to track (and it still displayed off ...)
     This was actually caused by a regression in gnome-shell
     https://bugzilla.gnome.org/show_bug.cgi?id=654267
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    5 ++---
@@ -2770,7 +2770,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:49:31 2011 +0200
 
     Post release version bump
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -2781,7 +2781,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:48:05 2011 +0200
 
     Release 1.0
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS     |    2 +-
@@ -2793,7 +2793,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:47:18 2011 +0200
 
     gnome-shell applet: disable active checking for now (not really used anyway)
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    4 ++--
@@ -2804,7 +2804,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:40:28 2011 +0200
 
     typso
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    2 +-
@@ -2815,7 +2815,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:28:34 2011 +0200
 
     update TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    1 +
@@ -2826,7 +2826,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:18:27 2011 +0200
 
     make a first DBus call earlier to initialize
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |    1 +
@@ -2837,7 +2837,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:07:03 2011 +0200
 
     standard applet: missing DBus method
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/standard/gpaste-applet.vala |    2 ++
@@ -2848,7 +2848,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:05:54 2011 +0200
 
     TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    4 ++--
@@ -2859,7 +2859,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 10:05:07 2011 +0200
 
     standard applet: tiny fix
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/standard/gpaste-applet.vala |    3 ++-
@@ -2870,7 +2870,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Tue Jul 5 09:52:41 2011 +0200
 
     gnome-shell applet: create killSwitch earlier
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/extension.js |   35 ++++++++++++++++++++++++++++++++-
@@ -2881,7 +2881,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sun Jul 3 15:02:46 2011 +0200
 
     be compatible with gnome-shell git master
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/gnome-shell/metadata.json.in |    2 +-
@@ -2892,7 +2892,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 18:47:16 2011 +0200
 
     Adding TODO
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  TODO |    5 +++++
@@ -2903,7 +2903,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 18:41:34 2011 +0200
 
     Missing headings
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpaste-settings/gpaste-settings.vala |   32 ++++++++++++++++++++++++++++++
@@ -2915,7 +2915,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 18:39:00 2011 +0200
 
     retab
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/applets/standard/gpaste-applet.vala |   44 +++++++++++++++---------------
@@ -2930,7 +2930,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 18:27:52 2011 +0200
 
     leftover
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    5 +----
@@ -2941,7 +2941,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 18:20:30 2011 +0200
 
     little refactor
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/clipboard.vala |    1 +
@@ -2954,7 +2954,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 18:09:11 2011 +0200
 
     little simplification
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/history.vala |    8 ++------
@@ -2965,7 +2965,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 18:06:52 2011 +0200
 
     gpasted: Simplify Settings handling
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                       |    1 +
@@ -2979,7 +2979,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Jun 30 17:48:56 2011 +0200
 
     gpasted: History.changed is not needed, use the DBus signal
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS                     |    1 +
@@ -3002,7 +3002,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Jun 29 21:46:54 2011 +0200
 
     update gitignore
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  .gitignore |    1 +
@@ -3013,7 +3013,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Jun 29 21:46:30 2011 +0200
 
     autogenerate ChangeLog
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  ChangeLog   |    4 ++++
@@ -3025,7 +3025,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Jun 29 21:40:29 2011 +0200
 
     start writing 1.0 NEWS
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  NEWS |    7 +++++++
@@ -3036,7 +3036,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Jun 29 21:40:15 2011 +0200
 
     add AUTHORS
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  AUTHORS |    2 ++
@@ -3047,7 +3047,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Jun 29 21:36:19 2011 +0200
 
     switch to xz
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  configure.ac |    2 +-
@@ -3058,7 +3058,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Jun 29 21:35:21 2011 +0200
 
     update gitignore
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  .gitignore |    1 +
@@ -3069,7 +3069,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Wed Jun 29 21:34:37 2011 +0200
 
     remove debug output
-    
+
     Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
  src/gpasted/gpasted.vala |    1 -
@@ -4098,7 +4098,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Sat Feb 5 14:04:17 2011 +0100
 
     Revert "rename bash completion"
-    
+
     This reverts commit c0e82b4dc21f3fe17c24386e7016d010c6589684.
 
  Makefile.am                       |    2 +-
@@ -4399,7 +4399,7 @@ Author: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date:   Thu Feb 3 14:13:40 2011 +0100
 
     Fix segfault
-    
+
     At startup, we try to restore history[0] into the clipboard
     if it's empty. Do not try to do that if history is empty too.
 
