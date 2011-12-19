@@ -316,7 +316,7 @@ void
 g_paste_history_load (GPasteHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    
+
     gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", HISTORY_FILE, NULL);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
