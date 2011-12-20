@@ -145,6 +145,7 @@ endif
 AM_CFLAGS = \
 	-I$(top_srcdir)/libgpaste \
 	-DGPASTE_COMPILATION \
+	-D__G_DEPRECATED_THREAD_H__ \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
 	$(GLIB_CFLAGS) \
@@ -169,7 +170,7 @@ bin_gpaste_settings_CFLAGS = \
 	$(AM_CFLAGS)
 
 libgpaste_libgpaste_la_CFLAGS = \
-	-Wall -Wextra \
+	-Wall -Wextra -pedantic \
 	$(GDK_PIXBUF_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
