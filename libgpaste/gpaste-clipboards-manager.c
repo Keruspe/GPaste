@@ -50,7 +50,7 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     GtkClipboard *real = g_paste_clipboard_get_real (clipboard);
 
     priv->clipboards = g_slist_prepend (priv->clipboards, clipboard);
-    
+
     if (gtk_clipboard_wait_is_uris_available (real) ||
         gtk_clipboard_wait_is_text_available (real))
             g_paste_clipboard_set_text (clipboard);

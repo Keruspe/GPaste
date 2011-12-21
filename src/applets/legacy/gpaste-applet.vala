@@ -183,7 +183,7 @@ namespace GPaste {
                 this.settings.changed.connect((key)=>{
                     switch(key) {
                     case "element-size":
-                        this.element_size = this.real_element_size; 
+                        this.element_size = this.real_element_size;
                         this.window.fill_history(); /* Keep displayed history up to date */
                         break;
                     }
