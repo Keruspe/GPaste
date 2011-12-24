@@ -59,6 +59,9 @@ global:
     g_paste_keybinder_unbind;
     g_paste_keybinder_rebind;
     g_paste_keybinder_new;
+    g_paste_daemon_get_type;
+    g_paste_daemon_register_object;
+    g_paste_daemon_new;
 local:
     *;
 };
