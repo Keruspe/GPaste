@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.68])
-AC_INIT([GPaste],[2.5],[Marc-Antoine@Perennou.com])
+AC_INIT([GPaste],[2.5],[Marc-Antoine@Perennou.com],[GPaste])
 
 GLIB_REQUIRED="2.30.0"
 GTK_REQUIRED="3.0.0"
@@ -32,15 +32,24 @@ AC_PREFIX_DEFAULT([/usr])
 
 LT_PREREQ([2.2.6])
 LT_INIT([disable-static pic-only])
-AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
+AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar silent-rules -Wall])
 AM_SILENT_RULES([yes])
 
 AC_PROG_SED
 AC_PROG_MKDIR_P
 AC_PROG_INSTALL
+
 AC_PROG_CC
 AC_PROG_CC_STDC
 AM_PROG_CC_C_O
+
+CC_CHECK_CFLAGS_APPEND([ \
+                         -pipe \
+                         -pedantic \
+                         -DANOTHER_BRICK_IN_THE \
+                         -Wall \
+                         -Wextra \
+                       ])
 
 GOBJECT_INTROSPECTION_REQUIRE([1.30.0])
 AM_PROG_VALAC([0.14.0])

@@ -142,6 +142,12 @@ endif
 
 # CFLAGS
 
+VALA_CFLAGS = \
+	-Wno-missing-field-initializers \
+	-Wno-unused-parameter \
+	-Wno-unused-variable \
+	-Wno-unused-but-set-variable
+
 AM_CFLAGS = \
 	-I$(top_srcdir)/libgpaste \
 	-DGPASTE_COMPILATION \
@@ -153,24 +159,27 @@ AM_CFLAGS = \
 	$(GIO_CFLAGS)
 
 bin_gpaste_CFLAGS = \
+	$(VALA_CFLAGS) \
 	$(AM_CFLAGS)
 
 bin_gpasted_CFLAGS = \
+	$(VALA_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
 bin_gpaste_applet_CFLAGS = \
+	$(VALA_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
 bin_gpaste_settings_CFLAGS = \
+	$(VALA_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)
 
 libgpaste_libgpaste_la_CFLAGS = \
-	-Wall -Wextra -pedantic \
 	$(GDK_PIXBUF_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
