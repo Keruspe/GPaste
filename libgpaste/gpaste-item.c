@@ -230,12 +230,12 @@ struct _GPasteUrisItemPrivate
  *
  * Returns: (transfer none): read-only array of read-only uris (strings)
  */
-const gchar const **
+const gchar * const *
 g_paste_uris_item_get_uris (const GPasteUrisItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
 
-    return (const gchar const **) self->priv->uris;
+    return (const gchar * const *) self->priv->uris;
 }
 
 static gboolean

@@ -454,9 +454,9 @@ g_paste_history_init (GPasteHistory *self)
  *
  * Get the inner history of a GPasteHistory
  *
- * Returns: (element-type GPasteItem): The inner history
+ * Returns: (element-type GPasteItem) (transfer none): The inner history
  */
-const GSList *
+GSList *
 g_paste_history_get_history (GPasteHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);

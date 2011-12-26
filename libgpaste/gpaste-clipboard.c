@@ -203,7 +203,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard *clipboard, GtkSelectionData 
     else
     {
         GString *copy_string = g_string_new ("copy");
-        const gchar const **uris = g_paste_uris_item_get_uris (item);
+        const gchar * const *uris = g_paste_uris_item_get_uris (item);
         guint length = g_strv_length ((gchar **) uris);
 
         for (guint i = 0; i < length; ++i)

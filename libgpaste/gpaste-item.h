@@ -79,7 +79,7 @@ typedef struct _GPasteUrisItemPrivate GPasteUrisItemPrivate;
 
 GType g_paste_uris_item_get_type (void);
 GPasteUrisItem *g_paste_uris_item_new (const gchar *uris);
-const gchar const **g_paste_uris_item_get_uris (const GPasteUrisItem *self);
+const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
 
 /* GPaste ImageItem */
 
