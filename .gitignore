@@ -7,6 +7,7 @@ gpaste
 gpaste-applet
 *.c
 !libgpaste/*.c
+!src/gpasted/*.c
 *.o
 Makefile
 build-aux

@@ -97,8 +97,7 @@ bin_gpaste_SOURCES = \
 	src/gpaste.vala
 
 bin_gpasted_SOURCES = \
-	vapi/gpaste-1.0.vapi \
-	src/gpasted/gpasted.vala
+	src/gpasted/gpasted.c
 
 bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala
@@ -124,10 +123,6 @@ AM_VALAFLAGS = \
 	$(GIO_VALAFLAGS)
 
 bin_gpaste_VALAFLAGS = \
-	$(AM_VALAFLAGS)
-
-bin_gpasted_VALAFLAGS = \
-	$(GTK_VALAFLAGS) \
 	$(AM_VALAFLAGS)
 
 bin_gpaste_applet_VALAFLAGS = \
@@ -166,7 +161,6 @@ bin_gpaste_CFLAGS = \
 	$(AM_CFLAGS)
 
 bin_gpasted_CFLAGS = \
-	$(VALA_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(AM_CFLAGS)

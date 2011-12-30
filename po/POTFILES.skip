@@ -4,4 +4,3 @@ data/org.gnome.GPaste.gschema.xml.in
 src/applets/legacy/gpaste-applet.c
 src/gpaste-settings/gpaste-settings.c
 src/gpaste.c
-src/gpasted/gpasted.c
