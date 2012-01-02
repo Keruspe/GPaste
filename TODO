@@ -4,6 +4,5 @@
     rewrite gpaste in C
     forward "changed" event from GPasteSettings
     port gpaste-settings to libgpaste
-    automake: DISTCHECK_CONFIGURE_FLAGS → AM_DISTCHECK_CONFIGURE_FLAGS
     automake: remove g-i hack
     build: depend on intltool 0.50 to remove _NOMERGE hack

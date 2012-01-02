@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-DISTCHECK_CONFIGURE_FLAGS = \
+AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
 	--enable-applet
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
