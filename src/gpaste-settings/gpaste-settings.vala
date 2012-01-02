@@ -257,7 +257,7 @@ namespace GPaste {
                 min_text_item_size_label.xalign = 0;
                 grid.attach (min_text_item_size_label, 0, current_line++, 1, 1);
 
-                this.min_text_item_size_button = new Gtk.SpinButton.with_range(1, int.MAX, 1);
+                this.min_text_item_size_button = new Gtk.SpinButton.with_range(1, uint32.MAX, 1);
                 this.min_text_item_size = app.min_text_item_size;
                 this.min_text_item_size_button.get_adjustment().value_changed.connect(()=>{
                     app.min_text_item_size = this.min_text_item_size;
@@ -268,7 +268,7 @@ namespace GPaste {
                 max_text_item_size_label.xalign = 0;
                 grid.attach (max_text_item_size_label, 0, current_line++, 1, 1);
 
-                this.max_text_item_size_button = new Gtk.SpinButton.with_range(1, int.MAX, 1);
+                this.max_text_item_size_button = new Gtk.SpinButton.with_range(1, uint32.MAX, 1);
                 this.max_text_item_size = app.max_text_item_size;
                 this.max_text_item_size_button.get_adjustment().value_changed.connect(()=>{
                     app.max_text_item_size = this.max_text_item_size;
