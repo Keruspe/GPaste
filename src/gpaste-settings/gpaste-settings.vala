@@ -32,6 +32,8 @@ namespace GPaste {
             private Gtk.SpinButton max_displayed_history_size_button;
             private Gtk.SpinButton element_size_button;
             private Gtk.Entry keyboard_shortcut_entry;
+            private Gtk.SpinButton max_text_item_size_button;
+            private Gtk.SpinButton min_text_item_size_button;
 
             public bool primary_to_history {
                 get {
@@ -120,6 +122,24 @@ namespace GPaste {
                 }
                 set {
                     this.keyboard_shortcut_entry.set_text(value);
+                }
+            }
+
+            public uint32 min_text_item_size {
+                get {
+                    return (uint32)this.min_text_item_size_button.get_value_as_int();
+                }
+                set {
+                    this.min_text_item_size_button.get_adjustment().value = value;
+                }
+            }
+
+            public uint32 max_text_item_size {
+                get {
+                    return (uint32)this.max_text_item_size_button.get_value_as_int();
+                }
+                set {
+                    this.max_text_item_size_button.get_adjustment().value = value;
                 }
             }
 
@@ -233,6 +253,28 @@ namespace GPaste {
                 });
                 grid.attach_next_to (this.keyboard_shortcut_entry, keyboard_shortcut_label, Gtk.PositionType.RIGHT, 1, 1);
 
+                var min_text_item_size_label = new Gtk.Label (_("Min text item length: "));
+                min_text_item_size_label.xalign = 0;
+                grid.attach (min_text_item_size_label, 0, current_line++, 1, 1);
+
+                this.min_text_item_size_button = new Gtk.SpinButton.with_range(1, int.MAX, 1);
+                this.min_text_item_size = app.min_text_item_size;
+                this.min_text_item_size_button.get_adjustment().value_changed.connect(()=>{
+                    app.min_text_item_size = this.min_text_item_size;
+                });
+                grid.attach_next_to (this.min_text_item_size_button, min_text_item_size_label, Gtk.PositionType.RIGHT, 1, 1);
+
+                var max_text_item_size_label = new Gtk.Label (_("Max text item length: "));
+                max_text_item_size_label.xalign = 0;
+                grid.attach (max_text_item_size_label, 0, current_line++, 1, 1);
+
+                this.max_text_item_size_button = new Gtk.SpinButton.with_range(1, int.MAX, 1);
+                this.max_text_item_size = app.max_text_item_size;
+                this.max_text_item_size_button.get_adjustment().value_changed.connect(()=>{
+                    app.max_text_item_size = this.max_text_item_size;
+                });
+                grid.attach_next_to (this.max_text_item_size_button, max_text_item_size_label, Gtk.PositionType.RIGHT, 1, 1);
+
                 this.add (grid);
             }
         }
@@ -328,6 +370,24 @@ namespace GPaste {
                 }
                 set {
                     this.settings.set_string("keyboard-shortcut", value);
+                }
+            }
+
+            public uint32 min_text_item_size {
+                get {
+                    return this.settings.get_value("min-text-item-size").get_uint32();
+                }
+                set {
+                    this.settings.set_value("min-text-item-size", value);
+                }
+            }
+
+            public uint32 max_text_item_size {
+                get {
+                    return this.settings.get_value("max-text-item-size").get_uint32();
+                }
+                set {
+                    this.settings.set_value("max-text-item-size", value);
                 }
             }
 
