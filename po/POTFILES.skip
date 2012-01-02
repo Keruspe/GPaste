@@ -5,5 +5,3 @@ src/applets/legacy/gpaste-applet.c
 src/gpaste-settings/gpaste-settings.c
 src/gpaste.c
 src/gpasted/gpasted.c
-src/gpasted/history.c
-src/gpasted/item.c
