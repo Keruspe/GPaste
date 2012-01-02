@@ -87,8 +87,8 @@
     </key>
 
     <key name="max-text-item-size" type="u">
-      <range min="1" max="4294967295"/>
-      <default>4294967295</default>
+      <range min="1" max="2147483647"/>
+      <default>2147483647</default>
       <_summary>Max text item size</_summary>
       <_description>
         Maximum size of a text item. Anything out of this boundary is ignored.
@@ -96,7 +96,7 @@
     </key>
 
     <key name="min-text-item-size" type="u">
-      <range min="1" max="4294967295"/>
+      <range min="1" max="2147483647"/>
       <default>1</default>
       <_summary>Min text item size</_summary>
       <_description>
