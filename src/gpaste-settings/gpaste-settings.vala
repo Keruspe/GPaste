@@ -31,9 +31,9 @@ namespace GPaste {
             private Gtk.SpinButton max_history_size_button;
             private Gtk.SpinButton max_displayed_history_size_button;
             private Gtk.SpinButton element_size_button;
-            private Gtk.Entry keyboard_shortcut_entry;
             private Gtk.SpinButton max_text_item_size_button;
             private Gtk.SpinButton min_text_item_size_button;
+            private Gtk.Entry keyboard_shortcut_entry;
 
             public bool primary_to_history {
                 get {
@@ -116,15 +116,6 @@ namespace GPaste {
                 }
             }
 
-            public string keyboard_shortcut {
-                get {
-                    return this.keyboard_shortcut_entry.get_text();
-                }
-                set {
-                    this.keyboard_shortcut_entry.set_text(value);
-                }
-            }
-
             public uint32 min_text_item_size {
                 get {
                     return (uint32)this.min_text_item_size_button.get_value_as_int();
@@ -140,6 +131,15 @@ namespace GPaste {
                 }
                 set {
                     this.max_text_item_size_button.get_adjustment().value = value;
+                }
+            }
+
+            public string keyboard_shortcut {
+                get {
+                    return this.keyboard_shortcut_entry.get_text();
+                }
+                set {
+                    this.keyboard_shortcut_entry.set_text(value);
                 }
             }
 
@@ -242,17 +242,6 @@ namespace GPaste {
                 });
                 grid.attach_next_to (this.element_size_button, element_size_label, Gtk.PositionType.RIGHT, 1, 1);
 
-                var keyboard_shortcut_label = new Gtk.Label (_("Keyboard shortcut to display the history: "));
-                keyboard_shortcut_label.xalign = 0;
-                grid.attach (keyboard_shortcut_label, 0, current_line++, 1, 1);
-
-                this.keyboard_shortcut_entry = new Gtk.Entry();
-                this.keyboard_shortcut = app.keyboard_shortcut;
-                this.keyboard_shortcut_entry.changed.connect(()=>{
-                    app.keyboard_shortcut = this.keyboard_shortcut;
-                });
-                grid.attach_next_to (this.keyboard_shortcut_entry, keyboard_shortcut_label, Gtk.PositionType.RIGHT, 1, 1);
-
                 var min_text_item_size_label = new Gtk.Label (_("Min text item length: "));
                 min_text_item_size_label.xalign = 0;
                 grid.attach (min_text_item_size_label, 0, current_line++, 1, 1);
@@ -274,6 +263,17 @@ namespace GPaste {
                     app.max_text_item_size = this.max_text_item_size;
                 });
                 grid.attach_next_to (this.max_text_item_size_button, max_text_item_size_label, Gtk.PositionType.RIGHT, 1, 1);
+
+                var keyboard_shortcut_label = new Gtk.Label (_("Keyboard shortcut to display the history: "));
+                keyboard_shortcut_label.xalign = 0;
+                grid.attach (keyboard_shortcut_label, 0, current_line++, 1, 1);
+
+                this.keyboard_shortcut_entry = new Gtk.Entry();
+                this.keyboard_shortcut = app.keyboard_shortcut;
+                this.keyboard_shortcut_entry.changed.connect(()=>{
+                    app.keyboard_shortcut = this.keyboard_shortcut;
+                });
+                grid.attach_next_to (this.keyboard_shortcut_entry, keyboard_shortcut_label, Gtk.PositionType.RIGHT, 1, 1);
 
                 this.add (grid);
             }
@@ -364,15 +364,6 @@ namespace GPaste {
                 }
             }
 
-            public string keyboard_shortcut {
-                owned get {
-                    return this.settings.get_string("keyboard-shortcut");
-                }
-                set {
-                    this.settings.set_string("keyboard-shortcut", value);
-                }
-            }
-
             public uint32 min_text_item_size {
                 get {
                     return this.settings.get_value("min-text-item-size").get_uint32();
@@ -388,6 +379,15 @@ namespace GPaste {
                 }
                 set {
                     this.settings.set_value("max-text-item-size", value);
+                }
+            }
+
+            public string keyboard_shortcut {
+                owned get {
+                    return this.settings.get_string("keyboard-shortcut");
+                }
+                set {
+                    this.settings.set_string("keyboard-shortcut", value);
                 }
             }
 
@@ -423,6 +423,12 @@ namespace GPaste {
                         break;
                     case "trim-items":
                         this.window.trim_items = this.trim_items;
+                        break;
+                    case "min-text-item-size":
+                        this.window.min_text_item_size = this.min_text_item_size;
+                        break;
+                    case "max-text-item-size":
+                        this.window.max_text_item_size = this.max_text_item_size;
                         break;
                     case "keyboard-shortcut":
                         this.window.keyboard_shortcut = this.keyboard_shortcut;
