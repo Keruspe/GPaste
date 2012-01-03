@@ -33,7 +33,7 @@ struct _GPasteDaemonPrivate
     GPasteSettings *settings;
     GPasteClipboardsManager *clipboards_manager;
     GPasteKeybinder *keybinder;
-    GDBusInterfaceInfo g_paste_daemon_dbus_info;
+    GDBusNodeInfo *g_paste_daemon_dbus_info;
     GDBusInterfaceVTable g_paste_daemon_dbus_vtable;
 };
 
@@ -368,7 +368,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     GPasteDaemonPrivate *priv = self->priv;
     guint result = g_dbus_connection_register_object (connection,
                                                       path,
-                                                     &priv->g_paste_daemon_dbus_info,
+                                                      priv->g_paste_daemon_dbus_info->interfaces[0],
                                                      &priv->g_paste_daemon_dbus_vtable,
                                                       (gpointer) data,
                                                       g_paste_daemon_unregister_object,
@@ -405,6 +405,7 @@ g_paste_daemon_dispose (GObject *object)
     g_object_unref (priv->settings);
     g_object_unref (priv->clipboards_manager);
     g_object_unref (priv->keybinder);
+    g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
 
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->dispose (object);
 }
@@ -431,183 +432,45 @@ static void
 g_paste_daemon_init (GPasteDaemon *self)
 {
     GPasteDaemonPrivate *priv = self->priv = G_PASTE_DAEMON_GET_PRIVATE (self);
-    GDBusInterfaceInfo *info = &priv->g_paste_daemon_dbus_info;
     GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
 
-    static const GDBusArgInfo
-    history = {
-        .ref_count = -1,
-        .name = "history",
-        .signature = "as",
-        .annotations = NULL
-    },
-    selection  = {
-        .ref_count = -1,
-        .name = "selection",
-        .signature = "s",
-        .annotations = NULL
-    },
-    index = {
-        .ref_count = -1,
-        .name = "index",
-        .signature = "u",
-        .annotations = NULL
-    },
-    state = {
-        .ref_count = -1,
-        .name = "tracking_state",
-        .signature = "b",
-        .annotations = NULL
-    };
-
-    static const GDBusArgInfo * const history_args[] = {
-        [0] = &history,
-        [1] = NULL
-    };
-    static const GDBusArgInfo * const selection_args[] = {
-        [0] = &selection,
-        [1] = NULL
-    };
-    static const GDBusArgInfo * const index_args[] = {
-        [0] = &index,
-        [1] = NULL
-    };
-    static const GDBusArgInfo * const state_args[] = {
-        [0] = &state,
-        [1] = NULL
-    };
-
-    static const GDBusMethodInfo
-    get_history = {
-        .ref_count = -1,
-        .name = "GetHistory",
-        .in_args = NULL,
-        .out_args = (GDBusArgInfo **) &history_args,
-        .annotations = NULL
-    },
-    add = {
-        .ref_count = -1,
-        .name = "Add",
-        .in_args = (GDBusArgInfo **) &selection_args,
-        .out_args = NULL,
-        .annotations = NULL
-    },
-    get_element = {
-        .ref_count = -1,
-        .name = "GetElement",
-        .in_args = (GDBusArgInfo **) &index_args,
-        .out_args = (GDBusArgInfo **) &selection_args,
-        .annotations = NULL
-    },
-    select = {
-        .ref_count = -1,
-        .name = "Select",
-        .in_args = (GDBusArgInfo **) &index_args,
-        .out_args = NULL,
-        .annotations = NULL
-    },
-    delete = {
-        .ref_count = -1,
-        .name = "Delete",
-        .in_args = (GDBusArgInfo **) &index_args,
-        .out_args = NULL,
-        .annotations = NULL
-    },
-    empty = {
-        .ref_count = -1,
-        .name = "Empty",
-        .in_args = NULL,
-        .out_args = NULL,
-        .annotations = NULL
-    },
-    track = {
-        .ref_count = -1,
-        .name = "Track",
-        .in_args = (GDBusArgInfo **) &state_args,
-        .out_args = NULL,
-        .annotations = NULL
-    },
-    on_extension_state_changed = {
-        .ref_count = -1,
-        .name = "OnExtensionStateChanged",
-        .in_args = (GDBusArgInfo **) &state_args,
-        .out_args = NULL,
-        .annotations = NULL
-    },
-    reexecute = {
-        .ref_count = -1,
-        .name = "Reexecute",
-        .in_args = NULL,
-        .out_args = NULL,
-        .annotations = NULL
-    };
-
-    static const GDBusMethodInfo * const methods[] = {
-        [0] = &get_history,
-        [1] = &add,
-        [2] = &get_element,
-        [3] = &select,
-        [4] = &delete,
-        [5] = &empty,
-        [6] = &track,
-        [7] = &on_extension_state_changed,
-        [8] = &reexecute,
-        [9] = NULL
-    };
-
-    static const GDBusSignalInfo
-    reexecute_self = {
-        .ref_count = 1,
-        .name = "ReexecuteSelf",
-        .args = NULL,
-        .annotations = NULL
-    },
-    tracking = {
-        .ref_count = 1,
-        .name = "Tracking",
-        .args = (GDBusArgInfo **) &state_args,
-        .annotations = NULL
-    },
-    changed = {
-        .ref_count = 1,
-        .name = "Changed",
-        .args = NULL,
-        .annotations = NULL
-    },
-    toggle_history = {
-        .ref_count = 1,
-        .name = "ToggleHistory",
-        .args = NULL,
-        .annotations = NULL
-    };
-
-    static const GDBusSignalInfo * const signals[] = {
-        [0] = &reexecute_self,
-        [1] = &tracking,
-        [2] = &changed,
-        [3] = &toggle_history,
-        [4] = NULL
-    };
-
-    static const GDBusPropertyInfo active = {
-        .ref_count = -1,
-        .name = "Active",
-        .signature = "b",
-        .flags = G_DBUS_PROPERTY_INFO_FLAGS_READABLE,
-        .annotations = NULL
-    };
-
-    static const GDBusPropertyInfo * const properties[] = {
-        [0] = &active,
-        [1] = NULL
-    };
-
-    info->ref_count = -1;
-    info->name = G_PASTE_BUS_NAME;
-    info->methods = (GDBusMethodInfo **) &methods;
-    info->signals = (GDBusSignalInfo **) &signals;
-    info->properties = (GDBusPropertyInfo **) &properties;
-    info->annotations = NULL;
+    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (
+        "<node>"
+        "   <interface name='" G_PASTE_BUS_NAME "'>"
+        "       <method name='GetHistory'>"
+        "           <arg type='as' direction='out' />"
+        "       </method>"
+        "       <method name='Add'>"
+        "           <arg type='s' direction='in' />"
+        "       </method>"
+        "       <method name='GetElement'>"
+        "           <arg type='u' direction='in' />"
+        "           <arg type='s' direction='out' />"
+        "       </method>"
+        "       <method name='Select'>"
+        "           <arg type='u' direction='in' />"
+        "       </method>"
+        "       <method name='Delete'>"
+        "           <arg type='u' direction='in' />"
+        "       </method>"
+        "       <method name='Empty' />"
+        "       <method name='Track'>"
+        "           <arg type='b' direction='in' />"
+        "       </method>"
+        "       <method name='OnExtensionStateChanged'>"
+        "           <arg type='b' direction='in' />"
+        "       </method>"
+        "       <method name='Reexecute' />"
+        "       <signal name='ReexecuteSelf' />"
+        "       <signal name='Tracking'>"
+        "           <arg type='b' direction='out' />"
+        "       </signal>"
+        "       <signal name='Changed' />"
+        "       <signal name='ToggleHistory' />"
+        "       <property name='Active' type='b' access='read' />"
+        "   </interface>"
+        "</node>",
+        NULL); /* Error */
 
     vtable->method_call = g_paste_daemon_dbus_method_call;
     vtable->get_property = g_paste_daemon_dbus_get_property;
