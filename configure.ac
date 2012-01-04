@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.68])
-AC_INIT([GPaste],[2.5],[Marc-Antoine@Perennou.com],[GPaste])
+AC_INIT([GPaste],[2.5],[Marc-Antoine@Perennou.com],[gpaste])
 
 GLIB_REQUIRED="2.30.0"
 GTK_REQUIRED="3.0.0"
