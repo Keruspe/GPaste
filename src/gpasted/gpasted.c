@@ -30,7 +30,7 @@ static GMainLoop *main_loop;
 static void
 signal_handler (int signum)
 {
-    g_print ("Signal %d received, exiting\n", signum);
+    g_print (_("Signal %d received, exiting\n"), signum);
     g_main_loop_quit (main_loop);
 }
 
