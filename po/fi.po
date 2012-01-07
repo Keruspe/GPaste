@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-12-16 11:25+0100\n"
+"POT-Creation-Date: 2012-01-07 11:53+0100\n"
 "PO-Revision-Date: 2011-11-05 18:28+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -18,69 +18,64 @@ msgstr ""
 "X-Poedit-Language: Finnish\n"
 "X-Poedit-Country: FINLAND\n"
 
-#: ../src/gpasted/gpasted.vala:158
-#, c-format
-msgid "Could not aquire DBus name.\n"
-msgstr "DBus-nimen selvitys epäonnistui.\n"
-
-#: ../src/gpasted/gpasted.vala:165
-#, c-format
-msgid "Signal %d recieved, exiting.\n"
-msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
-
-#: ../src/gpasted/gpasted.vala:173
-#, c-format
-msgid "Could not register DBus service.\n"
-msgstr "DBus-palvelun rekisteröinti epäonnistui.\n"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:130
+#: ../src/gpaste-settings/gpaste-settings.vala:150
 #: ../src/applets/gnome-shell/extension.js:114
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "GPaste palvelun asetukset"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:139
+#: ../src/gpaste-settings/gpaste-settings.vala:166
+msgid "_Track clipboard changes"
+msgstr "_Pidä kirjaa leikepöydän tapahtumista"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:173
+msgid "Sync the daemon state with the _extension's one"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.vala:182
+msgid "_Primary selection affects history"
+msgstr "_Maalaminen vaikuttaa historiaan"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:189
+msgid "_Synchronize clipboard with primary selection"
+msgstr "_Synkronoi leikepöytä ja maalaaminen"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:198
+msgid "_Save history"
+msgstr "_Tallenna historia"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:205
+msgid "_Trim items"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.vala:214
 msgid "Max history size: "
 msgstr "Historian suurin koko:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:140
+#: ../src/gpaste-settings/gpaste-settings.vala:225
 #, fuzzy
 msgid "Max displayed history size: "
 msgstr "Historian suurin koko:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:141
+#: ../src/gpaste-settings/gpaste-settings.vala:236
 msgid "Max element size when displaying: "
 msgstr "Suurin koko elementtejä näytettäessä:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:142
+#: ../src/gpaste-settings/gpaste-settings.vala:247
+#, fuzzy
+msgid "Min text item length: "
+msgstr "Historian suurin koko"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:258
+#, fuzzy
+msgid "Max text item length: "
+msgstr "Historian suurin koko"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:269
 msgid "Keyboard shortcut to display the history: "
 msgstr "Pikanäppäin historian avaamiseksi:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:154
-msgid "_Primary selection affects history"
-msgstr "_Maalaminen vaikuttaa historiaan"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:159
-msgid "_Synchronize clipboard with primary selection"
-msgstr "_Synkronoi leikepöytä ja maalaaminen"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:164
-msgid "_Track clipboard changes"
-msgstr "_Pidä kirjaa leikepöydän tapahtumista"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:169
-msgid "Sync the daemon state with the _extension's one"
-msgstr ""
-
-#: ../src/gpaste-settings/gpaste-settings.vala:174
-msgid "_Save history"
-msgstr "_Tallenna historia"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:179
-msgid "_Trim items"
-msgstr ""
-
-#: ../src/gpaste-settings/gpaste-settings.vala:377
+#: ../src/gpaste-settings/gpaste-settings.vala:458
 #: ../src/applets/legacy/gpaste-applet.vala:217
 #, c-format
 msgid "Fail to register the gtk application.\n"
@@ -246,6 +241,16 @@ msgstr "%s %s on vanhentunut: käytä \"%s file\" komentoa sen sijaan\n"
 msgid "Could not read file: %s\n"
 msgstr "Tiedostoa %s ei voitu lukea\n"
 
+#: ../src/gpasted/gpasted.c:76
+#, fuzzy
+msgid "Could not register DBus service."
+msgstr "DBus-palvelun rekisteröinti epäonnistui.\n"
+
+#: ../src/gpasted/gpasted.c:85
+#, fuzzy
+msgid "Could not aquire DBus name."
+msgstr "DBus-nimen selvitys epäonnistui.\n"
+
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:1
 msgid "Max history size"
 msgstr "Historian suurin koko"
@@ -390,6 +395,9 @@ msgstr "[Kuva, %d x %d (%s)]"
 #, fuzzy
 msgid "Could not create history dir"
 msgstr "Historiatiedoston luonti epäonnistui.\n"
+
+#~ msgid "Signal %d recieved, exiting.\n"
+#~ msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
 
 #~ msgid "Could not delete history file.\n"
 #~ msgstr "Historiatiedoston poistaminen epäonnistui.\n"

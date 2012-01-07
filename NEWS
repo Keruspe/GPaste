@@ -1,12 +1,17 @@
 NEW in 2.5 (Not released yet)
-=======
+=============
 
 - Reexecute has now a signal: ReexecuteSelf
 
-NEW in 2.2 (Not released yet)
+NEW in 2.2 (07/01/2012)
 =============
 
 - Content is now stripped before being added to clipboard
+- New settings for maximum and minimum size of an item (thanks to Lukáš Zapletal)
+- Various code cleanup
+- Fix keybinding handling (conflict with mutter in keyboard grabbing)
+- Ability to stop tracking changes when disabling extension
+- Rewrite of gpaste-settings
 
 NEW in 2.1 (01/12/2011)
 =============
