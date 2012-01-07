@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-12-16 11:12+0100\n"
+"POT-Creation-Date: 2012-01-07 11:49+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -68,53 +68,63 @@ msgstr "Erreur lors de la sauvegarde de l'image: %s\n"
 msgid "Error while loading pixbuf: %s\n"
 msgstr "Erreur lors du chargement de l'image: %s\n"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:128
+#: ../src/gpaste-settings/gpaste-settings.vala:148
 #: ../src/applets/gnome-shell/extension.js:117
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Préférences du démon GPaste"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:137
-msgid "Max history size: "
-msgstr "Taille maximale de l'historique : "
-
-#: ../src/gpaste-settings/gpaste-settings.vala:138
-msgid "Max displayed history size: "
-msgstr "Taille maximale de l'historique affiché : "
-
-#: ../src/gpaste-settings/gpaste-settings.vala:139
-msgid "Max element size when displaying: "
-msgstr "Taille maximale d'un élément quand on l'affiche : "
-
-#: ../src/gpaste-settings/gpaste-settings.vala:140
-msgid "Keyboard shortcut to display the history: "
-msgstr "Raccourcis clavier pour afficher l'historique : "
-
-#: ../src/gpaste-settings/gpaste-settings.vala:152
-msgid "_Primary selection affects history"
-msgstr "La selection _primaire affecte l'historique"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:157
-msgid "_Synchronize clipboard with primary selection"
-msgstr "_Synchroniser le presse-papier avec la séléction primaire"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:162
+#: ../src/gpaste-settings/gpaste-settings.vala:164
 msgid "_Track clipboard changes"
 msgstr "Suivre les changemen_ts du presse-papier"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:167
+#: ../src/gpaste-settings/gpaste-settings.vala:171
 msgid "Sync the daemon state with the _extension's one"
 msgstr "Synchroniser l'état du démon avec celui de l'_extension"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:172
+#: ../src/gpaste-settings/gpaste-settings.vala:180
+msgid "_Primary selection affects history"
+msgstr "La selection _primaire affecte l'historique"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:187
+msgid "_Synchronize clipboard with primary selection"
+msgstr "_Synchroniser le presse-papier avec la séléction primaire"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:196
 msgid "_Save history"
 msgstr "Sauvegarder l'historique"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:177
+#: ../src/gpaste-settings/gpaste-settings.vala:203
 msgid "_Trim items"
 msgstr "_Tronquer les éléments (éliminer les espaces au début et à la fin)"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:375
+#: ../src/gpaste-settings/gpaste-settings.vala:212
+msgid "Max history size: "
+msgstr "Taille maximale de l'historique : "
+
+#: ../src/gpaste-settings/gpaste-settings.vala:223
+msgid "Max displayed history size: "
+msgstr "Taille maximale de l'historique affiché : "
+
+#: ../src/gpaste-settings/gpaste-settings.vala:234
+msgid "Max element size when displaying: "
+msgstr "Taille maximale d'un élément quand on l'affiche : "
+
+#: ../src/gpaste-settings/gpaste-settings.vala:245
+#,
+msgid "Min text item length: "
+msgstr "Taille minimale d'un élément textuel"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:256
+#,
+msgid "Max text item length: "
+msgstr "Taille maximale d'un élément textuel"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:267
+msgid "Keyboard shortcut to display the history: "
+msgstr "Raccourcis clavier pour afficher l'historique : "
+
+#: ../src/gpaste-settings/gpaste-settings.vala:456
 #: ../src/applets/legacy/gpaste-applet.vala:215
 #, c-format
 msgid "Fail to register the gtk application.\n"

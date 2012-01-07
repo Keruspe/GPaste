@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-12-16 11:12+0100\n"
+"POT-Creation-Date: 2012-01-07 11:49+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -68,54 +68,64 @@ msgstr ""
 msgid "Error while loading pixbuf: %s\n"
 msgstr ""
 
-#: ../src/gpaste-settings/gpaste-settings.vala:128
+#: ../src/gpaste-settings/gpaste-settings.vala:148
 #: ../src/applets/gnome-shell/extension.js:117
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Ajustes del servicio GPaste"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:137
+#: ../src/gpaste-settings/gpaste-settings.vala:164
+msgid "_Track clipboard changes"
+msgstr "Seguimiento de cambios en el portapapeles"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:171
+msgid "Sync the daemon state with the _extension's one"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.vala:180
+msgid "_Primary selection affects history"
+msgstr "Selección _principal afecta al historial"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:187
+msgid "_Synchronize clipboard with primary selection"
+msgstr "_Sincronizar el portapapeles con selección principal"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:196
+msgid "_Save history"
+msgstr "_Guardar historial"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:203
+msgid "_Trim items"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.vala:212
 msgid "Max history size: "
 msgstr "Tamaño máximo del historial: "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:138
+#: ../src/gpaste-settings/gpaste-settings.vala:223
 #, fuzzy
 msgid "Max displayed history size: "
 msgstr "Tamaño máximo del historial: "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:139
+#: ../src/gpaste-settings/gpaste-settings.vala:234
 msgid "Max element size when displaying: "
 msgstr "Tamaño máximo de los elementos al visualizarlos: "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:140
+#: ../src/gpaste-settings/gpaste-settings.vala:245
+#, fuzzy
+msgid "Min text item length: "
+msgstr "Tamaño máximo del historial"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:256
+#, fuzzy
+msgid "Max text item length: "
+msgstr "Tamaño máximo del historial"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:267
 msgid "Keyboard shortcut to display the history: "
 msgstr "Atajo de teclado para mostrar el historial: "
 
-#: ../src/gpaste-settings/gpaste-settings.vala:152
-msgid "_Primary selection affects history"
-msgstr "Selección _principal afecta al historial"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:157
-msgid "_Synchronize clipboard with primary selection"
-msgstr "_Sincronizar el portapapeles con selección principal"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:162
-msgid "_Track clipboard changes"
-msgstr "Seguimiento de cambios en el portapapeles"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:167
-msgid "Sync the daemon state with the _extension's one"
-msgstr ""
-
-#: ../src/gpaste-settings/gpaste-settings.vala:172
-msgid "_Save history"
-msgstr "_Guardar historial"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:177
-msgid "_Trim items"
-msgstr ""
-
-#: ../src/gpaste-settings/gpaste-settings.vala:375
+#: ../src/gpaste-settings/gpaste-settings.vala:456
 #: ../src/applets/legacy/gpaste-applet.vala:215
 #, c-format
 msgid "Fail to register the gtk application.\n"

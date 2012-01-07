@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2011-12-16 11:12+0100\n"
+"POT-Creation-Date: 2012-01-07 11:49+0100\n"
 "PO-Revision-Date: 2011-11-05 18:28+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -69,54 +69,64 @@ msgstr "Pixbufin tallennus epäonnistui: %s\n"
 msgid "Error while loading pixbuf: %s\n"
 msgstr "Pixbufin lataus epäonnistui: %s\n"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:128
+#: ../src/gpaste-settings/gpaste-settings.vala:148
 #: ../src/applets/gnome-shell/extension.js:117
 #: ../data/gpaste-settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "GPaste palvelun asetukset"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:137
+#: ../src/gpaste-settings/gpaste-settings.vala:164
+msgid "_Track clipboard changes"
+msgstr "_Pidä kirjaa leikepöydän tapahtumista"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:171
+msgid "Sync the daemon state with the _extension's one"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.vala:180
+msgid "_Primary selection affects history"
+msgstr "_Maalaminen vaikuttaa historiaan"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:187
+msgid "_Synchronize clipboard with primary selection"
+msgstr "_Synkronoi leikepöytä ja maalaaminen"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:196
+msgid "_Save history"
+msgstr "_Tallenna historia"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:203
+msgid "_Trim items"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.vala:212
 msgid "Max history size: "
 msgstr "Historian suurin koko:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:138
+#: ../src/gpaste-settings/gpaste-settings.vala:223
 #, fuzzy
 msgid "Max displayed history size: "
 msgstr "Historian suurin koko:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:139
+#: ../src/gpaste-settings/gpaste-settings.vala:234
 msgid "Max element size when displaying: "
 msgstr "Suurin koko elementtejä näytettäessä:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:140
+#: ../src/gpaste-settings/gpaste-settings.vala:245
+#, fuzzy
+msgid "Min text item length: "
+msgstr "Historian suurin koko"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:256
+#, fuzzy
+msgid "Max text item length: "
+msgstr "Historian suurin koko"
+
+#: ../src/gpaste-settings/gpaste-settings.vala:267
 msgid "Keyboard shortcut to display the history: "
 msgstr "Pikanäppäin historian avaamiseksi:"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:152
-msgid "_Primary selection affects history"
-msgstr "_Maalaminen vaikuttaa historiaan"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:157
-msgid "_Synchronize clipboard with primary selection"
-msgstr "_Synkronoi leikepöytä ja maalaaminen"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:162
-msgid "_Track clipboard changes"
-msgstr "_Pidä kirjaa leikepöydän tapahtumista"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:167
-msgid "Sync the daemon state with the _extension's one"
-msgstr ""
-
-#: ../src/gpaste-settings/gpaste-settings.vala:172
-msgid "_Save history"
-msgstr "_Tallenna historia"
-
-#: ../src/gpaste-settings/gpaste-settings.vala:177
-msgid "_Trim items"
-msgstr ""
-
-#: ../src/gpaste-settings/gpaste-settings.vala:375
+#: ../src/gpaste-settings/gpaste-settings.vala:456
 #: ../src/applets/legacy/gpaste-applet.vala:215
 #, c-format
 msgid "Fail to register the gtk application.\n"
