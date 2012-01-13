@@ -246,7 +246,8 @@ static void
 g_paste_daemon_track (GPasteDaemon          *self,
                       GDBusConnection       *connection,
                       GDBusMethodInvocation *invocation,
-                      GVariant              *parameters)
+                      GVariant              *parameters,
+                      gpointer              *data)
 {
     GVariantIter parameters_iter;
 
@@ -258,7 +259,7 @@ g_paste_daemon_track (GPasteDaemon          *self,
     g_variant_unref (variant);
 
     g_paste_settings_set_tracking_state (self->priv->settings, tracking_state);
-    g_paste_daemon_tracking (NULL, tracking_state, self);
+    g_paste_daemon_tracking (NULL, tracking_state, data);
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
@@ -266,10 +267,11 @@ static void
 g_paste_daemon_on_extension_state_changed (GPasteDaemon          *self,
                                            GDBusConnection       *connection,
                                            GDBusMethodInvocation *invocation,
-                                           GVariant              *parameters)
+                                           GVariant              *parameters,
+                                           gpointer              *data)
 {
     if (g_paste_settings_get_track_extension_state (self->priv->settings))
-        g_paste_daemon_track (self, connection, invocation, parameters);
+        g_paste_daemon_track (self, connection, invocation, parameters, data);
 }
 
 static void
@@ -309,9 +311,9 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
     else if (g_strcmp0 (method_name, "Empty") == 0)
         g_paste_daemon_empty (self, connection, invocation);
     else if (g_strcmp0 (method_name, "Track") == 0)
-        g_paste_daemon_track (self, connection, invocation, parameters);
+        g_paste_daemon_track (self, connection, invocation, parameters, data);
     else if (g_strcmp0 (method_name, "OnExtensionStateChanged") == 0)
-        g_paste_daemon_on_extension_state_changed (self, connection, invocation, parameters);
+        g_paste_daemon_on_extension_state_changed (self, connection, invocation, parameters, data);
     else if (g_strcmp0 (method_name, "Reexecute") == 0)
         g_paste_daemon_reexecute (self, connection, invocation);
 
