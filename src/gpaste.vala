@@ -66,12 +66,16 @@ namespace GPaste {
                 stdout.printf(_("%s help: display this help\n"), caller);
             }
 
-            private void history(bool raw) throws GLib.IOError {
+            private void history(bool raw = false, bool zero = false) throws GLib.IOError {
                 var history = this.gpaste.get_history();
                 for (int i = 0 ; i < history.length ; ++i) {
                     if (!raw)
                         stdout.printf("%d: ", i);
-                    stdout.printf("%s\n", history[i]);
+                    stdout.printf("%s", history[i]);
+                    if (zero)
+                        stdout.putc('\0');
+                    else
+                        stdout.putc('\n');
                 }
             }
 
@@ -95,7 +99,7 @@ namespace GPaste {
                     } else {
                         switch (args.length) {
                         case 1:
-                            app.history(false);
+                            app.history();
                             break;
                         case 2:
                             switch (args[1]) {
@@ -152,11 +156,15 @@ namespace GPaste {
                                 break;
                             case "h":
                             case "history":
-                                app.history(false);
+                                app.history();
                                 break;
                             case "rh":
                             case "raw-history":
                                 app.history(true);
+                                break;
+                            case "zh":
+                            case "zero-history":
+                                app.history (false, true);
                                 break;
                             default:
                                 app.usage(args[0]);
