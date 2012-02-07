@@ -187,8 +187,8 @@ const GPasteIndicator = new Lang.Class({
 
 let _indicator;
 
-function init(metadata) {
-    Gettext.bindtextdomain('gpaste', metadata.localedir);
+function init(extension) {
+    Gettext.bindtextdomain('gpaste', extension.metadata.localedir);
     StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
     Panel.STANDARD_STATUS_AREA_ORDER.unshift('gpaste');
 }
