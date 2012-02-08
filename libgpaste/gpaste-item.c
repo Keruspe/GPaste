@@ -17,7 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
 #include "gpaste-item-private.h"
 
 #include <glib/gi18n-lib.h>
@@ -44,7 +43,7 @@ struct _GPasteItemPrivate
  *
  * Returns: read-only string containing the value
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_item_get_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
@@ -60,7 +59,7 @@ g_paste_item_get_value (const GPasteItem *self)
  *
  * Returns: read-only display string
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_item_get_display_string (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
@@ -77,7 +76,7 @@ g_paste_item_get_display_string (const GPasteItem *self)
  *
  * Returns: true if equals, false otherwise
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_item_equals (const GPasteItem *self,
                      const GPasteItem *other)
 {
@@ -93,7 +92,7 @@ g_paste_item_equals (const GPasteItem *self,
  * Returns: read-only string containing the kind of GPasteItem
  *          can be "Text", "Uris" or "Image"
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_item_get_kind (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
@@ -205,7 +204,7 @@ _g_paste_text_item_new (GType        type,
  * Returns: a newly allocated GPasteTextItem
  *          free it with g_object_unref
  */
-GPasteTextItem *
+G_PASTE_VISIBLE GPasteTextItem *
 g_paste_text_item_new (const gchar *text)
 {
     return G_PASTE_TEXT_ITEM (_g_paste_text_item_new (G_PASTE_TYPE_TEXT_ITEM, text));
@@ -230,7 +229,7 @@ struct _GPasteUrisItemPrivate
  *
  * Returns: (transfer none): read-only array of read-only uris (strings)
  */
-const gchar * const *
+G_PASTE_VISIBLE const gchar * const *
 g_paste_uris_item_get_uris (const GPasteUrisItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
@@ -293,7 +292,7 @@ g_paste_uris_item_init (GPasteUrisItem *self)
  * Returns: a newly allocated GPasteUrisItem
  *          free it with g_object_unref
  */
-GPasteUrisItem *
+G_PASTE_VISIBLE GPasteUrisItem *
 g_paste_uris_item_new (const gchar *uris)
 {
     GPasteItem *g_paste_item = _g_paste_text_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
@@ -366,7 +365,7 @@ struct _GPasteImageItemPrivate
  *
  * Returns: read-only string representatig the SHA256 checksum of the image
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_image_item_get_checksum (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
@@ -382,7 +381,7 @@ g_paste_image_item_get_checksum (const GPasteImageItem *self)
  *
  * Returns: read-only GDateTime containing the image's creation date
  */
-const GDateTime *
+G_PASTE_VISIBLE const GDateTime *
 g_paste_image_item_get_date (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
@@ -398,7 +397,7 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
  *
  * Returns: read-only GdkPixbuf of the image
  */
-const GdkPixbuf *
+G_PASTE_VISIBLE const GdkPixbuf *
 g_paste_image_item_get_image (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
@@ -508,7 +507,7 @@ _g_paste_image_item_new (const gchar *path,
  * Returns: a newly allocated GPasteImageItem
  *          free it with g_object_unref
  */
-GPasteImageItem *
+G_PASTE_VISIBLE GPasteImageItem *
 g_paste_image_item_new (GdkPixbuf *img)
 {
     gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
@@ -550,7 +549,7 @@ g_paste_image_item_new (GdkPixbuf *img)
  * Returns: a newly allocated GPasteImageItem
  *          free it with g_object_unref
  */
-GPasteImageItem *
+G_PASTE_VISIBLE GPasteImageItem *
 g_paste_image_item_new_from_file (const gchar *path,
                                   GDateTime   *date)
 {

@@ -17,7 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
 #include "gpaste-history-private.h"
 
 #include <glib/gi18n-lib.h>
@@ -48,10 +47,10 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 static GSList *
 _g_paste_history_remove (GPasteHistory *self,
-                         GSList        *link,
+                         GSList        *elem,
                          gboolean       remove_leftovers)
 {
-    GPasteItem *item = link->data;
+    GPasteItem *item = elem->data;
 
     if (remove_leftovers && G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -64,7 +63,7 @@ _g_paste_history_remove (GPasteHistory *self,
 
     g_object_unref (item);
     return g_slist_delete_link (self->priv->history,
-                                link);
+                                elem);
 }
 
 /**
@@ -76,7 +75,7 @@ _g_paste_history_remove (GPasteHistory *self,
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_history_add (GPasteHistory *self,
                      GPasteItem    *item)
 {
@@ -126,22 +125,22 @@ g_paste_history_add (GPasteHistory *self,
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_history_remove (GPasteHistory *self,
-                        guint          index)
+                        guint          pos)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = self->priv;
     GSList *history = priv->history;
 
-    g_return_if_fail (index < g_slist_length (history));
+    g_return_if_fail (pos < g_slist_length (history));
 
-    for (guint i = 0; i < index; ++i)
+    for (guint i = 0; i < pos; ++i)
         history = g_slist_next (history);
     priv->history = _g_paste_history_remove (self, history, TRUE);
 
-    if (index == 0)
+    if (pos == 0)
         g_paste_history_select (self, 0);
 
     g_signal_emit (self,
@@ -158,17 +157,17 @@ g_paste_history_remove (GPasteHistory *self,
  *
  * Returns: the read-only value of the GPasteItem
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_history_get_element_value (GPasteHistory *self,
-                                   guint          index)
+                                   guint          pos)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
     GSList *history = self->priv->history;
 
-    g_return_val_if_fail (index < g_slist_length (history), NULL);
+    g_return_val_if_fail (pos < g_slist_length (history), NULL);
 
-    return g_paste_item_get_value (G_PASTE_ITEM (g_slist_nth_data (history, index)));
+    return g_paste_item_get_value (G_PASTE_ITEM (g_slist_nth_data (history, pos)));
 }
 
 /**
@@ -180,20 +179,20 @@ g_paste_history_get_element_value (GPasteHistory *self,
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_history_select (GPasteHistory *self,
-                        guint          index)
+                        guint          pos)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     GSList *history = self->priv->history;
 
-    g_return_if_fail (index < g_slist_length (history));
+    g_return_if_fail (pos < g_slist_length (history));
 
     g_signal_emit (self,
                    signals[SELECTED],
                    0, /* detail */
-                   g_slist_nth_data (history, index));
+                   g_slist_nth_data (history, pos));
 }
 
 /**
@@ -204,7 +203,7 @@ g_paste_history_select (GPasteHistory *self,
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_history_empty (GPasteHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
@@ -228,7 +227,7 @@ g_paste_history_empty (GPasteHistory *self)
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_history_save (GPasteHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
@@ -312,7 +311,7 @@ out:
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_history_load (GPasteHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
@@ -456,7 +455,7 @@ g_paste_history_init (GPasteHistory *self)
  *
  * Returns: (element-type GPasteItem) (transfer none): The inner history
  */
-GSList *
+G_PASTE_VISIBLE GSList *
 g_paste_history_get_history (GPasteHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
@@ -473,7 +472,7 @@ g_paste_history_get_history (GPasteHistory *self)
  * Returns: a newly allocated GPasteHistory
  *          free it with g_object_unref
  */
-GPasteHistory *
+G_PASTE_VISIBLE GPasteHistory *
 g_paste_history_new (GPasteSettings *settings)
 {
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);

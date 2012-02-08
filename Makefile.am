@@ -140,15 +140,9 @@ endif
 
 # CFLAGS
 
-VALA_CFLAGS = \
-	-Wno-missing-field-initializers \
-	-Wno-unused-parameter \
-	-Wno-unused-variable \
-	-Wno-unused-but-set-variable
-
 AM_CFLAGS = \
 	-I$(top_srcdir)/libgpaste \
-	-DGPASTE_COMPILATION \
+	-DG_PASTE_COMPILATION \
 	-D__G_DEPRECATED_THREAD_H__ \
 	-DLOCALEDIR=\"${localedir}\" \
 	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
@@ -156,9 +150,15 @@ AM_CFLAGS = \
 	$(GOBJECT_CFLAGS) \
 	$(GIO_CFLAGS)
 
+VALA_CFLAGS = \
+	-Wno-unused-parameter \
+	-Wno-unused-but-set-variable \
+	-Wno-missing-field-initializers \
+	-Wno-unused-but-set-variable
+
 bin_gpaste_CFLAGS = \
-	$(VALA_CFLAGS) \
-	$(AM_CFLAGS)
+	$(AM_CFLAGS) \
+	$(VALA_CFLAGS)
 
 bin_gpasted_CFLAGS = \
 	$(GDK_CFLAGS) \
@@ -166,15 +166,15 @@ bin_gpasted_CFLAGS = \
 	$(AM_CFLAGS)
 
 bin_gpaste_applet_CFLAGS = \
-	$(VALA_CFLAGS) \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
-	$(AM_CFLAGS)
+	$(AM_CFLAGS) \
+	$(VALA_CFLAGS)
 
 bin_gpaste_settings_CFLAGS = \
-	$(VALA_CFLAGS) \
 	$(GTK_CFLAGS) \
-	$(AM_CFLAGS)
+	$(AM_CFLAGS) \
+	$(VALA_CFLAGS)
 
 libgpaste_libgpaste_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
@@ -324,7 +324,7 @@ gi/.tmp:
 	@ $(MKDIR_P) gi && touch gi/.tmp
 gi/GPaste-1.0.gir: libgpaste/libgpaste.la gi/.tmp
 gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0 libxml2-2.0
-gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DGPASTE_COMPILATION -I$(srcdir)/libgpaste
+gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION -I$(srcdir)/libgpaste
 gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
 gi_GPaste_1_0_gir_FILES = $(introspection_sources)

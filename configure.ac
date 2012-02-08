@@ -48,8 +48,44 @@ CC_CHECK_CFLAGS_APPEND([ \
                          -pedantic \
                          -DANOTHER_BRICK_IN_THE \
                          -Wall \
+                         -W \
                          -Wextra \
+                         -Wvla \
+                         -Wundef \
+                         -Wformat=2 \
+                         -Wlogical-op \
+                         -Wsign-compare \
+                         -Wformat-security \
+                         -Wmissing-include-dirs \
+                         -Wformat-nonliteral \
+                         -Wold-style-definition \
+                         -Wpointer-arith \
+                         -Winit-self \
+                         -Wfloat-equal \
+                         -Wmissing-prototypes \
+                         -Wstrict-prototypes \
+                         -Wredundant-decls \
+                         -Wmissing-declarations \
+                         -Wmissing-noreturn \
+                         -Wshadow \
+                         -Wendif-labels \
+                         -Wcast-align \
+                         -Wstrict-aliasing=2 \
+                         -Wwrite-strings \
+                         -Werror=overflow \
+                         -Wp,-D_FORTIFY_SOURCE=2 \
+                         -ffast-math \
+                         -fno-common \
+                         -fdiagnostics-show-option \
+                         -fno-strict-aliasing \
+                         -fvisibility=hidden \
+                         -ffunction-sections \
+                         -fdata-sections \
+                         -Wl,--as-needed \
+                         -Wl,--gc-sections \
                        ])
+
+AC_DEFINE_UNQUOTED([G_PASTE_VISIBLE], [__attribute__((visibility("default")))], [Export symbol])
 
 GOBJECT_INTROSPECTION_REQUIRE([1.30.0])
 AM_PROG_VALAC([0.14.0])

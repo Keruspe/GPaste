@@ -95,7 +95,7 @@ g_paste_keybinder_activate (GPasteKeybinder *self)
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_keybinder_unbind (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
@@ -115,7 +115,7 @@ g_paste_keybinder_unbind (GPasteKeybinder *self)
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_keybinder_rebind (GPasteKeybinder *self,
                           const gchar     *binding)
 {
@@ -187,7 +187,7 @@ g_paste_keybinder_init (GPasteKeybinder *self)
  * Returns: a newly allocated GPasteKeybinder
  *          free it with g_object_unref
  */
-GPasteKeybinder *
+G_PASTE_VISIBLE GPasteKeybinder *
 g_paste_keybinder_new (const gchar *binding)
 {
     GPasteKeybinder *self = g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);

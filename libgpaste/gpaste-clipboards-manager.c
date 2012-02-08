@@ -39,7 +39,7 @@ struct _GPasteClipboardsManagerPrivate
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
                                           GPasteClipboard         *clipboard)
 {
@@ -162,7 +162,7 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 {
     g_timeout_add_seconds (1, g_paste_clipboards_manager_check_clipboards, self);
@@ -177,7 +177,7 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
                                    GPasteItem              *item)
 {
@@ -253,7 +253,7 @@ on_item_selected (GPasteClipboardsManager *self,
  * Returns: a newly allocated GPasteClipboardsManager
  *          free it with g_object_unref
  */
-GPasteClipboardsManager *
+G_PASTE_VISIBLE GPasteClipboardsManager *
 g_paste_clipboards_manager_new (GPasteHistory  *history,
                                 GPasteSettings *settings)
 {

@@ -43,7 +43,7 @@ rebind (GPasteSettings *settings G_GNUC_UNUSED,
 }
 
 static void
-reexec (GPasteDaemon *daemon G_GNUC_UNUSED,
+reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
         gpointer      user_data G_GNUC_UNUSED)
 {
     g_main_loop_quit (main_loop);
@@ -99,7 +99,7 @@ main (int argc, char *argv[])
     GPasteKeybinder *keybinder = g_paste_keybinder_new (g_paste_settings_get_keyboard_shortcut (settings));
     GPasteHistory *history = g_paste_history_new (settings);
     GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
-    GPasteDaemon *daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
+    GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
@@ -107,7 +107,7 @@ main (int argc, char *argv[])
                       "rebind",
                       G_CALLBACK (rebind),
                       keybinder);
-    g_signal_connect (G_OBJECT (daemon),
+    g_signal_connect (G_OBJECT (g_paste_daemon),
                       "reexecute-self",
                       G_CALLBACK (reexec),
                       NULL); /* user_data */
@@ -134,14 +134,14 @@ main (int argc, char *argv[])
                                      on_bus_acquired, 
                                      NULL, /* on_name_acquired */
                                      on_name_lost,
-                                     g_object_ref (daemon),
+                                     g_object_ref (g_paste_daemon),
                                      g_object_unref);
 
     g_main_loop_run (main_loop);
 
     g_paste_keybinder_unbind (keybinder);
     g_object_unref (keybinder);
-    g_object_unref (daemon);
+    g_object_unref (g_paste_daemon);
     g_bus_unown_name (owner_id);
     g_main_loop_unref (main_loop);
 

@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__G_PASTE_H_INSIDE__) && !defined (GPASTE_COMPILATION)
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste.h> can be included directly."
 #endif
 
@@ -39,6 +39,10 @@ typedef struct _GPasteKeybinder GPasteKeybinder;
 typedef struct _GPasteKeybinderClass GPasteKeybinderClass;
 typedef struct _GPasteKeybinderPrivate GPasteKeybinderPrivate;
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+G_PASTE_VISIBLE
+#endif
 GType g_paste_keybinder_get_type (void);
 void g_paste_keybinder_unbind (GPasteKeybinder *self);
 void g_paste_keybinder_rebind (GPasteKeybinder *self,

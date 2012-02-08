@@ -44,7 +44,7 @@ static GdkAtom g_paste_clipboard_copy_files_target;
  *
  * Returns: (transfer none): the GdkAtom representing the target (Primary, Clipboard, ...)
  */
-GdkAtom
+G_PASTE_VISIBLE GdkAtom
 g_paste_clipboard_get_target (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
@@ -60,7 +60,7 @@ g_paste_clipboard_get_target (const GPasteClipboard *self)
  *
  * Returns: (transfer none): the GtkClipboard used in the GPasteClipboard
  */
-GtkClipboard *
+G_PASTE_VISIBLE GtkClipboard *
 g_paste_clipboard_get_real (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
@@ -76,7 +76,7 @@ g_paste_clipboard_get_real (const GPasteClipboard *self)
  *
  * Returns: read-only string containing the text or NULL
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_clipboard_get_text (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
@@ -107,7 +107,7 @@ _g_paste_clipboard_set_text (GPasteClipboard *self,
  *
  * Returns: The new text if it was modified, or NULL
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_clipboard_set_text (GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
@@ -157,7 +157,7 @@ ignore:
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_select_text (GPasteClipboard *self,
                                const gchar     *text)
 {
@@ -260,7 +260,7 @@ _g_paste_clipboard_select_uris (GPasteClipboard      *self,
  *
  * Returns: read-only string containing the checksum of the image stored in the GPasteClipboard or NULL
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_clipboard_get_image_checksum (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
@@ -306,7 +306,7 @@ _g_paste_clipboard_select_image (GPasteClipboard *self,
  *
  * Returns: (transfer full): The new image if it was modified, or NULL
  */
-GdkPixbuf *
+G_PASTE_VISIBLE GdkPixbuf *
 g_paste_clipboard_set_image (GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
@@ -342,7 +342,7 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_select_item (GPasteClipboard  *self,
                                const GPasteItem *item)
 {
@@ -423,7 +423,7 @@ g_paste_clipboard_init (GPasteClipboard *self)
  * Returns: a newly allocated GPasteClipboard
  *          free it with g_object_unref
  */
-GPasteClipboard *
+G_PASTE_VISIBLE GPasteClipboard *
 g_paste_clipboard_new (GdkAtom         target,
                        GPasteSettings *settings)
 {

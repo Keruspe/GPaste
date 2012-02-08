@@ -81,7 +81,7 @@ g_paste_settings_set_primary_to_history_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the PRIMARY_TO_HISTORY_KEY setting
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_settings_get_primary_to_history (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
@@ -107,7 +107,7 @@ g_paste_settings_set_max_history_size_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the MAX_HISTORY_SIZE_KEY setting
  */
-guint
+G_PASTE_VISIBLE guint
 g_paste_settings_get_max_history_size (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
@@ -133,7 +133,7 @@ g_paste_settings_set_max_displayed_history_size_from_dconf (GPasteSettings *self
  *
  * Returns: the value of the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
  */
-guint
+G_PASTE_VISIBLE guint
 g_paste_settings_get_max_displayed_history_size (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
@@ -159,7 +159,7 @@ g_paste_settings_set_min_text_item_size_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the MIN_TEXT_ITEM_SIZE_KEY setting
  */
-guint
+G_PASTE_VISIBLE guint
 g_paste_settings_get_min_text_item_size (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
@@ -185,7 +185,7 @@ g_paste_settings_set_max_text_item_size_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the MAX_TEXT_ITEM_SIZE_KEY setting
  */
-guint
+G_PASTE_VISIBLE guint
 g_paste_settings_get_max_text_item_size (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
@@ -211,7 +211,7 @@ g_paste_settings_set_synchronize_clipboards_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the SYNCHRONIZE_CLIPBOARDS_KEY setting
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_settings_get_synchronize_clipboards (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
@@ -238,7 +238,7 @@ g_paste_settings_set_track_changes_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_settings_set_tracking_state (GPasteSettings *self,
                                      gboolean        value)
 {
@@ -258,7 +258,7 @@ g_paste_settings_set_tracking_state (GPasteSettings *self,
  *
  * Returns: the value of the TRACK_CHANGES_KEY setting
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_settings_get_track_changes (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
@@ -284,7 +284,7 @@ g_paste_settings_set_track_extension_state_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the TRACK_EXTENTION_STATE_KEY setting
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_settings_get_track_extension_state (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
@@ -310,7 +310,7 @@ g_paste_settings_set_save_history_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the SAVE_HISTORY_KEY setting
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_settings_get_save_history (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
@@ -336,7 +336,7 @@ g_paste_settings_set_trim_items_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the TRIM_ITEMS_KEY setting
  */
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_settings_get_trim_items (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
@@ -362,7 +362,7 @@ g_paste_settings_set_keyboard_shortcut_from_dconf (GPasteSettings *self)
  *
  * Returns: the value of the KEYBOARD_SHORTCUT_KEY setting
  */
-const gchar *
+G_PASTE_VISIBLE const gchar *
 g_paste_settings_get_keyboard_shortcut (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
@@ -470,7 +470,7 @@ g_paste_settings_settings_changed (GSettings   *settings,
  * Returns: a newly allocated GPasteSettings
  *          free it with g_object_unref
  */
-GPasteSettings *
+G_PASTE_VISIBLE GPasteSettings *
 g_paste_settings_new (void)
 {
     GPasteSettings *self = g_object_new (G_PASTE_TYPE_SETTINGS, NULL);

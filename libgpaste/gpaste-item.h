@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__G_PASTE_H_INSIDE__) && !defined (GPASTE_COMPILATION)
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste.h> can be included directly."
 #endif
 
@@ -42,6 +42,10 @@ typedef struct _GPasteItem GPasteItem;
 typedef struct _GPasteItemClass GPasteItemClass;
 typedef struct _GPasteItemPrivate GPasteItemPrivate;
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+G_PASTE_VISIBLE
+#endif
 GType g_paste_item_get_type (void);
 const gchar *g_paste_item_get_value (const GPasteItem *self);
 const gchar *g_paste_item_get_display_string (const GPasteItem *self);
@@ -61,7 +65,10 @@ const gchar *g_paste_item_get_kind (const GPasteItem *self);
 typedef struct _GPasteTextItem GPasteTextItem;
 typedef struct _GPasteTextItemClass GPasteTextItemClass;
 
+#ifdef G_PASTE_COMPILATION
+G_PASTE_VISIBLE
 GType g_paste_text_item_get_type (void);
+#endif
 GPasteTextItem *g_paste_text_item_new (const gchar *text);
 
 /* GPaste UrisItem */
@@ -77,7 +84,10 @@ typedef struct _GPasteUrisItem GPasteUrisItem;
 typedef struct _GPasteUrisItemClass GPasteUrisItemClass;
 typedef struct _GPasteUrisItemPrivate GPasteUrisItemPrivate;
 
+#ifdef G_PASTE_COMPILATION
+G_PASTE_VISIBLE
 GType g_paste_uris_item_get_type (void);
+#endif
 GPasteUrisItem *g_paste_uris_item_new (const gchar *uris);
 const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
 
@@ -94,7 +104,10 @@ typedef struct _GPasteImageItem GPasteImageItem;
 typedef struct _GPasteImageItemClass GPasteImageItemClass;
 typedef struct _GPasteImageItemPrivate GPasteImageItemPrivate;
 
+#ifdef G_PASTE_COMPILATION
+G_PASTE_VISIBLE
 GType g_paste_image_item_get_type (void);
+#endif
 GPasteImageItem *g_paste_image_item_new (GdkPixbuf *img);
 GPasteImageItem *g_paste_image_item_new_from_file (const gchar *path,
                                                    GDateTime   *date);

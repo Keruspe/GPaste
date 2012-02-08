@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__G_PASTE_H_INSIDE__) && !defined (GPASTE_COMPILATION)
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste.h> can be included directly."
 #endif
 
@@ -42,6 +42,10 @@ typedef struct _GPasteDaemon GPasteDaemon;
 typedef struct _GPasteDaemonClass GPasteDaemonClass;
 typedef struct _GPasteDaemonPrivate GPasteDaemonPrivate;
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+G_PASTE_VISIBLE
+#endif
 GType g_paste_daemon_get_type (void);
 guint g_paste_daemon_register_object (GPasteDaemon    *self,
                                       GDBusConnection *connection,

@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined (__G_PASTE_H_INSIDE__) && !defined (GPASTE_COMPILATION)
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste.h> can be included directly."
 #endif
 
@@ -39,6 +39,10 @@ typedef struct _GPasteSettings GPasteSettings;
 typedef struct _GPasteSettingsClass GPasteSettingsClass;
 typedef struct _GPasteSettingsPrivate GPasteSettingsPrivate;
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+G_PASTE_VISIBLE
+#endif
 GType g_paste_settings_get_type (void);
 gboolean g_paste_settings_get_primary_to_history (GPasteSettings *self);
 guint g_paste_settings_get_max_history_size (GPasteSettings *self);
