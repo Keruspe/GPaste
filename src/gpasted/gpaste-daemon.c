@@ -355,7 +355,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_free (data);
 }
 
-G_PASTE_VISIBLE guint
+guint
 g_paste_daemon_register_object (GPasteDaemon    *self,
                                 GDBusConnection *connection,
                                 const gchar     *path,
@@ -491,7 +491,7 @@ g_paste_daemon_init (GPasteDaemon *self)
  * Returns: a newly allocated GPasteDaemon
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteDaemon *
+GPasteDaemon *
 g_paste_daemon_new (GPasteHistory           *history,
                     GPasteSettings          *settings,
                     GPasteClipboardsManager *clipboards_manager,
