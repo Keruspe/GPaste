@@ -81,9 +81,12 @@ CC_CHECK_CFLAGS_APPEND([ \
                          -fvisibility=hidden \
                          -ffunction-sections \
                          -fdata-sections \
-                         -Wl,--as-needed \
-                         -Wl,--gc-sections \
                        ])
+
+CC_CHECK_LDFLAGS_APPEND([ \
+                          -Wl,--as-needed \
+                          -Wl,--gc-sections \
+                        ])
 
 AC_DEFINE_UNQUOTED([G_PASTE_VISIBLE], [__attribute__((visibility("default")))], [Export symbol])
 

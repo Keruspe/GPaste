@@ -152,7 +152,7 @@ AM_CFLAGS = \
 
 VALA_CFLAGS = \
 	-Wno-unused-parameter \
-	-Wno-unused-but-set-variable \
+	-Wno-unused-variable \
 	-Wno-missing-field-initializers \
 	-Wno-unused-but-set-variable
 
@@ -191,9 +191,6 @@ AM_LIBS = \
 	$(GOBJECT_LIBS) \
 	$(GIO_LIBS)
 
-AM_LDFLAGS = \
-	-Wl,--as-needed
-
 bin_gpaste_LDADD = \
 	$(AM_LIBS)
 
@@ -223,7 +220,6 @@ libgpaste_libgpaste_la_LIBADD = \
 # LDFLAGS
 
 libgpaste_libgpaste_la_LDFLAGS = \
-	$(AM_LDFLAGS) \
 	-version-info $(LIBGPASTE_CURRENT):$(LIBGPASTE_REVISION):$(LIBGPASTE_AGE) \
 	-Wl,--version-script=$(top_srcdir)/libgpaste/libgpaste.sym
 libgpaste_libgpaste_la_DEPENDENCIES = ${top_srcdir}/libgpaste/libgpaste.sym
