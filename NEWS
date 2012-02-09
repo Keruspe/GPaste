@@ -2,6 +2,10 @@ NEW in 2.5 (Not released yet)
 =============
 
 - Reexecute has now a signal: ReexecuteSelf
+- New library to externalize the core: libgpaste written in C with introspection and vapi
+- Various build system cleanup
+- Small bug fixes
+- Port gpasted to libgpaste and rewrite it in C
 
 NEW in 2.2.1 (07/01/2012)
 =============
