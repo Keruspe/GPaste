@@ -4,5 +4,4 @@
     rewrite gpaste in C
     forward "changed" event from GPasteSettings
     port gpaste-settings to libgpaste
-    automake: remove g-i hack
     build: depend on intltool 0.50 to remove _NOMERGE hack
