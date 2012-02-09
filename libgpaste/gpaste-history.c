@@ -426,11 +426,8 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
 
 static gboolean
 g_paste_history_self_changed (GPasteHistory *self,
-                              gpointer       user_data)
+                              gpointer       user_data G_GNUC_UNUSED)
 {
-    /* Silence warning */
-    user_data = user_data;
-
     g_paste_history_save (self);
 
     return TRUE;

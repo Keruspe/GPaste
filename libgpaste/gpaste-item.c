@@ -178,10 +178,8 @@ g_paste_text_item_class_init (GPasteTextItemClass *klass)
 }
 
 static void
-g_paste_text_item_init (GPasteTextItem *self)
+g_paste_text_item_init (GPasteTextItem *self G_GNUC_UNUSED)
 {
-    /* Silence warning */
-    self = self;
 }
 
 static GPasteItem *

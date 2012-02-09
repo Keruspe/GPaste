@@ -173,23 +173,20 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 /* The two following callbacks are for select_uris */
 
 static void
-g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard, gpointer user_data_or_owner)
+g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                        gpointer      user_data_or_owner G_GNUC_UNUSED)
 {
-    /* Silence warnings */
-    clipboard = clipboard;
-    user_data_or_owner = user_data_or_owner;
 }
 
 static void
-g_paste_clipboard_get_clipboard_data (GtkClipboard *clipboard, GtkSelectionData *selection_data, guint info, gpointer user_data_or_owner)
+g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
+                                      GtkSelectionData *selection_data,
+                                      guint             info G_GNUC_UNUSED,
+                                      gpointer          user_data_or_owner)
 {
     g_return_if_fail (G_PASTE_IS_URIS_ITEM (user_data_or_owner));
 
     GPasteUrisItem *item = G_PASTE_URIS_ITEM (user_data_or_owner);
-
-    /* Silence warnings */
-    clipboard = clipboard;
-    info = info;
 
     GdkAtom targets[1] = { gtk_selection_data_get_target (selection_data) };
 

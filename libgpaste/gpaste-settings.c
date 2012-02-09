@@ -416,15 +416,12 @@ g_paste_settings_init (GPasteSettings *self)
 }
 
 static void
-g_paste_settings_settings_changed (GSettings   *settings,
+g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    const gchar *key,
                                    gpointer user_data)
 {
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = self->priv;
-
-    /* Silence warning */
-    settings = settings;
 
     if (g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ) == 0)
         g_paste_settings_set_primary_to_history_from_dconf (self);

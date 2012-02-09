@@ -233,11 +233,8 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 static gboolean
 on_item_selected (GPasteClipboardsManager *self,
                   GPasteItem              *item,
-                  gpointer                 user_data)
+                  gpointer                 user_data G_GNUC_UNUSED)
 {
-    /* silence warning */
-    user_data = user_data;
-
     g_paste_clipboards_manager_select (self, item);
 
     return TRUE;
