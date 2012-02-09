@@ -48,6 +48,9 @@ AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
 
+CC_ATTRIBUTE_UNUSED
+CC_ATTRIBUTE_VISIBILITY([default])
+
 CC_CHECK_CFLAGS_APPEND([ \
                          -pipe \
                          -pedantic \
