@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include "gpaste-daemon.h"
 
 #include <glib/gi18n-lib.h>
 #include <gpaste.h>

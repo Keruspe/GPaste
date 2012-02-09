@@ -24,7 +24,6 @@
 
 #include <gpaste-clipboard.h>
 #include <gpaste-clipboards-manager.h>
-#include <gpaste-daemon.h>
 #include <gpaste-history.h>
 #include <gpaste-item.h>
 #include <gpaste-keybinder.h>

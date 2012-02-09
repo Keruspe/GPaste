@@ -23,13 +23,6 @@ namespace GPaste {
 		public void add_clipboard (GPaste.Clipboard clipboard);
 		public void select (GPaste.Item item);
 	}
-	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_daemon_get_type ()")]
-	public class Daemon : GLib.Object {
-		[CCode (has_construct_function = false)]
-		public Daemon (GPaste.History history, GPaste.Settings settings, GPaste.ClipboardsManager clipboards_manager, GPaste.Keybinder keybinder);
-		public uint register_object (GLib.DBusConnection connection, string path) throws GLib.Error;
-		public signal void reexecute_self ();
-	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_history_get_type ()")]
 	public class History : GLib.Object {
 		[CCode (has_construct_function = false)]
