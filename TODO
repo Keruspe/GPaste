@@ -6,6 +6,7 @@
     multiple histories
     FILO/LIFO
     paste&delete
+    prefs.js
     handle keyboard layout changes
     libgpaste-client + introspection/vapi
     rewrite gpaste in C
