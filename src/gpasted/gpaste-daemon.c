@@ -344,10 +344,10 @@ g_paste_daemon_unregister_object (gpointer user_data)
     GPasteDaemon *self = data[0];
     GPasteDaemonPrivate *priv = self->priv;
 
-    g_signal_handlers_disconnect_by_func (self, (gpointer) g_paste_daemon_reexecute_self, user_data);
-    g_signal_handlers_disconnect_by_func (priv->settings, (gpointer) g_paste_daemon_tracking, user_data);
-    g_signal_handlers_disconnect_by_func (priv->history, (gpointer) g_paste_daemon_changed, user_data);
-    g_signal_handlers_disconnect_by_func (priv->keybinder, (gpointer) g_paste_daemon_toggle_history, user_data);
+    g_signal_handlers_disconnect_by_func (self, G_CALLBACK (g_paste_daemon_reexecute_self), user_data);
+    g_signal_handlers_disconnect_by_func (priv->settings, G_CALLBACK (g_paste_daemon_tracking), user_data);
+    g_signal_handlers_disconnect_by_func (priv->history, G_CALLBACK (g_paste_daemon_changed), user_data);
+    g_signal_handlers_disconnect_by_func (priv->keybinder, G_CALLBACK (g_paste_daemon_toggle_history), user_data);
 
     g_object_unref (self);
     g_object_unref (data[1]);
