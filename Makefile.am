@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,251 +17,77 @@
 
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
-	--enable-applet
-ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
+	--enable-applet \
+	$(NULL)
+ACLOCAL_AMFLAGS  = -I m4 $(ACLOCAL_FLAGS)
 AM_MAKEFLAGS = --no-print-directory
 SUBDIRS = po
 
-LIBGPASTE_CURRENT=0
-LIBGPASTE_REVISION=0
-LIBGPASTE_AGE=0
-
-# Directories
+# Global part
 
 applicationsdir = $(datadir)/applications
+nodist_applications_in_files = $(NULL)
+nodist_applications_DATA = $(NULL)
+
 autostartdir = $(sysconfdir)/xdg/autostart
-gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
+nodist_autostart_in_files = $(NULL)
 
-# Data stuff
-
-gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
-
-nodist_dbusservices_DATA = data/org.gnome.GPaste.service
-
-noinst_DATA = data/completions/_gpaste \
-	      data/completions/gpaste
-
-nodist_man_MANS = man/gpaste.1
-gpaste_1_parts = data/gpaste.1.part
-man/gpaste.1: $(gpaste_1_parts)
-	$(AM_V_GEN) $(MKDIR_P) man && cat $^ > $@
-
-nodist_applications_in_files = data/gpaste-settings.desktop.in
-nodist_applications_DATA = $(nodist_applications_in_files:.desktop.in=.desktop)
-
-nodist_autostart_in_files =
-if ENABLE_APPLET
-gpaste_1_parts += data/gpaste-applet.1.part
-nodist_autostart_in_files += data/gpaste-applet.desktop.in
-endif
-
-if ENABLE_EXTENSION
-dist_gnomeshell_DATA = \
-	src/applets/gnome-shell/extension.js
-nodist_gnomeshell_DATA = src/applets/gnome-shell/metadata.json
-endif
-
-bin_gpasted_headers = \
-	src/gpasted/gpaste-daemon.h \
-	src/gpasted/gpaste-daemon-private.h
-
-libgpaste_libgpaste_la_public_headers = \
-	libgpaste/gpaste.h \
-	libgpaste/gpaste-clipboard.h \
-	libgpaste/gpaste-clipboards-manager.h \
-	libgpaste/gpaste-history.h \
-	libgpaste/gpaste-item.h \
-	libgpaste/gpaste-keybinder.h \
-	libgpaste/gpaste-settings.h
-libgpaste_libgpaste_la_private_headers = \
-	libgpaste/gpaste-clipboard-private.h \
-	libgpaste/gpaste-clipboards-manager-private.h \
-	libgpaste/gpaste-history-private.h \
-	libgpaste/gpaste-item-private.h \
-	libgpaste/gpaste-keybinder-private.h \
-	libgpaste/gpaste-settings-private.h
-pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libgpaste/gpaste.pc
+pkgconfig_DATA = $(NULL)
 
-# Binaries
+bin_PROGRAMS = $(NULL)
+pkglibexec_PROGRAMS = $(NULL)
 
-bin_PROGRAMS = bin/gpaste
-pkglibexec_PROGRAMS = bin/gpasted bin/gpaste-settings
-if ENABLE_APPLET
-pkglibexec_PROGRAMS += bin/gpaste-applet
-endif
-lib_LTLIBRARIES = libgpaste/libgpaste.la
+lib_LTLIBRARIES = $(NULL)
 
-# Sources
-
-bin_gpaste_SOURCES = \
-	src/gpaste.vala
-
-bin_gpasted_SOURCES = \
-	src/gpasted/gpaste-daemon.c \
-	src/gpasted/gpasted.c
-
-bin_gpaste_applet_SOURCES = \
-	src/applets/legacy/gpaste-applet.vala
-
-bin_gpaste_settings_SOURCES = \
-	src/gpaste-settings/gpaste-settings.vala
-
-libgpaste_libgpaste_la_SOURCES = \
-	libgpaste/gpaste-clipboard.c \
-	libgpaste/gpaste-clipboards-manager.c \
-	libgpaste/gpaste-history.c \
-	libgpaste/gpaste-item.c \
-	libgpaste/gpaste-keybinder.c \
-	libgpaste/gpaste-settings.c
-
-# VALAFLAGS
+nodist_man_MANS = $(NULL)
 
 AM_VALAFLAGS = \
 	--vapidir=$(top_srcdir)/vapi \
 	--pkg=config \
 	--pkg=posix \
-	$(GIO_VALAFLAGS)
-
-bin_gpaste_VALAFLAGS = \
-	$(AM_VALAFLAGS)
-
-bin_gpaste_applet_VALAFLAGS = \
-	$(GTK_VALAFLAGS) \
-	$(AM_VALAFLAGS)
-
-bin_gpaste_settings_VALAFLAGS = \
-	$(GTK_VALAFLAGS) \
-	$(AM_VALAFLAGS)
-
-if ENABLE_APPLET
-bin_gpaste_VALAFLAGS += \
-	--define=ENABLE_APPLET
-endif
-
-# CFLAGS
+	$(GIO_VALAFLAGS) \
+	$(NULL)
 
 AM_CFLAGS = \
 	-I$(top_srcdir)/libgpaste \
 	-DG_PASTE_COMPILATION \
 	-D__G_DEPRECATED_THREAD_H__ \
-	-DLOCALEDIR=\"${localedir}\" \
-	-DPKGLIBEXECDIR=\"${pkglibexecdir}\" \
+	-DLOCALEDIR=\"$(localedir)\" \
+	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
 	$(GLIB_CFLAGS) \
 	$(GOBJECT_CFLAGS) \
-	$(GIO_CFLAGS)
+	$(GIO_CFLAGS) \
+	$(NULL)
 
 VALA_CFLAGS = \
 	-Wno-unused-parameter \
 	-Wno-unused-variable \
 	-Wno-missing-field-initializers \
-	-Wno-unused-but-set-variable
-
-bin_gpaste_CFLAGS = \
-	$(AM_CFLAGS) \
-	$(VALA_CFLAGS)
-
-bin_gpasted_CFLAGS = \
-	$(GDK_CFLAGS) \
-	$(GTK_CFLAGS) \
-	$(AM_CFLAGS)
-
-bin_gpaste_applet_CFLAGS = \
-	$(GDK_CFLAGS) \
-	$(GTK_CFLAGS) \
-	$(AM_CFLAGS) \
-	$(VALA_CFLAGS)
-
-bin_gpaste_settings_CFLAGS = \
-	$(GTK_CFLAGS) \
-	$(AM_CFLAGS) \
-	$(VALA_CFLAGS)
-
-libgpaste_libgpaste_la_CFLAGS = \
-	$(GDK_PIXBUF_CFLAGS) \
-	$(GDK_CFLAGS) \
-	$(GTK_CFLAGS) \
-	$(XCB_CFLAGS) \
-	$(XML_CFLAGS) \
-	$(AM_CFLAGS)
-
-# LDADD
+	-Wno-unused-but-set-variable \
+	$(NULL)
 
 AM_LIBS = \
 	$(GLIB_LIBS) \
 	$(GOBJECT_LIBS) \
-	$(GIO_LIBS)
-
-bin_gpaste_LDADD = \
-	$(AM_LIBS)
-
-bin_gpasted_LDADD = \
-	$(GDK_LIBS) \
-	$(GTK_LIBS) \
-	$(AM_LIBS) \
-	libgpaste/libgpaste.la
-
-bin_gpaste_settings_LDADD = \
-	$(GTK_LIBS) \
-	$(AM_LIBS)
-
-bin_gpaste_applet_LDADD = \
-	$(GDK_LIBS) \
-	$(GTK_LIBS) \
-	$(AM_LIBS)
-
-libgpaste_libgpaste_la_LIBADD = \
-	$(GDK_PIXBUF_LIBS) \
-	$(GDK_LIBS) \
-	$(GTK_LIBS) \
-	$(XCB_LIBS) \
-	$(XML_LIBS) \
-	$(AM_LIBS)
-
-# LDFLAGS
-
-libgpaste_libgpaste_la_LDFLAGS = \
-	-version-info $(LIBGPASTE_CURRENT):$(LIBGPASTE_REVISION):$(LIBGPASTE_AGE) \
-	-Wl,--version-script=$(top_srcdir)/libgpaste/libgpaste.sym
-libgpaste_libgpaste_la_DEPENDENCIES = ${top_srcdir}/libgpaste/libgpaste.sym
-
-# Distribution stuff
+	$(GIO_LIBS) \
+	$(NULL)
 
 EXTRA_DIST = \
-	$(noinst_DATA) \
 	autogen.sh \
-	data/org.gnome.GPaste.gschema.xml.in.in \
-	data/org.gnome.GPaste.service.in \
-	data/gpaste-applet.desktop.in.in \
-	data/gpaste-settings.desktop.in.in \
-	data/gpaste.1.part data/gpaste-applet.1.part \
-	src/applets/gnome-shell/metadata.json.in \
-	$(libgpaste_libgpaste_la_private_headers) \
-	$(bin_gpasted_headers) \
-	libgpaste/libgpaste.sym \
-	vapi/config.vapi
+	vapi/config.vapi \
+	$(NULL)
 
 CLEANFILES = \
-	${gpaste_SOURCES:.vala=.c} \
-	${gpasted_SOURCES:.vala=.c} \
-	${gpaste_applet_SOURCES:.vala=.c} \
-	${gpaste_settings_SOURCES:.vala=.c} \
 	$(nodist_applications_in_files) \
 	$(nodist_applications_DATA) \
 	$(nodist_autostart_in_files) \
 	$(nodist_man_MANS) \
-	$(gsettings_SCHEMAS:.xml=.xml.in) \
-	$(gsettings_SCHEMAS) \
-	$(nodist_dbusservices_DATA) \
-	src/applets/gnome-shell/metadata.json \
-	gschemas.compiled
+	$(NULL)
 
 # Special rules
 
 @INTLTOOL_DESKTOP_RULE@
-@INTLTOOL_XML_NOMERGE_RULE@
-@GSETTINGS_RULES@
 
 SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
 .service.in.service:
@@ -273,9 +99,6 @@ SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
 .desktop.in.in.desktop.in:
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 
-gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
-	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
-
 update-po:
 	$(MAKE) -C po $@
 
@@ -283,6 +106,27 @@ release:
 	git commit -asm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)"
 	git tag -sm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" v$(PACKAGE_VERSION)
 	$(MAKE) distcheck
+
+# Specific parts
+
+include libgpaste/libgpaste.mk
+include gi/gi.mk
+include vapi/vapi.mk
+
+include bin/gpasted.mk
+include bin/gpaste.mk
+include bin/gpaste-settings.mk
+include bin/gpaste-applet.mk
+
+include data/gsettings.mk
+include data/dbus.mk
+include data/completions/completions.mk
+
+include man/man.mk
+
+if ENABLE_EXTENSION
+include src/applets/gnome-shell/extension.mk
+endif
 
 # Generate a ChangeLog file from 'git log'
 dist-hook:
@@ -299,48 +143,3 @@ dist-hook:
         else \
                 echo A git clone is required to generate a ChangeLog >&2; \
         fi
-
-# Introspection
-
--include $(INTROSPECTION_MAKEFILE)
-
-INTROSPECTION_GIRS =
-INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --c-include=gpaste.h
-INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
-
-girdir = $(datadir)/gir-1.0
-gir_DATA = $(INTROSPECTION_GIRS)
-
-typelibdir = $(libdir)/girepository-1.0
-typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
-
-introspection_sources = \
-	$(libgpaste_libgpaste_la_SOURCES) \
-	$(libgpaste_libgpaste_la_public_headers) \
-	$(libgpaste_libgpaste_la_private_headers)
-
-gi/GPaste-1.0.gir: libgpaste/libgpaste.la
-gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0 libxml2-2.0
-gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION -I$(srcdir)/libgpaste
-gi_GPaste_1_0_gir_LIBS = libgpaste/libgpaste.la
-gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
-gi_GPaste_1_0_gir_FILES = $(introspection_sources)
-INTROSPECTION_GIRS += gi/GPaste-1.0.gir
-
-CLEANFILES += $(gir_DATA) $(typelib_DATA) gi/.tmp
-
-# Vapi
-
-VAPI_FILES = vapi/gpaste-1.0.vapi
-VAPI_DEPS = vapi/gpaste-1.0.deps
-
-vapidir = $(datadir)/vala/vapi
-dist_vapi_DATA = $(VAPI_FILES) $(VAPI_DEPS)
-
-if ENABLE_VALA
-vapi/gpaste-1.0.vapi: gi/GPaste-1.0.gir
-	@ $(MKDIR_P) vapi
-	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
-
-CLEANFILES += $(VAPI_FILES)
-endif

@@ -51,4 +51,5 @@ libtool
 .libs
 *.la
 *.lo
-gi/
+*.gir
+*.typelib
