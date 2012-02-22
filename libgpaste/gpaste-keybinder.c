@@ -29,12 +29,12 @@ G_DEFINE_TYPE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 
 struct _GPasteKeybinderPrivate
 {
-    gchar *binding;
-    xcb_connection_t *connection;
-    xcb_screen_t *screen;
+    gchar             *binding;
+    xcb_connection_t  *connection;
+    xcb_screen_t      *screen;
     xcb_key_symbols_t *keysyms;
-    xcb_keycode_t *keycodes;
-    guint16 modifiers;
+    xcb_keycode_t     *keycodes;
+    guint16            modifiers;
 };
 
 enum
@@ -120,6 +120,7 @@ g_paste_keybinder_rebind (GPasteKeybinder *self,
                           const gchar     *binding)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (binding != NULL);
 
     GPasteKeybinderPrivate *priv = self->priv;
 
@@ -190,6 +191,8 @@ g_paste_keybinder_init (GPasteKeybinder *self)
 G_PASTE_VISIBLE GPasteKeybinder *
 g_paste_keybinder_new (const gchar *binding)
 {
+    g_return_val_if_fail (binding != NULL, NULL);
+
     GPasteKeybinder *self = g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);
     GPasteKeybinderPrivate *priv = self->priv;
     int connection_screen;

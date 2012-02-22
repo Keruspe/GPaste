@@ -25,8 +25,8 @@ G_DEFINE_TYPE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJEC
 
 struct _GPasteClipboardsManagerPrivate
 {
-    GSList *clipboards;
-    GPasteHistory *history;
+    GSList         *clipboards;
+    GPasteHistory  *history;
     GPasteSettings *settings;
 };
 

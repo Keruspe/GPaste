@@ -205,6 +205,8 @@ _g_paste_text_item_new (GType        type,
 G_PASTE_VISIBLE GPasteTextItem *
 g_paste_text_item_new (const gchar *text)
 {
+    g_return_val_if_fail (text != NULL, NULL);
+
     return G_PASTE_TEXT_ITEM (_g_paste_text_item_new (G_PASTE_TYPE_TEXT_ITEM, text));
 }
 
@@ -293,6 +295,8 @@ g_paste_uris_item_init (GPasteUrisItem *self)
 G_PASTE_VISIBLE GPasteUrisItem *
 g_paste_uris_item_new (const gchar *uris)
 {
+    g_return_val_if_fail (uris != NULL, NULL);
+
     GPasteItem *g_paste_item = _g_paste_text_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
     GPasteUrisItem *self = G_PASTE_URIS_ITEM (g_paste_item);
     GPasteUrisItemPrivate *priv = self->priv;
@@ -350,7 +354,7 @@ G_DEFINE_TYPE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_ITEM)
 
 struct _GPasteImageItemPrivate
 {
-    gchar *checksum;
+    gchar     *checksum;
     GDateTime *date;
     GdkPixbuf *image;
 };
@@ -508,6 +512,8 @@ _g_paste_image_item_new (const gchar *path,
 G_PASTE_VISIBLE GPasteImageItem *
 g_paste_image_item_new (GdkPixbuf *img)
 {
+    g_return_val_if_fail (GDK_IS_PIXBUF (img), NULL);
+
     gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
                                                    (guchar *) gdk_pixbuf_get_pixels (img),
                                                    -1);
@@ -551,8 +557,13 @@ G_PASTE_VISIBLE GPasteImageItem *
 g_paste_image_item_new_from_file (const gchar *path,
                                   GDateTime   *date)
 {
+    g_return_val_if_fail (path != NULL, NULL);
+    g_return_val_if_fail (date != NULL, NULL);
+
     GdkPixbuf *image = gdk_pixbuf_new_from_file (path,
                                                  NULL); /* Error */
+
+    g_return_val_if_fail (image != NULL, NULL);
 
     return _g_paste_image_item_new (path,
                                     image,

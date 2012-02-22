@@ -40,17 +40,17 @@ G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 struct _GPasteSettingsPrivate
 {
     GSettings *settings;
-    gboolean primary_to_history;
-    guint max_history_size;
-    guint max_displayed_history_size;
-    gboolean synchronize_clipboards;
-    gboolean track_changes;
-    gboolean track_extension_state;
-    gboolean save_history;
-    gboolean trim_items;
-    gchar *keyboard_shortcut;
-    guint max_text_item_size;
-    guint min_text_item_size;
+    gboolean   primary_to_history;
+    guint      max_history_size;
+    guint      max_displayed_history_size;
+    gboolean   synchronize_clipboards;
+    gboolean   track_changes;
+    gboolean   track_extension_state;
+    gboolean   save_history;
+    gboolean   trim_items;
+    gchar     *keyboard_shortcut;
+    guint      max_text_item_size;
+    guint      min_text_item_size;
 };
 
 enum
@@ -418,7 +418,7 @@ g_paste_settings_init (GPasteSettings *self)
 static void
 g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    const gchar *key,
-                                   gpointer user_data)
+                                   gpointer     user_data)
 {
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = self->priv;
