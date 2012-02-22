@@ -22,10 +22,10 @@ INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --c-include=gpaste.h
 INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
 
 introspection_sources = \
-       $(libgpaste_libgpaste_la_SOURCES) \
-       $(libgpaste_libgpaste_la_public_headers) \
-       $(libgpaste_libgpaste_la_private_headers) \
-       $(NULL)
+	$(libgpaste_libgpaste_la_SOURCES) \
+	$(libgpaste_libgpaste_la_public_headers) \
+	$(libgpaste_libgpaste_la_private_headers) \
+	$(NULL)
 
 gi/GPaste-1.0.gir: libgpaste/libgpaste.la
 gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0 libxml2-2.0
