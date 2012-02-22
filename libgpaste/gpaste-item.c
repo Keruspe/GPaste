@@ -427,7 +427,7 @@ g_paste_image_item_dispose (GObject *object)
     GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (object)->priv;
 
     g_date_time_unref (priv->date);
-    gdk_pixbuf_unref (priv->image);
+    g_object_unref (priv->image);
 
     G_OBJECT_CLASS (g_paste_image_item_parent_class)->dispose (object);
 }
@@ -521,7 +521,7 @@ g_paste_image_item_new (GdkPixbuf *img)
     gchar *filename = g_strconcat (checksum, ".png", NULL);
     gchar *path = g_build_filename (images_dir_path, filename, NULL);
     GPasteImageItem *self = _g_paste_image_item_new (path,
-                                                     gdk_pixbuf_ref (img),
+                                                     g_object_ref (img),
                                                      g_date_time_new_now_local (),
                                                      checksum);
     g_free (images_dir_path);

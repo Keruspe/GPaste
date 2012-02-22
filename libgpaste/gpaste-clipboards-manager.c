@@ -124,7 +124,7 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
                     GPasteItem *item = G_PASTE_ITEM (g_paste_image_item_new (image));
 
                     g_paste_history_add (history, item);
-                    gdk_pixbuf_unref (image);
+                    g_object_unref (image);
                     g_object_unref (item);
                 }
             }
