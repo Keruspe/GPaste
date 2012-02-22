@@ -89,9 +89,9 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_uris_item_get_type (void);
 
-GPasteUrisItem *g_paste_uris_item_new (const gchar *uris);
-
 const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
+
+GPasteUrisItem *g_paste_uris_item_new (const gchar *uris);
 
 /* GPaste ImageItem */
 
@@ -110,13 +110,13 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_image_item_get_type (void);
 
-GPasteImageItem *g_paste_image_item_new (GdkPixbuf *img);
-GPasteImageItem *g_paste_image_item_new_from_file (const gchar *path,
-                                                   GDateTime   *date);
-
 const gchar     *g_paste_image_item_get_checksum (const GPasteImageItem *self);
 const GDateTime *g_paste_image_item_get_date     (const GPasteImageItem *self);
 const GdkPixbuf *g_paste_image_item_get_image    (const GPasteImageItem *self);
+
+GPasteImageItem *g_paste_image_item_new (GdkPixbuf *img);
+GPasteImageItem *g_paste_image_item_new_from_file (const gchar *path,
+                                                   GDateTime   *date);
 
 G_END_DECLS
 

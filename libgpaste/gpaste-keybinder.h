@@ -44,11 +44,11 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_keybinder_get_type (void);
 
-GPasteKeybinder *g_paste_keybinder_new (const gchar *binding);
-
 void g_paste_keybinder_unbind (GPasteKeybinder *self);
 void g_paste_keybinder_rebind (GPasteKeybinder *self,
                                const gchar     *binding);
+
+GPasteKeybinder *g_paste_keybinder_new (const gchar *binding);
 
 G_END_DECLS
 

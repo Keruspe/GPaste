@@ -45,8 +45,6 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_history_get_type (void);
 
-GPasteHistory *g_paste_history_new (GPasteSettings *settings);
-
 void         g_paste_history_add               (GPasteHistory *self,
                                                 GPasteItem    *item);
 void         g_paste_history_remove            (GPasteHistory *self,
@@ -59,6 +57,8 @@ void         g_paste_history_empty       (GPasteHistory *self);
 void         g_paste_history_save        (GPasteHistory *self);
 void         g_paste_history_load        (GPasteHistory *self);
 GSList      *g_paste_history_get_history (GPasteHistory *self);
+
+GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 
 G_END_DECLS
 

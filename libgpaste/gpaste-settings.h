@@ -44,8 +44,6 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_settings_get_type (void);
 
-GPasteSettings *g_paste_settings_new (void);
-
 gboolean g_paste_settings_get_primary_to_history         (GPasteSettings *self);
 guint    g_paste_settings_get_max_history_size           (GPasteSettings *self);
 guint    g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
@@ -59,6 +57,8 @@ gboolean     g_paste_settings_get_track_extension_state  (GPasteSettings *self);
 gboolean     g_paste_settings_get_save_history           (GPasteSettings *self);
 gboolean     g_paste_settings_get_trim_items             (GPasteSettings *self);
 const gchar *g_paste_settings_get_keyboard_shortcut      (GPasteSettings *self);
+
+GPasteSettings *g_paste_settings_new (void);
 
 G_END_DECLS
 
