@@ -2,12 +2,16 @@
     forward "changed" event from GPasteSettings
     port gpaste-settings to libgpaste
 
-3.0:
+2.6:
     multiple histories
     FILO/LIFO
-    paste&delete
+    paste & pop
+
+3.0:
     prefs.js
     handle keyboard layout changes
     libgpaste-client + introspection/vapi
     rewrite gpaste in C
+
+future:
     build: depend on intltool 0.50 to remove _NOMERGE hack
