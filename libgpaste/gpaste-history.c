@@ -353,10 +353,9 @@ g_paste_history_load (GPasteHistory *self)
                                                                                          0)); /* base */
                 GPasteImageItem *item = g_paste_image_item_new_from_file (value, date_time);
 
-                if (item != NULL && g_paste_image_item_get_image (item) != NULL)
+                if (item != NULL)
                     priv->history = g_slist_append (priv->history, item);
-                else
-                    g_object_unref (item);
+
                 g_date_time_unref (date_time);
             }
 

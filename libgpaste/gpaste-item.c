@@ -563,7 +563,8 @@ g_paste_image_item_new_from_file (const gchar *path,
     GdkPixbuf *image = gdk_pixbuf_new_from_file (path,
                                                  NULL); /* Error */
 
-    g_return_val_if_fail (image != NULL, NULL);
+    if (!image)
+        return NULL;
 
     return _g_paste_image_item_new (path,
                                     image,
