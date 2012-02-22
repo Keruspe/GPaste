@@ -24,11 +24,13 @@
 
 G_BEGIN_DECLS
 
+typedef struct _GPasteHistoryPrivate GPasteHistoryPrivate;
+
 struct _GPasteHistory
 {
     GObject parent_instance;
 
-    /*< protected >*/
+    /*< private >*/
     GPasteHistoryPrivate *priv;
 };
 

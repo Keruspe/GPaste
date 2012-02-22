@@ -24,11 +24,13 @@
 
 G_BEGIN_DECLS
 
+typedef struct _GPasteKeybinderPrivate GPasteKeybinderPrivate;
+
 struct _GPasteKeybinder
 {
     GObject parent_instance;
 
-    /*< protected >*/
+    /*< private >*/
     GPasteKeybinderPrivate *priv;
 };
 

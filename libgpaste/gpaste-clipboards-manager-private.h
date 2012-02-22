@@ -24,11 +24,13 @@
 
 G_BEGIN_DECLS
 
+typedef struct _GPasteClipboardsManagerPrivate GPasteClipboardsManagerPrivate;
+
 struct _GPasteClipboardsManager
 {
     GObject parent_instance;
 
-    /*< protected >*/
+    /*< private >*/
     GPasteClipboardsManagerPrivate *priv;
 };
 

@@ -26,8 +26,6 @@
 
 #include "gpaste-clipboard.h"
 #include "gpaste-history.h"
-#include "gpaste-item.h"
-#include "gpaste-settings.h"
 
 G_BEGIN_DECLS
 
@@ -40,20 +38,21 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteClipboardsManager GPasteClipboardsManager;
 typedef struct _GPasteClipboardsManagerClass GPasteClipboardsManagerClass;
-typedef struct _GPasteClipboardsManagerPrivate GPasteClipboardsManagerPrivate;
 
 #ifdef G_PASTE_COMPILATION
 #include "config.h"
 G_PASTE_VISIBLE
 #endif
 GType g_paste_clipboards_manager_get_type (void);
-void g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
-                                               GPasteClipboard         *clipboard);
-void g_paste_clipboards_manager_activate (GPasteClipboardsManager *self);
-void g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
-                                        GPasteItem              *item);
+
 GPasteClipboardsManager *g_paste_clipboards_manager_new (GPasteHistory  *history,
                                                          GPasteSettings *settings);
+
+void g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
+                                               GPasteClipboard         *clipboard);
+void g_paste_clipboards_manager_activate      (GPasteClipboardsManager *self);
+void g_paste_clipboards_manager_select        (GPasteClipboardsManager *self,
+                                               GPasteItem              *item);
 
 G_END_DECLS
 

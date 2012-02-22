@@ -26,6 +26,8 @@ G_BEGIN_DECLS
 
 /* GPaste Item */
 
+typedef struct _GPasteItemPrivate GPasteItemPrivate;
+
 /*< abstract >*/
 struct _GPasteItem
 {
@@ -62,6 +64,8 @@ struct _GPasteTextItemClass
 
 /* GPaste UrisItem */
 
+typedef struct _GPasteUrisItemPrivate GPasteUrisItemPrivate;
+
 struct _GPasteUrisItem
 {
     GPasteTextItem parent_instance;
@@ -76,6 +80,8 @@ struct _GPasteUrisItemClass
 };
 
 /* GPaste ImageItem */
+
+typedef struct _GPasteImageItemPrivate GPasteImageItemPrivate;
 
 struct _GPasteImageItem
 {

@@ -38,26 +38,27 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteHistory GPasteHistory;
 typedef struct _GPasteHistoryClass GPasteHistoryClass;
-typedef struct _GPasteHistoryPrivate GPasteHistoryPrivate;
 
 #ifdef G_PASTE_COMPILATION
 #include "config.h"
 G_PASTE_VISIBLE
 #endif
 GType g_paste_history_get_type (void);
-void g_paste_history_add (GPasteHistory *self,
-                          GPasteItem    *item);
-void g_paste_history_remove (GPasteHistory *self,
-                             guint          index);
+
+GPasteHistory *g_paste_history_new (GPasteSettings *settings);
+
+void         g_paste_history_add               (GPasteHistory *self,
+                                                GPasteItem    *item);
+void         g_paste_history_remove            (GPasteHistory *self,
+                                                guint          index);
 const gchar *g_paste_history_get_element_value (GPasteHistory *self,
                                                 guint          index);
-void g_paste_history_select (GPasteHistory *self,
-                             guint          index);
-void g_paste_history_empty (GPasteHistory *self);
-void g_paste_history_save (GPasteHistory *self);
-void g_paste_history_load (GPasteHistory *self);
-GSList *g_paste_history_get_history (GPasteHistory *self);
-GPasteHistory *g_paste_history_new (GPasteSettings *settings);
+void         g_paste_history_select            (GPasteHistory *self,
+                                                guint          index);
+void         g_paste_history_empty       (GPasteHistory *self);
+void         g_paste_history_save        (GPasteHistory *self);
+void         g_paste_history_load        (GPasteHistory *self);
+GSList      *g_paste_history_get_history (GPasteHistory *self);
 
 G_END_DECLS
 

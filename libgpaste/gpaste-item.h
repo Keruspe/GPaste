@@ -40,18 +40,18 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteItem GPasteItem;
 typedef struct _GPasteItemClass GPasteItemClass;
-typedef struct _GPasteItemPrivate GPasteItemPrivate;
 
 #ifdef G_PASTE_COMPILATION
 #include "config.h"
 G_PASTE_VISIBLE
 #endif
 GType g_paste_item_get_type (void);
-const gchar *g_paste_item_get_value (const GPasteItem *self);
+
+const gchar *g_paste_item_get_value          (const GPasteItem *self);
 const gchar *g_paste_item_get_display_string (const GPasteItem *self);
-gboolean g_paste_item_equals (const GPasteItem *self,
-                              const GPasteItem *other);
-const gchar *g_paste_item_get_kind (const GPasteItem *self);
+gboolean     g_paste_item_equals             (const GPasteItem *self,
+                                              const GPasteItem *other);
+const gchar *g_paste_item_get_kind           (const GPasteItem *self);
 
 /* GPaste TextItem */
 
@@ -67,8 +67,9 @@ typedef struct _GPasteTextItemClass GPasteTextItemClass;
 
 #ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-GType g_paste_text_item_get_type (void);
 #endif
+GType g_paste_text_item_get_type (void);
+
 GPasteTextItem *g_paste_text_item_new (const gchar *text);
 
 /* GPaste UrisItem */
@@ -82,13 +83,14 @@ GPasteTextItem *g_paste_text_item_new (const gchar *text);
 
 typedef struct _GPasteUrisItem GPasteUrisItem;
 typedef struct _GPasteUrisItemClass GPasteUrisItemClass;
-typedef struct _GPasteUrisItemPrivate GPasteUrisItemPrivate;
 
 #ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-GType g_paste_uris_item_get_type (void);
 #endif
+GType g_paste_uris_item_get_type (void);
+
 GPasteUrisItem *g_paste_uris_item_new (const gchar *uris);
+
 const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
 
 /* GPaste ImageItem */
@@ -102,18 +104,19 @@ const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
 
 typedef struct _GPasteImageItem GPasteImageItem;
 typedef struct _GPasteImageItemClass GPasteImageItemClass;
-typedef struct _GPasteImageItemPrivate GPasteImageItemPrivate;
 
 #ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-GType g_paste_image_item_get_type (void);
 #endif
+GType g_paste_image_item_get_type (void);
+
 GPasteImageItem *g_paste_image_item_new (GdkPixbuf *img);
 GPasteImageItem *g_paste_image_item_new_from_file (const gchar *path,
                                                    GDateTime   *date);
-const gchar *g_paste_image_item_get_checksum (const GPasteImageItem *self);
-const GDateTime *g_paste_image_item_get_date (const GPasteImageItem *self);
-const GdkPixbuf *g_paste_image_item_get_image (const GPasteImageItem *self);
+
+const gchar     *g_paste_image_item_get_checksum (const GPasteImageItem *self);
+const GDateTime *g_paste_image_item_get_date     (const GPasteImageItem *self);
+const GdkPixbuf *g_paste_image_item_get_image    (const GPasteImageItem *self);
 
 G_END_DECLS
 
