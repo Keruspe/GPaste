@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -21,9 +21,7 @@
 #define __G_PASTE_DAEMON_H__
 
 #include <gpaste-clipboards-manager.h>
-#include <gpaste-history.h>
 #include <gpaste-keybinder.h>
-#include <gpaste-settings.h>
 
 G_BEGIN_DECLS
 
@@ -36,13 +34,14 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteDaemon GPasteDaemon;
 typedef struct _GPasteDaemonClass GPasteDaemonClass;
-typedef struct _GPasteDaemonPrivate GPasteDaemonPrivate;
 
 GType g_paste_daemon_get_type (void);
+
 guint g_paste_daemon_register_object (GPasteDaemon    *self,
                                       GDBusConnection *connection,
                                       const gchar     *path,
                                       GError         **error);
+
 GPasteDaemon *g_paste_daemon_new (GPasteHistory           *history,
                                   GPasteSettings          *settings,
                                   GPasteClipboardsManager *clipboards_manager,

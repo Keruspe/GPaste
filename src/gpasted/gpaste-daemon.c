@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -29,12 +29,12 @@ G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
 struct _GPasteDaemonPrivate
 {
-    GPasteHistory *history;
-    GPasteSettings *settings;
+    GPasteHistory           *history;
+    GPasteSettings          *settings;
     GPasteClipboardsManager *clipboards_manager;
-    GPasteKeybinder *keybinder;
-    GDBusNodeInfo *g_paste_daemon_dbus_info;
-    GDBusInterfaceVTable g_paste_daemon_dbus_vtable;
+    GPasteKeybinder         *keybinder;
+    GDBusNodeInfo           *g_paste_daemon_dbus_info;
+    GDBusInterfaceVTable     g_paste_daemon_dbus_vtable;
 };
 
 enum
