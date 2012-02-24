@@ -15,20 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+gnomeshell_extension_file = src/applets/gnome-shell/extension.js
+gnomeshell_metadata_file = src/applets/gnome-shell/metadata.json
+
+if ENABLE_EXTENSION
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
 
-dist_gnomeshell_DATA = \
-	src/applets/gnome-shell/extension.js \
-	$(NULL)
-
 nodist_gnomeshell_DATA = \
-	src/applets/gnome-shell/metadata.json \
-	$(NULL)
-
-EXTRA_DIST += \
-	src/applets/gnome-shell/metadata.json.in \
+	$(gnomeshell_extension_file) \
+	$(gnomeshell_metadata_file) \
 	$(NULL)
 
 CLEANFILES += \
-	src/applets/gnome-shell/metadata.json \
+	$(gnomeshell_metadata_file) \
+	$(NULL)
+endif
+
+EXTRA_DIST += \
+	$(gnomeshell_extension_file) \
+	$(gnomeshell_metadata_file:.json=.json.in) \
 	$(NULL)

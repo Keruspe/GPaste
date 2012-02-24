@@ -117,16 +117,13 @@ include bin/gpasted.mk
 include bin/gpaste.mk
 include bin/gpaste-settings.mk
 include bin/gpaste-applet.mk
+include src/applets/gnome-shell/extension.mk
 
 include data/gsettings.mk
 include data/dbus.mk
 include data/completions/completions.mk
 
 include man/man.mk
-
-if ENABLE_EXTENSION
-include src/applets/gnome-shell/extension.mk
-endif
 
 # Generate a ChangeLog file from 'git log'
 dist-hook:
