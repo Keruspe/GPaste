@@ -8,14 +8,14 @@ global:
     g_paste_text_item_get_type;
     g_paste_text_item_new;
     g_paste_uris_item_get_type;
-    g_paste_uris_item_new;
     g_paste_uris_item_get_uris;
+    g_paste_uris_item_new;
     g_paste_image_item_get_type;
-    g_paste_image_item_new;
-    g_paste_image_item_new_from_file;
     g_paste_image_item_get_checksum;
     g_paste_image_item_get_image;
     g_paste_image_item_get_date;
+    g_paste_image_item_new;
+    g_paste_image_item_new_from_file;
     g_paste_clipboard_get_type;
     g_paste_clipboard_get_target;
     g_paste_clipboard_get_real;
@@ -59,9 +59,6 @@ global:
     g_paste_keybinder_unbind;
     g_paste_keybinder_rebind;
     g_paste_keybinder_new;
-    g_paste_daemon_get_type;
-    g_paste_daemon_register_object;
-    g_paste_daemon_new;
 local:
     *;
 };
