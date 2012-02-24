@@ -19,7 +19,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
 	--enable-applet \
 	$(NULL)
-ACLOCAL_AMFLAGS  = -I m4 $(ACLOCAL_FLAGS)
+ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 AM_MAKEFLAGS = --no-print-directory
 SUBDIRS = po
 
