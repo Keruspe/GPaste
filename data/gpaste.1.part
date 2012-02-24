@@ -41,6 +41,10 @@ Display the history with indexes
 Display the history without indexes
 .br
 .TP
+.B gpaste zero-history
+Display the history with NUL as separator
+.br
+.TP
 .B gpaste add <text>
 Add the text into the history
 .br

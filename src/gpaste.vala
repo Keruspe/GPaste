@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ namespace GPaste {
                 stdout.printf(_("Usage:\n"));
                 stdout.printf(_("%s [history]: print the history with indexes\n"), caller);
                 stdout.printf(_("%s raw-history: print the history without indexes\n"), caller);
+                stdout.printf(_("%s zero-history: print the history with NUL as separator\n"), caller);
                 stdout.printf(_("%s add <text>: set text to clipboard\n"), caller);
                 stdout.printf(_("%s get <number>: get the <number>th item from the history\n"), caller);
                 stdout.printf(_("%s set <number>: set the <number>th item from the history to the clipboard\n"), caller);

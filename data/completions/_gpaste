@@ -19,6 +19,7 @@ if (( CURRENT == 2 )); then
         {start,daemon,d}:"Start the daemon"
         {stop,quit,q}:"Shutdown the daemon"
         {version,v,--version,-v}:"Display the version"
+        {zero-history,zh}:"Display the history with NUL as separator"
     )
 
     _describe -t commands command commands
