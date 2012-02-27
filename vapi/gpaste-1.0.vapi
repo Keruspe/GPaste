@@ -82,7 +82,17 @@ namespace GPaste {
 		public bool get_track_changes ();
 		public bool get_track_extension_state ();
 		public bool get_trim_items ();
-		public void set_tracking_state (bool value);
+		public void set_keyboard_shortcut (string value);
+		public void set_max_displayed_history_size (uint value);
+		public void set_max_history_size (uint value);
+		public void set_max_text_item_size (uint value);
+		public void set_min_text_item_size (uint value);
+		public void set_primary_to_history (bool value);
+		public void set_save_history (bool value);
+		public void set_synchronize_clipboards (bool value);
+		public void set_track_changes (bool value);
+		public void set_track_extension_state (bool value);
+		public void set_trim_items (bool value);
 		public signal void rebind (string object);
 		public signal void track (bool object);
 	}
