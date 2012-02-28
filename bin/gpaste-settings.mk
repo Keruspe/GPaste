@@ -19,6 +19,7 @@ pkglibexec_PROGRAMS += bin/gpaste-settings
 
 bin_gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala \
+	vapi/gpaste-1.0.vapi
 	$(NULL)
 
 bin_gpaste_settings_VALAFLAGS = \
@@ -35,6 +36,7 @@ bin_gpaste_settings_CFLAGS = \
 bin_gpaste_settings_LDADD = \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \
+	libgpaste/libgpaste.la \
 	$(NULL)
 
 bin_gpaste_settings_desktop_in_file = data/gpaste-settings.desktop.in
