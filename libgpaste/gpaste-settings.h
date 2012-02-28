@@ -52,6 +52,7 @@ gboolean     g_paste_settings_get_save_history               (GPasteSettings *se
 gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *self);
 guint        g_paste_settings_get_max_history_size           (GPasteSettings *self);
 guint        g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
+guint        g_paste_settings_get_element_size               (GPasteSettings *self);
 guint        g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
 guint        g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
 const gchar *g_paste_settings_get_keyboard_shortcut          (GPasteSettings *self);
@@ -71,6 +72,8 @@ void g_paste_settings_set_trim_items                 (GPasteSettings *self,
 void g_paste_settings_set_max_history_size           (GPasteSettings *self,
                                                       guint           value);
 void g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
+                                                      guint           value);
+void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint           value);
 void g_paste_settings_set_min_text_item_size         (GPasteSettings *self,
                                                       guint           value);

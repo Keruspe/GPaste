@@ -71,6 +71,7 @@ namespace GPaste {
 	public class Settings : GLib.Object {
 		[CCode (has_construct_function = false)]
 		public Settings ();
+		public uint get_element_size ();
 		public unowned string get_keyboard_shortcut ();
 		public uint get_max_displayed_history_size ();
 		public uint get_max_history_size ();
@@ -82,6 +83,7 @@ namespace GPaste {
 		public bool get_track_changes ();
 		public bool get_track_extension_state ();
 		public bool get_trim_items ();
+		public void set_element_size (uint value);
 		public void set_keyboard_shortcut (string value);
 		public void set_max_displayed_history_size (uint value);
 		public void set_max_history_size (uint value);

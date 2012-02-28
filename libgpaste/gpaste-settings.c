@@ -31,6 +31,7 @@
 #define TRIM_ITEMS_KEY                 "trim-items"
 #define MAX_HISTORY_SIZE_KEY           "max-history-size"
 #define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
+#define ELEMENT_SIZE_KEY               "element-size"
 #define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
 #define KEYBOARD_SHORTCUT_KEY          "keyboard-shortcut"
@@ -49,6 +50,7 @@ struct _GPasteSettingsPrivate
     gboolean   trim_items;
     guint      max_history_size;
     guint      max_displayed_history_size;
+    guint      element_size;
     guint      min_text_item_size;
     guint      max_text_item_size;
     gchar     *keyboard_shortcut;
@@ -441,6 +443,53 @@ g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
 }
 
 /**
+ * g_paste_settings_get_element_size:
+ * @self: a GPasteSettings instance
+ *
+ * Get the ELEMENT_SIZE_KEY setting
+ *
+ * Returns: the value of the ELEMENT_SIZE_KEY setting
+ */
+G_PASTE_VISIBLE guint
+g_paste_settings_get_element_size (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
+
+    return self->priv->element_size;
+}
+
+static void
+g_paste_settings_set_element_size_from_dconf (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->element_size = g_settings_get_uint (priv->settings, ELEMENT_SIZE_KEY);
+}
+
+/**
+ * g_paste_settings_set_element_size:
+ * @self: a GPasteSettings instance
+ * @value: the maximum displayed size of an item
+ *
+ * Change the ELEMENT_SIZE_KEY setting
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_set_element_size (GPasteSettings *self,
+                                   guint           value)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->element_size = value;
+    g_settings_set_uint (priv->settings, ELEMENT_SIZE_KEY, value);
+}
+
+/**
  * g_paste_settings_get_min_text_item_size:
  * @self: a GPasteSettings instance
  *
@@ -666,6 +715,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_max_history_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
         g_paste_settings_set_max_displayed_history_size_from_dconf (self);
+    else if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
+        g_paste_settings_set_element_size_from_dconf (self);
     else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)
         g_paste_settings_set_min_text_item_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
@@ -706,6 +757,7 @@ g_paste_settings_new (void)
     g_paste_settings_set_trim_items_from_dconf (self);
     g_paste_settings_set_max_history_size_from_dconf (self);
     g_paste_settings_set_max_displayed_history_size_from_dconf (self);
+    g_paste_settings_set_element_size_from_dconf (self);
     g_paste_settings_set_min_text_item_size_from_dconf(self);
     g_paste_settings_set_max_text_item_size_from_dconf(self);
     g_paste_settings_set_keyboard_shortcut_from_dconf (self);
