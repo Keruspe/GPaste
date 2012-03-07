@@ -58,6 +58,7 @@ struct _GPasteSettingsPrivate
 
 enum
 {
+    CHANGED,
     REBIND,
     TRACK,
 
@@ -657,6 +658,16 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     G_OBJECT_CLASS (klass)->dispose = g_paste_settings_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_settings_finalize;
 
+    signals[CHANGED] = g_signal_new ("changed",
+                                     G_PASTE_TYPE_SETTINGS,
+                                     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
+                                     0, /* class offset */
+                                     NULL, /* accumulator */
+                                     NULL, /* accumulator data */
+                                     g_cclosure_marshal_VOID__STRING,
+                                     G_TYPE_NONE,
+                                     1, /* number of params */
+                                     G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE);
     signals[REBIND] = g_signal_new ("rebind",
                                     G_PASTE_TYPE_SETTINGS,
                                     G_SIGNAL_RUN_LAST,
@@ -729,6 +740,12 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                        0, /* detail */
                        priv->keyboard_shortcut);
     }
+
+    /* Forward the signal */
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   g_quark_from_string (key),
+                   key);
 }
 
 /**

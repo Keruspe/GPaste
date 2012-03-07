@@ -95,6 +95,7 @@ namespace GPaste {
 		public void set_track_changes (bool value);
 		public void set_track_extension_state (bool value);
 		public void set_trim_items (bool value);
+		public signal void changed (string object);
 		public signal void rebind (string object);
 		public signal void track (bool object);
 	}
