@@ -287,7 +287,7 @@ public class Main : Gtk.Application {
         GLib.Object (application_id: "org.gnome.GPaste.Settings");
         this.activate.connect (this.init);
         this.settings = new GPaste.Settings ();
-        new GLib.Settings ("org.gnome.GPaste").changed.connect ((key) => {
+        this.settings.changed.connect ((key) => {
             switch(key) {
             case "track-changes":
                 this.window.track_changes = this.settings.get_track_changes ();
