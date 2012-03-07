@@ -22,6 +22,7 @@ pkglibexec_PROGRAMS += bin/gpaste-applet
 
 bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala \
+	vapi/gpaste-1.0.vapi \
 	$(NULL)
 
 bin_gpaste_applet_VALAFLAGS = \
@@ -40,6 +41,7 @@ bin_gpaste_applet_LDADD = \
 	$(GDK_LIBS) \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \
+	libgpaste/libgpaste.la \
 	$(NULL)
 
 nodist_autostart_in_files += $(bin_gpaste_applet_desktop_in_file)
