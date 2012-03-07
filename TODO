@@ -11,3 +11,4 @@
 
 future:
     build: depend on intltool 0.50 to remove _NOMERGE hack
+    build: depend on >automake 1.11.3 to avoid shipping vapi
