@@ -1,4 +1,4 @@
-NEW in 2.5 (Not released yet)
+NEW in 2.5 (08/03/2012)
 =============
 
 - Reexecute has now a signal: ReexecuteSelf
@@ -6,6 +6,8 @@ NEW in 2.5 (Not released yet)
 - Various build system cleanup
 - Small bug fixes
 - Port gpasted to libgpaste and rewrite it in C
+- Port gpaste-settings to libgpaste
+- Port gpaste-applet to libgpaste
 
 NEW in 2.2.1 (07/01/2012)
 =============
