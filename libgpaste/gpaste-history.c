@@ -68,10 +68,10 @@ _g_paste_history_remove (GPasteHistory *self,
 
 /**
  * g_paste_history_add:
- * @self: a GPasteHistory instance
- * @item: (transfer none): the GPasteItem to add
+ * @self: a #GPasteHistory instance
+ * @item: (transfer none): the #GPasteItem to add
  *
- * Add a GPasteItem to the GPasteHistory
+ * Add a #GPasteItem to the #GPasteHistory
  *
  * Returns:
  */
@@ -118,10 +118,10 @@ g_paste_history_add (GPasteHistory *self,
 
 /**
  * g_paste_history_delete:
- * @self: a GPasteHistory instance
- * @index: the index of the GPasteItem to delete
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteItem to delete
  *
- * Delete a GPasteItem from the GPasteHistory
+ * Delete a #GPasteItem from the #GPasteHistory
  *
  * Returns:
  */
@@ -150,12 +150,12 @@ g_paste_history_remove (GPasteHistory *self,
 
 /**
  * g_paste_history_get_element_value:
- * @self: a GPasteHistory instance
- * @index: the index of the GPasteItem
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteItem
  *
- * Get the value of a GPasteItem from the GPasteHistory
+ * Get the value of a #GPasteItem from the #GPasteHistory
  *
- * Returns: the read-only value of the GPasteItem
+ * Returns: the read-only value of the #GPasteItem
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_history_get_element_value (GPasteHistory *self,
@@ -172,10 +172,10 @@ g_paste_history_get_element_value (GPasteHistory *self,
 
 /**
  * g_paste_history_select:
- * @self: a GPasteHistory instance
- * @index: the index of the GPasteItem to select
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteItem to select
  *
- * Select a GPasteItem from the GPasteHistory
+ * Select a #GPasteItem from the #GPasteHistory
  *
  * Returns:
  */
@@ -197,9 +197,9 @@ g_paste_history_select (GPasteHistory *self,
 
 /**
  * g_paste_history_empty:
- * @self: a GPasteHistory instance
+ * @self: a #GPasteHistory instance
  *
- * Empty the GPasteHistory
+ * Empty the #GPasteHistory
  *
  * Returns:
  */
@@ -221,9 +221,9 @@ g_paste_history_empty (GPasteHistory *self)
 
 /**
  * g_paste_history_save:
- * @self: a GPasteHistory instance
+ * @self: a #GPasteHistory instance
  *
- * Save the GPasteHistory to the history file
+ * Save the #GPasteHistory to the history file
  *
  * Returns:
  */
@@ -305,9 +305,9 @@ out:
 
 /**
  * g_paste_history_load:
- * @self: a GPasteHistory instance
+ * @self: a #GPasteHistory instance
  *
- * Load the GPasteHistory from the history file
+ * Load the #GPasteHistory from the history file
  *
  * Returns:
  */
@@ -445,9 +445,9 @@ g_paste_history_init (GPasteHistory *self)
 
 /**
  * g_paste_history_get_history
- * @self: a GPasteHistory instance
+ * @self: a #GPasteHistory instance
  *
- * Get the inner history of a GPasteHistory
+ * Get the inner history of a #GPasteHistory
  *
  * Returns: (element-type GPasteItem) (transfer none): The inner history
  */
@@ -461,11 +461,11 @@ g_paste_history_get_history (GPasteHistory *self)
 
 /**
  * g_paste_history_new:
- * @settings: (transfer none): a GPasteSettings instance
+ * @settings: (transfer none): a #GPasteSettings instance
  *
- * Create a new instance of GPasteHistory
+ * Create a new instance of #GPasteHistory
  *
- * Returns: a newly allocated GPasteHistory
+ * Returns: a newly allocated #GPasteHistory
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteHistory *

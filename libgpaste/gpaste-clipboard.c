@@ -38,9 +38,9 @@ static GdkAtom g_paste_clipboard_copy_files_target;
 
 /**
  * g_paste_clipboard_get_target:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  *
- * Get the target the GPasteClipboard points to
+ * Get the target the #GPasteClipboard points to
  *
  * Returns: (transfer none): the GdkAtom representing the target (Primary, Clipboard, ...)
  */
@@ -54,11 +54,11 @@ g_paste_clipboard_get_target (const GPasteClipboard *self)
 
 /**
  * g_paste_clipboard_get_real:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  *
- * Get the GtkClipboard linked to the GPasteClipboard
+ * Get the GtkClipboard linked to the #GPasteClipboard
  *
- * Returns: (transfer none): the GtkClipboard used in the GPasteClipboard
+ * Returns: (transfer none): the GtkClipboard used in the #GPasteClipboard
  */
 G_PASTE_VISIBLE GtkClipboard *
 g_paste_clipboard_get_real (const GPasteClipboard *self)
@@ -70,9 +70,9 @@ g_paste_clipboard_get_real (const GPasteClipboard *self)
 
 /**
  * g_paste_clipboard_get_text:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  *
- * Get the text stored in the GPasteClipboard
+ * Get the text stored in the #GPasteClipboard
  *
  * Returns: read-only string containing the text or NULL
  */
@@ -101,9 +101,9 @@ _g_paste_clipboard_set_text (GPasteClipboard *self,
 
 /**
  * g_paste_clipboard_set_text:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  *
- * Put the text from the intern GtkClipboard in the GPasteClipboard
+ * Put the text from the intern GtkClipboard in the #GPasteClipboard
  *
  * Returns: The new text if it was modified, or NULL
  */
@@ -150,10 +150,10 @@ ignore:
 
 /**
  * g_paste_clipboard_select_text:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  * @text: the text to select
  *
- * Put the text into the GPasteClipbaord and the intern GtkClipboard
+ * Put the text into the #GPasteClipbaord and the intern GtkClipboard
  *
  * Returns:
  */
@@ -170,8 +170,6 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     gtk_clipboard_set_text (real, text, -1);
     gtk_clipboard_store (real);
 }
-
-/* The two following callbacks are for select_uris */
 
 static void
 g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
@@ -252,11 +250,11 @@ _g_paste_clipboard_select_uris (GPasteClipboard      *self,
 
 /**
  * g_paste_clipboard_get_image_checksum:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  *
- * Get the checksum of the image stored in the GPasteClipboard
+ * Get the checksum of the image stored in the #GPasteClipboard
  *
- * Returns: read-only string containing the checksum of the image stored in the GPasteClipboard or NULL
+ * Returns: read-only string containing the checksum of the image stored in the #GPasteClipboard or NULL
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_clipboard_get_image_checksum (const GPasteClipboard *self)
@@ -298,9 +296,9 @@ _g_paste_clipboard_select_image (GPasteClipboard *self,
 
 /**
  * g_paste_clipboard_set_image:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  *
- * Put the image from the intern GtkClipboard in the GPasteClipboard
+ * Put the image from the intern GtkClipboard in the #GPasteClipboard
  *
  * Returns: (transfer full): The new image if it was modified, or NULL
  */
@@ -333,10 +331,10 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
 
 /**
  * g_paste_clipboard_select_item:
- * @self: a GPasteClipboard instance
+ * @self: a #GPasteClipboard instance
  * @item: the item to select
  *
- * Put the value of the item into the GPasteClipbaord and the intern GtkClipboard
+ * Put the value of the item into the #GPasteClipbaord and the intern GtkClipboard
  *
  * Returns:
  */
@@ -414,11 +412,11 @@ g_paste_clipboard_init (GPasteClipboard *self)
 /**
  * g_paste_clipboard_new:
  * @target: the GdkAtom representating the GtkClipboard we're abstracting
- * @settings: a GPasteSettings instance
+ * @settings: a #GPasteSettings instance
  *
- * Create a new instance of GPasteClipboard
+ * Create a new instance of #GPasteClipboard
  *
- * Returns: a newly allocated GPasteClipboard
+ * Returns: a newly allocated #GPasteClipboard
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteClipboard *

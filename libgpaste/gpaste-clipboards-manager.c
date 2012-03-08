@@ -32,10 +32,10 @@ struct _GPasteClipboardsManagerPrivate
 
 /**
  * g_paste_clipboards_manager_add_clipboard:
- * @self: a GPasteClipboardsManager instance
+ * @self: a #GPasteClipboardsManager instance
  * @clipboard: (transfer none): the GPasteClipboard to add
  *
- * Add a GPasteClipboard to the GPasteClipboardsManager
+ * Add a #GPasteClipboard to the #GPasteClipboardsManager
  *
  * Returns:
  */
@@ -156,9 +156,9 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
 
 /**
  * g_paste_clipboards_manager_activate:
- * @self: a GPasteClipboardsManager instance
+ * @self: a #GPasteClipboardsManager instance
  *
- * Activate the GPasteClipboardsManager
+ * Activate the #GPasteClipboardsManager
  *
  * Returns:
  */
@@ -170,10 +170,10 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 
 /**
  * g_paste_clipboards_manager_select:
- * @self: a GPasteClipboardsManager instance
- * @item: the GPasteItem to select
+ * @self: a #GPasteClipboardsManager instance
+ * @item: the #GPasteItem to select
  *
- * Select a new GPasteItem
+ * Select a new #GPasteItem
  *
  * Returns:
  */
@@ -242,12 +242,12 @@ on_item_selected (GPasteClipboardsManager *self,
 
 /**
  * g_paste_clipboards_manager_new:
- * @history: (transfer none): a GPasteHistory instance
- * @settings: (transfer none): a GPasteSettings instance
+ * @history: (transfer none): a #GPasteHistory instance
+ * @settings: (transfer none): a #GPasteSettings instance
  *
- * Create a new instance of GPasteClipboardsManager
+ * Create a new instance of #GPasteClipboardsManager
  *
- * Returns: a newly allocated GPasteClipboardsManager
+ * Returns: a newly allocated #GPasteClipboardsManager
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteClipboardsManager *

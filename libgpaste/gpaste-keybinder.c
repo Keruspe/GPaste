@@ -89,7 +89,7 @@ g_paste_keybinder_activate (GPasteKeybinder *self)
 
 /**
  * g_paste_keybinder_unbind:
- * @self: a GPasteKeybinder instance
+ * @self: a #GPasteKeybinder instance
  *
  * Unbind the keybinding
  *
@@ -108,7 +108,7 @@ g_paste_keybinder_unbind (GPasteKeybinder *self)
 
 /**
  * g_paste_keybinder_rebind:
- * @self: a GPasteKeybinder instance
+ * @self: a #GPasteKeybinder instance
  * @binding: the new keybinding
  *
  * Rebind to a new keybinding
@@ -183,9 +183,9 @@ g_paste_keybinder_init (GPasteKeybinder *self)
 /**
  * g_paste_keybinder_new:
  *
- * Create a new instance of GPasteKeybinder
+ * Create a new instance of #GPasteKeybinder
  *
- * Returns: a newly allocated GPasteKeybinder
+ * Returns: a newly allocated #GPasteKeybinder
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinder *

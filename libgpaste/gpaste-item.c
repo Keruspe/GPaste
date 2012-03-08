@@ -37,7 +37,7 @@ struct _GPasteItemPrivate
 
 /**
  * g_paste_item_get_value:
- * @self: a GPasteItem instance
+ * @self: a #GPasteItem instance
  *
  * Get the value of the given item (text, uris or path to the image)
  *
@@ -53,9 +53,9 @@ g_paste_item_get_value (const GPasteItem *self)
 
 /**
  * g_paste_item_get_display_string:
- * @self: a GPasteItem instance
+ * @self: a #GPasteItem instance
  *
- * Get the string we should use to display the GPasteItem
+ * Get the string we should use to display the #GPasteItem
  *
  * Returns: read-only display string
  */
@@ -69,8 +69,8 @@ g_paste_item_get_display_string (const GPasteItem *self)
 
 /**
  * g_paste_item_equals:
- * @self: a GPasteItem instance
- * @other: another GPasteItem instance
+ * @self: a #GPasteItem instance
+ * @other: another #GPasteItem instance
  *
  * Compare the two instances
  *
@@ -85,9 +85,9 @@ g_paste_item_equals (const GPasteItem *self,
 
 /**
  * g_paste_item_get_kind:
- * @self: a GPasteItem instance
+ * @self: a #GPasteItem instance
  *
- * Get the kind of GPasteItem as string (for serialization)
+ * Get the kind of #GPasteItem as string (for serialization)
  *
  * Returns: read-only string containing the kind of GPasteItem
  *          can be "Text", "Uris" or "Image"
@@ -195,11 +195,11 @@ _g_paste_text_item_new (GType        type,
 
 /**
  * g_paste_text_item_new:
- * @text: the content of the desired GPasteTextItem
+ * @text: the content of the desired #GPasteTextItem
  *
- * Create a new instance of GPasteTextItem
+ * Create a new instance of #GPasteTextItem
  *
- * Returns: a newly allocated GPasteTextItem
+ * Returns: a newly allocated #GPasteTextItem
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteTextItem *
@@ -223,9 +223,9 @@ struct _GPasteUrisItemPrivate
 
 /**
  * g_paste_uris_item_get_uris:
- * @self: a GPasteUrisItem instance
+ * @self: a #GPasteUrisItem instance
  *
- * Get the list of uris contained in the GPasteUrisItem
+ * Get the list of uris contained in the #GPasteUrisItem
  *
  * Returns: (transfer none): read-only array of read-only uris (strings)
  */
@@ -287,9 +287,9 @@ g_paste_uris_item_init (GPasteUrisItem *self)
  * g_paste_uris_item_new:
  * @uris: a string containing the paths separated by "\n" (as returned by gtk_clipboard_wait_for_uris)
  *
- * Create a new instance of GPasteUrisItem
+ * Create a new instance of #GPasteUrisItem
  *
- * Returns: a newly allocated GPasteUrisItem
+ * Returns: a newly allocated #GPasteUrisItem
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteUrisItem *
@@ -361,9 +361,9 @@ struct _GPasteImageItemPrivate
 
 /**
  * g_paste_image_item_get_checksum:
- * @self: a GPasteImageItem instance
+ * @self: a #GPasteImageItem instance
  *
- * Get the checksum of the GdkPixbuf contained in the GPasteImageItem
+ * Get the checksum of the GdkPixbuf contained in the #GPasteImageItem
  *
  * Returns: read-only string representatig the SHA256 checksum of the image
  */
@@ -377,7 +377,7 @@ g_paste_image_item_get_checksum (const GPasteImageItem *self)
 
 /**
  * g_paste_image_item_get_date:
- * @self: a GPasteImageItem instance
+ * @self: a #GPasteImageItem instance
  *
  * Get the date at which the image was created
  *
@@ -393,9 +393,9 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
 
 /**
  * g_paste_image_item_get_image:
- * @self: a GPasteImageItem instance
+ * @self: a #GPasteImageItem instance
  *
- * Get the image contained in the GPasteImageItem
+ * Get the image contained in the #GPasteImageItem
  *
  * Returns: read-only GdkPixbuf of the image
  */
@@ -502,11 +502,11 @@ _g_paste_image_item_new (const gchar *path,
 
 /**
  * g_paste_image_item_new:
- * @img: (transfer none): the GdkPixbuf we want to be contained in the GPasteImageItem
+ * @img: (transfer none): the GdkPixbuf we want to be contained in the #GPasteImageItem
  *
- * Create a new instance of GPasteImageItem
+ * Create a new instance of #GPasteImageItem
  *
- * Returns: a newly allocated GPasteImageItem
+ * Returns: a newly allocated #GPasteImageItem
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteImageItem *
@@ -545,12 +545,12 @@ g_paste_image_item_new (GdkPixbuf *img)
 
 /**
  * g_paste_image_item_new_from_file:
- * @path: the path to the image we want to be contained in the GPasteImageItem
+ * @path: the path to the image we want to be contained in the #GPasteImageItem
  * @date: (transfer none): the date at which the image was created
  *
- * Create a new instance of GPasteImageItem
+ * Create a new instance of #GPasteImageItem
  *
- * Returns: a newly allocated GPasteImageItem
+ * Returns: a newly allocated #GPasteImageItem
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteImageItem *

@@ -69,7 +69,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 /**
  * g_paste_settings_get_track_changes:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the TRACK_CHANGES_KEY setting
  *
@@ -95,7 +95,7 @@ g_paste_settings_set_track_changes_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_track_changes:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: whether to track or not the clipboard changes
  *
  * Change the TRACK_CHANGES_KEY setting
@@ -116,7 +116,7 @@ g_paste_settings_set_track_changes (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_track_extension_state:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the TRACK_EXTENTION_STATE_KEY setting
  *
@@ -142,7 +142,7 @@ g_paste_settings_set_track_extension_state_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_track_extension_state:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: whether to stop tracking or not the clipboard changes when an applet exits
  *
  * Change the TRACK_EXTENTION_STATE_KEY setting
@@ -163,7 +163,7 @@ g_paste_settings_set_track_extension_state (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_primary_to_history:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the PRIMARY_TO_HISTORY_KEY setting
  *
@@ -189,7 +189,7 @@ g_paste_settings_set_primary_to_history_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_primary_to_history:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: whether to track or not the primary selection changes as clipboard ones
  *
  * Change the PRIMARY_TO_HISTORY_KEY setting
@@ -210,7 +210,7 @@ g_paste_settings_set_primary_to_history (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_synchronize_clipboards:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the SYNCHRONIZE_CLIPBOARDS_KEY setting
  *
@@ -236,7 +236,7 @@ g_paste_settings_set_synchronize_clipboards_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_synchronize_clipboards:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: whether to synchronize the clipboard and the primary selection or not
  *
  * Change the SYNCHRONIZE_CLIPBOARDS_KEY setting
@@ -257,7 +257,7 @@ g_paste_settings_set_synchronize_clipboards (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_save_history:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the SAVE_HISTORY_KEY setting
  *
@@ -283,7 +283,7 @@ g_paste_settings_set_save_history_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_save_history:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: whether to save or not the history
  *
  * Change the SAVE_HISTORY_KEY setting
@@ -304,7 +304,7 @@ g_paste_settings_set_save_history (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_trim_items:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the TRIM_ITEMS_KEY setting
  *
@@ -330,7 +330,7 @@ g_paste_settings_set_trim_items_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_trim_items:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: whether to trim or not textual items
  *
  * Change the TRIM_ITEMS_KEY setting
@@ -351,7 +351,7 @@ g_paste_settings_set_trim_items (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_max_history_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the MAX_HISTORY_SIZE_KEY setting
  *
@@ -377,7 +377,7 @@ g_paste_settings_set_max_history_size_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_max_history_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: the maximum number of items the history can contain
  *
  * Change the MAX_HISTORY_SIZE_KEY setting
@@ -398,7 +398,7 @@ g_paste_settings_set_max_history_size (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_max_displayed_history_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
  *
@@ -424,7 +424,7 @@ g_paste_settings_set_max_displayed_history_size_from_dconf (GPasteSettings *self
 
 /**
  * g_paste_settings_set_max_displayed_history_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: the maximum number of items to display
  *
  * Change the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
@@ -445,7 +445,7 @@ g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_element_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the ELEMENT_SIZE_KEY setting
  *
@@ -471,7 +471,7 @@ g_paste_settings_set_element_size_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_element_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: the maximum displayed size of an item
  *
  * Change the ELEMENT_SIZE_KEY setting
@@ -492,7 +492,7 @@ g_paste_settings_set_element_size (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_min_text_item_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the MIN_TEXT_ITEM_SIZE_KEY setting
  *
@@ -518,7 +518,7 @@ g_paste_settings_set_min_text_item_size_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_min_text_item_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: the minimum size for a textual item to be handled
  *
  * Change the MIN_TEXT_ITEM_SIZE_KEY setting
@@ -539,7 +539,7 @@ g_paste_settings_set_min_text_item_size (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_max_text_item_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the MAX_TEXT_ITEM_SIZE_KEY setting
  *
@@ -565,7 +565,7 @@ g_paste_settings_set_max_text_item_size_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_max_text_item_size:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: the maximum size for a textual item to be handled
  *
  * Change the MAX_TEXT_ITEM_SIZE_KEY setting
@@ -586,7 +586,7 @@ g_paste_settings_set_max_text_item_size (GPasteSettings *self,
 
 /**
  * g_paste_settings_get_keyboard_shortcut:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  *
  * Get the KEYBOARD_SHORTCUT_KEY setting
  *
@@ -613,7 +613,7 @@ g_paste_settings_set_keyboard_shortcut_from_dconf (GPasteSettings *self)
 
 /**
  * g_paste_settings_set_keyboard_shortcut:
- * @self: a GPasteSettings instance
+ * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
  *
  * Change the KEYBOARD_SHORTCUT_KEY setting
@@ -751,9 +751,9 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 /**
  * g_paste_settings_new:
  *
- * Create a new instance of GPasteSettings
+ * Create a new instance of #GPasteSettings
  *
- * Returns: a newly allocated GPasteSettings
+ * Returns: a newly allocated #GPasteSettings
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteSettings *
