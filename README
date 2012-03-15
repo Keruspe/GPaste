@@ -12,4 +12,3 @@ Steps to install it after cloning:
 ./configure --sysconfdir=/etc
 make
 sudo make install
-
