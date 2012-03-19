@@ -67,10 +67,10 @@ libgpaste_libgpaste_la_LIBADD = \
 
 libgpaste_libgpaste_la_LDFLAGS = \
 	-version-info $(LIBGPASTE_CURRENT):$(LIBGPASTE_REVISION):$(LIBGPASTE_AGE) \
-	-Wl,--version-script=$(top_srcdir)/libgpaste/libgpaste.sym \
+	-Wl,--version-script=$(srcdir)/libgpaste/libgpaste.sym \
 	$(NULL)
 
-libgpaste_libgpaste_la_DEPENDENCIES = $(top_srcdir)/libgpaste/libgpaste.sym
+libgpaste_libgpaste_la_DEPENDENCIES = $(srcdir)/libgpaste/libgpaste.sym
 
 pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
 
