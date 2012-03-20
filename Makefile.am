@@ -52,7 +52,6 @@ AM_VALAFLAGS = \
 AM_CFLAGS = \
 	-I$(srcdir)/libgpaste \
 	-DG_PASTE_COMPILATION \
-	-D__G_DEPRECATED_THREAD_H__ \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
 	$(GLIB_CFLAGS) \
