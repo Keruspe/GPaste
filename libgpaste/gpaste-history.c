@@ -273,6 +273,7 @@ g_paste_history_save (GPasteHistory *self)
 
         xmlTextWriterStartDocument (writer, "1.0", "UTF-8", NULL);
         xmlTextWriterStartElement (writer, BAD_CAST "history");
+        xmlTextWriterWriteAttribute (writer, BAD_CAST "version", BAD_CAST "1.0");
 
         for (GSList *history = priv->history; history; history = g_slist_next (history))
         {
