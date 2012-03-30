@@ -219,6 +219,51 @@ g_paste_history_empty (GPasteHistory *self)
                    0); /* detail */
 }
 
+static gchar *
+g_paste_history_replace (const gchar *text,
+                         const gchar *pattern,
+                         const gchar *substitution)
+{
+    gchar *regex_string = g_regex_escape_string (pattern, -1);
+    GRegex *regex = g_regex_new (regex_string,
+                                 0, /* Compile options */
+                                 0, /* Match options */
+                                 NULL); /* Error */
+    gchar *encoded_text = g_regex_replace_literal (regex,
+                                                   text,
+                                                   (gssize) -1,
+                                                   0, /* Start position */
+                                                   substitution,
+                                                   0, /* Match options */
+                                                   NULL); /* Error */
+    g_regex_unref (regex);
+    g_free (regex_string);
+
+    return encoded_text;
+}
+
+static gchar *
+g_paste_history_encode (const gchar *text)
+{
+    gchar *_encoded_text = g_paste_history_replace (text, "&", "&amp;");
+    gchar *encoded_text = g_paste_history_replace (_encoded_text, ">", "&gt;");
+
+    g_free (_encoded_text);
+
+    return encoded_text;
+}
+
+static gchar *
+g_paste_history_decode (const gchar *text)
+{
+    gchar *_decoded_text = g_paste_history_replace (text, "&gt;", ">");
+    gchar *decoded_text = g_paste_history_replace (_decoded_text, "&amp;", "&");
+
+    g_free (_decoded_text);
+
+    return decoded_text;
+}
+
 /**
  * g_paste_history_save:
  * @self: a #GPasteHistory instance
@@ -285,7 +330,11 @@ g_paste_history_save (GPasteHistory *self)
                 xmlTextWriterWriteFormatAttribute (writer, BAD_CAST "date", "%ld",
                                                    g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item))));
             xmlTextWriterStartCDATA (writer);
-            xmlTextWriterWriteString (writer, BAD_CAST g_paste_item_get_value (item));
+
+            gchar *data = g_paste_history_encode (g_paste_item_get_value (item));
+            xmlTextWriterWriteString (writer, BAD_CAST data);
+            g_free (data);
+
             xmlTextWriterEndCDATA (writer);
             xmlTextWriterEndElement (writer);
         }
@@ -341,7 +390,8 @@ g_paste_history_load (GPasteHistory *self)
 
             gchar *kind = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "kind");
             gchar *date = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "date");
-            gchar *value = (gchar *) xmlTextReaderReadString (reader);
+            gchar *raw_value = (gchar *) xmlTextReaderReadString (reader);
+            gchar *value = g_paste_history_decode (raw_value);
 
             if (g_strcmp0 (kind, "Text") == 0)
                 priv->history = g_slist_append (priv->history, g_paste_text_item_new (value));
@@ -360,6 +410,7 @@ g_paste_history_load (GPasteHistory *self)
                 g_date_time_unref (date_time);
             }
 
+            g_free (raw_value);
             g_free (value);
             g_free (date);
             g_free (kind);
