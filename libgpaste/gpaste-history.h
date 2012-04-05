@@ -24,6 +24,10 @@
 #ifndef __G_PASTE_HISTORY_H__
 #define __G_PASTE_HISTORY_H__
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+#endif
+
 #include "gpaste-item.h"
 #include "gpaste-settings.h"
 
@@ -40,7 +44,6 @@ typedef struct _GPasteHistory GPasteHistory;
 typedef struct _GPasteHistoryClass GPasteHistoryClass;
 
 #ifdef G_PASTE_COMPILATION
-#include "config.h"
 G_PASTE_VISIBLE
 #endif
 GType g_paste_history_get_type (void);

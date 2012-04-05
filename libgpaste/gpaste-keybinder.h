@@ -24,6 +24,10 @@
 #ifndef __G_PASTE_KEYBINDER_H__
 #define __G_PASTE_KEYBINDER_H__
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+#endif
+
 #include <glib-object.h>
 
 G_BEGIN_DECLS
@@ -39,7 +43,6 @@ typedef struct _GPasteKeybinder GPasteKeybinder;
 typedef struct _GPasteKeybinderClass GPasteKeybinderClass;
 
 #ifdef G_PASTE_COMPILATION
-#include "config.h"
 G_PASTE_VISIBLE
 #endif
 GType g_paste_keybinder_get_type (void);

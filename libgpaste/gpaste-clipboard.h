@@ -24,6 +24,10 @@
 #ifndef __G_PASTE_CLIPBOARD_H__
 #define __G_PASTE_CLIPBOARD_H__
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+#endif
+
 #include "gpaste-item.h"
 #include "gpaste-settings.h"
 
@@ -42,7 +46,6 @@ typedef struct _GPasteClipboard GPasteClipboard;
 typedef struct _GPasteClipboardClass GPasteClipboardClass;
 
 #ifdef G_PASTE_COMPILATION
-#include "config.h"
 G_PASTE_VISIBLE
 #endif
 GType g_paste_clipboard_get_type (void);

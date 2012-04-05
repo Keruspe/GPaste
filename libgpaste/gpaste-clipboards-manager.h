@@ -24,6 +24,10 @@
 #ifndef __G_PASTE_CLIPBOARDS_MANAGER_H__
 #define __G_PASTE_CLIPBOARDS_MANAGER_H__
 
+#ifdef G_PASTE_COMPILATION
+#include "config.h"
+#endif
+
 #include "gpaste-clipboard.h"
 #include "gpaste-history.h"
 
@@ -40,7 +44,6 @@ typedef struct _GPasteClipboardsManager GPasteClipboardsManager;
 typedef struct _GPasteClipboardsManagerClass GPasteClipboardsManagerClass;
 
 #ifdef G_PASTE_COMPILATION
-#include "config.h"
 G_PASTE_VISIBLE
 #endif
 GType g_paste_clipboards_manager_get_type (void);
