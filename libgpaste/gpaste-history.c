@@ -496,7 +496,7 @@ g_paste_history_init (GPasteHistory *self)
 }
 
 /**
- * g_paste_history_get_history
+ * g_paste_history_get_history:
  * @self: a #GPasteHistory instance
  *
  * Get the inner history of a #GPasteHistory
