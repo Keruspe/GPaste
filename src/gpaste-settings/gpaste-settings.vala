@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-static const string gettext_package = Config.GETTEXT_PACKAGE;
-
 public class Window : Gtk.Window {
     private Gtk.CheckButton track_changes_button;
     private Gtk.CheckButton track_extension_state_button;
@@ -335,6 +333,7 @@ public class Main : Gtk.Application {
     }
 
     public static int main (string[] args) {
+        const string gettext_package = Config.GETTEXT_PACKAGE;
         GLib.Intl.bindtextdomain (gettext_package, Config.LOCALEDIR);
         GLib.Intl.bind_textdomain_codeset (gettext_package, "UTF-8");
         GLib.Intl.textdomain (gettext_package);

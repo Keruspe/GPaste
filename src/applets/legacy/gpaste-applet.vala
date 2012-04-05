@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-static const string gettext_package = Config.GETTEXT_PACKAGE;
-
 [DBus (name = "org.gnome.GPaste")]
 public interface DBusClient : GLib.Object {
     [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
@@ -196,6 +194,7 @@ public class Main : Gtk.Application {
     }
 
     public static int main (string[] args) {
+        const string gettext_package = Config.GETTEXT_PACKAGE;
         GLib.Intl.bindtextdomain (gettext_package, Config.LOCALEDIR);
         GLib.Intl.bind_textdomain_codeset (gettext_package, "UTF-8");
         GLib.Intl.textdomain (gettext_package);

@@ -60,6 +60,7 @@ AM_CFLAGS = \
 	$(NULL)
 
 VALA_CFLAGS = \
+	--include config.h \
 	-Wno-unused-parameter \
 	-Wno-unused-variable \
 	-Wno-missing-field-initializers \
