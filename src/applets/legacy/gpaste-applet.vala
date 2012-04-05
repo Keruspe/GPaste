@@ -22,9 +22,9 @@ public interface DBusClient : GLib.Object {
     [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
     public abstract string[] get_history () throws GLib.IOError;
     [DBus (name = "Select", inSignature = "u", outSignature = "")]
-    public abstract void select (uint32 index) throws GLib.IOError;
+    public abstract void select (uint32 pos) throws GLib.IOError;
     [DBus (name = "Delete", inSignature = "u", outSignature = "")]
-    public abstract void delete (uint32 index) throws GLib.IOError;
+    public abstract void delete (uint32 pos) throws GLib.IOError;
     [DBus (name = "Empty", inSignature = "", outSignature = "")]
     public abstract void empty () throws GLib.IOError;
     [DBus (name = "Track", inSignature = "b", outSignature = "")]
@@ -76,9 +76,9 @@ public class Window : Gtk.Window {
             var hist = app.gpasted.get_history ();
             history_is_empty = (hist.length == 0);
             uint32 element_size = app.element_size;
-            for (uint32 index = 0 ; index < hist.length ; ++index) {
-                uint32 current = index; // local, or weird closure behaviour
-                string elem = hist[index];
+            for (uint32 i = 0 ; i < hist.length ; ++i) {
+                uint32 current = i; // local, or weird closure behaviour
+                string elem = hist[i];
                 var item = new Gtk.ImageMenuItem.with_label (elem);
                 var label = item.get_child () as Gtk.Label;
                 if (element_size != 0) {
@@ -86,7 +86,7 @@ public class Window : Gtk.Window {
                     label.max_width_chars = (int) element_size;
                     label.ellipsize = Pango.EllipsizeMode.END;
                 }
-                if (index == 0)
+                if (i == 0)
                     label.set_markup ("<b>" + GLib.Markup.escape_text (label.get_text ()) + "</b>");
                 item.activate.connect (() => {
                     try {

@@ -28,11 +28,11 @@ namespace GPaste {
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws GLib.IOError;
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
-            public abstract string get_element(uint32 index) throws GLib.IOError;
+            public abstract string get_element(uint32 pos) throws GLib.IOError;
             [DBus (name = "Select", inSignature = "u", outSignature = "")]
-            public abstract void select(uint32 index) throws GLib.IOError;
+            public abstract void select(uint32 pos) throws GLib.IOError;
             [DBus (name = "Delete", inSignature = "u", outSignature = "")]
-            public abstract void delete(uint32 index) throws GLib.IOError;
+            public abstract void delete(uint32 pos) throws GLib.IOError;
             [DBus (name = "Empty", inSignature = "", outSignature = "")]
             public abstract void empty() throws GLib.IOError;
             [DBus (name = "Track", inSignature = "b", outSignature = "")]
