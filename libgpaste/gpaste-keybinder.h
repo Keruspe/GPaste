@@ -28,7 +28,7 @@
 #include "config.h"
 #endif
 
-#include <glib-object.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 
@@ -47,11 +47,12 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_keybinder_get_type (void);
 
-void g_paste_keybinder_unbind (GPasteKeybinder *self);
-void g_paste_keybinder_rebind (GPasteKeybinder *self,
-                               const gchar     *binding);
+void g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
+                                       GPasteKeybinding *binding);
+void g_paste_keybinder_activate_all (GPasteKeybinder *self);
+void g_paste_keybinder_deactivate_all (GPasteKeybinder *self);
 
-GPasteKeybinder *g_paste_keybinder_new (const gchar *binding);
+GPasteKeybinder *g_paste_keybinder_new (GPasteXcbWrapper *xcb_wrapper);
 
 G_END_DECLS
 

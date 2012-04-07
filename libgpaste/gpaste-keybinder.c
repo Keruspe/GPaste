@@ -19,9 +19,7 @@
 
 #include "gpaste-keybinder-private.h"
 
-#include <gtk/gtk.h>
-#include <xcb/xcb.h>
-#include <xcb/xcb_keysyms.h>
+#include <gdk/gdk.h>
 
 #define G_PASTE_KEYBINDER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_KEYBINDER, GPasteKeybinderPrivate))
 
@@ -29,38 +27,40 @@ G_DEFINE_TYPE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 
 struct _GPasteKeybinderPrivate
 {
-    gchar             *binding;
-    xcb_connection_t  *connection;
-    xcb_screen_t      *screen;
-    xcb_key_symbols_t *keysyms;
-    xcb_keycode_t     *keycodes;
-    guint16            modifiers;
+    GPasteXcbWrapper *xcb_wrapper;
+    GSList           *keybindings;
 };
-
-enum
-{
-    TOGGLE,
-
-    LAST_SIGNAL
-};
-
-static guint signals[LAST_SIGNAL] = { 0 };
 
 static gboolean
 g_paste_keybinder_source (gpointer data)
 {
-    GPasteKeybinder *self = G_PASTE_KEYBINDER (data);
-    GPasteKeybinderPrivate *priv = self->priv;
+    GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (data)->priv;
+    xcb_connection_t *connection = g_paste_xcb_wrapper_get_connection (priv->xcb_wrapper);
     xcb_generic_event_t *event;
 
-    if ((event = xcb_poll_for_event (priv->connection)) &&
+    if ((event = xcb_poll_for_event (connection)) &&
         (event->response_type & ~0x80) == XCB_KEY_PRESS)
     {
-        xcb_ungrab_keyboard (priv->connection, GDK_CURRENT_TIME);
-        xcb_flush (priv->connection);
-        g_signal_emit (self,
-                       signals[TOGGLE],
-                       0); /* detail */
+        xcb_ungrab_keyboard (connection, GDK_CURRENT_TIME);
+        xcb_flush (connection);
+        xcb_key_press_event_t *real_event = (xcb_key_press_event_t *) event;
+        xcb_keycode_t keycode = real_event->detail;
+        for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
+        {
+            GPasteKeybinding *real_keybinding = keybinding->data;
+            if (g_paste_keybinding_is_active (real_keybinding))
+            {
+                const xcb_keycode_t *keycodes = (const xcb_keycode_t *) g_paste_keybinding_get_keycodes (real_keybinding);
+                if (keycodes)
+                {
+                    for (const xcb_keycode_t *k = keycodes; *k; ++k)
+                    {
+                        if (*k == keycode)
+                            g_paste_keybinding_notify (real_keybinding);
+                    }
+                }
+            }
+        }
     }
 
     g_free (event);
@@ -68,89 +68,93 @@ g_paste_keybinder_source (gpointer data)
     return TRUE;
 }
 
+/**
+ * g_paste_keybinder_add_keybinding:
+ * @self: a #GPasteKeybinder instance
+ * @binding; a #GPasteKeybinding instance
+ *
+ * Add a new keybinding
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
+                                  GPasteKeybinding *binding)
+{
+    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (binding));
+
+    GPasteKeybinderPrivate *priv = self->priv;
+
+    priv->keybindings = g_slist_prepend (priv->keybindings,
+                                         g_object_ref (binding));
+}
+
 static void
-g_paste_keybinder_activate (GPasteKeybinder *self)
+g_paste_keybinder_activate_keybinding_func (gpointer data,
+                                            gpointer user_data G_GNUC_UNUSED)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
+    GPasteKeybinding *keybinding = G_PASTE_KEYBINDING (data);
 
-    GPasteKeybinderPrivate *priv = self->priv;
-    guint keysym;
-
-    gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
-    g_free (priv->keycodes);
-    priv->keycodes = xcb_key_symbols_get_keycode (priv->keysyms, keysym);
-
-    gdk_error_trap_push ();
-    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
-        xcb_grab_key (priv->connection, FALSE, priv->screen->root, priv->modifiers, *keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    xcb_flush (priv->connection);
-    gdk_error_trap_pop_ignored ();
+    if (!g_paste_keybinding_is_active (keybinding))
+        g_paste_keybinding_activate (keybinding);
 }
 
 /**
- * g_paste_keybinder_unbind:
+ * g_paste_keybinder_activate_all:
  * @self: a #GPasteKeybinder instance
  *
- * Unbind the keybinding
+ * Activate all the managed keybindings
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_keybinder_unbind (GPasteKeybinder *self)
+g_paste_keybinder_activate_all (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
-    GPasteKeybinderPrivate *priv = self->priv;
+    g_slist_foreach (self->priv->keybindings,
+                     g_paste_keybinder_activate_keybinding_func,
+                     self);
+}
 
-    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
-        xcb_ungrab_key (priv->connection, *keycode, priv->screen->root, priv->modifiers);
+static void
+g_paste_keybinder_deactivate_keybinding_func (gpointer data,
+                                              gpointer user_data G_GNUC_UNUSED)
+{
+    GPasteKeybinding *keybinding = G_PASTE_KEYBINDING (data);
+
+    if (g_paste_keybinding_is_active (keybinding))
+        g_paste_keybinding_deactivate (keybinding);
 }
 
 /**
- * g_paste_keybinder_rebind:
+ * g_paste_keybinder_deactivate_all:
  * @self: a #GPasteKeybinder instance
- * @binding: the new keybinding
  *
- * Rebind to a new keybinding
+ * Deactivate all the managed keybindings
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_keybinder_rebind (GPasteKeybinder *self,
-                          const gchar     *binding)
+g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
-    g_return_if_fail (binding != NULL);
 
-    GPasteKeybinderPrivate *priv = self->priv;
-
-    g_free (priv->binding);
-    priv->binding = g_strdup (binding);
-    g_paste_keybinder_unbind (self);
-    g_paste_keybinder_activate (self);
+    g_slist_foreach (self->priv->keybindings,
+                     g_paste_keybinder_deactivate_keybinding_func,
+                     self);
 }
 
 static void
 g_paste_keybinder_dispose (GObject *object)
 {
-    GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
-
-    g_paste_keybinder_unbind (self);
-    xcb_disconnect (self->priv->connection);
-
-    G_OBJECT_CLASS (g_paste_keybinder_parent_class)->dispose (object);
-}
-
-static void
-g_paste_keybinder_finalize (GObject *object)
-{
     GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (object)->priv;
 
-    xcb_key_symbols_free (priv->keysyms);
-    g_free (priv->keycodes);
-    g_free (priv->binding);
+    g_object_unref (priv->xcb_wrapper);
+    g_slist_foreach (priv->keybindings, (GFunc) g_object_unref, NULL);
 
-    G_OBJECT_CLASS (g_paste_keybinder_parent_class)->finalize (object);
+    G_OBJECT_CLASS (g_paste_keybinder_parent_class)->dispose (object);
 }
 
 static void
@@ -158,30 +162,20 @@ g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteKeybinderPrivate));
 
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_keybinder_dispose;
-    object_class->finalize = g_paste_keybinder_finalize;
-
-    signals[TOGGLE] = g_signal_new ("toggle",
-                                    G_PASTE_TYPE_KEYBINDER,
-                                    G_SIGNAL_RUN_LAST,
-                                    0, /* class offset */
-                                    NULL, /* accumulator */
-                                    NULL, /* accumulator data */
-                                    g_cclosure_marshal_VOID__VOID,
-                                    G_TYPE_NONE,
-                                    0); /* number of params */
+    G_OBJECT_CLASS (klass)->dispose = g_paste_keybinder_dispose;
 }
 
 static void
 g_paste_keybinder_init (GPasteKeybinder *self)
 {
-    self->priv = G_PASTE_KEYBINDER_GET_PRIVATE (self);
+    GPasteKeybinderPrivate *priv = self->priv = G_PASTE_KEYBINDER_GET_PRIVATE (self);
+
+    priv->keybindings = NULL;
 }
 
 /**
  * g_paste_keybinder_new:
+ * @xcb_wrapper: a #GPasteXcbWrapper instance
  *
  * Create a new instance of #GPasteKeybinder
  *
@@ -189,33 +183,13 @@ g_paste_keybinder_init (GPasteKeybinder *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinder *
-g_paste_keybinder_new (const gchar *binding)
+g_paste_keybinder_new (GPasteXcbWrapper *xcb_wrapper)
 {
-    g_return_val_if_fail (binding != NULL, NULL);
-
     GPasteKeybinder *self = g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);
     GPasteKeybinderPrivate *priv = self->priv;
-    int connection_screen;
-    const xcb_setup_t *setup;
 
-    priv->connection = xcb_connect (NULL, &connection_screen);
+    priv->xcb_wrapper = g_object_ref (xcb_wrapper);
 
-    if ((setup = xcb_get_setup (priv->connection))) {
-        xcb_screen_iterator_t iter = xcb_setup_roots_iterator (setup);
-        for (; iter.rem; --connection_screen, xcb_screen_next (&iter))
-            if (0 == connection_screen)
-                priv->screen = iter.data;
-    }
-
-    if (!priv->screen)
-    {
-        g_object_unref (self);
-        return NULL;
-    }
-
-    priv->keysyms = xcb_key_symbols_alloc (priv->connection);
-    priv->binding = g_strdup (binding);
-    g_paste_keybinder_activate (self);
     g_timeout_add (100, g_paste_keybinder_source, self);
 
     return self;

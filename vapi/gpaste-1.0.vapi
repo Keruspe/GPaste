@@ -62,10 +62,10 @@ namespace GPaste {
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_keybinder_get_type ()")]
 	public class Keybinder : GLib.Object {
 		[CCode (has_construct_function = false)]
-		public Keybinder (string binding);
-		public void rebind (string binding);
-		public void unbind ();
-		public signal void toggle ();
+		public Keybinder (GPaste.XcbWrapper xcb_wrapper);
+		public void activate_all ();
+		public void add_keybinding (GPaste.Keybinding binding);
+		public void deactivate_all ();
 	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_keybinding_get_type ()")]
 	public class Keybinding : GLib.Object {
