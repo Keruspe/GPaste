@@ -1,4 +1,4 @@
-LIBGPASTE_2_5 {
+LIBGPASTE {
 global:
     g_paste_clipboard_get_type;
     g_paste_clipboard_get_target;
@@ -76,6 +76,9 @@ global:
     g_paste_settings_set_max_text_item_size;
     g_paste_settings_set_keyboard_shortcut;
     g_paste_settings_new;
+
+    g_paste_xcb_wrapper_get_type;
+    g_paste_xcb_wrapper_new;
 local:
     *;
 };

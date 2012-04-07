@@ -111,4 +111,9 @@ namespace GPaste {
 		[CCode (array_length = false, array_null_terminated = true)]
 		public unowned string[] get_uris ();
 	}
+	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_xcb_wrapper_get_type ()")]
+	public class XcbWrapper : GLib.Object {
+		[CCode (has_construct_function = false)]
+		public XcbWrapper ();
+	}
 }

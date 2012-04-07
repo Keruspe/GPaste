@@ -27,6 +27,7 @@ libgpaste_libgpaste_la_public_headers = \
 	libgpaste/gpaste-item.h \
 	libgpaste/gpaste-keybinder.h \
 	libgpaste/gpaste-settings.h \
+	libgpaste/gpaste-xcb-wrapper.h \
 	$(NULL)
 
 libgpaste_libgpaste_la_private_headers = \
@@ -36,6 +37,11 @@ libgpaste_libgpaste_la_private_headers = \
 	libgpaste/gpaste-item-private.h \
 	libgpaste/gpaste-keybinder-private.h \
 	libgpaste/gpaste-settings-private.h \
+	libgpaste/gpaste-xcb-wrapper-private.h \
+	$(NULL)
+
+libgpaste_libgpaste_la_internal_headers = \
+	libgpaste/gpaste-xcb-wrapper-internal.h \
 	$(NULL)
 
 libgpaste_libgpaste_la_SOURCES = \
@@ -45,6 +51,7 @@ libgpaste_libgpaste_la_SOURCES = \
 	libgpaste/gpaste-item.c \
 	libgpaste/gpaste-keybinder.c \
 	libgpaste/gpaste-settings.c \
+	libgpaste/gpaste-xcb-wrapper.c \
 	$(NULL)
 
 libgpaste_libgpaste_la_CFLAGS = \
@@ -80,5 +87,6 @@ lib_LTLIBRARIES += libgpaste/libgpaste.la
 
 EXTRA_DIST += \
 	$(libgpaste_libgpaste_la_private_headers) \
+	$(libgpaste_libgpaste_la_internal_headers) \
 	libgpaste/libgpaste.sym \
 	$(NULL)

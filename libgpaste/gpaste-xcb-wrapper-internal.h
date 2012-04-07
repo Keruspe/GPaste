@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -17,19 +17,17 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_H__
-#define __G_PASTE_H__
+#ifndef __G_PASTE_XCB_WRAPPER_INTERNAL_H__
+#define __G_PASTE_XCB_WRAPPER_INTERNAL_H__
 
-#define __G_PASTE_H_INSIDE__
+#include "gpaste-xcb-wrapper.h"
 
-#include <gpaste-clipboard.h>
-#include <gpaste-clipboards-manager.h>
-#include <gpaste-history.h>
-#include <gpaste-item.h>
-#include <gpaste-keybinder.h>
-#include <gpaste-settings.h>
-#include <gpaste-xcb-wrapper.h>
+G_BEGIN_DECLS
 
-#undef __G_PASTE_H_INSIDE__
+xcb_connection_t  *g_paste_xcb_wrapper_get_connection (GPasteXcbWrapper *self);
+xcb_screen_t      *g_paste_xcb_wrapper_get_screen     (GPasteXcbWrapper *self);
+xcb_key_symbols_t *g_paste_xcb_wrapper_get_keysyms    (GPasteXcbWrapper *self);
 
-#endif /*__G_PASTE_H__*/
+G_END_DECLS
+
+#endif /*__G_PASTE_XCB_WRAPPER_INTERNAL_H__*/
