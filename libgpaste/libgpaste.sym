@@ -33,6 +33,15 @@ global:
     g_paste_keybinder_rebind;
     g_paste_keybinder_new;
 
+    g_paste_keybinding_get_type;
+    g_paste_keybinding_activate;
+    g_paste_keybinding_deactivate;
+    g_paste_keybinding_rebind;
+    g_paste_keybinding_get_keycodes;
+    g_paste_keybinding_is_active;
+    g_paste_keybinding_notify;
+    g_paste_keybinding_new;
+
     g_paste_item_get_type;
     g_paste_item_get_value;
     g_paste_item_get_display_string;

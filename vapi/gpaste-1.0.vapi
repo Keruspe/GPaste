@@ -67,6 +67,22 @@ namespace GPaste {
 		public void unbind ();
 		public signal void toggle ();
 	}
+	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_keybinding_get_type ()")]
+	public class Keybinding : GLib.Object {
+		[CCode (has_construct_function = false)]
+		public Keybinding (GPaste.XcbWrapper xcb_wrapper, string binding, GLib.SourceFunc callback);
+		public void activate ();
+		public void deactivate ();
+		[CCode (array_length = false, array_null_terminated = true)]
+		public unowned GPaste.Keycode[] get_keycodes ();
+		public bool is_active ();
+		public bool notify ();
+		public void rebind (string binding);
+	}
+	[CCode (cheader_filename = "gpaste.h")]
+	[Compact]
+	public class Keycode {
+	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_settings_get_type ()")]
 	public class Settings : GLib.Object {
 		[CCode (has_construct_function = false)]
