@@ -214,11 +214,12 @@ g_paste_daemon_changed (GPasteHistory *history G_GNUC_UNUSED,
                                    NULL); /* error */
 }
 
-static void
-_g_paste_daemon_show_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
-                              gpointer         user_data)
+void
+g_paste_daemon_show_history (GPasteDaemon *self)
 {
-    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
+    GPasteDaemonPrivate *priv = self->priv;
 
     g_dbus_connection_emit_signal (priv->connection,
                                    NULL, /* destination_bus_name */
@@ -345,7 +346,6 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handlers_disconnect_by_func (self, (gpointer) g_paste_daemon_reexecute_self, user_data);
     g_signal_handlers_disconnect_by_func (priv->settings, (gpointer) g_paste_daemon_tracking, user_data);
     g_signal_handlers_disconnect_by_func (priv->history, (gpointer) g_paste_daemon_changed, user_data);
-    g_signal_handlers_disconnect_by_func (priv->keybinder, (gpointer) _g_paste_daemon_show_history, user_data);
 
     g_object_unref (self);
 }
@@ -384,10 +384,6 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     g_signal_connect (G_OBJECT (priv->history),
                       "changed",
                       G_CALLBACK (g_paste_daemon_changed),
-                      self);
-    g_signal_connect (G_OBJECT (priv->keybinder),
-                      "toggle",
-                      G_CALLBACK (g_paste_daemon_show_history),
                       self);
 
     return result;

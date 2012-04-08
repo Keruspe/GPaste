@@ -62,35 +62,52 @@ namespace GPaste {
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_keybinder_get_type ()")]
 	public class Keybinder : GLib.Object {
 		[CCode (has_construct_function = false)]
-		public Keybinder (string binding);
+		public Keybinder (GPaste.XcbWrapper xcb_wrapper);
+		public void activate_all ();
+		public void add_keybinding (GPaste.Keybinding binding);
+		public void deactivate_all ();
+	}
+	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_keybinding_get_type ()")]
+	public class Keybinding : GLib.Object {
+		[CCode (has_construct_function = false)]
+		public Keybinding (GPaste.XcbWrapper xcb_wrapper, string binding, GPaste.KeybindingFunc callback);
+		public void activate ();
+		public void deactivate ();
+		[CCode (array_length = false, array_null_terminated = true)]
+		public unowned GPaste.Keycode[] get_keycodes ();
+		public uint16 get_modifiers ();
+		public bool is_active ();
+		public void notify ();
 		public void rebind (string binding);
-		public void unbind ();
-		public signal void toggle ();
+	}
+	[CCode (cheader_filename = "gpaste.h")]
+	[Compact]
+	public class Keycode {
 	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_settings_get_type ()")]
 	public class Settings : GLib.Object {
 		[CCode (has_construct_function = false)]
 		public Settings ();
 		public uint get_element_size ();
-		public unowned string get_keyboard_shortcut ();
 		public uint get_max_displayed_history_size ();
 		public uint get_max_history_size ();
 		public uint get_max_text_item_size ();
 		public uint get_min_text_item_size ();
 		public bool get_primary_to_history ();
 		public bool get_save_history ();
+		public unowned string get_show_history ();
 		public bool get_synchronize_clipboards ();
 		public bool get_track_changes ();
 		public bool get_track_extension_state ();
 		public bool get_trim_items ();
 		public void set_element_size (uint value);
-		public void set_keyboard_shortcut (string value);
 		public void set_max_displayed_history_size (uint value);
 		public void set_max_history_size (uint value);
 		public void set_max_text_item_size (uint value);
 		public void set_min_text_item_size (uint value);
 		public void set_primary_to_history (bool value);
 		public void set_save_history (bool value);
+		public void set_show_history (string value);
 		public void set_synchronize_clipboards (bool value);
 		public void set_track_changes (bool value);
 		public void set_track_extension_state (bool value);
@@ -111,4 +128,16 @@ namespace GPaste {
 		[CCode (array_length = false, array_null_terminated = true)]
 		public unowned string[] get_uris ();
 	}
+	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_xcb_wrapper_get_type ()")]
+	public class XcbWrapper : GLib.Object {
+		[CCode (has_construct_function = false)]
+		public XcbWrapper ();
+	}
+	[CCode (cheader_filename = "gpaste.h", cprefix = "G_PASTE_KEYBINDINGS_")]
+	public enum Keybindings {
+		SHOW_HISTORY,
+		LAST_KEYBINDING
+	}
+	[CCode (cheader_filename = "gpaste.h", instance_pos = 0.9)]
+	public delegate void KeybindingFunc ();
 }

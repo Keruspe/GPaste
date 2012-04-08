@@ -1,4 +1,4 @@
-LIBGPASTE_2_5 {
+LIBGPASTE {
 global:
     g_paste_clipboard_get_type;
     g_paste_clipboard_get_target;
@@ -29,9 +29,20 @@ global:
     g_paste_history_new;
 
     g_paste_keybinder_get_type;
-    g_paste_keybinder_unbind;
-    g_paste_keybinder_rebind;
+    g_paste_keybinder_add_keybinding;
+    g_paste_keybinder_activate_all;
+    g_paste_keybinder_deactivate_all;
     g_paste_keybinder_new;
+
+    g_paste_keybinding_get_type;
+    g_paste_keybinding_activate;
+    g_paste_keybinding_deactivate;
+    g_paste_keybinding_rebind;
+    g_paste_keybinding_get_keycodes;
+    g_paste_keybinding_get_modifiers;
+    g_paste_keybinding_is_active;
+    g_paste_keybinding_notify;
+    g_paste_keybinding_new;
 
     g_paste_item_get_type;
     g_paste_item_get_value;
@@ -62,7 +73,7 @@ global:
     g_paste_settings_get_element_size;
     g_paste_settings_get_min_text_item_size;
     g_paste_settings_get_max_text_item_size;
-    g_paste_settings_get_keyboard_shortcut;
+    g_paste_settings_get_show_history;
     g_paste_settings_set_track_changes;
     g_paste_settings_set_track_extension_state;
     g_paste_settings_set_primary_to_history;
@@ -74,8 +85,11 @@ global:
     g_paste_settings_set_element_size;
     g_paste_settings_set_min_text_item_size;
     g_paste_settings_set_max_text_item_size;
-    g_paste_settings_set_keyboard_shortcut;
+    g_paste_settings_set_show_history;
     g_paste_settings_new;
+
+    g_paste_xcb_wrapper_get_type;
+    g_paste_xcb_wrapper_new;
 local:
     *;
 };

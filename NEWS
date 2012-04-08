@@ -5,6 +5,7 @@ NEW in 2.6 (Not released yet)
 - the history file now has a version number
 - CDATA can now be copied
 - ToggleHistory is now ShowHistory
+- The "keyboard-shortcut" preferences is now called "show-history"
 
 NEW in 2.5 (08/03/2012)
 =============

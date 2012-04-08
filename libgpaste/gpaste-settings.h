@@ -28,7 +28,7 @@
 #include "config.h"
 #endif
 
-#include <glib-object.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 
@@ -58,7 +58,7 @@ guint        g_paste_settings_get_max_displayed_history_size (GPasteSettings *se
 guint        g_paste_settings_get_element_size               (GPasteSettings *self);
 guint        g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
 guint        g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
-const gchar *g_paste_settings_get_keyboard_shortcut          (GPasteSettings *self);
+const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
 
 void g_paste_settings_set_track_changes              (GPasteSettings *self,
                                                       gboolean        value);
@@ -82,7 +82,7 @@ void g_paste_settings_set_min_text_item_size         (GPasteSettings *self,
                                                       guint           value);
 void g_paste_settings_set_max_text_item_size         (GPasteSettings *self,
                                                       guint           value);
-void g_paste_settings_set_keyboard_shortcut          (GPasteSettings *self,
+void g_paste_settings_set_show_history               (GPasteSettings *self,
                                                       const gchar    *value);
 
 GPasteSettings *g_paste_settings_new (void);

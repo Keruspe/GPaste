@@ -29,7 +29,7 @@ public class Window : Gtk.Window {
     private Gtk.SpinButton element_size_button;
     private Gtk.SpinButton min_text_item_size_button;
     private Gtk.SpinButton max_text_item_size_button;
-    private Gtk.Entry keyboard_shortcut_entry;
+    private Gtk.Entry show_history_entry;
 
     public bool track_changes {
         get {
@@ -130,12 +130,12 @@ public class Window : Gtk.Window {
         }
     }
 
-    public string keyboard_shortcut {
+    public string show_history {
         get {
-            return this.keyboard_shortcut_entry.get_text ();
+            return this.show_history_entry.get_text ();
         }
         set {
-            this.keyboard_shortcut_entry.set_text (value);
+            this.show_history_entry.set_text (value);
         }
     }
 
@@ -260,16 +260,16 @@ public class Window : Gtk.Window {
         });
         grid.attach_next_to (this.max_text_item_size_button, max_text_item_size_label, Gtk.PositionType.RIGHT, 1, 1);
 
-        var keyboard_shortcut_label = new Gtk.Label (_("Keyboard shortcut to display the history: "));
-        keyboard_shortcut_label.xalign = 0;
-        grid.attach (keyboard_shortcut_label, 0, current_line++, 1, 1);
+        var show_history_label = new Gtk.Label (_("Keyboard shortcut to display the history: "));
+        show_history_label.xalign = 0;
+        grid.attach (show_history_label, 0, current_line++, 1, 1);
 
-        this.keyboard_shortcut_entry = new Gtk.Entry ();
-        this.keyboard_shortcut = app.settings.get_keyboard_shortcut ();
-        this.keyboard_shortcut_entry.changed.connect (() => {
-            app.settings.set_keyboard_shortcut (this.keyboard_shortcut);
+        this.show_history_entry = new Gtk.Entry ();
+        this.show_history = app.settings.get_show_history ();
+        this.show_history_entry.changed.connect (() => {
+            app.settings.set_show_history (this.show_history);
         });
-        grid.attach_next_to (this.keyboard_shortcut_entry, keyboard_shortcut_label, Gtk.PositionType.RIGHT, 1, 1);
+        grid.attach_next_to (this.show_history_entry, show_history_label, Gtk.PositionType.RIGHT, 1, 1);
 
         this.add (grid);
     }
@@ -320,8 +320,8 @@ public class Main : Gtk.Application {
             case "max-text-item-size":
                 this.window.max_text_item_size = this.settings.get_max_text_item_size ();
                 break;
-            case "keyboard-shortcut":
-                this.window.keyboard_shortcut = this.settings.get_keyboard_shortcut ();
+            case "show-history":
+                this.window.show_history = this.settings.get_show_history ();
                 break;
             }
         });

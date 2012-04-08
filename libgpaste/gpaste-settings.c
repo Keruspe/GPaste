@@ -34,7 +34,7 @@
 #define ELEMENT_SIZE_KEY               "element-size"
 #define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
-#define KEYBOARD_SHORTCUT_KEY          "keyboard-shortcut"
+#define SHOW_HISTORY_KEY               "show-history"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
@@ -53,7 +53,7 @@ struct _GPasteSettingsPrivate
     guint      element_size;
     guint      min_text_item_size;
     guint      max_text_item_size;
-    gchar     *keyboard_shortcut;
+    gchar     *show_history;
 };
 
 enum
@@ -585,53 +585,53 @@ g_paste_settings_set_max_text_item_size (GPasteSettings *self,
 }
 
 /**
- * g_paste_settings_get_keyboard_shortcut:
+ * g_paste_settings_get_show_history:
  * @self: a #GPasteSettings instance
  *
- * Get the KEYBOARD_SHORTCUT_KEY setting
+ * Get the SHOW_HISTORY_KEY setting
  *
- * Returns: the value of the KEYBOARD_SHORTCUT_KEY setting
+ * Returns: the value of the SHOW_HISTORY_KEY setting
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_settings_get_keyboard_shortcut (GPasteSettings *self)
+g_paste_settings_get_show_history (GPasteSettings *self)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
 
-    return self->priv->keyboard_shortcut;
+    return self->priv->show_history;
 }
 
 static void
-g_paste_settings_set_keyboard_shortcut_from_dconf (GPasteSettings *self)
+g_paste_settings_set_show_history_from_dconf (GPasteSettings *self)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
 
     GPasteSettingsPrivate *priv = self->priv;
 
-    g_free (priv->keyboard_shortcut);
-    priv->keyboard_shortcut = g_settings_get_string (priv->settings, KEYBOARD_SHORTCUT_KEY);
+    g_free (priv->show_history);
+    priv->show_history = g_settings_get_string (priv->settings, SHOW_HISTORY_KEY);
 }
 
 /**
- * g_paste_settings_set_keyboard_shortcut:
+ * g_paste_settings_set_show_history:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
  *
- * Change the KEYBOARD_SHORTCUT_KEY setting
+ * Change the SHOW_HISTORY_KEY setting
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_settings_set_keyboard_shortcut (GPasteSettings *self,
-                                        const gchar    *value)
+g_paste_settings_set_show_history (GPasteSettings *self,
+                                   const gchar    *value)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     g_return_if_fail (value != NULL);
 
     GPasteSettingsPrivate *priv = self->priv;
 
-    g_free (priv->keyboard_shortcut);
-    priv->keyboard_shortcut = g_strdup (value);
-    g_settings_set_string (priv->settings, KEYBOARD_SHORTCUT_KEY, value);
+    g_free (priv->show_history);
+    priv->show_history = g_strdup (value);
+    g_settings_set_string (priv->settings, SHOW_HISTORY_KEY, value);
 }
 
 static void
@@ -645,7 +645,7 @@ g_paste_settings_dispose (GObject *object)
 static void
 g_paste_settings_finalize (GObject *object)
 {
-    g_free (G_PASTE_SETTINGS (object)->priv->keyboard_shortcut);
+    g_free (G_PASTE_SETTINGS (object)->priv->show_history);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
 }
@@ -732,13 +732,13 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_min_text_item_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
         g_paste_settings_set_max_text_item_size_from_dconf (self);
-    else if (g_strcmp0 (key, KEYBOARD_SHORTCUT_KEY) == 0)
+    else if (g_strcmp0 (key, SHOW_HISTORY_KEY) == 0)
     {
-        g_paste_settings_set_keyboard_shortcut_from_dconf (self);
+        g_paste_settings_set_show_history_from_dconf (self);
         g_signal_emit (self,
                        signals[REBIND],
                        0, /* detail */
-                       priv->keyboard_shortcut);
+                       G_PASTE_KEYBINDINGS_SHOW_HISTORY);
     }
 
     /* Forward the signal */
@@ -764,7 +764,7 @@ g_paste_settings_new (void)
 
     GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
 
-    priv->keyboard_shortcut = NULL;
+    priv->show_history = NULL;
 
     g_paste_settings_set_track_changes_from_dconf (self);
     g_paste_settings_set_track_extension_state_from_dconf (self);
@@ -777,7 +777,7 @@ g_paste_settings_new (void)
     g_paste_settings_set_element_size_from_dconf (self);
     g_paste_settings_set_min_text_item_size_from_dconf(self);
     g_paste_settings_set_max_text_item_size_from_dconf(self);
-    g_paste_settings_set_keyboard_shortcut_from_dconf (self);
+    g_paste_settings_set_show_history_from_dconf (self);
 
     g_signal_connect (G_OBJECT (settings),
                       "changed",

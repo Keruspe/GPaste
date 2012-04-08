@@ -35,11 +35,25 @@ signal_handler (int signum)
 }
 
 static void
-rebind (GPasteSettings *settings G_GNUC_UNUSED,
-        const char     *binding,
-        gpointer        user_data)
+rebind (GPasteSettings   *settings,
+        GPasteKeybindings keybinding,
+        gpointer          user_data)
 {
-    g_paste_keybinder_rebind (G_PASTE_KEYBINDER (user_data), binding);
+    GPasteKeybinding **keybindings = (GPasteKeybinding **) user_data;
+    const gchar *binding;
+
+    switch (keybinding)
+    {
+    case G_PASTE_KEYBINDINGS_SHOW_HISTORY:
+        binding = g_paste_settings_get_show_history (settings);
+        break;
+    default:
+        binding = NULL;
+        break;
+    }
+
+    if (binding)
+        g_paste_keybinding_rebind (keybindings[keybinding], binding);
 }
 
 static void
@@ -96,32 +110,48 @@ main (int argc, char *argv[])
     gtk_init (&argc, &argv);
 
     GPasteSettings *settings = g_paste_settings_new ();
-    GPasteKeybinder *keybinder = g_paste_keybinder_new (g_paste_settings_get_keyboard_shortcut (settings));
     GPasteHistory *history = g_paste_history_new (settings);
     GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
+    GPasteXcbWrapper *xcb_wrapper = g_paste_xcb_wrapper_new ();
+    GPasteKeybinder *keybinder = g_paste_keybinder_new (xcb_wrapper);
     GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
+    GPasteKeybinding **keybindings = alloca (G_PASTE_KEYBINDINGS_LAST_KEYBINDING * sizeof (GPasteKeybinding *));
+    keybindings[G_PASTE_KEYBINDINGS_SHOW_HISTORY] = g_paste_keybinding_new (xcb_wrapper,
+                                                                            g_paste_settings_get_show_history (settings),
+                                                                            (GPasteKeybindingFunc) g_paste_daemon_show_history,
+                                                                            g_paste_daemon);
+
     g_signal_connect (G_OBJECT (settings),
                       "rebind",
                       G_CALLBACK (rebind),
-                      keybinder);
+                      keybindings);
     g_signal_connect (G_OBJECT (g_paste_daemon),
                       "reexecute-self",
                       G_CALLBACK (reexec),
                       NULL); /* user_data */
 
     g_paste_history_load (history);
+    g_paste_keybinder_activate_all (keybinder);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
+    for (GPasteKeybindings k = 0; k < G_PASTE_KEYBINDINGS_LAST_KEYBINDING; ++k)
+        g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
+
     g_object_unref (settings);
     g_object_unref (history);
     g_object_unref (clipboards_manager);
+    g_object_unref (xcb_wrapper);
+    g_object_unref (keybinder);
     g_object_unref (clipboard);
     g_object_unref (primary);
+
+    for (GPasteKeybindings k = 0; k < G_PASTE_KEYBINDINGS_LAST_KEYBINDING; ++k)
+        g_object_unref (keybindings[k]);
 
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
@@ -139,8 +169,6 @@ main (int argc, char *argv[])
 
     g_main_loop_run (main_loop);
 
-    g_paste_keybinder_unbind (keybinder);
-    g_object_unref (keybinder);
     g_object_unref (g_paste_daemon);
     g_bus_unown_name (owner_id);
     g_main_loop_unref (main_loop);
