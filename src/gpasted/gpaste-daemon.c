@@ -29,6 +29,8 @@ G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
 struct _GPasteDaemonPrivate
 {
+    GDBusConnection         *connection;
+    gchar                   *object_path;
     GPasteHistory           *history;
     GPasteSettings          *settings;
     GPasteClipboardsManager *clipboards_manager;
@@ -185,12 +187,12 @@ g_paste_daemon_tracking (GPasteSettings *settings G_GNUC_UNUSED,
                          gboolean        tracking_state,
                          gpointer        user_data)
 {
+    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
     GVariant *variant = g_variant_new_boolean (tracking_state);
-    gpointer *data = (gpointer *) user_data;
 
-    g_dbus_connection_emit_signal (data[1], /* connection */
+    g_dbus_connection_emit_signal (priv->connection,
                                    NULL, /* destination_bus_name */
-                                   data[2], /* object_path */
+                                   priv->object_path,
                                    G_PASTE_BUS_NAME,
                                    "Tracking",
                                    g_variant_new_tuple (&variant, 1),
@@ -201,11 +203,11 @@ static void
 g_paste_daemon_changed (GPasteHistory *history G_GNUC_UNUSED,
                         gpointer       user_data)
 {
-    gpointer *data = (gpointer *) user_data;
+    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
 
-    g_dbus_connection_emit_signal (data[1], /* connection */
+    g_dbus_connection_emit_signal (priv->connection,
                                    NULL, /* destination_bus_name */
-                                   data[2], /* object_path */
+                                   priv->object_path,
                                    G_PASTE_BUS_NAME,
                                    "Changed",
                                    g_variant_new_tuple (NULL, 0),
@@ -213,14 +215,14 @@ g_paste_daemon_changed (GPasteHistory *history G_GNUC_UNUSED,
 }
 
 static void
-g_paste_daemon_toggle_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
+_g_paste_daemon_toggle_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
                                gpointer         user_data)
 {
-    gpointer *data = (gpointer *) user_data;
+    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
 
-    g_dbus_connection_emit_signal (data[1], /* connection */
+    g_dbus_connection_emit_signal (priv->connection,
                                    NULL, /* destination_bus_name */
-                                   data[2], /* object_path */
+                                   priv->object_path,
                                    G_PASTE_BUS_NAME,
                                    "ToggleHistory",
                                    g_variant_new_tuple (NULL, 0),
@@ -228,14 +230,14 @@ g_paste_daemon_toggle_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
 }
 
 static void
-g_paste_daemon_reexecute_self (GPasteDaemon *self G_GNUC_UNUSED,
-                               gpointer      user_data)
+g_paste_daemon_reexecute_self (GPasteDaemon *self,
+                               gpointer      user_data G_GNUC_UNUSED)
 {
-    gpointer *data = (gpointer *) user_data;
+    GPasteDaemonPrivate *priv = self->priv;
 
-    g_dbus_connection_emit_signal (data[1], /* connection */
+    g_dbus_connection_emit_signal (priv->connection,
                                    NULL, /* destination_bus_name */
-                                   data[2], /* object_path */
+                                   priv->object_path,
                                    G_PASTE_BUS_NAME,
                                    "ReexecuteSelf",
                                    g_variant_new_tuple (NULL, 0),
@@ -246,8 +248,7 @@ static void
 g_paste_daemon_track (GPasteDaemon          *self,
                       GDBusConnection       *connection,
                       GDBusMethodInvocation *invocation,
-                      GVariant              *parameters,
-                      gpointer              *data)
+                      GVariant              *parameters)
 {
     GVariantIter parameters_iter;
 
@@ -259,7 +260,7 @@ g_paste_daemon_track (GPasteDaemon          *self,
     g_variant_unref (variant);
 
     g_paste_settings_set_track_changes (self->priv->settings, tracking_state);
-    g_paste_daemon_tracking (NULL, tracking_state, data);
+    g_paste_daemon_tracking (NULL, tracking_state, self);
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
@@ -267,11 +268,10 @@ static void
 g_paste_daemon_on_extension_state_changed (GPasteDaemon          *self,
                                            GDBusConnection       *connection,
                                            GDBusMethodInvocation *invocation,
-                                           GVariant              *parameters,
-                                           gpointer              *data)
+                                           GVariant              *parameters)
 {
     if (g_paste_settings_get_track_extension_state (self->priv->settings))
-        g_paste_daemon_track (self, connection, invocation, parameters, data);
+        g_paste_daemon_track (self, connection, invocation, parameters);
 }
 
 static void
@@ -295,8 +295,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
                                  GDBusMethodInvocation *invocation,
                                  gpointer               user_data)
 {
-    gpointer *data = (gpointer *) user_data;
-    GPasteDaemon *self = G_PASTE_DAEMON (data[0]);
+    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
 
     if (g_strcmp0 (method_name, "GetHistory") == 0)
         g_paste_daemon_get_history (self, connection, invocation);
@@ -311,9 +310,9 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
     else if (g_strcmp0 (method_name, "Empty") == 0)
         g_paste_daemon_empty (self, connection, invocation);
     else if (g_strcmp0 (method_name, "Track") == 0)
-        g_paste_daemon_track (self, connection, invocation, parameters, data);
+        g_paste_daemon_track (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "OnExtensionStateChanged") == 0)
-        g_paste_daemon_on_extension_state_changed (self, connection, invocation, parameters, data);
+        g_paste_daemon_on_extension_state_changed (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "Reexecute") == 0)
         g_paste_daemon_reexecute (self, connection, invocation);
 
@@ -329,10 +328,10 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
                                   GError         **error G_GNUC_UNUSED,
                                   gpointer         user_data)
 {
-    gpointer *data = (gpointer *) user_data;
+    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
 
     if (g_strcmp0 (property_name, "Active") == 0)
-        return g_variant_new_boolean (g_paste_settings_get_track_changes (G_PASTE_DAEMON (data[0])->priv->settings));
+        return g_variant_new_boolean (g_paste_settings_get_track_changes (priv->settings));
 
     return NULL;
 }
@@ -340,19 +339,15 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
 static void
 g_paste_daemon_unregister_object (gpointer user_data)
 {
-    gpointer *data = (gpointer *) user_data;
-    GPasteDaemon *self = data[0];
+    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = self->priv;
 
     g_signal_handlers_disconnect_by_func (self, (gpointer) g_paste_daemon_reexecute_self, user_data);
     g_signal_handlers_disconnect_by_func (priv->settings, (gpointer) g_paste_daemon_tracking, user_data);
     g_signal_handlers_disconnect_by_func (priv->history, (gpointer) g_paste_daemon_changed, user_data);
-    g_signal_handlers_disconnect_by_func (priv->keybinder, (gpointer) g_paste_daemon_toggle_history, user_data);
+    g_signal_handlers_disconnect_by_func (priv->keybinder, (gpointer) _g_paste_daemon_toggle_history, user_data);
 
     g_object_unref (self);
-    g_object_unref (data[1]);
-    g_free (data[2]);
-    g_free (data);
 }
 
 guint
@@ -361,18 +356,18 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                 const gchar     *path,
                                 GError         **error)
 {
-    gpointer *data = g_new (gpointer, 3);
-
-    data[0] = g_object_ref (self);
-    data[1] = g_object_ref (connection);
-    data[2] = g_strdup (path);
+    g_return_val_if_fail (G_PASTE_IS_DAEMON (self), 0);
 
     GPasteDaemonPrivate *priv = self->priv;
+
+    priv->connection = g_object_ref (connection);
+    priv->object_path = g_strdup (path);
+
     guint result = g_dbus_connection_register_object (connection,
                                                       path,
                                                       priv->g_paste_daemon_dbus_info->interfaces[0],
                                                      &priv->g_paste_daemon_dbus_vtable,
-                                                      (gpointer) data,
+                                                      g_object_ref (self),
                                                       g_paste_daemon_unregister_object,
                                                       error);
     if (!result)
@@ -381,19 +376,19 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     g_signal_connect (G_OBJECT (self),
                       "reexecute-self",
                       G_CALLBACK (g_paste_daemon_reexecute_self),
-                      data);
+                      NULL);
     g_signal_connect (G_OBJECT (priv->settings),
                       "track",
                       G_CALLBACK (g_paste_daemon_tracking),
-                      data);
+                      self);
     g_signal_connect (G_OBJECT (priv->history),
                       "changed",
                       G_CALLBACK (g_paste_daemon_changed),
-                      data);
+                      self);
     g_signal_connect (G_OBJECT (priv->keybinder),
                       "toggle",
                       G_CALLBACK (g_paste_daemon_toggle_history),
-                      data);
+                      self);
 
     return result;
 }
@@ -403,6 +398,7 @@ g_paste_daemon_dispose (GObject *object)
 {
     GPasteDaemonPrivate *priv = G_PASTE_DAEMON (object)->priv;
 
+    g_object_unref (priv->connection);
     g_object_unref (priv->history);
     g_object_unref (priv->settings);
     g_object_unref (priv->clipboards_manager);
@@ -413,11 +409,20 @@ g_paste_daemon_dispose (GObject *object)
 }
 
 static void
+g_paste_daemon_finalize (GObject *object)
+{
+    g_free (G_PASTE_DAEMON (object)->priv->object_path);
+
+    G_OBJECT_CLASS (g_paste_daemon_parent_class)->finalize (object);
+}
+
+static void
 g_paste_daemon_class_init (GPasteDaemonClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteDaemonPrivate));
 
     G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
+    G_OBJECT_CLASS (klass)->finalize = g_paste_daemon_finalize;
 
     signals[REEXECUTE_SELF] = g_signal_new ("reexecute-self",
                                             G_PASTE_TYPE_DAEMON,
