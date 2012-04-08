@@ -75,6 +75,7 @@ namespace GPaste {
 		public void deactivate ();
 		[CCode (array_length = false, array_null_terminated = true)]
 		public unowned GPaste.Keycode[] get_keycodes ();
+		public uint16 get_modifiers ();
 		public bool is_active ();
 		public void notify ();
 		public void rebind (string binding);

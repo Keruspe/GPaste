@@ -39,6 +39,7 @@ global:
     g_paste_keybinding_deactivate;
     g_paste_keybinding_rebind;
     g_paste_keybinding_get_keycodes;
+    g_paste_keybinding_get_modifiers;
     g_paste_keybinding_is_active;
     g_paste_keybinding_notify;
     g_paste_keybinding_new;

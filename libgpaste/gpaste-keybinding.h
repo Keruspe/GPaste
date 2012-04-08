@@ -54,6 +54,7 @@ void g_paste_keybinding_deactivate (GPasteKeybinding  *self);
 void g_paste_keybinding_rebind (GPasteKeybinding  *self,
                                 const gchar       *binding);
 const GPasteKeycode *g_paste_keybinding_get_keycodes (GPasteKeybinding *self);
+guint16 g_paste_keybinding_get_modifiers (GPasteKeybinding *self);
 gboolean g_paste_keybinding_is_active (GPasteKeybinding *self);
 void g_paste_keybinding_notify (GPasteKeybinding *self);
 

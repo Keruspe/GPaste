@@ -45,13 +45,14 @@ g_paste_keybinder_source (gpointer data)
         xcb_flush (connection);
         xcb_key_press_event_t *real_event = (xcb_key_press_event_t *) event;
         xcb_keycode_t keycode = real_event->detail;
+        guint16 modifiers = real_event->state;
         for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
         {
             GPasteKeybinding *real_keybinding = keybinding->data;
             if (g_paste_keybinding_is_active (real_keybinding))
             {
                 const xcb_keycode_t *keycodes = (const xcb_keycode_t *) g_paste_keybinding_get_keycodes (real_keybinding);
-                if (keycodes)
+                if (keycodes && g_paste_keybinding_get_modifiers (real_keybinding) == modifiers)
                 {
                     for (const xcb_keycode_t *k = keycodes; *k; ++k)
                     {
