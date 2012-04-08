@@ -51,7 +51,7 @@ const GPasteInterface =
             <arg type="b" direction="in" />
         </method>
         <signal name="Changed" />
-        <signal name="ToggleHistory" />
+        <signal name="ShowHistory" />
         <signal name="Tracking">
             <arg type="b" direction="out" />
         </signal>
@@ -69,7 +69,7 @@ const GPasteIndicator = new Lang.Class({
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._proxy = new GPasteProxy(Gio.DBus.session, BUS_NAME, OBJECT_PATH);
         this._proxy.connectSignal('Changed', Lang.bind(this, this._updateHistory));
-        this._proxy.connectSignal('ToggleHistory', Lang.bind(this, this._toggleHistory));
+        this._proxy.connectSignal('ShowHistory', Lang.bind(this, this._showHistory));
         this._proxy.connectSignal('Tracking', Lang.bind(this, function(proxy, sender, [trackingState]) {
             this._trackingStateChanged(trackingState);
         }));
@@ -134,8 +134,8 @@ const GPasteIndicator = new Lang.Class({
         }));
     },
 
-    _toggleHistory: function() {
-        this.menu.toggle();
+    _showHistory: function() {
+        this.menu.open(true);
     },
 
     _createHistoryItem: function(index) {
