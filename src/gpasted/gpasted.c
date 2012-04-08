@@ -133,14 +133,14 @@ main (int argc, char *argv[])
                       G_CALLBACK (reexec),
                       NULL); /* user_data */
 
+    for (GPasteKeybindings k = 0; k < G_PASTE_KEYBINDINGS_LAST_KEYBINDING; ++k)
+        g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
+
     g_paste_history_load (history);
     g_paste_keybinder_activate_all (keybinder);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
-
-    for (GPasteKeybindings k = 0; k < G_PASTE_KEYBINDINGS_LAST_KEYBINDING; ++k)
-        g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
 
     g_object_unref (settings);
     g_object_unref (history);
