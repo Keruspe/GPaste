@@ -44,6 +44,12 @@ typedef struct _GPasteKeybindingClass GPasteKeybindingClass;
 typedef struct _GPasteKeycode GPasteKeycode;
 typedef void  (*GPasteKeybindingFunc) (gpointer user_data);
 
+typedef enum {
+    G_PASTE_KEYBINDINGS_SHOW_HISTORY,
+
+    G_PASTE_KEYBINDINGS_LAST_KEYBINDING
+} GPasteKeybindings;
+
 #ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
 #endif

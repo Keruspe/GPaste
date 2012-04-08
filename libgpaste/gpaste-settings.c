@@ -738,7 +738,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_signal_emit (self,
                        signals[REBIND],
                        0, /* detail */
-                       priv->keyboard_shortcut);
+                       G_PASTE_KEYBINDINGS_SHOW_HISTORY);
     }
 
     /* Forward the signal */

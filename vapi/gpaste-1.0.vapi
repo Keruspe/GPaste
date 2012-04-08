@@ -133,6 +133,11 @@ namespace GPaste {
 		[CCode (has_construct_function = false)]
 		public XcbWrapper ();
 	}
+	[CCode (cheader_filename = "gpaste.h", cprefix = "G_PASTE_KEYBINDINGS_")]
+	public enum Keybindings {
+		SHOW_HISTORY,
+		LAST_KEYBINDING
+	}
 	[CCode (cheader_filename = "gpaste.h", instance_pos = 0.9)]
 	public delegate void KeybindingFunc ();
 }
