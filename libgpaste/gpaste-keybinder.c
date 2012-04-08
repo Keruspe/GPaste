@@ -151,8 +151,10 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 static void
 g_paste_keybinder_dispose (GObject *object)
 {
-    GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (object)->priv;
+    GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
+    GPasteKeybinderPrivate *priv = self->priv;
 
+    g_paste_keybinder_deactivate_all (self);
     g_object_unref (priv->xcb_wrapper);
     g_slist_foreach (priv->keybindings, (GFunc) g_object_unref, NULL);
 
