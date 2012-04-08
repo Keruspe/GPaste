@@ -42,6 +42,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteKeybinding GPasteKeybinding;
 typedef struct _GPasteKeybindingClass GPasteKeybindingClass;
 typedef struct _GPasteKeycode GPasteKeycode;
+typedef void  (*GPasteKeybindingFunc) (gpointer user_data);
 
 #ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
@@ -54,12 +55,12 @@ void g_paste_keybinding_rebind (GPasteKeybinding  *self,
                                 const gchar       *binding);
 const GPasteKeycode *g_paste_keybinding_get_keycodes (GPasteKeybinding *self);
 gboolean g_paste_keybinding_is_active (GPasteKeybinding *self);
-gboolean g_paste_keybinding_notify (GPasteKeybinding *self);
+void g_paste_keybinding_notify (GPasteKeybinding *self);
 
-GPasteKeybinding *g_paste_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
-                                          const gchar      *binding,
-                                          GSourceFunc       callback,
-                                          gpointer          user_data);
+GPasteKeybinding *g_paste_keybinding_new (GPasteXcbWrapper    *xcb_wrapper,
+                                          const gchar         *binding,
+                                          GPasteKeybindingFunc callback,
+                                          gpointer             user_data);
 
 G_END_DECLS
 

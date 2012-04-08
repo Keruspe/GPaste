@@ -27,13 +27,13 @@ G_DEFINE_TYPE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 
 struct _GPasteKeybindingPrivate
 {
-    GPasteXcbWrapper *xcb_wrapper;
-    gchar            *binding;
-    xcb_keycode_t    *keycodes;
-    guint16           modifiers;
-    GSourceFunc       callback;
-    gpointer          user_data;
-    gboolean          active;
+    GPasteXcbWrapper    *xcb_wrapper;
+    gchar               *binding;
+    xcb_keycode_t       *keycodes;
+    guint16              modifiers;
+    GPasteKeybindingFunc callback;
+    gpointer             user_data;
+    gboolean             active;
 };
 
 struct _GPasteKeycode
@@ -180,14 +180,14 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
  *
  * Returns: The return value of the callback
  */
-G_PASTE_VISIBLE gboolean
+G_PASTE_VISIBLE void
 g_paste_keybinding_notify (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), FALSE);
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
     GPasteKeybindingPrivate *priv = self->priv;
 
-    return priv->callback (priv->user_data);
+    priv->callback (priv->user_data);
 }
 
 static void
@@ -236,8 +236,8 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  * g_paste_keybinding_new:
  * @binding: the key binding to watch
  * @xcb_wrapper: a #GPasteXcbWrapper instance
- * @callback: (scope call): the callback to call when activated
- * @user_data: the data to pass to the callback
+ * @callback: (closure user_data) (scope notified): the callback to call when activated
+ * @user_data: (closure): the data to pass to @callback
  *
  * Create a new instance of #GPasteKeybinding
  *
@@ -245,10 +245,10 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
-                        const gchar      *binding,
-                        GSourceFunc       callback,
-                        gpointer          user_data)
+g_paste_keybinding_new (GPasteXcbWrapper    *xcb_wrapper,
+                        const gchar         *binding,
+                        GPasteKeybindingFunc callback,
+                        gpointer             user_data)
 {
     g_return_val_if_fail (binding != NULL, NULL);
 
