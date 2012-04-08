@@ -215,8 +215,8 @@ g_paste_daemon_changed (GPasteHistory *history G_GNUC_UNUSED,
 }
 
 static void
-_g_paste_daemon_toggle_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
-                               gpointer         user_data)
+_g_paste_daemon_show_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
+                              gpointer         user_data)
 {
     GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
 
@@ -224,7 +224,7 @@ _g_paste_daemon_toggle_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
                                    NULL, /* destination_bus_name */
                                    priv->object_path,
                                    G_PASTE_BUS_NAME,
-                                   "ToggleHistory",
+                                   "ShowHistory",
                                    g_variant_new_tuple (NULL, 0),
                                    NULL); /* error */
 }
@@ -345,7 +345,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handlers_disconnect_by_func (self, (gpointer) g_paste_daemon_reexecute_self, user_data);
     g_signal_handlers_disconnect_by_func (priv->settings, (gpointer) g_paste_daemon_tracking, user_data);
     g_signal_handlers_disconnect_by_func (priv->history, (gpointer) g_paste_daemon_changed, user_data);
-    g_signal_handlers_disconnect_by_func (priv->keybinder, (gpointer) _g_paste_daemon_toggle_history, user_data);
+    g_signal_handlers_disconnect_by_func (priv->keybinder, (gpointer) _g_paste_daemon_show_history, user_data);
 
     g_object_unref (self);
 }
@@ -387,7 +387,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                       self);
     g_signal_connect (G_OBJECT (priv->keybinder),
                       "toggle",
-                      G_CALLBACK (g_paste_daemon_toggle_history),
+                      G_CALLBACK (g_paste_daemon_show_history),
                       self);
 
     return result;
@@ -473,7 +473,7 @@ g_paste_daemon_init (GPasteDaemon *self)
         "           <arg type='b' direction='out' />"
         "       </signal>"
         "       <signal name='Changed' />"
-        "       <signal name='ToggleHistory' />"
+        "       <signal name='ShowHistory' />"
         "       <property name='Active' type='b' access='read' />"
         "   </interface>"
         "</node>",

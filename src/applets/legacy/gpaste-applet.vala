@@ -31,8 +31,8 @@ public interface DBusClient : GLib.Object {
     public abstract void track (bool tracking_state) throws GLib.IOError;
     [DBus (name = "Changed", inSignature = "")]
     public abstract signal void changed ();
-    [DBus (name = "ToggleHistory", inSignature = "")]
-    public abstract signal void toggle_history ();
+    [DBus (name = "ShowHistory", inSignature = "")]
+    public abstract signal void show_history ();
 }
 
 public class Window : Gtk.Window {
@@ -115,7 +115,7 @@ public class Window : Gtk.Window {
         this.history.show_all ();
     }
 
-    public void toggle_history () {
+    public void show_history () {
         Gdk.Event e = Gtk.get_current_event ();
         if (this.needs_repaint)
             this.fill_history ();
@@ -182,8 +182,8 @@ public class Main : Gtk.Application {
         try {
             this.gpasted = Bus.get_proxy_sync (BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
             this.gpasted.track (true); /* In case we exited the applet and we're launching it back */
-            this.gpasted.toggle_history.connect (() => {
-                this.window.toggle_history ();
+            this.gpasted.show_history.connect (() => {
+                this.window.show_history ();
             });
         } catch (IOError e) {
             stderr.printf (_("Couldn't connect to GPaste daemon.\n"));
