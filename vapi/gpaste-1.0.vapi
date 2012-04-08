@@ -89,25 +89,25 @@ namespace GPaste {
 		[CCode (has_construct_function = false)]
 		public Settings ();
 		public uint get_element_size ();
-		public unowned string get_keyboard_shortcut ();
 		public uint get_max_displayed_history_size ();
 		public uint get_max_history_size ();
 		public uint get_max_text_item_size ();
 		public uint get_min_text_item_size ();
 		public bool get_primary_to_history ();
 		public bool get_save_history ();
+		public unowned string get_show_history ();
 		public bool get_synchronize_clipboards ();
 		public bool get_track_changes ();
 		public bool get_track_extension_state ();
 		public bool get_trim_items ();
 		public void set_element_size (uint value);
-		public void set_keyboard_shortcut (string value);
 		public void set_max_displayed_history_size (uint value);
 		public void set_max_history_size (uint value);
 		public void set_max_text_item_size (uint value);
 		public void set_min_text_item_size (uint value);
 		public void set_primary_to_history (bool value);
 		public void set_save_history (bool value);
+		public void set_show_history (string value);
 		public void set_synchronize_clipboards (bool value);
 		public void set_track_changes (bool value);
 		public void set_track_extension_state (bool value);

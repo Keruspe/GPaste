@@ -45,7 +45,7 @@ rebind (GPasteSettings   *settings,
     switch (keybinding)
     {
     case G_PASTE_KEYBINDINGS_SHOW_HISTORY:
-        binding = g_paste_settings_get_keyboard_shortcut (settings);
+        binding = g_paste_settings_get_show_history (settings);
         break;
     default:
         binding = NULL;
@@ -120,7 +120,7 @@ main (int argc, char *argv[])
 
     GPasteKeybinding **keybindings = alloca (G_PASTE_KEYBINDINGS_LAST_KEYBINDING * sizeof (GPasteKeybinding *));
     keybindings[G_PASTE_KEYBINDINGS_SHOW_HISTORY] = g_paste_keybinding_new (xcb_wrapper,
-                                                                            g_paste_settings_get_keyboard_shortcut (settings),
+                                                                            g_paste_settings_get_show_history (settings),
                                                                             (GPasteKeybindingFunc) g_paste_daemon_show_history,
                                                                             g_paste_daemon);
 
