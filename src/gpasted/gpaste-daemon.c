@@ -231,13 +231,6 @@ g_paste_daemon_show_history (GPasteDaemon *self)
 }
 
 static void
-_g_paste_daemon_show_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
-                              gpointer         user_data)
-{
-    g_paste_daemon_show_history (G_PASTE_DAEMON (user_data));
-}
-
-static void
 g_paste_daemon_reexecute_self (GPasteDaemon *self,
                                gpointer      user_data G_GNUC_UNUSED)
 {
@@ -353,7 +346,6 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handlers_disconnect_by_func (self, (gpointer) g_paste_daemon_reexecute_self, user_data);
     g_signal_handlers_disconnect_by_func (priv->settings, (gpointer) g_paste_daemon_tracking, user_data);
     g_signal_handlers_disconnect_by_func (priv->history, (gpointer) g_paste_daemon_changed, user_data);
-    g_signal_handlers_disconnect_by_func (priv->keybinder, (gpointer) _g_paste_daemon_show_history, user_data);
 
     g_object_unref (self);
 }
@@ -392,10 +384,6 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     g_signal_connect (G_OBJECT (priv->history),
                       "changed",
                       G_CALLBACK (g_paste_daemon_changed),
-                      self);
-    g_signal_connect (G_OBJECT (priv->keybinder),
-                      "toggle",
-                      G_CALLBACK (g_paste_daemon_show_history),
                       self);
 
     return result;
