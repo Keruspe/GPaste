@@ -214,11 +214,12 @@ g_paste_daemon_changed (GPasteHistory *history G_GNUC_UNUSED,
                                    NULL); /* error */
 }
 
-static void
-_g_paste_daemon_show_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
-                              gpointer         user_data)
+void
+g_paste_daemon_show_history (GPasteDaemon *self)
 {
-    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
+    GPasteDaemonPrivate *priv = self->priv;
 
     g_dbus_connection_emit_signal (priv->connection,
                                    NULL, /* destination_bus_name */
@@ -227,6 +228,13 @@ _g_paste_daemon_show_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
                                    "ShowHistory",
                                    g_variant_new_tuple (NULL, 0),
                                    NULL); /* error */
+}
+
+static void
+_g_paste_daemon_show_history (GPasteKeybinder *keybinder G_GNUC_UNUSED,
+                              gpointer         user_data)
+{
+    g_paste_daemon_show_history (G_PASTE_DAEMON (user_data));
 }
 
 static void

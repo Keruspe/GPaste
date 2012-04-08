@@ -41,6 +41,7 @@ guint g_paste_daemon_register_object (GPasteDaemon    *self,
                                       GDBusConnection *connection,
                                       const gchar     *path,
                                       GError         **error);
+void g_paste_daemon_show_history (GPasteDaemon *self);
 
 GPasteDaemon *g_paste_daemon_new (GPasteHistory           *history,
                                   GPasteSettings          *settings,
