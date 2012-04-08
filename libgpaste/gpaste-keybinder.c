@@ -45,7 +45,8 @@ g_paste_keybinder_source (gpointer data)
         xcb_flush (connection);
         xcb_key_press_event_t *real_event = (xcb_key_press_event_t *) event;
         xcb_keycode_t keycode = real_event->detail;
-        guint16 modifiers = real_event->state;
+        /* Ignore numlock and mouse events */
+        guint16 modifiers = (real_event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK)) & 0xff;
         for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
         {
             GPasteKeybinding *real_keybinding = keybinding->data;
