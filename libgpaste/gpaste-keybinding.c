@@ -55,7 +55,10 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
 
     GPasteXcbWrapper *xcb_wrapper = priv->xcb_wrapper;
     xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
+    xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
     guint keysym;
+
+    g_return_if_fail (!screen); /* This should never happen */
 
     gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
     priv->keycodes = xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
@@ -63,8 +66,6 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
     gdk_error_trap_push ();
     for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
     {
-        xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
-
         xcb_grab_key (connection,
                       FALSE,
                       screen->root,
@@ -133,8 +134,12 @@ g_paste_keybinding_rebind (GPasteKeybinding  *self,
 
     g_free (priv->binding);
     priv->binding = g_strdup (binding);
-    g_paste_keybinding_deactivate (self);
-    g_paste_keybinding_activate (self);
+
+    if (priv->active)
+    {
+        g_paste_keybinding_deactivate (self);
+        g_paste_keybinding_activate (self);
+    }
 }
 
 /**
@@ -267,7 +272,9 @@ g_paste_keybinding_new (GPasteXcbWrapper    *xcb_wrapper,
                         GPasteKeybindingFunc callback,
                         gpointer             user_data)
 {
+    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (binding != NULL, NULL);
+    g_return_val_if_fail (callback != NULL, NULL);
 
     GPasteKeybinding *self = g_object_new (G_PASTE_TYPE_KEYBINDING, NULL);
     GPasteKeybindingPrivate *priv = self->priv;

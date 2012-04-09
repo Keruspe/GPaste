@@ -108,6 +108,7 @@ g_paste_xcb_wrapper_init (GPasteXcbWrapper *self)
 
     priv->connection = xcb_connect (NULL, &connection_screen);
     priv->keysyms = xcb_key_symbols_alloc (priv->connection);
+    priv->screen = NULL;
 
     if ((setup = xcb_get_setup (priv->connection))) {
         xcb_screen_iterator_t iter = xcb_setup_roots_iterator (setup);

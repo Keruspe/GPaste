@@ -746,12 +746,6 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
 }
 
 static void
-g_paste_settings_init (GPasteSettings *self)
-{
-    self->priv = G_PASTE_SETTINGS_GET_PRIVATE (self);
-}
-
-static void
 g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    const gchar *key,
                                    gpointer     user_data)
@@ -811,20 +805,10 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                    key);
 }
 
-/**
- * g_paste_settings_new:
- *
- * Create a new instance of #GPasteSettings
- *
- * Returns: a newly allocated #GPasteSettings
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteSettings *
-g_paste_settings_new (void)
+static void
+g_paste_settings_init (GPasteSettings *self)
 {
-    GPasteSettings *self = g_object_new (G_PASTE_TYPE_SETTINGS, NULL);
-    GPasteSettingsPrivate *priv = self->priv;
-
+    GPasteSettingsPrivate *priv = self->priv = G_PASTE_SETTINGS_GET_PRIVATE (self);
     GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
 
     priv->show_history = NULL;
@@ -848,6 +832,18 @@ g_paste_settings_new (void)
                       "changed",
                       G_CALLBACK (g_paste_settings_settings_changed),
                       self);
+}
 
-    return self;
+/**
+ * g_paste_settings_new:
+ *
+ * Create a new instance of #GPasteSettings
+ *
+ * Returns: a newly allocated #GPasteSettings
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteSettings *
+g_paste_settings_new (void)
+{
+    return g_object_new (G_PASTE_TYPE_SETTINGS, NULL);
 }

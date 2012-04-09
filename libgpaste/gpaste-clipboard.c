@@ -406,7 +406,10 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 static void
 g_paste_clipboard_init (GPasteClipboard *self)
 {
-    self->priv = G_PASTE_CLIPBOARD_GET_PRIVATE (self);
+    GPasteClipboardPrivate *priv = self->priv = G_PASTE_CLIPBOARD_GET_PRIVATE (self);
+
+    priv->text = NULL;
+    priv->image_checksum = NULL;
 }
 
 /**
@@ -423,14 +426,14 @@ G_PASTE_VISIBLE GPasteClipboard *
 g_paste_clipboard_new (GdkAtom         target,
                        GPasteSettings *settings)
 {
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
     GPasteClipboardPrivate *priv = self->priv;
 
     priv->target = target;
     priv->real = gtk_clipboard_get (target);
     priv->settings = g_object_ref (settings);
-    priv->text = NULL;
-    priv->image_checksum = NULL;
 
     return self;
 }

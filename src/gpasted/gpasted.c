@@ -72,18 +72,18 @@ typedef struct {
 
 static void
 fake_keyboard (GPasteXcbWrapper *xcb_wrapper,
+               xcb_connection_t *connection,
+               xcb_screen_t     *screen,
                xcb_keysym_t      keysym,
-               gboolean          press)
+               guint8            event)
 {
     xcb_keycode_t *keycode = (xcb_keycode_t *) xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
 
     if (!keycode)
         return;
 
-    xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
-
-    xcb_test_fake_input ((xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper),
-                         (press) ? XCB_KEY_PRESS : XCB_KEY_RELEASE,
+    xcb_test_fake_input (connection,
+                         event,
                          *keycode, 0,
                          screen->root,
                          0, 0, 0);
@@ -93,13 +93,17 @@ static void
 paste_and_pop (PasteAndPopData *data)
 {
     GPasteXcbWrapper *xcb_wrapper = data->xcb_wrapper;
+    xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
+    xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
 
-    fake_keyboard (xcb_wrapper, GDK_KEY_Shift_L, TRUE);
-    fake_keyboard (xcb_wrapper, GDK_KEY_Insert, TRUE);
-    fake_keyboard (xcb_wrapper, GDK_KEY_Insert, FALSE);
-    fake_keyboard (xcb_wrapper, GDK_KEY_Shift_L, FALSE);
+    g_return_if_fail (!screen); /* This should never happen */
 
-    xcb_flush ((xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper));
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, XCB_KEY_PRESS);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, XCB_KEY_PRESS);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, XCB_KEY_RELEASE);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, XCB_KEY_RELEASE);
+
+    xcb_flush (connection);
 
     usleep (200000);
 

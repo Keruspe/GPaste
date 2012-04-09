@@ -183,11 +183,11 @@ g_paste_daemon_empty (GPasteDaemon          *self,
 }
 
 static void
-g_paste_daemon_tracking (GPasteSettings *settings G_GNUC_UNUSED,
-                         gboolean        tracking_state,
-                         gpointer        user_data)
+g_paste_daemon_tracking (GPasteDaemon *self,
+                         gboolean      tracking_state,
+                         gpointer      user_data G_GNUC_UNUSED)
 {
-    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
+    GPasteDaemonPrivate *priv = self->priv;
     GVariant *variant = g_variant_new_boolean (tracking_state);
 
     g_dbus_connection_emit_signal (priv->connection,
@@ -200,10 +200,10 @@ g_paste_daemon_tracking (GPasteSettings *settings G_GNUC_UNUSED,
 }
 
 static void
-g_paste_daemon_changed (GPasteHistory *history G_GNUC_UNUSED,
-                        gpointer       user_data)
+g_paste_daemon_changed (GPasteDaemon *self,
+                        gpointer      user_data G_GNUC_UNUSED)
 {
-    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
+    GPasteDaemonPrivate *priv = self->priv;
 
     g_dbus_connection_emit_signal (priv->connection,
                                    NULL, /* destination_bus_name */
@@ -377,14 +377,14 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                       "reexecute-self",
                       G_CALLBACK (g_paste_daemon_reexecute_self),
                       NULL);
-    g_signal_connect (G_OBJECT (priv->settings),
-                      "track",
-                      G_CALLBACK (g_paste_daemon_tracking),
-                      self);
-    g_signal_connect (G_OBJECT (priv->history),
-                      "changed",
-                      G_CALLBACK (g_paste_daemon_changed),
-                      self);
+    g_signal_connect_swapped (G_OBJECT (priv->settings),
+                              "track",
+                              G_CALLBACK (g_paste_daemon_tracking),
+                              self);
+    g_signal_connect_swapped (G_OBJECT (priv->history),
+                              "changed",
+                              G_CALLBACK (g_paste_daemon_changed),
+                              self);
 
     return result;
 }
@@ -498,6 +498,11 @@ g_paste_daemon_new (GPasteHistory           *history,
                     GPasteClipboardsManager *clipboards_manager,
                     GPasteKeybinder         *keybinder)
 {
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (clipboards_manager), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDER (keybinder), NULL);
+
     GPasteDaemon *self = g_object_new (G_PASTE_TYPE_DAEMON, NULL);
     GPasteDaemonPrivate *priv = self->priv;
 

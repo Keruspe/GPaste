@@ -182,17 +182,6 @@ g_paste_text_item_init (GPasteTextItem *self G_GNUC_UNUSED)
 {
 }
 
-static GPasteItem *
-_g_paste_text_item_new (GType        type,
-                        const gchar *text)
-{
-    GPasteItem *self = g_paste_item_new (type, text);
-
-    self->priv->display_string = self->priv->value;
-
-    return self;
-}
-
 /**
  * g_paste_text_item_new:
  * @text: the content of the desired #GPasteTextItem
@@ -207,7 +196,11 @@ g_paste_text_item_new (const gchar *text)
 {
     g_return_val_if_fail (text != NULL, NULL);
 
-    return G_PASTE_TEXT_ITEM (_g_paste_text_item_new (G_PASTE_TYPE_TEXT_ITEM, text));
+    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_TEXT_ITEM, text);
+
+    self->priv->display_string = self->priv->value;
+
+    return G_PASTE_TEXT_ITEM (self);
 }
 
 /* GPaste UrisItem */
@@ -297,7 +290,7 @@ g_paste_uris_item_new (const gchar *uris)
 {
     g_return_val_if_fail (uris != NULL, NULL);
 
-    GPasteItem *g_paste_item = _g_paste_text_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
+    GPasteItem *g_paste_item = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
     GPasteUrisItem *self = G_PASTE_URIS_ITEM (g_paste_item);
     GPasteUrisItemPrivate *priv = self->priv;
 

@@ -189,10 +189,11 @@ g_paste_keybinder_init (GPasteKeybinder *self)
 G_PASTE_VISIBLE GPasteKeybinder *
 g_paste_keybinder_new (GPasteXcbWrapper *xcb_wrapper)
 {
-    GPasteKeybinder *self = g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);
-    GPasteKeybinderPrivate *priv = self->priv;
+    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
 
-    priv->xcb_wrapper = g_object_ref (xcb_wrapper);
+    GPasteKeybinder *self = g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);
+
+    self->priv->xcb_wrapper = g_object_ref (xcb_wrapper);
 
     g_timeout_add (100, g_paste_keybinder_source, self);
 

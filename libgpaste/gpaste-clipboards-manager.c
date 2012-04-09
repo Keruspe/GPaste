@@ -165,6 +165,8 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 {
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+
     g_timeout_add_seconds (1, g_paste_clipboards_manager_check_clipboards, self);
 }
 
@@ -227,7 +229,9 @@ g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 static void
 g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 {
-    self->priv = G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE (self);
+    GPasteClipboardsManagerPrivate *priv = self->priv = G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE (self);
+
+    priv->clipboards = NULL;
 }
 
 static gboolean
@@ -254,12 +258,14 @@ G_PASTE_VISIBLE GPasteClipboardsManager *
 g_paste_clipboards_manager_new (GPasteHistory  *history,
                                 GPasteSettings *settings)
 {
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
     GPasteClipboardsManager *self = g_object_new (G_PASTE_TYPE_CLIPBOARDS_MANAGER, NULL);
     GPasteClipboardsManagerPrivate *priv = self->priv;
 
     priv->history = g_object_ref (history);
     priv->settings = g_object_ref (settings);
-    priv->clipboards = NULL;
 
     g_signal_connect_swapped (G_OBJECT (history),
                               "selected",

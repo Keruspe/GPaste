@@ -487,7 +487,9 @@ g_paste_history_self_changed (GPasteHistory *self,
 static void
 g_paste_history_init (GPasteHistory *self)
 {
-    self->priv = G_PASTE_HISTORY_GET_PRIVATE (self);
+    GPasteHistoryPrivate *priv = self->priv = G_PASTE_HISTORY_GET_PRIVATE (self);
+
+    priv->history = NULL;
 
     g_signal_connect (G_OBJECT (self),
                       "changed",
@@ -523,11 +525,11 @@ g_paste_history_get_history (GPasteHistory *self)
 G_PASTE_VISIBLE GPasteHistory *
 g_paste_history_new (GPasteSettings *settings)
 {
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
-    GPasteHistoryPrivate *priv = self->priv;
 
-    priv->settings = g_object_ref (settings);
-    priv->history = NULL;
+    self->priv->settings = g_object_ref (settings);
 
     return self;
 }
