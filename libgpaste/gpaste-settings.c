@@ -670,7 +670,7 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
                                      G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE);
     signals[REBIND] = g_signal_new ("rebind",
                                     G_PASTE_TYPE_SETTINGS,
-                                    G_SIGNAL_RUN_LAST,
+                                    G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
                                     0, /* class offset */
                                     NULL, /* accumulator */
                                     NULL, /* accumulator data */
@@ -737,7 +737,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_show_history_from_dconf (self);
         g_signal_emit (self,
                        signals[REBIND],
-                       0, /* detail */
+                       g_quark_from_string (SHOW_HISTORY_KEY),
                        G_PASTE_KEYBINDINGS_SHOW_HISTORY);
     }
 
