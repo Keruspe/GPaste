@@ -89,6 +89,9 @@ global:
     g_paste_settings_new;
 
     g_paste_xcb_wrapper_get_type;
+    g_paste_xcb_wrapper_get_connection;
+    g_paste_xcb_wrapper_get_screen;
+    g_paste_xcb_wrapper_get_keysyms;
     g_paste_xcb_wrapper_new;
 local:
     *;

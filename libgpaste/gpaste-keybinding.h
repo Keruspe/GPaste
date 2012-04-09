@@ -28,7 +28,7 @@
 #include "config.h"
 #endif
 
-#include <gpaste-xcb-wrapper-internal.h>
+#include <gpaste-xcb-wrapper.h>
 
 G_BEGIN_DECLS
 
@@ -41,7 +41,6 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteKeybinding GPasteKeybinding;
 typedef struct _GPasteKeybindingClass GPasteKeybindingClass;
-typedef struct _GPasteKeycode GPasteKeycode;
 typedef void  (*GPasteKeybindingFunc) (gpointer user_data);
 
 typedef enum {

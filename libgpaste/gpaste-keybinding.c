@@ -36,11 +36,6 @@ struct _GPasteKeybindingPrivate
     gboolean             active;
 };
 
-struct _GPasteKeycode
-{
-    xcb_keycode_t real;
-};
-
 /**
  * g_paste_keybinding_activate:
  * @self: a #GPasteKeybinding instance
@@ -59,18 +54,20 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
     g_return_if_fail (!priv->active);
 
     GPasteXcbWrapper *xcb_wrapper = priv->xcb_wrapper;
-    xcb_connection_t *connection = g_paste_xcb_wrapper_get_connection (xcb_wrapper);
+    xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
     guint keysym;
 
     gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
-    priv->keycodes = xcb_key_symbols_get_keycode (g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
+    priv->keycodes = xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
 
     gdk_error_trap_push ();
     for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
     {
+        xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
+
         xcb_grab_key (connection,
                       FALSE,
-                      g_paste_xcb_wrapper_get_screen(xcb_wrapper)->root,
+                      screen->root,
                       priv->modifiers,
                       *keycode,
                       XCB_GRAB_MODE_ASYNC,
@@ -103,9 +100,11 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
 
     for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
     {
-        xcb_ungrab_key (g_paste_xcb_wrapper_get_connection (xcb_wrapper),
+        xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
+
+        xcb_ungrab_key ((xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper),
                         *keycode,
-                        g_paste_xcb_wrapper_get_screen (xcb_wrapper)->root,
+                        screen->root,
                         priv->modifiers);
     }
 

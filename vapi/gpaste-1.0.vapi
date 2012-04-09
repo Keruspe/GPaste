@@ -80,10 +80,6 @@ namespace GPaste {
 		public void notify ();
 		public void rebind (string binding);
 	}
-	[CCode (cheader_filename = "gpaste.h")]
-	[Compact]
-	public class Keycode {
-	}
 	[CCode (cheader_filename = "gpaste.h", type_id = "g_paste_settings_get_type ()")]
 	public class Settings : GLib.Object {
 		[CCode (has_construct_function = false)]
@@ -132,6 +128,26 @@ namespace GPaste {
 	public class XcbWrapper : GLib.Object {
 		[CCode (has_construct_function = false)]
 		public XcbWrapper ();
+		public GPaste.Connection get_connection ();
+		[CCode (array_length = false, array_null_terminated = true)]
+		public unowned GPaste.KeySymbols[] get_keysyms ();
+		public GPaste.Screen get_screen ();
+	}
+	[CCode (cheader_filename = "gpaste.h")]
+	[SimpleType]
+	public struct Connection {
+	}
+	[CCode (cheader_filename = "gpaste.h")]
+	[SimpleType]
+	public struct KeySymbols {
+	}
+	[CCode (cheader_filename = "gpaste.h")]
+	[SimpleType]
+	public struct Keycode {
+	}
+	[CCode (cheader_filename = "gpaste.h")]
+	[SimpleType]
+	public struct Screen {
 	}
 	[CCode (cheader_filename = "gpaste.h", cprefix = "G_PASTE_KEYBINDINGS_")]
 	public enum Keybindings {

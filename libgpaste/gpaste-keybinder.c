@@ -35,7 +35,7 @@ static gboolean
 g_paste_keybinder_source (gpointer data)
 {
     GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (data)->priv;
-    xcb_connection_t *connection = g_paste_xcb_wrapper_get_connection (priv->xcb_wrapper);
+    xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (priv->xcb_wrapper);
     xcb_generic_event_t *event;
 
     if ((event = xcb_poll_for_event (connection)) &&

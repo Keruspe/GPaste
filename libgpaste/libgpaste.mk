@@ -42,10 +42,6 @@ libgpaste_libgpaste_la_private_headers = \
 	libgpaste/gpaste-xcb-wrapper-private.h \
 	$(NULL)
 
-libgpaste_libgpaste_la_internal_headers = \
-	libgpaste/gpaste-xcb-wrapper-internal.h \
-	$(NULL)
-
 libgpaste_libgpaste_la_SOURCES = \
 	libgpaste/gpaste-clipboard.c \
 	libgpaste/gpaste-clipboards-manager.c \
@@ -90,6 +86,5 @@ lib_LTLIBRARIES += libgpaste/libgpaste.la
 
 EXTRA_DIST += \
 	$(libgpaste_libgpaste_la_private_headers) \
-	$(libgpaste_libgpaste_la_internal_headers) \
 	libgpaste/libgpaste.sym \
 	$(NULL)

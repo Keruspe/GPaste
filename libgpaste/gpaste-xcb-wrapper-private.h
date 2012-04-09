@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_XCB_WRAPPER_PRIVATE_H__
 #define __G_PASTE_XCB_WRAPPER_PRIVATE_H__
 
-#include "gpaste-xcb-wrapper-internal.h"
+#include "gpaste-xcb-wrapper.h"
 
 G_BEGIN_DECLS
 

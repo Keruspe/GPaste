@@ -30,22 +30,49 @@ struct _GPasteXcbWrapperPrivate
     xcb_key_symbols_t *keysyms;
 };
 
-xcb_connection_t *
+/**
+ * g_paste_xcb_wrapper_get_connection:
+ *
+ * Get the #GPasteConnection managed by the #GPasteXcbWrapper
+ *
+ * Returns: (transfer none): the #GPasteConnection (xcb_connection_t)
+ */
+G_PASTE_VISIBLE GPasteConnection
 g_paste_xcb_wrapper_get_connection (GPasteXcbWrapper *self)
 {
-    return self->priv->connection;
+    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (self), NULL);
+
+    return (GPasteConnection) self->priv->connection;
 }
 
-xcb_screen_t *
+/**
+ * g_paste_xcb_wrapper_get_screen:
+ *
+ * Get the #GPasteScreen managed by the #GPasteXcbWrapper
+ *
+ * Returns: (transfer none): the #GPasteScreen (xcb_screen_t)
+ */
+G_PASTE_VISIBLE GPasteScreen
 g_paste_xcb_wrapper_get_screen (GPasteXcbWrapper *self)
 {
-    return self->priv->screen;
+    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (self), NULL);
+
+    return (GPasteScreen) self->priv->screen;
 }
 
-xcb_key_symbols_t *
+/**
+ * g_paste_xcb_wrapper_get_keysyms:
+ *
+ * Get the #GPasteKeySymbols managed by the #GPasteXcbWrapper
+ *
+ * Returns: (transfer none) (array zero-terminated=1): the #GPasteKeySymbols (xcb_connection_t)
+ */
+G_PASTE_VISIBLE GPasteKeySymbols
 g_paste_xcb_wrapper_get_keysyms (GPasteXcbWrapper *self)
 {
-    return self->priv->keysyms;
+    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (self), NULL);
+
+    return (GPasteKeySymbols) self->priv->keysyms;
 }
 
 static void
