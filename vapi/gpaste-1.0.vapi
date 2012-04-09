@@ -89,6 +89,7 @@ namespace GPaste {
 		public uint get_max_history_size ();
 		public uint get_max_text_item_size ();
 		public uint get_min_text_item_size ();
+		public unowned string get_paste_and_pop ();
 		public bool get_primary_to_history ();
 		public bool get_save_history ();
 		public unowned string get_show_history ();
@@ -101,6 +102,7 @@ namespace GPaste {
 		public void set_max_history_size (uint value);
 		public void set_max_text_item_size (uint value);
 		public void set_min_text_item_size (uint value);
+		public void set_paste_and_pop (string value);
 		public void set_primary_to_history (bool value);
 		public void set_save_history (bool value);
 		public void set_show_history (string value);
@@ -152,6 +154,7 @@ namespace GPaste {
 	[CCode (cheader_filename = "gpaste.h", cprefix = "G_PASTE_KEYBINDINGS_")]
 	public enum Keybindings {
 		SHOW_HISTORY,
+		PASTE_AND_POP,
 		LAST_KEYBINDING
 	}
 	[CCode (cheader_filename = "gpaste.h", instance_pos = 0.9)]

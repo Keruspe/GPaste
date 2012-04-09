@@ -45,6 +45,7 @@ typedef void  (*GPasteKeybindingFunc) (gpointer user_data);
 
 typedef enum {
     G_PASTE_KEYBINDINGS_SHOW_HISTORY,
+    G_PASTE_KEYBINDINGS_PASTE_AND_POP,
 
     G_PASTE_KEYBINDINGS_LAST_KEYBINDING
 } GPasteKeybindings;

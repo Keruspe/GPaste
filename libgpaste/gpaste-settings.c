@@ -35,6 +35,7 @@
 #define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
 #define SHOW_HISTORY_KEY               "show-history"
+#define PASTE_AND_POP_KEY              "paste-and-pop"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
@@ -54,6 +55,7 @@ struct _GPasteSettingsPrivate
     guint      min_text_item_size;
     guint      max_text_item_size;
     gchar     *show_history;
+    gchar     *paste_and_pop;
 };
 
 enum
@@ -634,6 +636,56 @@ g_paste_settings_set_show_history (GPasteSettings *self,
     g_settings_set_string (priv->settings, SHOW_HISTORY_KEY, value);
 }
 
+/**
+ * g_paste_settings_get_paste_and_pop:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the PASTE_AND_POP_KEY setting
+ *
+ * Returns: the value of the PASTE_AND_POP_KEY setting
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_settings_get_paste_and_pop (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
+
+    return self->priv->paste_and_pop;
+}
+
+static void
+g_paste_settings_set_paste_and_pop_from_dconf (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    g_free (priv->paste_and_pop);
+    priv->paste_and_pop = g_settings_get_string (priv->settings, PASTE_AND_POP_KEY);
+}
+
+/**
+ * g_paste_settings_set_paste_and_pop:
+ * @self: a #GPasteSettings instance
+ * @value: the new keyboard shortcut
+ *
+ * Change the PASTE_AND_POP_KEY setting
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_set_paste_and_pop (GPasteSettings *self,
+                                    const gchar    *value)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (value != NULL);
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    g_free (priv->paste_and_pop);
+    priv->show_history = g_strdup (value);
+    g_settings_set_string (priv->settings, PASTE_AND_POP_KEY, value);
+}
+
 static void
 g_paste_settings_dispose (GObject *object)
 {
@@ -645,7 +697,10 @@ g_paste_settings_dispose (GObject *object)
 static void
 g_paste_settings_finalize (GObject *object)
 {
-    g_free (G_PASTE_SETTINGS (object)->priv->show_history);
+    GPasteSettingsPrivate *priv = G_PASTE_SETTINGS (object)->priv;
+
+    g_free (priv->show_history);
+    g_free (priv->paste_and_pop);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
 }
@@ -740,6 +795,14 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                        g_quark_from_string (SHOW_HISTORY_KEY),
                        G_PASTE_KEYBINDINGS_SHOW_HISTORY);
     }
+    else if (g_strcmp0 (key, PASTE_AND_POP_KEY) == 0)
+    {
+        g_paste_settings_set_paste_and_pop_from_dconf (self);
+        g_signal_emit (self,
+                       signals[REBIND],
+                       g_quark_from_string (SHOW_HISTORY_KEY),
+                       G_PASTE_KEYBINDINGS_PASTE_AND_POP);
+    }
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -765,6 +828,7 @@ g_paste_settings_new (void)
     GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
 
     priv->show_history = NULL;
+    priv->paste_and_pop = NULL;
 
     g_paste_settings_set_track_changes_from_dconf (self);
     g_paste_settings_set_track_extension_state_from_dconf (self);
@@ -778,6 +842,7 @@ g_paste_settings_new (void)
     g_paste_settings_set_min_text_item_size_from_dconf(self);
     g_paste_settings_set_max_text_item_size_from_dconf(self);
     g_paste_settings_set_show_history_from_dconf (self);
+    g_paste_settings_set_paste_and_pop_from_dconf (self);
 
     g_signal_connect (G_OBJECT (settings),
                       "changed",

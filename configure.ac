@@ -140,7 +140,7 @@ PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0])
 
 PKG_CHECK_MODULES(XML, [libxml-2.0])
 
-PKG_CHECK_MODULES(XCB, [xcb xcb-keysyms])
+PKG_CHECK_MODULES(XCB, [xcb xcb-keysyms xcb-xtest])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 AC_ARG_WITH([dbusservicesdir],

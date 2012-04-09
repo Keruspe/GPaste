@@ -30,6 +30,7 @@ public class Window : Gtk.Window {
     private Gtk.SpinButton min_text_item_size_button;
     private Gtk.SpinButton max_text_item_size_button;
     private Gtk.Entry show_history_entry;
+    private Gtk.Entry paste_and_pop_entry;
 
     public bool track_changes {
         get {
@@ -136,6 +137,15 @@ public class Window : Gtk.Window {
         }
         set {
             this.show_history_entry.set_text (value);
+        }
+    }
+
+    public string paste_and_pop {
+        get {
+            return this.paste_and_pop_entry.get_text ();
+        }
+        set {
+            this.paste_and_pop_entry.set_text (value);
         }
     }
 
@@ -271,6 +281,17 @@ public class Window : Gtk.Window {
         });
         grid.attach_next_to (this.show_history_entry, show_history_label, Gtk.PositionType.RIGHT, 1, 1);
 
+        var paste_and_pop_label = new Gtk.Label (_("Keyboard shortcut to paste and then delete the first item in history: "));
+        paste_and_pop_label.xalign = 0;
+        grid.attach (paste_and_pop_label, 0, current_line++, 1, 1);
+
+        this.paste_and_pop_entry = new Gtk.Entry ();
+        this.paste_and_pop = app.settings.get_paste_and_pop ();
+        this.paste_and_pop_entry.changed.connect (() => {
+            app.settings.set_paste_and_pop (this.paste_and_pop);
+        });
+        grid.attach_next_to (this.paste_and_pop_entry, paste_and_pop_label, Gtk.PositionType.RIGHT, 1, 1);
+
         this.add (grid);
     }
 }
@@ -322,6 +343,9 @@ public class Main : Gtk.Application {
                 break;
             case "show-history":
                 this.window.show_history = this.settings.get_show_history ();
+                break;
+            case "paste-and-pop":
+                this.window.paste_and_pop = this.settings.get_paste_and_pop ();
                 break;
             }
         });

@@ -20,6 +20,7 @@
 #include "gpaste-daemon.h"
 
 #include <glib/gi18n-lib.h>
+#include <xcb/xtest.h>
 #include <gpaste.h>
 #include <signal.h>
 #include <stdio.h>
@@ -62,6 +63,47 @@ reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 {
     g_main_loop_quit (main_loop);
     execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
+}
+
+typedef struct {
+    GPasteXcbWrapper *xcb_wrapper;
+    GPasteHistory    *history;
+} PasteAndPopData;
+
+static void
+fake_keyboard (GPasteXcbWrapper *xcb_wrapper,
+               xcb_keysym_t      keysym,
+               gboolean          press)
+{
+    xcb_keycode_t *keycode = (xcb_keycode_t *) xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
+
+    if (!keycode)
+        return;
+
+    xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
+
+    xcb_test_fake_input ((xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper),
+                         (press) ? XCB_KEY_PRESS : XCB_KEY_RELEASE,
+                         *keycode, 0,
+                         screen->root,
+                         0, 0, 0);
+}
+
+static void
+paste_and_pop (PasteAndPopData *data)
+{
+    GPasteXcbWrapper *xcb_wrapper = data->xcb_wrapper;
+
+    fake_keyboard (xcb_wrapper, GDK_KEY_Shift_L, TRUE);
+    fake_keyboard (xcb_wrapper, GDK_KEY_Insert, TRUE);
+    fake_keyboard (xcb_wrapper, GDK_KEY_Insert, FALSE);
+    fake_keyboard (xcb_wrapper, GDK_KEY_Shift_L, FALSE);
+
+    xcb_flush ((xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper));
+
+    usleep (200000);
+
+    g_paste_history_remove (data->history, 0);
 }
 
 static void
@@ -118,11 +160,20 @@ main (int argc, char *argv[])
     GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
+    PasteAndPopData data = {
+        .xcb_wrapper = xcb_wrapper,
+        .history = history
+    };
+
     GPasteKeybinding **keybindings = alloca (G_PASTE_KEYBINDINGS_LAST_KEYBINDING * sizeof (GPasteKeybinding *));
     keybindings[G_PASTE_KEYBINDINGS_SHOW_HISTORY] = g_paste_keybinding_new (xcb_wrapper,
                                                                             g_paste_settings_get_show_history (settings),
                                                                             (GPasteKeybindingFunc) g_paste_daemon_show_history,
                                                                             g_paste_daemon);
+    keybindings[G_PASTE_KEYBINDINGS_PASTE_AND_POP] = g_paste_keybinding_new (xcb_wrapper,
+                                                                             g_paste_settings_get_paste_and_pop (settings),
+                                                                             (GPasteKeybindingFunc) paste_and_pop,
+                                                                             &data);
 
     g_signal_connect (G_OBJECT (settings),
                       "rebind",
