@@ -44,19 +44,19 @@ G_BEGIN_DECLS
 typedef struct _GPasteXcbWrapper GPasteXcbWrapper;
 typedef struct _GPasteXcbWrapperClass GPasteXcbWrapperClass;
 
-typedef gpointer GPasteConnection;
-typedef gpointer GPasteScreen;
-typedef gpointer GPasteKeySymbols;
-typedef gpointer GPasteKeycode;
+typedef struct _GPasteConnection GPasteConnection;
+typedef struct _GPasteScreen GPasteScreen;
+typedef struct _GPasteKeySymbols GPasteKeySymbols;
+typedef struct _GPasteKeycode GPasteKeycode;
 
 #ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
 #endif
 GType g_paste_xcb_wrapper_get_type (void);
 
-GPasteConnection g_paste_xcb_wrapper_get_connection (GPasteXcbWrapper *self);
-GPasteScreen     g_paste_xcb_wrapper_get_screen     (GPasteXcbWrapper *self);
-GPasteKeySymbols g_paste_xcb_wrapper_get_keysyms    (GPasteXcbWrapper *self);
+GPasteConnection *g_paste_xcb_wrapper_get_connection (GPasteXcbWrapper *self);
+GPasteScreen     *g_paste_xcb_wrapper_get_screen     (GPasteXcbWrapper *self);
+GPasteKeySymbols *g_paste_xcb_wrapper_get_keysyms    (GPasteXcbWrapper *self);
 
 GPasteXcbWrapper *g_paste_xcb_wrapper_new (void);
 
