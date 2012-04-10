@@ -98,8 +98,10 @@ paste_and_pop (PasteAndPopData *data)
 
     g_return_if_fail (screen); /* This should never happen */
 
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Paste, XCB_KEY_PRESS);
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Paste, XCB_KEY_RELEASE);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, XCB_KEY_PRESS);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, XCB_KEY_PRESS);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, XCB_KEY_RELEASE);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, XCB_KEY_RELEASE);
 
     xcb_flush (connection);
 
