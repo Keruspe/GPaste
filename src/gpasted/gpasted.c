@@ -96,7 +96,7 @@ paste_and_pop (PasteAndPopData *data)
     xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
     xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
 
-    g_return_if_fail (!screen); /* This should never happen */
+    g_return_if_fail (screen); /* This should never happen */
 
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, XCB_KEY_PRESS);
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, XCB_KEY_PRESS);

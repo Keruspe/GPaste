@@ -58,7 +58,7 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
     xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
     guint keysym;
 
-    g_return_if_fail (!screen); /* This should never happen */
+    g_return_if_fail (screen); /* This should never happen */
 
     gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
     priv->keycodes = xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
