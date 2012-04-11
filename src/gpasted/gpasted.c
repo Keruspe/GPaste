@@ -107,7 +107,7 @@ paste_and_pop (PasteAndPopData *data)
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, 0, XCB_KEY_RELEASE);
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, 0, XCB_KEY_RELEASE);
 
-    g_usleep (400000);
+    g_usleep (1000000);
 
     g_paste_history_remove (data->history, 0);
 }
