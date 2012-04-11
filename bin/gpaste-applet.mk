@@ -24,7 +24,6 @@ pkglibexec_PROGRAMS += \
 
 bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala \
-	$(libgpaste_vapi_file) \
 	$(NULL)
 
 bin_gpaste_applet_VALAFLAGS = \
@@ -57,5 +56,6 @@ CLEANFILES += \
 endif
 
 EXTRA_DIST += \
+	$(libgpaste_vapi_file) \
 	$(bin_gpaste_applet_desktop_in_file:.desktop.in=.desktop.in.in) \
 	$(NULL)
