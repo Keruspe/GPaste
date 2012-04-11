@@ -75,6 +75,7 @@ fake_keyboard (GPasteXcbWrapper *xcb_wrapper,
                xcb_connection_t *connection,
                xcb_screen_t     *screen,
                xcb_keysym_t      keysym,
+               guint8            delay,
                guint8            event)
 {
     xcb_keycode_t *keycode = (xcb_keycode_t *) xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
@@ -84,9 +85,12 @@ fake_keyboard (GPasteXcbWrapper *xcb_wrapper,
 
     xcb_test_fake_input (connection,
                          event,
-                         *keycode, 0,
+                         *keycode,
+                         delay,
                          screen->root,
                          0, 0, 0);
+
+    xcb_flush (connection);
 }
 
 static void
@@ -98,14 +102,12 @@ paste_and_pop (PasteAndPopData *data)
 
     g_return_if_fail (screen); /* This should never happen */
 
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, XCB_KEY_PRESS);
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, XCB_KEY_PRESS);
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, XCB_KEY_RELEASE);
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, XCB_KEY_RELEASE);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, 0, XCB_KEY_PRESS);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, 200, XCB_KEY_PRESS);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, 0, XCB_KEY_RELEASE);
+    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, 0, XCB_KEY_RELEASE);
 
-    xcb_flush (connection);
-
-    usleep (200000);
+    g_usleep (200000);
 
     g_paste_history_remove (data->history, 0);
 }
