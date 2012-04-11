@@ -25,6 +25,7 @@ bin_gpaste_settings_SOURCES = \
 	$(NULL)
 
 bin_gpaste_settings_VALAFLAGS = \
+	$(libgpaste_vapi_file) \
 	$(GTK_VALAFLAGS) \
 	$(AM_VALAFLAGS) \
 	$(NULL)
