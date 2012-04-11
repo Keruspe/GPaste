@@ -18,11 +18,13 @@
 bin_gpaste_applet_desktop_in_file = data/gpaste-applet.desktop.in
 
 if ENABLE_APPLET
-pkglibexec_PROGRAMS += bin/gpaste-applet
+pkglibexec_PROGRAMS += \
+	bin/gpaste-applet \
+	$(NULL)
 
 bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala \
-	vapi/gpaste-1.0.vapi \
+	$(libgpaste_vapi_file) \
 	$(NULL)
 
 bin_gpaste_applet_VALAFLAGS = \
@@ -41,14 +43,18 @@ bin_gpaste_applet_LDADD = \
 	$(GDK_LIBS) \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \
-	libgpaste/libgpaste.la \
+	$(libgpaste_la_file) \
 	$(NULL)
 
-nodist_autostart_in_files += $(bin_gpaste_applet_desktop_in_file)
+nodist_autostart_in_files += \
+	$(bin_gpaste_applet_desktop_in_file) \
+	$(NULL)
 
 CLEANFILES += \
 	$(gpaste_applet_SOURCES:.vala=.c) \
 	$(NULL)
 endif
 
-EXTRA_DIST += $(bin_gpaste_applet_desktop_in_file:.desktop.in=.desktop.in.in)
+EXTRA_DIST += \
+	$(bin_gpaste_applet_desktop_in_file:.desktop.in=.desktop.in.in) \
+	$(NULL)

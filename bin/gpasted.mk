@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-pkglibexec_PROGRAMS += bin/gpasted
+pkglibexec_PROGRAMS += \
+	bin/gpasted \
+	$(NULL)
 
 bin_gpasted_headers = \
 	src/gpasted/gpaste-daemon.h \
@@ -23,6 +25,7 @@ bin_gpasted_headers = \
 	$(NULL)
 
 bin_gpasted_SOURCES = \
+	$(bin_gpasted_headers) \
 	src/gpasted/gpaste-daemon.c \
 	src/gpasted/gpasted.c \
 	$(NULL)
@@ -37,9 +40,5 @@ bin_gpasted_LDADD = \
 	$(GDK_LIBS) \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \
-	libgpaste/libgpaste.la \
-	$(NULL)
-
-EXTRA_DIST += \
-	$(bin_gpasted_headers) \
+	$(libgpaste_la_file) \
 	$(NULL)

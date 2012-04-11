@@ -20,4 +20,6 @@ noinst_DATA = \
 	data/completions/gpaste \
 	$(NULL)
 
-EXTRA_DIST += $(noinst_DATA)
+EXTRA_DIST += \
+	$(noinst_DATA) \
+	$(NULL)

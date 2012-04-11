@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
+gsettings_SCHEMAS = \
+	data/org.gnome.GPaste.gschema.xml \
+	$(NULL)
 
 @GSETTINGS_RULES@
 @INTLTOOL_XML_NOMERGE_RULE@
@@ -23,7 +25,9 @@ gsettings_SCHEMAS = data/org.gnome.GPaste.gschema.xml
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
 
-EXTRA_DIST += $(gsettings_SCHEMAS:.xml=.xml.in.in)
+EXTRA_DIST += \
+	$(gsettings_SCHEMAS:.xml=.xml.in.in) \
+	$(NULL)
 
 CLEANFILES += \
 	$(gsettings_SCHEMAS:.xml=.xml.in) \

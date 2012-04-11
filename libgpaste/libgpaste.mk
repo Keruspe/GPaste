@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+libgpaste_la_file = libgpaste/libgpaste.la
+
 LIBGPASTE_CURRENT=0
 LIBGPASTE_REVISION=0
 LIBGPASTE_AGE=0
@@ -43,6 +45,8 @@ libgpaste_libgpaste_la_private_headers = \
 	$(NULL)
 
 libgpaste_libgpaste_la_SOURCES = \
+	$(libgpaste_libgpaste_la_public_headers) \
+	$(libgpaste_libgpaste_la_private_headers) \
 	libgpaste/gpaste-clipboard.c \
 	libgpaste/gpaste-clipboards-manager.c \
 	libgpaste/gpaste-history.c \
@@ -71,20 +75,29 @@ libgpaste_libgpaste_la_LIBADD = \
 	$(AM_LIBS) \
 	$(NULL)
 
+libgpaste_symbols_file = $(srcdir)/libgpaste/libgpaste.sym
+
 libgpaste_libgpaste_la_LDFLAGS = \
 	-version-info $(LIBGPASTE_CURRENT):$(LIBGPASTE_REVISION):$(LIBGPASTE_AGE) \
-	-Wl,--version-script=$(srcdir)/libgpaste/libgpaste.sym \
+	-Wl,--version-script=$(libgpaste_symbols_file) \
 	$(NULL)
 
-libgpaste_libgpaste_la_DEPENDENCIES = $(srcdir)/libgpaste/libgpaste.sym
+libgpaste_libgpaste_la_DEPENDENCIES = \
+	$(libgpaste_symbols_file) \
+	$(NULL)
 
-pkginclude_HEADERS = $(libgpaste_libgpaste_la_public_headers)
+pkginclude_HEADERS = \
+	$(libgpaste_libgpaste_la_public_headers) \
+	$(NULL)
 
-pkgconfig_DATA += libgpaste/gpaste.pc
+pkgconfig_DATA += \
+	libgpaste/gpaste.pc \
+	$(NULL)
 
-lib_LTLIBRARIES += libgpaste/libgpaste.la
+lib_LTLIBRARIES += \
+	$(libgpaste_la_file) \
+	$(NULL)
 
 EXTRA_DIST += \
-	$(libgpaste_libgpaste_la_private_headers) \
-	libgpaste/libgpaste.sym \
+	$(libgpaste_symbols_file) \
 	$(NULL)

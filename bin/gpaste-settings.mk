@@ -15,11 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-pkglibexec_PROGRAMS += bin/gpaste-settings
+pkglibexec_PROGRAMS += \
+	bin/gpaste-settings \
+	$(NULL)
 
 bin_gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala \
-	vapi/gpaste-1.0.vapi \
+	$(libgpaste_vapi_file) \
 	$(NULL)
 
 bin_gpaste_settings_VALAFLAGS = \
@@ -36,15 +38,18 @@ bin_gpaste_settings_CFLAGS = \
 bin_gpaste_settings_LDADD = \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \
-	libgpaste/libgpaste.la \
+	$(libgpaste_la_file) \
 	$(NULL)
 
 bin_gpaste_settings_desktop_in_file = data/gpaste-settings.desktop.in
 
-nodist_applications_in_files += $(bin_gpaste_settings_desktop_in_file)
-nodist_applications_DATA += $(bin_gpaste_settings_desktop_in_file:.desktop.in=.desktop)
+nodist_applications_DATA += \
+	$(bin_gpaste_settings_desktop_in_file:.desktop.in=.desktop) \
+	$(NULL)
 
-EXTRA_DIST += $(bin_gpaste_settings_desktop_in_file:.desktop.in=.desktop.in.in)
+EXTRA_DIST += \
+	$(bin_gpaste_settings_desktop_in_file:.desktop.in=.desktop.in.in) \
+	$(NULL)
 
 CLEANFILES += \
 	$(gpaste_settings_SOURCES:.vala=.c) \

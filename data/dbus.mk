@@ -15,8 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-nodist_dbusservices_DATA = data/org.gnome.GPaste.service
+nodist_dbusservices_DATA = \
+	data/org.gnome.GPaste.service \
+	$(NULL)
 
-EXTRA_DIST += $(nodist_dbusservices_DATA:.service=.service.in)
+EXTRA_DIST += \
+	$(nodist_dbusservices_DATA:.service=.service.in) \
+	$(NULL)
 
-CLEANFILES += $(nodist_dbusservices_DATA)
+CLEANFILES += \
+	$(nodist_dbusservices_DATA) \
+	$(NULL)

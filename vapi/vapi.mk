@@ -15,26 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-VAPI_FILES = \
-	vapi/gpaste-1.0.vapi \
-	$(NULL)
-
-VAPI_DEPS = \
-	vapi/gpaste-1.0.deps \
-	$(NULL)
+libgpaste_vapi_file = vapi/gpaste-1.0.vapi
 
 vapidir = $(datadir)/vala/vapi
 dist_vapi_DATA = \
-	$(VAPI_FILES) \
-	$(VAPI_DEPS) \
+	$(libgpaste_vapi_file) \
+	$(libgpaste_vapi_file:.vapi=.deps) \
 	$(NULL)
 
 if ENABLE_VALA
-vapi/gpaste-1.0.vapi: gi/GPaste-1.0.gir
+$(libgpaste_vapi_file): $(libgpaste_gir_file)
 	@ $(MKDIR_P) vapi
 	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
 
 CLEANFILES += \
-	$(VAPI_FILES) \
+	$(libgpaste_vapi_file) \
 	$(NULL)
 endif

@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-bin_PROGRAMS += bin/gpaste
+bin_PROGRAMS += \
+	bin/gpaste \
+	$(NULL)
 
 bin_gpaste_SOURCES = \
 	src/gpaste.vala \
@@ -27,7 +29,8 @@ bin_gpaste_VALAFLAGS = \
 
 if ENABLE_APPLET
 bin_gpaste_VALAFLAGS += \
-	--define=ENABLE_APPLET
+	--define=ENABLE_APPLET \
+	$(NULL)
 endif
 
 bin_gpaste_CFLAGS = \

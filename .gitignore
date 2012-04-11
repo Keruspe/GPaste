@@ -1,5 +1,5 @@
 Makefile
-bin/
+bin/*
 !bin/*.mk
 *.pc
 *.desktop
