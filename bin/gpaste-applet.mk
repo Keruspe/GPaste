@@ -56,6 +56,5 @@ CLEANFILES += \
 endif
 
 EXTRA_DIST += \
-	$(libgpaste_vapi_file) \
 	$(bin_gpaste_applet_desktop_in_file:.desktop.in=.desktop.in.in) \
 	$(NULL)

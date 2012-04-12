@@ -48,7 +48,6 @@ nodist_applications_DATA += \
 	$(NULL)
 
 EXTRA_DIST += \
-	$(libgpaste_vapi_file) \
 	$(bin_gpaste_settings_desktop_in_file:.desktop.in=.desktop.in.in) \
 	$(NULL)
 
