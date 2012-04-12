@@ -155,9 +155,6 @@ AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
 AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 
-AC_ARG_ENABLE(vala, AS_HELP_STRING([--enable-vala], [Enable vapi generation]), enable_vala=$enableval, enable_vala=no)
-AM_CONDITIONAL(ENABLE_VALA, test x$enable_vala != xno)
-
 AC_CONFIG_FILES([
     Makefile
     po/Makefile.in
@@ -184,5 +181,4 @@ AC_MSG_RESULT([
 
         Legacy applet:          ${enable_applet}
         Gnome-Shell extension:  ${enable_extension}
-        Rebuild vapi:           ${enable_vala}
 ])
