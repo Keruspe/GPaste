@@ -18,12 +18,13 @@
 libgpaste_vapi_file = vapi/gpaste-1.0.vapi
 
 vapidir = $(datadir)/vala/vapi
-dist_vapi_DATA = \
+nodist_vapi_DATA = \
 	$(libgpaste_vapi_file) \
+	$(NULL)
+dist_vapi_DATA = \
 	$(libgpaste_vapi_file:.vapi=.deps) \
 	$(NULL)
 
-if ENABLE_VALA
 $(libgpaste_vapi_file): $(libgpaste_gir_file)
 	@ $(MKDIR_P) vapi
 	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
@@ -31,4 +32,3 @@ $(libgpaste_vapi_file): $(libgpaste_gir_file)
 CLEANFILES += \
 	$(libgpaste_vapi_file) \
 	$(NULL)
-endif

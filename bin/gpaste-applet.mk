@@ -22,9 +22,15 @@ pkglibexec_PROGRAMS += \
 	bin/gpaste-applet \
 	$(NULL)
 
+nodist_bin_gpaste_applet_SOURCES = \
+	$(libgpaste_vapi_file) \
+	$(NULL)
+
 bin_gpaste_applet_SOURCES = \
 	src/applets/legacy/gpaste-applet.vala \
 	$(NULL)
+
+bin_gpaste_applet_vala.stamp: $(libgpaste_vapi_file)
 
 bin_gpaste_applet_VALAFLAGS = \
 	$(libgpaste_vapi_file) \

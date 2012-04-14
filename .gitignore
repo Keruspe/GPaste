@@ -6,6 +6,7 @@ bin/*
 *.gschema.xml.in
 *.gschema.xml
 *.service
+*.vapi
 *.gir
 *.typelib
 *.1
@@ -13,3 +14,4 @@ metadata.json
 src/applets/legacy/*.c
 src/gpaste-settings/*.c
 src/*.c
+/gpaste-*
