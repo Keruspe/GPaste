@@ -34,6 +34,7 @@
 #define ELEMENT_SIZE_KEY               "element-size"
 #define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
+#define HISTORY_NAME_KEY               "history-name"
 #define SHOW_HISTORY_KEY               "show-history"
 #define PASTE_AND_POP_KEY              "paste-and-pop"
 
@@ -54,6 +55,7 @@ struct _GPasteSettingsPrivate
     guint      element_size;
     guint      min_text_item_size;
     guint      max_text_item_size;
+    gchar     *history_name;
     gchar     *show_history;
     gchar     *paste_and_pop;
 };
@@ -587,6 +589,56 @@ g_paste_settings_set_max_text_item_size (GPasteSettings *self,
 }
 
 /**
+ * g_paste_settings_get_history_name:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the HISTORY_NAME_KEY setting
+ *
+ * Returns: the value of the HISTORY_NAME_KEY setting
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_settings_get_history_name (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
+
+    return self->priv->history_name;
+}
+
+static void
+g_paste_settings_set_history_name_from_dconf (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    g_free (priv->history_name);
+    priv->history_name = g_settings_get_string (priv->settings, HISTORY_NAME_KEY);
+}
+
+/**
+ * g_paste_settings_set_history_name:
+ * @self: a #GPasteSettings instance
+ * @value: the new history name
+ *
+ * Change the HISTORY_NAME_KEY setting
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_set_history_name (GPasteSettings *self,
+                                   const gchar    *value)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (value != NULL);
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    g_free (priv->history_name);
+    priv->history_name = g_strdup (value);
+    g_settings_set_string (priv->settings, HISTORY_NAME_KEY, value);
+}
+
+/**
  * g_paste_settings_get_show_history:
  * @self: a #GPasteSettings instance
  *
@@ -699,6 +751,7 @@ g_paste_settings_finalize (GObject *object)
 {
     GPasteSettingsPrivate *priv = G_PASTE_SETTINGS (object)->priv;
 
+    g_free (priv->history_name);
     g_free (priv->show_history);
     g_free (priv->paste_and_pop);
 
@@ -781,6 +834,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_min_text_item_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
         g_paste_settings_set_max_text_item_size_from_dconf (self);
+    else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
+        g_paste_settings_set_history_name_from_dconf (self);
     else if (g_strcmp0 (key, SHOW_HISTORY_KEY) == 0)
     {
         g_paste_settings_set_show_history_from_dconf (self);
@@ -811,6 +866,7 @@ g_paste_settings_init (GPasteSettings *self)
     GPasteSettingsPrivate *priv = self->priv = G_PASTE_SETTINGS_GET_PRIVATE (self);
     GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
 
+    priv->history_name = NULL;
     priv->show_history = NULL;
     priv->paste_and_pop = NULL;
 
@@ -825,6 +881,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_element_size_from_dconf (self);
     g_paste_settings_set_min_text_item_size_from_dconf(self);
     g_paste_settings_set_max_text_item_size_from_dconf(self);
+    g_paste_settings_set_history_name_from_dconf (self);
     g_paste_settings_set_show_history_from_dconf (self);
     g_paste_settings_set_paste_and_pop_from_dconf (self);
 

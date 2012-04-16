@@ -58,6 +58,7 @@ guint        g_paste_settings_get_max_displayed_history_size (GPasteSettings *se
 guint        g_paste_settings_get_element_size               (GPasteSettings *self);
 guint        g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
 guint        g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
+const gchar *g_paste_settings_get_history_name               (GPasteSettings *self);
 const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
 const gchar *g_paste_settings_get_paste_and_pop              (GPasteSettings *self);
 
@@ -83,6 +84,8 @@ void g_paste_settings_set_min_text_item_size         (GPasteSettings *self,
                                                       guint           value);
 void g_paste_settings_set_max_text_item_size         (GPasteSettings *self,
                                                       guint           value);
+void g_paste_settings_set_history_name               (GPasteSettings *self,
+                                                      const gchar    *value);
 void g_paste_settings_set_show_history               (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_paste_and_pop              (GPasteSettings *self,

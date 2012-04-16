@@ -73,6 +73,7 @@ global:
     g_paste_settings_get_element_size;
     g_paste_settings_get_min_text_item_size;
     g_paste_settings_get_max_text_item_size;
+    g_paste_settings_get_history_name;
     g_paste_settings_get_show_history;
     g_paste_settings_get_paste_and_pop;
     g_paste_settings_set_track_changes;
@@ -86,6 +87,7 @@ global:
     g_paste_settings_set_element_size;
     g_paste_settings_set_min_text_item_size;
     g_paste_settings_set_max_text_item_size;
+    g_paste_settings_set_history_name;
     g_paste_settings_set_show_history;
     g_paste_settings_set_paste_and_pop;
     g_paste_settings_new;
