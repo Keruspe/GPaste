@@ -682,7 +682,7 @@ g_paste_settings_set_paste_and_pop (GPasteSettings *self,
     GPasteSettingsPrivate *priv = self->priv;
 
     g_free (priv->paste_and_pop);
-    priv->show_history = g_strdup (value);
+    priv->paste_and_pop = g_strdup (value);
     g_settings_set_string (priv->settings, PASTE_AND_POP_KEY, value);
 }
 
