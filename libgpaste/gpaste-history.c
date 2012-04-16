@@ -25,8 +25,6 @@
 
 #define G_PASTE_HISTORY_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_HISTORY, GPasteHistoryPrivate))
 
-#define HISTORY_FILE "history.xml"
-
 G_DEFINE_TYPE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
 
 struct _GPasteHistoryPrivate
@@ -300,7 +298,8 @@ g_paste_history_save (GPasteHistory *self)
         }
     }
 
-    gchar *history_file_path = g_build_filename (history_dir_path, HISTORY_FILE, NULL);
+    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
+    gchar *history_file_path = g_build_filename (history_dir_path, history_file_name, NULL);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (!save_history)
@@ -348,6 +347,7 @@ g_paste_history_save (GPasteHistory *self)
 
     g_object_unref (history_file);
     g_free (history_file_path);
+    g_free (history_file_name);
 out:
     g_object_unref (history_dir);
     g_free (history_dir_path);
@@ -366,7 +366,10 @@ g_paste_history_load (GPasteHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
-    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", HISTORY_FILE, NULL);
+    GPasteHistoryPrivate *priv = self->priv;
+
+    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
+    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
@@ -375,7 +378,6 @@ g_paste_history_load (GPasteHistory *self)
         LIBXML_TEST_VERSION
 
         xmlTextReaderPtr reader = xmlNewTextReaderFilename (history_file_path);
-        GPasteHistoryPrivate *priv = self->priv;
         guint max_history_size = g_paste_settings_get_max_history_size (priv->settings);
 
         for (guint i = 0; i < max_history_size && xmlTextReaderRead (reader) == 1;)
@@ -421,6 +423,7 @@ g_paste_history_load (GPasteHistory *self)
 
     g_object_unref (history_file);
     g_free (history_file_path);
+    g_free (history_file_name);
 }
 
 static void
