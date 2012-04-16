@@ -36,6 +36,7 @@
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
 #define SHOW_HISTORY_KEY               "show-history"
 #define PASTE_AND_POP_KEY              "paste-and-pop"
+#define FIFO_KEY              "fifo"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
@@ -49,6 +50,7 @@ struct _GPasteSettingsPrivate
     gboolean   synchronize_clipboards;
     gboolean   save_history;
     gboolean   trim_items;
+    gboolean   fifo;
     guint      max_history_size;
     guint      max_displayed_history_size;
     guint      element_size;
@@ -349,6 +351,53 @@ g_paste_settings_set_trim_items (GPasteSettings *self,
 
     priv->trim_items = value;
     g_settings_set_boolean (priv->settings, TRIM_ITEMS_KEY, value);
+}
+
+/**
+ * g_paste_settings_get_fifo:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the FIFO_KEY setting
+ *
+ * Returns: the value of the FIFO_KEY setting
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_settings_get_fifo (GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+
+    return self->priv->fifo;
+}
+
+static void
+g_paste_settings_set_fifo_from_dconf (GPasteSettings *self)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->fifo = g_settings_get_boolean (priv->settings, FIFO_KEY);
+}
+
+/**
+ * g_paste_settings_set_fifo:
+ * @self: a #GPasteSettings instance
+ * @value: whether to trim or not textual items
+ *
+ * Change the FIFO_KEY setting
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_set_fifo (GPasteSettings *self,
+                                 gboolean        value)
+{
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+
+    GPasteSettingsPrivate *priv = self->priv;
+
+    priv->fifo = value;
+    g_settings_set_boolean (priv->settings, FIFO_KEY, value);
 }
 
 /**
@@ -771,6 +820,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_save_history_from_dconf (self);
     else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
         g_paste_settings_set_trim_items_from_dconf (self);
+    else if (g_strcmp0 (key, FIFO_KEY) == 0)
+        g_paste_settings_set_fifo_from_dconf (self);
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
         g_paste_settings_set_max_history_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
@@ -820,6 +871,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_synchronize_clipboards_from_dconf (self);
     g_paste_settings_set_save_history_from_dconf (self);
     g_paste_settings_set_trim_items_from_dconf (self);
+    g_paste_settings_set_fifo_from_dconf (self);
     g_paste_settings_set_max_history_size_from_dconf (self);
     g_paste_settings_set_max_displayed_history_size_from_dconf (self);
     g_paste_settings_set_element_size_from_dconf (self);
