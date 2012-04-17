@@ -107,7 +107,7 @@ g_paste_history_add (GPasteHistory *self,
     {
         if (fifo)
         {
-            GList *previous = g_slist_nth(history, g_slist_length(history) - max_history_size - 1);
+            GSList *previous = g_slist_nth(history, g_slist_length(history) - max_history_size - 1);
             /* start the shortened list at the right place */
             priv->history = previous->next;
             /* terminate the original list so that it can be freed (below) */
