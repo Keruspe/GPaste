@@ -35,6 +35,8 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
     if (gtk_targets_include_text (targets, 1))
         gtk_selection_data_set_text (selection_data, g_paste_item_get_value (item), -1);
     /* The content is requested as uris */
+    else if (G_PASTE_IS_IMAGE_ITEM (item) && gtk_targets_include_image (targets, 1, TRUE))
+        gtk_selection_data_set_pixbuf (selection_data, g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (item)));
     else
     {
         g_return_if_fail (G_PASTE_IS_URIS_ITEM (item));

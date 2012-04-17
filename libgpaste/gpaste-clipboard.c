@@ -303,7 +303,7 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
 
         if (g_strcmp0 (checksum, self->priv->image_checksum) != 0)
             _g_paste_clipboard_select_image (self,
-                                             (GdkPixbuf *) g_paste_image_item_get_image (image_item),
+                                             g_paste_image_item_get_image (image_item),
                                              checksum);
     }
     else
