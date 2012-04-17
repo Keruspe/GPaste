@@ -172,12 +172,6 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 }
 
 static void
-g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
-                                        gpointer      user_data_or_owner G_GNUC_UNUSED)
-{
-}
-
-static void
 g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
                                       GtkSelectionData *selection_data,
                                       guint             info G_GNUC_UNUSED,
@@ -219,8 +213,15 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
 }
 
 static void
-_g_paste_clipboard_select_uris (GPasteClipboard      *self,
-                                const GPasteUrisItem *item)
+g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                        gpointer      user_data_or_owner)
+{
+    g_object_unref (user_data_or_owner);
+}
+
+static void
+_g_paste_clipboard_select_uris (GPasteClipboard *self,
+                                GPasteUrisItem  *item)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (G_PASTE_IS_URIS_ITEM (item));
@@ -241,7 +242,7 @@ _g_paste_clipboard_select_uris (GPasteClipboard      *self,
                                   n_targets,
                                   g_paste_clipboard_get_clipboard_data,
                                   g_paste_clipboard_clear_clipboard_data,
-                                  G_OBJECT (item));
+                                  g_object_ref (item));
     gtk_clipboard_store (real);
 
     gtk_target_table_free (targets, n_targets);
