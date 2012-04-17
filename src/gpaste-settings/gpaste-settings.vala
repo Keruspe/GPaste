@@ -24,6 +24,7 @@ public class Window : Gtk.Window {
     private Gtk.CheckButton synchronize_clipboards_button;
     private Gtk.CheckButton save_history_button;
     private Gtk.CheckButton trim_items_button;
+    private Gtk.CheckButton fifo_button;
     private Gtk.SpinButton max_history_size_button;
     private Gtk.SpinButton max_displayed_history_size_button;
     private Gtk.SpinButton element_size_button;
@@ -83,6 +84,15 @@ public class Window : Gtk.Window {
         }
         set {
             this.trim_items_button.set_active (value);
+        }
+    }
+
+    public bool fifo {
+        get {
+            return this.fifo_button.get_active ();
+        }
+        set {
+            this.fifo_button.set_active (value);
         }
     }
 
@@ -213,6 +223,13 @@ public class Window : Gtk.Window {
         });
         grid.attach (trim_items_button, 0, current_line++, 2, 1);
 
+        this.fifo_button = new Gtk.CheckButton.with_mnemonic (_("_Copy to end of history"));
+        this.fifo = app.settings.get_fifo ();
+        this.fifo_button.toggled.connect (() => {
+            app.settings.set_fifo (this.fifo);
+        });
+        grid.attach (fifo_button, 0, current_line++, 2, 1);
+
         grid.attach (new Gtk.Separator (Gtk.Orientation.HORIZONTAL), 0, current_line++, 2, 1);
 
         var max_history_size_label = new Gtk.Label (_("Max history size: "));
@@ -325,6 +342,9 @@ public class Main : Gtk.Application {
                 break;
             case "trim-items":
                 this.window.trim_items = this.settings.get_trim_items ();
+                break;
+            case "fifo":
+                this.window.fifo = this.settings.get_fifo ();
                 break;
             case "max-history-size":
                 this.window.max_history_size = this.settings.get_max_history_size ();
