@@ -36,7 +36,7 @@
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
 #define SHOW_HISTORY_KEY               "show-history"
 #define PASTE_AND_POP_KEY              "paste-and-pop"
-#define FIFO_KEY              "fifo"
+#define FIFO_KEY                       "fifo"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
@@ -382,7 +382,7 @@ g_paste_settings_set_fifo_from_dconf (GPasteSettings *self)
 /**
  * g_paste_settings_set_fifo:
  * @self: a #GPasteSettings instance
- * @value: whether to trim or not textual items
+ * @value: whether to add the end of the history or not
  *
  * Change the FIFO_KEY setting
  *

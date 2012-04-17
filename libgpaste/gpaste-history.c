@@ -107,19 +107,22 @@ g_paste_history_add (GPasteHistory *self,
 
     if (g_slist_length (history) > max_history_size)
     {
-        if (fifo) {
+        if (fifo)
+        {
+            GList *previous = g_slist_nth(history, g_slist_length(history) - max_history_size - 1);
             /* start the shortened list at the right place */
-            priv->history = g_slist_nth(history, g_slist_length(history) - max_history_size);
+            priv->history = previous->next;
             /* terminate the original list so that it can be freed (below) */
-            g_slist_nth(history, g_slist_length(history) - max_history_size - 1)->next = NULL;
+            previous->next = NULL;
         }
-        else {
-             for (guint i = 0; i < max_history_size - 1; ++i)
-                 history = g_slist_next (history);
-         }
-         g_slist_free_full (g_slist_next (history),
-                            g_object_unref);
-         history->next = NULL;
+        else
+        {
+            for (guint i = 0; i < max_history_size - 1; ++i)
+                history = g_slist_next (history);
+        }
+        g_slist_free_full (g_slist_next (history),
+                           g_object_unref);
+        history->next = NULL;
     }
 
     g_signal_emit (self,
