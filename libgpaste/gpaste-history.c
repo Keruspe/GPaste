@@ -96,14 +96,28 @@ g_paste_history_add (GPasteHistory *self,
             }
         }
     }
-    history = priv->history = g_slist_prepend (priv->history, g_object_ref (item));
+    gboolean fifo = g_paste_settings_get_fifo (priv->settings);
+    history = priv->history = fifo ?
+        g_slist_append (priv->history, g_object_ref (item)) :
+        g_slist_prepend (priv->history, g_object_ref (item));
 
     guint max_history_size = g_paste_settings_get_max_history_size (priv->settings);
 
     if (g_slist_length (history) > max_history_size)
     {
-        for (guint i = 0; i < max_history_size - 1; ++i)
-            history = g_slist_next (history);
+        if (fifo)
+        {
+            GList *previous = g_slist_nth(history, g_slist_length(history) - max_history_size - 1);
+            /* start the shortened list at the right place */
+            priv->history = previous->next;
+            /* terminate the original list so that it can be freed (below) */
+            previous->next = NULL;
+        }
+        else
+        {
+            for (guint i = 0; i < max_history_size - 1; ++i)
+                history = g_slist_next (history);
+        }
         g_slist_free_full (g_slist_next (history),
                            g_object_unref);
         history->next = NULL;

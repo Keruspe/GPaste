@@ -85,6 +85,14 @@
       </_description>
     </key>
 
+    <key name="fifo" type="b">
+      <default>false</default>
+      <_summary>Copy new items to the end of the list so that they are pasted last?</_summary>
+      <_description>
+        By default new items are added to the top of the list so that they are pasted first.
+      </_description>
+    </key>
+
     <key name="show-history" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
       <_summary>The keyboard shortcut to display the menu</_summary>

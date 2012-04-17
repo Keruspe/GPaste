@@ -53,6 +53,7 @@ gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *se
 gboolean     g_paste_settings_get_synchronize_clipboards     (GPasteSettings *self);
 gboolean     g_paste_settings_get_save_history               (GPasteSettings *self);
 gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *self);
+gboolean     g_paste_settings_get_fifo                       (GPasteSettings *self);
 guint        g_paste_settings_get_max_history_size           (GPasteSettings *self);
 guint        g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
 guint        g_paste_settings_get_element_size               (GPasteSettings *self);
@@ -73,6 +74,8 @@ void g_paste_settings_set_synchronize_clipboards     (GPasteSettings *self,
 void g_paste_settings_set_save_history               (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_trim_items                 (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_fifo                       (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_max_history_size           (GPasteSettings *self,
                                                       guint           value);

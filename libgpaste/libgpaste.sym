@@ -76,6 +76,7 @@ global:
     g_paste_settings_get_history_name;
     g_paste_settings_get_show_history;
     g_paste_settings_get_paste_and_pop;
+    g_paste_settings_get_fifo;
     g_paste_settings_set_track_changes;
     g_paste_settings_set_track_extension_state;
     g_paste_settings_set_primary_to_history;
@@ -90,6 +91,7 @@ global:
     g_paste_settings_set_history_name;
     g_paste_settings_set_show_history;
     g_paste_settings_set_paste_and_pop;
+    g_paste_settings_set_fifo;
     g_paste_settings_new;
 
     g_paste_xcb_wrapper_get_type;
