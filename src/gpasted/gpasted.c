@@ -18,6 +18,7 @@
  */
 
 #include "gpaste-daemon.h"
+#include "gpaste-clipboard-internal.h"
 
 #include <glib/gi18n-lib.h>
 #include <xcb/xtest.h>
@@ -94,6 +95,28 @@ fake_keyboard (GPasteXcbWrapper *xcb_wrapper,
 }
 
 static void
+paste_and_pop_get_clipboard_data (GtkClipboard     *clipboard,
+                                  GtkSelectionData *selection_data,
+                                  guint             info,
+                                  gpointer          user_data_or_owner)
+{
+    PasteAndPopData *data = (PasteAndPopData *) user_data_or_owner;
+    GPasteHistory *history = data->history;
+
+    g_paste_clipboard_get_clipboard_data (clipboard,
+                                          selection_data,
+                                          info,
+                                          G_OBJECT (g_paste_history_get (history, 0)));
+    g_paste_history_remove (history, 0);
+}
+
+static void
+paste_and_pop_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                    gpointer      user_data_or_owner G_GNUC_UNUSED)
+{
+}
+
+static void
 paste_and_pop (PasteAndPopData *data)
 {
     GPasteXcbWrapper *xcb_wrapper = data->xcb_wrapper;
@@ -102,14 +125,30 @@ paste_and_pop (PasteAndPopData *data)
 
     g_return_if_fail (screen); /* This should never happen */
 
+    GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
+
+    gtk_target_list_add_text_targets (target_list, 0);
+    gtk_target_list_add_uri_targets (target_list, 0);
+    gtk_target_list_add (target_list, g_paste_clipboard_copy_files_target, 0, 0);
+
+    gint n_targets;
+    GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
+    GtkClipboard *clipboard = gtk_clipboard_get (GDK_SELECTION_PRIMARY);
+
+    gtk_clipboard_set_with_data (clipboard,
+                                 targets,
+                                 n_targets,
+                                 paste_and_pop_get_clipboard_data,
+                                 paste_and_pop_clear_clipboard_data,
+                                 data);
+
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, 0, XCB_KEY_PRESS);
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, 200, XCB_KEY_PRESS);
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, 0, XCB_KEY_RELEASE);
     fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, 0, XCB_KEY_RELEASE);
 
-    g_usleep (1500000);
-
-    g_paste_history_remove (data->history, 0);
+    gtk_target_table_free (targets, n_targets);
+    gtk_target_list_unref (target_list);
 }
 
 static void
