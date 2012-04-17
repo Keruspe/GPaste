@@ -9,6 +9,8 @@ NEW in 2.6 (Not released yet)
 - New feature : Paste & Pop with a new keybinding (experimental)
 - vapi is no longer shipped and is generated when building
 - Now requires automake 1.11.5
+- Brazilian Portuguese translation by Elder Marco
+- FIFO mode
 
 NEW in 2.5 (08/03/2012)
 =============
