@@ -87,23 +87,74 @@ g_paste_daemon_get_history (GPasteDaemon          *self,
     g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));
 }
 
+static gchar *
+g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
+                                          gsize    *length)
+{
+    GVariantIter parameters_iter;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    gchar *value = g_variant_dup_string (variant, length);
+
+    g_variant_unref (variant);
+
+    return value;
+}
+
+static void
+g_paste_daemon_backup_history (GPasteDaemon          *self,
+                               GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation,
+                               GVariant              *parameters)
+{
+    gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name != NULL);
+
+    GPasteDaemonPrivate *priv = self->priv;
+    GPasteSettings *settings = priv->settings;
+
+    gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
+
+    g_paste_settings_set_history_name (settings, name);
+    g_paste_history_save (priv->history);
+    g_paste_settings_set_history_name (settings, old_name);
+
+    g_free (old_name);
+
+    g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
+}
+
+static void
+g_paste_daemon_switch_history (GPasteDaemon          *self,
+                               GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation,
+                               GVariant              *parameters)
+{
+    gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name != NULL);
+
+    GPasteDaemonPrivate *priv = self->priv;
+    GPasteSettings *settings = priv->settings;
+
+    g_paste_settings_set_history_name (settings, name);
+    g_paste_history_load (priv->history);
+    g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
+}
+
 static void
 g_paste_daemon_add (GPasteDaemon          *self,
                     GDBusConnection       *connection,
                     GDBusMethodInvocation *invocation,
                     GVariant              *parameters)
 {
-    GVariantIter parameters_iter;
-
-    g_variant_iter_init (&parameters_iter, parameters);
-
     gsize length;
-    GVariant *selection = g_variant_iter_next_value (&parameters_iter);
-    gchar *text = g_variant_dup_string (selection, &length);
-    g_variant_unref (selection);
+    gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
     g_return_if_fail (text != NULL);
-    g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     GPasteDaemonPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
@@ -300,6 +351,10 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
 
     if (g_strcmp0 (method_name, "GetHistory") == 0)
         g_paste_daemon_get_history (self, connection, invocation);
+    else if (g_strcmp0 (method_name, "BackupHistory") == 0)
+        g_paste_daemon_backup_history (self, connection, invocation, parameters);
+    else if (g_strcmp0 (method_name, "SwitchHistory") == 0)
+        g_paste_daemon_switch_history (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "Add") == 0)
         g_paste_daemon_add (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "GetElement") == 0)
