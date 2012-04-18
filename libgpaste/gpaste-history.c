@@ -128,6 +128,9 @@ g_paste_history_add (GPasteHistory *self,
     g_signal_emit (self,
                    signals[CHANGED],
                    0); /* detail */
+
+    if (fifo)
+        g_paste_history_select (self, 0);
 }
 
 /**
