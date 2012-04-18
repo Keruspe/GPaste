@@ -49,6 +49,9 @@ rebind (GPasteSettings   *settings,
     case G_PASTE_KEYBINDINGS_SHOW_HISTORY:
         binding = g_paste_settings_get_show_history (settings);
         break;
+    case G_PASTE_KEYBINDINGS_PASTE_AND_POP:
+        binding = g_paste_settings_get_paste_and_pop (settings);
+        break;
     default:
         binding = NULL;
         break;
