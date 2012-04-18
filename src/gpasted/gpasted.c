@@ -128,6 +128,7 @@ paste_and_pop (PasteAndPopData *data)
     GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
     gtk_target_list_add_text_targets (target_list, 0);
+    gtk_target_list_add_image_targets (target_list, 0);
     gtk_target_list_add_uri_targets (target_list, 0);
     gtk_target_list_add (target_list, g_paste_clipboard_copy_files_target, 0, 0);
 
