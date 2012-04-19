@@ -25,6 +25,10 @@ namespace GPaste {
         interface DBusClient : GLib.Object {
             [DBus (name = "GetHistory", inSignature = "", outSignature = "as")]
             public abstract string[] get_history() throws GLib.IOError;
+            [DBus (name = "BackupHistory", inSignature = "s", outSignature = "")]
+            public abstract void backup_history(string name) throws GLib.IOError;
+            [DBus (name = "SwitchHistory", inSignature = "s", outSignature = "")]
+            public abstract void switch_history(string name) throws GLib.IOError;
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws GLib.IOError;
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
@@ -47,6 +51,8 @@ namespace GPaste {
             private void usage(string caller) {
                 stdout.printf(_("Usage:\n"));
                 stdout.printf(_("%s [history]: print the history with indexes\n"), caller);
+                stdout.printf(_("%s backup-history <name>: backup current history\n"), caller);
+                stdout.printf(_("%s switch-history <name>: switch to another history\n"), caller);
                 stdout.printf(_("%s raw-history: print the history without indexes\n"), caller);
                 stdout.printf(_("%s zero-history: print the history with NUL as separator\n"), caller);
                 stdout.printf(_("%s add <text>: set text to clipboard\n"), caller);
@@ -173,6 +179,14 @@ namespace GPaste {
                             break;
                         case 3:
                             switch (args[1]) {
+                            case "bh":
+                            case "backup-history":
+                                app.gpaste.backup_history(args[2]);
+                                break;
+                            case "sh":
+                            case "switch-history":
+                                app.gpaste.switch_history(args[2]);
+                                break;
                             case "a":
                             case "add":
                                 app.gpaste.add(args[2]);

@@ -41,6 +41,14 @@ Display the history with indexes
 Display the history without indexes
 .br
 .TP
+.B gpaste backup-history
+Backup the current history
+.br
+.TP
+.B gpaste switch-history
+Switch to another history
+.br
+.TP
 .B gpaste zero-history
 Display the history with NUL as separator
 .br
