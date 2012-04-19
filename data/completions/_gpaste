@@ -6,6 +6,7 @@ if (( CURRENT == 2 )); then
 
     commands=(
         {add,a}:"Set text to clipboard"
+        {backup-history,bh}:"Backup current history"
         {daemon-reexec,dr}:"Reexecute the daemon"
         {delete,d}:"Delete an element of the history"
         {empty,e}:"Empty the history"
@@ -18,6 +19,7 @@ if (( CURRENT == 2 )); then
         {settings,s,preferences,p}:"Launch the configuration tool"
         {start,daemon,d}:"Start the daemon"
         {stop,quit,q}:"Shutdown the daemon"
+        {switch-history,sh}:"Switch to another history"
         {version,v,--version,-v}:"Display the version"
         {zero-history,zh}:"Display the history with NUL as separator"
     )

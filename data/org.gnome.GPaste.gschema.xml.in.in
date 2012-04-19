@@ -1,6 +1,14 @@
 <schemalist>
     <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="@GETTEXT_PACKAGE@">
 
+    <key name="history-name" type="s">
+      <default>'history'</default>
+      <_summary>The name of the current history</_summary>
+      <_description>
+        The default name is "history"
+      </_description>
+    </key>
+
     <key name="max-history-size" type="u">
       <range min="5" max="255"/>
       <default>30</default>
