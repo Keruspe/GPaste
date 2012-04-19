@@ -11,6 +11,7 @@ NEW in 2.6 (Not released yet)
 - Now requires automake 1.11.5
 - Brazilian Portuguese translation by Elder Marco
 - FIFO mode
+- Multi-history with "gpaste backup-history" and "gpaste switch-history"
 
 NEW in 2.5 (08/03/2012)
 =============
