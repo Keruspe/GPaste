@@ -382,6 +382,10 @@ g_paste_history_load (GPasteHistory *self)
 
     GPasteHistoryPrivate *priv = self->priv;
 
+    g_slist_free_full (priv->history,
+                       g_object_unref);
+    priv->history = NULL;
+
     gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
     gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
     GFile *history_file = g_file_new_for_path (history_file_path);
