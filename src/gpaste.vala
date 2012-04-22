@@ -29,6 +29,8 @@ namespace GPaste {
             public abstract void backup_history(string name) throws GLib.IOError;
             [DBus (name = "SwitchHistory", inSignature = "s", outSignature = "")]
             public abstract void switch_history(string name) throws GLib.IOError;
+            [DBus (name = "DeleteHistory", inSignature = "s", outSignature = "")]
+            public abstract void delete_history(string name) throws GLib.IOError;
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws GLib.IOError;
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
@@ -53,6 +55,7 @@ namespace GPaste {
                 stdout.printf(_("%s [history]: print the history with indexes\n"), caller);
                 stdout.printf(_("%s backup-history <name>: backup current history\n"), caller);
                 stdout.printf(_("%s switch-history <name>: switch to another history\n"), caller);
+                stdout.printf(_("%s delete-history <name>: delete a history\n"), caller);
                 stdout.printf(_("%s raw-history: print the history without indexes\n"), caller);
                 stdout.printf(_("%s zero-history: print the history with NUL as separator\n"), caller);
                 stdout.printf(_("%s add <text>: set text to clipboard\n"), caller);
@@ -186,6 +189,10 @@ namespace GPaste {
                             case "sh":
                             case "switch-history":
                                 app.gpaste.switch_history(args[2]);
+                                break;
+                            case "dh":
+                            case "delete-history":
+                                app.gpaste.delete_history(args[2]);
                                 break;
                             case "a":
                             case "add":

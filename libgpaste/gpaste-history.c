@@ -391,7 +391,7 @@ g_paste_history_load (GPasteHistory *self)
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
-                              NULL)) /* cancellable */
+                             NULL)) /* cancellable */
     {
         LIBXML_TEST_VERSION
 

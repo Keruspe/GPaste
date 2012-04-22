@@ -49,6 +49,10 @@ Backup the current history
 Switch to another history
 .br
 .TP
+.B gpaste delete-history
+Delete a history
+.br
+.TP
 .B gpaste zero-history
 Display the history with NUL as separator
 .br

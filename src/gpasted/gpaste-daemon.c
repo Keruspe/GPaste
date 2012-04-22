@@ -19,6 +19,7 @@
 
 #include "gpaste-daemon-private.h"
 
+#include <glib.h>
 #include <string.h>
 
 #define G_PASTE_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_DAEMON, GPasteDaemonPrivate))
@@ -123,6 +124,7 @@ g_paste_daemon_backup_history (GPasteDaemon          *self,
     g_paste_settings_set_history_name (settings, old_name);
 
     g_free (old_name);
+    g_free (name);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
@@ -142,6 +144,37 @@ g_paste_daemon_switch_history (GPasteDaemon          *self,
 
     g_paste_settings_set_history_name (settings, name);
     g_paste_history_load (priv->history);
+
+    g_free (name);
+
+    g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
+}
+
+static void
+g_paste_daemon_delete_history (GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation,
+                               GVariant              *parameters)
+{
+    gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name != NULL);
+
+    gchar *history_file_name = g_strconcat (name, ".xml", NULL);
+    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
+    GFile *history_file = g_file_new_for_path (history_file_path);
+
+    if (g_file_query_exists (history_file,
+                             NULL)) /* cancellable */
+    {
+        g_file_delete (history_file,
+                       NULL, /* cancellable */
+                       NULL); /* error */
+    }
+
+    g_object_unref (history_file);
+    g_free (history_file_path);
+    g_free (name);
+
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
@@ -355,6 +388,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
         g_paste_daemon_backup_history (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "SwitchHistory") == 0)
         g_paste_daemon_switch_history (self, connection, invocation, parameters);
+    else if (g_strcmp0 (method_name, "DeleteHistory") == 0)
+        g_paste_daemon_delete_history (connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "Add") == 0)
         g_paste_daemon_add (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "GetElement") == 0)
@@ -502,6 +537,9 @@ g_paste_daemon_init (GPasteDaemon *self)
         "           <arg type='s' direction='in' />"
         "       </method>"
         "       <method name='SwitchHistory'>"
+        "           <arg type='s' direction='in' />"
+        "       </method>"
+        "       <method name='DeleteHistory'>"
         "           <arg type='s' direction='in' />"
         "       </method>"
         "       <method name='Add'>"
