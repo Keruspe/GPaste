@@ -1,5 +1,5 @@
 /Makefile
-/bin
+/bin/*
 !/bin/*.mk
 /data/*.desktop
 /data/*.gschema.xml

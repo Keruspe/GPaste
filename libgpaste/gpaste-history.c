@@ -126,6 +126,9 @@ g_paste_history_add (GPasteHistory *self,
     g_signal_emit (self,
                    signals[CHANGED],
                    0); /* detail */
+
+    if (fifo)
+        g_paste_history_select (self, 0);
 }
 
 /**
@@ -160,8 +163,37 @@ g_paste_history_remove (GPasteHistory *self,
                    0); /* detail */
 }
 
+static GPasteItem *
+_g_paste_history_get (GPasteHistory *self,
+                      guint          pos)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+
+    GSList *history = self->priv->history;
+
+    g_return_val_if_fail (pos < g_slist_length (history), NULL);
+
+    return G_PASTE_ITEM (g_slist_nth_data (history, pos));
+}
+
 /**
- * g_paste_history_get_element_value:
+ * g_paste_history_get:
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteItem
+ *
+ * Get a #GPasteItem from the #GPasteHistory
+ *
+ * Returns: a read-only #GPasteItem
+ */
+G_PASTE_VISIBLE const GPasteItem *
+g_paste_history_get (GPasteHistory *self,
+                     guint          pos)
+{
+    return _g_paste_history_get (self, pos);
+}
+
+/**
+ * g_paste_history_get_value:
  * @self: a #GPasteHistory instance
  * @index: the index of the #GPasteItem
  *
@@ -170,16 +202,14 @@ g_paste_history_remove (GPasteHistory *self,
  * Returns: the read-only value of the #GPasteItem
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_history_get_element_value (GPasteHistory *self,
-                                   guint          pos)
+g_paste_history_get_value (GPasteHistory *self,
+                           guint          pos)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    GPasteItem *item = _g_paste_history_get (self, pos);
 
-    GSList *history = self->priv->history;
+    g_return_val_if_fail (item != NULL, NULL);
 
-    g_return_val_if_fail (pos < g_slist_length (history), NULL);
-
-    return g_paste_item_get_value (G_PASTE_ITEM (g_slist_nth_data (history, pos)));
+    return g_paste_item_get_value (item);
 }
 
 /**

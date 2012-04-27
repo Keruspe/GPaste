@@ -390,9 +390,9 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
  *
  * Get the image contained in the #GPasteImageItem
  *
- * Returns: read-only GdkPixbuf of the image
+ * Returns: (transfer none): the GdkPixbuf of the image
  */
-G_PASTE_VISIBLE const GdkPixbuf *
+G_PASTE_VISIBLE GdkPixbuf *
 g_paste_image_item_get_image (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);

@@ -228,8 +228,8 @@ g_paste_daemon_get_element (GPasteDaemon          *self,
                             GDBusMethodInvocation *invocation,
                             GVariant              *parameters)
 {
-    const gchar *value = g_paste_history_get_element_value (self->priv->history,
-                                                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    const gchar *value = g_paste_history_get_value (self->priv->history,
+                                                    g_paste_daemon_get_dbus_uint32_parameter (parameters));
     GVariant *variant = g_variant_new_string ((value == NULL) ? "" : value);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));

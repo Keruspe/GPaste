@@ -34,6 +34,7 @@ libgpaste_libgpaste_la_public_headers = \
 	$(NULL)
 
 libgpaste_libgpaste_la_private_headers = \
+	libgpaste/gpaste-clipboard-internal.h \
 	libgpaste/gpaste-clipboard-private.h \
 	libgpaste/gpaste-clipboards-manager-private.h \
 	libgpaste/gpaste-history-private.h \
@@ -48,6 +49,7 @@ libgpaste_libgpaste_la_SOURCES = \
 	$(libgpaste_libgpaste_la_public_headers) \
 	$(libgpaste_libgpaste_la_private_headers) \
 	libgpaste/gpaste-clipboard.c \
+	libgpaste/gpaste-clipboard-internal.c \
 	libgpaste/gpaste-clipboards-manager.c \
 	libgpaste/gpaste-history.c \
 	libgpaste/gpaste-item.c \

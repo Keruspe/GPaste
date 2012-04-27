@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-clipboard-private.h"
+#include "gpaste-clipboard-internal.h"
 
 #include <string.h>
 
@@ -33,8 +33,6 @@ struct _GPasteClipboardPrivate
     gchar *text;
     gchar *image_checksum;
 };
-
-static GdkAtom g_paste_clipboard_copy_files_target;
 
 /**
  * g_paste_clipboard_get_target:
@@ -172,55 +170,8 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 }
 
 static void
-g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
-                                        gpointer      user_data_or_owner G_GNUC_UNUSED)
-{
-}
-
-static void
-g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
-                                      GtkSelectionData *selection_data,
-                                      guint             info G_GNUC_UNUSED,
-                                      gpointer          user_data_or_owner)
-{
-    g_return_if_fail (G_PASTE_IS_URIS_ITEM (user_data_or_owner));
-
-    GPasteUrisItem *item = G_PASTE_URIS_ITEM (user_data_or_owner);
-
-    GdkAtom targets[1] = { gtk_selection_data_get_target (selection_data) };
-
-    /* The content is requested as text */
-    if (gtk_targets_include_text (targets, 1))
-        gtk_selection_data_set_text (selection_data, g_paste_item_get_value (G_PASTE_ITEM (item)), -1);
-    /* The content is requested as uris */
-    else if (gtk_targets_include_uri (targets, 1))
-        gtk_selection_data_set_uris (selection_data, (gchar **) g_paste_uris_item_get_uris (item));
-    /* The content is requested as special gnome-copied-files by nautilus */
-    else
-    {
-        GString *copy_string = g_string_new ("copy");
-        const gchar * const *uris = g_paste_uris_item_get_uris (item);
-        guint length = g_strv_length ((gchar **) uris);
-
-        for (guint i = 0; i < length; ++i)
-            g_string_append (g_string_append (copy_string,
-                                              "\n"),
-                             uris[i]);
-
-        gchar *str = copy_string->str;
-        length = copy_string->len + 1;
-        guchar *copy_files_data = g_new (guchar, length);
-        for (guint i = 0; i < length; ++i)
-            copy_files_data[i] = (guchar) str[i];
-        gtk_selection_data_set (selection_data, g_paste_clipboard_copy_files_target, 8, copy_files_data, length);
-        g_free (copy_files_data);
-        g_string_free (copy_string, TRUE);
-    }
-}
-
-static void
-_g_paste_clipboard_select_uris (GPasteClipboard      *self,
-                                const GPasteUrisItem *item)
+_g_paste_clipboard_select_uris (GPasteClipboard *self,
+                                GPasteUrisItem  *item)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (G_PASTE_IS_URIS_ITEM (item));
@@ -241,7 +192,7 @@ _g_paste_clipboard_select_uris (GPasteClipboard      *self,
                                   n_targets,
                                   g_paste_clipboard_get_clipboard_data,
                                   g_paste_clipboard_clear_clipboard_data,
-                                  G_OBJECT (item));
+                                  g_object_ref (item));
     gtk_clipboard_store (real);
 
     gtk_target_table_free (targets, n_targets);
@@ -352,7 +303,7 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
 
         if (g_strcmp0 (checksum, self->priv->image_checksum) != 0)
             _g_paste_clipboard_select_image (self,
-                                             (GdkPixbuf *) g_paste_image_item_get_image (image_item),
+                                             g_paste_image_item_get_image (image_item),
                                              checksum);
     }
     else
@@ -394,8 +345,6 @@ static void
 g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteClipboardPrivate));
-
-    g_paste_clipboard_copy_files_target  = gdk_atom_intern_static_string ("x-special/gnome-copied-files");
 
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 

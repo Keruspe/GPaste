@@ -25,6 +25,9 @@ nodist_bin_gpaste_settings_SOURCES = \
 
 bin_gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala \
+	src/gpaste-settings/gpaste-settings-notebook.vala \
+	src/gpaste-settings/gpaste-settings-panel.vala \
+	src/gpaste-settings/gpaste-settings-window.vala \
 	$(NULL)
 
 bin_gpaste_settings_vala.stamp: $(libgpaste_vapi_file)

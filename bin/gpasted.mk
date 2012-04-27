@@ -26,6 +26,7 @@ bin_gpasted_headers = \
 
 bin_gpasted_SOURCES = \
 	$(bin_gpasted_headers) \
+	libgpaste/gpaste-clipboard-internal.c \
 	src/gpasted/gpaste-daemon.c \
 	src/gpasted/gpasted.c \
 	$(NULL)
