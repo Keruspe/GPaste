@@ -1,4 +1,5 @@
 src/gpaste-settings/gpaste-settings.vala
+src/gpaste-settings/gpaste-settings-window.vala
 src/applets/legacy/gpaste-applet.vala
 src/applets/gnome-shell/extension.js
 src/gpaste.vala

@@ -3,4 +3,5 @@ data/gpaste-settings.desktop.in
 data/org.gnome.GPaste.gschema.xml.in
 src/applets/legacy/gpaste-applet.c
 src/gpaste-settings/gpaste-settings.c
+src/gpaste-settings/gpaste-settings-window.c
 src/gpaste.c
