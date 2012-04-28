@@ -179,6 +179,18 @@ g_paste_daemon_delete_history (GDBusConnection       *connection,
 }
 
 static void
+g_paste_daemon_list_histories (GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation)
+{
+    gchar **history_names = g_paste_history_list ();
+    GVariant *variant = g_variant_new_strv ((const gchar **) history_names, -1);
+
+    g_strfreev (history_names);
+
+    g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));
+}
+
+static void
 g_paste_daemon_add (GPasteDaemon          *self,
                     GDBusConnection       *connection,
                     GDBusMethodInvocation *invocation,
@@ -390,6 +402,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
         g_paste_daemon_switch_history (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "DeleteHistory") == 0)
         g_paste_daemon_delete_history (connection, invocation, parameters);
+    else if (g_strcmp0 (method_name, "ListHistories") == 0)
+        g_paste_daemon_list_histories (connection, invocation);
     else if (g_strcmp0 (method_name, "Add") == 0)
         g_paste_daemon_add (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "GetElement") == 0)
@@ -541,6 +555,9 @@ g_paste_daemon_init (GPasteDaemon *self)
         "       </method>"
         "       <method name='DeleteHistory'>"
         "           <arg type='s' direction='in' />"
+        "       </method>"
+        "       <method name='ListHistories'>"
+        "           <arg type='as' direction='out' />"
         "       </method>"
         "       <method name='Add'>"
         "           <arg type='s' direction='in' />"
