@@ -584,3 +584,54 @@ g_paste_history_new (GPasteSettings *settings)
 
     return self;
 }
+
+/**
+ * g_paste_history_list:
+ *
+ * Get the list of available histories
+ *
+ * Returns: (transfer full): The list of history names
+ *                           free it with g_strfreev
+ */
+G_PASTE_VISIBLE gchar **
+g_paste_history_list (void)
+{
+    gchar *history_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
+    GFile *history_dir = g_file_new_for_path (history_dir_path);
+    GFileEnumerator *histories = g_file_enumerate_children (history_dir,
+                                                            G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                                                            G_FILE_QUERY_INFO_NONE,
+                                                            NULL, /* cancellable */
+                                                            NULL); /* error */
+    GArray *history_names = g_array_new (TRUE, /* zero-terminated */
+                                         TRUE, /* clear */
+                                         sizeof (gchar *));
+    GFileInfo *history;
+
+    while ((history = g_file_enumerator_next_file (histories,
+                                                   NULL, /* cancellable */
+                                                   NULL))) /* error */
+    {
+        const gchar *raw_name = g_file_info_get_display_name (history);
+
+        if (g_str_has_suffix (raw_name, ".xml"))
+        {
+            gchar *name = g_strdup (raw_name);
+
+            name[strlen (name) - 4] = '\0';
+            g_array_append_val (history_names, name);
+            g_object_unref (history);
+        }
+    }
+
+    g_object_unref (histories);
+    g_object_unref (history_dir);
+    g_free (history_dir_path);
+
+    gchar **ret = (gchar **) history_names->data;
+
+    g_array_free (history_names,
+                  FALSE); /* free_segment */
+
+    return ret;
+}
