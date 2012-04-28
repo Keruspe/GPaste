@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: GPaste 2.6\n"
+"Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2012-04-27 18:20+0200\n"
-"PO-Revision-Date: 2012-04-15 19:57-0300\n"
+"PO-Revision-Date: 2012-04-27 22:12-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -54,7 +54,7 @@ msgstr "Aparar i_tens"
 
 #: ../src/gpaste-settings/gpaste-settings-window.vala:132
 msgid "_Copy to end of history"
-msgstr ""
+msgstr "_Copiar para o final do histórico"
 
 #: ../src/gpaste-settings/gpaste-settings-window.vala:144
 msgid "Max history size: "
@@ -70,37 +70,33 @@ msgstr "Tamanho máximo do elemento ao exibir:"
 
 #: ../src/gpaste-settings/gpaste-settings-window.vala:162
 msgid "Min text item length: "
-msgstr "Tamanho mínimo do texto:"
+msgstr "Tamanho mínimo do item de texto:"
 
 #: ../src/gpaste-settings/gpaste-settings-window.vala:168
 msgid "Max text item length: "
-msgstr "Tamanho máximo do texto:"
+msgstr "Tamanho máximo do item de texto:"
 
 #. translators: Keyboard shortcut to display the history
 #: ../src/gpaste-settings/gpaste-settings-window.vala:182
-#, fuzzy
 msgid "Display the history: "
-msgstr "Tamanho máximo do histórico ao exibir:"
+msgstr "Mostrar histórico:"
 
 #. translators: Keyboard shortcut to paste and then delete the first item in history
 #: ../src/gpaste-settings/gpaste-settings-window.vala:188
-#, fuzzy
 msgid "Paste and then delete the first item in history: "
-msgstr "Atalho do teclado para copiar e apagar o primeiro item no histórico:"
+msgstr "Colar e apagar o primeiro item do histórico:"
 
 #: ../src/gpaste-settings/gpaste-settings-window.vala:200
 msgid "General behaviour"
-msgstr ""
+msgstr "Comportamento geral"
 
 #: ../src/gpaste-settings/gpaste-settings-window.vala:201
-#, fuzzy
 msgid "History settings"
-msgstr "Configurações do daemon GPaste"
+msgstr "Configurações do histórico"
 
 #: ../src/gpaste-settings/gpaste-settings-window.vala:202
-#, fuzzy
 msgid "Keyboard shortcuts"
-msgstr "Atalho do teclado para exibir o histórico:"
+msgstr "Atalhos do teclado"
 
 #: ../src/applets/legacy/gpaste-applet.vala:102
 #, c-format
@@ -135,7 +131,8 @@ msgstr "Não foi possível esvaziar o histórico.\n"
 msgid "Quit"
 msgstr "Sair"
 
-#: ../src/applets/legacy/gpaste-applet.vala:189 ../src/gpaste.vala:259
+#: ../src/applets/legacy/gpaste-applet.vala:189
+#: ../src/gpaste.vala:259
 #, c-format
 msgid "Couldn't connect to GPaste daemon.\n"
 msgstr "Não foi possível se conectar ao daemon do GPaste.\n"
@@ -161,32 +158,32 @@ msgstr "Uso:\n"
 #: ../src/gpaste.vala:55
 #, c-format
 msgid "%s [history]: print the history with indexes\n"
-msgstr "%s [history]: imprimir histórico com os índices\n"
+msgstr "%s [history]: imprimir o histórico com os índices\n"
 
 #: ../src/gpaste.vala:56
 #, c-format
 msgid "%s backup-history <name>: backup current history\n"
-msgstr ""
+msgstr "%s backup-history <nome>: faz um backup do histórico atual\n"
 
 #: ../src/gpaste.vala:57
 #, c-format
 msgid "%s switch-history <name>: switch to another history\n"
-msgstr ""
+msgstr "%s switch-history <nome>:  muda para um outro histórico\n"
 
 #: ../src/gpaste.vala:58
-#, fuzzy, c-format
+#, c-format
 msgid "%s delete-history <name>: delete a history\n"
-msgstr "%s delete <n>: apaga o n-ésimo item do histórico\n"
+msgstr "%s delete-history <nome>: apaga um histórico\n"
 
 #: ../src/gpaste.vala:59
 #, c-format
 msgid "%s raw-history: print the history without indexes\n"
-msgstr "%s raw-history: imprimir histórico sem os índices\n"
+msgstr "%s raw-history: imprime o histórico sem os índices\n"
 
 #: ../src/gpaste.vala:60
 #, c-format
 msgid "%s zero-history: print the history with NUL as separator\n"
-msgstr "%s zero-history: imprimir histórico com um NULO como separador\n"
+msgstr "%s zero-history: imprime o histórico com um NULO como separador\n"
 
 #: ../src/gpaste.vala:61
 #, c-format
@@ -200,10 +197,8 @@ msgstr "%s get <n>: obtém o n-ésimo item do histórico\n"
 
 #: ../src/gpaste.vala:63
 #, c-format
-msgid ""
-"%s set <number>: set the <number>th item from the history to the clipboard\n"
-msgstr ""
-"%s set <n>: copia o n-ésimo item do histórico para a área de transferência\n"
+msgid "%s set <number>: set the <number>th item from the history to the clipboard\n"
+msgstr "%s set <n>: copia o n-ésimo item do histórico para a área de transferência\n"
 
 #: ../src/gpaste.vala:64
 #, c-format
@@ -212,18 +207,13 @@ msgstr "%s delete <n>: apaga o n-ésimo item do histórico\n"
 
 #: ../src/gpaste.vala:65
 #, c-format
-msgid ""
-"%s file <path>: put the content of the file at <path> into the clipboard\n"
-msgstr ""
-"%s file <caminho>: coloca o conteúdo do arquivo em <caminho> na área de "
-"transferência\n"
+msgid "%s file <path>: put the content of the file at <path> into the clipboard\n"
+msgstr "%s file <caminho>: coloca o conteúdo do arquivo em <caminho> na área de transferência\n"
 
 #: ../src/gpaste.vala:66
 #, c-format
 msgid "whatever | %s: set the output of whatever to clipboard\n"
-msgstr ""
-"qualquercomando | %s: copia a saída de qualquercomando para a área de "
-"transferência\n"
+msgstr "qualquercomando | %s: copia a saída de qualquercomando para a área de transferência\n"
 
 #: ../src/gpaste.vala:67
 #, c-format
@@ -233,8 +223,7 @@ msgstr "%s empty: esvazia o histórico\n"
 #: ../src/gpaste.vala:68
 #, c-format
 msgid "%s start: start tracking clipboard changes\n"
-msgstr ""
-"%s start: inicia o monitoramento de alterações na área de transferência\n"
+msgstr "%s start: inicia o monitoramento de alterações na área de transferência\n"
 
 #: ../src/gpaste.vala:69
 #, c-format
@@ -301,13 +290,12 @@ msgid "Could not aquire DBus name."
 msgstr "Não foi possível obter um nome DBus."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:1
-#, fuzzy
 msgid "The name of the current history"
-msgstr "Número máximo de itens no histórico"
+msgstr "O nome do histórico atual"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:2
 msgid "The default name is \"history\""
-msgstr ""
+msgstr "O nome padrão é \"history\""
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:3
 msgid "Max history size"
@@ -330,12 +318,8 @@ msgid "Max size of an element when displaying it"
 msgstr "Tamanho máximo de um elemento ao exibir"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:8
-msgid ""
-"The extra stuff of that element will be replaced by \"…\", and newlines by "
-"\" \" when displaying from the applet, 0 to disable."
-msgstr ""
-"O restante desse elemento será substituído por \"…\", e novas linhas por \" "
-"\" quando exibido do applet, 0 para desabilitar."
+msgid "The extra stuff of that element will be replaced by \"…\", and newlines by \" \" when displaying from the applet, 0 to disable."
+msgstr "O restante desse elemento será substituído por \"…\", e novas linhas por \" \" quando for exibido no applet, 0 para desabilitar."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:9
 msgid "Does the primary selection affects history?"
@@ -343,8 +327,7 @@ msgstr "Seleção primária afeta o histórico?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:10
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr ""
-"Por padrão, somente a área de transferência (ctrl+c) afeta o histórico."
+msgstr "Por padrão, somente a área de transferência (ctrl+c) afeta o histórico."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:11
 msgid "Are the primary selection and the clipboard synchronized?"
@@ -352,8 +335,7 @@ msgstr "Seleção primária e a área de transferência estão sincronizadas?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:12
 msgid "By default, the primary selection and the clipboard are independent."
-msgstr ""
-"Por padrão, seleção primária e área de transferência são independentes."
+msgstr "Por padrão, seleção primária e área de transferência são independentes."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:13
 msgid "Do we track the clipboard changes?"
@@ -364,12 +346,8 @@ msgid "By default, we're tracking those changes."
 msgstr "Por padrão, essas alterações são monitoradas."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:15
-msgid ""
-"Do we sync the daemon state with the gnome-shell extension's one? (disable "
-"the daemon when disabling the extension)"
-msgstr ""
-"Sincronizar o estado do daemon com a extensão do gnome-shell? (desativar o "
-"daemon irá desativar a extensão)"
+msgid "Do we sync the daemon state with the gnome-shell extension's one? (disable the daemon when disabling the extension)"
+msgstr "Sincronizar o estado do daemon com a extensão do gnome-shell? (desabilitar o daemon quando desabilitar a extensão)"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:16
 msgid "By default, the daemon state keeps unchanged"
@@ -388,49 +366,32 @@ msgid "Do we trim the textual items before adding them to history?"
 msgstr "Aparar itens textuais antes de adicioná-los ao histórico?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:20
-msgid ""
-"Trimming means removing all trailing and ending spaces. By default, we're "
-"letting them as-is."
-msgstr ""
-"Aparar significa que espaços em branco antes e depois do texto serão "
-"removidos. Por padrão, é deixado como está."
+msgid "Trimming means removing all trailing and ending spaces. By default, we're letting them as-is."
+msgstr "Aparar significa que espaços em branco antes e depois do texto serão removidos. Por padrão, é deixado como está."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:21
 msgid "Copy new items to the end of the list so that they are pasted last?"
-msgstr ""
+msgstr "Copiar novos itens para o final da lista e então eles serão colados por último?"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:22
-msgid ""
-"By default new items are added to the top of the list so that they are "
-"pasted first."
-msgstr ""
+msgid "By default new items are added to the top of the list so that they are pasted first."
+msgstr "Por padrão, novos itens são adicionados ao topo da lista e serão colados primeiro."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:23
 msgid "The keyboard shortcut to display the menu"
 msgstr "O atalho do teclado para exibir o menu"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:24
-msgid ""
-"By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;"
-"Alt&gt;H\"). An empty string here disables this functionnality."
-msgstr ""
-"Por padrão, a combinação de teclas ctrl + alt + h exibe o menu (\"&lt;"
-"Ctrl&gt;&lt;Alt&gt;H\"). Deixar vazio aqui desabilita essa funcionalidade."
+msgid "By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;Alt&gt;H\"). An empty string here disables this functionnality."
+msgstr "Por padrão, a combinação de teclas ctrl + alt + h exibe o menu (\"&lt;Ctrl&gt;&lt;Alt&gt;H\"). Deixar vazio aqui desabilita essa funcionalidade."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:25
-msgid ""
-"The keyboard shortcut to paste and then delete the first element in history"
-msgstr ""
-"O atalho do teclado para colar e então apagar o primeiro elemento no "
-"histórico"
+msgid "The keyboard shortcut to paste and then delete the first element in history"
+msgstr "O atalho do teclado para colar e então apagar o primeiro elemento no histórico"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:26
-msgid ""
-"By default, hitting ctrl + alt + v does that (\"&lt;Ctrl&gt;&lt;Alt&gt;V\"). "
-"An empty string here disables this functionnality."
-msgstr ""
-"Por padrão,  a combinação de teclas ctrl + alt + v faz isso (\"&lt;Ctrl&gt;"
-"&lt;Alt&gt;V\"). Deixar vazio aqui desabilita essa funcionalidade."
+msgid "By default, hitting ctrl + alt + v does that (\"&lt;Ctrl&gt;&lt;Alt&gt;V\"). An empty string here disables this functionnality."
+msgstr "Por padrão,  a combinação de teclas ctrl + alt + v faz isso (\"&lt;Ctrl&gt;&lt;Alt&gt;V\"). Deixar vazio aqui desabilita essa funcionalidade."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:27
 msgid "Max text item size"
@@ -438,9 +399,7 @@ msgstr "Tamanho máximo do item de texto"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:28
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
-"Tamanho máximo de um item de texto. Qualquer coisa fora desse limite é "
-"ignorado."
+msgstr "Tamanho máximo de um item de texto. Qualquer coisa fora desse limite é ignorado."
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:29
 msgid "Min text item size"
@@ -448,9 +407,7 @@ msgstr "Tamanho mínimo do item de texto"
 
 #: ../data/org.gnome.GPaste.gschema.xml.in.in.h:30
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
-"Tamanho mínimo de um item de texto. Qualquer coisa fora desse limite é "
-"ignorado."
+msgstr "Tamanho mínimo de um item de texto. Qualquer coisa fora desse limite é ignorado."
 
 #: ../data/gpaste-applet.desktop.in.in.h:1
 msgid "GPaste Applet"
@@ -458,7 +415,7 @@ msgstr "Applet do GPaste"
 
 #: ../data/gpaste-applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
-msgstr "O ícone da bandeja para gerenciar o GPaste"
+msgstr "Ícone da bandeja para gerenciar o GPaste"
 
 #: ../data/gpaste-settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
@@ -482,4 +439,5 @@ msgstr "[Imagem, %d x %d (%s)]"
 
 #: ../libgpaste/gpaste-history.c:339
 msgid "Could not create history dir"
-msgstr "Não foi possível criar um diretório do histórico"
+msgstr "Não foi possível criar o diretório do histórico"
+
