@@ -53,6 +53,10 @@ Switch to another history
 Delete a history
 .br
 .TP
+.B gpaste list-histories
+List available histories
+.br
+.TP
 .B gpaste zero-history
 Display the history with NUL as separator
 .br

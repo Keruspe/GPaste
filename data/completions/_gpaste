@@ -15,6 +15,7 @@ if (( CURRENT == 2 )); then
         {get,g}:"Display an element of the history"
         {help,--help,-h}:"Display the help"
         {history,h}:"Display the history with indexes"
+        {list-histories,lh}:"List available histories"
         {raw-history,rh}:"Display the history without indexes"
         {set,s}:"Select an element of the history"
         {settings,s,preferences,p}:"Launch the configuration tool"

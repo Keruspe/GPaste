@@ -7,7 +7,7 @@ _gpaste()
         local cur opts
 
         cur="${COMP_WORDS[$COMP_CWORD]}"
-        opts="add backup-history daemon daemon-reexec delete delete-history empty file help --help -h history preferences quit raw-history set settings start stop switch-history version --version -v zero-history"
+        opts="add backup-history daemon daemon-reexec delete delete-history empty file help --help -h history list-histories preferences quit raw-history set settings start stop switch-history version --version -v zero-history"
         COMPREPLY=( $(compgen -W "$opts" -- $cur ) )
 
     elif [[ $COMP_CWORD == 2 ]]; then

@@ -31,6 +31,8 @@ namespace GPaste {
             public abstract void switch_history(string name) throws GLib.IOError;
             [DBus (name = "DeleteHistory", inSignature = "s", outSignature = "")]
             public abstract void delete_history(string name) throws GLib.IOError;
+            [DBus (name = "ListHistories", inSignature = "", outSignature = "as")]
+            public abstract string[] list_histories() throws GLib.IOError;
             [DBus (name = "Add", inSignature = "s", outSignature = "")]
             public abstract void add(string selection) throws GLib.IOError;
             [DBus (name = "GetElement", inSignature = "u", outSignature = "s")]
@@ -56,6 +58,7 @@ namespace GPaste {
                 stdout.printf(_("%s backup-history <name>: backup current history\n"), caller);
                 stdout.printf(_("%s switch-history <name>: switch to another history\n"), caller);
                 stdout.printf(_("%s delete-history <name>: delete a history\n"), caller);
+                stdout.printf(_("%s list-histories: list available histories\n"), caller);
                 stdout.printf(_("%s raw-history: print the history without indexes\n"), caller);
                 stdout.printf(_("%s zero-history: print the history with NUL as separator\n"), caller);
                 stdout.printf(_("%s add <text>: set text to clipboard\n"), caller);
@@ -174,6 +177,13 @@ namespace GPaste {
                             case "zh":
                             case "zero-history":
                                 app.history (false, true);
+                                break;
+                            case "lh":
+                            case "list-history":
+                                var history_names = app.gpaste.list_histories();
+                                for (int i = 0 ; i < history_names.length ; ++i) {
+                                    stdout.printf("%s\n", history_names[i]);
+                                }
                                 break;
                             default:
                                 app.usage(args[0]);
