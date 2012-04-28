@@ -194,12 +194,50 @@ namespace GPaste {
             return panel;
         }
 
+        private Panel make_histories_panel () {
+            var panel = new Panel ();
+
+            panel.add_text_confirm_setting (_("Backup history as: "),
+                                            this.settings.get_history_name () + "_backup",
+                                            (value) => { /* nothing to do there */ },
+                                            "Backup",
+                                            (value) => {
+                                                try {
+                                                    (this.application as Main).gpaste.backup_history (value);
+                                                } catch (GLib.IOError e) {
+                                                    /* TODO: error message */
+                                                }
+                                            });
+            string[] actions = { "Switch to", "Delete" };
+            panel.add_multi_action_setting (actions, History.list (), "Go", (action, target) => {
+                switch (action) {
+                case "Switch to":
+                    try {
+                        (this.application as Main).gpaste.switch_history (target);
+                    } catch (GLib.IOError e) {
+                        /* TODO: error message */
+                    }
+                    break;
+                case "Delete":
+                    try {
+                        (this.application as Main).gpaste.delete_history (target);
+                    } catch (GLib.IOError e) {
+                        /* TODO: error message */
+                    }
+                    break;
+                }
+            });
+
+            return panel;
+        }
+
         private void fill () {
             var notebook = new Notebook ();
 
             notebook.add_panel (_("General behaviour"), this.make_behaviour_panel ());
             notebook.add_panel (_("History settings"), this.make_history_settings_panel ());
             notebook.add_panel (_("Keyboard shortcuts"), this.make_keybindings_panel ());
+            notebook.add_panel (_("Histories"), this.make_histories_panel ());
 
             this.add (notebook);
         }
