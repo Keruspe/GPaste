@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.69])
 AC_INIT([GPaste],[2.6],[Marc-Antoine@Perennou.com],[gpaste])
 
 INTLTOOL_REQUIRED="0.40.0"
@@ -44,9 +44,11 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
 
+AM_PROG_AR
 LT_PREREQ([2.2.6])
 LT_INIT([disable-static pic-only])
-AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar silent-rules -Wall])
+
+AM_INIT_AUTOMAKE([1.12 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar silent-rules -Wall])
 AM_SILENT_RULES([yes])
 
 AC_PROG_SED
@@ -56,6 +58,8 @@ AC_PROG_INSTALL
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+
+AC_CHECK_HEADER_STDBOOL
 
 CC_ATTRIBUTE_UNUSED
 CC_ATTRIBUTE_VISIBILITY([default])

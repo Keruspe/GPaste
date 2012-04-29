@@ -20,6 +20,7 @@ bin_PROGRAMS += \
 	$(NULL)
 
 bin_gpaste_SOURCES = \
+	src/gpaste-client.vala \
 	src/gpaste.vala \
 	$(NULL)
 
