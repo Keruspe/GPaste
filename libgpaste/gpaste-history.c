@@ -468,6 +468,11 @@ g_paste_history_load (GPasteHistory *self)
 
         xmlFreeTextReader (reader);
     }
+    else
+    {
+        /* Create the empty file to be listed as an available history */
+        g_paste_history_save (self);
+    }
 
     g_object_unref (history_file);
     g_free (history_file_path);
