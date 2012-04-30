@@ -24,6 +24,7 @@
 
 #define G_PASTE_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_DAEMON, GPasteDaemonPrivate))
 
+#define DEFAULT_HISTORY "history"
 #define G_PASTE_BUS_NAME "org.gnome.GPaste"
 
 G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
@@ -163,7 +164,7 @@ g_paste_daemon_delete_history (GPasteDaemon          *self,
 
     g_paste_history_switch (history, name);
     g_paste_history_delete (history);
-    g_paste_history_switch (history, old_history);
+    g_paste_history_switch (history, (g_strcmp0 (name, old_history) == 0) ? DEFAULT_HISTORY : old_history);
 
     g_free (name);
     g_free (old_history);
