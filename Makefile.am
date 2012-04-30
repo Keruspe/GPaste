@@ -43,6 +43,10 @@ lib_LTLIBRARIES = $(NULL)
 nodist_man_MANS = $(NULL)
 
 AM_VALAFLAGS = \
+	--enable-checking \
+	--enable-experimental \
+	--fatal-warnings \
+	--target-glib=2.30 \
 	--vapidir=$(srcdir)/vapi \
 	--pkg=config \
 	--pkg=posix \
