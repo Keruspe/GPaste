@@ -202,9 +202,9 @@ namespace GPaste {
         private void refill_histories () {
             this.targets.remove_all ();
             foreach (string label in History.list ()) {
-                this.targets.append_text (label);
+                this.targets.append (label, label);
             }
-            this.targets.active = 0;
+            this.targets.set_active_id (this.settings.get_history_name ());
         }
 
         private Panel make_histories_panel () {

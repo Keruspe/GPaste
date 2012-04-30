@@ -1,5 +1,4 @@
 2.6:
-    gpaste-settings: activate appropriate one by default in ComboBoxText
     use g_utf8_validate where appropriate
 
 3.0:
