@@ -89,22 +89,22 @@ namespace GPaste {
             return entry;
         }
 
-        private Gtk.ComboBoxText make_combo_box_text (string[] labels, bool with_entry) {
-            var combo_box = (with_entry) ? new Gtk.ComboBoxText.with_entry () : new Gtk.ComboBoxText ();
-            foreach (string label in labels) {
-                combo_box.append_text (label);
+        private Gtk.ComboBoxText make_combo_box_text (string[,] labels) {
+            var combo_box = new Gtk.ComboBoxText ();
+            for (int i = 0; i < labels.length[0]; ++i) {
+                combo_box.append (labels[i,0], labels[i,1]);
             }
             combo_box.active = 0;
             return combo_box;
         }
 
-        public Gtk.ComboBoxText add_multi_action_setting (string[] action_labels, string[] target_labels, string confirm_label, MultiActionCallback confirm_action) {
-            var actions = this.make_combo_box_text (action_labels, false);
-            var targets = this.make_combo_box_text (target_labels, true);
+        public Gtk.ComboBoxText add_multi_action_setting (string[,] action_labels, string[] target_labels, string confirm_label, MultiActionCallback confirm_action) {
+            var actions = this.make_combo_box_text (action_labels);
+            var targets = new Gtk.ComboBoxText.with_entry ();
             this.attach (actions, 0, this.current_line++, 1, 1);
             this.attach_next_to (targets, actions, Gtk.PositionType.RIGHT, 1, 1);
             var button = this.add_confirm_button (confirm_label, targets);
-            button.pressed.connect (() => { confirm_action (actions.get_active_text (), targets.get_active_text ()); });
+            button.pressed.connect (() => { confirm_action (actions.get_active_id (), targets.get_active_text ()); });
             return targets;
         }
     }

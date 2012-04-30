@@ -213,7 +213,8 @@ namespace GPaste {
             this.backup_entry = panel.add_text_confirm_setting (_("Backup history as: "),
                                                                 this.settings.get_history_name () + "_backup",
                                                                 (value) => { /* nothing to do there */ },
-                                                                "Backup",
+                                                                /* translators: This is the name of a multi-history management action */
+                                                                _("Backup"),
                                                                 (value) => {
                                                                     try {
                                                                         (this.application as Main).gpaste.backup_history (value);
@@ -222,15 +223,25 @@ namespace GPaste {
                                                                         stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                                                                     }
                                                                 });
-            string[] actions = { "Switch to", "Delete" };
-            this.targets = panel.add_multi_action_setting (actions, History.list (), "Go", (action, target) => {
+
+            string[,] actions = {
+                    /* translators: This is the name of a multi-history management action */
+                    { "switch", _("Switch to") },
+                    /* translators: This is the name of a multi-history management action */
+                    { "delete", _("Delete") }
+                };
+            /* translators: This is the text displayed on the button used to perform a multi-history management action */
+            this.targets = panel.add_multi_action_setting (actions, History.list (), _("Go"), (action, target) => {
                                try {
                                    switch (action) {
-                                   case "Switch to":
+                                   case "switch":
                                        (this.application as Main).gpaste.switch_history (target);
                                        break;
-                                   case "Delete":
+                                   case "delete":
                                        (this.application as Main).gpaste.delete_history (target);
+                                       break;
+                                   default:
+                                       stdout.printf("%s\n", action);
                                        break;
                                    }
                                    this.refill_histories ();
@@ -238,6 +249,7 @@ namespace GPaste {
                                    stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                                }
                            });
+            this.refill_histories ();
 
             return panel;
         }
