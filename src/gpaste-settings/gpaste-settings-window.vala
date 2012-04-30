@@ -35,6 +35,7 @@ namespace GPaste {
         private Gtk.SpinButton max_text_item_size_button;
         private Gtk.Entry show_history_entry;
         private Gtk.Entry paste_and_pop_entry;
+        private Gtk.ComboBoxText targets;
 
         public Window (Gtk.Application application) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
@@ -194,6 +195,14 @@ namespace GPaste {
             return panel;
         }
 
+        private void refill_histories () {
+            this.targets.remove_all ();
+            foreach (string label in History.list ()) {
+                this.targets.append_text (label);
+            }
+            this.targets.active = 0;
+        }
+
         private Panel make_histories_panel () {
             var panel = new Panel ();
 
@@ -204,29 +213,27 @@ namespace GPaste {
                                             (value) => {
                                                 try {
                                                     (this.application as Main).gpaste.backup_history (value);
+                                                    this.refill_histories ();
                                                 } catch (GLib.IOError e) {
                                                     /* TODO: error message */
                                                 }
                                             });
             string[] actions = { "Switch to", "Delete" };
-            panel.add_multi_action_setting (actions, History.list (), "Go", (action, target) => {
-                switch (action) {
-                case "Switch to":
-                    try {
-                        (this.application as Main).gpaste.switch_history (target);
-                    } catch (GLib.IOError e) {
-                        /* TODO: error message */
-                    }
-                    break;
-                case "Delete":
-                    try {
-                        (this.application as Main).gpaste.delete_history (target);
-                    } catch (GLib.IOError e) {
-                        /* TODO: error message */
-                    }
-                    break;
-                }
-            });
+            this.targets = panel.add_multi_action_setting (actions, History.list (), "Go", (action, target) => {
+                               try {
+                                   switch (action) {
+                                   case "Switch to":
+                                       (this.application as Main).gpaste.switch_history (target);
+                                       break;
+                                   case "Delete":
+                                       (this.application as Main).gpaste.delete_history (target);
+                                       this.refill_histories ();
+                                       break;
+                                   }
+                               } catch (GLib.IOError e) {
+                                   /* TODO: error message */
+                               }
+                           });
 
             return panel;
         }

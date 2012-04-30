@@ -98,13 +98,14 @@ namespace GPaste {
             return combo_box;
         }
 
-        public void add_multi_action_setting (string[] action_labels, string[] target_labels, string confirm_label, MultiActionCallback confirm_action) {
+        public Gtk.ComboBoxText add_multi_action_setting (string[] action_labels, string[] target_labels, string confirm_label, MultiActionCallback confirm_action) {
             var actions = this.make_combo_box_text (action_labels, false);
             var targets = this.make_combo_box_text (target_labels, true);
             this.attach (actions, 0, this.current_line++, 1, 1);
             this.attach_next_to (targets, actions, Gtk.PositionType.RIGHT, 1, 1);
             var button = this.add_confirm_button (confirm_label, targets);
             button.pressed.connect (() => { confirm_action (actions.get_active_text (), targets.get_active_text ()); });
+            return targets;
         }
     }
 }
