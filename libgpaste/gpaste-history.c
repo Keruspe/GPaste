@@ -474,6 +474,10 @@ g_paste_history_load (GPasteHistory *self)
         g_paste_history_save (self);
     }
 
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   0); /* detail */
+
     g_object_unref (history_file);
     g_free (history_file_path);
     g_free (history_file_name);
