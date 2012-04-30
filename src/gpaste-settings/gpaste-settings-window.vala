@@ -215,7 +215,7 @@ namespace GPaste {
                                                     (this.application as Main).gpaste.backup_history (value);
                                                     this.refill_histories ();
                                                 } catch (GLib.IOError e) {
-                                                    /* TODO: error message */
+                                                    stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                                                 }
                                             });
             string[] actions = { "Switch to", "Delete" };
@@ -231,7 +231,7 @@ namespace GPaste {
                                        break;
                                    }
                                } catch (GLib.IOError e) {
-                                   /* TODO: error message */
+                                   stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                                }
                            });
 
