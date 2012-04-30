@@ -19,6 +19,8 @@
 
 namespace GPaste {
     public class Main : Gtk.Application {
+        public DBusClient gpaste;
+
         public Main () {
             GLib.Object (application_id: "org.gnome.GPaste.Settings");
 
@@ -39,8 +41,12 @@ namespace GPaste {
 
             var app = new Main ();
             try {
+                app.gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 app.register ();
-            } catch (Error e) {
+            } catch (GLib.IOError e) {
+                stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
+                return 1;
+            } catch (GLib.Error e) {
                 stderr.printf(_("Fail to register the gtk application.\n"));
                 return 1;
             }

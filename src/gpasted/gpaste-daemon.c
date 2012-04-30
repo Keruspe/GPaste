@@ -19,10 +19,12 @@
 
 #include "gpaste-daemon-private.h"
 
+#include <glib.h>
 #include <string.h>
 
 #define G_PASTE_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_DAEMON, GPasteDaemonPrivate))
 
+#define DEFAULT_HISTORY "history"
 #define G_PASTE_BUS_NAME "org.gnome.GPaste"
 
 G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
@@ -123,6 +125,7 @@ g_paste_daemon_backup_history (GPasteDaemon          *self,
     g_paste_settings_set_history_name (settings, old_name);
 
     g_free (old_name);
+    g_free (name);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
@@ -137,12 +140,48 @@ g_paste_daemon_switch_history (GPasteDaemon          *self,
 
     g_return_if_fail (name != NULL);
 
-    GPasteDaemonPrivate *priv = self->priv;
-    GPasteSettings *settings = priv->settings;
+    g_paste_history_switch (self->priv->history, name);
 
-    g_paste_settings_set_history_name (settings, name);
-    g_paste_history_load (priv->history);
+    g_free (name);
+
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
+}
+
+static void
+g_paste_daemon_delete_history (GPasteDaemon          *self,
+                               GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation,
+                               GVariant              *parameters)
+{
+    gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name != NULL);
+
+    GPasteDaemonPrivate *priv = self->priv;
+    GPasteHistory *history = priv->history;
+
+    gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
+
+    g_paste_history_switch (history, name);
+    g_paste_history_delete (history);
+    g_paste_history_switch (history, (g_strcmp0 (name, old_history) == 0) ? DEFAULT_HISTORY : old_history);
+
+    g_free (name);
+    g_free (old_history);
+
+    g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
+}
+
+static void
+g_paste_daemon_list_histories (GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation)
+{
+    gchar **history_names = g_paste_history_list ();
+    GVariant *variant = g_variant_new_strv ((const gchar **) history_names, -1);
+
+    g_strfreev (history_names);
+
+    g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));
 }
 
 static void
@@ -355,6 +394,10 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
         g_paste_daemon_backup_history (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "SwitchHistory") == 0)
         g_paste_daemon_switch_history (self, connection, invocation, parameters);
+    else if (g_strcmp0 (method_name, "DeleteHistory") == 0)
+        g_paste_daemon_delete_history (self, connection, invocation, parameters);
+    else if (g_strcmp0 (method_name, "ListHistories") == 0)
+        g_paste_daemon_list_histories (connection, invocation);
     else if (g_strcmp0 (method_name, "Add") == 0)
         g_paste_daemon_add (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "GetElement") == 0)
@@ -503,6 +546,12 @@ g_paste_daemon_init (GPasteDaemon *self)
         "       </method>"
         "       <method name='SwitchHistory'>"
         "           <arg type='s' direction='in' />"
+        "       </method>"
+        "       <method name='DeleteHistory'>"
+        "           <arg type='s' direction='in' />"
+        "       </method>"
+        "       <method name='ListHistories'>"
+        "           <arg type='as' direction='out' />"
         "       </method>"
         "       <method name='Add'>"
         "           <arg type='s' direction='in' />"

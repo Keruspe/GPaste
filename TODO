@@ -1,5 +1,5 @@
 2.6:
-    show-history needs left-right before navigating
+    gpaste-settings: activate appropriate one by default in ComboBoxText
 
 3.0:
     prefs.js

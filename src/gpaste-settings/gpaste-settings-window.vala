@@ -35,6 +35,8 @@ namespace GPaste {
         private Gtk.SpinButton max_text_item_size_button;
         private Gtk.Entry show_history_entry;
         private Gtk.Entry paste_and_pop_entry;
+        private Gtk.Entry backup_entry;
+        private Gtk.ComboBoxText targets;
 
         public Window (Gtk.Application application) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
@@ -83,6 +85,9 @@ namespace GPaste {
                     break;
                 case "paste-and-pop":
                     this.paste_and_pop_entry.set_text (this.settings.get_paste_and_pop ());
+                    break;
+                case "history-name":
+                    this.backup_entry.set_text (this.settings.get_history_name () + "_backup");
                     break;
                 }
             });
@@ -194,12 +199,56 @@ namespace GPaste {
             return panel;
         }
 
+        private void refill_histories () {
+            this.targets.remove_all ();
+            foreach (string label in History.list ()) {
+                this.targets.append_text (label);
+            }
+            this.targets.active = 0;
+        }
+
+        private Panel make_histories_panel () {
+            var panel = new Panel ();
+
+            this.backup_entry = panel.add_text_confirm_setting (_("Backup history as: "),
+                                                                this.settings.get_history_name () + "_backup",
+                                                                (value) => { /* nothing to do there */ },
+                                                                "Backup",
+                                                                (value) => {
+                                                                    try {
+                                                                        (this.application as Main).gpaste.backup_history (value);
+                                                                        this.refill_histories ();
+                                                                    } catch (GLib.IOError e) {
+                                                                        stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
+                                                                    }
+                                                                });
+            string[] actions = { "Switch to", "Delete" };
+            this.targets = panel.add_multi_action_setting (actions, History.list (), "Go", (action, target) => {
+                               try {
+                                   switch (action) {
+                                   case "Switch to":
+                                       (this.application as Main).gpaste.switch_history (target);
+                                       break;
+                                   case "Delete":
+                                       (this.application as Main).gpaste.delete_history (target);
+                                       break;
+                                   }
+                                   this.refill_histories ();
+                               } catch (GLib.IOError e) {
+                                   stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
+                               }
+                           });
+
+            return panel;
+        }
+
         private void fill () {
             var notebook = new Notebook ();
 
             notebook.add_panel (_("General behaviour"), this.make_behaviour_panel ());
             notebook.add_panel (_("History settings"), this.make_history_settings_panel ());
             notebook.add_panel (_("Keyboard shortcuts"), this.make_keybindings_panel ());
+            notebook.add_panel (_("Histories"), this.make_histories_panel ());
 
             this.add (notebook);
         }

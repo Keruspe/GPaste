@@ -132,7 +132,7 @@ g_paste_history_add (GPasteHistory *self,
 }
 
 /**
- * g_paste_history_delete:
+ * g_paste_history_remove:
  * @self: a #GPasteHistory instance
  * @index: the index of the #GPasteItem to delete
  *
@@ -421,7 +421,7 @@ g_paste_history_load (GPasteHistory *self)
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
-                              NULL)) /* cancellable */
+                             NULL)) /* cancellable */
     {
         LIBXML_TEST_VERSION
 
@@ -467,6 +467,70 @@ g_paste_history_load (GPasteHistory *self)
         }
 
         xmlFreeTextReader (reader);
+    }
+    else
+    {
+        /* Create the empty file to be listed as an available history */
+        g_paste_history_save (self);
+    }
+
+    g_object_unref (history_file);
+    g_free (history_file_path);
+    g_free (history_file_name);
+}
+
+/**
+ * g_paste_history_switch:
+ * @self: a #GPasteHistory instance
+ * @name: the name of the new history
+ *
+ * Switch to a new history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_switch (GPasteHistory *self,
+                        const gchar   *name)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (name != NULL);
+    g_return_if_fail (g_utf8_validate (name,
+                                       -1,
+                                       NULL)); /* end */
+
+    g_paste_settings_set_history_name (self->priv->settings, name);
+    g_paste_history_load (self);
+
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   0); /* detail */
+}
+
+/**
+ * g_paste_history_delete:
+ * @self: a #GPasteHistory instance
+ *
+ * Delete the current #GPasteHistory
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_delete (GPasteHistory *self)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+
+    GPasteHistoryPrivate *priv = self->priv;
+
+    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
+    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
+    GFile *history_file = g_file_new_for_path (history_file_path);
+
+    if (g_file_query_exists (history_file,
+                             NULL)) /* cancellable */
+    {
+        g_file_delete (history_file,
+                       NULL, /* cancellable */
+                       NULL); /* error */
     }
 
     g_object_unref (history_file);
@@ -583,4 +647,55 @@ g_paste_history_new (GPasteSettings *settings)
     self->priv->settings = g_object_ref (settings);
 
     return self;
+}
+
+/**
+ * g_paste_history_list:
+ *
+ * Get the list of available histories
+ *
+ * Returns: (transfer full): The list of history names
+ *                           free it with g_strfreev
+ */
+G_PASTE_VISIBLE gchar **
+g_paste_history_list (void)
+{
+    gchar *history_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
+    GFile *history_dir = g_file_new_for_path (history_dir_path);
+    GFileEnumerator *histories = g_file_enumerate_children (history_dir,
+                                                            G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                                                            G_FILE_QUERY_INFO_NONE,
+                                                            NULL, /* cancellable */
+                                                            NULL); /* error */
+    GArray *history_names = g_array_new (TRUE, /* zero-terminated */
+                                         TRUE, /* clear */
+                                         sizeof (gchar *));
+    GFileInfo *history;
+
+    while ((history = g_file_enumerator_next_file (histories,
+                                                   NULL, /* cancellable */
+                                                   NULL))) /* error */
+    {
+        const gchar *raw_name = g_file_info_get_display_name (history);
+
+        if (g_str_has_suffix (raw_name, ".xml"))
+        {
+            gchar *name = g_strdup (raw_name);
+
+            name[strlen (name) - 4] = '\0';
+            g_array_append_val (history_names, name);
+            g_object_unref (history);
+        }
+    }
+
+    g_object_unref (histories);
+    g_object_unref (history_dir);
+    g_free (history_dir_path);
+
+    gchar **ret = (gchar **) history_names->data;
+
+    g_array_free (history_names,
+                  FALSE); /* free_segment */
+
+    return ret;
 }

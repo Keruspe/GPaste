@@ -26,8 +26,11 @@ global:
     g_paste_history_empty;
     g_paste_history_save;
     g_paste_history_load;
+    g_paste_history_switch;
+    g_paste_history_delete;
     g_paste_history_get_history;
     g_paste_history_new;
+    g_paste_history_list;
 
     g_paste_keybinder_get_type;
     g_paste_keybinder_add_keybinding;

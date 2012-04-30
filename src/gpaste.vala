@@ -29,6 +29,8 @@ namespace GPaste {
                 stdout.printf(_("%s [history]: print the history with indexes\n"), caller);
                 stdout.printf(_("%s backup-history <name>: backup current history\n"), caller);
                 stdout.printf(_("%s switch-history <name>: switch to another history\n"), caller);
+                stdout.printf(_("%s delete-history <name>: delete a history\n"), caller);
+                stdout.printf(_("%s list-histories: list available histories\n"), caller);
                 stdout.printf(_("%s raw-history: print the history without indexes\n"), caller);
                 stdout.printf(_("%s zero-history: print the history with NUL as separator\n"), caller);
                 stdout.printf(_("%s add <text>: set text to clipboard\n"), caller);
@@ -148,6 +150,13 @@ namespace GPaste {
                             case "zero-history":
                                 app.history (false, true);
                                 break;
+                            case "lh":
+                            case "list-history":
+                                var history_names = app.gpaste.list_histories();
+                                for (int i = 0 ; i < history_names.length ; ++i) {
+                                    stdout.printf("%s\n", history_names[i]);
+                                }
+                                break;
                             default:
                                 app.usage(args[0]);
                                 break;
@@ -162,6 +171,10 @@ namespace GPaste {
                             case "sh":
                             case "switch-history":
                                 app.gpaste.switch_history(args[2]);
+                                break;
+                            case "dh":
+                            case "delete-history":
+                                app.gpaste.delete_history(args[2]);
                                 break;
                             case "a":
                             case "add":

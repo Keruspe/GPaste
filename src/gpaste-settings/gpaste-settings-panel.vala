@@ -19,6 +19,7 @@
 
 namespace GPaste {
     public delegate void BooleanCallback (bool data);
+    public delegate void MultiActionCallback (string action, string target);
     public delegate void RangeCallback (double data);
     public delegate void TextCallback (string data);
 
@@ -73,6 +74,38 @@ namespace GPaste {
             });
             this.attach_next_to (entry, entry_label, Gtk.PositionType.RIGHT, 1, 1);
             return entry;
+        }
+
+        private Gtk.Button add_confirm_button (string label, Gtk.Widget attach_to) {
+            var button = new Gtk.Button.with_label (label);
+            this.attach_next_to (button, attach_to, Gtk.PositionType.RIGHT, 1, 1);
+            return button;
+        }
+
+        public Gtk.Entry add_text_confirm_setting (string label, string value, TextCallback on_value_changed, string confirm_label, TextCallback confirm_action) {
+            var entry = this.add_text_setting (label, value, on_value_changed);
+            var button = this.add_confirm_button (confirm_label, entry);
+            button.pressed.connect (() => { confirm_action (entry.get_text ()); });
+            return entry;
+        }
+
+        private Gtk.ComboBoxText make_combo_box_text (string[] labels, bool with_entry) {
+            var combo_box = (with_entry) ? new Gtk.ComboBoxText.with_entry () : new Gtk.ComboBoxText ();
+            foreach (string label in labels) {
+                combo_box.append_text (label);
+            }
+            combo_box.active = 0;
+            return combo_box;
+        }
+
+        public Gtk.ComboBoxText add_multi_action_setting (string[] action_labels, string[] target_labels, string confirm_label, MultiActionCallback confirm_action) {
+            var actions = this.make_combo_box_text (action_labels, false);
+            var targets = this.make_combo_box_text (target_labels, true);
+            this.attach (actions, 0, this.current_line++, 1, 1);
+            this.attach_next_to (targets, actions, Gtk.PositionType.RIGHT, 1, 1);
+            var button = this.add_confirm_button (confirm_label, targets);
+            button.pressed.connect (() => { confirm_action (actions.get_active_text (), targets.get_active_text ()); });
+            return targets;
         }
     }
 }
