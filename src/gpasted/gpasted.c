@@ -17,8 +17,8 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-daemon.h"
 #include "gpaste-clipboard-internal.h"
+#include "gpaste-daemon.h"
 
 #include <glib/gi18n-lib.h>
 #include <xcb/xtest.h>

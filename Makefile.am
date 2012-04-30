@@ -120,6 +120,8 @@ include libgpaste/libgpaste.mk
 include gi/gi.mk
 include vapi/vapi.mk
 
+include libgpaste-daemon/libgpaste-daemon.mk
+
 include bin/gpasted.mk
 include bin/gpaste.mk
 include bin/gpaste-settings.mk

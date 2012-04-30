@@ -1,0 +1,9 @@
+LIBGPASTE_DAEMON {
+global:
+    g_paste_daemon_get_type;
+    g_paste_daemon_register_object;
+    g_paste_daemon_show_history;
+    g_paste_daemon_new;
+local:
+    *;
+};
