@@ -132,7 +132,7 @@ g_paste_history_add (GPasteHistory *self,
 }
 
 /**
- * g_paste_history_delete:
+ * g_paste_history_remove:
  * @self: a #GPasteHistory instance
  * @index: the index of the #GPasteItem to delete
  *
@@ -474,9 +474,64 @@ g_paste_history_load (GPasteHistory *self)
         g_paste_history_save (self);
     }
 
+    g_object_unref (history_file);
+    g_free (history_file_path);
+    g_free (history_file_name);
+}
+
+/**
+ * g_paste_history_switch:
+ * @self: a #GPasteHistory instance
+ * @name: the name of the new history
+ *
+ * Switch to a new history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_switch (GPasteHistory *self,
+                        const gchar   *name)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (name != NULL);
+    g_return_if_fail (g_utf8_validate (name,
+                                       -1,
+                                       NULL)); /* end */
+
+    g_paste_settings_set_history_name (self->priv->settings, name);
+    g_paste_history_load (self);
+
     g_signal_emit (self,
                    signals[CHANGED],
                    0); /* detail */
+}
+
+/**
+ * g_paste_history_delete:
+ * @self: a #GPasteHistory instance
+ *
+ * Delete the current #GPasteHistory
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_delete (GPasteHistory *self)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+
+    GPasteHistoryPrivate *priv = self->priv;
+
+    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
+    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
+    GFile *history_file = g_file_new_for_path (history_file_path);
+
+    if (g_file_query_exists (history_file,
+                             NULL)) /* cancellable */
+    {
+        g_file_delete (history_file,
+                       NULL, /* cancellable */
+                       NULL); /* error */
+    }
 
     g_object_unref (history_file);
     g_free (history_file_path);
