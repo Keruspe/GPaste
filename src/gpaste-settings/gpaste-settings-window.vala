@@ -231,9 +231,9 @@ namespace GPaste {
                                        break;
                                    case "Delete":
                                        (this.application as Main).gpaste.delete_history (target);
-                                       this.refill_histories ();
                                        break;
                                    }
+                                   this.refill_histories ();
                                } catch (GLib.IOError e) {
                                    stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                                }
