@@ -679,6 +679,7 @@ g_paste_settings_set_history_name (GPasteSettings *self,
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     g_return_if_fail (value != NULL);
+    g_return_if_fail (g_utf8_validate (value, -1, NULL));
 
     GPasteSettingsPrivate *priv = self->priv;
 
@@ -729,6 +730,7 @@ g_paste_settings_set_show_history (GPasteSettings *self,
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     g_return_if_fail (value != NULL);
+    g_return_if_fail (g_utf8_validate (value, -1, NULL));
 
     GPasteSettingsPrivate *priv = self->priv;
 
@@ -779,6 +781,7 @@ g_paste_settings_set_paste_and_pop (GPasteSettings *self,
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     g_return_if_fail (value != NULL);
+    g_return_if_fail (g_utf8_validate (value, -1, NULL));
 
     GPasteSettingsPrivate *priv = self->priv;
 

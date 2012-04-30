@@ -161,6 +161,7 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (text != NULL);
+    g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     GtkClipboard *real = self->priv->real;
 

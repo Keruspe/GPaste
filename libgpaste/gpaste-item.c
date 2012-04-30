@@ -195,6 +195,7 @@ G_PASTE_VISIBLE GPasteTextItem *
 g_paste_text_item_new (const gchar *text)
 {
     g_return_val_if_fail (text != NULL, NULL);
+    g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_TEXT_ITEM, text);
 
@@ -289,6 +290,7 @@ G_PASTE_VISIBLE GPasteUrisItem *
 g_paste_uris_item_new (const gchar *uris)
 {
     g_return_val_if_fail (uris != NULL, NULL);
+    g_return_val_if_fail (g_utf8_validate (uris, -1, NULL), NULL);
 
     GPasteItem *g_paste_item = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
     GPasteUrisItem *self = G_PASTE_URIS_ITEM (g_paste_item);
@@ -551,6 +553,7 @@ g_paste_image_item_new_from_file (const gchar *path,
                                   GDateTime   *date)
 {
     g_return_val_if_fail (path != NULL, NULL);
+    g_return_val_if_fail (g_utf8_validate (path, -1, NULL), NULL);
     g_return_val_if_fail (date != NULL, NULL);
 
     GdkPixbuf *image = gdk_pixbuf_new_from_file (path,

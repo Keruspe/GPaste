@@ -1,6 +1,3 @@
-2.6:
-    use g_utf8_validate where appropriate
-
 3.0:
     prefs.js
     handle keyboard layout changes

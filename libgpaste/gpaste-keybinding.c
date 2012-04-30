@@ -129,6 +129,7 @@ g_paste_keybinding_rebind (GPasteKeybinding  *self,
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
     g_return_if_fail (binding != NULL);
+    g_return_if_fail (g_utf8_validate (binding, -1, NULL));
 
     GPasteKeybindingPrivate *priv = self->priv;
 
@@ -274,6 +275,7 @@ g_paste_keybinding_new (GPasteXcbWrapper    *xcb_wrapper,
 {
     g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (binding != NULL, NULL);
+    g_return_val_if_fail (g_utf8_validate (binding, -1, NULL), NULL);
     g_return_val_if_fail (callback != NULL, NULL);
 
     GPasteKeybinding *self = g_object_new (G_PASTE_TYPE_KEYBINDING, NULL);

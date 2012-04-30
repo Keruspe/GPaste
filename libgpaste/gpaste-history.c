@@ -494,9 +494,7 @@ g_paste_history_switch (GPasteHistory *self,
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (name != NULL);
-    g_return_if_fail (g_utf8_validate (name,
-                                       -1,
-                                       NULL)); /* end */
+    g_return_if_fail (g_utf8_validate (name, -1, NULL));
 
     g_paste_settings_set_history_name (self->priv->settings, name);
     g_paste_history_load (self);
