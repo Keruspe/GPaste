@@ -139,11 +139,7 @@ g_paste_daemon_switch_history (GPasteDaemon          *self,
 
     g_return_if_fail (name != NULL);
 
-    GPasteDaemonPrivate *priv = self->priv;
-    GPasteSettings *settings = priv->settings;
-
-    g_paste_settings_set_history_name (settings, name);
-    g_paste_history_load (priv->history);
+    g_paste_history_switch (self->priv->history, name);
 
     g_free (name);
 
@@ -151,7 +147,8 @@ g_paste_daemon_switch_history (GPasteDaemon          *self,
 }
 
 static void
-g_paste_daemon_delete_history (GDBusConnection       *connection,
+g_paste_daemon_delete_history (GPasteDaemon          *self,
+                               GDBusConnection       *connection,
                                GDBusMethodInvocation *invocation,
                                GVariant              *parameters)
 {
@@ -159,21 +156,17 @@ g_paste_daemon_delete_history (GDBusConnection       *connection,
 
     g_return_if_fail (name != NULL);
 
-    gchar *history_file_name = g_strconcat (name, ".xml", NULL);
-    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
-    GFile *history_file = g_file_new_for_path (history_file_path);
+    GPasteDaemonPrivate *priv = self->priv;
+    GPasteHistory *history = priv->history;
 
-    if (g_file_query_exists (history_file,
-                             NULL)) /* cancellable */
-    {
-        g_file_delete (history_file,
-                       NULL, /* cancellable */
-                       NULL); /* error */
-    }
+    gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
 
-    g_object_unref (history_file);
-    g_free (history_file_path);
+    g_paste_history_switch (history, name);
+    g_paste_history_delete (history);
+    g_paste_history_switch (history, old_history);
+
     g_free (name);
+    g_free (old_history);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
@@ -401,7 +394,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
     else if (g_strcmp0 (method_name, "SwitchHistory") == 0)
         g_paste_daemon_switch_history (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "DeleteHistory") == 0)
-        g_paste_daemon_delete_history (connection, invocation, parameters);
+        g_paste_daemon_delete_history (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "ListHistories") == 0)
         g_paste_daemon_list_histories (connection, invocation);
     else if (g_strcmp0 (method_name, "Add") == 0)
