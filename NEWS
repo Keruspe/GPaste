@@ -1,4 +1,4 @@
-NEW in 2.6 (Not released yet)
+NEW in 2.6 (05/05/2012)
 =============
 
 - various cleanup and bugfixes
@@ -8,11 +8,13 @@ NEW in 2.6 (Not released yet)
 - The "keyboard-shortcut" preferences is now called "show-history"
 - New feature : Paste & Pop with a new keybinding (experimental)
 - vapi is no longer shipped and is generated when building
-- Now requires automake 1.11.5
+- Now requires automake 1.12 and autoconf 2.69
 - Brazilian Portuguese translation by Elder Marco
 - FIFO mode
 - Multi-history with "gpaste backup-history" and "gpaste switch-history"
+- New commands: "gpaste delete-history" and "gpaste list-histories"
 - gpaste-settings has been rewritten
+- libgpaste improvements
 
 NEW in 2.5 (08/03/2012)
 =============
