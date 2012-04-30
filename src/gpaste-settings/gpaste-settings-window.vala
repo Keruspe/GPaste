@@ -232,7 +232,7 @@ namespace GPaste {
                     { "delete", _("Delete") }
                 };
             /* translators: This is the text displayed on the button used to perform a multi-history management action */
-            this.targets = panel.add_multi_action_setting (actions, History.list (), _("Go"), (action, target) => {
+            this.targets = panel.add_multi_action_setting (actions, History.list (), _("Ok"), (action, target) => {
                                try {
                                    var app = (Main) this.application;
                                    switch (action) {
