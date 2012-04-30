@@ -74,11 +74,11 @@ namespace GPaste {
                     if (!Posix.isatty(stdin.fileno())) {
                         /* We are being piped ! */
                         var text = new StringBuilder();
-                        string line = stdin.read_line();
+                        string? line = stdin.read_line();
                         if (line != null)
-                            text.append(line);
+                            text.append((!) line);
                         while ((line = stdin.read_line()) != null)
-                            text.append_c('\n').append(line);
+                            text.append_c('\n').append((!) line);
                         app.gpaste.add(text.str);
                     } else {
                         switch (args.length) {
@@ -202,11 +202,11 @@ namespace GPaste {
                                 try {
                                     var dis = new GLib.DataInputStream(file.read());
                                     var text = new GLib.StringBuilder();
-                                    string line = dis.read_line(null);
+                                    string? line = dis.read_line(null);
                                     if (line != null)
-                                        text.append(line);
+                                        text.append((!) line);
                                     while ((line = dis.read_line(null)) != null)
-                                        text.append_c('\n').append(line);
+                                        text.append_c('\n').append((!) line);
                                     app.gpaste.add(text.str);
                                 } catch(GLib.Error e) {
                                     stderr.printf(_("Could not read file: %s\n"), args[2]);
