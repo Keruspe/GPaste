@@ -216,8 +216,9 @@ namespace GPaste {
                                                                 /* translators: This is the name of a multi-history management action */
                                                                 _("Backup"),
                                                                 (value) => {
+                                                                    var app = (Main) this.application;
                                                                     try {
-                                                                        (this.application as Main).gpaste.backup_history (value);
+                                                                        app.gpaste.backup_history (value);
                                                                         this.refill_histories ();
                                                                     } catch (GLib.IOError e) {
                                                                         stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
@@ -233,12 +234,13 @@ namespace GPaste {
             /* translators: This is the text displayed on the button used to perform a multi-history management action */
             this.targets = panel.add_multi_action_setting (actions, History.list (), _("Go"), (action, target) => {
                                try {
+                                   var app = (Main) this.application;
                                    switch (action) {
                                    case "switch":
-                                       (this.application as Main).gpaste.switch_history (target);
+                                       app.gpaste.switch_history (target);
                                        break;
                                    case "delete":
-                                       (this.application as Main).gpaste.delete_history (target);
+                                       app.gpaste.delete_history (target);
                                        break;
                                    default:
                                        stdout.printf("%s\n", action);

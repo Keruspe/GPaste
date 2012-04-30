@@ -25,14 +25,14 @@ namespace GPaste {
         private Gtk.Menu options;
         private bool needs_repaint;
 
-        public Window(Gtk.Application app) {
+        public Window(Main app) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
             this.application = app;
             this.tray_icon = new Gtk.StatusIcon.from_stock (Gtk.Stock.PASTE);
             this.tray_icon.set_tooltip_text ("GPaste");
             this.tray_icon.set_visible (true);
             this.fill_history ();
-            (this.application as Main).gpasted.changed.connect (() => {
+            app.gpasted.changed.connect (() => {
                 this.needs_repaint = true;
             });
             this.fill_options ();
@@ -55,7 +55,7 @@ namespace GPaste {
         public void fill_history () {
             this.history = new Gtk.Menu ();
             bool history_is_empty;
-            var app = this.application as Main;
+            var app = (Main) this.application;
             try {
                 var hist = app.gpasted.get_history ();
                 history_is_empty = (hist.length == 0);
@@ -64,7 +64,7 @@ namespace GPaste {
                     uint32 current = i; // local, or weird closure behaviour
                     string elem = hist[i];
                     var item = new Gtk.ImageMenuItem.with_label (elem);
-                    var label = item.get_child () as Gtk.Label;
+                    var label = (Gtk.Label) item.get_child ();
                     if (element_size != 0) {
                         label.set_label (label.get_text ().delimit ("\n", ' '));
                         label.max_width_chars = (int) element_size;
@@ -91,7 +91,7 @@ namespace GPaste {
             } catch (IOError e) {}
             if (history_is_empty) {
                 var item = new Gtk.ImageMenuItem.with_label (_("(Empty)"));
-                var label = item.get_child () as Gtk.Label;
+                var label = (Gtk.Label) item.get_child ();
                 label.set_selectable (false);
                 this.history.add (item);
             }
@@ -120,14 +120,14 @@ namespace GPaste {
             var empty = new Gtk.ImageMenuItem.with_label (_("Empty history"));
             empty.activate.connect (() => {
                 try {
-                    (this.application as Main).gpasted.empty();
+                    ((Main) this.application).gpasted.empty();
                 } catch (IOError e) {
                     stderr.printf (_("Couldn't empty history.\n"));
                 }
             });
             this.options.add (empty);
             var quit = new Gtk.ImageMenuItem.with_label (_("Quit"));
-            quit.activate.connect (() => (this.application as GLib.Application).quit_mainloop ());
+            quit.activate.connect (() => ((GLib.Application) this.application).quit_mainloop ());
             this.options.add (quit);
             this.options.show_all ();
         }
