@@ -304,6 +304,14 @@ g_paste_daemon_changed (GPasteDaemon *self,
                                    NULL); /* error */
 }
 
+/**
+ * g_paste_daemon_show_history:
+ * @self: (transfer none): the #GPasteDaemon
+ *
+ * Emit the signal to show history
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self)
 {
@@ -448,6 +456,17 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_object_unref (self);
 }
 
+/**
+ * g_paste_daemon_register_object:
+ * @self: (transfer none): the #GPasteDaemon
+ * @connection: (transfer none): the #GDBusConnection
+ * @path: the DBus path
+ * @error: a pointer to a #GError for DBus connection errors
+ *
+ * Register the daemon on the DBus connection
+ *
+ * Returns: the id of the daemon on the DBus connection
+ */
 G_PASTE_VISIBLE guint
 g_paste_daemon_register_object (GPasteDaemon    *self,
                                 GDBusConnection *connection,
@@ -592,14 +611,14 @@ g_paste_daemon_init (GPasteDaemon *self)
 
 /**
  * g_paste_daemon_new:
- * @history: (transfer none): a GPasteHistory
- * @settings: (transfer none): a GPasteSettings
- * @clipboards_manager: (transfer none): a GPasteClipboardsManager
- * @keybinder: (transfer none): a GPasteKeybinder
+ * @history: (transfer none): a #GPasteHistory
+ * @settings: (transfer none): a #GPasteSettings
+ * @clipboards_manager: (transfer none): a #GPasteClipboardsManager
+ * @keybinder: (transfer none): a #GPasteKeybinder
  *
- * Create a new instance of GPasteDaemon
+ * Create a new instance of #GPasteDaemon
  *
- * Returns: a newly allocated GPasteDaemon
+ * Returns: a newly allocated #GPasteDaemon
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteDaemon *
