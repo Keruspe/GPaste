@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([GPaste],[2.6],[Marc-Antoine@Perennou.com],[gpaste])
+AC_INIT([GPaste],[2.8],[Marc-Antoine@Perennou.com],[gpaste])
 
 INTLTOOL_REQUIRED="0.40.0"
 PKGCONFIG_REQUIRED="0.22"
