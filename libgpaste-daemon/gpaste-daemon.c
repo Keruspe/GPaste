@@ -304,7 +304,7 @@ g_paste_daemon_changed (GPasteDaemon *self,
                                    NULL); /* error */
 }
 
-void
+G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self)
 {
     g_return_if_fail (G_PASTE_IS_DAEMON (self));
@@ -448,7 +448,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_object_unref (self);
 }
 
-guint
+G_PASTE_VISIBLE guint
 g_paste_daemon_register_object (GPasteDaemon    *self,
                                 GDBusConnection *connection,
                                 const gchar     *path,
@@ -602,7 +602,7 @@ g_paste_daemon_init (GPasteDaemon *self)
  * Returns: a newly allocated GPasteDaemon
  *          free it with g_object_unref
  */
-GPasteDaemon *
+G_PASTE_VISIBLE GPasteDaemon *
 g_paste_daemon_new (GPasteHistory           *history,
                     GPasteSettings          *settings,
                     GPasteClipboardsManager *clipboards_manager,

@@ -19,27 +19,21 @@ pkglibexec_PROGRAMS += \
 	bin/gpasted \
 	$(NULL)
 
-bin_gpasted_headers = \
-	src/gpasted/gpaste-daemon.h \
-	src/gpasted/gpaste-daemon-private.h \
-	$(NULL)
-
 bin_gpasted_SOURCES = \
-	$(bin_gpasted_headers) \
 	libgpaste/gpaste-clipboard-internal.c \
-	src/gpasted/gpaste-daemon.c \
 	src/gpasted/gpasted.c \
 	$(NULL)
 
 bin_gpasted_CFLAGS = \
-	$(GDK_CFLAGS) \
+	-I $(srcdir)/libgpaste-daemon/ \
 	$(GTK_CFLAGS) \
+	$(GDK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 
 bin_gpasted_LDADD = \
-	$(GDK_LIBS) \
 	$(GTK_LIBS) \
+	$(GDK_LIBS) \
 	$(AM_LIBS) \
-	$(libgpaste_la_file) \
+	$(libgpaste_daemon_la_file) \
 	$(NULL)

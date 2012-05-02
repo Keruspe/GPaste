@@ -35,6 +35,9 @@ G_BEGIN_DECLS
 typedef struct _GPasteDaemon GPasteDaemon;
 typedef struct _GPasteDaemonClass GPasteDaemonClass;
 
+#ifdef G_PASTE_COMPILATION
+G_PASTE_VISIBLE
+#endif
 GType g_paste_daemon_get_type (void);
 
 guint g_paste_daemon_register_object (GPasteDaemon    *self,
