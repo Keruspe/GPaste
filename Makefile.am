@@ -117,10 +117,11 @@ release:
 # Specific parts
 
 include libgpaste/libgpaste.mk
+include libgpaste-client/libgpaste-client.mk
+include libgpaste-daemon/libgpaste-daemon.mk
+
 include gi/gi.mk
 include vapi/vapi.mk
-
-include libgpaste-daemon/libgpaste-daemon.mk
 
 include bin/gpasted.mk
 include bin/gpaste.mk
