@@ -25,6 +25,7 @@ INTROSPECTION_COMPILER_ARGS = $(NULL)
 
 gi/GPaste-1.0.gir: $(libgpaste_la_file)
 gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0 libxml2-2.0
+gi_GPaste_1_0_gir_EXPORT_PACKAGES = libgpaste
 gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION -I$(srcdir)/libgpaste
 gi_GPaste_1_0_gir_LIBS = $(libgpaste_la_file)
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
