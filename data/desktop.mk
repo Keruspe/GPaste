@@ -15,23 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-gpaste_gschema_file = data/org.gnome.GPaste.gschema.xml
-gschemas_compiled = data/gschemas.compiled
+gpaste_applet_desktop_file = data/gpaste-applet.desktop
+gpaste_settings_desktop_file = data/gpaste-settings.desktop
 
-gsettings_SCHEMAS = \
-	$(gpaste_gschema_file) \
+nodist_applications_DATA += \
+	$(gpaste_applet_desktop_file) \
+	$(gpaste_settings_desktop_file) \
 	$(NULL)
 
-@GSETTINGS_RULES@
-@INTLTOOL_XML_RULE@
-
-$(gschemas_compiled): $(gsettings_SCHEMAS:.xml=.valid)
-	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=$(srcdir) .
+@INTLTOOL_DESKTOP_RULE@
 
 EXTRA_DIST += \
-	$(gpaste_gschema_file) \
-	$(NULL)
-
-CLEANFILES += \
-	$(gschemas_compiled) \
+	$(gpaste_applet_desktop_file:.desktop=.desktop.in.in) \
+	$(gpaste_settings_desktop_file:.desktop=.desktop.in.in) \
 	$(NULL)

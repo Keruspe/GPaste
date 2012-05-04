@@ -51,16 +51,6 @@ bin_gpaste_settings_LDADD = \
 	$(libgpaste_la_file) \
 	$(NULL)
 
-bin_gpaste_settings_desktop_in_file = data/gpaste-settings.desktop.in
-
-nodist_applications_DATA += \
-	$(bin_gpaste_settings_desktop_in_file:.desktop.in=.desktop) \
-	$(NULL)
-
-EXTRA_DIST += \
-	$(bin_gpaste_settings_desktop_in_file:.desktop.in=.desktop.in.in) \
-	$(NULL)
-
 CLEANFILES += \
 	$(gpaste_settings_SOURCES:.vala=.c) \
 	$(NULL)

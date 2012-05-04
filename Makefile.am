@@ -93,9 +93,10 @@ CLEANFILES = \
 
 # Special rules
 
-@INTLTOOL_DESKTOP_RULE@
-
-SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
+SUFFIXES = .desktop.in.in .desktop.in .service .service.in .json .json.in
+.desktop.in.in.desktop.in:
+	@$(MKDIR_P) $(dir $@)
+	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 .service.in.service:
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 .json.in.json:
@@ -103,8 +104,6 @@ SUFFIXES = .service .service.in .json .json.in .desktop.in .desktop.in.in
 	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
 					   -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' \
 					   < $< > $@
-.desktop.in.in.desktop.in:
-	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 
 update-po:
 	$(MAKE) -C po $@
@@ -129,9 +128,10 @@ include bin/gpaste-settings.mk
 include bin/gpaste-applet.mk
 include src/applets/gnome-shell/extension.mk
 
-include data/gsettings.mk
+include data/completions.mk
 include data/dbus.mk
-include data/completions/completions.mk
+include data/desktop.mk
+include data/gsettings.mk
 
 include man/man.mk
 

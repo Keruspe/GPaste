@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-bin_gpaste_applet_desktop_in_file = data/gpaste-applet.desktop.in
-
 if ENABLE_APPLET
 pkglibexec_PROGRAMS += \
 	bin/gpaste-applet \
@@ -53,15 +51,7 @@ bin_gpaste_applet_LDADD = \
 	$(libgpaste_la_file) \
 	$(NULL)
 
-nodist_autostart_in_files += \
-	$(bin_gpaste_applet_desktop_in_file) \
-	$(NULL)
-
 CLEANFILES += \
 	$(gpaste_applet_SOURCES:.vala=.c) \
 	$(NULL)
 endif
-
-EXTRA_DIST += \
-	$(bin_gpaste_applet_desktop_in_file:.desktop.in=.desktop.in.in) \
-	$(NULL)

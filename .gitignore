@@ -2,6 +2,7 @@
 /bin/*
 !/bin/*.mk
 /data/*.desktop
+/data/*.desktop.in
 /data/*.service
 /gi/*.gir
 /gi/*.typelib
