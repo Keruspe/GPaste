@@ -20,17 +20,11 @@ gsettings_SCHEMAS = \
 	$(NULL)
 
 @GSETTINGS_RULES@
-@INTLTOOL_XML_NOMERGE_RULE@
+@INTLTOOL_XML_RULE@
 
 gschemas.compiled: $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=. .
 
-EXTRA_DIST += \
-	$(gsettings_SCHEMAS:.xml=.xml.in.in) \
-	$(NULL)
-
 CLEANFILES += \
-	$(gsettings_SCHEMAS:.xml=.xml.in) \
-	$(gsettings_SCHEMAS) \
 	gschemas.compiled \
 	$(NULL)

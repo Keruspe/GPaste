@@ -1,132 +1,132 @@
 <schemalist>
-    <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="@GETTEXT_PACKAGE@">
+    <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/">
 
     <key name="history-name" type="s">
       <default>'history'</default>
-      <_summary>The name of the current history</_summary>
-      <_description>
+      <summary>The name of the current history</summary>
+      <description>
         The default name is "history"
-      </_description>
+      </description>
     </key>
 
     <key name="max-history-size" type="u">
       <range min="5" max="255"/>
       <default>30</default>
-      <_summary>Max history size</_summary>
-      <_description>
+      <summary>Max history size</summary>
+      <description>
         Maximum number of items in history
-      </_description>
+      </description>
     </key>
 
     <key name="max-displayed-history-size" type="u">
       <range min="5" max="255"/>
       <default>20</default>
-      <_summary>Max displayed history size</_summary>
-      <_description>
+      <summary>Max displayed history size</summary>
+      <description>
         Maximum number of items displayed in the history
-      </_description>
+      </description>
     </key>
 
     <key name="element-size" type="u">
       <range min="0" max="255"/>
       <default>60</default>
-      <_summary>Max size of an element when displaying it</_summary>
-      <_description>
+      <summary>Max size of an element when displaying it</summary>
+      <description>
         The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.
-      </_description>
+      </description>
     </key>
 
     <key name="primary-to-history" type="b">
       <default>false</default>
-      <_summary>Does the primary selection affects history?</_summary>
-      <_description>
+      <summary>Does the primary selection affects history?</summary>
+      <description>
         By default, only clipboard (ctrl+c) affects history.
-      </_description>
+      </description>
     </key>
 
     <key name="synchronize-clipboards" type="b">
       <default>false</default>
-      <_summary>Are the primary selection and the clipboard synchronized?</_summary>
-      <_description>
+      <summary>Are the primary selection and the clipboard synchronized?</summary>
+      <description>
         By default, the primary selection and the clipboard are independent.
-      </_description>
+      </description>
     </key>
 
     <key name="track-changes" type="b">
       <default>true</default>
-      <_summary>Do we track the clipboard changes?</_summary>
-      <_description>
+      <summary>Do we track the clipboard changes?</summary>
+      <description>
         By default, we're tracking those changes.
-      </_description>
+      </description>
     </key>
 
     <key name="track-extension-state" type="b">
       <default>false</default>
-      <_summary>Do we sync the daemon state with the gnome-shell extension's one? (disable the daemon when disabling the extension)</_summary>
-      <_description>
+      <summary>Do we sync the daemon state with the gnome-shell extension's one? (disable the daemon when disabling the extension)</summary>
+      <description>
         By default, the daemon state keeps unchanged
-      </_description>
+      </description>
     </key>
 
     <key name="save-history" type="b">
       <default>true</default>
-      <_summary>Do we save the history from one session to another?</_summary>
-      <_description>
+      <summary>Do we save the history from one session to another?</summary>
+      <description>
         By default, we're saving it
-      </_description>
+      </description>
     </key>
 
     <key name="trim-items" type="b">
       <default>false</default>
-      <_summary>Do we trim the textual items before adding them to history?</_summary>
-      <_description>
+      <summary>Do we trim the textual items before adding them to history?</summary>
+      <description>
         Trimming means removing all trailing and ending spaces.
         By default, we're letting them as-is.
-      </_description>
+      </description>
     </key>
 
     <key name="fifo" type="b">
       <default>false</default>
-      <_summary>Copy new items to the end of the list so that they are pasted last?</_summary>
-      <_description>
+      <summary>Copy new items to the end of the list so that they are pasted last?</summary>
+      <description>
         By default new items are added to the top of the list so that they are pasted first.
-      </_description>
+      </description>
     </key>
 
     <key name="show-history" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
-      <_summary>The keyboard shortcut to display the menu</_summary>
-      <_description>
+      <summary>The keyboard shortcut to display the menu</summary>
+      <description>
         By default, hitting ctrl + alt + h displays the menu ("&lt;Ctrl&gt;&lt;Alt&gt;H").
         An empty string here disables this functionnality.
-      </_description>
+      </description>
     </key>
 
     <key name="paste-and-pop" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;V'</default>
-      <_summary>The keyboard shortcut to paste and then delete the first element in history</_summary>
-      <_description>
+      <summary>The keyboard shortcut to paste and then delete the first element in history</summary>
+      <description>
         By default, hitting ctrl + alt + v does that ("&lt;Ctrl&gt;&lt;Alt&gt;V").
         An empty string here disables this functionnality.
-      </_description>
+      </description>
     </key>
 
     <key name="max-text-item-size" type="u">
       <range min="1" max="2147483647"/>
       <default>2147483647</default>
-      <_summary>Max text item size</_summary>
-      <_description>
+      <summary>Max text item size</summary>
+      <description>
         Maximum size of a text item. Anything out of this boundary is ignored.
-      </_description>
+      </description>
     </key>
 
     <key name="min-text-item-size" type="u">
       <range min="1" max="2147483647"/>
       <default>1</default>
-      <_summary>Min text item size</_summary>
-      <_description>
+      <summary>Min text item size</summary>
+      <description>
         Minimum size of a text item. Anything out of this boundary is ignored.
-      </_description>
+      </description>
     </key>
 
   </schema>

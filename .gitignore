@@ -2,8 +2,6 @@
 /bin/*
 !/bin/*.mk
 /data/*.desktop
-/data/*.gschema.xml
-/data/*.gschema.xml.in
 /data/*.service
 /gi/*.gir
 /gi/*.typelib

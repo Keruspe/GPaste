@@ -1,16 +1,18 @@
 NEW in 2.9 (Not released yet)
 =============
 
+- Now depends on intltool 0.50
+
 NEW in 2.8 (02/05/2012)
 =============
 
-- various cleanup and bugfixes
-- the history file now has a version number
+- Various cleanup and bugfixes
+- The history file now has a version number
 - CDATA can now be copied
 - ToggleHistory is now ShowHistory
 - The "keyboard-shortcut" preferences is now called "show-history"
 - New feature : Paste & Pop with a new keybinding (experimental)
-- vapi is no longer shipped and is generated when building
+- Vapi is no longer shipped and is generated when building
 - Now requires automake 1.12 and autoconf 2.69
 - Brazilian Portuguese translation by Elder Marco
 - FIFO mode

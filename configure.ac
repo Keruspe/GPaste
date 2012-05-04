@@ -18,7 +18,7 @@
 AC_PREREQ([2.69])
 AC_INIT([GPaste],[2.9],[Marc-Antoine@Perennou.com],[gpaste])
 
-INTLTOOL_REQUIRED="0.40.0"
+INTLTOOL_REQUIRED="0.50.0"
 PKGCONFIG_REQUIRED="0.22"
 
 GLIB_MIN_MAJOR="2"
@@ -48,7 +48,7 @@ AM_PROG_AR
 LT_PREREQ([2.2.6])
 LT_INIT([disable-static pic-only])
 
-AM_INIT_AUTOMAKE([1.12 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar silent-rules -Wall])
+AM_INIT_AUTOMAKE([1.12 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
 AM_SILENT_RULES([yes])
 
 AC_PROG_SED
@@ -162,7 +162,6 @@ AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 AC_CONFIG_FILES([
     Makefile
     po/Makefile.in
-    data/org.gnome.GPaste.gschema.xml.in
     libgpaste/gpaste.pc
 ])
 AC_OUTPUT

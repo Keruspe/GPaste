@@ -4,7 +4,7 @@ src/applets/legacy/gpaste-applet.vala
 src/applets/gnome-shell/extension.js
 src/gpaste.vala
 src/gpasted/gpasted.c
-data/org.gnome.GPaste.gschema.xml.in.in
+data/org.gnome.GPaste.gschema.xml
 data/gpaste-applet.desktop.in.in
 data/gpaste-settings.desktop.in.in
 libgpaste/gpaste-item.c

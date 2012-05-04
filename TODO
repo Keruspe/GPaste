@@ -3,6 +3,3 @@
     handle keyboard layout changes
     libgpaste-client + introspection/vapi
     rewrite gpaste in C
-
-future:
-    build: depend on intltool 0.50 to remove _NOMERGE hack
