@@ -3,6 +3,11 @@ NEW in 2.9 (Not released yet)
 
 - Now depends on intltool 0.50
 
+NEW in 2.8.1 (05/05/2012)
+=============
+
+- Fix crash in gpaste_daemon_tracking
+
 NEW in 2.8 (02/05/2012)
 =============
 

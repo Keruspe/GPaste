@@ -359,7 +359,7 @@ g_paste_daemon_track (GPasteDaemon          *self,
     g_variant_unref (variant);
 
     g_paste_settings_set_track_changes (self->priv->settings, tracking_state);
-    g_paste_daemon_tracking (NULL, tracking_state, self);
+    g_paste_daemon_tracking (self, tracking_state, NULL);
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
