@@ -98,9 +98,10 @@ SUFFIXES = .desktop.in.in .desktop.in .service .service.in .json .json.in
 	@ $(MKDIR_P) `dirname $@`
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 .service.in.service:
+	@ $(MKDIR_P) `dirname $@`
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 .json.in.json:
-	@ $(MKDIR_P) src/applets/gnome-shell
+	@ $(MKDIR_P) `dirname $@`
 	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
 					   -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' \
 					   < $< > $@

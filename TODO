@@ -3,5 +3,3 @@
     handle keyboard layout changes
     libgpaste-client + introspection/vapi
     rewrite gpaste in C
-build:
-    fix parallel build
