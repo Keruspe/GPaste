@@ -95,7 +95,7 @@ CLEANFILES = \
 
 SUFFIXES = .desktop.in.in .desktop.in .service .service.in .json .json.in
 .desktop.in.in.desktop.in:
-	@$(MKDIR_P) $(dir $@)
+	@ $(MKDIR_P) `dirname $@`
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 .service.in.service:
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
