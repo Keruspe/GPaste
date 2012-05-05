@@ -92,10 +92,6 @@ pkginclude_HEADERS = \
 	$(libgpaste_libgpaste_la_public_headers) \
 	$(NULL)
 
-pkgconfig_DATA += \
-	libgpaste/gpaste.pc \
-	$(NULL)
-
 lib_LTLIBRARIES += \
 	$(libgpaste_la_file) \
 	$(NULL)

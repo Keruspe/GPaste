@@ -15,12 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
+
 gnomeshell_extension_file = src/applets/gnome-shell/extension.js
 gnomeshell_metadata_file = src/applets/gnome-shell/metadata.json
 
-if ENABLE_EXTENSION
-gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
+SUFFIXES += .json .json.in
+.json.in.json:
+	@ $(MKDIR_P) `dirname $@`
+	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
+					   -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' \
+					   < $< > $@
 
+if ENABLE_EXTENSION
 nodist_gnomeshell_DATA = \
 	$(gnomeshell_extension_file) \
 	$(gnomeshell_metadata_file) \

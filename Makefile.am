@@ -15,32 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+SUBDIRS = po
+
+ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
+AM_MAKEFLAGS = --no-print-directory
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
 	--enable-applet \
 	$(NULL)
-ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
-AM_MAKEFLAGS = --no-print-directory
-SUBDIRS = po
-
-# Global part
-
-applicationsdir = $(datadir)/applications
-nodist_applications_in_files = $(NULL)
-nodist_applications_DATA = $(NULL)
-
-autostartdir = $(sysconfdir)/xdg/autostart
-nodist_autostart_in_files = $(NULL)
-
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = $(NULL)
-
-bin_PROGRAMS = $(NULL)
-pkglibexec_PROGRAMS = $(NULL)
-
-lib_LTLIBRARIES = $(NULL)
-
-nodist_man_MANS = $(NULL)
 
 AM_VALAFLAGS = \
 	--enable-checking \
@@ -84,27 +66,12 @@ EXTRA_DIST = \
 	vapi/config.vapi \
 	$(NULL)
 
-CLEANFILES = \
-	$(nodist_applications_in_files) \
-	$(nodist_applications_DATA) \
-	$(nodist_autostart_in_files) \
-	$(nodist_man_MANS) \
-	$(NULL)
+CLEANFILES = $(NULL)
+SUFFIXES = $(NULL)
 
-# Special rules
-
-SUFFIXES = .desktop.in.in .desktop.in .service .service.in .json .json.in
-.desktop.in.in.desktop.in:
-	@ $(MKDIR_P) `dirname $@`
-	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
-.service.in.service:
-	@ $(MKDIR_P) `dirname $@`
-	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
-.json.in.json:
-	@ $(MKDIR_P) `dirname $@`
-	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
-					   -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' \
-					   < $< > $@
+bin_PROGRAMS = $(NULL)
+pkglibexec_PROGRAMS = $(NULL)
+lib_LTLIBRARIES = $(NULL)
 
 update-po:
 	$(MAKE) -C po $@
@@ -114,7 +81,7 @@ release:
 	git tag -sm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" v$(PACKAGE_VERSION)
 	$(MAKE) distcheck
 
-# Specific parts
+# Real stuff goes in these subfiles
 
 include libgpaste/libgpaste.mk
 include libgpaste-client/libgpaste-client.mk

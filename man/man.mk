@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-nodist_man_MANS += \
+nodist_man_MANS = \
 	man/gpaste.1 \
 	$(NULL)
 
@@ -36,4 +36,8 @@ man/gpaste.1: $(gpaste_1_parts)
 EXTRA_DIST += \
 	data/gpaste.1.part \
 	data/gpaste-applet.1.part \
+	$(NULL)
+
+CLEANFILES += \
+	$(nodist_man_MANS) \
 	$(NULL)
