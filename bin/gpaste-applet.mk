@@ -33,13 +33,10 @@ bin_gpaste_applet_vala.stamp: $(libgpaste_vapi_file)
 
 bin_gpaste_applet_VALAFLAGS = \
 	$(libgpaste_vapi_file) \
-	$(GTK_VALAFLAGS) \
 	$(AM_VALAFLAGS) \
 	$(NULL)
 
 bin_gpaste_applet_CFLAGS = \
-	$(GDK_CFLAGS) \
-	$(GTK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(VALA_CFLAGS) \
 	$(NULL)

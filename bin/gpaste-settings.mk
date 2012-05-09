@@ -35,12 +35,10 @@ bin_gpaste_settings_vala.stamp: $(libgpaste_vapi_file)
 
 bin_gpaste_settings_VALAFLAGS = \
 	$(libgpaste_vapi_file) \
-	$(GTK_VALAFLAGS) \
 	$(AM_VALAFLAGS) \
 	$(NULL)
 
 bin_gpaste_settings_CFLAGS = \
-	$(GTK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(VALA_CFLAGS) \
 	$(NULL)

@@ -19,12 +19,19 @@ bin_PROGRAMS += \
 	bin/gpaste \
 	$(NULL)
 
+nodist_bin_gpaste_SOURCES = \
+	$(libgpaste_vapi_file) \
+	$(NULL)
+
 bin_gpaste_SOURCES = \
 	src/gpaste-client.vala \
 	src/gpaste.vala \
 	$(NULL)
 
+bin_gpaste_vala.stamp: $(libgpaste_vapi_file)
+
 bin_gpaste_VALAFLAGS = \
+	$(libgpaste_vapi_file) \
 	$(AM_VALAFLAGS) \
 	$(NULL)
 
@@ -41,6 +48,7 @@ bin_gpaste_CFLAGS = \
 
 bin_gpaste_LDADD = \
 	$(AM_LIBS) \
+	$(libgpaste_client_la_file) \
 	$(NULL)
 
 CLEANFILES += \

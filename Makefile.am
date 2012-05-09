@@ -34,6 +34,7 @@ AM_VALAFLAGS = \
 	--pkg=config \
 	--pkg=posix \
 	$(GIO_VALAFLAGS) \
+	$(GTK_VALAFLAGS) \
 	$(NULL)
 
 AM_CFLAGS = \
@@ -53,6 +54,8 @@ VALA_CFLAGS = \
 	-Wno-unused-variable \
 	-Wno-missing-field-initializers \
 	-Wno-unused-but-set-variable \
+	$(GDK_CFLAGS) \
+	$(GTK_CFLAGS) \
 	$(NULL)
 
 AM_LIBS = \
@@ -129,4 +132,4 @@ dist-hook:
 # to use the vala stamp files as targets. These stamp files are shipped
 # with the generated sources and are tried to be uninstalled.
 # Adding them to .PHONY avoids this.
-.PHONY: bin_gpaste_settings_vala.stamp bin_gpaste_applet_vala.stamp
+.PHONY: bin_gpaste.vala bin_gpaste_applet_vala.stamp bin_gpaste_settings_vala.stamp
