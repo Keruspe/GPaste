@@ -88,7 +88,7 @@ libgpaste_libgpaste_la_DEPENDENCIES = \
 	$(libgpaste_symbols_file) \
 	$(NULL)
 
-pkginclude_HEADERS = \
+pkginclude_HEADERS += \
 	$(libgpaste_libgpaste_la_public_headers) \
 	$(NULL)
 

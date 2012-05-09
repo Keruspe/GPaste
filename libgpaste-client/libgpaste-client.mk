@@ -24,11 +24,15 @@ LIBGPASTE_CLIENT_REVISION=0
 LIBGPASTE_CLIENT_AGE=0
 
 libgpaste_client_libgpaste_client_la_private_headers = \
-	libgpaste-client/gpaste-client.h \
 	libgpaste-client/gpaste-client-private.h \
 	$(NULL)
 
+libgpaste_client_libgpaste_client_la_public_headers = \
+	libgpaste-client/gpaste-client.h \
+	$(NULL)
+
 libgpaste_client_libgpaste_client_la_SOURCES = \
+	$(libgpaste_client_libgpaste_client_la_public_headers) \
 	$(libgpaste_client_libgpaste_client_la_private_headers) \
 	libgpaste-client/gpaste-client.c \
 	$(NULL)
@@ -55,6 +59,10 @@ libgpaste_client_libgpaste_client_la_LDFLAGS = \
 
 libgpaste_client_libgpaste_client_la_DEPENDENCIES = \
 	$(libgpaste_client_symbols_file) \
+	$(NULL)
+
+pkginclude_HEADERS += \
+	$(libgpaste_client_libgpaste_client_la_public_headers) \
 	$(NULL)
 
 lib_LTLIBRARIES += \
