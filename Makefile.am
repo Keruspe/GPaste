@@ -38,6 +38,7 @@ AM_VALAFLAGS = \
 
 AM_CFLAGS = \
 	-I$(srcdir)/libgpaste \
+	-I$(srcdir)/libgpaste-client \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \

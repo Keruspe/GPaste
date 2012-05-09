@@ -15,22 +15,42 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-libgpaste_gir_file = gi/GPaste-1.0.gir
-
 -include $(INTROSPECTION_MAKEFILE)
 
-INTROSPECTION_GIRS = $(NULL)
-INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h
+INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h --c-include=gpaste-client.h
 INTROSPECTION_COMPILER_ARGS = $(NULL)
 
-gi/GPaste-1.0.gir: $(libgpaste_la_file)
-gi_GPaste_1_0_gir_INCLUDES = GdkPixbuf-2.0 Gio-2.0 GObject-2.0 Gtk-3.0 libxml2-2.0
-gi_GPaste_1_0_gir_EXPORT_PACKAGES = libgpaste
-gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION -I$(srcdir)/libgpaste
-gi_GPaste_1_0_gir_LIBS = $(libgpaste_la_file)
+libgpaste_gir_file = gi/GPaste-1.0.gir
+
+$(libgpaste_gir_file): $(libgpaste_la_file) $(libgpaste_client_la_file)
+gi_GPaste_1_0_gir_FILES = \
+	$(libgpaste_libgpaste_la_SOURCES) \
+	$(libgpaste_client_libgpaste_client_la_SOURCES) \
+	$(NULL)
+gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
+	-I$(srcdir)/libgpaste \
+	-I$(srcdir)/libgpaste-client \
+	$(NULL)
+gi_GPaste_1_0_gir_LIBS = \
+	$(libgpaste_la_file) \
+	$(libgpaste_client_la_file) \
+	$(NULL)
+gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
+	libgpaste \
+	libgpaste-client \
+	$(NULL)
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
-gi_GPaste_1_0_gir_FILES = $(libgpaste_libgpaste_la_SOURCES)
-INTROSPECTION_GIRS += $(libgpaste_gir_file)
+gi_GPaste_1_0_gir_INCLUDES = \
+	GdkPixbuf-2.0 \
+	Gio-2.0 \
+	GObject-2.0 \
+	Gtk-3.0 \
+	libxml2-2.0 \
+	$(NULL)
+
+INTROSPECTION_GIRS = \
+	$(libgpaste_gir_file) \
+	$(NULL)
 
 girdir = $(datadir)/gir-1.0
 gir_DATA = $(INTROSPECTION_GIRS)

@@ -17,6 +17,10 @@
 
 libgpaste_vapi_file = vapi/gpaste-1.0.vapi
 
+$(libgpaste_vapi_file): $(libgpaste_gir_file)
+	@ $(MKDIR_P) vapi
+	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
+
 vapidir = $(datadir)/vala/vapi
 nodist_vapi_DATA = \
 	$(libgpaste_vapi_file) \
@@ -24,10 +28,6 @@ nodist_vapi_DATA = \
 dist_vapi_DATA = \
 	$(libgpaste_vapi_file:.vapi=.deps) \
 	$(NULL)
-
-$(libgpaste_vapi_file): $(libgpaste_gir_file)
-	@ $(MKDIR_P) vapi
-	$(AM_V_GEN) $(VAPIGEN) --directory vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
 
 CLEANFILES += \
 	$(libgpaste_vapi_file) \
