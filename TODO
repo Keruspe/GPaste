@@ -3,3 +3,5 @@
     handle keyboard layout changes
     libgpaste-client + introspection/vapi
     rewrite gpaste in C
+    remove useless targets from clipboard callbacks
+    libgpaste-client.pc
