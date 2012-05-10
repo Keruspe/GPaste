@@ -78,14 +78,6 @@ pkginclude_HEADERS = $(NULL)
 pkglibexec_PROGRAMS = $(NULL)
 lib_LTLIBRARIES = $(NULL)
 
-update-po:
-	$(MAKE) -C po $@
-
-release:
-	git commit -asm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)"
-	git tag -sm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" v$(PACKAGE_VERSION)
-	$(MAKE) distcheck
-
 # Real stuff goes in these subfiles
 
 include libgpaste/libgpaste.mk
@@ -108,7 +100,18 @@ include data/gsettings.mk
 
 include man/man.mk
 
+# Maintainance stuff
+
+update-po:
+	$(MAKE) -C po $@
+
+release:
+	$(MAKE) distcheck && \
+	git commit -asm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" && \
+	git tag -sm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" v$(PACKAGE_VERSION)
+
 # Generate a ChangeLog file from 'git log'
+
 dist-hook:
 	@ if test -d "$(srcdir)/.git"; then \
 	    echo Creating ChangeLog; \
