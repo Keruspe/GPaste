@@ -23,17 +23,18 @@
 
 #define G_PASTE_CLIENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_CLIENT, GPasteClientPrivate))
 
-#define G_PASTE_BUS_NAME "org.gnome.GPaste"
-
 G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_OBJECT)
 
 struct _GPasteClientPrivate
 {
+    GDBusProxy *proxy;
 };
 
 static void
 g_paste_client_dispose (GObject *object)
 {
+    g_object_unref (G_PASTE_CLIENT (object)->priv->proxy);
+
     G_OBJECT_CLASS (g_paste_client_parent_class)->dispose (object);
 }
 
@@ -56,6 +57,15 @@ static void
 g_paste_client_init (GPasteClient *self)
 {
     GPasteClientPrivate *priv = self->priv = G_PASTE_CLIENT_GET_PRIVATE (self);
+
+    priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                 G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                 NULL, /* interface_info */
+                                                 "org.gnome.GPaste",
+                                                 "/org/gnome/GPaste",
+                                                 "org.gnome.GPaste",
+                                                 NULL, /* cancellable */
+                                                 NULL); /* error */
 }
 
 /**
