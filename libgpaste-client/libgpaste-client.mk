@@ -17,8 +17,6 @@
 
 libgpaste_client_la_file = libgpaste-client/libgpaste-client.la
 
-$(libgpaste_client_la_file): $(libgpaste_la_file)
-
 LIBGPASTE_CLIENT_CURRENT=0
 LIBGPASTE_CLIENT_REVISION=0
 LIBGPASTE_CLIENT_AGE=0
@@ -38,16 +36,11 @@ libgpaste_client_libgpaste_client_la_SOURCES = \
 	$(NULL)
 
 libgpaste_client_libgpaste_client_la_CFLAGS = \
-	$(GTK_CFLAGS) \
-	$(GDK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 
 libgpaste_client_libgpaste_client_la_LIBADD = \
-	$(GTK_LIBS) \
-	$(GDK_LIBS) \
 	$(AM_LIBS) \
-	$(libgpaste_la_file) \
 	$(NULL)
 
 libgpaste_client_symbols_file = $(srcdir)/libgpaste-client/libgpaste-client.sym
