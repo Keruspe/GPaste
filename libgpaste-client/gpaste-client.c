@@ -30,6 +30,51 @@ struct _GPasteClientPrivate
     GDBusProxy *proxy;
 };
 
+/**
+ * g_paste_client_get_element:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to get
+ * @error: a #GError
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: a newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_element (GPasteClient *self,
+                            guint32       index,
+                            GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+
+    GDBusProxy *proxy = self->priv->proxy;
+    GVariant *parameter = g_variant_new_uint32 (index);
+
+    GVariant *result = g_dbus_proxy_call_sync (proxy,
+                                               "GetElement",
+                                               g_variant_new_tuple (&parameter, 1),
+                                               G_DBUS_CALL_FLAGS_NONE,
+                                               -1,
+                                               NULL, /* cancellable */
+                                               error);
+
+    if (!result)
+        return NULL;
+
+    GVariantIter result_iter;
+
+    g_variant_iter_init (&result_iter, result);
+
+    GVariant *variant = g_variant_iter_next_value (&result_iter);
+    gchar *answer = g_variant_dup_string (variant,
+                                          NULL); /* length */
+
+    g_variant_unref (variant);
+    g_variant_unref (result);
+
+    return answer;
+}
+
 static void
 g_paste_client_dispose (GObject *object)
 {
