@@ -21,7 +21,7 @@ nodist_dbusservices_DATA = \
 
 SUFFIXES += .service .service.in
 .service.in.service:
-	@ $(MKDIR_P) `dirname $@`
+	@ $(MKDIR_P) data
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 
 EXTRA_DIST += \

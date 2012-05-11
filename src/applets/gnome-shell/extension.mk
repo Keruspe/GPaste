@@ -22,7 +22,7 @@ gnomeshell_metadata_file = src/applets/gnome-shell/metadata.json
 
 SUFFIXES += .json .json.in
 .json.in.json:
-	@ $(MKDIR_P) `dirname $@`
+	@ $(MKDIR_P) src/applets/gnome-shell
 	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
 					   -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' \
 					   < $< > $@

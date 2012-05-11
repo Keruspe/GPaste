@@ -29,7 +29,7 @@ nodist_applications_DATA = \
 
 SUFFIXES += .desktop.in.in .desktop.in
 .desktop.in.in.desktop.in:
-	@ $(MKDIR_P) `dirname $@`
+	@ $(MKDIR_P) data
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 
 EXTRA_DIST += \
