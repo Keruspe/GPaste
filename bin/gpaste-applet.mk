@@ -37,14 +37,10 @@ bin_gpaste_applet_VALAFLAGS = \
 	$(NULL)
 
 bin_gpaste_applet_CFLAGS = \
-	$(AM_CFLAGS) \
 	$(VALA_CFLAGS) \
 	$(NULL)
 
 bin_gpaste_applet_LDADD = \
-	$(GDK_LIBS) \
-	$(GTK_LIBS) \
-	$(AM_LIBS) \
 	$(libgpaste_la_file) \
 	$(NULL)
 

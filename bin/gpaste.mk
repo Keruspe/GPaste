@@ -42,12 +42,10 @@ bin_gpaste_VALAFLAGS += \
 endif
 
 bin_gpaste_CFLAGS = \
-	$(AM_CFLAGS) \
 	$(VALA_CFLAGS) \
 	$(NULL)
 
 bin_gpaste_LDADD = \
-	$(AM_LIBS) \
 	$(libgpaste_client_la_file) \
 	$(NULL)
 

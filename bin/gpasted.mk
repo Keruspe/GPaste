@@ -27,13 +27,9 @@ bin_gpasted_SOURCES = \
 bin_gpasted_CFLAGS = \
 	-I $(srcdir)/libgpaste-daemon/ \
 	$(GTK_CFLAGS) \
-	$(GDK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 
 bin_gpasted_LDADD = \
-	$(GTK_LIBS) \
-	$(GDK_LIBS) \
-	$(AM_LIBS) \
 	$(libgpaste_daemon_la_file) \
 	$(NULL)

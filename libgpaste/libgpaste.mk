@@ -70,7 +70,6 @@ libgpaste_libgpaste_la_CFLAGS = \
 
 libgpaste_libgpaste_la_LIBADD = \
 	$(GDK_PIXBUF_LIBS) \
-	$(GDK_LIBS) \
 	$(GTK_LIBS) \
 	$(XCB_LIBS) \
 	$(XML_LIBS) \

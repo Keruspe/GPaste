@@ -44,8 +44,6 @@ AM_CFLAGS = \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
 	$(GLIB_CFLAGS) \
-	$(GOBJECT_CFLAGS) \
-	$(GIO_CFLAGS) \
 	$(NULL)
 
 VALA_CFLAGS = \
@@ -54,14 +52,12 @@ VALA_CFLAGS = \
 	-Wno-unused-variable \
 	-Wno-missing-field-initializers \
 	-Wno-unused-but-set-variable \
-	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
+	$(AM_CFLAGS) \
 	$(NULL)
 
 AM_LIBS = \
 	$(GLIB_LIBS) \
-	$(GOBJECT_LIBS) \
-	$(GIO_LIBS) \
 	$(NULL)
 
 EXTRA_DIST = \

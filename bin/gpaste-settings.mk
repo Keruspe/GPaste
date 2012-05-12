@@ -39,13 +39,10 @@ bin_gpaste_settings_VALAFLAGS = \
 	$(NULL)
 
 bin_gpaste_settings_CFLAGS = \
-	$(AM_CFLAGS) \
 	$(VALA_CFLAGS) \
 	$(NULL)
 
 bin_gpaste_settings_LDADD = \
-	$(GTK_LIBS) \
-	$(AM_LIBS) \
 	$(libgpaste_la_file) \
 	$(NULL)
 
