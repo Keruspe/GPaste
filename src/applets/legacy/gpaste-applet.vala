@@ -57,7 +57,7 @@ namespace GPaste {
             bool history_is_empty;
             var app = (Main) this.application;
             try {
-                var hist = app.gpasted.get_history ();
+                var hist = app.client.get_history ();
                 history_is_empty = (hist.length == 0);
                 uint32 element_size = app.element_size;
                 for (uint32 i = 0 ; i < hist.length ; ++i) {
@@ -88,7 +88,7 @@ namespace GPaste {
                     });
                     this.history.add (item);
                 }
-            } catch (IOError e) {}
+            } catch (Error e) {}
             if (history_is_empty) {
                 var item = new Gtk.ImageMenuItem.with_label (_("(Empty)"));
                 var label = (Gtk.Label) item.get_child ();
@@ -138,6 +138,11 @@ namespace GPaste {
         private GPaste.Settings settings;
 
         public uint32 element_size {
+            get;
+            private set;
+        }
+
+        public Client client {
             get;
             private set;
         }

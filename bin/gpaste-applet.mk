@@ -42,6 +42,7 @@ bin_gpaste_applet_CFLAGS = \
 
 bin_gpaste_applet_LDADD = \
 	$(libgpaste_la_file) \
+	$(libgpaste_client_la_file) \
 	$(NULL)
 
 CLEANFILES += \

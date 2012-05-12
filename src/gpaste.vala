@@ -52,8 +52,8 @@ namespace GPaste {
             stdout.printf(_("%s help: display this help\n"), caller);
         }
 
-        private void history(bool raw = false, bool zero = false) throws GLib.IOError {
-            var history = this.gpaste.get_history();
+        private void history(bool raw = false, bool zero = false) throws GLib.Error {
+            var history = this.client.get_history();
             for (int i = 0 ; i < history.length ; ++i) {
                 if (!raw)
                     stdout.printf("%d: ", i);
