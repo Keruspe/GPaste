@@ -43,9 +43,11 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_client_get_type (void);
 
-gchar *g_paste_client_get_element (GPasteClient *self,
-                                   guint32       index,
-                                   GError      **error);
+gchar *g_paste_client_get_element  (GPasteClient *self,
+                                    guint32       index,
+                                    GError      **error);
+gchar **g_paste_client_get_history (GPasteClient *self,
+                                    GError      **error);
 
 GPasteClient *g_paste_client_new (void);
 

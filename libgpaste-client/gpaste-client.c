@@ -75,6 +75,47 @@ g_paste_client_get_element (GPasteClient *self,
     return answer;
 }
 
+/**
+ * g_paste_client_get_history:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * Get the history from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE gchar **
+g_paste_client_get_history (GPasteClient *self,
+                            GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+
+    GDBusProxy *proxy = self->priv->proxy;
+
+    GVariant *result = g_dbus_proxy_call_sync (proxy,
+                                               "GetHistory",
+                                               g_variant_new_tuple (NULL, 0),
+                                               G_DBUS_CALL_FLAGS_NONE,
+                                               -1,
+                                               NULL, /* cancellable */
+                                               error);
+
+    if (!result)
+        return NULL;
+
+    GVariantIter result_iter;
+
+    g_variant_iter_init (&result_iter, result);
+
+    GVariant *variant = g_variant_iter_next_value (&result_iter);
+    gchar **answer = g_variant_dup_strv (variant,
+                                         NULL); /* length */
+
+    g_variant_unref (variant);
+    g_variant_unref (result);
+
+    return answer;
+}
 static void
 g_paste_client_dispose (GObject *object)
 {
