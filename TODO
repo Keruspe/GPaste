@@ -1,8 +1,16 @@
 3.0:
-    prefs.js
-    handle keyboard layout changes
-    libgpaste-client + introspection/vapi
-    rewrite gpaste in C
-    remove useless targets from clipboard callbacks
-    libgpaste-client.pc
-    libgpaste-client: specify errors types when possible in g-i
+    libgpaste:
+        simplify gpaste-settings ? (macros ?)
+        remove useless targets from clipboard callbacks
+    libgpaste-client:
+        pkg-config
+        specify errors types when possible in g-i
+        refactor common dbus stuff
+    gpaste:
+        rewrite in C
+    gnome-shell:
+        prefs.js
+
+future:
+    libgpaste:
+        handle keyboard layout changes
