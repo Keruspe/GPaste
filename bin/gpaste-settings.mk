@@ -44,6 +44,7 @@ bin_gpaste_settings_CFLAGS = \
 
 bin_gpaste_settings_LDADD = \
 	$(libgpaste_la_file) \
+	$(libgpaste_client_la_file) \
 	$(NULL)
 
 CLEANFILES += \

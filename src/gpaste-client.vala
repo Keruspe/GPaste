@@ -21,8 +21,6 @@ namespace GPaste {
 
     [DBus (name = "org.gnome.GPaste")]
     public interface DBusClient : GLib.Object {
-        [DBus (name = "BackupHistory", inSignature = "s", outSignature = "")]
-        public abstract void backup_history(string name) throws GLib.IOError;
         [DBus (name = "SwitchHistory", inSignature = "s", outSignature = "")]
         public abstract void switch_history(string name) throws GLib.IOError;
         [DBus (name = "DeleteHistory", inSignature = "s", outSignature = "")]

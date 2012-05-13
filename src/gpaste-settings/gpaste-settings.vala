@@ -19,6 +19,10 @@
 
 namespace GPaste {
     public class Main : Gtk.Application {
+        public Client client {
+            get;
+            private set;
+        }
         public DBusClient gpaste;
 
         public Main () {

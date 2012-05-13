@@ -140,7 +140,7 @@ g_paste_client_add (GPasteClient *self,
                     const gchar  *text,
                     GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("Add", string ,text)
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("Add", string, text)
 }
 
 /**
@@ -227,6 +227,24 @@ g_paste_client_reexecute (GPasteClient *self,
                           GError      **error)
 {
     DBUS_CALL_NO_PARAM_NO_RETURN ("Reexecute")
+}
+
+/**
+ * g_paste_client_backup_history:
+ * @self: a #GPasteClient instance
+ * @name: the name of the backup
+ * @error: a #GError
+ *
+ * backup the current history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_backup_history (GPasteClient *self,
+                               const gchar  *name,
+                               GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("BackupHistory", string, name)
 }
 
 static void

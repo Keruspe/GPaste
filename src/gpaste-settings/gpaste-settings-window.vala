@@ -218,9 +218,9 @@ namespace GPaste {
                                                                 (value) => {
                                                                     var app = (Main) this.application;
                                                                     try {
-                                                                        app.gpaste.backup_history (value);
+                                                                        app.client.backup_history (value);
                                                                         this.refill_histories ();
-                                                                    } catch (GLib.IOError e) {
+                                                                    } catch (GLib.Error e) {
                                                                         stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                                                                     }
                                                                 });

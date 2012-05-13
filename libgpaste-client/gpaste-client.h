@@ -43,27 +43,30 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_client_get_type (void);
 
-gchar  *g_paste_client_get_element (GPasteClient *self,
-                                    guint32       index,
-                                    GError      **error);
-gchar **g_paste_client_get_history (GPasteClient *self,
-                                    GError      **error);
-void    g_paste_client_add         (GPasteClient *self,
-                                    const gchar  *text,
-                                    GError      **error);
-void    g_paste_client_select      (GPasteClient *self,
-                                    guint32       index,
-                                    GError      **error);
-void    g_paste_client_delete      (GPasteClient *self,
-                                    guint32       index,
-                                    GError      **error);
-void    g_paste_client_empty       (GPasteClient *self,
-                                    GError      **error);
-void    g_paste_client_track       (GPasteClient *self,
-                                    gboolean      state,
-                                    GError      **error);
-void    g_paste_client_reexecute   (GPasteClient *self,
-                                    GError      **error);
+gchar  *g_paste_client_get_element    (GPasteClient *self,
+                                       guint32       index,
+                                       GError      **error);
+gchar **g_paste_client_get_history    (GPasteClient *self,
+                                       GError      **error);
+void    g_paste_client_add            (GPasteClient *self,
+                                       const gchar  *text,
+                                       GError      **error);
+void    g_paste_client_select         (GPasteClient *self,
+                                       guint32       index,
+                                       GError      **error);
+void    g_paste_client_delete         (GPasteClient *self,
+                                       guint32       index,
+                                       GError      **error);
+void    g_paste_client_empty          (GPasteClient *self,
+                                       GError      **error);
+void    g_paste_client_track          (GPasteClient *self,
+                                       gboolean      state,
+                                       GError      **error);
+void    g_paste_client_reexecute      (GPasteClient *self,
+                                       GError      **error);
+void    g_paste_client_backup_history (GPasteClient *self,
+                                       const gchar  *name,
+                                       GError      **error);
 
 GPasteClient *g_paste_client_new (void);
 

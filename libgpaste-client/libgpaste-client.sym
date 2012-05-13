@@ -9,6 +9,7 @@ global:
     g_paste_client_empty;
     g_paste_client_track;
     g_paste_client_reexecute;
+    g_paste_client_backup_history;
     g_paste_client_new;
 local:
     *;
