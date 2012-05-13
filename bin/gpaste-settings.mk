@@ -24,7 +24,6 @@ nodist_bin_gpaste_settings_SOURCES = \
 	$(NULL)
 
 bin_gpaste_settings_SOURCES = \
-	src/gpaste-settings/gpaste-client.vala \
 	src/gpaste-settings/gpaste-settings.vala \
 	src/gpaste-settings/gpaste-settings-notebook.vala \
 	src/gpaste-settings/gpaste-settings-panel.vala \

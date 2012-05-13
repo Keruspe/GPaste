@@ -24,7 +24,6 @@ nodist_bin_gpaste_SOURCES = \
 	$(NULL)
 
 bin_gpaste_SOURCES = \
-	src/gpaste-client.vala \
 	src/gpaste.vala \
 	$(NULL)
 

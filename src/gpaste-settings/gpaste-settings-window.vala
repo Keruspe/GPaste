@@ -19,6 +19,7 @@
 
 namespace GPaste {
     public class Window : Gtk.Window {
+        private Client client;
         private Settings settings;
 
         private Gtk.CheckButton track_changes_button;
@@ -41,6 +42,7 @@ namespace GPaste {
         public Window (Gtk.Application application) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
 
+            this.client = new Client ();
             this.settings = new Settings ();
             this.settings.changed.connect ((key) => {
                 switch(key) {
@@ -216,9 +218,8 @@ namespace GPaste {
                                                                 /* translators: This is the name of a multi-history management action */
                                                                 _("Backup"),
                                                                 (value) => {
-                                                                    var app = (Main) this.application;
                                                                     try {
-                                                                        app.client.backup_history (value);
+                                                                        this.client.backup_history (value);
                                                                         this.refill_histories ();
                                                                     } catch (GLib.Error e) {
                                                                         stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
@@ -234,13 +235,12 @@ namespace GPaste {
             /* translators: This is the text displayed on the button used to perform a multi-history management action */
             this.targets = panel.add_multi_action_setting (actions, History.list (), _("Ok"), (action, target) => {
                                try {
-                                   var app = (Main) this.application;
                                    switch (action) {
                                    case "switch":
-                                       app.client.switch_history (target);
+                                       this.client.switch_history (target);
                                        break;
                                    case "delete":
-                                       app.client.delete_history (target);
+                                       this.client.delete_history (target);
                                        break;
                                    default:
                                        stdout.printf("%s\n", action);

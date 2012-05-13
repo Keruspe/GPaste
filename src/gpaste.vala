@@ -21,7 +21,6 @@ namespace GPaste {
 
     public class Main : GLib.Object {
         private Client client;
-        private DBusClient gpaste;
 
         public Main () {
             this.client = new Client ();
@@ -73,7 +72,6 @@ namespace GPaste {
             GLib.Intl.setlocale(LocaleCategory.ALL, "");
             var app = new Main();
             try {
-                app.gpaste = Bus.get_proxy_sync(BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 if (!Posix.isatty(stdin.fileno())) {
                     /* We are being piped ! */
                     var text = new StringBuilder();
