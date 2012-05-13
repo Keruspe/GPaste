@@ -173,7 +173,7 @@ namespace GPaste {
                             break;
                         case "sh":
                         case "switch-history":
-                            app.gpaste.switch_history(args[2]);
+                            app.client.switch_history(args[2]);
                             break;
                         case "dh":
                         case "delete-history":

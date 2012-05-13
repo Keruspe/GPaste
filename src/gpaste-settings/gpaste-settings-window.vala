@@ -237,7 +237,7 @@ namespace GPaste {
                                    var app = (Main) this.application;
                                    switch (action) {
                                    case "switch":
-                                       app.gpaste.switch_history (target);
+                                       app.client.switch_history (target);
                                        break;
                                    case "delete":
                                        app.gpaste.delete_history (target);
@@ -247,7 +247,7 @@ namespace GPaste {
                                        break;
                                    }
                                    this.refill_histories ();
-                               } catch (GLib.IOError e) {
+                               } catch (GLib.Error e) {
                                    stderr.printf(_("Couldn't connect to GPaste daemon.\n"));
                                }
                            });

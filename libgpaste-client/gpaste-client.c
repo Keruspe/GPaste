@@ -235,7 +235,7 @@ g_paste_client_reexecute (GPasteClient *self,
  * @name: the name of the backup
  * @error: a #GError
  *
- * backup the current history
+ * Backup the current history
  *
  * Returns:
  */
@@ -245,6 +245,24 @@ g_paste_client_backup_history (GPasteClient *self,
                                GError      **error)
 {
     DBUS_CALL_WITH_PARAM_NO_RETURN ("BackupHistory", string, name)
+}
+
+/**
+ * g_paste_client_switch_history:
+ * @self: a #GPasteClient instance
+ * @name: the name of the hisotry to switch to
+ * @error: a #GError
+ *
+ * Switch to another history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_switch_history (GPasteClient *self,
+                               const gchar  *name,
+                               GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("SwitchHistory", string, name)
 }
 
 static void
