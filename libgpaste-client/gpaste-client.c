@@ -214,6 +214,22 @@ g_paste_client_track (GPasteClient *self,
     DBUS_CALL_WITH_PARAM_NO_RETURN ("Track", boolean, state)
 }
 
+/**
+ * g_paste_client_reexecute:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * Reexecute the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_reexecute (GPasteClient *self,
+                          GError      **error)
+{
+    DBUS_CALL_NO_PARAM_NO_RETURN ("Reexecute")
+}
+
 static void
 g_paste_client_dispose (GObject *object)
 {

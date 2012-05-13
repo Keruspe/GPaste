@@ -133,7 +133,7 @@ namespace GPaste {
                         case "dr":
                         case "daemon-reexec":
                             try {
-                                app.gpaste.reexec();
+                                app.client.reexecute (); 
                             } catch (GLib.Error e) {
                                 if (e.code == 4) /* NoReply, but we do not expect one when doing this ! */
                                     stdout.printf(_("Successfully reexecuted the daemon\n"));

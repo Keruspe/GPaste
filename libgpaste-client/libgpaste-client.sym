@@ -8,6 +8,7 @@ global:
     g_paste_client_delete;
     g_paste_client_empty;
     g_paste_client_track;
+    g_paste_client_reexecute;
     g_paste_client_new;
 local:
     *;
