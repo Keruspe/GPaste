@@ -6,6 +6,7 @@ global:
     g_paste_client_add;
     g_paste_client_select;
     g_paste_client_delete;
+    g_paste_client_empty;
     g_paste_client_new;
 local:
     *;

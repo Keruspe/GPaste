@@ -30,7 +30,7 @@ struct _GPasteClientPrivate
     GDBusProxy *proxy;
 };
 
-#define DBUS_CALL(method, ans_type, variant_type, fail) \
+#define DBUS_CALL_NO_PARAM(method, ans_type, variant_type, fail) \
     DBUS_CALL_WITH_RETURN(method, \
         NULL, 0, \
         ans_type, variant_type, \
@@ -42,6 +42,12 @@ struct _GPasteClientPrivate
         ans_type, variant_type, \
         fail, \
         GVariant *parameter = g_variant_new_##param_type (param_name))
+#define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
+    DBUS_CALL_NO_RETURN(method, \
+        NULL, 0, \
+        ans_type, variant_type, \
+        fail, \
+        {})
 #define DBUS_CALL_WITH_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_NO_RETURN(method, \
         &parameter, 1, \
@@ -116,7 +122,7 @@ G_PASTE_VISIBLE gchar **
 g_paste_client_get_history (GPasteClient *self,
                             GError      **error)
 {
-    DBUS_CALL ("GetHistory", gchar**, strv, NULL)
+    DBUS_CALL_NO_PARAM ("GetHistory", gchar**, strv, NULL)
 }
 
 /**
@@ -172,6 +178,22 @@ g_paste_client_delete (GPasteClient *self,
                        GError      **error)
 {
     DBUS_CALL_WITH_PARAM_NO_RETURN ("Delete", uint32, index)
+}
+
+/**
+ * g_paste_client_empty:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * Empty the history from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_empty (GPasteClient *self,
+                      GError      **error)
+{
+    DBUS_CALL_NO_PARAM_NO_RETURN ("Empty")
 }
 
 static void

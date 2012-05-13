@@ -120,8 +120,8 @@ namespace GPaste {
             var empty = new Gtk.ImageMenuItem.with_label (_("Empty history"));
             empty.activate.connect (() => {
                 try {
-                    ((Main) this.application).gpasted.empty();
-                } catch (IOError e) {
+                    ((Main) this.application).client.empty();
+                } catch (Error e) {
                     stderr.printf (_("Couldn't empty history.\n"));
                 }
             });

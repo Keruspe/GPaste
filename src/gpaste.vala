@@ -107,7 +107,7 @@ namespace GPaste {
                             break;
                         case "e":
                         case "empty":
-                            app.gpaste.empty();
+                            app.client.empty();
                             break;
                         case "v":
                         case "version":
