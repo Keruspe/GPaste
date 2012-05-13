@@ -4,7 +4,6 @@
         remove useless targets from clipboard callbacks
     libgpaste-client:
         pkg-config
-        specify errors types when possible in g-i
     gpaste:
         rewrite in C
     gnome-shell:
@@ -13,3 +12,5 @@
 future:
     libgpaste:
         handle keyboard layout changes
+    libgpaste-client:
+        specify errors types when possible in g-i
