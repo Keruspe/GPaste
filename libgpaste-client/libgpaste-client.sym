@@ -11,6 +11,7 @@ global:
     g_paste_client_reexecute;
     g_paste_client_backup_history;
     g_paste_client_switch_history;
+    g_paste_client_delete_history;
     g_paste_client_new;
 local:
     *;

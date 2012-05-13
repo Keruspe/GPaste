@@ -240,7 +240,7 @@ namespace GPaste {
                                        app.client.switch_history (target);
                                        break;
                                    case "delete":
-                                       app.gpaste.delete_history (target);
+                                       app.client.delete_history (target);
                                        break;
                                    default:
                                        stdout.printf("%s\n", action);

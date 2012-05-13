@@ -70,6 +70,9 @@ void    g_paste_client_backup_history (GPasteClient *self,
 void    g_paste_client_switch_history (GPasteClient *self,
                                        const gchar  *name,
                                        GError      **error);
+void    g_paste_client_delete_history (GPasteClient *self,
+                                       const gchar  *name,
+                                       GError      **error);
 
 GPasteClient *g_paste_client_new (void);
 

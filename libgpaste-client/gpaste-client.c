@@ -250,7 +250,7 @@ g_paste_client_backup_history (GPasteClient *self,
 /**
  * g_paste_client_switch_history:
  * @self: a #GPasteClient instance
- * @name: the name of the hisotry to switch to
+ * @name: the name of the history to switch to
  * @error: a #GError
  *
  * Switch to another history
@@ -263,6 +263,24 @@ g_paste_client_switch_history (GPasteClient *self,
                                GError      **error)
 {
     DBUS_CALL_WITH_PARAM_NO_RETURN ("SwitchHistory", string, name)
+}
+
+/**
+ * g_paste_client_delete_history:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history to delete
+ * @error: a #GError
+ *
+ * Delete an history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_history (GPasteClient *self,
+                               const gchar  *name,
+                               GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("DeleteHistory", string, name)
 }
 
 static void

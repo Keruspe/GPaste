@@ -177,7 +177,7 @@ namespace GPaste {
                             break;
                         case "dh":
                         case "delete-history":
-                            app.gpaste.delete_history(args[2]);
+                            app.client.delete_history(args[2]);
                             break;
                         case "a":
                         case "add":
