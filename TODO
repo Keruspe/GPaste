@@ -1,9 +1,9 @@
 3.0:
     libgpaste:
         simplify gpaste-settings ? (macros ?)
-        remove useless targets from clipboard callbacks
     libgpaste-client:
         pkg-config
+        signals
     gpaste:
         rewrite in C
     gnome-shell:
