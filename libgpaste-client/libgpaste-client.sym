@@ -12,6 +12,7 @@ global:
     g_paste_client_backup_history;
     g_paste_client_switch_history;
     g_paste_client_delete_history;
+    g_paste_client_list_histories;
     g_paste_client_new;
 local:
     *;

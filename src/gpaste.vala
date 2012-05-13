@@ -155,7 +155,7 @@ namespace GPaste {
                             break;
                         case "lh":
                         case "list-history":
-                            var history_names = app.gpaste.list_histories();
+                            var history_names = app.client.list_histories();
                             for (int i = 0 ; i < history_names.length ; ++i) {
                                 stdout.printf("%s\n", history_names[i]);
                             }

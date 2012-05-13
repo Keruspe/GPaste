@@ -283,6 +283,22 @@ g_paste_client_delete_history (GPasteClient *self,
     DBUS_CALL_WITH_PARAM_NO_RETURN ("DeleteHistory", string, name)
 }
 
+/**
+ * g_paste_client_list_histories:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * List all available hisotries
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE gchar **
+g_paste_client_list_histories (GPasteClient *self,
+                               GError      **error)
+{
+    DBUS_CALL_NO_PARAM ("ListHistories", gchar**, strv, NULL)
+}
+
 static void
 g_paste_client_dispose (GObject *object)
 {
