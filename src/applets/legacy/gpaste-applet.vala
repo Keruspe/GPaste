@@ -79,7 +79,7 @@ namespace GPaste {
                                 app.client.select (current);
                                 break;
                             case 3:
-                                app.gpasted.delete (current);
+                                app.client.delete (current);
                                 break;
                             }
                         } catch (Error e) {

@@ -193,7 +193,7 @@ namespace GPaste {
                             break;
                         case "d":
                         case "delete":
-                            app.gpaste.delete(int.parse(args[2]));
+                            app.client.delete(int.parse(args[2]));
                             break;
                         case "-f":
                         case "--file":

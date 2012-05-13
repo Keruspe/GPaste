@@ -54,6 +54,9 @@ gchar **g_paste_client_add         (GPasteClient *self,
 void    g_paste_client_select      (GPasteClient *self,
                                     guint32       index,
                                     GError      **error);
+void    g_paste_client_delete      (GPasteClient *self,
+                                    guint32       index,
+                                    GError      **error);
 
 GPasteClient *g_paste_client_new (void);
 

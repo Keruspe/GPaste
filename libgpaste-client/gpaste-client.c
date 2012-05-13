@@ -156,6 +156,24 @@ g_paste_client_select (GPasteClient *self,
     DBUS_CALL_WITH_PARAM_NO_RETURN ("Select", uint32, index)
 }
 
+/**
+ * g_paste_client_delete:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to delete
+ * @error: a #GError
+ *
+ * Delete an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete (GPasteClient *self,
+                       guint32       index,
+                       GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("Delete", uint32, index)
+}
+
 static void
 g_paste_client_dispose (GObject *object)
 {
