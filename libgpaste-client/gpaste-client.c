@@ -131,17 +131,16 @@ g_paste_client_get_history (GPasteClient *self,
  * @text: the text to add
  * @error: a #GError
  *
- * Get the history from the #GPasteDaemon
+ * Add an item to the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated array of string
+ * Returns:
  */
-G_PASTE_VISIBLE gchar **
+G_PASTE_VISIBLE void
 g_paste_client_add (GPasteClient *self,
                     const gchar  *text,
                     GError      **error)
 {
-    DBUS_CALL_WITH_PARAM ("Add", gchar**, strv, NULL,
-                          string ,text)
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("Add", string ,text)
 }
 
 /**
