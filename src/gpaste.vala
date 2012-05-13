@@ -82,7 +82,7 @@ namespace GPaste {
                         text.append((!) line);
                     while ((line = stdin.read_line()) != null)
                         text.append_c('\n').append((!) line);
-                    app.gpaste.add(text.str);
+                    app.client.add(text.str);
                 } else {
                     switch (args.length) {
                     case 1:
@@ -181,7 +181,7 @@ namespace GPaste {
                             break;
                         case "a":
                         case "add":
-                            app.gpaste.add(args[2]);
+                            app.client.add(args[2]);
                             break;
                         case "g":
                         case "get":
@@ -210,7 +210,7 @@ namespace GPaste {
                                     text.append((!) line);
                                 while ((line = dis.read_line(null)) != null)
                                     text.append_c('\n').append((!) line);
-                                app.gpaste.add(text.str);
+                                app.client.add(text.str);
                             } catch(GLib.Error e) {
                                 stderr.printf(_("Could not read file: %s\n"), args[2]);
                             }

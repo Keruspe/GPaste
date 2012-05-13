@@ -30,11 +30,14 @@ struct _GPasteClientPrivate
     GDBusProxy *proxy;
 };
 
-#define DBUS_CALL(method, param, n_param, ans_type, variant_type, fail) DBUS_CALL_WITH_CODE(method, param, n_param, ans_type, variant_type, fail, {})
-#define DBUS_CALL_WITH_CODE(method, param, n_param, ans_type, variant_type, fail, code) \
+#define DBUS_CALL(method, ans_type, variant_type, fail) \
+        DBUS_CALL_FULL(method, NULL, 0, ans_type, variant_type, fail, {})
+#define DBUS_CALL_WITH_PARAM(method, ans_type, variant_type, fail, param_type, param_name) \
+        DBUS_CALL_FULL(method, &parameter, 1, ans_type, variant_type, fail, GVariant *parameter = g_variant_new_##param_type (param_name);)
+#define DBUS_CALL_FULL(method, param, n_param, ans_type, variant_type, fail, decl) \
     g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL); \
     GDBusProxy *proxy = self->priv->proxy; \
-    code \
+    decl \
     GVariant *result = g_dbus_proxy_call_sync (proxy, \
                                                method, \
                                                g_variant_new_tuple (param, n_param), \
@@ -47,8 +50,8 @@ struct _GPasteClientPrivate
     GVariantIter result_iter; \
     g_variant_iter_init (&result_iter, result); \
     GVariant *variant = g_variant_iter_next_value (&result_iter); \
-    ans_type answer = g_variant_dup_##type (variant, \
-                                            NULL); /* length */ \
+    ans_type answer = g_variant_dup_##variant_type (variant, \
+                                                    NULL); /* length */ \
     g_variant_unref (variant); \
     g_variant_unref (result); \
     return answer;
@@ -68,10 +71,8 @@ g_paste_client_get_element (GPasteClient *self,
                             guint32       index,
                             GError      **error)
 {
-    DBUS_CALL_WITH_CODE ("GetElement",
-                         &parameter, 1,
-                         gchar*, string, NULL,
-                         GVariant *parameter = g_variant_new_uint32 (index);)
+    DBUS_CALL_WITH_PARAM ("GetElement", gchar*, string, NULL,
+                          uint32, index)
 }
 
 /**
@@ -87,9 +88,26 @@ G_PASTE_VISIBLE gchar **
 g_paste_client_get_history (GPasteClient *self,
                             GError      **error)
 {
-    DBUS_CALL ("GetHistory",
-               NULL, 0,
-               gchar**, strv, NULL)
+    DBUS_CALL ("GetHistory", gchar**, strv, NULL)
+}
+
+/**
+ * g_paste_client_add:
+ * @self: a #GPasteClient instance
+ * @text: the text to add
+ * @error: a #GError
+ *
+ * Get the history from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE gchar **
+g_paste_client_add (GPasteClient *self,
+                    const gchar  *text,
+                    GError      **error)
+{
+    DBUS_CALL_WITH_PARAM ("Add", gchar**, strv, NULL,
+                          string ,text)
 }
 
 static void
