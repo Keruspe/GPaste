@@ -29,8 +29,6 @@ namespace GPaste {
         public abstract void delete_history(string name) throws GLib.IOError;
         [DBus (name = "ListHistories", inSignature = "", outSignature = "as")]
         public abstract string[] list_histories() throws GLib.IOError;
-        [DBus (name = "Track", inSignature = "b", outSignature = "")]
-        public abstract void track(bool tracking_state) throws GLib.IOError;
         [DBus (name = "Reexecute", inSignature = "", outSignature = "")]
         public abstract void reexec() throws GLib.IOError;
         [DBus (name = "Changed", inSignature = "")]

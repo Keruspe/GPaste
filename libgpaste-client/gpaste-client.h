@@ -59,6 +59,9 @@ void    g_paste_client_delete      (GPasteClient *self,
                                     GError      **error);
 void    g_paste_client_empty       (GPasteClient *self,
                                     GError      **error);
+void    g_paste_client_track       (GPasteClient *self,
+                                    gboolean      state,
+                                    GError      **error);
 
 GPasteClient *g_paste_client_new (void);
 

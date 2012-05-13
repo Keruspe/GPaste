@@ -170,11 +170,11 @@ namespace GPaste {
         private void init () {
             try {
                 this.gpasted = Bus.get_proxy_sync (BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
-                this.gpasted.track (true); /* In case we exited the applet and we're launching it back */
+                this.client.track (true); /* In case we exited the applet and we're launching it back */
                 this.gpasted.show_history.connect (() => {
                     this.window.show_history ();
                 });
-            } catch (IOError e) {
+            } catch (Error e) {
                 stderr.printf (_("Couldn't connect to GPaste daemon.\n"));
                 Posix.exit(1);
             }

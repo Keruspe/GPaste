@@ -196,6 +196,24 @@ g_paste_client_empty (GPasteClient *self,
     DBUS_CALL_NO_PARAM_NO_RETURN ("Empty")
 }
 
+/**
+ * g_paste_client_track:
+ * @self: a #GPasteClient instance
+ * @state: the new tracking state of the #GPasteDaemon
+ * @error: a #GError
+ *
+ * Change the tracking state of the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_track (GPasteClient *self,
+                      gboolean      state,
+                      GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("Track", boolean, state)
+}
+
 static void
 g_paste_client_dispose (GObject *object)
 {

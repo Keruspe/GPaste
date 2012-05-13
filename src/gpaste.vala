@@ -98,12 +98,12 @@ namespace GPaste {
                         case "start":
                         case "d":
                         case "daemon":
-                            app.gpaste.track(true);
+                            app.client.track(true);
                             break;
                         case "stop":
                         case "q":
                         case "quit":
-                            app.gpaste.track(false);
+                            app.client.track(false);
                             break;
                         case "e":
                         case "empty":
