@@ -189,7 +189,7 @@ namespace GPaste {
                             break;
                         case "s":
                         case "set":
-                            app.gpaste.select(int.parse(args[2]));
+                            app.client.select(int.parse(args[2]));
                             break;
                         case "d":
                         case "delete":

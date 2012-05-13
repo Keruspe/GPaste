@@ -31,13 +31,46 @@ struct _GPasteClientPrivate
 };
 
 #define DBUS_CALL(method, ans_type, variant_type, fail) \
-        DBUS_CALL_FULL(method, NULL, 0, ans_type, variant_type, fail, {})
+    DBUS_CALL_WITH_RETURN(method, \
+        NULL, 0, \
+        ans_type, variant_type, \
+        fail, \
+        {})
 #define DBUS_CALL_WITH_PARAM(method, ans_type, variant_type, fail, param_type, param_name) \
-        DBUS_CALL_FULL(method, &parameter, 1, ans_type, variant_type, fail, GVariant *parameter = g_variant_new_##param_type (param_name);)
-#define DBUS_CALL_FULL(method, param, n_param, ans_type, variant_type, fail, decl) \
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL); \
+    DBUS_CALL_WITH_RETURN(method, \
+        &parameter, 1, \
+        ans_type, variant_type, \
+        fail, \
+        GVariant *parameter = g_variant_new_##param_type (param_name))
+#define DBUS_CALL_WITH_PARAM_NO_RETURN(method, param_type, param_name) \
+    DBUS_CALL_NO_RETURN(method, \
+        &parameter, 1, \
+        ans_type, variant_type, \
+        fail, \
+        GVariant *parameter = g_variant_new_##param_type (param_name))
+#define DBUS_CALL_WITH_RETURN(method, param, n_param, ans_type, variant_type, fail, decl) \
+    DBUS_CALL_FULL(method, \
+        param, n_param, \
+        GVariantIter result_iter; \
+        g_variant_iter_init (&result_iter, result); \
+        GVariant *variant = g_variant_iter_next_value (&result_iter); \
+        ans_type answer = g_variant_dup_##variant_type (variant, \
+                                                        NULL); /* length */ \
+        g_variant_unref (variant), \
+        fail, decl, \
+        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL), \
+        return answer)
+#define DBUS_CALL_NO_RETURN(method, param, n_param, ans_type, variant_type, fail, decl) \
+    DBUS_CALL_FULL(method, \
+        param, n_param, \
+        {}, \
+        ;, decl, \
+        g_return_if_fail (G_PASTE_IS_CLIENT (self)), \
+        {})
+#define DBUS_CALL_FULL(method, param, n_param, extract_answer, fail, decl, guard, return_stmt) \
+    guard; \
     GDBusProxy *proxy = self->priv->proxy; \
-    decl \
+    decl; \
     GVariant *result = g_dbus_proxy_call_sync (proxy, \
                                                method, \
                                                g_variant_new_tuple (param, n_param), \
@@ -47,14 +80,9 @@ struct _GPasteClientPrivate
                                                error); \
     if (!result) \
         return fail; \
-    GVariantIter result_iter; \
-    g_variant_iter_init (&result_iter, result); \
-    GVariant *variant = g_variant_iter_next_value (&result_iter); \
-    ans_type answer = g_variant_dup_##variant_type (variant, \
-                                                    NULL); /* length */ \
-    g_variant_unref (variant); \
+    extract_answer; \
     g_variant_unref (result); \
-    return answer;
+    return_stmt;
 
 /**
  * g_paste_client_get_element:
@@ -108,6 +136,24 @@ g_paste_client_add (GPasteClient *self,
 {
     DBUS_CALL_WITH_PARAM ("Add", gchar**, strv, NULL,
                           string ,text)
+}
+
+/**
+ * g_paste_client_select:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to select
+ * @error: a #GError
+ *
+ * Select an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_select (GPasteClient *self,
+                       guint32       index,
+                       GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN ("Select", uint32, index)
 }
 
 static void

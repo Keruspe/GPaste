@@ -76,19 +76,19 @@ namespace GPaste {
                         try {
                             switch (Gtk.get_current_event ().button.button) {
                             case 1:
-                                app.gpasted.select (current);
+                                app.client.select (current);
                                 break;
                             case 3:
                                 app.gpasted.delete (current);
                                 break;
                             }
-                        } catch (IOError e) {
+                        } catch (Error e) {
                             stderr.printf (_("Couldn't update history.\n"));
                         }
                     });
                     this.history.add (item);
                 }
-            } catch (Error e) {}
+            } catch (GLib.Error e) {}
             if (history_is_empty) {
                 var item = new Gtk.ImageMenuItem.with_label (_("(Empty)"));
                 var label = (Gtk.Label) item.get_child ();
