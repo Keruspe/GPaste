@@ -5,7 +5,6 @@
     libgpaste-client:
         pkg-config
         specify errors types when possible in g-i
-        refactor common dbus stuff
     gpaste:
         rewrite in C
     gnome-shell:

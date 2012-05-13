@@ -30,6 +30,29 @@ struct _GPasteClientPrivate
     GDBusProxy *proxy;
 };
 
+#define DBUS_CALL(method, param, n_param, ans_type, variant_type, fail) DBUS_CALL_WITH_CODE(method, param, n_param, ans_type, variant_type, fail, {})
+#define DBUS_CALL_WITH_CODE(method, param, n_param, ans_type, variant_type, fail, code) \
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL); \
+    GDBusProxy *proxy = self->priv->proxy; \
+    code \
+    GVariant *result = g_dbus_proxy_call_sync (proxy, \
+                                               method, \
+                                               g_variant_new_tuple (param, n_param), \
+                                               G_DBUS_CALL_FLAGS_NONE, \
+                                               -1, \
+                                               NULL, /* cancellable */ \
+                                               error); \
+    if (!result) \
+        return fail; \
+    GVariantIter result_iter; \
+    g_variant_iter_init (&result_iter, result); \
+    GVariant *variant = g_variant_iter_next_value (&result_iter); \
+    ans_type answer = g_variant_dup_##type (variant, \
+                                            NULL); /* length */ \
+    g_variant_unref (variant); \
+    g_variant_unref (result); \
+    return answer;
+
 /**
  * g_paste_client_get_element:
  * @self: a #GPasteClient instance
@@ -45,34 +68,10 @@ g_paste_client_get_element (GPasteClient *self,
                             guint32       index,
                             GError      **error)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-
-    GDBusProxy *proxy = self->priv->proxy;
-    GVariant *parameter = g_variant_new_uint32 (index);
-
-    GVariant *result = g_dbus_proxy_call_sync (proxy,
-                                               "GetElement",
-                                               g_variant_new_tuple (&parameter, 1),
-                                               G_DBUS_CALL_FLAGS_NONE,
-                                               -1,
-                                               NULL, /* cancellable */
-                                               error);
-
-    if (!result)
-        return NULL;
-
-    GVariantIter result_iter;
-
-    g_variant_iter_init (&result_iter, result);
-
-    GVariant *variant = g_variant_iter_next_value (&result_iter);
-    gchar *answer = g_variant_dup_string (variant,
-                                          NULL); /* length */
-
-    g_variant_unref (variant);
-    g_variant_unref (result);
-
-    return answer;
+    DBUS_CALL_WITH_CODE ("GetElement",
+                         &parameter, 1,
+                         gchar*, string, NULL,
+                         GVariant *parameter = g_variant_new_uint32 (index);)
 }
 
 /**
@@ -88,34 +87,11 @@ G_PASTE_VISIBLE gchar **
 g_paste_client_get_history (GPasteClient *self,
                             GError      **error)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
-
-    GDBusProxy *proxy = self->priv->proxy;
-
-    GVariant *result = g_dbus_proxy_call_sync (proxy,
-                                               "GetHistory",
-                                               g_variant_new_tuple (NULL, 0),
-                                               G_DBUS_CALL_FLAGS_NONE,
-                                               -1,
-                                               NULL, /* cancellable */
-                                               error);
-
-    if (!result)
-        return NULL;
-
-    GVariantIter result_iter;
-
-    g_variant_iter_init (&result_iter, result);
-
-    GVariant *variant = g_variant_iter_next_value (&result_iter);
-    gchar **answer = g_variant_dup_strv (variant,
-                                         NULL); /* length */
-
-    g_variant_unref (variant);
-    g_variant_unref (result);
-
-    return answer;
+    DBUS_CALL ("GetHistory",
+               NULL, 0,
+               gchar**, strv, NULL)
 }
+
 static void
 g_paste_client_dispose (GObject *object)
 {
