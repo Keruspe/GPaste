@@ -1,6 +1,7 @@
 3.0:
     libgpaste:
         simplify gpaste-settings ? (macros ?)
+        split off libgpaste-settings
     libgpaste-client:
         pkg-config
         signals
