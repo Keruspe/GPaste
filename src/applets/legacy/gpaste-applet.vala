@@ -66,7 +66,7 @@ namespace GPaste {
                     var item = new Gtk.ImageMenuItem.with_label (elem);
                     var label = (Gtk.Label) item.get_child ();
                     if (element_size != 0) {
-                        label.set_label (label.get_text ().delimit ("\n", ' '));
+                        label.set_label (label.get_text ().replace ("\n", " "));
                         label.max_width_chars = (int) element_size;
                         label.ellipsize = Pango.EllipsizeMode.END;
                     }
