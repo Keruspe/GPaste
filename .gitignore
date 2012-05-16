@@ -13,6 +13,5 @@
 /src/applets/gnome-shell/metadata.json
 /src/applets/legacy/*.c
 /src/gpaste-settings/*.c
-/src/*.c
 /vapi/*.vapi
 !/vapi/config.vapi

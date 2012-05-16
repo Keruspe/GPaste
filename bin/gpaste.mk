@@ -19,35 +19,21 @@ bin_PROGRAMS += \
 	bin/gpaste \
 	$(NULL)
 
-nodist_bin_gpaste_SOURCES = \
-	$(libgpaste_vapi_file) \
-	$(NULL)
-
 bin_gpaste_SOURCES = \
-	src/gpaste.vala \
+	src/gpaste.c \
 	$(NULL)
 
-bin_gpaste_vala.stamp: $(libgpaste_vapi_file)
-
-bin_gpaste_VALAFLAGS = \
-	$(libgpaste_vapi_file) \
-	$(AM_VALAFLAGS) \
+bin_gpaste_CFLAGS = \
+	-I $(srcdir)/libgpaste-client/ \
+	$(AM_CFLAGS) \
 	$(NULL)
 
 if ENABLE_APPLET
-bin_gpaste_VALAFLAGS += \
-	--define=ENABLE_APPLET \
+bin_gpaste_CFLAGS += \
+	-DENABLE_APPLET \
 	$(NULL)
 endif
 
-bin_gpaste_CFLAGS = \
-	$(VALA_CFLAGS) \
-	$(NULL)
-
 bin_gpaste_LDADD = \
 	$(libgpaste_client_la_file) \
-	$(NULL)
-
-CLEANFILES += \
-	$(gpaste_SOURCES:.vala=.c) \
 	$(NULL)
