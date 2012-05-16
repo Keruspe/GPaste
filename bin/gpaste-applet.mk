@@ -25,7 +25,6 @@ nodist_bin_gpaste_applet_SOURCES = \
 	$(NULL)
 
 bin_gpaste_applet_SOURCES = \
-	src/applets/legacy/gpaste-client.vala \
 	src/applets/legacy/gpaste-applet.vala \
 	$(NULL)
 

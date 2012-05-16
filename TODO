@@ -4,7 +4,6 @@
         split off libgpaste-settings
     libgpaste-client:
         pkg-config
-        signals
     gpaste:
         rewrite in C
     gnome-shell:

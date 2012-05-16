@@ -147,11 +147,6 @@ namespace GPaste {
             private set;
         }
 
-        public DBusClient gpasted {
-            get;
-            private set;
-        }
-
         public Main() {
             GLib.Object (application_id: "org.gnome.GPaste.Applet");
             this.settings = new GPaste.Settings ();
@@ -169,9 +164,8 @@ namespace GPaste {
 
         private void init () {
             try {
-                this.gpasted = Bus.get_proxy_sync (BusType.SESSION, "org.gnome.GPaste", "/org/gnome/GPaste");
                 this.client.track (true); /* In case we exited the applet and we're launching it back */
-                this.gpasted.show_history.connect (() => {
+                this.client.show_history.connect (() => {
                     this.window.show_history ();
                 });
             } catch (Error e) {

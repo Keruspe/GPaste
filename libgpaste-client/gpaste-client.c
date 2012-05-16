@@ -33,6 +33,7 @@ struct _GPasteClientPrivate
 enum
 {
     CHANGED,
+    SHOW_HISTORY,
 
     LAST_SIGNAL
 };
@@ -321,6 +322,12 @@ g_paste_client_handle_signal (GPasteClient *self,
                        signals[CHANGED],
                        0); /* detail */
     }
+    else if (g_strcmp0 (signal_name, "ShowHistory") == 0)
+    {
+        g_signal_emit (self,
+                       signals[SHOW_HISTORY],
+                       0); /* detail */
+    }
 }
 
 static void
@@ -356,6 +363,15 @@ g_paste_client_class_init (GPasteClientClass *klass)
                                      g_cclosure_marshal_VOID__VOID,
                                      G_TYPE_NONE,
                                      0); /* number of params */
+    signals[SHOW_HISTORY] = g_signal_new ("show-history",
+                                          G_PASTE_TYPE_CLIENT,
+                                          G_SIGNAL_RUN_LAST,
+                                          0, /* class offset */
+                                          NULL, /* accumulator */
+                                          NULL, /* accumulator data */
+                                          g_cclosure_marshal_VOID__VOID,
+                                          G_TYPE_NONE,
+                                          0); /* number of params */
 }
 
 static void
