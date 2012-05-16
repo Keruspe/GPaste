@@ -536,11 +536,22 @@ g_paste_history_delete (GPasteHistory *self)
     g_free (history_file_name);
 }
 
+static gboolean
+g_paste_history_self_changed (GPasteHistory *self,
+                              gpointer       user_data G_GNUC_UNUSED)
+{
+    g_paste_history_save (self);
+
+    return TRUE;
+}
+
 static void
 g_paste_history_dispose (GObject *object)
 {
-    GPasteHistoryPrivate *priv = G_PASTE_HISTORY (object)->priv;
+    GPasteHistory *self = G_PASTE_HISTORY (object);
+    GPasteHistoryPrivate *priv = self->priv;
 
+    g_signal_handlers_disconnect_by_func (self, (gpointer) g_paste_history_self_changed, NULL);
     g_object_unref (priv->settings);
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->dispose (object);
@@ -586,15 +597,6 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                       G_TYPE_NONE,
                                       1, /* number of params */
                                       G_PASTE_TYPE_ITEM);
-}
-
-static gboolean
-g_paste_history_self_changed (GPasteHistory *self,
-                              gpointer       user_data G_GNUC_UNUSED)
-{
-    g_paste_history_save (self);
-
-    return TRUE;
 }
 
 static void

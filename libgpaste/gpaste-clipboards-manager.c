@@ -193,11 +193,24 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
         g_paste_clipboard_select_item (clipboard->data, item);
 }
 
+static gboolean
+on_item_selected (GPasteClipboardsManager *self,
+                  GPasteItem              *item,
+                  gpointer                 user_data G_GNUC_UNUSED)
+{
+    g_paste_clipboards_manager_select (self, item);
+
+    return TRUE;
+}
+
 static void
 g_paste_clipboards_manager_dispose (GObject *object)
 {
-    GPasteClipboardsManagerPrivate *priv = G_PASTE_CLIPBOARDS_MANAGER (object)->priv;
+    GPasteClipboardsManager *self = G_PASTE_CLIPBOARDS_MANAGER (object);
+    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteSettings *settings = priv->settings;
 
+    g_signal_handlers_disconnect_by_func (settings, (gpointer) on_item_selected, self);
     g_object_unref (priv->settings);
     g_object_unref (priv->history);
 
@@ -232,16 +245,6 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
     GPasteClipboardsManagerPrivate *priv = self->priv = G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE (self);
 
     priv->clipboards = NULL;
-}
-
-static gboolean
-on_item_selected (GPasteClipboardsManager *self,
-                  GPasteItem              *item,
-                  gpointer                 user_data G_GNUC_UNUSED)
-{
-    g_paste_clipboards_manager_select (self, item);
-
-    return TRUE;
 }
 
 /**

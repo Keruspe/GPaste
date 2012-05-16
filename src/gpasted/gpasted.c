@@ -239,7 +239,6 @@ main (int argc, char *argv[])
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
-    g_object_unref (settings);
     g_object_unref (history);
     g_object_unref (clipboards_manager);
     g_object_unref (xcb_wrapper);
@@ -266,6 +265,9 @@ main (int argc, char *argv[])
 
     g_main_loop_run (main_loop);
 
+    g_signal_handlers_disconnect_by_func (settings, (gpointer) rebind, keybindings);
+    g_signal_handlers_disconnect_by_func (g_paste_daemon, (gpointer) reexec, NULL);
+    g_object_unref (settings);
     g_object_unref (g_paste_daemon);
     g_bus_unown_name (owner_id);
     g_main_loop_unref (main_loop);

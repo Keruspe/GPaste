@@ -791,66 +791,6 @@ g_paste_settings_set_paste_and_pop (GPasteSettings *self,
 }
 
 static void
-g_paste_settings_dispose (GObject *object)
-{
-    g_object_unref (G_PASTE_SETTINGS (object)->priv->settings);
-
-    G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
-}
-
-static void
-g_paste_settings_finalize (GObject *object)
-{
-    GPasteSettingsPrivate *priv = G_PASTE_SETTINGS (object)->priv;
-
-    g_free (priv->history_name);
-    g_free (priv->show_history);
-    g_free (priv->paste_and_pop);
-
-    G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
-}
-
-static void
-g_paste_settings_class_init (GPasteSettingsClass *klass)
-{
-    g_type_class_add_private (klass, sizeof (GPasteSettingsPrivate));
-
-    G_OBJECT_CLASS (klass)->dispose = g_paste_settings_dispose;
-    G_OBJECT_CLASS (klass)->finalize = g_paste_settings_finalize;
-
-    signals[CHANGED] = g_signal_new ("changed",
-                                     G_PASTE_TYPE_SETTINGS,
-                                     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
-                                     0, /* class offset */
-                                     NULL, /* accumulator */
-                                     NULL, /* accumulator data */
-                                     g_cclosure_marshal_VOID__STRING,
-                                     G_TYPE_NONE,
-                                     1, /* number of params */
-                                     G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE);
-    signals[REBIND] = g_signal_new ("rebind",
-                                    G_PASTE_TYPE_SETTINGS,
-                                    G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
-                                    0, /* class offset */
-                                    NULL, /* accumulator */
-                                    NULL, /* accumulator data */
-                                    g_cclosure_marshal_VOID__STRING,
-                                    G_TYPE_NONE,
-                                    1, /* number of params */
-                                    G_TYPE_STRING);
-    signals[TRACK] = g_signal_new ("track",
-                                   G_PASTE_TYPE_SETTINGS,
-                                   G_SIGNAL_RUN_LAST,
-                                   0, /* class offset */
-                                   NULL, /* accumulator */
-                                   NULL, /* accumulator data */
-                                   g_cclosure_marshal_VOID__BOOLEAN,
-                                   G_TYPE_NONE,
-                                   1, /* number of params */
-                                   G_TYPE_BOOLEAN);
-}
-
-static void
 g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    const gchar *key,
                                    gpointer     user_data)
@@ -912,6 +852,70 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                    signals[CHANGED],
                    g_quark_from_string (key),
                    key);
+}
+
+static void
+g_paste_settings_dispose (GObject *object)
+{
+    GPasteSettings *self = G_PASTE_SETTINGS (object);
+    GSettings *settings = self->priv->settings;
+
+    g_signal_handlers_disconnect_by_func (settings, (gpointer) g_paste_settings_settings_changed, self);
+    g_object_unref (settings);
+
+    G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
+}
+
+static void
+g_paste_settings_finalize (GObject *object)
+{
+    GPasteSettingsPrivate *priv = G_PASTE_SETTINGS (object)->priv;
+
+    g_free (priv->history_name);
+    g_free (priv->show_history);
+    g_free (priv->paste_and_pop);
+
+    G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
+}
+
+static void
+g_paste_settings_class_init (GPasteSettingsClass *klass)
+{
+    g_type_class_add_private (klass, sizeof (GPasteSettingsPrivate));
+
+    G_OBJECT_CLASS (klass)->dispose = g_paste_settings_dispose;
+    G_OBJECT_CLASS (klass)->finalize = g_paste_settings_finalize;
+
+    signals[CHANGED] = g_signal_new ("changed",
+                                     G_PASTE_TYPE_SETTINGS,
+                                     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
+                                     0, /* class offset */
+                                     NULL, /* accumulator */
+                                     NULL, /* accumulator data */
+                                     g_cclosure_marshal_VOID__STRING,
+                                     G_TYPE_NONE,
+                                     1, /* number of params */
+                                     G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE);
+    signals[REBIND] = g_signal_new ("rebind",
+                                    G_PASTE_TYPE_SETTINGS,
+                                    G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
+                                    0, /* class offset */
+                                    NULL, /* accumulator */
+                                    NULL, /* accumulator data */
+                                    g_cclosure_marshal_VOID__STRING,
+                                    G_TYPE_NONE,
+                                    1, /* number of params */
+                                    G_TYPE_STRING);
+    signals[TRACK] = g_signal_new ("track",
+                                   G_PASTE_TYPE_SETTINGS,
+                                   G_SIGNAL_RUN_LAST,
+                                   0, /* class offset */
+                                   NULL, /* accumulator */
+                                   NULL, /* accumulator data */
+                                   g_cclosure_marshal_VOID__BOOLEAN,
+                                   G_TYPE_NONE,
+                                   1, /* number of params */
+                                   G_TYPE_BOOLEAN);
 }
 
 static void

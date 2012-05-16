@@ -333,7 +333,11 @@ g_paste_client_handle_signal (GPasteClient *self,
 static void
 g_paste_client_dispose (GObject *object)
 {
-    g_object_unref (G_PASTE_CLIENT (object)->priv->proxy);
+    GPasteClient *self = G_PASTE_CLIENT (object);
+    GDBusProxy *proxy = self->priv->proxy;
+
+    g_signal_handlers_disconnect_by_func (proxy, (gpointer) g_paste_client_handle_signal, self);
+    g_object_unref (proxy);
 
     G_OBJECT_CLASS (g_paste_client_parent_class)->dispose (object);
 }
