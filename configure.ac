@@ -160,6 +160,7 @@ AC_CONFIG_FILES([
     Makefile
     po/Makefile.in
     libgpaste/gpaste.pc
+    libgpaste-client/gpaste-client.pc
 ])
 AC_OUTPUT
 AC_MSG_RESULT([

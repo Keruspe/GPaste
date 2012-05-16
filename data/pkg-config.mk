@@ -18,4 +18,5 @@
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = \
 	libgpaste/gpaste.pc \
+	libgpaste-client/gpaste-client.pc \
 	$(NULL)
