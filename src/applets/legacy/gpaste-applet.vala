@@ -32,7 +32,7 @@ namespace GPaste {
             this.tray_icon.set_tooltip_text ("GPaste");
             this.tray_icon.set_visible (true);
             this.fill_history ();
-            app.gpasted.changed.connect (() => {
+            app.client.changed.connect (() => {
                 this.needs_repaint = true;
             });
             this.fill_options ();

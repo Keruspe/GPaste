@@ -30,6 +30,15 @@ struct _GPasteClientPrivate
     GDBusProxy *proxy;
 };
 
+enum
+{
+    CHANGED,
+
+    LAST_SIGNAL
+};
+
+static guint signals[LAST_SIGNAL] = { 0 };
+
 #define DBUS_CALL_NO_PARAM(method, ans_type, variant_type, fail) \
     DBUS_CALL_WITH_RETURN(method, \
         NULL, 0, \
@@ -300,6 +309,21 @@ g_paste_client_list_histories (GPasteClient *self,
 }
 
 static void
+g_paste_client_handle_signal (GPasteClient *self,
+                              gchar        *sender_name G_GNUC_UNUSED,
+                              gchar        *signal_name,
+                              GVariant     *parameters G_GNUC_UNUSED,
+                              gpointer      user_data G_GNUC_UNUSED)
+{
+    if (g_strcmp0 (signal_name, "Changed") == 0)
+    {
+        g_signal_emit (self,
+                       signals[CHANGED],
+                       0); /* detail */
+    }
+}
+
+static void
 g_paste_client_dispose (GObject *object)
 {
     g_object_unref (G_PASTE_CLIENT (object)->priv->proxy);
@@ -318,8 +342,20 @@ g_paste_client_class_init (GPasteClientClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteClientPrivate));
 
-    G_OBJECT_CLASS (klass)->dispose = g_paste_client_dispose;
-    G_OBJECT_CLASS (klass)->finalize = g_paste_client_finalize;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_client_dispose;
+    object_class->finalize = g_paste_client_finalize;
+
+    signals[CHANGED] = g_signal_new ("changed",
+                                     G_PASTE_TYPE_CLIENT,
+                                     G_SIGNAL_RUN_LAST,
+                                     0, /* class offset */
+                                     NULL, /* accumulator */
+                                     NULL, /* accumulator data */
+                                     g_cclosure_marshal_VOID__VOID,
+                                     G_TYPE_NONE,
+                                     0); /* number of params */
 }
 
 static void
@@ -327,14 +363,19 @@ g_paste_client_init (GPasteClient *self)
 {
     GPasteClientPrivate *priv = self->priv = G_PASTE_CLIENT_GET_PRIVATE (self);
 
-    priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                 G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                                 NULL, /* interface_info */
-                                                 "org.gnome.GPaste",
-                                                 "/org/gnome/GPaste",
-                                                 "org.gnome.GPaste",
-                                                 NULL, /* cancellable */
-                                                 NULL); /* error */
+    GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                                     G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                                     NULL, /* interface_info */
+                                                                     "org.gnome.GPaste",
+                                                                     "/org/gnome/GPaste",
+                                                                     "org.gnome.GPaste",
+                                                                     NULL, /* cancellable */
+                                                                     NULL); /* error */
+
+    g_signal_connect_swapped (G_OBJECT (proxy),
+                              "g-signal",
+                              G_CALLBACK (g_paste_client_handle_signal),
+                              self); /* user_data */
 }
 
 /**

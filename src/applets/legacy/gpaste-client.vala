@@ -21,8 +21,6 @@ namespace GPaste {
 
     [DBus (name = "org.gnome.GPaste")]
     public interface DBusClient : GLib.Object {
-        [DBus (name = "Changed", inSignature = "")]
-        public abstract signal void changed ();
         [DBus (name = "ShowHistory", inSignature = "")]
         public abstract signal void show_history ();
     }
