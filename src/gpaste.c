@@ -37,7 +37,7 @@ show_help (const gchar *caller)
     printf (_("%s zero-history: print the history with NUL as separator\n"), caller);                  
     printf (_("%s add <text>: set text to clipboard\n"), caller);                                      
     printf (_("%s get <number>: get the <number>th item from the history\n"), caller);                 
-    printf (_("%s set <number>: set the <number>th item from the history to the clipboard\n"), caller);
+    printf (_("%s select <number>: set the <number>th item from the history to the clipboard\n"), caller);
     printf (_("%s delete <number>: delete <number>th item of the history\n"), caller);                 
     printf (_("%s file <path>: put the content of the file at <path> into the clipboard\n"), caller);  
     printf (_("whatever | %s: set the output of whatever to clipboard\n"), caller);                    

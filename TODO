@@ -2,8 +2,6 @@
     libgpaste:
         simplify gpaste-settings ? (macros ?)
         split off libgpaste-settings
-    gpaste:
-        rewrite in C
     gnome-shell:
         prefs.js
 

@@ -69,7 +69,7 @@ Add the text into the history
 Get the <number>th item from the history
 .br
 .TP
-.B gpaste set <number>
+.B gpaste select <number>
 Put the <number>th item of the history into the clipboard
 .br
 .TP

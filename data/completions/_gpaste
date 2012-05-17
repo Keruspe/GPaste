@@ -17,7 +17,7 @@ if (( CURRENT == 2 )); then
         {history,h}:"Display the history with indexes"
         {list-histories,lh}:"List available histories"
         {raw-history,rh}:"Display the history without indexes"
-        {set,s}:"Select an element of the history"
+        {select,set,s}:"Select an element of the history"
         {settings,s,preferences,p}:"Launch the configuration tool"
         {start,daemon,d}:"Start the daemon"
         {stop,quit,q}:"Shutdown the daemon"
