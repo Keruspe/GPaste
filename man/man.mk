@@ -15,29 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-nodist_man_MANS = \
+man_MANS = \
 	man/gpaste.1 \
 	$(NULL)
 
-gpaste_1_parts = \
-	data/gpaste.1.part \
-	$(NULL)
-
 if ENABLE_APPLET
-gpaste_1_parts += \
-	data/gpaste-applet.1.part \
-	$(NULL)
+man_MANS += man/gpaste-applet.1
 endif
-
-man/gpaste.1: $(gpaste_1_parts)
-	@ $(MKDIR_P) man
-	$(AM_V_GEN) cat $^ > $@
-
-EXTRA_DIST += \
-	data/gpaste.1.part \
-	data/gpaste-applet.1.part \
-	$(NULL)
-
-CLEANFILES += \
-	$(nodist_man_MANS) \
-	$(NULL)
