@@ -280,6 +280,7 @@ main (int argc, char *argv[])
     if (error)
     {
         fprintf (stderr, _("Couldn't connect to GPaste daemon.\n"));
+        g_error_free (error);
         status = 1;
     }
 
