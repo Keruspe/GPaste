@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-man_MANS = \
-	man/gpaste.1 \
+dist_man_MANS = \
+	data/man/gpaste.1 \
 	$(NULL)
 
 if ENABLE_APPLET
-man_MANS += man/gpaste-applet.1
+dist_man_MANS += data/man/gpaste-applet.1
 endif

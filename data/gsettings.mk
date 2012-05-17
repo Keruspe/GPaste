@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-gpaste_gschema_file = data/org.gnome.GPaste.gschema.xml
-gschemas_compiled = data/gschemas.compiled
+gpaste_gschema_file = data/gsettings/org.gnome.GPaste.gschema.xml
+gschemas_compiled = data/gsettings/gschemas.compiled
 
 gsettings_SCHEMAS = \
 	$(gpaste_gschema_file) \
@@ -24,6 +24,9 @@ gsettings_SCHEMAS = \
 
 @GSETTINGS_RULES@
 @INTLTOOL_XML_RULE@
+
+$(gpaste_gschema_file:.xml=.valid): $(gpaste_gschema_file)
+	@ $(MKDIR_P) data/gsettings
 
 $(gschemas_compiled): $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=$(srcdir) .

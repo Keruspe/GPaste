@@ -17,8 +17,8 @@
 
 applicationsdir = $(datadir)/applications
 
-gpaste_applet_desktop_file = data/gpaste-applet.desktop
-gpaste_settings_desktop_file = data/gpaste-settings.desktop
+gpaste_applet_desktop_file = data/desktop/gpaste-applet.desktop
+gpaste_settings_desktop_file = data/desktop/gpaste-settings.desktop
 
 nodist_applications_DATA = \
 	$(gpaste_applet_desktop_file) \
@@ -29,7 +29,7 @@ nodist_applications_DATA = \
 
 SUFFIXES += .desktop.in.in .desktop.in
 .desktop.in.in.desktop.in:
-	@ $(MKDIR_P) data
+	@ $(MKDIR_P) data/desktop
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 
 EXTRA_DIST += \

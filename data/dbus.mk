@@ -16,12 +16,12 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 nodist_dbusservices_DATA = \
-	data/org.gnome.GPaste.service \
+	data/dbus/org.gnome.GPaste.service \
 	$(NULL)
 
 SUFFIXES += .service .service.in
 .service.in.service:
-	@ $(MKDIR_P) data
+	@ $(MKDIR_P) data/dbus
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
 
 EXTRA_DIST += \

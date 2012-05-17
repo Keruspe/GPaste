@@ -2,10 +2,10 @@ src/gpaste-settings/gpaste-settings.vala
 src/gpaste-settings/gpaste-settings-window.vala
 src/applets/legacy/gpaste-applet.vala
 src/applets/gnome-shell/extension.js
-src/gpaste.vala
+src/gpaste.c
 src/gpasted/gpasted.c
-data/org.gnome.GPaste.gschema.xml
-data/gpaste-applet.desktop.in.in
-data/gpaste-settings.desktop.in.in
+data/gsettings/org.gnome.GPaste.gschema.xml
+data/desktop/gpaste-applet.desktop.in.in
+data/desktop/gpaste-settings.desktop.in.in
 libgpaste/gpaste-item.c
 libgpaste/gpaste-history.c
