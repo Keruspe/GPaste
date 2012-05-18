@@ -85,11 +85,11 @@ include libgpaste/daemon.mk
 include gi/gi.mk
 include vapi/vapi.mk
 
-include bin/gpasted.mk
-include bin/gpaste.mk
-include bin/gpaste-settings.mk
-include bin/gpaste-applet.mk
-include src/applets/gnome-shell/extension.mk
+include src/gpaste.mk
+include src/gpasted.mk
+include src/gpaste-settings.mk
+include src/applets/gnome-shell.mk
+include src/applets/legacy.mk
 
 include data/completions.mk
 include data/dbus.mk
