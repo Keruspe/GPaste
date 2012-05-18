@@ -30,10 +30,9 @@ namespace GPaste {
         }
 
         public static int main (string[] args) {
-            const string gettext_package = Config.GETTEXT_PACKAGE;
-            GLib.Intl.bindtextdomain (gettext_package, Config.LOCALEDIR);
-            GLib.Intl.bind_textdomain_codeset (gettext_package, "UTF-8");
-            GLib.Intl.textdomain (gettext_package);
+            GLib.Intl.bindtextdomain (Config.GETTEXT_PACKAGE, Config.LOCALEDIR);
+            GLib.Intl.bind_textdomain_codeset (Config.GETTEXT_PACKAGE, "UTF-8");
+            GLib.Intl.textdomain (Config.GETTEXT_PACKAGE);
             Gtk.init (ref args);
             Gtk.Settings.get_default ().gtk_application_prefer_dark_theme = true;
 
@@ -41,7 +40,7 @@ namespace GPaste {
             try {
                 app.register ();
             } catch (GLib.Error e) {
-                stderr.printf(_("Fail to register the gtk application.\n"));
+                stderr.printf (_("Fail to register the gtk application.\n"));
                 return 1;
             }
             return app.run ();
