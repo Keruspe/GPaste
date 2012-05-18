@@ -80,7 +80,7 @@ lib_LTLIBRARIES = $(NULL)
 include libgpaste/common.mk
 include libgpaste/core.mk
 include libgpaste/client.mk
-include libgpaste-daemon/libgpaste-daemon.mk
+include libgpaste/daemon.mk
 
 include gi/gi.mk
 include vapi/vapi.mk

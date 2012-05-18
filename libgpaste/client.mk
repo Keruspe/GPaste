@@ -37,7 +37,6 @@ libgpaste_client_libgpaste_client_la_SOURCES = \
 
 libgpaste_client_libgpaste_client_la_CFLAGS = \
 	$(AM_CFLAGS) \
-	-I$(srcdir)/libgpaste-daemon \
 	$(NULL)
 
 libgpaste_client_libgpaste_client_la_LIBADD = \
