@@ -24,7 +24,7 @@ bin_gpaste_SOURCES = \
 	$(NULL)
 
 bin_gpaste_CFLAGS = \
-	-I $(srcdir)/libgpaste-client/ \
+	-I$(srcdir)/libgpaste/client/ \
 	$(AM_CFLAGS) \
 	$(NULL)
 

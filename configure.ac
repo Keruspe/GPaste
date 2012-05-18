@@ -160,7 +160,7 @@ AC_CONFIG_FILES([
     Makefile
     po/Makefile.in
     data/pkg-config/gpaste-core-1.0.pc
-    data/pkg-config/gpaste-client.pc
+    data/pkg-config/gpaste-client-1.0.pc
 ])
 AC_OUTPUT
 AC_MSG_RESULT([

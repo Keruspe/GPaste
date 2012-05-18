@@ -30,7 +30,7 @@ gi_GPaste_1_0_gir_FILES = \
 gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
 	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/core \
-	-I$(srcdir)/libgpaste-client \
+	-I$(srcdir)/libgpaste/client \
 	$(NULL)
 gi_GPaste_1_0_gir_LIBS = \
 	$(libgpaste_core_la_file) \
