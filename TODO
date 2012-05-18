@@ -2,6 +2,10 @@
     libgpaste:
         simplify gpaste-settings ? (macros ?)
         split off libgpaste-settings
+    libgpaste-client:
+        refactor dbus defines
+    gpaste:
+        defer file reading to daemon
     gnome-shell:
         prefs.js
 
