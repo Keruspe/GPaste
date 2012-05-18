@@ -1,4 +1,6 @@
 3.0:
+    internal:
+        libgpaste-common
     libgpaste:
         simplify gpaste-settings ? (macros ?)
         split off libgpaste-settings
@@ -7,6 +9,8 @@
         ReexecuteSelf
         OnExtensionStateChanged
         Active
+    libgpaste-daemon:
+        polish and make public
     gpaste:
         defer file reading to daemon
     gnome-shell:
