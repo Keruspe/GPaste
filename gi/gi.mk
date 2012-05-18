@@ -24,19 +24,20 @@ libgpaste_gir_file = gi/GPaste-1.0.gir
 
 $(libgpaste_gir_file): $(libgpaste_la_file) $(libgpaste_client_la_file)
 gi_GPaste_1_0_gir_FILES = \
-	$(libgpaste_libgpaste_la_SOURCES) \
+	$(libgpaste_core_libgpaste_core_la_SOURCES) \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(NULL)
 gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
-	-I$(srcdir)/libgpaste \
+	-I$(srcdir)/libgpaste/common \
+	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste-client \
 	$(NULL)
 gi_GPaste_1_0_gir_LIBS = \
-	$(libgpaste_la_file) \
+	$(libgpaste_core_la_file) \
 	$(libgpaste_client_la_file) \
 	$(NULL)
 gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
-	libgpaste \
+	libgpaste-core \
 	libgpaste-client \
 	$(NULL)
 gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error

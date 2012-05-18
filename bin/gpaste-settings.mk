@@ -42,7 +42,7 @@ bin_gpaste_settings_CFLAGS = \
 	$(NULL)
 
 bin_gpaste_settings_LDADD = \
-	$(libgpaste_la_file) \
+	$(libgpaste_core_la_file) \
 	$(libgpaste_client_la_file) \
 	$(NULL)
 

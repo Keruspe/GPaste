@@ -38,7 +38,8 @@ AM_VALAFLAGS = \
 	$(NULL)
 
 AM_CFLAGS = \
-	-I$(srcdir)/libgpaste \
+	-I$(srcdir)/libgpaste/common \
+	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste-client \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
@@ -76,7 +77,8 @@ lib_LTLIBRARIES = $(NULL)
 
 # Real stuff goes in these subfiles
 
-include libgpaste/libgpaste.mk
+include libgpaste/common.mk
+include libgpaste/core.mk
 include libgpaste-client/libgpaste-client.mk
 include libgpaste-daemon/libgpaste-daemon.mk
 

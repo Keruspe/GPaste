@@ -20,7 +20,7 @@ pkglibexec_PROGRAMS += \
 	$(NULL)
 
 bin_gpasted_SOURCES = \
-	libgpaste/gpaste-clipboard-internal.c \
+	libgpaste/common/gpaste-clipboard-internal.c \
 	src/gpasted/gpasted.c \
 	$(NULL)
 

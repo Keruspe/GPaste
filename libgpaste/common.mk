@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = \
-	data/pkg-config/gpaste-core-1.0.pc \
-	data/pkg-config/gpaste-client.pc \
+EXTRA_DIST += \
+	libgpaste/common/gdbus-defines.h \
+	libgpaste/common/gpaste-clipboard-internal.h \
 	$(NULL)

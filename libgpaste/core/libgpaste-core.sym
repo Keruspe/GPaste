@@ -1,4 +1,4 @@
-LIBGPASTE {
+LIBGPASTE_CORE_1 {
 global:
     g_paste_clipboard_get_type;
     g_paste_clipboard_get_target;

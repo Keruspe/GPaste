@@ -40,7 +40,7 @@ libgpaste_daemon_libgpaste_daemon_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_daemon_libgpaste_daemon_la_LIBADD = \
-	$(libgpaste_la_file) \
+	$(libgpaste_core_la_file) \
 	$(NULL)
 
 libgpaste_daemon_symbols_file = $(srcdir)/libgpaste-daemon/libgpaste-daemon.sym
@@ -60,5 +60,4 @@ lib_LTLIBRARIES += \
 
 EXTRA_DIST += \
 	$(libgpaste_daemon_symbols_file) \
-	libgpaste-daemon/gdbus-defines.h \
 	$(NULL)
