@@ -22,7 +22,7 @@ INTROSPECTION_COMPILER_ARGS = $(NULL)
 
 libgpaste_gir_file = gi/GPaste-1.0.gir
 
-$(libgpaste_gir_file): $(libgpaste_la_file) $(libgpaste_client_la_file)
+$(libgpaste_gir_file): $(libgpaste_core_la_file) $(libgpaste_client_la_file)
 gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \

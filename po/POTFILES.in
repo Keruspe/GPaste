@@ -7,5 +7,5 @@ src/gpasted/gpasted.c
 data/gsettings/org.gnome.GPaste.gschema.xml
 data/desktop/gpaste-applet.desktop.in.in
 data/desktop/gpaste-settings.desktop.in.in
-libgpaste/gpaste-item.c
-libgpaste/gpaste-history.c
+libgpaste/core/gpaste-item.c
+libgpaste/core/gpaste-history.c

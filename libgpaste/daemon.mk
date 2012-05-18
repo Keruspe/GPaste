@@ -17,7 +17,7 @@
 
 libgpaste_daemon_la_file = libgpaste/daemon/libgpaste-daemon.la
 
-$(libgpaste_daemon_la_file): $(libgpaste_la_file)
+$(libgpaste_daemon_la_file): $(libgpaste_core_la_file)
 
 LIBGPASTE_DAEMON_CURRENT=1
 LIBGPASTE_DAEMON_REVISION=0
