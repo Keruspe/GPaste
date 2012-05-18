@@ -20,7 +20,7 @@ bin_PROGRAMS += \
 	$(NULL)
 
 bin_gpaste_SOURCES = \
-	src/gpaste.c \
+	src/gpaste/gpaste.c \
 	$(NULL)
 
 bin_gpaste_CFLAGS = \

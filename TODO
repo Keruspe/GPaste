@@ -7,8 +7,6 @@
         ReexecuteSelf
         OnExtensionStateChanged
         Active
-    libgpaste-daemon:
-        move gdbus-methods to common
     gpaste:
         defer file reading to daemon
     gnome-shell:

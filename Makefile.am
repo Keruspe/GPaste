@@ -30,7 +30,7 @@ AM_VALAFLAGS = \
 	--enable-experimental-non-null \
 	--fatal-warnings \
 	--target-glib=2.30 \
-	--vapidir=$(srcdir)/vapi \
+	--vapidir=$(srcdir)/bindings/vapi \
 	--pkg=config \
 	--pkg=posix \
 	$(GIO_VALAFLAGS) \
@@ -64,7 +64,7 @@ AM_LIBS = \
 EXTRA_DIST = \
 	autogen.sh \
 	ChangeLog.pre2.2.1 \
-	vapi/config.vapi \
+	bindings/vapi/config.vapi \
 	$(NULL)
 
 CLEANFILES = $(NULL)
@@ -82,8 +82,8 @@ include libgpaste/core.mk
 include libgpaste/client.mk
 include libgpaste/daemon.mk
 
-include gi/gi.mk
-include vapi/vapi.mk
+include bindings/gi.mk
+include bindings/vapi.mk
 
 include src/gpaste.mk
 include src/gpasted.mk

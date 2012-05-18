@@ -2,7 +2,7 @@ src/gpaste-settings/gpaste-settings.vala
 src/gpaste-settings/gpaste-settings-window.vala
 src/applets/legacy/gpaste-applet.vala
 src/applets/gnome-shell/extension.js
-src/gpaste.c
+src/gpaste/gpaste.c
 src/gpasted/gpasted.c
 data/gsettings/org.gnome.GPaste.gschema.xml
 data/desktop/gpaste-applet.desktop.in.in

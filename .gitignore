@@ -4,13 +4,12 @@
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
 /data/dbus/*.service
-/gi/*.gir
-/gi/*.typelib
+/bindings/gi
 /data/pkg-config/*.pc
 /man/*.1
 /po/Makefile
 /src/applets/gnome-shell/metadata.json
 /src/applets/legacy/*.c
 /src/gpaste-settings/*.c
-/vapi/*.vapi
+/bindings/vapi/*.vapi
 !/vapi/config.vapi

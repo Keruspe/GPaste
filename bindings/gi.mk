@@ -20,28 +20,28 @@
 INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h --c-include=gpaste-client.h
 INTROSPECTION_COMPILER_ARGS = $(NULL)
 
-libgpaste_gir_file = gi/GPaste-1.0.gir
+libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
 $(libgpaste_gir_file): $(libgpaste_core_la_file) $(libgpaste_client_la_file)
-gi_GPaste_1_0_gir_FILES = \
+bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(NULL)
-gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
+bindings_gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
 	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/client \
 	$(NULL)
-gi_GPaste_1_0_gir_LIBS = \
+bindings_gi_GPaste_1_0_gir_LIBS = \
 	$(libgpaste_core_la_file) \
 	$(libgpaste_client_la_file) \
 	$(NULL)
-gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
+bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
 	libgpaste-core \
 	libgpaste-client \
 	$(NULL)
-gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
-gi_GPaste_1_0_gir_INCLUDES = \
+bindings_gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
+bindings_gi_GPaste_1_0_gir_INCLUDES = \
 	GdkPixbuf-2.0 \
 	Gio-2.0 \
 	GObject-2.0 \
