@@ -18,6 +18,7 @@
  */
 
 #include "gpaste-client-private.h"
+#include "gdbus-defines.h"
 
 #include <gio/gio.h>
 
@@ -115,7 +116,7 @@ g_paste_client_get_element (GPasteClient *self,
                             guint32       index,
                             GError      **error)
 {
-    DBUS_CALL_WITH_PARAM ("GetElement", gchar*, string, NULL,
+    DBUS_CALL_WITH_PARAM (GET_ELEMENT, gchar*, string, NULL,
                           uint32, index)
 }
 
@@ -132,7 +133,7 @@ G_PASTE_VISIBLE gchar **
 g_paste_client_get_history (GPasteClient *self,
                             GError      **error)
 {
-    DBUS_CALL_NO_PARAM ("GetHistory", gchar**, strv, NULL)
+    DBUS_CALL_NO_PARAM (GET_HISTORY, gchar**, strv, NULL)
 }
 
 /**
@@ -150,7 +151,7 @@ g_paste_client_add (GPasteClient *self,
                     const gchar  *text,
                     GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("Add", string, text)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD, string, text)
 }
 
 /**
@@ -168,7 +169,7 @@ g_paste_client_select (GPasteClient *self,
                        guint32       index,
                        GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("Select", uint32, index)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (SELECT, uint32, index)
 }
 
 /**
@@ -186,7 +187,7 @@ g_paste_client_delete (GPasteClient *self,
                        guint32       index,
                        GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("Delete", uint32, index)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE, uint32, index)
 }
 
 /**
@@ -202,7 +203,7 @@ G_PASTE_VISIBLE void
 g_paste_client_empty (GPasteClient *self,
                       GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN ("Empty")
+    DBUS_CALL_NO_PARAM_NO_RETURN (EMPTY)
 }
 
 /**
@@ -220,7 +221,7 @@ g_paste_client_track (GPasteClient *self,
                       gboolean      state,
                       GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("Track", boolean, state)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (TRACK, boolean, state)
 }
 
 /**
@@ -236,7 +237,7 @@ G_PASTE_VISIBLE void
 g_paste_client_reexecute (GPasteClient *self,
                           GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN ("Reexecute")
+    DBUS_CALL_NO_PARAM_NO_RETURN (REEXECUTE)
 }
 
 /**
@@ -254,7 +255,7 @@ g_paste_client_backup_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("BackupHistory", string, name)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (BACKUP_HISTORY, string, name)
 }
 
 /**
@@ -272,7 +273,7 @@ g_paste_client_switch_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("SwitchHistory", string, name)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (SWITCH_HISTORY, string, name)
 }
 
 /**
@@ -290,7 +291,7 @@ g_paste_client_delete_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN ("DeleteHistory", string, name)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE_HISTORY, string, name)
 }
 
 /**
@@ -306,7 +307,7 @@ G_PASTE_VISIBLE gchar **
 g_paste_client_list_histories (GPasteClient *self,
                                GError      **error)
 {
-    DBUS_CALL_NO_PARAM ("ListHistories", gchar**, strv, NULL)
+    DBUS_CALL_NO_PARAM (LIST_HISTORIES, gchar**, strv, NULL)
 }
 
 static void
@@ -316,13 +317,13 @@ g_paste_client_handle_signal (GPasteClient *self,
                               GVariant     *parameters G_GNUC_UNUSED,
                               gpointer      user_data G_GNUC_UNUSED)
 {
-    if (g_strcmp0 (signal_name, "Changed") == 0)
+    if (g_strcmp0 (signal_name, SIG_CHANGED) == 0)
     {
         g_signal_emit (self,
                        signals[CHANGED],
                        0); /* detail */
     }
-    else if (g_strcmp0 (signal_name, "ShowHistory") == 0)
+    else if (g_strcmp0 (signal_name, SIG_SHOW_HISTORY) == 0)
     {
         g_signal_emit (self,
                        signals[SHOW_HISTORY],
@@ -386,9 +387,9 @@ g_paste_client_init (GPasteClient *self)
     GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                                      G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
                                                                      NULL, /* interface_info */
-                                                                     "org.gnome.GPaste",
-                                                                     "/org/gnome/GPaste",
-                                                                     "org.gnome.GPaste",
+                                                                     G_PASTE_BUS_NAME,
+                                                                     G_PASTE_OBJECT_PATH,
+                                                                     G_PASTE_INTERFACE_NAME,
                                                                      NULL, /* cancellable */
                                                                      NULL); /* error */
 

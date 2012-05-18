@@ -19,6 +19,7 @@
 
 #include "gpaste-clipboard-internal.h"
 #include "gpaste-daemon.h"
+#include "gdbus-defines.h"
 
 #include <glib/gi18n-lib.h>
 #include <xcb/xtest.h>
@@ -169,8 +170,8 @@ on_bus_acquired (GDBusConnection *connection,
 
     g_paste_daemon_register_object (G_PASTE_DAEMON (user_data),
                                     connection,
-                                    "/org/gnome/GPaste",
-                                   &error);
+                                    G_PASTE_OBJECT_PATH,
+                                    &error);
 
     if (error != NULL)
     {
@@ -255,7 +256,7 @@ main (int argc, char *argv[])
     main_loop = g_main_loop_new (NULL, FALSE);
 
     guint owner_id = g_bus_own_name (G_BUS_TYPE_SESSION,
-                                     "org.gnome.GPaste",
+                                     G_PASTE_BUS_NAME,
                                      G_BUS_NAME_OWNER_FLAGS_NONE,
                                      on_bus_acquired, 
                                      NULL, /* on_name_acquired */

@@ -18,6 +18,7 @@
  */
 
 #include "gpaste-daemon-private.h"
+#include "gdbus-defines.h"
 
 #include <glib.h>
 #include <string.h>
@@ -25,7 +26,6 @@
 #define G_PASTE_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_DAEMON, GPasteDaemonPrivate))
 
 #define DEFAULT_HISTORY "history"
-#define G_PASTE_BUS_NAME "org.gnome.GPaste"
 
 G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
@@ -299,7 +299,7 @@ g_paste_daemon_changed (GPasteDaemon *self,
                                    NULL, /* destination_bus_name */
                                    priv->object_path,
                                    G_PASTE_BUS_NAME,
-                                   "Changed",
+                                   SIG_CHANGED,
                                    g_variant_new_tuple (NULL, 0),
                                    NULL); /* error */
 }
@@ -323,7 +323,7 @@ g_paste_daemon_show_history (GPasteDaemon *self)
                                    NULL, /* destination_bus_name */
                                    priv->object_path,
                                    G_PASTE_BUS_NAME,
-                                   "ShowHistory",
+                                   SIG_SHOW_HISTORY,
                                    g_variant_new_tuple (NULL, 0),
                                    NULL); /* error */
 }
@@ -396,31 +396,31 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
 {
     GPasteDaemon *self = G_PASTE_DAEMON (user_data);
 
-    if (g_strcmp0 (method_name, "GetHistory") == 0)
+    if (g_strcmp0 (method_name, GET_HISTORY) == 0)
         g_paste_daemon_get_history (self, connection, invocation);
-    else if (g_strcmp0 (method_name, "BackupHistory") == 0)
+    else if (g_strcmp0 (method_name, BACKUP_HISTORY) == 0)
         g_paste_daemon_backup_history (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "SwitchHistory") == 0)
+    else if (g_strcmp0 (method_name, SWITCH_HISTORY) == 0)
         g_paste_daemon_switch_history (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "DeleteHistory") == 0)
+    else if (g_strcmp0 (method_name, DELETE_HISTORY) == 0)
         g_paste_daemon_delete_history (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "ListHistories") == 0)
+    else if (g_strcmp0 (method_name, LIST_HISTORIES) == 0)
         g_paste_daemon_list_histories (connection, invocation);
-    else if (g_strcmp0 (method_name, "Add") == 0)
+    else if (g_strcmp0 (method_name, ADD) == 0)
         g_paste_daemon_add (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "GetElement") == 0)
+    else if (g_strcmp0 (method_name, GET_ELEMENT) == 0)
         g_paste_daemon_get_element (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "Select") == 0)
+    else if (g_strcmp0 (method_name, SELECT) == 0)
         g_paste_daemon_select (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "Delete") == 0)
+    else if (g_strcmp0 (method_name, DELETE) == 0)
         g_paste_daemon_delete (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "Empty") == 0)
+    else if (g_strcmp0 (method_name, EMPTY) == 0)
         g_paste_daemon_empty (self, connection, invocation);
-    else if (g_strcmp0 (method_name, "Track") == 0)
+    else if (g_strcmp0 (method_name, TRACK) == 0)
         g_paste_daemon_track (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, "OnExtensionStateChanged") == 0)
         g_paste_daemon_on_extension_state_changed (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "Reexecute") == 0)
+    else if (g_strcmp0 (method_name, REEXECUTE) == 0)
         g_paste_daemon_reexecute (self, connection, invocation);
 
     g_object_unref (invocation);
@@ -556,49 +556,49 @@ g_paste_daemon_init (GPasteDaemon *self)
 
     priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (
         "<node>"
-        "   <interface name='" G_PASTE_BUS_NAME "'>"
-        "       <method name='GetHistory'>"
+        "   <interface name='" G_PASTE_INTERFACE_NAME "'>"
+        "       <method name='" GET_HISTORY "'>"
         "           <arg type='as' direction='out' />"
         "       </method>"
-        "       <method name='BackupHistory'>"
+        "       <method name='" BACKUP_HISTORY "'>"
         "           <arg type='s' direction='in' />"
         "       </method>"
-        "       <method name='SwitchHistory'>"
+        "       <method name='" SWITCH_HISTORY "'>"
         "           <arg type='s' direction='in' />"
         "       </method>"
-        "       <method name='DeleteHistory'>"
+        "       <method name='" DELETE_HISTORY "'>"
         "           <arg type='s' direction='in' />"
         "       </method>"
-        "       <method name='ListHistories'>"
+        "       <method name='" LIST_HISTORIES "'>"
         "           <arg type='as' direction='out' />"
         "       </method>"
-        "       <method name='Add'>"
+        "       <method name='" ADD "'>"
         "           <arg type='s' direction='in' />"
         "       </method>"
-        "       <method name='GetElement'>"
+        "       <method name='" GET_ELEMENT "'>"
         "           <arg type='u' direction='in' />"
         "           <arg type='s' direction='out' />"
         "       </method>"
-        "       <method name='Select'>"
+        "       <method name='" SELECT "'>"
         "           <arg type='u' direction='in' />"
         "       </method>"
-        "       <method name='Delete'>"
+        "       <method name='" DELETE "'>"
         "           <arg type='u' direction='in' />"
         "       </method>"
-        "       <method name='Empty' />"
-        "       <method name='Track'>"
+        "       <method name='" EMPTY "' />"
+        "       <method name='" TRACK "'>"
         "           <arg type='b' direction='in' />"
         "       </method>"
         "       <method name='OnExtensionStateChanged'>"
         "           <arg type='b' direction='in' />"
         "       </method>"
-        "       <method name='Reexecute' />"
+        "       <method name='" REEXECUTE "' />"
         "       <signal name='ReexecuteSelf' />"
         "       <signal name='Tracking'>"
         "           <arg type='b' direction='out' />"
         "       </signal>"
-        "       <signal name='Changed' />"
-        "       <signal name='ShowHistory' />"
+        "       <signal name='" SIG_CHANGED "' />"
+        "       <signal name='" SIG_SHOW_HISTORY "' />"
         "       <property name='Active' type='b' access='read' />"
         "   </interface>"
         "</node>",

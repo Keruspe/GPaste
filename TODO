@@ -3,7 +3,12 @@
         simplify gpaste-settings ? (macros ?)
         split off libgpaste-settings
     libgpaste-client:
-        refactor dbus defines
+        Tracking
+        ReexecuteSelf
+        OnExtensionStateChanged
+        Active
+    libgpaste-daemon:
+        move gdbus-methods to common
     gpaste:
         defer file reading to daemon
     gnome-shell:

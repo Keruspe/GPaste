@@ -60,4 +60,5 @@ lib_LTLIBRARIES += \
 
 EXTRA_DIST += \
 	$(libgpaste_daemon_symbols_file) \
+	libgpaste-daemon/gdbus-defines.h \
 	$(NULL)
