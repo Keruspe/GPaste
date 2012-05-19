@@ -12,4 +12,4 @@
 /src/applets/legacy/*.c
 /src/gpaste-settings/*.c
 /bindings/vapi/*.vapi
-!/vapi/config.vapi
+!bindings/vapi/config.vapi
