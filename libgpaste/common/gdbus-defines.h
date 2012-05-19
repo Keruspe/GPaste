@@ -17,8 +17,8 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GDBUS_METHODS_H__
-#define __GDBUS_METHODS_H__
+#ifndef __GDBUS_DEFINES_H__
+#define __GDBUS_DEFINES_H__
 
 #define G_PASTE_BUS_NAME       "org.gnome.GPaste"
 #define G_PASTE_OBJECT_PATH    "/org/gnome/GPaste"
@@ -40,4 +40,4 @@
 #define SIG_CHANGED      "Changed"
 #define SIG_SHOW_HISTORY "ShowHistory"
 
-#endif /*__GDBUS_METHODS_H__*/
+#endif /*__GDBUS_DEFINES_H__*/
