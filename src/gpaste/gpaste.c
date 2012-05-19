@@ -23,6 +23,7 @@
 #include <glib/gi18n-lib.h>
 #include <gpaste-client.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static void
 show_help (const gchar *caller)
@@ -77,6 +78,21 @@ show_history (GPasteClient *client,
     }
 }
 
+static gboolean
+is_help (const gchar *option)
+{
+    return (g_strcmp0 (option, "help") == 0 ||
+            g_strcmp0 (option, "-h") == 0 ||
+            g_strcmp0 (option, "--help") == 0);
+}
+
+static void
+failure_exit (void)
+{
+    fprintf (stderr, _("Couldn't connect to GPaste daemon.\n"));
+    exit (EXIT_FAILURE);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -84,7 +100,7 @@ main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
-    int status = 0;
+    int status = EXIT_SUCCESS;
 
     g_type_init ();
 
@@ -94,8 +110,13 @@ main (int argc, char *argv[])
 
     if (!client)
     {
-        fprintf (stderr, _("Couldn't connect to GPaste daemon.\n"));
-        return 1;
+        if (argc == 2 && is_help (argv[1]))
+        {
+            show_help (argv[0]);
+            return EXIT_SUCCESS;
+        }
+
+        failure_exit ();
     }
 
     if (!isatty (fileno (stdin)))
@@ -122,9 +143,7 @@ main (int argc, char *argv[])
             break;
         case 2:
             arg1 = argv[1];
-            if (g_strcmp0 (arg1, "help") == 0 ||
-                g_strcmp0 (arg1, "-h") == 0 ||
-                g_strcmp0 (arg1, "--help") == 0)
+            if (is_help (arg1))
             {
                 show_help (argv[0]);
             }
@@ -160,7 +179,7 @@ main (int argc, char *argv[])
                 {
                     fprintf (stderr, _("Couldn't spawn gpaste-applet.\n"));
                     g_clear_error (&error);
-                    status = 1;
+                    status = EXIT_FAILURE;
                 }
             }
 #endif
@@ -209,7 +228,7 @@ main (int argc, char *argv[])
             else
             {
                 show_help (argv[0]);
-                status = 1;
+                status = EXIT_FAILURE;
             }
             break;
         case 3:
@@ -268,27 +287,26 @@ main (int argc, char *argv[])
                {
                    fprintf (stderr, _("Could not read file: %s\n"), arg2);
                    g_clear_error (&error);
-                   status = 1;
+                   status = EXIT_FAILURE;
                }
             }
             else
             {
                 show_help (argv[0]);
-                status = 1;
+                status = EXIT_FAILURE;
             }
             break;
         default:
             show_help (argv[0]);
-            status = 1;
+            status = EXIT_FAILURE;
             break;
         }
     }
 
     if (error)
     {
-        fprintf (stderr, _("Couldn't connect to GPaste daemon.\n"));
         g_error_free (error);
-        status = 1;
+        failure_exit ();
     }
 
     g_object_unref (client);
