@@ -337,8 +337,11 @@ g_paste_client_dispose (GObject *object)
     GPasteClient *self = G_PASTE_CLIENT (object);
     GDBusProxy *proxy = self->priv->proxy;
 
-    g_signal_handlers_disconnect_by_func (proxy, (gpointer) g_paste_client_handle_signal, self);
-    g_object_unref (proxy);
+    if (proxy)
+    {
+        g_signal_handlers_disconnect_by_func (proxy, (gpointer) g_paste_client_handle_signal, self);
+        g_object_unref (proxy);
+    }
 
     G_OBJECT_CLASS (g_paste_client_parent_class)->dispose (object);
 }
@@ -393,10 +396,13 @@ g_paste_client_init (GPasteClient *self)
                                                                      NULL, /* cancellable */
                                                                      NULL); /* error */
 
-    g_signal_connect_swapped (G_OBJECT (proxy),
-                              "g-signal",
-                              G_CALLBACK (g_paste_client_handle_signal),
-                              self); /* user_data */
+    if (proxy)
+    {
+        g_signal_connect_swapped (G_OBJECT (proxy),
+                                  "g-signal",
+                                  G_CALLBACK (g_paste_client_handle_signal),
+                                  self); /* user_data */
+    }
 }
 
 /**
@@ -410,5 +416,13 @@ g_paste_client_init (GPasteClient *self)
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new (void)
 {
-    return g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GPasteClient *self = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+
+    if (!self->priv->proxy)
+    {
+        g_object_unref (self);
+        return NULL;
+    }
+
+    return self;
 }
