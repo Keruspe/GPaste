@@ -21,7 +21,7 @@
 #define __GDBUS_METHODS_H__
 
 #define G_PASTE_BUS_NAME       "org.gnome.GPaste"
-#define G_PASTE_OBJECT_PATH    "org.gnome.GPaste"
+#define G_PASTE_OBJECT_PATH    "/org/gnome/GPaste"
 #define G_PASTE_INTERFACE_NAME "org.gnome.GPaste"
 
 #define ADD              "Add"
