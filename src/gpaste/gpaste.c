@@ -61,6 +61,7 @@ show_history (GPasteClient *client,
               GError      **error)
 {
     gchar **history = g_paste_client_get_history (client, error);
+
     if (!*error)
     {
         unsigned int i = 0;
@@ -90,6 +91,12 @@ main (int argc, char *argv[])
     GPasteClient *client = g_paste_client_new ();
     GError *error = NULL;
     const gchar *arg1, *arg2;
+
+    if (!client)
+    {
+        fprintf (stderr, _("Couldn't connect to GPaste daemon.\n"));
+        return 1;
+    }
 
     if (!isatty (fileno (stdin)))
     {
