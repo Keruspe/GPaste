@@ -126,11 +126,3 @@ dist-hook:
 	else \
 	    echo A git clone is required to generate a ChangeLog >&2; \
 	fi
-
-# This is a little hacky:
-# We're using a vapi we're building in other stuff we're building too.
-# To make gpaste-settings and gpaste-applet depend on the vapi, we have
-# to use the vala stamp files as targets. These stamp files are shipped
-# with the generated sources and are tried to be uninstalled.
-# Adding them to .PHONY avoids this.
-.PHONY: bin_gpaste.vala bin_gpaste_applet_vala.stamp bin_gpaste_settings_vala.stamp
