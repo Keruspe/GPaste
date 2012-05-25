@@ -15,6 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+SUFFIXES += .pc.in .pc
+.pc.in.pc:
+	@ $(MKDIR_P) data/pkg-config
+	$(AM_V_GEN) $(SED) \
+	    -e 's,[@]libdir[@],$(libdir),g' \
+	    -e 's,[@]includedir[@],$(includedir),g' \
+	    -e 's,[@]VERSION[@],$(VERSION),g' \
+	    < $< > $@
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = \
 	data/pkg-config/gpaste-core-1.0.pc \

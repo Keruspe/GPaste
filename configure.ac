@@ -159,8 +159,6 @@ AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 AC_CONFIG_FILES([
     Makefile
     po/Makefile.in
-    data/pkg-config/gpaste-core-1.0.pc
-    data/pkg-config/gpaste-client-1.0.pc
 ])
 AC_OUTPUT
 AC_MSG_RESULT([
