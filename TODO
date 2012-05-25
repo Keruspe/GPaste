@@ -1,9 +1,9 @@
 3.0:
     internal:
         libgpaste-common
-    libgpaste:
+    libgpaste-settings:
         simplify gpaste-settings ? (macros ?)
-        split off libgpaste-settings
+        pkg-config
     libgpaste-client:
         Tracking
         ReexecuteSelf
@@ -11,6 +11,7 @@
         Active
     libgpaste-daemon:
         polish and make public
+        pkg-config
     gpaste:
         defer file reading to daemon
     legacy-applet:

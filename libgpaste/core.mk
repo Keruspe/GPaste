@@ -21,6 +21,8 @@ LIBGPASTE_CORE_CURRENT=1
 LIBGPASTE_CORE_REVISION=0
 LIBGPASTE_CORE_AGE=0
 
+$(libgpaste_core_la_file): $(libgpaste_settings_la_file)
+
 libgpaste_core_public_headers = \
 	libgpaste/core/gpaste.h \
 	libgpaste/core/gpaste-clipboard.h \
@@ -29,7 +31,6 @@ libgpaste_core_public_headers = \
 	libgpaste/core/gpaste-item.h \
 	libgpaste/core/gpaste-keybinder.h \
 	libgpaste/core/gpaste-keybinding.h \
-	libgpaste/core/gpaste-settings.h \
 	libgpaste/core/gpaste-xcb-wrapper.h \
 	$(NULL)
 
@@ -40,7 +41,6 @@ libgpaste_core_private_headers = \
 	libgpaste/core/gpaste-item-private.h \
 	libgpaste/core/gpaste-keybinder-private.h \
 	libgpaste/core/gpaste-keybinding-private.h \
-	libgpaste/core/gpaste-settings-private.h \
 	libgpaste/core/gpaste-xcb-wrapper-private.h \
 	$(NULL)
 
@@ -54,7 +54,6 @@ libgpaste_core_libgpaste_core_la_SOURCES = \
 	libgpaste/core/gpaste-item.c \
 	libgpaste/core/gpaste-keybinder.c \
 	libgpaste/core/gpaste-keybinding.c \
-	libgpaste/core/gpaste-settings.c \
 	libgpaste/core/gpaste-xcb-wrapper.c \
 	$(NULL)
 
@@ -68,6 +67,7 @@ libgpaste_core_libgpaste_core_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_core_libgpaste_core_la_LIBADD = \
+	$(libgpaste_settings_la_file) \
 	$(GDK_PIXBUF_LIBS) \
 	$(GTK_LIBS) \
 	$(XCB_LIBS) \

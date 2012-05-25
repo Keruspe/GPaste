@@ -29,7 +29,8 @@
 #endif
 
 #include "gpaste-item.h"
-#include "gpaste-settings.h"
+
+#include <gpaste-settings.h>
 
 G_BEGIN_DECLS
 
