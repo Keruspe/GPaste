@@ -202,11 +202,16 @@ namespace GPaste {
         }
 
         private void refill_histories () {
-            this.targets.remove_all ();
-            foreach (string label in History.list ()) {
-                this.targets.append (label, label);
+            try {
+                var histories = this.client.list_histories ();
+                this.targets.remove_all ();
+                foreach (string label in histories) {
+                    this.targets.append (label, label);
+                }
+                this.targets.set_active_id (this.settings.get_history_name ());
+            } catch (GLib.Error e) {
+                stderr.printf (_("Couldn't connect to GPaste daemon.\n"));
             }
-            this.targets.set_active_id (this.settings.get_history_name ());
         }
 
         private Panel make_histories_panel () {
@@ -232,8 +237,18 @@ namespace GPaste {
                     /* translators: This is the name of a multi-history management action */
                     { "delete", _("Delete") }
                 };
+
+            string[] histories;
+
+            try {
+                histories = this.client.list_histories ();
+            } catch (GLib.Error e) {
+                stderr.printf (_("Couldn't connect to GPaste daemon.\n"));
+                histories = new string[] {};
+            }
+
             /* translators: This is the text displayed on the button used to perform a multi-history management action */
-            this.targets = panel.add_multi_action_setting (actions, History.list (), _("Ok"), (action, target) => {
+            this.targets = panel.add_multi_action_setting (actions, histories, _("Ok"), (action, target) => {
                                try {
                                    switch (action) {
                                    case "switch":

@@ -42,8 +42,9 @@ bin_gpaste_settings_CFLAGS = \
 	$(NULL)
 
 bin_gpaste_settings_LDADD = \
-	$(libgpaste_core_la_file) \
+	$(libgpaste_settings_la_file) \
 	$(libgpaste_client_la_file) \
+	$(GTK_LIBS) \
 	$(NULL)
 
 CLEANFILES += \
