@@ -25,7 +25,15 @@ SUFFIXES += .pc.in .pc
 	    < $< > $@
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = \
+nodist_pkgconfig_DATA = \
 	data/pkg-config/gpaste-core-1.0.pc \
 	data/pkg-config/gpaste-client-1.0.pc \
+	$(NULL)
+
+EXTRA_DIST += \
+	$(nodist_pkgconfig_DATA:.pc=.pc.in) \
+	$(NULL)
+
+CLEANFILES += \
+	$(nodist_pkgconfig_DATA) \
 	$(NULL)
