@@ -29,7 +29,6 @@ bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
-	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/settings \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/client \

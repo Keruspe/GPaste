@@ -17,9 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-clipboard-internal.h"
+#include "gpaste-clipboard-common.h"
 
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
                                       GtkSelectionData *selection_data,
                                       guint             info G_GNUC_UNUSED,
@@ -71,7 +71,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
     }
 }
 
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
                                         gpointer      user_data_or_owner)
 {

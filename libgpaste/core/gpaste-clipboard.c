@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-clipboard-internal.h"
+#include "gpaste-clipboard-common.h"
 
 #include <string.h>
 

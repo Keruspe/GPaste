@@ -15,12 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+gpasted_binary = bin/gpasted
+
 pkglibexec_PROGRAMS += \
-	bin/gpasted \
+	$(gpasted_binary) \
 	$(NULL)
 
+$(gpasted_binary): $(libgpaste_common_la_file)
+
 bin_gpasted_SOURCES = \
-	libgpaste/common/gpaste-clipboard-internal.c \
 	src/gpasted/gpasted.c \
 	$(NULL)
 

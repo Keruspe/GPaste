@@ -1,6 +1,4 @@
 3.0:
-    internal:
-        libgpaste-common
     libgpaste-settings:
         pkg-config
     libgpaste-client:
