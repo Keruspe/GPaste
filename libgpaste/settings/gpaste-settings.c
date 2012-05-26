@@ -73,6 +73,43 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+#define SETTING(name, key, type, setting_type, fail, guards, clear_func, dup_func) \
+    G_PASTE_VISIBLE type \
+    g_paste_settings_get_##name (GPasteSettings *self) \
+    { \
+        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail); \
+        return self->priv->name; \
+    } \
+    static void \
+    g_paste_settings_set_##name##_from_dconf (GPasteSettings *self) \
+    { \
+        g_return_if_fail (G_PASTE_IS_SETTINGS (self)); \
+        GPasteSettingsPrivate *priv = self->priv; \
+        priv->name = g_settings_get_##setting_type (priv->settings, key); \
+    } \
+    G_PASTE_VISIBLE void \
+    g_paste_settings_set_##name (GPasteSettings *self, \
+                                 type            value) \
+    { \
+        g_return_if_fail (G_PASTE_IS_SETTINGS (self)); \
+        guards \
+        GPasteSettingsPrivate *priv = self->priv; \
+        clear_func \
+        priv->name = dup_func (value); \
+        g_settings_set_##setting_type (priv->settings, key, value); \
+    }
+
+#define TRIVIAL_SETTING(name, key, type, setting_type, fail) \
+    SETTING (name, key, type, setting_type, fail, {}, {},)
+
+#define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
+#define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint, uint, 0)
+
+#define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL, \
+                                           g_return_if_fail (value != NULL); \
+                                           g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
+                                           g_free (priv->name);, g_strdup)
+
 /**
  * g_paste_settings_get_track_changes:
  * @self: a #GPasteSettings instance
@@ -81,24 +118,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
  *
  * Returns: the value of the TRACK_CHANGES_KEY setting
  */
-G_PASTE_VISIBLE gboolean
-g_paste_settings_get_track_changes (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
-
-    return self->priv->track_changes;
-}
-
-static void
-g_paste_settings_set_track_changes_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->track_changes = g_settings_get_boolean (priv->settings, TRACK_CHANGES_KEY);
-}
-
 /**
  * g_paste_settings_set_track_changes:
  * @self: a #GPasteSettings instance
@@ -108,17 +127,7 @@ g_paste_settings_set_track_changes_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_track_changes (GPasteSettings *self,
-                                    gboolean        value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->track_changes = value;
-    g_settings_set_boolean (priv->settings, TRACK_CHANGES_KEY, value);
-}
+BOOLEAN_SETTING (track_changes, TRACK_CHANGES_KEY)
 
 /**
  * g_paste_settings_get_track_extension_state:
@@ -128,24 +137,6 @@ g_paste_settings_set_track_changes (GPasteSettings *self,
  *
  * Returns: the value of the TRACK_EXTENTION_STATE_KEY setting
  */
-G_PASTE_VISIBLE gboolean
-g_paste_settings_get_track_extension_state (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
-
-    return self->priv->track_extension_state;
-}
-
-static void
-g_paste_settings_set_track_extension_state_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->track_extension_state = g_settings_get_boolean (priv->settings, TRACK_EXTENTION_STATE_KEY);
-}
-
 /**
  * g_paste_settings_set_track_extension_state:
  * @self: a #GPasteSettings instance
@@ -155,17 +146,7 @@ g_paste_settings_set_track_extension_state_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_track_extension_state (GPasteSettings *self,
-                                            gboolean        value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->track_extension_state = value;
-    g_settings_set_boolean (priv->settings, TRACK_EXTENTION_STATE_KEY, value);
-}
+BOOLEAN_SETTING (track_extension_state, TRACK_EXTENTION_STATE_KEY)
 
 /**
  * g_paste_settings_get_primary_to_history:
@@ -175,24 +156,6 @@ g_paste_settings_set_track_extension_state (GPasteSettings *self,
  *
  * Returns: the value of the PRIMARY_TO_HISTORY_KEY setting
  */
-G_PASTE_VISIBLE gboolean
-g_paste_settings_get_primary_to_history (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
-
-    return self->priv->primary_to_history;
-}
-
-static void
-g_paste_settings_set_primary_to_history_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->primary_to_history = g_settings_get_boolean (priv->settings, PRIMARY_TO_HISTORY_KEY);
-}
-
 /**
  * g_paste_settings_set_primary_to_history:
  * @self: a #GPasteSettings instance
@@ -202,17 +165,7 @@ g_paste_settings_set_primary_to_history_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_primary_to_history (GPasteSettings *self,
-                                         gboolean        value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->primary_to_history = value;
-    g_settings_set_boolean (priv->settings, PRIMARY_TO_HISTORY_KEY, value);
-}
+BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY_KEY)
 
 /**
  * g_paste_settings_get_synchronize_clipboards:
@@ -222,24 +175,6 @@ g_paste_settings_set_primary_to_history (GPasteSettings *self,
  *
  * Returns: the value of the SYNCHRONIZE_CLIPBOARDS_KEY setting
  */
-G_PASTE_VISIBLE gboolean
-g_paste_settings_get_synchronize_clipboards (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
-
-    return self->priv->synchronize_clipboards;
-}
-
-static void
-g_paste_settings_set_synchronize_clipboards_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->synchronize_clipboards = g_settings_get_boolean (priv->settings, SYNCHRONIZE_CLIPBOARDS_KEY);
-}
-
 /**
  * g_paste_settings_set_synchronize_clipboards:
  * @self: a #GPasteSettings instance
@@ -249,17 +184,7 @@ g_paste_settings_set_synchronize_clipboards_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_synchronize_clipboards (GPasteSettings *self,
-                                             gboolean        value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->synchronize_clipboards = value;
-    g_settings_set_boolean (priv->settings, SYNCHRONIZE_CLIPBOARDS_KEY, value);
-}
+BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS_KEY)
 
 /**
  * g_paste_settings_get_save_history:
@@ -269,24 +194,6 @@ g_paste_settings_set_synchronize_clipboards (GPasteSettings *self,
  *
  * Returns: the value of the SAVE_HISTORY_KEY setting
  */
-G_PASTE_VISIBLE gboolean
-g_paste_settings_get_save_history (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
-
-    return self->priv->save_history;
-}
-
-static void
-g_paste_settings_set_save_history_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->save_history = g_settings_get_boolean (priv->settings, SAVE_HISTORY_KEY);
-}
-
 /**
  * g_paste_settings_set_save_history:
  * @self: a #GPasteSettings instance
@@ -296,17 +203,7 @@ g_paste_settings_set_save_history_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_save_history (GPasteSettings *self,
-                                   gboolean        value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->save_history = value;
-    g_settings_set_boolean (priv->settings, SAVE_HISTORY_KEY, value);
-}
+BOOLEAN_SETTING (save_history, SAVE_HISTORY_KEY)
 
 /**
  * g_paste_settings_get_trim_items:
@@ -316,24 +213,6 @@ g_paste_settings_set_save_history (GPasteSettings *self,
  *
  * Returns: the value of the TRIM_ITEMS_KEY setting
  */
-G_PASTE_VISIBLE gboolean
-g_paste_settings_get_trim_items (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
-
-    return self->priv->trim_items;
-}
-
-static void
-g_paste_settings_set_trim_items_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->trim_items = g_settings_get_boolean (priv->settings, TRIM_ITEMS_KEY);
-}
-
 /**
  * g_paste_settings_set_trim_items:
  * @self: a #GPasteSettings instance
@@ -343,17 +222,7 @@ g_paste_settings_set_trim_items_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_trim_items (GPasteSettings *self,
-                                 gboolean        value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->trim_items = value;
-    g_settings_set_boolean (priv->settings, TRIM_ITEMS_KEY, value);
-}
+BOOLEAN_SETTING (trim_items, TRIM_ITEMS_KEY)
 
 /**
  * g_paste_settings_get_fifo:
@@ -363,24 +232,6 @@ g_paste_settings_set_trim_items (GPasteSettings *self,
  *
  * Returns: the value of the FIFO_KEY setting
  */
-G_PASTE_VISIBLE gboolean
-g_paste_settings_get_fifo (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
-
-    return self->priv->fifo;
-}
-
-static void
-g_paste_settings_set_fifo_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->fifo = g_settings_get_boolean (priv->settings, FIFO_KEY);
-}
-
 /**
  * g_paste_settings_set_fifo:
  * @self: a #GPasteSettings instance
@@ -390,17 +241,7 @@ g_paste_settings_set_fifo_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_fifo (GPasteSettings *self,
-                                 gboolean        value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->fifo = value;
-    g_settings_set_boolean (priv->settings, FIFO_KEY, value);
-}
+BOOLEAN_SETTING (fifo, FIFO_KEY)
 
 /**
  * g_paste_settings_get_max_history_size:
@@ -410,24 +251,6 @@ g_paste_settings_set_fifo (GPasteSettings *self,
  *
  * Returns: the value of the MAX_HISTORY_SIZE_KEY setting
  */
-G_PASTE_VISIBLE guint
-g_paste_settings_get_max_history_size (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->max_history_size;
-}
-
-static void
-g_paste_settings_set_max_history_size_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->max_history_size = g_settings_get_uint (priv->settings, MAX_HISTORY_SIZE_KEY);
-}
-
 /**
  * g_paste_settings_set_max_history_size:
  * @self: a #GPasteSettings instance
@@ -437,17 +260,7 @@ g_paste_settings_set_max_history_size_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_max_history_size (GPasteSettings *self,
-                                       guint           value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->max_history_size = value;
-    g_settings_set_uint (priv->settings, MAX_HISTORY_SIZE_KEY, value);
-}
+UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE_KEY)
 
 /**
  * g_paste_settings_get_max_displayed_history_size:
@@ -457,24 +270,6 @@ g_paste_settings_set_max_history_size (GPasteSettings *self,
  *
  * Returns: the value of the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
  */
-G_PASTE_VISIBLE guint
-g_paste_settings_get_max_displayed_history_size (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->max_displayed_history_size;
-}
-
-static void
-g_paste_settings_set_max_displayed_history_size_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->max_displayed_history_size = g_settings_get_uint (priv->settings, MAX_DISPLAYED_HISTORY_SIZE_KEY);
-}
-
 /**
  * g_paste_settings_set_max_displayed_history_size:
  * @self: a #GPasteSettings instance
@@ -484,17 +279,7 @@ g_paste_settings_set_max_displayed_history_size_from_dconf (GPasteSettings *self
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
-                                                 guint           value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->max_displayed_history_size = value;
-    g_settings_set_uint (priv->settings, MAX_DISPLAYED_HISTORY_SIZE_KEY, value);
-}
+UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE_KEY)
 
 /**
  * g_paste_settings_get_element_size:
@@ -504,24 +289,6 @@ g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
  *
  * Returns: the value of the ELEMENT_SIZE_KEY setting
  */
-G_PASTE_VISIBLE guint
-g_paste_settings_get_element_size (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->element_size;
-}
-
-static void
-g_paste_settings_set_element_size_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->element_size = g_settings_get_uint (priv->settings, ELEMENT_SIZE_KEY);
-}
-
 /**
  * g_paste_settings_set_element_size:
  * @self: a #GPasteSettings instance
@@ -531,17 +298,7 @@ g_paste_settings_set_element_size_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_element_size (GPasteSettings *self,
-                                   guint           value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->element_size = value;
-    g_settings_set_uint (priv->settings, ELEMENT_SIZE_KEY, value);
-}
+UNSIGNED_SETTING (element_size, ELEMENT_SIZE_KEY)
 
 /**
  * g_paste_settings_get_min_text_item_size:
@@ -551,24 +308,6 @@ g_paste_settings_set_element_size (GPasteSettings *self,
  *
  * Returns: the value of the MIN_TEXT_ITEM_SIZE_KEY setting
  */
-G_PASTE_VISIBLE guint
-g_paste_settings_get_min_text_item_size (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->min_text_item_size;
-}
-
-static void
-g_paste_settings_set_min_text_item_size_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->min_text_item_size = g_settings_get_uint (priv->settings, MIN_TEXT_ITEM_SIZE_KEY);
-}
-
 /**
  * g_paste_settings_set_min_text_item_size:
  * @self: a #GPasteSettings instance
@@ -578,17 +317,7 @@ g_paste_settings_set_min_text_item_size_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_min_text_item_size (GPasteSettings *self,
-                                         guint           value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->min_text_item_size = value;
-    g_settings_set_uint (priv->settings, MIN_TEXT_ITEM_SIZE_KEY, value);
-}
+UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE_KEY)
 
 /**
  * g_paste_settings_get_max_text_item_size:
@@ -598,24 +327,6 @@ g_paste_settings_set_min_text_item_size (GPasteSettings *self,
  *
  * Returns: the value of the MAX_TEXT_ITEM_SIZE_KEY setting
  */
-G_PASTE_VISIBLE guint
-g_paste_settings_get_max_text_item_size (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->max_text_item_size;
-}
-
-static void
-g_paste_settings_set_max_text_item_size_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->max_text_item_size = g_settings_get_uint (priv->settings, MAX_TEXT_ITEM_SIZE_KEY);
-}
-
 /**
  * g_paste_settings_set_max_text_item_size:
  * @self: a #GPasteSettings instance
@@ -625,17 +336,7 @@ g_paste_settings_set_max_text_item_size_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_max_text_item_size (GPasteSettings *self,
-                                         guint           value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    priv->max_text_item_size = value;
-    g_settings_set_uint (priv->settings, MAX_TEXT_ITEM_SIZE_KEY, value);
-}
+UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE_KEY)
 
 /**
  * g_paste_settings_get_history_name:
@@ -645,25 +346,6 @@ g_paste_settings_set_max_text_item_size (GPasteSettings *self,
  *
  * Returns: the value of the HISTORY_NAME_KEY setting
  */
-G_PASTE_VISIBLE const gchar *
-g_paste_settings_get_history_name (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->history_name;
-}
-
-static void
-g_paste_settings_set_history_name_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    g_free (priv->history_name);
-    priv->history_name = g_settings_get_string (priv->settings, HISTORY_NAME_KEY);
-}
-
 /**
  * g_paste_settings_set_history_name:
  * @self: a #GPasteSettings instance
@@ -673,20 +355,7 @@ g_paste_settings_set_history_name_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_history_name (GPasteSettings *self,
-                                   const gchar    *value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-    g_return_if_fail (value != NULL);
-    g_return_if_fail (g_utf8_validate (value, -1, NULL));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    g_free (priv->history_name);
-    priv->history_name = g_strdup (value);
-    g_settings_set_string (priv->settings, HISTORY_NAME_KEY, value);
-}
+STRING_SETTING (history_name, HISTORY_NAME_KEY)
 
 /**
  * g_paste_settings_get_show_history:
@@ -696,25 +365,6 @@ g_paste_settings_set_history_name (GPasteSettings *self,
  *
  * Returns: the value of the SHOW_HISTORY_KEY setting
  */
-G_PASTE_VISIBLE const gchar *
-g_paste_settings_get_show_history (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->show_history;
-}
-
-static void
-g_paste_settings_set_show_history_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    g_free (priv->show_history);
-    priv->show_history = g_settings_get_string (priv->settings, SHOW_HISTORY_KEY);
-}
-
 /**
  * g_paste_settings_set_show_history:
  * @self: a #GPasteSettings instance
@@ -724,20 +374,7 @@ g_paste_settings_set_show_history_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_show_history (GPasteSettings *self,
-                                   const gchar    *value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-    g_return_if_fail (value != NULL);
-    g_return_if_fail (g_utf8_validate (value, -1, NULL));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    g_free (priv->show_history);
-    priv->show_history = g_strdup (value);
-    g_settings_set_string (priv->settings, SHOW_HISTORY_KEY, value);
-}
+STRING_SETTING (show_history, SHOW_HISTORY_KEY)
 
 /**
  * g_paste_settings_get_paste_and_pop:
@@ -747,25 +384,6 @@ g_paste_settings_set_show_history (GPasteSettings *self,
  *
  * Returns: the value of the PASTE_AND_POP_KEY setting
  */
-G_PASTE_VISIBLE const gchar *
-g_paste_settings_get_paste_and_pop (GPasteSettings *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), 0);
-
-    return self->priv->paste_and_pop;
-}
-
-static void
-g_paste_settings_set_paste_and_pop_from_dconf (GPasteSettings *self)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    g_free (priv->paste_and_pop);
-    priv->paste_and_pop = g_settings_get_string (priv->settings, PASTE_AND_POP_KEY);
-}
-
 /**
  * g_paste_settings_set_paste_and_pop:
  * @self: a #GPasteSettings instance
@@ -775,20 +393,7 @@ g_paste_settings_set_paste_and_pop_from_dconf (GPasteSettings *self)
  *
  * Returns:
  */
-G_PASTE_VISIBLE void
-g_paste_settings_set_paste_and_pop (GPasteSettings *self,
-                                    const gchar    *value)
-{
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
-    g_return_if_fail (value != NULL);
-    g_return_if_fail (g_utf8_validate (value, -1, NULL));
-
-    GPasteSettingsPrivate *priv = self->priv;
-
-    g_free (priv->paste_and_pop);
-    priv->paste_and_pop = g_strdup (value);
-    g_settings_set_string (priv->settings, PASTE_AND_POP_KEY, value);
-}
+STRING_SETTING (paste_and_pop, PASTE_AND_POP_KEY)
 
 static void
 g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,

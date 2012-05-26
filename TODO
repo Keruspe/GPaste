@@ -2,7 +2,6 @@
     internal:
         libgpaste-common
     libgpaste-settings:
-        simplify gpaste-settings ? (macros ?)
         pkg-config
     libgpaste-client:
         Tracking
