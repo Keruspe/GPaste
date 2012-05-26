@@ -20,6 +20,8 @@
         prefs.js
 
 future:
+    gpaste:
+        GSubProcess
     libgpaste:
         handle keyboard layout changes
     libgpaste-client:
