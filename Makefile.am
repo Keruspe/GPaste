@@ -75,7 +75,7 @@ bin_PROGRAMS = $(NULL)
 pkginclude_HEADERS = $(NULL)
 pkglibexec_PROGRAMS = $(NULL)
 lib_LTLIBRARIES = $(NULL)
-pkglib_LTLIBRARIES = $(NULL)
+noinst_LTLIBRARIES = $(NULL)
 
 # Real stuff goes in these subfiles
 
@@ -129,10 +129,3 @@ dist-hook:
 	else \
 	    echo A git clone is required to generate a ChangeLog >&2; \
 	fi
-
-install-data-hook:
-	@ cd $(DESTDIR)$(pkglibdir) && rm -f $(pkglib_LTLIBRARIES)
-
-uninstall-hook:
-	@ cd $(DESTDIR)$(pkglibdir) && rm -f $(pkglib_LTLIBRARIES:.la=$(shrext_cmds))
-	@ rmdir $(DESTDIR)$(pkglibdir)

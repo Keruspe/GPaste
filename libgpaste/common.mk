@@ -43,6 +43,6 @@ libgpaste_common_libgpaste_common_la_LDFLAGS = \
 	-avoid-version \
 	$(NULL)
 
-pkglib_LTLIBRARIES += \
+noinst_LTLIBRARIES += \
 	$(libgpaste_common_la_file) \
 	$(NULL)

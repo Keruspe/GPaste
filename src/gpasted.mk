@@ -21,7 +21,7 @@ pkglibexec_PROGRAMS += \
 	$(gpasted_binary) \
 	$(NULL)
 
-$(gpasted_binary): $(libgpaste_common_la_file)
+$(gpasted_binary): $(libgpaste_daemon_la_file)
 
 bin_gpasted_SOURCES = \
 	src/gpasted/gpasted.c \
@@ -34,5 +34,6 @@ bin_gpasted_CFLAGS = \
 	$(NULL)
 
 bin_gpasted_LDADD = \
+	$(libgpaste_common_la_file) \
 	$(libgpaste_daemon_la_file) \
 	$(NULL)
