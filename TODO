@@ -1,6 +1,4 @@
 3.0:
-    libgpaste-settings:
-        pkg-config
     libgpaste-client:
         Tracking
         ReexecuteSelf
