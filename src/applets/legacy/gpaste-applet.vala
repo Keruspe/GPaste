@@ -59,9 +59,9 @@ namespace GPaste {
             try {
                 var hist = app.client.get_history ();
                 history_is_empty = (hist.length == 0);
-                uint32 element_size = app.element_size;
-                for (uint32 i = 0 ; i < hist.length ; ++i) {
-                    uint32 current = i; // local, or weird closure behaviour
+                uint element_size = app.element_size;
+                for (uint i = 0 ; i < hist.length ; ++i) {
+                    uint current = i; // local, or weird closure behaviour
                     string elem = hist[i];
                     var item = new Gtk.ImageMenuItem.with_label (elem);
                     var label = (Gtk.Label) item.get_child ();
@@ -137,7 +137,7 @@ namespace GPaste {
         private Window window;
         private GPaste.Settings settings;
 
-        public uint32 element_size {
+        public uint element_size {
             get;
             private set;
         }

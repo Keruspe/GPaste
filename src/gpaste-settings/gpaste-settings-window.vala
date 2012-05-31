@@ -168,13 +168,13 @@ namespace GPaste {
                                                                 });
             this.min_text_item_size_button = panel.add_range_setting (_("Min text item length: "),
                                                                       (double)this.settings.get_min_text_item_size (),
-                                                                      1, uint32.MAX, 1,
+                                                                      1, uint.MAX, 1,
                                                                       (value) => {
                                                                           this.settings.set_min_text_item_size ((uint)value);
                                                                       });
             this.max_text_item_size_button = panel.add_range_setting (_("Max text item length: "),
                                                                       (double)this.settings.get_max_text_item_size (),
-                                                                      1, uint32.MAX, 1,
+                                                                      1, uint.MAX, 1,
                                                                       (value) => {
                                                                           this.settings.set_max_text_item_size ((uint)value);
                                                                       });
