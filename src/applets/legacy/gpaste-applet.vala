@@ -150,6 +150,7 @@ namespace GPaste {
         public Main() {
             GLib.Object (application_id: "org.gnome.GPaste.Applet");
             this.settings = new GPaste.Settings ();
+            this.client = new GPaste.Client ();
             this.element_size = this.settings.get_element_size ();
             this.activate.connect (init);
             this.settings.changed.connect ((key) => {

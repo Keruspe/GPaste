@@ -9,8 +9,6 @@
         pkg-config
     gpaste:
         defer file reading to daemon
-    legacy-applet:
-        libgpaste-client fixes
     gnome-shell:
         port to libgpaste-client
         prefs.js
