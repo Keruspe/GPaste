@@ -116,16 +116,9 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
     priv->active = FALSE;
 }
 
-/**
- * g_paste_keybinding_rebind:
- * @self: a #GPasteKeybinding instance
- *
- * Rebind to a new keybinding
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_keybinding_rebind (GPasteKeybinding  *self)
+static void
+g_paste_keybinding_rebind (GPasteKeybinding  *self,
+                           GPasteSettings    *settings G_GNUC_UNUSED)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
@@ -258,6 +251,7 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  * g_paste_keybinding_new:
  * @xcb_wrapper: a #GPasteXcbWrapper instance
  * @settings: a #GPasteSettings instance
+ * @dconf_key: the dconf key to watch
  * @getter: (closure settings) (scope notified): the getter to use to get the binding
  * @callback: (closure user_data) (scope notified): the callback to call when activated
  * @user_data: (closure): the data to pass to @callback
@@ -270,12 +264,14 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_keybinding_new (GPasteXcbWrapper      *xcb_wrapper,
                         GPasteSettings        *settings,
+                        const gchar           *dconf_key,
                         GPasteKeybindingGetter getter,
                         GPasteKeybindingFunc   callback,
                         gpointer               user_data)
 {
     g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (dconf_key != NULL, NULL);
     g_return_val_if_fail (getter != NULL, NULL);
     g_return_val_if_fail (callback != NULL, NULL);
 
@@ -288,6 +284,15 @@ g_paste_keybinding_new (GPasteXcbWrapper      *xcb_wrapper,
     priv->getter = getter;
     priv->callback = callback;
     priv->user_data = user_data;
+
+    gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
+
+    g_signal_connect_swapped (G_OBJECT (settings),
+                              detailed_signal,
+                              G_CALLBACK (g_paste_keybinding_rebind),
+                              self);
+
+    g_free (detailed_signal);
 
     return self;
 }
