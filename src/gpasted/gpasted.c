@@ -37,29 +37,22 @@ signal_handler (int signum)
     g_main_loop_quit (main_loop);
 }
 
+typedef enum {
+    G_PASTE_KEYBINDINGS_SHOW_HISTORY,
+    G_PASTE_KEYBINDINGS_PASTE_AND_POP,
+
+    G_PASTE_KEYBINDINGS_LAST_KEYBINDING
+} GPasteKeybindings;
+
 static void
-rebind (GPasteSettings   *settings,
+rebind (GPasteSettings   *settings G_GNUC_UNUSED,
         GPasteKeybindings keybinding,
         gpointer          user_data)
 {
+    /* Probably broken, but will be removed */
     GPasteKeybinding **keybindings = (GPasteKeybinding **) user_data;
-    const gchar *binding;
 
-    switch (keybinding)
-    {
-    case G_PASTE_KEYBINDINGS_SHOW_HISTORY:
-        binding = g_paste_settings_get_show_history (settings);
-        break;
-    case G_PASTE_KEYBINDINGS_PASTE_AND_POP:
-        binding = g_paste_settings_get_paste_and_pop (settings);
-        break;
-    default:
-        binding = NULL;
-        break;
-    }
-
-    if (binding)
-        g_paste_keybinding_rebind (keybindings[keybinding], binding);
+    g_paste_keybinding_rebind (keybindings[keybinding]);
 }
 
 static void
@@ -214,11 +207,13 @@ main (int argc, char *argv[])
 
     GPasteKeybinding **keybindings = alloca (G_PASTE_KEYBINDINGS_LAST_KEYBINDING * sizeof (GPasteKeybinding *));
     keybindings[G_PASTE_KEYBINDINGS_SHOW_HISTORY] = g_paste_keybinding_new (xcb_wrapper,
-                                                                            g_paste_settings_get_show_history (settings),
+                                                                            settings,
+                                                                            g_paste_settings_get_show_history,
                                                                             (GPasteKeybindingFunc) g_paste_daemon_show_history,
                                                                             g_paste_daemon);
     keybindings[G_PASTE_KEYBINDINGS_PASTE_AND_POP] = g_paste_keybinding_new (xcb_wrapper,
-                                                                             g_paste_settings_get_paste_and_pop (settings),
+                                                                             settings,
+                                                                             g_paste_settings_get_paste_and_pop,
                                                                              (GPasteKeybindingFunc) paste_and_pop,
                                                                              &data);
 
