@@ -28,6 +28,7 @@
 #include "config.h"
 #endif
 
+#include <gpaste-settings.h>
 #include <gpaste-xcb-wrapper.h>
 
 G_BEGIN_DECLS
@@ -41,14 +42,8 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteKeybinding GPasteKeybinding;
 typedef struct _GPasteKeybindingClass GPasteKeybindingClass;
+typedef const gchar *(*GPasteKeybindingGetter) (GPasteSettings *settings);
 typedef void  (*GPasteKeybindingFunc) (gpointer user_data);
-
-typedef enum {
-    G_PASTE_KEYBINDINGS_SHOW_HISTORY,
-    G_PASTE_KEYBINDINGS_PASTE_AND_POP,
-
-    G_PASTE_KEYBINDINGS_LAST_KEYBINDING
-} GPasteKeybindings;
 
 #ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
@@ -57,17 +52,17 @@ GType g_paste_keybinding_get_type (void);
 
 void g_paste_keybinding_activate (GPasteKeybinding  *self);
 void g_paste_keybinding_deactivate (GPasteKeybinding  *self);
-void g_paste_keybinding_rebind (GPasteKeybinding  *self,
-                                const gchar       *binding);
 const GPasteKeycode *g_paste_keybinding_get_keycodes (GPasteKeybinding *self);
 guint16 g_paste_keybinding_get_modifiers (GPasteKeybinding *self);
 gboolean g_paste_keybinding_is_active (GPasteKeybinding *self);
 void g_paste_keybinding_notify (GPasteKeybinding *self);
 
-GPasteKeybinding *g_paste_keybinding_new (GPasteXcbWrapper    *xcb_wrapper,
-                                          const gchar         *binding,
-                                          GPasteKeybindingFunc callback,
-                                          gpointer             user_data);
+GPasteKeybinding *g_paste_keybinding_new (GPasteXcbWrapper      *xcb_wrapper,
+                                          GPasteSettings        *settings,
+                                          const gchar           *dconf_key,
+                                          GPasteKeybindingGetter getter,
+                                          GPasteKeybindingFunc   callback,
+                                          gpointer               user_data);
 
 G_END_DECLS
 

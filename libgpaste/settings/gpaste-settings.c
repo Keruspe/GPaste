@@ -17,27 +17,12 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "gpaste-settings-keys.h"
 #include "gpaste-settings-private.h"
 
 #include <gio/gio.h>
 
 #define G_PASTE_SETTINGS_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_SETTINGS, GPasteSettingsPrivate))
-
-#define TRACK_CHANGES_KEY              "track-changes"
-#define TRACK_EXTENTION_STATE_KEY      "track-extension-state"
-#define PRIMARY_TO_HISTORY_KEY         "primary-to-history"
-#define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
-#define SAVE_HISTORY_KEY               "save-history"
-#define TRIM_ITEMS_KEY                 "trim-items"
-#define MAX_HISTORY_SIZE_KEY           "max-history-size"
-#define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
-#define ELEMENT_SIZE_KEY               "element-size"
-#define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
-#define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
-#define HISTORY_NAME_KEY               "history-name"
-#define SHOW_HISTORY_KEY               "show-history"
-#define PASTE_AND_POP_KEY              "paste-and-pop"
-#define FIFO_KEY                       "fifo"
 
 G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
@@ -440,16 +425,14 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_show_history_from_dconf (self);
         g_signal_emit (self,
                        signals[REBIND],
-                       g_quark_from_string (SHOW_HISTORY_KEY),
-                       G_PASTE_KEYBINDINGS_SHOW_HISTORY);
+                       g_quark_from_string (SHOW_HISTORY_KEY));
     }
     else if (g_strcmp0 (key, PASTE_AND_POP_KEY) == 0)
     {
         g_paste_settings_set_paste_and_pop_from_dconf (self);
         g_signal_emit (self,
                        signals[REBIND],
-                       g_quark_from_string (SHOW_HISTORY_KEY),
-                       G_PASTE_KEYBINDINGS_PASTE_AND_POP);
+                       g_quark_from_string (PASTE_AND_POP_KEY));
     }
 
     /* Forward the signal */

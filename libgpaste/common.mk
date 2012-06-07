@@ -20,6 +20,7 @@ libgpaste_common_la_file = libgpaste/common/libgpaste-common.la
 libgpaste_common_public_headers = \
 	libgpaste/common/gdbus-defines.h  \
 	libgpaste/common/gpaste-clipboard-common.h \
+	libgpaste/common/gpaste-settings-keys.h \
 	$(NULL)
 
 libgpaste_common_libgpaste_common_la_SOURCES = \

@@ -17,9 +17,10 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "gdbus-defines.h"
 #include "gpaste-clipboard-common.h"
 #include "gpaste-daemon.h"
-#include "gdbus-defines.h"
+#include "gpaste-settings-keys.h"
 
 #include <glib/gi18n-lib.h>
 #include <xcb/xtest.h>
@@ -28,6 +29,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define ELEMENTSOF(foo) sizeof(foo)/sizeof(foo[0])
+
 static GMainLoop *main_loop;
 
 static void
@@ -35,31 +38,6 @@ signal_handler (int signum)
 {
     g_print (_("Signal %d received, exiting\n"), signum);
     g_main_loop_quit (main_loop);
-}
-
-static void
-rebind (GPasteSettings   *settings,
-        GPasteKeybindings keybinding,
-        gpointer          user_data)
-{
-    GPasteKeybinding **keybindings = (GPasteKeybinding **) user_data;
-    const gchar *binding;
-
-    switch (keybinding)
-    {
-    case G_PASTE_KEYBINDINGS_SHOW_HISTORY:
-        binding = g_paste_settings_get_show_history (settings);
-        break;
-    case G_PASTE_KEYBINDINGS_PASTE_AND_POP:
-        binding = g_paste_settings_get_paste_and_pop (settings);
-        break;
-    default:
-        binding = NULL;
-        break;
-    }
-
-    if (binding)
-        g_paste_keybinding_rebind (keybindings[keybinding], binding);
 }
 
 static void
@@ -212,26 +190,27 @@ main (int argc, char *argv[])
         .history = history
     };
 
-    GPasteKeybinding **keybindings = alloca (G_PASTE_KEYBINDINGS_LAST_KEYBINDING * sizeof (GPasteKeybinding *));
-    keybindings[G_PASTE_KEYBINDINGS_SHOW_HISTORY] = g_paste_keybinding_new (xcb_wrapper,
-                                                                            g_paste_settings_get_show_history (settings),
-                                                                            (GPasteKeybindingFunc) g_paste_daemon_show_history,
-                                                                            g_paste_daemon);
-    keybindings[G_PASTE_KEYBINDINGS_PASTE_AND_POP] = g_paste_keybinding_new (xcb_wrapper,
-                                                                             g_paste_settings_get_paste_and_pop (settings),
-                                                                             (GPasteKeybindingFunc) paste_and_pop,
-                                                                             &data);
+    GPasteKeybinding *keybindings[] = {
+        g_paste_keybinding_new (xcb_wrapper,
+                                settings,
+                                SHOW_HISTORY_KEY,
+                                g_paste_settings_get_show_history,
+                                (GPasteKeybindingFunc) g_paste_daemon_show_history,
+                                g_paste_daemon),
+        g_paste_keybinding_new (xcb_wrapper,
+                                settings,
+                                PASTE_AND_POP_KEY,
+                                g_paste_settings_get_paste_and_pop,
+                                (GPasteKeybindingFunc) paste_and_pop,
+                                &data)
+    };
 
-    g_signal_connect (G_OBJECT (settings),
-                      "rebind",
-                      G_CALLBACK (rebind),
-                      keybindings);
     g_signal_connect (G_OBJECT (g_paste_daemon),
                       "reexecute-self",
                       G_CALLBACK (reexec),
                       NULL); /* user_data */
 
-    for (GPasteKeybindings k = 0; k < G_PASTE_KEYBINDINGS_LAST_KEYBINDING; ++k)
+    for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
         g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
 
     g_paste_history_load (history);
@@ -247,7 +226,7 @@ main (int argc, char *argv[])
     g_object_unref (clipboard);
     g_object_unref (primary);
 
-    for (GPasteKeybindings k = 0; k < G_PASTE_KEYBINDINGS_LAST_KEYBINDING; ++k)
+    for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
         g_object_unref (keybindings[k]);
 
     signal (SIGTERM, &signal_handler);
@@ -266,7 +245,6 @@ main (int argc, char *argv[])
 
     g_main_loop_run (main_loop);
 
-    g_signal_handlers_disconnect_by_func (settings, (gpointer) rebind, keybindings);
     g_signal_handlers_disconnect_by_func (g_paste_daemon, (gpointer) reexec, NULL);
     g_object_unref (settings);
     g_object_unref (g_paste_daemon);

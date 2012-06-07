@@ -24,7 +24,7 @@
 #include "config.h"
 #endif
 
-#include <gpaste-keybinding.h>
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
