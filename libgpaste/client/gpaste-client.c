@@ -113,7 +113,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_element (GPasteClient *self,
-                            guint         index,
+                            guint32       index,
                             GError      **error)
 {
     DBUS_CALL_WITH_PARAM (GET_ELEMENT, gchar*, string, NULL,
@@ -166,7 +166,7 @@ g_paste_client_add (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_select (GPasteClient *self,
-                       guint         index,
+                       guint32       index,
                        GError      **error)
 {
     DBUS_CALL_WITH_PARAM_NO_RETURN (SELECT, uint32, index)
@@ -184,7 +184,7 @@ g_paste_client_select (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete (GPasteClient *self,
-                       guint         index,
+                       guint32       index,
                        GError      **error)
 {
     DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE, uint32, index)

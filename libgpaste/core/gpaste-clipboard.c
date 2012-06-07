@@ -121,7 +121,7 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     gboolean trim_items = g_paste_settings_get_trim_items (settings);
     const gchar *to_add = trim_items ? stripped : text;
     const gchar *ret = NULL;
-    guint length = strlen (to_add);
+    gsize length = strlen (to_add);
 
     if (length < g_paste_settings_get_min_text_item_size (settings) ||
         length > g_paste_settings_get_max_text_item_size (settings) ||

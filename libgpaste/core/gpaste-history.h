@@ -52,13 +52,13 @@ GType g_paste_history_get_type (void);
 void              g_paste_history_add       (GPasteHistory *self,
                                              GPasteItem    *item);
 void              g_paste_history_remove    (GPasteHistory *self,
-                                             guint          index);
+                                             guint32        index);
 const GPasteItem *g_paste_history_get       (GPasteHistory *self,
-                                             guint          index);
+                                             guint32        index);
 const gchar      *g_paste_history_get_value (GPasteHistory *self,
-                                             guint          index);
+                                             guint32        index);
 void              g_paste_history_select    (GPasteHistory *self,
-                                             guint          index);
+                                             guint32        index);
 void         g_paste_history_empty       (GPasteHistory *self);
 void         g_paste_history_save        (GPasteHistory *self);
 void         g_paste_history_load        (GPasteHistory *self);

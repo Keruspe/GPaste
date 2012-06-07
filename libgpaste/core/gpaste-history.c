@@ -101,7 +101,7 @@ g_paste_history_add (GPasteHistory *self,
         g_slist_append (priv->history, g_object_ref (item)) :
         g_slist_prepend (priv->history, g_object_ref (item));
 
-    guint max_history_size = g_paste_settings_get_max_history_size (priv->settings);
+    guint32 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
 
     if (g_slist_length (history) > max_history_size)
     {
@@ -115,7 +115,7 @@ g_paste_history_add (GPasteHistory *self,
         }
         else
         {
-            for (guint i = 0; i < max_history_size - 1; ++i)
+            for (guint32 i = 0; i < max_history_size - 1; ++i)
                 history = g_slist_next (history);
         }
         g_slist_free_full (g_slist_next (history),
@@ -142,7 +142,7 @@ g_paste_history_add (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_remove (GPasteHistory *self,
-                        guint          pos)
+                        guint32        pos)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
@@ -151,7 +151,7 @@ g_paste_history_remove (GPasteHistory *self,
 
     g_return_if_fail (pos < g_slist_length (history));
 
-    for (guint i = 0; i < pos; ++i)
+    for (guint32 i = 0; i < pos; ++i)
         history = g_slist_next (history);
     priv->history = _g_paste_history_remove (self, history, TRUE);
 
@@ -165,7 +165,7 @@ g_paste_history_remove (GPasteHistory *self,
 
 static GPasteItem *
 _g_paste_history_get (GPasteHistory *self,
-                      guint          pos)
+                      guint32        pos)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
@@ -187,7 +187,7 @@ _g_paste_history_get (GPasteHistory *self,
  */
 G_PASTE_VISIBLE const GPasteItem *
 g_paste_history_get (GPasteHistory *self,
-                     guint          pos)
+                     guint32        pos)
 {
     return _g_paste_history_get (self, pos);
 }
@@ -203,7 +203,7 @@ g_paste_history_get (GPasteHistory *self,
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_history_get_value (GPasteHistory *self,
-                           guint          pos)
+                           guint32        pos)
 {
     GPasteItem *item = _g_paste_history_get (self, pos);
 
@@ -223,7 +223,7 @@ g_paste_history_get_value (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_select (GPasteHistory *self,
-                        guint          pos)
+                        guint32        pos)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
@@ -426,9 +426,9 @@ g_paste_history_load (GPasteHistory *self)
         LIBXML_TEST_VERSION
 
         xmlTextReaderPtr reader = xmlNewTextReaderFilename (history_file_path);
-        guint max_history_size = g_paste_settings_get_max_history_size (priv->settings);
+        guint32 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
 
-        for (guint i = 0; i < max_history_size && xmlTextReaderRead (reader) == 1;)
+        for (guint32 i = 0; i < max_history_size && xmlTextReaderRead (reader) == 1;)
         {
             if (xmlTextReaderNodeType (reader) != 1)
                 continue;

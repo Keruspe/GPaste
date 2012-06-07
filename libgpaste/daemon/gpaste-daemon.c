@@ -213,15 +213,15 @@ g_paste_daemon_add (GPasteDaemon          *self,
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
-static guint
-g_paste_daemon_get_dbus_uint_parameter (GVariant *parameters)
+static guint32
+g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
 {
     GVariantIter parameters_iter;
 
     g_variant_iter_init (&parameters_iter, parameters);
 
     GVariant *variant = g_variant_iter_next_value (&parameters_iter);
-    guint value = g_variant_get_uint32 (variant);
+    guint32 value = g_variant_get_uint32 (variant);
 
     g_variant_unref (variant);
 
@@ -235,7 +235,7 @@ g_paste_daemon_get_element (GPasteDaemon          *self,
                             GVariant              *parameters)
 {
     const gchar *value = g_paste_history_get_value (self->priv->history,
-                                                    g_paste_daemon_get_dbus_uint_parameter (parameters));
+                                                    g_paste_daemon_get_dbus_uint32_parameter (parameters));
     GVariant *variant = g_variant_new_string ((value == NULL) ? "" : value);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));
@@ -248,7 +248,7 @@ g_paste_daemon_select (GPasteDaemon          *self,
                        GVariant              *parameters)
 {
     g_paste_history_select (self->priv->history,
-                            g_paste_daemon_get_dbus_uint_parameter (parameters));
+                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
@@ -259,7 +259,7 @@ g_paste_daemon_delete (GPasteDaemon          *self,
                        GVariant              *parameters)
 {
     g_paste_history_remove (self->priv->history,
-                            g_paste_daemon_get_dbus_uint_parameter (parameters));
+                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
@@ -483,7 +483,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     guint result = g_dbus_connection_register_object (connection,
                                                       path,
                                                       priv->g_paste_daemon_dbus_info->interfaces[0],
-                                                     &priv->g_paste_daemon_dbus_vtable,
+                                                      &priv->g_paste_daemon_dbus_vtable,
                                                       g_object_ref (self),
                                                       g_paste_daemon_unregister_object,
                                                       error);

@@ -37,11 +37,11 @@ struct _GPasteSettingsPrivate
     gboolean   save_history;
     gboolean   trim_items;
     gboolean   fifo;
-    guint      max_history_size;
-    guint      max_displayed_history_size;
-    guint      element_size;
-    guint      min_text_item_size;
-    guint      max_text_item_size;
+    guint32    max_history_size;
+    guint32    max_displayed_history_size;
+    guint32    element_size;
+    guint32    min_text_item_size;
+    guint32    max_text_item_size;
     gchar     *history_name;
     gchar     *show_history;
     gchar     *paste_and_pop;
@@ -88,7 +88,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     SETTING (name, key, type, setting_type, fail, {}, {},)
 
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
-#define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint, uint, 0)
+#define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint32, uint, 0)
 
 #define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL, \
                                            g_return_if_fail (value != NULL); \
