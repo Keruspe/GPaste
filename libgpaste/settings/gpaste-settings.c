@@ -440,16 +440,14 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_show_history_from_dconf (self);
         g_signal_emit (self,
                        signals[REBIND],
-                       g_quark_from_string (SHOW_HISTORY_KEY),
-                       G_PASTE_KEYBINDINGS_SHOW_HISTORY);
+                       g_quark_from_string (SHOW_HISTORY_KEY));
     }
     else if (g_strcmp0 (key, PASTE_AND_POP_KEY) == 0)
     {
         g_paste_settings_set_paste_and_pop_from_dconf (self);
         g_signal_emit (self,
                        signals[REBIND],
-                       g_quark_from_string (SHOW_HISTORY_KEY),
-                       G_PASTE_KEYBINDINGS_PASTE_AND_POP);
+                       g_quark_from_string (PASTE_AND_POP_KEY));
     }
 
     /* Forward the signal */

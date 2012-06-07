@@ -27,13 +27,15 @@ G_DEFINE_TYPE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 
 struct _GPasteKeybindingPrivate
 {
-    GPasteXcbWrapper    *xcb_wrapper;
-    gchar               *binding;
-    xcb_keycode_t       *keycodes;
-    guint16              modifiers;
-    GPasteKeybindingFunc callback;
-    gpointer             user_data;
-    gboolean             active;
+    GPasteXcbWrapper      *xcb_wrapper;
+    gchar                 *binding;
+    xcb_keycode_t         *keycodes;
+    guint16                modifiers;
+    GPasteSettings        *settings;
+    GPasteKeybindingGetter getter;
+    GPasteKeybindingFunc   callback;
+    gpointer               user_data;
+    gboolean               active;
 };
 
 /**
@@ -117,24 +119,20 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
 /**
  * g_paste_keybinding_rebind:
  * @self: a #GPasteKeybinding instance
- * @binding: the new keybinding
  *
  * Rebind to a new keybinding
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_keybinding_rebind (GPasteKeybinding  *self,
-                           const gchar       *binding)
+g_paste_keybinding_rebind (GPasteKeybinding  *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
-    g_return_if_fail (binding != NULL);
-    g_return_if_fail (g_utf8_validate (binding, -1, NULL));
 
     GPasteKeybindingPrivate *priv = self->priv;
 
     g_free (priv->binding);
-    priv->binding = g_strdup (binding);
+    priv->binding = g_strdup (priv->getter (priv->settings));
 
     if (priv->active)
     {
@@ -222,6 +220,7 @@ g_paste_keybinding_dispose (GObject *object)
     if (priv->active)
         g_paste_keybinding_deactivate (self);
     g_object_unref (priv->xcb_wrapper);
+    g_object_unref (priv->settings);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->dispose (object);
 }
@@ -257,8 +256,9 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 
 /**
  * g_paste_keybinding_new:
- * @binding: the key binding to watch
  * @xcb_wrapper: a #GPasteXcbWrapper instance
+ * @settings: a #GPasteSettings instance
+ * @getter: (closure settings) (scope notified): the getter to use to get the binding
  * @callback: (closure user_data) (scope notified): the callback to call when activated
  * @user_data: (closure): the data to pass to @callback
  *
@@ -268,21 +268,24 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_keybinding_new (GPasteXcbWrapper    *xcb_wrapper,
-                        const gchar         *binding,
-                        GPasteKeybindingFunc callback,
-                        gpointer             user_data)
+g_paste_keybinding_new (GPasteXcbWrapper      *xcb_wrapper,
+                        GPasteSettings        *settings,
+                        GPasteKeybindingGetter getter,
+                        GPasteKeybindingFunc   callback,
+                        gpointer               user_data)
 {
     g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
-    g_return_val_if_fail (binding != NULL, NULL);
-    g_return_val_if_fail (g_utf8_validate (binding, -1, NULL), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (getter != NULL, NULL);
     g_return_val_if_fail (callback != NULL, NULL);
 
     GPasteKeybinding *self = g_object_new (G_PASTE_TYPE_KEYBINDING, NULL);
     GPasteKeybindingPrivate *priv = self->priv;
 
     priv->xcb_wrapper = g_object_ref (xcb_wrapper);
-    priv->binding = g_strdup (binding);
+    priv->settings = g_object_ref (settings);
+    priv->binding = g_strdup (getter (settings));
+    priv->getter = getter;
     priv->callback = callback;
     priv->user_data = user_data;
 
