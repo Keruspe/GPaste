@@ -16,9 +16,9 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 dist_man_MANS = \
-	data/man/gpaste.1 \
+	man/1/gpaste.1 \
 	$(NULL)
 
 if ENABLE_APPLET
-dist_man_MANS += data/man/gpaste-applet.1
+dist_man_MANS += man/1/gpaste-applet.1
 endif
