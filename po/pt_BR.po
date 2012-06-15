@@ -106,7 +106,7 @@ msgstr "Não foi possível se conectar ao daemon do GPaste.\n"
 #. translators: This is the name of a multi-history management action
 #: ../src/gpaste-settings/gpaste-settings-window.vala:231
 msgid "Switch to"
-msgstr "Alterna para"
+msgstr "Alternar para"
 
 #. translators: This is the name of a multi-history management action
 #: ../src/gpaste-settings/gpaste-settings-window.vala:233
