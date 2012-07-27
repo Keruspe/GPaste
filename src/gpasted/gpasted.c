@@ -33,6 +33,14 @@
 
 static GMainLoop *main_loop;
 
+enum
+{
+    C_REEXECUTE_SELF,
+    C_LAST_SIGNAL
+};
+
+static gulong c_signals[C_LAST_SIGNAL] = { 0 };
+
 static void
 signal_handler (int signum)
 {
@@ -205,10 +213,10 @@ main (int argc, char *argv[])
                                 &data)
     };
 
-    g_signal_connect (G_OBJECT (g_paste_daemon),
-                      "reexecute-self",
-                      G_CALLBACK (reexec),
-                      NULL); /* user_data */
+    c_signals[C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
+                                                    "reexecute-self",
+                                                    G_CALLBACK (reexec),
+                                                    NULL); /* user_data */
 
     for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
         g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
@@ -245,7 +253,7 @@ main (int argc, char *argv[])
 
     g_main_loop_run (main_loop);
 
-    g_signal_handlers_disconnect_by_func (g_paste_daemon, (gpointer) reexec, NULL);
+    g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
     g_object_unref (settings);
     g_object_unref (g_paste_daemon);
     g_bus_unown_name (owner_id);

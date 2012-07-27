@@ -50,6 +50,16 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+enum
+{
+    C_CHANGED,
+    C_REEXECUTE_SELF,
+    C_TRACK,
+    C_LAST_SIGNAL
+};
+
+static gulong c_signals[C_LAST_SIGNAL] = { 0 };
+
 static void
 g_paste_daemon_send_dbus_reply (GDBusConnection       *connection,
                                 GDBusMethodInvocation *invocation,
@@ -449,9 +459,9 @@ g_paste_daemon_unregister_object (gpointer user_data)
     GPasteDaemon *self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = self->priv;
 
-    g_signal_handlers_disconnect_by_func (self, (gpointer) g_paste_daemon_reexecute_self, user_data);
-    g_signal_handlers_disconnect_by_func (priv->settings, (gpointer) g_paste_daemon_tracking, user_data);
-    g_signal_handlers_disconnect_by_func (priv->history, (gpointer) g_paste_daemon_changed, user_data);
+    g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
+    g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
+    g_signal_handler_disconnect (priv->history, c_signals[C_CHANGED]);
 
     g_object_unref (self);
 }
@@ -490,18 +500,18 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     if (!result)
         return 0;
 
-    g_signal_connect (G_OBJECT (self),
-                      "reexecute-self",
-                      G_CALLBACK (g_paste_daemon_reexecute_self),
-                      NULL);
-    g_signal_connect_swapped (G_OBJECT (priv->settings),
-                              "track",
-                              G_CALLBACK (g_paste_daemon_tracking),
-                              self);
-    g_signal_connect_swapped (G_OBJECT (priv->history),
-                              "changed",
-                              G_CALLBACK (g_paste_daemon_changed),
-                              self);
+    c_signals[C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (self),
+                                                    "reexecute-self",
+                                                    G_CALLBACK (g_paste_daemon_reexecute_self),
+                                                    NULL);
+    c_signals[C_TRACK] = g_signal_connect_swapped (G_OBJECT (priv->settings),
+                                                   "track",
+                                                   G_CALLBACK (g_paste_daemon_tracking),
+                                                   self);
+    c_signals[C_CHANGED] = g_signal_connect_swapped (G_OBJECT (priv->history),
+                                                     "changed",
+                                                     G_CALLBACK (g_paste_daemon_changed),
+                                                     self);
 
     return result;
 }

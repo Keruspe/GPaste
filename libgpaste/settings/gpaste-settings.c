@@ -58,6 +58,14 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+enum
+{
+    C_CHANGED,
+    C_LAST_SIGNAL
+};
+
+static gulong c_signals[C_LAST_SIGNAL] = { 0 };
+
 #define SETTING(name, key, type, setting_type, fail, guards, clear_func, dup_func) \
     G_PASTE_VISIBLE type \
     g_paste_settings_get_##name (GPasteSettings *self) \
@@ -448,7 +456,7 @@ g_paste_settings_dispose (GObject *object)
     GPasteSettings *self = G_PASTE_SETTINGS (object);
     GSettings *settings = self->priv->settings;
 
-    g_signal_handlers_disconnect_by_func (settings, (gpointer) g_paste_settings_settings_changed, self);
+    g_signal_handler_disconnect (settings, c_signals[C_CHANGED]);
     g_object_unref (settings);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
@@ -532,10 +540,10 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_show_history_from_dconf (self);
     g_paste_settings_set_paste_and_pop_from_dconf (self);
 
-    g_signal_connect (G_OBJECT (settings),
-                      "changed",
-                      G_CALLBACK (g_paste_settings_settings_changed),
-                      self);
+    c_signals[C_CHANGED] = g_signal_connect (G_OBJECT (settings),
+                                             "changed",
+                                             G_CALLBACK (g_paste_settings_settings_changed),
+                                             self);
 }
 
 /**
