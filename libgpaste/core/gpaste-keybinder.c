@@ -58,7 +58,10 @@ g_paste_keybinder_source (gpointer data)
                     for (const xcb_keycode_t *k = keycodes; *k; ++k)
                     {
                         if (*k == keycode)
+                        {
                             g_paste_keybinding_notify (real_keybinding);
+                            break;
+                        }
                     }
                 }
             }
@@ -195,7 +198,7 @@ g_paste_keybinder_new (GPasteXcbWrapper *xcb_wrapper)
 
     self->priv->xcb_wrapper = g_object_ref (xcb_wrapper);
 
-    g_timeout_add (100, g_paste_keybinder_source, self);
+    g_idle_add (g_paste_keybinder_source, self);
 
     return self;
 }
