@@ -211,7 +211,7 @@ g_paste_keybinder_new (GPasteXcbWrapper *xcb_wrapper)
     GPasteKeybinderPrivate *priv = self->priv;
 
     priv->xcb_wrapper = g_object_ref (xcb_wrapper);
-    priv->thread = g_thread_new ("gpaste-keybinder",
+    priv->thread = g_thread_new ("GPasteKeybinder",
                                  g_paste_keybinder_thread,
                                  self);
 
