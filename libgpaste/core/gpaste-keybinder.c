@@ -29,48 +29,53 @@ struct _GPasteKeybinderPrivate
 {
     GPasteXcbWrapper *xcb_wrapper;
     GSList           *keybindings;
+    GThread          *thread;
+    gboolean          keep_looping;
 };
 
-static gboolean
-g_paste_keybinder_source (gpointer data)
+static gpointer
+g_paste_keybinder_thread (gpointer data)
 {
     GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (data)->priv;
     xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (priv->xcb_wrapper);
     xcb_generic_event_t *event;
 
-    if ((event = xcb_poll_for_event (connection)) &&
-        (event->response_type & ~0x80) == XCB_KEY_PRESS)
+    while (priv->keep_looping)
     {
-        xcb_ungrab_keyboard (connection, GDK_CURRENT_TIME);
-        xcb_flush (connection);
-        xcb_key_press_event_t *real_event = (xcb_key_press_event_t *) event;
-        xcb_keycode_t keycode = real_event->detail;
-        /* Ignore mouse modifiers */
-        guint16 modifiers = real_event->state & 0xff;
-        for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
+        if ((event = xcb_wait_for_event (connection)) &&
+            (event->response_type & ~0x80) == XCB_KEY_PRESS)
         {
-            GPasteKeybinding *real_keybinding = keybinding->data;
-            if (g_paste_keybinding_is_active (real_keybinding))
+            xcb_ungrab_keyboard (connection, GDK_CURRENT_TIME);
+            xcb_flush (connection);
+            xcb_key_press_event_t *real_event = (xcb_key_press_event_t *) event;
+            xcb_keycode_t keycode = real_event->detail;
+            /* Ignore mouse modifiers */
+            guint16 modifiers = real_event->state & 0xff;
+            for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
             {
-                const xcb_keycode_t *keycodes = (const xcb_keycode_t *) g_paste_keybinding_get_keycodes (real_keybinding);
-                if (keycodes && g_paste_keybinding_get_modifiers (real_keybinding) == modifiers)
+                GPasteKeybinding *real_keybinding = keybinding->data;
+                if (g_paste_keybinding_is_active (real_keybinding))
                 {
-                    for (const xcb_keycode_t *k = keycodes; *k; ++k)
+                    const xcb_keycode_t *keycodes = (const xcb_keycode_t *) g_paste_keybinding_get_keycodes (real_keybinding);
+                    if (keycodes && g_paste_keybinding_get_modifiers (real_keybinding) == modifiers)
                     {
-                        if (*k == keycode)
+                        for (const xcb_keycode_t *k = keycodes; *k; ++k)
                         {
-                            g_paste_keybinding_notify (real_keybinding);
-                            break;
+                            if (*k == keycode)
+                            {
+                                g_paste_keybinding_notify (real_keybinding);
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
+
+        g_free (event);
     }
 
-    g_free (event);
-
-    return TRUE;
+    return NULL;
 }
 
 /**
@@ -157,6 +162,8 @@ g_paste_keybinder_dispose (GObject *object)
     GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
     GPasteKeybinderPrivate *priv = self->priv;
 
+    priv->keep_looping = FALSE;
+    g_thread_join (priv->thread);
     g_paste_keybinder_deactivate_all (self);
     g_object_unref (priv->xcb_wrapper);
     g_slist_foreach (priv->keybindings, (GFunc) g_object_unref, NULL);
@@ -178,6 +185,7 @@ g_paste_keybinder_init (GPasteKeybinder *self)
     GPasteKeybinderPrivate *priv = self->priv = G_PASTE_KEYBINDER_GET_PRIVATE (self);
 
     priv->keybindings = NULL;
+    priv->keep_looping = TRUE;
 }
 
 /**
@@ -195,10 +203,12 @@ g_paste_keybinder_new (GPasteXcbWrapper *xcb_wrapper)
     g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
 
     GPasteKeybinder *self = g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);
+    GPasteKeybinderPrivate *priv = self->priv;
 
-    self->priv->xcb_wrapper = g_object_ref (xcb_wrapper);
-
-    g_idle_add (g_paste_keybinder_source, self);
+    priv->xcb_wrapper = g_object_ref (xcb_wrapper);
+    priv->thread = g_thread_new ("gpaste-keybinder",
+                                 g_paste_keybinder_thread,
+                                 self);
 
     return self;
 }
