@@ -74,6 +74,7 @@ g_paste_keybinder_thread (gpointer data)
             }
 
             g_free (event);
+            g_usleep (100);
         }
         else
             g_usleep (1000);
