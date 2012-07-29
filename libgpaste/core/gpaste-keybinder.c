@@ -42,37 +42,41 @@ g_paste_keybinder_thread (gpointer data)
 
     while (priv->keep_looping)
     {
-        if ((event = xcb_wait_for_event (connection)) &&
-            (event->response_type & ~0x80) == XCB_KEY_PRESS)
+        if ((event = xcb_wait_for_event (connection)))
         {
-            xcb_ungrab_keyboard (connection, GDK_CURRENT_TIME);
-            xcb_flush (connection);
-            xcb_key_press_event_t *real_event = (xcb_key_press_event_t *) event;
-            xcb_keycode_t keycode = real_event->detail;
-            /* Ignore mouse modifiers */
-            guint16 modifiers = real_event->state & 0xff;
-            for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
+            if ((event->response_type & ~0x80) == XCB_KEY_PRESS)
             {
-                GPasteKeybinding *real_keybinding = keybinding->data;
-                if (g_paste_keybinding_is_active (real_keybinding))
+                xcb_ungrab_keyboard (connection, GDK_CURRENT_TIME);
+                xcb_flush (connection);
+                xcb_key_press_event_t *real_event = (xcb_key_press_event_t *) event;
+                xcb_keycode_t keycode = real_event->detail;
+                /* Ignore mouse modifiers */
+                guint16 modifiers = real_event->state & 0xff;
+                for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
                 {
-                    const xcb_keycode_t *keycodes = (const xcb_keycode_t *) g_paste_keybinding_get_keycodes (real_keybinding);
-                    if (keycodes && g_paste_keybinding_get_modifiers (real_keybinding) == modifiers)
+                    GPasteKeybinding *real_keybinding = keybinding->data;
+                    if (g_paste_keybinding_is_active (real_keybinding))
                     {
-                        for (const xcb_keycode_t *k = keycodes; *k; ++k)
+                        const xcb_keycode_t *keycodes = (const xcb_keycode_t *) g_paste_keybinding_get_keycodes (real_keybinding);
+                        if (keycodes && g_paste_keybinding_get_modifiers (real_keybinding) == modifiers)
                         {
-                            if (*k == keycode)
+                            for (const xcb_keycode_t *k = keycodes; *k; ++k)
                             {
-                                g_paste_keybinding_notify (real_keybinding);
-                                break;
+                                if (*k == keycode)
+                                {
+                                    g_paste_keybinding_notify (real_keybinding);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        g_free (event);
+            g_free (event);
+        }
+        else
+            g_usleep (1000);
     }
 
     return NULL;
