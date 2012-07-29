@@ -86,63 +86,70 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         GPasteClipboard *clip = clipboard->data;
-        GtkClipboard *real = g_paste_clipboard_get_real (clip);
         gboolean something_in_clipboard = FALSE;
-        gboolean uris_available = gtk_clipboard_wait_is_uris_available (real);
+        GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
+                                                                     gdk_atom_intern_static_string ("TARGETS"));
 
-        if (uris_available || gtk_clipboard_wait_is_text_available (real))
+        if (targets)
         {
-            const gchar *text = g_paste_clipboard_set_text (clip);
+            gboolean uris_available = gtk_selection_data_targets_include_uri (targets);
 
-            something_in_clipboard = (g_paste_clipboard_get_text (clip) != NULL);
-
-            if (text != NULL)
+            if (uris_available || gtk_selection_data_targets_include_text (targets))
             {
-                if (g_paste_settings_get_track_changes (settings) &&
-                    (g_paste_clipboard_get_target (clip) == GDK_SELECTION_CLIPBOARD ||
-                        g_paste_settings_get_primary_to_history (settings)))
+                const gchar *text = g_paste_clipboard_set_text (clip);
+
+                something_in_clipboard = (g_paste_clipboard_get_text (clip) != NULL);
+
+                if (text != NULL)
                 {
-                    GPasteItem *item;
+                    if (g_paste_settings_get_track_changes (settings) &&
+                        (g_paste_clipboard_get_target (clip) == GDK_SELECTION_CLIPBOARD ||
+                            g_paste_settings_get_primary_to_history (settings)))
+                    {
+                        GPasteItem *item;
 
-                    if (uris_available)
-                        item = G_PASTE_ITEM (g_paste_uris_item_new (text));
-                    else
-                        item = G_PASTE_ITEM (g_paste_text_item_new (text));
+                        if (uris_available)
+                            item = G_PASTE_ITEM (g_paste_uris_item_new (text));
+                        else
+                            item = G_PASTE_ITEM (g_paste_text_item_new (text));
 
-                    g_paste_history_add (history, item);
-                    g_object_unref (item);
-                }
+                        g_paste_history_add (history, item);
+                        g_object_unref (item);
+                    }
 
-                if (g_paste_settings_get_synchronize_clipboards (settings))
-                    synchronized_text = text;
-            }
-        }
-        else if (gtk_clipboard_wait_is_image_available (real))
-        {
-            GdkPixbuf *image = g_paste_clipboard_set_image (clip);
-
-            something_in_clipboard = (g_paste_clipboard_get_image_checksum (clip) != NULL);
-
-            if (image != NULL)
-            {
-                if (g_paste_settings_get_track_changes (settings) &&
-                    (g_paste_clipboard_get_target (clip) == GDK_SELECTION_CLIPBOARD ||
-                        g_paste_settings_get_primary_to_history (settings)))
-                {
-                    GPasteItem *item = G_PASTE_ITEM (g_paste_image_item_new (image));
-
-                    g_paste_history_add (history, item);
-                    g_object_unref (image);
-                    g_object_unref (item);
+                    if (g_paste_settings_get_synchronize_clipboards (settings))
+                        synchronized_text = text;
                 }
             }
-        }
+            else if (gtk_selection_data_targets_include_image (targets, FALSE))
+            {
+                GdkPixbuf *image = g_paste_clipboard_set_image (clip);
 
-        if (!something_in_clipboard)
-        {
-            const GSList *hist = g_paste_history_get_history (history);
-            if (hist != NULL)
-                g_paste_clipboard_select_item (clip, hist->data);
+                something_in_clipboard = (g_paste_clipboard_get_image_checksum (clip) != NULL);
+
+                if (image != NULL)
+                {
+                    if (g_paste_settings_get_track_changes (settings) &&
+                        (g_paste_clipboard_get_target (clip) == GDK_SELECTION_CLIPBOARD ||
+                            g_paste_settings_get_primary_to_history (settings)))
+                    {
+                        GPasteItem *item = G_PASTE_ITEM (g_paste_image_item_new (image));
+
+                        g_paste_history_add (history, item);
+                        g_object_unref (image);
+                        g_object_unref (item);
+                    }
+                }
+            }
+
+            gtk_selection_data_free (targets);
+
+            if (!something_in_clipboard)
+            {
+                const GSList *hist = g_paste_history_get_history (history);
+                if (hist != NULL)
+                    g_paste_clipboard_select_item (clip, hist->data);
+            }
         }
     }
 
