@@ -86,6 +86,11 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         GPasteClipboard *clip = clipboard->data;
+
+        if (g_paste_clipboard_get_target (clip) == GDK_SELECTION_PRIMARY &&
+            !g_paste_settings_get_primary_to_history (settings))
+                continue;
+
         gboolean something_in_clipboard = FALSE;
         GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
                                                                      gdk_atom_intern_static_string ("TARGETS"));
@@ -102,9 +107,7 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
 
                 if (text != NULL)
                 {
-                    if (g_paste_settings_get_track_changes (settings) &&
-                        (g_paste_clipboard_get_target (clip) == GDK_SELECTION_CLIPBOARD ||
-                            g_paste_settings_get_primary_to_history (settings)))
+                    if (g_paste_settings_get_track_changes (settings))
                     {
                         GPasteItem *item;
 
