@@ -18,7 +18,6 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const StatusIconDispatcher = imports.ui.statusIconDispatcher;
 const Main = imports.ui.main;
 const Panel = imports.ui.panel;
 const Lang = imports.lang;
@@ -189,7 +188,6 @@ let _indicator;
 
 function init(extension) {
     Gettext.bindtextdomain('gpaste', extension.metadata.localedir);
-    StatusIconDispatcher.STANDARD_TRAY_ICON_IMPLEMENTATIONS['gpaste-applet'] = 'gpaste';
 }
 
 function enable() {
