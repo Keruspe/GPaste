@@ -80,6 +80,9 @@ G_PASTE_VISIBLE gboolean
 g_paste_item_equals (const GPasteItem *self,
                      const GPasteItem *other)
 {
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
+
     return G_PASTE_ITEM_GET_CLASS (self)->equals (self, other);
 }
 
@@ -100,6 +103,24 @@ g_paste_item_get_kind (const GPasteItem *self)
     return G_PASTE_ITEM_GET_CLASS (self)->get_kind (self);
 }
 
+/**
+ * g_paste_item_set_state:
+ * @self: a #GPasteItem instance
+ * @state: a #GPasteItemState
+ *
+ * Set whether this item is Active or Idle
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_item_set_state (GPasteItem     *self,
+                        GPasteItemState state)
+{
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
+
+    G_PASTE_ITEM_GET_CLASS (self)->set_state (self, state);
+}
+
 static void
 g_paste_item_finalize (GObject *object)
 {
@@ -112,10 +133,13 @@ static gboolean
 g_paste_item_default_equals (const GPasteItem *self,
                              const GPasteItem *other)
 {
-    g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
-
     return (g_strcmp0 (self->priv->value, other->priv->value) == 0);
+}
+
+static void
+g_paste_item_default_set_state (GPasteItem     *self G_GNUC_UNUSED,
+                                GPasteItemState state G_GNUC_UNUSED)
+{
 }
 
 static void
@@ -125,6 +149,7 @@ g_paste_item_class_init (GPasteItemClass *klass)
 
     klass->equals = g_paste_item_default_equals;
     klass->get_kind = NULL;
+    klass->set_state = g_paste_item_default_set_state;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_item_finalize;
 }
@@ -421,6 +446,27 @@ g_paste_image_item_get_kind (const GPasteItem *self)
 }
 
 static void
+g_paste_image_item_set_state (GPasteItem     *self,
+                              GPasteItemState state)
+{
+    g_return_if_fail (G_PASTE_IS_IMAGE_ITEM (self));
+
+    GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (self)->priv;
+
+    switch (state)
+    {
+    case G_PASTE_ITEM_STATE_IDLE:
+        g_clear_object (&priv->image);
+        break;
+    case G_PASTE_ITEM_STATE_ACTIVE:
+        if (!priv->image)
+            priv->image = gdk_pixbuf_new_from_file (self->priv->value,
+                                                    NULL); /* Error */
+        break;
+    }
+}
+
+static void
 g_paste_image_item_dispose (GObject *object)
 {
     GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (object)->priv;
@@ -449,6 +495,7 @@ g_paste_image_item_class_init (GPasteImageItemClass *klass)
 
     item_class->equals = g_paste_image_item_equals;
     item_class->get_kind = g_paste_image_item_get_kind;
+    item_class->set_state = g_paste_image_item_set_state;
 
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
@@ -464,8 +511,8 @@ g_paste_image_item_init (GPasteImageItem *self)
 
 static GPasteImageItem *
 _g_paste_image_item_new (const gchar *path,
-                         GdkPixbuf   *image,
                          GDateTime   *date,
+                         GdkPixbuf   *image,
                          gchar       *checksum)
 {
     GPasteItem *g_paste_item = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, path);
@@ -474,6 +521,8 @@ _g_paste_image_item_new (const gchar *path,
 
     priv->date = date;
     priv->image = image;
+    g_paste_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE); /* We're active when we're created */
+    image = priv->image;
 
     if (image)
     {
@@ -522,8 +571,8 @@ g_paste_image_item_new (GdkPixbuf *img)
     gchar *filename = g_strconcat (checksum, ".png", NULL);
     gchar *path = g_build_filename (images_dir_path, filename, NULL);
     GPasteImageItem *self = _g_paste_image_item_new (path,
-                                                     g_object_ref (img),
                                                      g_date_time_new_now_local (),
+                                                     g_object_ref (img),
                                                      checksum);
     g_free (images_dir_path);
     g_free (filename);
@@ -556,14 +605,8 @@ g_paste_image_item_new_from_file (const gchar *path,
     g_return_val_if_fail (g_utf8_validate (path, -1, NULL), NULL);
     g_return_val_if_fail (date != NULL, NULL);
 
-    GdkPixbuf *image = gdk_pixbuf_new_from_file (path,
-                                                 NULL); /* Error */
-
-    if (!image)
-        return NULL;
-
     return _g_paste_image_item_new (path,
-                                    image,
                                     g_date_time_ref (date),
-                                    NULL);
+                                    NULL, /* GdkPixbuf */
+                                    NULL); /* Checksum */
 }

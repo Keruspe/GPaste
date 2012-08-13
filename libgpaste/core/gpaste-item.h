@@ -33,6 +33,11 @@
 
 G_BEGIN_DECLS
 
+typedef enum {
+    G_PASTE_ITEM_STATE_IDLE,
+    G_PASTE_ITEM_STATE_ACTIVE
+} GPasteItemState;
+
 /* GPaste Item */
 
 #define G_PASTE_TYPE_ITEM                (g_paste_item_get_type ())
@@ -55,6 +60,9 @@ const gchar *g_paste_item_get_display_string (const GPasteItem *self);
 gboolean     g_paste_item_equals             (const GPasteItem *self,
                                               const GPasteItem *other);
 const gchar *g_paste_item_get_kind           (const GPasteItem *self);
+
+void g_paste_item_set_state (GPasteItem     *self,
+                             GPasteItemState state);
 
 /* GPaste TextItem */
 

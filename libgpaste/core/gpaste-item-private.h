@@ -48,6 +48,8 @@ struct _GPasteItemClass
     /*< pure virtual >*/
     gboolean (*has_value) (const GPasteItem *self);
     const gchar *(*get_kind) (const GPasteItem *self);
+    void (*set_state) (GPasteItem     *self,
+                       GPasteItemState state);
 };
 
 /* GPaste TextItem */
