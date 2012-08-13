@@ -109,6 +109,12 @@ g_paste_history_add (GPasteHistory *self,
         g_slist_append (priv->history, g_object_ref (item)) :
         g_slist_prepend (priv->history, g_object_ref (item));
 
+    GSList *next = history->next;
+
+    if (next)
+        g_paste_item_set_state (next->data, G_PASTE_ITEM_STATE_IDLE);
+    g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
+
     guint32 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
 
     if (g_slist_length (history) > max_history_size)
