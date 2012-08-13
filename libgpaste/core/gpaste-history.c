@@ -531,6 +531,7 @@ g_paste_history_delete (GPasteHistory *self)
     gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
+    g_paste_history_empty (self);
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
     {

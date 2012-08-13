@@ -171,10 +171,12 @@ g_paste_daemon_delete_history (GPasteDaemon          *self,
     GPasteHistory *history = priv->history;
 
     gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
+    gboolean delete_current = g_strcmp0 (name, old_history) == 0;
 
-    g_paste_history_switch (history, name);
+    if (!delete_current)
+        g_paste_history_switch (history, name);
     g_paste_history_delete (history);
-    g_paste_history_switch (history, (g_strcmp0 (name, old_history) == 0) ? DEFAULT_HISTORY : old_history);
+    g_paste_history_switch (history, delete_current ? DEFAULT_HISTORY : old_history);
 
     g_free (name);
     g_free (old_history);
