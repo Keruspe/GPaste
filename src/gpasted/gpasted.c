@@ -148,25 +148,6 @@ error_exit (const gchar *error)
 }
 
 static void
-on_bus_acquired (GDBusConnection *connection,
-                 const char      *name G_GNUC_UNUSED,
-                 gpointer         user_data)
-{
-    GError *error = NULL;
-
-    g_paste_daemon_register_object (G_PASTE_DAEMON (user_data),
-                                    connection,
-                                    G_PASTE_OBJECT_PATH,
-                                    &error);
-
-    if (error != NULL)
-    {
-        g_error_free (error);
-        error_exit (_("Could not register DBus service."));
-    }
-}
-
-static void
 on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
               const char      *name G_GNUC_UNUSED,
               gpointer         user_data G_GNUC_UNUSED)
@@ -242,21 +223,18 @@ main (int argc, char *argv[])
 
     main_loop = g_main_loop_new (NULL, FALSE);
 
-    guint owner_id = g_bus_own_name (G_BUS_TYPE_SESSION,
-                                     G_PASTE_BUS_NAME,
-                                     G_BUS_NAME_OWNER_FLAGS_NONE,
-                                     on_bus_acquired, 
-                                     NULL, /* on_name_acquired */
-                                     on_name_lost,
-                                     g_object_ref (g_paste_daemon),
-                                     g_object_unref);
+    GError *error;
+    if (!g_paste_daemon_own_bus_name (g_paste_daemon, &error))
+    {
+        g_error_free (error);
+        error_exit (_("Could not register DBus service."));
+    }
 
     g_main_loop_run (main_loop);
 
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
     g_object_unref (settings);
     g_object_unref (g_paste_daemon);
-    g_bus_unown_name (owner_id);
     g_main_loop_unref (main_loop);
 
     return EXIT_SUCCESS;

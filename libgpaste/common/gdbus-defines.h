@@ -38,6 +38,7 @@
 #define TRACK            "Track"
 
 #define SIG_CHANGED      "Changed"
+#define SIG_NAME_LOST    "NameLost"
 #define SIG_SHOW_HISTORY "ShowHistory"
 
 #endif /*__GDBUS_DEFINES_H__*/

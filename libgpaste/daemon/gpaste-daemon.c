@@ -33,6 +33,8 @@ struct _GPasteDaemonPrivate
 {
     GDBusConnection         *connection;
     gchar                   *object_path;
+    guint                    id_on_bus;
+    GError                  *inner_error;
     GPasteHistory           *history;
     GPasteSettings          *settings;
     GPasteClipboardsManager *clipboards_manager;
@@ -316,6 +318,20 @@ g_paste_daemon_changed (GPasteDaemon *self,
                                    NULL); /* error */
 }
 
+static void
+g_paste_daemon_name_lost (GPasteDaemon *self)
+{
+    GPasteDaemonPrivate *priv = self->priv;
+
+    g_dbus_connection_emit_signal (priv->connection,
+                                   NULL, /* destination_bus_name */
+                                   priv->object_path,
+                                   G_PASTE_BUS_NAME,
+                                   SIG_NAME_LOST,
+                                   g_variant_new_tuple (NULL, 0),
+                                   NULL); /* error */
+}
+
 /**
  * g_paste_daemon_show_history:
  * @self: (transfer none): the #GPasteDaemon
@@ -519,10 +535,55 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
 }
 
 static void
+g_paste_daemon_on_bus_acquired (GDBusConnection *connection,
+                                const char      *name G_GNUC_UNUSED,
+                                gpointer         user_data)
+{
+    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
+
+    g_paste_daemon_register_object (self,
+                                    connection,
+                                    G_PASTE_OBJECT_PATH,
+                                    &self->priv->inner_error);
+}
+
+static void
+g_paste_daemon_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
+                             const char      *name G_GNUC_UNUSED,
+                             gpointer         user_data)
+{
+    g_paste_daemon_name_lost (G_PASTE_DAEMON (user_data));
+}
+
+
+G_PASTE_VISIBLE gboolean
+g_paste_daemon_own_bus_name (GPasteDaemon *self,
+                             GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_DAEMON (self), FALSE);
+
+    GPasteDaemonPrivate *priv = self->priv;
+
+    priv->inner_error = *error;
+    priv->id_on_bus = g_bus_own_name (G_BUS_TYPE_SESSION,
+                                      G_PASTE_BUS_NAME,
+                                      G_BUS_NAME_OWNER_FLAGS_NONE,
+                                      g_paste_daemon_on_bus_acquired,
+                                      NULL, /* on_name_acquired */
+                                      g_paste_daemon_on_name_lost,
+                                      g_object_ref (self),
+                                      g_object_unref);
+
+    return (!priv->inner_error);
+}
+
+
+static void
 g_paste_daemon_dispose (GObject *object)
 {
     GPasteDaemonPrivate *priv = G_PASTE_DAEMON (object)->priv;
 
+    g_bus_unown_name (priv->id_on_bus);
     g_object_unref (priv->connection);
     g_object_unref (priv->history);
     g_object_unref (priv->settings);
@@ -610,6 +671,7 @@ g_paste_daemon_init (GPasteDaemon *self)
         "           <arg type='b' direction='out' />"
         "       </signal>"
         "       <signal name='" SIG_CHANGED "' />"
+        "       <signal name='" SIG_NAME_LOST "' />"
         "       <signal name='" SIG_SHOW_HISTORY "' />"
         "       <property name='Active' type='b' access='read' />"
         "   </interface>"
