@@ -5,9 +5,6 @@
         ReexecuteSelf
         OnExtensionStateChanged
         Active
-    libgpaste-daemon:
-        polish and make public
-        pkg-config
     gpaste:
         defer file reading to daemon
     gnome-shell:
