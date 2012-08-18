@@ -29,7 +29,7 @@ typedef struct _GPastePasteAndPopKeybindingPrivate GPastePasteAndPopKeybindingPr
 
 struct _GPastePasteAndPopKeybinding
 {
-    GObject parent_instance;
+    GPasteKeybinding parent_instance;
 
     /*< private >*/
     GPastePasteAndPopKeybindingPrivate *priv;
@@ -37,7 +37,7 @@ struct _GPastePasteAndPopKeybinding
 
 struct _GPastePasteAndPopKeybindingClass
 {
-    GObjectClass parent_class;
+    GPasteKeybindingClass parent_class;
 };
 
 G_END_DECLS

@@ -49,8 +49,9 @@ g_paste_paste_and_pop_keybinding_class_init (GPastePasteAndPopKeybindingClass *k
 }
 
 static void
-g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self G_GNUC_UNUSED)
+g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self)
 {
+    self->priv = G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE (self);
 }
 
 static void
