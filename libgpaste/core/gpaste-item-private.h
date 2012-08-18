@@ -50,6 +50,9 @@ struct _GPasteItemClass
                        GPasteItemState state);
 };
 
+void g_paste_item_set_display_string (GPasteItem  *self,
+                                      const gchar *display_string);
+
 GPasteItem *g_paste_item_new (GType        type,
                               const gchar *value);
 

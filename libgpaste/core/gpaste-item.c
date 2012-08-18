@@ -100,16 +100,7 @@ g_paste_item_get_kind (const GPasteItem *self)
     return G_PASTE_ITEM_GET_CLASS (self)->get_kind (self);
 }
 
-/**
- * g_paste_item_set_display_string:
- * @self: a #GPasteItem instance
- * @display_string: the new display string
- *
- * Set the string displayed when accessing the item
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
+void
 g_paste_item_set_display_string (GPasteItem  *self,
                                  const gchar *display_string)
 {
@@ -120,6 +111,7 @@ g_paste_item_set_display_string (GPasteItem  *self,
     g_free (priv->display_string);
     priv->display_string = g_strdup (display_string);
 }
+
 /**
  * g_paste_item_set_state:
  * @self: a #GPasteItem instance

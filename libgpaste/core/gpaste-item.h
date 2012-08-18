@@ -59,8 +59,6 @@ gboolean     g_paste_item_equals             (const GPasteItem *self,
                                               const GPasteItem *other);
 const gchar *g_paste_item_get_kind           (const GPasteItem *self);
 
-void g_paste_item_set_display_string (GPasteItem  *self,
-                                      const gchar *display_string);
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
 
