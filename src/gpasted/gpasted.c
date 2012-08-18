@@ -228,7 +228,7 @@ main (int argc, char *argv[])
 
     main_loop = g_main_loop_new (NULL, FALSE);
 
-    GError *error;
+    GError *error = NULL;
     if (!g_paste_daemon_own_bus_name (g_paste_daemon, &error))
     {
         g_error_free (error);
