@@ -51,18 +51,12 @@ signal_handler (int signum)
 }
 
 static void
-error_exit (const gchar *error)
-{
-    fprintf (stderr, "%s\n", error);
-    g_main_loop_quit (main_loop);
-    exit (EXIT_FAILURE);
-}
-
-static void
 on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
               gpointer      user_data G_GNUC_UNUSED)
 {
-    error_exit (_("Could not aquire DBus name."));
+    fprintf (stderr, "%s\n", _("Could not acquire DBus name."));
+    g_main_loop_quit (main_loop);
+    exit (EXIT_FAILURE);
 }
 
 static void
@@ -228,14 +222,18 @@ main (int argc, char *argv[])
 
     main_loop = g_main_loop_new (NULL, FALSE);
 
+    gint exit_status = EXIT_SUCCESS;
     GError *error = NULL;
-    if (!g_paste_daemon_own_bus_name (g_paste_daemon, &error))
+    if (g_paste_daemon_own_bus_name (g_paste_daemon, &error))
+    {
+        g_main_loop_run (main_loop);
+    }
+    else
     {
         g_error_free (error);
-        error_exit (_("Could not register DBus service."));
+        fprintf (stderr, "%s\n", _("Could not register DBus service."));
+        exit_status = EXIT_FAILURE;
     }
-
-    g_main_loop_run (main_loop);
 
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
@@ -243,5 +241,5 @@ main (int argc, char *argv[])
     g_object_unref (g_paste_daemon);
     g_main_loop_unref (main_loop);
 
-    return EXIT_SUCCESS;
+    return exit_status;
 }
