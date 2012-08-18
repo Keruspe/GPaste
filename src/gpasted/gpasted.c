@@ -35,7 +35,9 @@ static GMainLoop *main_loop;
 
 enum
 {
+    C_NAME_LOST,
     C_REEXECUTE_SELF,
+
     C_LAST_SIGNAL
 };
 
@@ -46,6 +48,21 @@ signal_handler (int signum)
 {
     g_print (_("Signal %d received, exiting\n"), signum);
     g_main_loop_quit (main_loop);
+}
+
+static void
+error_exit (const gchar *error)
+{
+    fprintf (stderr, "%s\n", error);
+    g_main_loop_quit (main_loop);
+    exit (EXIT_FAILURE);
+}
+
+static void
+on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
+              gpointer      user_data G_GNUC_UNUSED)
+{
+    error_exit (_("Could not aquire DBus name."));
 }
 
 static void
@@ -139,22 +156,6 @@ paste_and_pop (PasteAndPopData *data)
     gtk_target_list_unref (target_list);
 }
 
-static void
-error_exit (const gchar *error)
-{
-    fprintf (stderr, "%s\n", error);
-    g_main_loop_quit (main_loop);
-    exit (EXIT_FAILURE);
-}
-
-static void
-on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
-              const char      *name G_GNUC_UNUSED,
-              gpointer         user_data G_GNUC_UNUSED)
-{
-    error_exit (_("Could not aquire DBus name."));
-}
-
 int
 main (int argc, char *argv[])
 {
@@ -194,6 +195,10 @@ main (int argc, char *argv[])
                                 &data)
     };
 
+    c_signals[C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
+                                               "name-lost",
+                                               G_CALLBACK (on_name_lost),
+                                               NULL); /* user_data */
     c_signals[C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
                                                     "reexecute-self",
                                                     G_CALLBACK (reexec),
@@ -232,6 +237,7 @@ main (int argc, char *argv[])
 
     g_main_loop_run (main_loop);
 
+    g_signal_handler_disconnect (g_paste_daemon, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
     g_object_unref (settings);
     g_object_unref (g_paste_daemon);
