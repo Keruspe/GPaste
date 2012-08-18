@@ -5,9 +5,12 @@
         ReexecuteSelf
         OnExtensionStateChanged
         Active
+    libgpaste-daemon:
+        fix pop from paste & pop
     gpaste:
         defer file reading to daemon
     gnome-shell:
+        fix settings opening
         port to libgpaste-client
         prefs.js
 
