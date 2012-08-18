@@ -39,6 +39,14 @@ struct _GPasteKeybindingClass
     GObjectClass parent_class;
 };
 
+GPasteKeybinding *_g_paste_keybinding_new (GType                  type,
+                                           GPasteXcbWrapper      *xcb_wrapper,
+                                           GPasteSettings        *settings,
+                                           const gchar           *dconf_key,
+                                           GPasteKeybindingGetter getter,
+                                           GPasteKeybindingFunc   callback,
+                                           gpointer               user_data);
+
 G_END_DECLS
 
 #endif /*__G_PASTE_KEYBINDING_PRIVATE_H__*/

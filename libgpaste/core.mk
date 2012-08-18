@@ -32,6 +32,7 @@ libgpaste_core_public_headers = \
 	libgpaste/core/gpaste-item.h \
 	libgpaste/core/gpaste-keybinder.h \
 	libgpaste/core/gpaste-keybinding.h \
+	libgpaste/core/gpaste-show-history-keybinding.h \
 	libgpaste/core/gpaste-text-item.h \
 	libgpaste/core/gpaste-uris-item.h \
 	libgpaste/core/gpaste-xcb-wrapper.h \
@@ -45,6 +46,7 @@ libgpaste_core_private_headers = \
 	libgpaste/core/gpaste-item-private.h \
 	libgpaste/core/gpaste-keybinder-private.h \
 	libgpaste/core/gpaste-keybinding-private.h \
+	libgpaste/core/gpaste-show-history-keybinding-private.h \
 	libgpaste/core/gpaste-text-item-private.h \
 	libgpaste/core/gpaste-uris-item-private.h \
 	libgpaste/core/gpaste-xcb-wrapper-private.h \
@@ -60,6 +62,7 @@ libgpaste_core_libgpaste_core_la_SOURCES = \
 	libgpaste/core/gpaste-item.c \
 	libgpaste/core/gpaste-keybinder.c \
 	libgpaste/core/gpaste-keybinding.c \
+	libgpaste/core/gpaste-show-history-keybinding.c \
 	libgpaste/core/gpaste-text-item.c \
 	libgpaste/core/gpaste-uris-item.c \
 	libgpaste/core/gpaste-xcb-wrapper.c \

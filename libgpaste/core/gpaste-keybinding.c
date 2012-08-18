@@ -247,6 +247,37 @@ g_paste_keybinding_init (GPasteKeybinding *self)
     priv->active = FALSE;
 }
 
+GPasteKeybinding *
+_g_paste_keybinding_new (GType                  type,
+                         GPasteXcbWrapper      *xcb_wrapper,
+                         GPasteSettings        *settings,
+                         const gchar           *dconf_key,
+                         GPasteKeybindingGetter getter,
+                         GPasteKeybindingFunc   callback,
+                         gpointer               user_data)
+{
+    GPasteKeybinding *self = g_object_new (type, NULL);
+    GPasteKeybindingPrivate *priv = self->priv;
+
+    priv->xcb_wrapper = g_object_ref (xcb_wrapper);
+    priv->settings = g_object_ref (settings);
+    priv->binding = g_strdup (getter (settings));
+    priv->getter = getter;
+    priv->callback = callback;
+    priv->user_data = user_data;
+
+    gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
+
+    g_signal_connect_swapped (G_OBJECT (settings),
+                              detailed_signal,
+                              G_CALLBACK (g_paste_keybinding_rebind),
+                              self);
+
+    g_free (detailed_signal);
+
+    return self;
+}
+
 /**
  * g_paste_keybinding_new:
  * @xcb_wrapper: a #GPasteXcbWrapper instance
@@ -275,24 +306,11 @@ g_paste_keybinding_new (GPasteXcbWrapper      *xcb_wrapper,
     g_return_val_if_fail (getter != NULL, NULL);
     g_return_val_if_fail (callback != NULL, NULL);
 
-    GPasteKeybinding *self = g_object_new (G_PASTE_TYPE_KEYBINDING, NULL);
-    GPasteKeybindingPrivate *priv = self->priv;
-
-    priv->xcb_wrapper = g_object_ref (xcb_wrapper);
-    priv->settings = g_object_ref (settings);
-    priv->binding = g_strdup (getter (settings));
-    priv->getter = getter;
-    priv->callback = callback;
-    priv->user_data = user_data;
-
-    gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
-
-    g_signal_connect_swapped (G_OBJECT (settings),
-                              detailed_signal,
-                              G_CALLBACK (g_paste_keybinding_rebind),
-                              self);
-
-    g_free (detailed_signal);
-
-    return self;
+    return _g_paste_keybinding_new (G_PASTE_TYPE_KEYBINDING,
+                                    xcb_wrapper,
+                                    settings,
+                                    dconf_key,
+                                    getter,
+                                    callback,
+                                    user_data);
 }
