@@ -41,6 +41,7 @@ AM_CFLAGS = \
 	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/settings \
 	-I$(srcdir)/libgpaste/core \
+	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/client \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \

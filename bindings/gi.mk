@@ -17,29 +17,33 @@
 
 -include $(INTROSPECTION_MAKEFILE)
 
-INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h --c-include=gpaste-client.h
+INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h --c-include=gpaste-daemon.h --c-include=gpaste-client.h
 INTROSPECTION_COMPILER_ARGS = $(NULL)
 
 libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
-$(libgpaste_gir_file): $(libgpaste_core_la_file) $(libgpaste_client_la_file)
+$(libgpaste_gir_file): $(libgpaste_core_la_file) $(libgpaste_daemon_la_file) $(libgpaste_client_la_file)
 bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_settings_libgpaste_settings_la_SOURCES) \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
+	$(libgpaste_daemon_libgpaste_daemon_la_SOURCES) \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
 	-I$(srcdir)/libgpaste/settings \
 	-I$(srcdir)/libgpaste/core \
+	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/client \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_LIBS = \
 	$(libgpaste_core_la_file) \
+	$(libgpaste_daemon_la_file) \
 	$(libgpaste_client_la_file) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
 	libgpaste-settings \
 	libgpaste-core \
+	libgpaste-daemon \
 	libgpaste-client \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all --warn-error
