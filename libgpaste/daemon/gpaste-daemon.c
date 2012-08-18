@@ -489,18 +489,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_object_unref (self);
 }
 
-/**
- * g_paste_daemon_register_object:
- * @self: (transfer none): the #GPasteDaemon
- * @connection: (transfer none): the #GDBusConnection
- * @path: the DBus path
- * @error: a pointer to a #GError for DBus connection errors
- *
- * Register the daemon on the DBus connection
- *
- * Returns: the id of the daemon on the DBus connection
- */
-G_PASTE_VISIBLE guint
+static guint
 g_paste_daemon_register_object (GPasteDaemon    *self,
                                 GDBusConnection *connection,
                                 const gchar     *path,

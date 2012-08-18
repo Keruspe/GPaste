@@ -40,10 +40,6 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_daemon_get_type (void);
 
-guint g_paste_daemon_register_object (GPasteDaemon    *self,
-                                      GDBusConnection *connection,
-                                      const gchar     *path,
-                                      GError         **error);
 gboolean g_paste_daemon_own_bus_name (GPasteDaemon *self,
                                       GError      **error);
 void g_paste_daemon_show_history (GPasteDaemon *self);
