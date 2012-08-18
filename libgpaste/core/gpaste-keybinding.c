@@ -256,6 +256,9 @@ g_paste_keybinding_init (GPasteKeybinding *self)
     priv->active = FALSE;
 }
 
+/**
+ * _g_paste_keybinding_new: (skip)
+ */
 GPasteKeybinding *
 _g_paste_keybinding_new (GType                  type,
                          GPasteXcbWrapper      *xcb_wrapper,

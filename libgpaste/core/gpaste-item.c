@@ -175,6 +175,9 @@ g_paste_item_init (GPasteItem *self)
     self->priv = G_PASTE_ITEM_GET_PRIVATE (self);
 }
 
+/**
+ * g_paste_item_new: (skip)
+ */
 GPasteItem *
 g_paste_item_new (GType        type,
                   const gchar *value)
