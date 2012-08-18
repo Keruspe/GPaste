@@ -18,6 +18,7 @@
  */
 
 #include "gpaste-daemon-private.h"
+#include "gpaste-text-item.h"
 #include "gdbus-defines.h"
 
 #include <glib.h>

@@ -18,6 +18,8 @@
  */
 
 #include "gpaste-clipboard-common.h"
+#include "gpaste-image-item.h"
+#include "gpaste-uris-item.h"
 
 #include <string.h>
 

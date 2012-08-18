@@ -17,18 +17,24 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_H__
-#define __G_PASTE_H__
+#ifndef __G_PASTE_TEXT_ITEM_PRIVATE_H__
+#define __G_PASTE_TEXT_ITEM_PRIVATE_H__
 
-#define __G_PASTE_H_INSIDE__
+#include "gpaste-item-private.h"
+#include "gpaste-text-item.h"
 
-#include <gpaste-clipboard.h>
-#include <gpaste-clipboards-manager.h>
-#include <gpaste-history.h>
-#include <gpaste-keybinder.h>
-#include <gpaste-settings.h>
-#include <gpaste-xcb-wrapper.h>
+G_BEGIN_DECLS
 
-#undef __G_PASTE_H_INSIDE__
+struct _GPasteTextItem
+{
+    GPasteItem parent_instance;
+};
 
-#endif /*__G_PASTE_H__*/
+struct _GPasteTextItemClass
+{
+    GPasteItemClass parent_class;
+};
+
+G_END_DECLS
+
+#endif /*__G_PASTE_TEXT_ITEM_PRIVATE_H__*/

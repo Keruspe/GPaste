@@ -28,9 +28,12 @@ libgpaste_core_public_headers = \
 	libgpaste/core/gpaste-clipboard.h \
 	libgpaste/core/gpaste-clipboards-manager.h \
 	libgpaste/core/gpaste-history.h \
+	libgpaste/core/gpaste-image-item.h \
 	libgpaste/core/gpaste-item.h \
 	libgpaste/core/gpaste-keybinder.h \
 	libgpaste/core/gpaste-keybinding.h \
+	libgpaste/core/gpaste-text-item.h \
+	libgpaste/core/gpaste-uris-item.h \
 	libgpaste/core/gpaste-xcb-wrapper.h \
 	$(NULL)
 
@@ -38,9 +41,12 @@ libgpaste_core_private_headers = \
 	libgpaste/core/gpaste-clipboard-private.h \
 	libgpaste/core/gpaste-clipboards-manager-private.h \
 	libgpaste/core/gpaste-history-private.h \
+	libgpaste/core/gpaste-image-item-private.h \
 	libgpaste/core/gpaste-item-private.h \
 	libgpaste/core/gpaste-keybinder-private.h \
 	libgpaste/core/gpaste-keybinding-private.h \
+	libgpaste/core/gpaste-text-item-private.h \
+	libgpaste/core/gpaste-uris-item-private.h \
 	libgpaste/core/gpaste-xcb-wrapper-private.h \
 	$(NULL)
 
@@ -50,9 +56,12 @@ libgpaste_core_libgpaste_core_la_SOURCES = \
 	libgpaste/core/gpaste-clipboard.c \
 	libgpaste/core/gpaste-clipboards-manager.c \
 	libgpaste/core/gpaste-history.c \
+	libgpaste/core/gpaste-image-item.c \
 	libgpaste/core/gpaste-item.c \
 	libgpaste/core/gpaste-keybinder.c \
 	libgpaste/core/gpaste-keybinding.c \
+	libgpaste/core/gpaste-text-item.c \
+	libgpaste/core/gpaste-uris-item.c \
 	libgpaste/core/gpaste-xcb-wrapper.c \
 	$(NULL)
 

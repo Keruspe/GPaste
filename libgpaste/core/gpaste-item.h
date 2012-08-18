@@ -38,8 +38,6 @@ typedef enum {
     G_PASTE_ITEM_STATE_ACTIVE
 } GPasteItemState;
 
-/* GPaste Item */
-
 #define G_PASTE_TYPE_ITEM                (g_paste_item_get_type ())
 #define G_PASTE_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_ITEM, GPasteItem))
 #define G_PASTE_IS_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_ITEM))
@@ -61,73 +59,10 @@ gboolean     g_paste_item_equals             (const GPasteItem *self,
                                               const GPasteItem *other);
 const gchar *g_paste_item_get_kind           (const GPasteItem *self);
 
+void g_paste_item_set_display_string (GPasteItem  *self,
+                                      const gchar *display_string);
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
-
-/* GPaste TextItem */
-
-#define G_PASTE_TYPE_TEXT_ITEM                (g_paste_text_item_get_type ())
-#define G_PASTE_TEXT_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_TEXT_ITEM, GPasteTextItem))
-#define G_PASTE_IS_TEXT_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_TEXT_ITEM))
-#define G_PASTE_TEXT_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_TEXT_ITEM, GPasteTextItemClass))
-#define G_PASTE_IS_TEXT_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_TEXT_ITEM))
-#define G_PASTE_TEXT_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_TEXT_ITEM, GPasteTextItemClass))
-
-typedef struct _GPasteTextItem GPasteTextItem;
-typedef struct _GPasteTextItemClass GPasteTextItemClass;
-
-#ifdef G_PASTE_COMPILATION
-G_PASTE_VISIBLE
-#endif
-GType g_paste_text_item_get_type (void);
-
-GPasteTextItem *g_paste_text_item_new (const gchar *text);
-
-/* GPaste UrisItem */
-
-#define G_PASTE_TYPE_URIS_ITEM                (g_paste_uris_item_get_type ())
-#define G_PASTE_URIS_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_URIS_ITEM, GPasteUrisItem))
-#define G_PASTE_IS_URIS_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_URIS_ITEM))
-#define G_PASTE_URIS_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_URIS_ITEM, GPasteUrisItemClass))
-#define G_PASTE_IS_URIS_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_URIS_ITEM))
-#define G_PASTE_URIS_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_URIS_ITEM, GPasteUrisItemClass))
-
-typedef struct _GPasteUrisItem GPasteUrisItem;
-typedef struct _GPasteUrisItemClass GPasteUrisItemClass;
-
-#ifdef G_PASTE_COMPILATION
-G_PASTE_VISIBLE
-#endif
-GType g_paste_uris_item_get_type (void);
-
-const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
-
-GPasteUrisItem *g_paste_uris_item_new (const gchar *uris);
-
-/* GPaste ImageItem */
-
-#define G_PASTE_TYPE_IMAGE_ITEM                (g_paste_image_item_get_type ())
-#define G_PASTE_IMAGE_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_IMAGE_ITEM, GPasteImageItem))
-#define G_PASTE_IS_IMAGE_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_IMAGE_ITEM))
-#define G_PASTE_IMAGE_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_IMAGE_ITEM, GPasteImageItemClass))
-#define G_PASTE_IS_IMAGE_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_IMAGE_ITEM))
-#define G_PASTE_IMAGE_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_IMAGE_ITEM, GPasteImageItemClass))
-
-typedef struct _GPasteImageItem GPasteImageItem;
-typedef struct _GPasteImageItemClass GPasteImageItemClass;
-
-#ifdef G_PASTE_COMPILATION
-G_PASTE_VISIBLE
-#endif
-GType g_paste_image_item_get_type (void);
-
-const gchar     *g_paste_image_item_get_checksum (const GPasteImageItem *self);
-const GDateTime *g_paste_image_item_get_date     (const GPasteImageItem *self);
-GdkPixbuf       *g_paste_image_item_get_image    (const GPasteImageItem *self);
-
-GPasteImageItem *g_paste_image_item_new (GdkPixbuf *img);
-GPasteImageItem *g_paste_image_item_new_from_file (const gchar *path,
-                                                   GDateTime   *date);
 
 G_END_DECLS
 

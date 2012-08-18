@@ -18,6 +18,8 @@
  */
 
 #include "gpaste-clipboard-common.h"
+#include "gpaste-image-item.h"
+#include "gpaste-uris-item.h"
 
 G_PASTE_VISIBLE void
 g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,

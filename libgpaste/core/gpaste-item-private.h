@@ -24,8 +24,6 @@
 
 G_BEGIN_DECLS
 
-/* GPaste Item */
-
 typedef struct _GPasteItemPrivate GPasteItemPrivate;
 
 /*< abstract >*/
@@ -52,51 +50,8 @@ struct _GPasteItemClass
                        GPasteItemState state);
 };
 
-/* GPaste TextItem */
-
-struct _GPasteTextItem
-{
-    GPasteItem parent_instance;
-};
-
-struct _GPasteTextItemClass
-{
-    GPasteItemClass parent_class;
-};
-
-/* GPaste UrisItem */
-
-typedef struct _GPasteUrisItemPrivate GPasteUrisItemPrivate;
-
-struct _GPasteUrisItem
-{
-    GPasteTextItem parent_instance;
-
-    /*< private >*/
-    GPasteUrisItemPrivate *priv;
-};
-
-struct _GPasteUrisItemClass
-{
-    GPasteTextItemClass parent_class;
-};
-
-/* GPaste ImageItem */
-
-typedef struct _GPasteImageItemPrivate GPasteImageItemPrivate;
-
-struct _GPasteImageItem
-{
-    GPasteItem parent_instance;
-
-    /*<private>*/
-    GPasteImageItemPrivate *priv;
-};
-
-struct _GPasteImageItemClass
-{
-    GPasteItemClass parent_class;
-};
+GPasteItem *g_paste_item_new (GType        type,
+                              const gchar *value);
 
 G_END_DECLS
 
