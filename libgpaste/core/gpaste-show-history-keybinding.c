@@ -36,6 +36,7 @@ g_paste_show_history_keybinding_init (GPasteShowHistoryKeybinding *self G_GNUC_U
  * g_paste_show_history_keybinding_new:
  * @xcb_wrapper: a #GPasteXcbWrapper instance
  * @settings: a #GPasteSettings instance
+ * @daemon: a #GPasteDaemon instance
  *
  * Create a new instance of #GPasteShowHistoryKeybinding
  *
@@ -49,6 +50,7 @@ g_paste_show_history_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
 {
     g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_DAEMON (daemon), NULL);
 
     return G_PASTE_SHOW_HISTORY_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
                                                                      xcb_wrapper,

@@ -100,6 +100,9 @@ g_paste_item_get_kind (const GPasteItem *self)
     return G_PASTE_ITEM_GET_CLASS (self)->get_kind (self);
 }
 
+/**
+ * g_paste_item_set_display_string: (skip)
+ */
 void
 g_paste_item_set_display_string (GPasteItem  *self,
                                  const gchar *display_string)
