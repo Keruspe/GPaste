@@ -45,6 +45,7 @@ struct _GPasteDaemonPrivate
 
 enum
 {
+    NAME_LOST,
     REEXECUTE_SELF,
 
     LAST_SIGNAL
@@ -55,8 +56,10 @@ static guint signals[LAST_SIGNAL] = { 0 };
 enum
 {
     C_CHANGED,
+    C_NAME_LOST,
     C_REEXECUTE_SELF,
     C_TRACK,
+
     C_LAST_SIGNAL
 };
 
@@ -319,7 +322,8 @@ g_paste_daemon_changed (GPasteDaemon *self,
 }
 
 static void
-g_paste_daemon_name_lost (GPasteDaemon *self)
+g_paste_daemon_name_lost (GPasteDaemon *self,
+                          gpointer      user_data G_GNUC_UNUSED)
 {
     GPasteDaemonPrivate *priv = self->priv;
 
@@ -477,6 +481,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
     GPasteDaemon *self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = self->priv;
 
+    g_signal_handler_disconnect (self, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history, c_signals[C_CHANGED]);
@@ -518,6 +523,10 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     if (!result)
         return 0;
 
+    c_signals[C_NAME_LOST] = g_signal_connect (G_OBJECT (self),
+                                              "name-lost",
+                                               G_CALLBACK (g_paste_daemon_name_lost),
+                                               NULL);
     c_signals[C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (self),
                                                     "reexecute-self",
                                                     G_CALLBACK (g_paste_daemon_reexecute_self),
@@ -552,7 +561,9 @@ g_paste_daemon_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
                              const char      *name G_GNUC_UNUSED,
                              gpointer         user_data)
 {
-    g_paste_daemon_name_lost (G_PASTE_DAEMON (user_data));
+    g_signal_emit (G_PASTE_DAEMON (user_data),
+                   signals[NAME_LOST],
+                   0); /* detail */
 }
 
 
@@ -610,6 +621,15 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
     G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_daemon_finalize;
 
+    signals[NAME_LOST] = g_signal_new ("name-lost",
+                                       G_PASTE_TYPE_DAEMON,
+                                       G_SIGNAL_RUN_LAST,
+                                       0, /* class offset */
+                                       NULL, /* accumulator */
+                                       NULL, /* accumulator data */
+                                       g_cclosure_marshal_VOID__VOID,
+                                       G_TYPE_NONE,
+                                       0);
     signals[REEXECUTE_SELF] = g_signal_new ("reexecute-self",
                                             G_PASTE_TYPE_DAEMON,
                                             G_SIGNAL_RUN_LAST,
