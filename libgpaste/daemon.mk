@@ -23,12 +23,16 @@ LIBGPASTE_DAEMON_CURRENT=1
 LIBGPASTE_DAEMON_REVISION=0
 LIBGPASTE_DAEMON_AGE=0
 
-libgpaste_daemon_libgpaste_daemon_la_private_headers = \
+libgpaste_daemon_libgpaste_daemon_la_public_headers = \
 	libgpaste/daemon/gpaste-daemon.h \
+	$(NULL)
+
+libgpaste_daemon_libgpaste_daemon_la_private_headers = \
 	libgpaste/daemon/gpaste-daemon-private.h \
 	$(NULL)
 
 libgpaste_daemon_libgpaste_daemon_la_SOURCES = \
+	$(libgpaste_daemon_libgpaste_daemon_la_public_headers) \
 	$(libgpaste_daemon_libgpaste_daemon_la_private_headers) \
 	libgpaste/daemon/gpaste-daemon.c \
 	$(NULL)
@@ -52,6 +56,10 @@ libgpaste_daemon_libgpaste_daemon_la_LDFLAGS = \
 
 libgpaste_daemon_libgpaste_daemon_la_DEPENDENCIES = \
 	$(libgpaste_daemon_symbols_file) \
+	$(NULL)
+
+pkginclude_HEADERS += \
+	$(libgpaste_daemon_libgpaste_daemon_la_public_headers) \
 	$(NULL)
 
 lib_LTLIBRARIES += \
