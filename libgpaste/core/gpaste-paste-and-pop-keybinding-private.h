@@ -17,38 +17,29 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_KEYBINDING_PRIVATE_H__
-#define __G_PASTE_KEYBINDING_PRIVATE_H__
+#ifndef __G_PASTE_PASTE_AND_POP_KEYBINDING_PRIVATE_H__
+#define __G_PASTE_PASTE_AND_POP_KEYBINDING_PRIVATE_H__
 
-#include "gpaste-keybinding.h"
+#include "gpaste-paste-and-pop-keybinding.h"
+#include "gpaste-keybinding-private.h"
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteKeybindingPrivate GPasteKeybindingPrivate;
+typedef struct _GPastePasteAndPopKeybindingPrivate GPastePasteAndPopKeybindingPrivate;
 
-struct _GPasteKeybinding
+struct _GPastePasteAndPopKeybinding
 {
     GObject parent_instance;
 
     /*< private >*/
-    GPasteKeybindingPrivate *priv;
+    GPastePasteAndPopKeybindingPrivate *priv;
 };
 
-struct _GPasteKeybindingClass
+struct _GPastePasteAndPopKeybindingClass
 {
     GObjectClass parent_class;
 };
 
-GPasteXcbWrapper *g_paste_keybinding_get_xcb_wrapper (GPasteKeybinding *self);
-
-GPasteKeybinding *_g_paste_keybinding_new (GType                  type,
-                                           GPasteXcbWrapper      *xcb_wrapper,
-                                           GPasteSettings        *settings,
-                                           const gchar           *dconf_key,
-                                           GPasteKeybindingGetter getter,
-                                           GPasteKeybindingFunc   callback,
-                                           gpointer               user_data);
-
 G_END_DECLS
 
-#endif /*__G_PASTE_KEYBINDING_PRIVATE_H__*/
+#endif /*__G_PASTE_PASTE_AND_POP_KEYBINDING_PRIVATE_H__*/

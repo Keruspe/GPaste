@@ -135,6 +135,15 @@ g_paste_keybinding_rebind (GPasteKeybinding  *self,
 }
 
 /**
+ * g_paste_keybinding_get_xcb_wrapper: (skip)
+ */
+GPasteXcbWrapper *
+g_paste_keybinding_get_xcb_wrapper (GPasteKeybinding *self)
+{
+    return self->priv->xcb_wrapper;
+}
+
+/**
  * g_paste_keybinding_get_keycodes:
  * @self: a #GPasteKeybinding instance
  *
@@ -264,7 +273,7 @@ _g_paste_keybinding_new (GType                  type,
     priv->binding = g_strdup (getter (settings));
     priv->getter = getter;
     priv->callback = callback;
-    priv->user_data = user_data;
+    priv->user_data = (user_data) ? user_data : self;
 
     gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
 
@@ -285,7 +294,7 @@ _g_paste_keybinding_new (GType                  type,
  * @dconf_key: the dconf key to watch
  * @getter: (closure settings) (scope notified): the getter to use to get the binding
  * @callback: (closure user_data) (scope notified): the callback to call when activated
- * @user_data: (closure): the data to pass to @callback
+ * @user_data: (closure): the data to pass to @callback, defaults to self/this
  *
  * Create a new instance of #GPasteKeybinding
  *

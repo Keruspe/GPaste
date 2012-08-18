@@ -46,6 +46,8 @@ global:
     g_paste_keybinding_is_active;
     g_paste_keybinding_notify;
     g_paste_keybinding_new;
+    g_paste_paste_and_pop_keybinding_get_type;
+    g_paste_paste_and_pop_keybinding_new;
     g_paste_show_history_keybinding_get_type;
     g_paste_show_history_keybinding_new;
 
