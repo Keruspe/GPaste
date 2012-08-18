@@ -29,6 +29,19 @@
 
 G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
+#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num) \
+    GPasteDaemonPrivate *priv = self->priv; \
+    g_dbus_connection_emit_signal (priv->connection, \
+                                   NULL, /* destination_bus_name */ \
+                                   priv->object_path, \
+                                   G_PASTE_BUS_NAME, \
+                                   sig, \
+                                   g_variant_new_tuple (data, num), \
+                                   NULL); /* error */
+
+#define G_PASTE_SEND_DBUS_SIGNAL(sig) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,NULL,0)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,data) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,&data,1)
+
 struct _GPasteDaemonPrivate
 {
     GDBusConnection         *connection;
@@ -294,46 +307,23 @@ g_paste_daemon_tracking (GPasteDaemon *self,
                          gboolean      tracking_state,
                          gpointer      user_data G_GNUC_UNUSED)
 {
-    GPasteDaemonPrivate *priv = self->priv;
     GVariant *variant = g_variant_new_boolean (tracking_state);
 
-    g_dbus_connection_emit_signal (priv->connection,
-                                   NULL, /* destination_bus_name */
-                                   priv->object_path,
-                                   G_PASTE_BUS_NAME,
-                                   "Tracking",
-                                   g_variant_new_tuple (&variant, 1),
-                                   NULL); /* error */
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SIG_TRACKING, variant)
 }
 
 static void
 g_paste_daemon_changed (GPasteDaemon *self,
                         gpointer      user_data G_GNUC_UNUSED)
 {
-    GPasteDaemonPrivate *priv = self->priv;
-
-    g_dbus_connection_emit_signal (priv->connection,
-                                   NULL, /* destination_bus_name */
-                                   priv->object_path,
-                                   G_PASTE_BUS_NAME,
-                                   SIG_CHANGED,
-                                   g_variant_new_tuple (NULL, 0),
-                                   NULL); /* error */
+    G_PASTE_SEND_DBUS_SIGNAL (SIG_CHANGED)
 }
 
 static void
 g_paste_daemon_name_lost (GPasteDaemon *self,
                           gpointer      user_data G_GNUC_UNUSED)
 {
-    GPasteDaemonPrivate *priv = self->priv;
-
-    g_dbus_connection_emit_signal (priv->connection,
-                                   NULL, /* destination_bus_name */
-                                   priv->object_path,
-                                   G_PASTE_BUS_NAME,
-                                   SIG_NAME_LOST,
-                                   g_variant_new_tuple (NULL, 0),
-                                   NULL); /* error */
+    G_PASTE_SEND_DBUS_SIGNAL (SIG_NAME_LOST)
 }
 
 /**
@@ -349,30 +339,14 @@ g_paste_daemon_show_history (GPasteDaemon *self)
 {
     g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
-    GPasteDaemonPrivate *priv = self->priv;
-
-    g_dbus_connection_emit_signal (priv->connection,
-                                   NULL, /* destination_bus_name */
-                                   priv->object_path,
-                                   G_PASTE_BUS_NAME,
-                                   SIG_SHOW_HISTORY,
-                                   g_variant_new_tuple (NULL, 0),
-                                   NULL); /* error */
+    G_PASTE_SEND_DBUS_SIGNAL (SIG_SHOW_HISTORY)
 }
 
 static void
 g_paste_daemon_reexecute_self (GPasteDaemon *self,
                                gpointer      user_data G_GNUC_UNUSED)
 {
-    GPasteDaemonPrivate *priv = self->priv;
-
-    g_dbus_connection_emit_signal (priv->connection,
-                                   NULL, /* destination_bus_name */
-                                   priv->object_path,
-                                   G_PASTE_BUS_NAME,
-                                   "ReexecuteSelf",
-                                   g_variant_new_tuple (NULL, 0),
-                                   NULL); /* error */
+    G_PASTE_SEND_DBUS_SIGNAL (SIG_REEXECUTE_SELF)
 }
 
 static void
@@ -687,8 +661,8 @@ g_paste_daemon_init (GPasteDaemon *self)
         "           <arg type='b' direction='in' />"
         "       </method>"
         "       <method name='" REEXECUTE "' />"
-        "       <signal name='ReexecuteSelf' />"
-        "       <signal name='Tracking'>"
+        "       <signal name='" SIG_REEXECUTE_SELF "' />"
+        "       <signal name='" SIG_TRACKING "'>"
         "           <arg type='b' direction='out' />"
         "       </signal>"
         "       <signal name='" SIG_CHANGED "' />"
