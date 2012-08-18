@@ -567,6 +567,15 @@ g_paste_daemon_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
 }
 
 
+/**
+ * g_paste_daemon_own_bus_name:
+ * @self: (transfer none): the #GPasteDaemon
+ * @error: a #GError
+ *
+ * Own the bus name
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE gboolean
 g_paste_daemon_own_bus_name (GPasteDaemon *self,
                              GError      **error)
@@ -574,6 +583,8 @@ g_paste_daemon_own_bus_name (GPasteDaemon *self,
     g_return_val_if_fail (G_PASTE_IS_DAEMON (self), FALSE);
 
     GPasteDaemonPrivate *priv = self->priv;
+
+    g_return_val_if_fail (!priv->id_on_bus, FALSE);
 
     priv->inner_error = *error;
     priv->id_on_bus = g_bus_own_name (G_BUS_TYPE_SESSION,
@@ -647,6 +658,7 @@ g_paste_daemon_init (GPasteDaemon *self)
     GPasteDaemonPrivate *priv = self->priv = G_PASTE_DAEMON_GET_PRIVATE (self);
     GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
 
+    priv->id_on_bus = 0;
     priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (
         "<node>"
         "   <interface name='" G_PASTE_INTERFACE_NAME "'>"
