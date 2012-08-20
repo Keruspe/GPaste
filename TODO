@@ -10,7 +10,6 @@
     gpaste:
         defer file reading to daemon
     gnome-shell:
-        fix settings opening
         port to libgpaste-client
         prefs.js
 
