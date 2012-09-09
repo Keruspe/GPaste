@@ -436,7 +436,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
         g_paste_daemon_empty (self, connection, invocation);
     else if (g_strcmp0 (method_name, TRACK) == 0)
         g_paste_daemon_track (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, "OnExtensionStateChanged") == 0)
+    else if (g_strcmp0 (method_name, ON_EXTENSION_STATE_CHANGED) == 0)
         g_paste_daemon_on_extension_state_changed (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, REEXECUTE) == 0)
         g_paste_daemon_reexecute (self, connection, invocation);
@@ -455,7 +455,7 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
 {
     GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
 
-    if (g_strcmp0 (property_name, "Active") == 0)
+    if (g_strcmp0 (property_name, PROP_ACTIVE) == 0)
         return g_variant_new_boolean (g_paste_settings_get_track_changes (priv->settings));
 
     return NULL;
@@ -653,7 +653,7 @@ g_paste_daemon_init (GPasteDaemon *self)
         "       <method name='" TRACK "'>"
         "           <arg type='b' direction='in' />"
         "       </method>"
-        "       <method name='OnExtensionStateChanged'>"
+        "       <method name='" ON_EXTENSION_STATE_CHANGED "'>"
         "           <arg type='b' direction='in' />"
         "       </method>"
         "       <method name='" REEXECUTE "' />"
@@ -664,7 +664,7 @@ g_paste_daemon_init (GPasteDaemon *self)
         "       <signal name='" SIG_CHANGED "' />"
         "       <signal name='" SIG_NAME_LOST "' />"
         "       <signal name='" SIG_SHOW_HISTORY "' />"
-        "       <property name='Active' type='b' access='read' />"
+        "       <property name='" PROP_ACTIVE "' type='b' access='read' />"
         "   </interface>"
         "</node>",
         NULL); /* Error */
