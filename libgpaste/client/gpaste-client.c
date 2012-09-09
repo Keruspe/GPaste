@@ -50,82 +50,82 @@ enum
 static gulong c_signals[C_LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_NO_PARAM(method, ans_type, variant_type, fail) \
-    DBUS_CALL_WITH_RETURN(method, \
-        NULL, 0, \
-        ans_type, variant_type, \
-        fail, \
+    DBUS_CALL_WITH_RETURN(method,                                \
+        NULL, 0,                                                 \
+        ans_type, variant_type,                                  \
+        fail,                                                    \
         {})
 #define DBUS_CALL_WITH_PARAM(method, ans_type, variant_type, fail, param_type, param_name) \
-    DBUS_CALL_WITH_RETURN(method, \
-        &parameter, 1, \
-        ans_type, variant_type, \
-        fail, \
+    DBUS_CALL_WITH_RETURN(method,                                                          \
+        &parameter, 1,                                                                     \
+        ans_type, variant_type,                                                            \
+        fail,                                                                              \
         GVariant *parameter = g_variant_new_##param_type (param_name))
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_RETURN(method, \
-        NULL, 0, \
-        ans_type, variant_type, \
-        fail, \
+    DBUS_CALL_NO_RETURN(method,              \
+        NULL, 0,                             \
+        ans_type, variant_type,              \
+        fail,                                \
         {})
 #define DBUS_CALL_WITH_PARAM_NO_RETURN(method, param_type, param_name) \
-    DBUS_CALL_NO_RETURN(method, \
-        &parameter, 1, \
-        ans_type, variant_type, \
-        fail, \
+    DBUS_CALL_NO_RETURN(method,                                        \
+        &parameter, 1,                                                 \
+        ans_type, variant_type,                                        \
+        fail,                                                          \
         GVariant *parameter = g_variant_new_##param_type (param_name))
 #define DBUS_CALL_WITH_RETURN(method, param, n_param, ans_type, variant_type, fail, decl) \
-    DBUS_CALL_FULL(method, \
-        param, n_param, \
-        GVariantIter result_iter; \
-        g_variant_iter_init (&result_iter, result); \
-        GVariant *variant = g_variant_iter_next_value (&result_iter); \
-        ans_type answer = g_variant_dup_##variant_type (variant, \
-                                                        NULL); /* length */ \
-        g_variant_unref (variant), \
-        fail, decl, \
-        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL), \
+    DBUS_CALL_FULL(method,                                                                \
+        param, n_param,                                                                   \
+        GVariantIter result_iter;                                                         \
+        g_variant_iter_init (&result_iter, result);                                       \
+        GVariant *variant = g_variant_iter_next_value (&result_iter);                     \
+        ans_type answer = g_variant_dup_##variant_type (variant,                          \
+                                                        NULL); /* length */               \
+        g_variant_unref (variant),                                                        \
+        fail, decl,                                                                       \
+        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL),                            \
         return answer)
 #define DBUS_CALL_NO_RETURN(method, param, n_param, ans_type, variant_type, fail, decl) \
-    DBUS_CALL_FULL(method, \
-        param, n_param, \
-        {}, \
-        ;, decl, \
-        g_return_if_fail (G_PASTE_IS_CLIENT (self)), \
+    DBUS_CALL_FULL(method,                                                              \
+        param, n_param,                                                                 \
+        {},                                                                             \
+        ;, decl,                                                                        \
+        g_return_if_fail (G_PASTE_IS_CLIENT (self)),                                    \
         {})
 #define DBUS_CALL_FULL(method, param, n_param, extract_answer, fail, decl, guard, return_stmt) \
-    guard; \
-    GDBusProxy *proxy = self->priv->proxy; \
-    decl; \
-    GVariant *result = g_dbus_proxy_call_sync (proxy, \
-                                               method, \
-                                               g_variant_new_tuple (param, n_param), \
-                                               G_DBUS_CALL_FLAGS_NONE, \
-                                               -1, \
-                                               NULL, /* cancellable */ \
-                                               error); \
-    if (!result) \
-        return fail; \
-    extract_answer; \
-    g_variant_unref (result); \
+    guard;                                                                                     \
+    GDBusProxy *proxy = self->priv->proxy;                                                     \
+    decl;                                                                                      \
+    GVariant *result = g_dbus_proxy_call_sync (proxy,                                          \
+                                               method,                                         \
+                                               g_variant_new_tuple (param, n_param),           \
+                                               G_DBUS_CALL_FLAGS_NONE,                         \
+                                               -1,                                             \
+                                               NULL, /* cancellable */                         \
+                                               error);                                         \
+    if (!result)                                                                               \
+        return fail;                                                                           \
+    extract_answer;                                                                            \
+    g_variant_unref (result);                                                                  \
     return_stmt;
 
-#define HANDLE_SIGNAL(sig) \
+#define HANDLE_SIGNAL(sig)                       \
     if (g_strcmp0 (signal_name, SIG_##sig) == 0) \
-    { \
-        g_signal_emit (self, \
-                       signals[sig], \
-                       0); /* detail */ \
+    {                                            \
+        g_signal_emit (self,                     \
+                       signals[sig],             \
+                       0); /* detail */          \
     }
 
 #define NEW_SIGNAL(name) \
     g_signal_new (name, \
-                  G_PASTE_TYPE_CLIENT, \
-                  G_SIGNAL_RUN_LAST, \
-                  0, /* class offset */ \
-                  NULL, /* accumulator */ \
-                  NULL, /* accumulator data */ \
+                  G_PASTE_TYPE_CLIENT,           \
+                  G_SIGNAL_RUN_LAST,             \
+                  0, /* class offset */          \
+                  NULL, /* accumulator */        \
+                  NULL, /* accumulator data */   \
                   g_cclosure_marshal_VOID__VOID, \
-                  G_TYPE_NONE, \
+                  G_TYPE_NONE,                   \
                   0); /* number of params */
 
 /**
@@ -379,7 +379,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
     object_class->dispose = g_paste_client_dispose;
     object_class->finalize = g_paste_client_finalize;
 
-    signals[CHANGED] = NEW_SIGNAL ("changed")
+    signals[CHANGED]      = NEW_SIGNAL ("changed")
     signals[SHOW_HISTORY] = NEW_SIGNAL ("show-history")
 }
 
