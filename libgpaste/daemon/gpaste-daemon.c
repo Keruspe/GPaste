@@ -30,18 +30,29 @@
 
 G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
-#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num) \
-    GPasteDaemonPrivate *priv = self->priv; \
-    g_dbus_connection_emit_signal (priv->connection, \
+#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num)                 \
+    GPasteDaemonPrivate *priv = self->priv;                         \
+    g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
-                                   priv->object_path, \
-                                   G_PASTE_BUS_NAME, \
-                                   sig, \
+                                   priv->object_path,               \
+                                   G_PASTE_BUS_NAME,                \
+                                   sig,                             \
                                    g_variant_new_tuple (data, num), \
                                    NULL); /* error */
 
 #define G_PASTE_SEND_DBUS_SIGNAL(sig) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,NULL,0)
 #define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,data) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,&data,1)
+
+#define NEW_SIGNAL(name) \
+    g_signal_new (name, \
+                  G_PASTE_TYPE_DAEMON,           \
+                  G_SIGNAL_RUN_LAST,             \
+                  0, /* class offset */          \
+                  NULL, /* accumulator */        \
+                  NULL, /* accumulator data */   \
+                  g_cclosure_marshal_VOID__VOID, \
+                  G_TYPE_NONE,                   \
+                  0);
 
 struct _GPasteDaemonPrivate
 {
@@ -596,24 +607,8 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
     G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_daemon_finalize;
 
-    signals[NAME_LOST] = g_signal_new ("name-lost",
-                                       G_PASTE_TYPE_DAEMON,
-                                       G_SIGNAL_RUN_LAST,
-                                       0, /* class offset */
-                                       NULL, /* accumulator */
-                                       NULL, /* accumulator data */
-                                       g_cclosure_marshal_VOID__VOID,
-                                       G_TYPE_NONE,
-                                       0);
-    signals[REEXECUTE_SELF] = g_signal_new ("reexecute-self",
-                                            G_PASTE_TYPE_DAEMON,
-                                            G_SIGNAL_RUN_LAST,
-                                            0, /* class offset */
-                                            NULL, /* accumulator */
-                                            NULL, /* accumulator data */
-                                            g_cclosure_marshal_VOID__VOID,
-                                            G_TYPE_NONE,
-                                            0);
+    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost")
+    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self")
 }
 
 static void
