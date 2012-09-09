@@ -43,52 +43,52 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_settings_get_type (void);
 
+guint32      g_paste_settings_get_element_size               (GPasteSettings *self);
+gboolean     g_paste_settings_get_fifo                       (GPasteSettings *self);
+const gchar *g_paste_settings_get_history_name               (GPasteSettings *self);
+guint32      g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
+guint32      g_paste_settings_get_max_history_size           (GPasteSettings *self);
+guint32      g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
+guint32      g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
+const gchar *g_paste_settings_get_paste_and_pop              (GPasteSettings *self);
+gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *self);
+gboolean     g_paste_settings_get_save_history               (GPasteSettings *self);
+const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
+gboolean     g_paste_settings_get_synchronize_clipboards     (GPasteSettings *self);
 gboolean     g_paste_settings_get_track_changes              (GPasteSettings *self);
 gboolean     g_paste_settings_get_track_extension_state      (GPasteSettings *self);
-gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *self);
-gboolean     g_paste_settings_get_synchronize_clipboards     (GPasteSettings *self);
-gboolean     g_paste_settings_get_save_history               (GPasteSettings *self);
 gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *self);
-gboolean     g_paste_settings_get_fifo                       (GPasteSettings *self);
-guint32      g_paste_settings_get_max_history_size           (GPasteSettings *self);
-guint32      g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
-guint32      g_paste_settings_get_element_size               (GPasteSettings *self);
-guint32      g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
-guint32      g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
-const gchar *g_paste_settings_get_history_name               (GPasteSettings *self);
-const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
-const gchar *g_paste_settings_get_paste_and_pop              (GPasteSettings *self);
 
+void g_paste_settings_set_element_size               (GPasteSettings *self,
+                                                      guint32         value);
+void g_paste_settings_set_fifo                       (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_history_name               (GPasteSettings *self,
+                                                      const gchar    *value);
+void g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
+                                                      guint32         value);
+void g_paste_settings_set_max_history_size           (GPasteSettings *self,
+                                                      guint32         value);
+void g_paste_settings_set_max_text_item_size         (GPasteSettings *self,
+                                                      guint32         value);
+void g_paste_settings_set_min_text_item_size         (GPasteSettings *self,
+                                                      guint32         value);
+void g_paste_settings_set_paste_and_pop              (GPasteSettings *self,
+                                                      const gchar    *value);
+void g_paste_settings_set_primary_to_history         (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_save_history               (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_show_history               (GPasteSettings *self,
+                                                      const gchar    *value);
+void g_paste_settings_set_synchronize_clipboards     (GPasteSettings *self,
+                                                      gboolean        value);
 void g_paste_settings_set_track_changes              (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_track_extension_state      (GPasteSettings *self,
                                                       gboolean        value);
-void g_paste_settings_set_primary_to_history         (GPasteSettings *self,
-                                                      gboolean        value);
-void g_paste_settings_set_synchronize_clipboards     (GPasteSettings *self,
-                                                      gboolean        value);
-void g_paste_settings_set_save_history               (GPasteSettings *self,
-                                                      gboolean        value);
 void g_paste_settings_set_trim_items                 (GPasteSettings *self,
                                                       gboolean        value);
-void g_paste_settings_set_fifo                       (GPasteSettings *self,
-                                                      gboolean        value);
-void g_paste_settings_set_max_history_size           (GPasteSettings *self,
-                                                      guint32         value);
-void g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
-                                                      guint32         value);
-void g_paste_settings_set_element_size               (GPasteSettings *self,
-                                                      guint32         value);
-void g_paste_settings_set_min_text_item_size         (GPasteSettings *self,
-                                                      guint32         value);
-void g_paste_settings_set_max_text_item_size         (GPasteSettings *self,
-                                                      guint32         value);
-void g_paste_settings_set_history_name               (GPasteSettings *self,
-                                                      const gchar    *value);
-void g_paste_settings_set_show_history               (GPasteSettings *self,
-                                                      const gchar    *value);
-void g_paste_settings_set_paste_and_pop              (GPasteSettings *self,
-                                                      const gchar    *value);
 
 GPasteSettings *g_paste_settings_new (void);
 

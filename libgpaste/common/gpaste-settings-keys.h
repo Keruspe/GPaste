@@ -20,20 +20,20 @@
 #ifndef __GPASTE_SETTINGS_KEYS_H__
 #define __GPASTE_SETTINGS_KEYS_H__
 
+#define ELEMENT_SIZE_KEY               "element-size"
+#define FIFO_KEY                       "fifo"
+#define HISTORY_NAME_KEY               "history-name"
+#define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
+#define MAX_HISTORY_SIZE_KEY           "max-history-size"
+#define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
+#define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
+#define PASTE_AND_POP_KEY              "paste-and-pop"
+#define PRIMARY_TO_HISTORY_KEY         "primary-to-history"
+#define SAVE_HISTORY_KEY               "save-history"
+#define SHOW_HISTORY_KEY               "show-history"
+#define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
 #define TRACK_CHANGES_KEY              "track-changes"
 #define TRACK_EXTENTION_STATE_KEY      "track-extension-state"
-#define PRIMARY_TO_HISTORY_KEY         "primary-to-history"
-#define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
-#define SAVE_HISTORY_KEY               "save-history"
 #define TRIM_ITEMS_KEY                 "trim-items"
-#define MAX_HISTORY_SIZE_KEY           "max-history-size"
-#define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
-#define ELEMENT_SIZE_KEY               "element-size"
-#define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
-#define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
-#define HISTORY_NAME_KEY               "history-name"
-#define SHOW_HISTORY_KEY               "show-history"
-#define PASTE_AND_POP_KEY              "paste-and-pop"
-#define FIFO_KEY                       "fifo"
 
 #endif /*__GPASTE_SETTINGS_KEYS_H__*/

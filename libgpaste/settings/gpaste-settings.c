@@ -30,21 +30,21 @@ struct _GPasteSettingsPrivate
 {
     GSettings *settings;
 
+    guint32    element_size;
+    gboolean   fifo;
+    gchar     *history_name;
+    guint32    max_displayed_history_size;
+    guint32    max_history_size;
+    guint32    max_text_item_size;
+    guint32    min_text_item_size;
+    gchar     *paste_and_pop;
+    gboolean   primary_to_history;
+    gboolean   save_history;
+    gchar     *show_history;
+    gboolean   synchronize_clipboards;
     gboolean   track_changes;
     gboolean   track_extension_state;
-    gboolean   primary_to_history;
-    gboolean   synchronize_clipboards;
-    gboolean   save_history;
     gboolean   trim_items;
-    gboolean   fifo;
-    guint32    max_history_size;
-    guint32    max_displayed_history_size;
-    guint32    element_size;
-    guint32    min_text_item_size;
-    guint32    max_text_item_size;
-    gchar     *history_name;
-    gchar     *show_history;
-    gchar     *paste_and_pop;
 };
 
 enum
@@ -103,6 +103,248 @@ static gulong c_signals[C_LAST_SIGNAL] = { 0 };
                                            g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
                                            g_free (priv->name);, g_strdup)
 
+#define NEW_SIGNAL_FULL(name, type, arg)           \
+    g_signal_new (name,                            \
+                  G_PASTE_TYPE_SETTINGS,           \
+                  type,                            \
+                  0, /* class offset */            \
+                  NULL, /* accumulator */          \
+                  NULL, /* accumulator data */     \
+                  g_cclosure_marshal_VOID__STRING, \
+                  G_TYPE_NONE,                     \
+                  1, /* number of params */        \
+                  arg);
+#define NEW_SIGNAL(name, arg) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg)
+#define NEW_SIGNAL_DETAILED(name, arg) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg)
+
+/**
+ * g_paste_settings_get_element_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the ELEMENT_SIZE_KEY setting
+ *
+ * Returns: the value of the ELEMENT_SIZE_KEY setting
+ */
+/**
+ * g_paste_settings_set_element_size:
+ * @self: a #GPasteSettings instance
+ * @value: the maximum displayed size of an item
+ *
+ * Change the ELEMENT_SIZE_KEY setting
+ *
+ * Returns:
+ */
+UNSIGNED_SETTING (element_size, ELEMENT_SIZE_KEY)
+
+/**
+ * g_paste_settings_get_fifo:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the FIFO_KEY setting
+ *
+ * Returns: the value of the FIFO_KEY setting
+ */
+/**
+ * g_paste_settings_set_fifo:
+ * @self: a #GPasteSettings instance
+ * @value: whether to add the end of the history or not
+ *
+ * Change the FIFO_KEY setting
+ *
+ * Returns:
+ */
+BOOLEAN_SETTING (fifo, FIFO_KEY)
+
+/**
+ * g_paste_settings_get_history_name:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the HISTORY_NAME_KEY setting
+ *
+ * Returns: the value of the HISTORY_NAME_KEY setting
+ */
+/**
+ * g_paste_settings_set_history_name:
+ * @self: a #GPasteSettings instance
+ * @value: the new history name
+ *
+ * Change the HISTORY_NAME_KEY setting
+ *
+ * Returns:
+ */
+STRING_SETTING (history_name, HISTORY_NAME_KEY)
+
+/**
+ * g_paste_settings_get_max_displayed_history_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ *
+ * Returns: the value of the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ */
+/**
+ * g_paste_settings_set_max_displayed_history_size:
+ * @self: a #GPasteSettings instance
+ * @value: the maximum number of items to display
+ *
+ * Change the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ *
+ * Returns:
+ */
+UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE_KEY)
+
+/**
+ * g_paste_settings_get_max_history_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the MAX_HISTORY_SIZE_KEY setting
+ *
+ * Returns: the value of the MAX_HISTORY_SIZE_KEY setting
+ */
+/**
+ * g_paste_settings_set_max_history_size:
+ * @self: a #GPasteSettings instance
+ * @value: the maximum number of items the history can contain
+ *
+ * Change the MAX_HISTORY_SIZE_KEY setting
+ *
+ * Returns:
+ */
+UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE_KEY)
+
+/**
+ * g_paste_settings_get_max_text_item_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the MAX_TEXT_ITEM_SIZE_KEY setting
+ *
+ * Returns: the value of the MAX_TEXT_ITEM_SIZE_KEY setting
+ */
+/**
+ * g_paste_settings_set_max_text_item_size:
+ * @self: a #GPasteSettings instance
+ * @value: the maximum size for a textual item to be handled
+ *
+ * Change the MAX_TEXT_ITEM_SIZE_KEY setting
+ *
+ * Returns:
+ */
+UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE_KEY)
+
+/**
+ * g_paste_settings_get_min_text_item_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the MIN_TEXT_ITEM_SIZE_KEY setting
+ *
+ * Returns: the value of the MIN_TEXT_ITEM_SIZE_KEY setting
+ */
+/**
+ * g_paste_settings_set_min_text_item_size:
+ * @self: a #GPasteSettings instance
+ * @value: the minimum size for a textual item to be handled
+ *
+ * Change the MIN_TEXT_ITEM_SIZE_KEY setting
+ *
+ * Returns:
+ */
+UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE_KEY)
+
+/**
+ * g_paste_settings_get_paste_and_pop:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the PASTE_AND_POP_KEY setting
+ *
+ * Returns: the value of the PASTE_AND_POP_KEY setting
+ */
+/**
+ * g_paste_settings_set_paste_and_pop:
+ * @self: a #GPasteSettings instance
+ * @value: the new keyboard shortcut
+ *
+ * Change the PASTE_AND_POP_KEY setting
+ *
+ * Returns:
+ */
+STRING_SETTING (paste_and_pop, PASTE_AND_POP_KEY)
+
+/**
+ * g_paste_settings_get_primary_to_history:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the PRIMARY_TO_HISTORY_KEY setting
+ *
+ * Returns: the value of the PRIMARY_TO_HISTORY_KEY setting
+ */
+/**
+ * g_paste_settings_set_primary_to_history:
+ * @self: a #GPasteSettings instance
+ * @value: whether to track or not the primary selection changes as clipboard ones
+ *
+ * Change the PRIMARY_TO_HISTORY_KEY setting
+ *
+ * Returns:
+ */
+BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY_KEY)
+
+/**
+ * g_paste_settings_get_save_history:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the SAVE_HISTORY_KEY setting
+ *
+ * Returns: the value of the SAVE_HISTORY_KEY setting
+ */
+/**
+ * g_paste_settings_set_save_history:
+ * @self: a #GPasteSettings instance
+ * @value: whether to save or not the history
+ *
+ * Change the SAVE_HISTORY_KEY setting
+ *
+ * Returns:
+ */
+BOOLEAN_SETTING (save_history, SAVE_HISTORY_KEY)
+
+/**
+ * g_paste_settings_get_show_history:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the SHOW_HISTORY_KEY setting
+ *
+ * Returns: the value of the SHOW_HISTORY_KEY setting
+ */
+/**
+ * g_paste_settings_set_show_history:
+ * @self: a #GPasteSettings instance
+ * @value: the new keyboard shortcut
+ *
+ * Change the SHOW_HISTORY_KEY setting
+ *
+ * Returns:
+ */
+STRING_SETTING (show_history, SHOW_HISTORY_KEY)
+
+/**
+ * g_paste_settings_get_synchronize_clipboards:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the SYNCHRONIZE_CLIPBOARDS_KEY setting
+ *
+ * Returns: the value of the SYNCHRONIZE_CLIPBOARDS_KEY setting
+ */
+/**
+ * g_paste_settings_set_synchronize_clipboards:
+ * @self: a #GPasteSettings instance
+ * @value: whether to synchronize the clipboard and the primary selection or not
+ *
+ * Change the SYNCHRONIZE_CLIPBOARDS_KEY setting
+ *
+ * Returns:
+ */
+BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS_KEY)
+
 /**
  * g_paste_settings_get_track_changes:
  * @self: a #GPasteSettings instance
@@ -142,63 +384,6 @@ BOOLEAN_SETTING (track_changes, TRACK_CHANGES_KEY)
 BOOLEAN_SETTING (track_extension_state, TRACK_EXTENTION_STATE_KEY)
 
 /**
- * g_paste_settings_get_primary_to_history:
- * @self: a #GPasteSettings instance
- *
- * Get the PRIMARY_TO_HISTORY_KEY setting
- *
- * Returns: the value of the PRIMARY_TO_HISTORY_KEY setting
- */
-/**
- * g_paste_settings_set_primary_to_history:
- * @self: a #GPasteSettings instance
- * @value: whether to track or not the primary selection changes as clipboard ones
- *
- * Change the PRIMARY_TO_HISTORY_KEY setting
- *
- * Returns:
- */
-BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY_KEY)
-
-/**
- * g_paste_settings_get_synchronize_clipboards:
- * @self: a #GPasteSettings instance
- *
- * Get the SYNCHRONIZE_CLIPBOARDS_KEY setting
- *
- * Returns: the value of the SYNCHRONIZE_CLIPBOARDS_KEY setting
- */
-/**
- * g_paste_settings_set_synchronize_clipboards:
- * @self: a #GPasteSettings instance
- * @value: whether to synchronize the clipboard and the primary selection or not
- *
- * Change the SYNCHRONIZE_CLIPBOARDS_KEY setting
- *
- * Returns:
- */
-BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS_KEY)
-
-/**
- * g_paste_settings_get_save_history:
- * @self: a #GPasteSettings instance
- *
- * Get the SAVE_HISTORY_KEY setting
- *
- * Returns: the value of the SAVE_HISTORY_KEY setting
- */
-/**
- * g_paste_settings_set_save_history:
- * @self: a #GPasteSettings instance
- * @value: whether to save or not the history
- *
- * Change the SAVE_HISTORY_KEY setting
- *
- * Returns:
- */
-BOOLEAN_SETTING (save_history, SAVE_HISTORY_KEY)
-
-/**
  * g_paste_settings_get_trim_items:
  * @self: a #GPasteSettings instance
  *
@@ -217,177 +402,6 @@ BOOLEAN_SETTING (save_history, SAVE_HISTORY_KEY)
  */
 BOOLEAN_SETTING (trim_items, TRIM_ITEMS_KEY)
 
-/**
- * g_paste_settings_get_fifo:
- * @self: a #GPasteSettings instance
- *
- * Get the FIFO_KEY setting
- *
- * Returns: the value of the FIFO_KEY setting
- */
-/**
- * g_paste_settings_set_fifo:
- * @self: a #GPasteSettings instance
- * @value: whether to add the end of the history or not
- *
- * Change the FIFO_KEY setting
- *
- * Returns:
- */
-BOOLEAN_SETTING (fifo, FIFO_KEY)
-
-/**
- * g_paste_settings_get_max_history_size:
- * @self: a #GPasteSettings instance
- *
- * Get the MAX_HISTORY_SIZE_KEY setting
- *
- * Returns: the value of the MAX_HISTORY_SIZE_KEY setting
- */
-/**
- * g_paste_settings_set_max_history_size:
- * @self: a #GPasteSettings instance
- * @value: the maximum number of items the history can contain
- *
- * Change the MAX_HISTORY_SIZE_KEY setting
- *
- * Returns:
- */
-UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE_KEY)
-
-/**
- * g_paste_settings_get_max_displayed_history_size:
- * @self: a #GPasteSettings instance
- *
- * Get the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
- *
- * Returns: the value of the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
- */
-/**
- * g_paste_settings_set_max_displayed_history_size:
- * @self: a #GPasteSettings instance
- * @value: the maximum number of items to display
- *
- * Change the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
- *
- * Returns:
- */
-UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE_KEY)
-
-/**
- * g_paste_settings_get_element_size:
- * @self: a #GPasteSettings instance
- *
- * Get the ELEMENT_SIZE_KEY setting
- *
- * Returns: the value of the ELEMENT_SIZE_KEY setting
- */
-/**
- * g_paste_settings_set_element_size:
- * @self: a #GPasteSettings instance
- * @value: the maximum displayed size of an item
- *
- * Change the ELEMENT_SIZE_KEY setting
- *
- * Returns:
- */
-UNSIGNED_SETTING (element_size, ELEMENT_SIZE_KEY)
-
-/**
- * g_paste_settings_get_min_text_item_size:
- * @self: a #GPasteSettings instance
- *
- * Get the MIN_TEXT_ITEM_SIZE_KEY setting
- *
- * Returns: the value of the MIN_TEXT_ITEM_SIZE_KEY setting
- */
-/**
- * g_paste_settings_set_min_text_item_size:
- * @self: a #GPasteSettings instance
- * @value: the minimum size for a textual item to be handled
- *
- * Change the MIN_TEXT_ITEM_SIZE_KEY setting
- *
- * Returns:
- */
-UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE_KEY)
-
-/**
- * g_paste_settings_get_max_text_item_size:
- * @self: a #GPasteSettings instance
- *
- * Get the MAX_TEXT_ITEM_SIZE_KEY setting
- *
- * Returns: the value of the MAX_TEXT_ITEM_SIZE_KEY setting
- */
-/**
- * g_paste_settings_set_max_text_item_size:
- * @self: a #GPasteSettings instance
- * @value: the maximum size for a textual item to be handled
- *
- * Change the MAX_TEXT_ITEM_SIZE_KEY setting
- *
- * Returns:
- */
-UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE_KEY)
-
-/**
- * g_paste_settings_get_history_name:
- * @self: a #GPasteSettings instance
- *
- * Get the HISTORY_NAME_KEY setting
- *
- * Returns: the value of the HISTORY_NAME_KEY setting
- */
-/**
- * g_paste_settings_set_history_name:
- * @self: a #GPasteSettings instance
- * @value: the new history name
- *
- * Change the HISTORY_NAME_KEY setting
- *
- * Returns:
- */
-STRING_SETTING (history_name, HISTORY_NAME_KEY)
-
-/**
- * g_paste_settings_get_show_history:
- * @self: a #GPasteSettings instance
- *
- * Get the SHOW_HISTORY_KEY setting
- *
- * Returns: the value of the SHOW_HISTORY_KEY setting
- */
-/**
- * g_paste_settings_set_show_history:
- * @self: a #GPasteSettings instance
- * @value: the new keyboard shortcut
- *
- * Change the SHOW_HISTORY_KEY setting
- *
- * Returns:
- */
-STRING_SETTING (show_history, SHOW_HISTORY_KEY)
-
-/**
- * g_paste_settings_get_paste_and_pop:
- * @self: a #GPasteSettings instance
- *
- * Get the PASTE_AND_POP_KEY setting
- *
- * Returns: the value of the PASTE_AND_POP_KEY setting
- */
-/**
- * g_paste_settings_set_paste_and_pop:
- * @self: a #GPasteSettings instance
- * @value: the new keyboard shortcut
- *
- * Change the PASTE_AND_POP_KEY setting
- *
- * Returns:
- */
-STRING_SETTING (paste_and_pop, PASTE_AND_POP_KEY)
-
 static void
 g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    const gchar *key,
@@ -396,7 +410,41 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = self->priv;
 
-    if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
+    if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
+        g_paste_settings_set_element_size_from_dconf (self);
+    else if (g_strcmp0 (key, FIFO_KEY) == 0)
+        g_paste_settings_set_fifo_from_dconf (self);
+    else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
+        g_paste_settings_set_history_name_from_dconf (self);
+    else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
+        g_paste_settings_set_max_displayed_history_size_from_dconf (self);
+    else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
+        g_paste_settings_set_max_history_size_from_dconf (self);
+    else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
+        g_paste_settings_set_max_text_item_size_from_dconf (self);
+    else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)
+        g_paste_settings_set_min_text_item_size_from_dconf (self);
+    else if (g_strcmp0 (key, PASTE_AND_POP_KEY) == 0)
+    {
+        g_paste_settings_set_paste_and_pop_from_dconf (self);
+        g_signal_emit (self,
+                       signals[REBIND],
+                       g_quark_from_string (PASTE_AND_POP_KEY));
+    }
+    else if (g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ) == 0)
+        g_paste_settings_set_primary_to_history_from_dconf (self);
+    else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
+        g_paste_settings_set_save_history_from_dconf (self);
+    else if (g_strcmp0 (key, SHOW_HISTORY_KEY) == 0)
+    {
+        g_paste_settings_set_show_history_from_dconf (self);
+        g_signal_emit (self,
+                       signals[REBIND],
+                       g_quark_from_string (SHOW_HISTORY_KEY));
+    }
+    else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
+        g_paste_settings_set_synchronize_clipboards_from_dconf (self);
+    else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
     {
         g_paste_settings_set_track_changes_from_dconf (self);
         g_signal_emit (self,
@@ -406,42 +454,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     }
     else if (g_strcmp0 (key, TRACK_EXTENTION_STATE_KEY) == 0)
         g_paste_settings_set_track_extension_state_from_dconf (self);
-    else if (g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ) == 0)
-        g_paste_settings_set_primary_to_history_from_dconf (self);
-    else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
-        g_paste_settings_set_synchronize_clipboards_from_dconf (self);
-    else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
-        g_paste_settings_set_save_history_from_dconf (self);
     else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
         g_paste_settings_set_trim_items_from_dconf (self);
-    else if (g_strcmp0 (key, FIFO_KEY) == 0)
-        g_paste_settings_set_fifo_from_dconf (self);
-    else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
-        g_paste_settings_set_max_history_size_from_dconf (self);
-    else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
-        g_paste_settings_set_max_displayed_history_size_from_dconf (self);
-    else if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
-        g_paste_settings_set_element_size_from_dconf (self);
-    else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)
-        g_paste_settings_set_min_text_item_size_from_dconf (self);
-    else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
-        g_paste_settings_set_max_text_item_size_from_dconf (self);
-    else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
-        g_paste_settings_set_history_name_from_dconf (self);
-    else if (g_strcmp0 (key, SHOW_HISTORY_KEY) == 0)
-    {
-        g_paste_settings_set_show_history_from_dconf (self);
-        g_signal_emit (self,
-                       signals[REBIND],
-                       g_quark_from_string (SHOW_HISTORY_KEY));
-    }
-    else if (g_strcmp0 (key, PASTE_AND_POP_KEY) == 0)
-    {
-        g_paste_settings_set_paste_and_pop_from_dconf (self);
-        g_signal_emit (self,
-                       signals[REBIND],
-                       g_quark_from_string (PASTE_AND_POP_KEY));
-    }
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -482,36 +496,9 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     G_OBJECT_CLASS (klass)->dispose = g_paste_settings_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_settings_finalize;
 
-    signals[CHANGED] = g_signal_new ("changed",
-                                     G_PASTE_TYPE_SETTINGS,
-                                     G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
-                                     0, /* class offset */
-                                     NULL, /* accumulator */
-                                     NULL, /* accumulator data */
-                                     g_cclosure_marshal_VOID__STRING,
-                                     G_TYPE_NONE,
-                                     1, /* number of params */
-                                     G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE);
-    signals[REBIND] = g_signal_new ("rebind",
-                                    G_PASTE_TYPE_SETTINGS,
-                                    G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED,
-                                    0, /* class offset */
-                                    NULL, /* accumulator */
-                                    NULL, /* accumulator data */
-                                    g_cclosure_marshal_VOID__STRING,
-                                    G_TYPE_NONE,
-                                    1, /* number of params */
-                                    G_TYPE_STRING);
-    signals[TRACK] = g_signal_new ("track",
-                                   G_PASTE_TYPE_SETTINGS,
-                                   G_SIGNAL_RUN_LAST,
-                                   0, /* class offset */
-                                   NULL, /* accumulator */
-                                   NULL, /* accumulator data */
-                                   g_cclosure_marshal_VOID__BOOLEAN,
-                                   G_TYPE_NONE,
-                                   1, /* number of params */
-                                   G_TYPE_BOOLEAN);
+    signals[CHANGED] = NEW_SIGNAL_DETAILED("changed", G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE)
+    signals[CHANGED] = NEW_SIGNAL_DETAILED("rebind" , G_TYPE_STRING)
+    signals[TRACK]   = NEW_SIGNAL         ("track"  , G_TYPE_BOOLEAN)
 }
 
 static void
@@ -521,24 +508,25 @@ g_paste_settings_init (GPasteSettings *self)
     GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
 
     priv->history_name = NULL;
-    priv->show_history = NULL;
     priv->paste_and_pop = NULL;
+    priv->show_history = NULL;
 
+    g_paste_settings_set_element_size_from_dconf (self);
+    g_paste_settings_set_fifo_from_dconf (self);
+    g_paste_settings_set_history_name_from_dconf (self);
+    g_paste_settings_set_max_displayed_history_size_from_dconf (self);
+    g_paste_settings_set_max_history_size_from_dconf (self);
+    g_paste_settings_set_max_text_item_size_from_dconf(self);
+    g_paste_settings_set_min_text_item_size_from_dconf(self);
+    g_paste_settings_set_paste_and_pop_from_dconf (self);
+    g_paste_settings_set_primary_to_history_from_dconf (self);
+    g_paste_settings_set_save_history_from_dconf (self);
+    g_paste_settings_set_show_history_from_dconf (self);
+    g_paste_settings_set_synchronize_clipboards_from_dconf (self);
     g_paste_settings_set_track_changes_from_dconf (self);
     g_paste_settings_set_track_extension_state_from_dconf (self);
-    g_paste_settings_set_primary_to_history_from_dconf (self);
-    g_paste_settings_set_synchronize_clipboards_from_dconf (self);
-    g_paste_settings_set_save_history_from_dconf (self);
     g_paste_settings_set_trim_items_from_dconf (self);
-    g_paste_settings_set_fifo_from_dconf (self);
-    g_paste_settings_set_max_history_size_from_dconf (self);
-    g_paste_settings_set_max_displayed_history_size_from_dconf (self);
-    g_paste_settings_set_element_size_from_dconf (self);
-    g_paste_settings_set_min_text_item_size_from_dconf(self);
-    g_paste_settings_set_max_text_item_size_from_dconf(self);
-    g_paste_settings_set_history_name_from_dconf (self);
-    g_paste_settings_set_show_history_from_dconf (self);
-    g_paste_settings_set_paste_and_pop_from_dconf (self);
+
 
     c_signals[C_CHANGED] = g_signal_connect (G_OBJECT (settings),
                                              "changed",
