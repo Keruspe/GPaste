@@ -109,6 +109,25 @@ static gulong c_signals[C_LAST_SIGNAL] = { 0 };
     g_variant_unref (result); \
     return_stmt;
 
+#define HANDLE_SIGNAL(sig) \
+    if (g_strcmp0 (signal_name, SIG_##sig) == 0) \
+    { \
+        g_signal_emit (self, \
+                       signals[sig], \
+                       0); /* detail */ \
+    }
+
+#define NEW_SIGNAL(name) \
+    g_signal_new (name, \
+                  G_PASTE_TYPE_CLIENT, \
+                  G_SIGNAL_RUN_LAST, \
+                  0, /* class offset */ \
+                  NULL, /* accumulator */ \
+                  NULL, /* accumulator data */ \
+                  g_cclosure_marshal_VOID__VOID, \
+                  G_TYPE_NONE, \
+                  0); /* number of params */
+
 /**
  * g_paste_client_get_element:
  * @self: a #GPasteClient instance
@@ -325,18 +344,8 @@ g_paste_client_handle_signal (GPasteClient *self,
                               GVariant     *parameters G_GNUC_UNUSED,
                               gpointer      user_data G_GNUC_UNUSED)
 {
-    if (g_strcmp0 (signal_name, SIG_CHANGED) == 0)
-    {
-        g_signal_emit (self,
-                       signals[CHANGED],
-                       0); /* detail */
-    }
-    else if (g_strcmp0 (signal_name, SIG_SHOW_HISTORY) == 0)
-    {
-        g_signal_emit (self,
-                       signals[SHOW_HISTORY],
-                       0); /* detail */
-    }
+    HANDLE_SIGNAL (CHANGED)
+    else HANDLE_SIGNAL (SHOW_HISTORY)
 }
 
 static void
@@ -370,24 +379,8 @@ g_paste_client_class_init (GPasteClientClass *klass)
     object_class->dispose = g_paste_client_dispose;
     object_class->finalize = g_paste_client_finalize;
 
-    signals[CHANGED] = g_signal_new ("changed",
-                                     G_PASTE_TYPE_CLIENT,
-                                     G_SIGNAL_RUN_LAST,
-                                     0, /* class offset */
-                                     NULL, /* accumulator */
-                                     NULL, /* accumulator data */
-                                     g_cclosure_marshal_VOID__VOID,
-                                     G_TYPE_NONE,
-                                     0); /* number of params */
-    signals[SHOW_HISTORY] = g_signal_new ("show-history",
-                                          G_PASTE_TYPE_CLIENT,
-                                          G_SIGNAL_RUN_LAST,
-                                          0, /* class offset */
-                                          NULL, /* accumulator */
-                                          NULL, /* accumulator data */
-                                          g_cclosure_marshal_VOID__VOID,
-                                          G_TYPE_NONE,
-                                          0); /* number of params */
+    signals[CHANGED] = NEW_SIGNAL ("changed")
+    signals[SHOW_HISTORY] = NEW_SIGNAL ("show-history")
 }
 
 static void
