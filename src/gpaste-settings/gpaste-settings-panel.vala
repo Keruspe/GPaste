@@ -85,7 +85,7 @@ namespace GPaste {
         public Gtk.Entry add_text_confirm_setting (string label, string value, TextCallback on_value_changed, string confirm_label, TextCallback confirm_action) {
             var entry = this.add_text_setting (label, value, on_value_changed);
             var button = this.add_confirm_button (confirm_label, entry);
-            button.pressed.connect (() => { confirm_action (entry.get_text ()); });
+            button.button_press_event.connect (() => { confirm_action (entry.get_text ()); return false; });
             return entry;
         }
 
@@ -104,7 +104,7 @@ namespace GPaste {
             this.attach (actions, 0, this.current_line++, 1, 1);
             this.attach_next_to (targets, actions, Gtk.PositionType.RIGHT, 1, 1);
             var button = this.add_confirm_button (confirm_label, targets);
-            button.pressed.connect (() => { confirm_action (actions.get_active_id (), targets.get_active_text ()); });
+            button.button_press_event.connect (() => { confirm_action (actions.get_active_id (), targets.get_active_text ()); return false;  });
             return targets;
         }
     }
