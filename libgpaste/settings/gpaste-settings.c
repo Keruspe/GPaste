@@ -33,6 +33,7 @@ struct _GPasteSettingsPrivate
     guint32    element_size;
     gboolean   fifo;
     gchar     *history_name;
+    gboolean   images_support;
     guint32    max_displayed_history_size;
     guint32    max_history_size;
     guint32    max_text_item_size;
@@ -173,6 +174,25 @@ BOOLEAN_SETTING (fifo, FIFO_KEY)
  * Returns:
  */
 STRING_SETTING (history_name, HISTORY_NAME_KEY)
+
+/**
+ * g_paste_settings_get_images_support:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the IMAGES_SUPPORT_KEY setting
+ *
+ * Returns: the value of the IMAGES_SUPPORT_KEY setting
+ */
+/**
+ * g_paste_settings_set_images_support:
+ * @self: a #GPasteSettings instance
+ * @value: the new history name
+ *
+ * Change the IMAGES_SUPPORT_KEY setting
+ *
+ * Returns:
+ */
+BOOLEAN_SETTING (images_support, IMAGES_SUPPORT_KEY)
 
 /**
  * g_paste_settings_get_max_displayed_history_size:
@@ -514,6 +534,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_element_size_from_dconf (self);
     g_paste_settings_set_fifo_from_dconf (self);
     g_paste_settings_set_history_name_from_dconf (self);
+    g_paste_settings_set_images_support_from_dconf (self);
     g_paste_settings_set_max_displayed_history_size_from_dconf (self);
     g_paste_settings_set_max_history_size_from_dconf (self);
     g_paste_settings_set_max_text_item_size_from_dconf(self);

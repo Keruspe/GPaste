@@ -26,6 +26,14 @@
       </description>
     </key>
 
+    <key name="images-support" type="b">
+      <default>true</default>
+      <summary>Do we save the images copied to history, or only text?</summary>
+      <description>
+        By default, we're saving both
+      </description>
+    </key>
+
     <key name="max-displayed-history-size" type="u">
       <range min="5" max="255"/>
       <default>20</default>
