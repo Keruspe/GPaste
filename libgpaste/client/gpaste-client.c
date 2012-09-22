@@ -252,6 +252,24 @@ g_paste_client_track (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_on_extension_state_changed:
+ * @self: a #GPasteClient instance
+ * @state: the new state of the extension
+ * @error: a #GError
+ *
+ * Call this when the extension changes its state
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_on_extension_state_changed (GPasteClient *self,
+                                           gboolean      state,
+                                           GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN (ON_EXTENSION_STATE_CHANGED, boolean, state)
+}
+
+/**
  * g_paste_client_reexecute:
  * @self: a #GPasteClient instance
  * @error: a #GError

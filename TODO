@@ -3,7 +3,6 @@
         NameLost
         Tracking
         ReexecuteSelf
-        OnExtensionStateChanged
         Active
     libgpaste-daemon:
         fix pop from paste & pop
