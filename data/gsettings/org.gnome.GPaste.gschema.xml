@@ -1,20 +1,28 @@
 <schemalist>
     <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/">
 
+    <key name="element-size" type="u">
+      <range min="0" max="255"/>
+      <default>60</default>
+      <summary>Max size of an element when displaying it</summary>
+      <description>
+        The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.
+      </description>
+    </key>
+
+    <key name="fifo" type="b">
+      <default>false</default>
+      <summary>Copy new items to the end of the list so that they are pasted last?</summary>
+      <description>
+        By default new items are added to the top of the list so that they are pasted first.
+      </description>
+    </key>
+
     <key name="history-name" type="s">
       <default>'history'</default>
       <summary>The name of the current history</summary>
       <description>
         The default name is "history"
-      </description>
-    </key>
-
-    <key name="max-history-size" type="u">
-      <range min="5" max="255"/>
-      <default>30</default>
-      <summary>Max history size</summary>
-      <description>
-        Maximum number of items in history
       </description>
     </key>
 
@@ -27,12 +35,39 @@
       </description>
     </key>
 
-    <key name="element-size" type="u">
-      <range min="0" max="255"/>
-      <default>60</default>
-      <summary>Max size of an element when displaying it</summary>
+    <key name="max-history-size" type="u">
+      <range min="5" max="255"/>
+      <default>30</default>
+      <summary>Max history size</summary>
       <description>
-        The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.
+        Maximum number of items in history
+      </description>
+    </key>
+
+    <key name="max-text-item-size" type="u">
+      <range min="1" max="2147483647"/>
+      <default>2147483647</default>
+      <summary>Max text item size</summary>
+      <description>
+        Maximum size of a text item. Anything out of this boundary is ignored.
+      </description>
+    </key>
+
+    <key name="min-text-item-size" type="u">
+      <range min="1" max="2147483647"/>
+      <default>1</default>
+      <summary>Min text item size</summary>
+      <description>
+        Minimum size of a text item. Anything out of this boundary is ignored.
+      </description>
+    </key>
+
+    <key name="paste-and-pop" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;V'</default>
+      <summary>The keyboard shortcut to paste and then delete the first element in history</summary>
+      <description>
+        By default, hitting ctrl + alt + v does that ("&lt;Ctrl&gt;&lt;Alt&gt;V").
+        An empty string here disables this functionnality.
       </description>
     </key>
 
@@ -41,6 +76,23 @@
       <summary>Does the primary selection affects history?</summary>
       <description>
         By default, only clipboard (ctrl+c) affects history.
+      </description>
+    </key>
+
+    <key name="save-history" type="b">
+      <default>true</default>
+      <summary>Do we save the history from one session to another?</summary>
+      <description>
+        By default, we're saving it
+      </description>
+    </key>
+
+    <key name="show-history" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
+      <summary>The keyboard shortcut to display the menu</summary>
+      <description>
+        By default, hitting ctrl + alt + h displays the menu ("&lt;Ctrl&gt;&lt;Alt&gt;H").
+        An empty string here disables this functionnality.
       </description>
     </key>
 
@@ -68,64 +120,12 @@
       </description>
     </key>
 
-    <key name="save-history" type="b">
-      <default>true</default>
-      <summary>Do we save the history from one session to another?</summary>
-      <description>
-        By default, we're saving it
-      </description>
-    </key>
-
     <key name="trim-items" type="b">
       <default>false</default>
       <summary>Do we trim the textual items before adding them to history?</summary>
       <description>
         Trimming means removing all trailing and ending spaces.
         By default, we're letting them as-is.
-      </description>
-    </key>
-
-    <key name="fifo" type="b">
-      <default>false</default>
-      <summary>Copy new items to the end of the list so that they are pasted last?</summary>
-      <description>
-        By default new items are added to the top of the list so that they are pasted first.
-      </description>
-    </key>
-
-    <key name="show-history" type="s">
-      <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
-      <summary>The keyboard shortcut to display the menu</summary>
-      <description>
-        By default, hitting ctrl + alt + h displays the menu ("&lt;Ctrl&gt;&lt;Alt&gt;H").
-        An empty string here disables this functionnality.
-      </description>
-    </key>
-
-    <key name="paste-and-pop" type="s">
-      <default>'&lt;Ctrl&gt;&lt;Alt&gt;V'</default>
-      <summary>The keyboard shortcut to paste and then delete the first element in history</summary>
-      <description>
-        By default, hitting ctrl + alt + v does that ("&lt;Ctrl&gt;&lt;Alt&gt;V").
-        An empty string here disables this functionnality.
-      </description>
-    </key>
-
-    <key name="max-text-item-size" type="u">
-      <range min="1" max="2147483647"/>
-      <default>2147483647</default>
-      <summary>Max text item size</summary>
-      <description>
-        Maximum size of a text item. Anything out of this boundary is ignored.
-      </description>
-    </key>
-
-    <key name="min-text-item-size" type="u">
-      <range min="1" max="2147483647"/>
-      <default>1</default>
-      <summary>Min text item size</summary>
-      <description>
-        Minimum size of a text item. Anything out of this boundary is ignored.
       </description>
     </key>
 
