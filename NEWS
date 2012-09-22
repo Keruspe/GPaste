@@ -5,7 +5,7 @@ NEW in 2.9 (Not released yet)
 - Automake stack is even more modular
 - libgpaste has been split into sublibs: libgpaste-core and libgpaste-settings
 - New libraries: libgpaste-client and libgpaste-daemon
-- gpaste VLI is rewritten in C
+- gpaste CLI is rewritten in C
 - Keybindings have totally been reworked
 - Performance improvements
 - Various code cleanup
