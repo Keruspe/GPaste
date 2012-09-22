@@ -428,12 +428,13 @@ g_paste_history_load (GPasteHistory *self)
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = self->priv;
+    GPasteSettings *settings = priv->settings;
 
     g_slist_free_full (priv->history,
                        g_object_unref);
     priv->history = NULL;
 
-    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
+    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
     gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
@@ -443,7 +444,7 @@ g_paste_history_load (GPasteHistory *self)
         LIBXML_TEST_VERSION
 
         xmlTextReaderPtr reader = xmlNewTextReaderFilename (history_file_path);
-        guint32 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
+        guint32 max_history_size = g_paste_settings_get_max_history_size (settings);
 
         for (guint32 i = 0; i < max_history_size && xmlTextReaderRead (reader) == 1;)
         {
@@ -466,15 +467,32 @@ g_paste_history_load (GPasteHistory *self)
                 priv->history = g_slist_append (priv->history, g_paste_uris_item_new (value));
             else if (g_strcmp0 (kind, "Image") == 0)
             {
-                GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (date,
-                                                                                         NULL, /* end */
-                                                                                         0)); /* base */
-                GPasteImageItem *item = g_paste_image_item_new_from_file (value, date_time);
+                if (g_paste_settings_get_images_support (settings))
+                {
+                    GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (date,
+                                                                                             NULL, /* end */
+                                                                                             0)); /* base */
+                    GPasteImageItem *item = g_paste_image_item_new_from_file (value, date_time);
 
-                if (item != NULL)
-                    priv->history = g_slist_append (priv->history, item);
+                    if (item != NULL)
+                        priv->history = g_slist_append (priv->history, item);
 
-                g_date_time_unref (date_time);
+                    g_date_time_unref (date_time);
+                }
+                else
+                {
+                    GFile *img_file = g_file_new_for_path (value);
+
+                    if (g_file_query_exists (img_file,
+                                             NULL)) /* cancellable */
+                    {
+                        g_file_delete (img_file,
+                                       NULL, /* cancellable */
+                                       NULL); /* error */
+                    }
+
+                    g_object_unref (img_file);
+                }
             }
 
             g_free (raw_value);

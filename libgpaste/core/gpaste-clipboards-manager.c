@@ -127,7 +127,7 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
                         synchronized_text = text;
                 }
             }
-            else if (gtk_selection_data_targets_include_image (targets, FALSE))
+            else if (g_paste_settings_get_images_support (settings) && gtk_selection_data_targets_include_image (targets, FALSE))
             {
                 GdkPixbuf *image = g_paste_clipboard_set_image (clip);
 
