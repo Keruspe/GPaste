@@ -3,6 +3,13 @@ NEW in 2.9 (Not released yet)
 
 - Now depends on intltool 0.50
 - Automake stack is even more modular
+- libgpaste has been split into sublibs: libgpaste-core and libgpaste-settings
+- New libraries: libgpaste-client and libgpaste-daemon
+- gpaste VLI is rewritten in C
+- Keybindings have totally been reworked
+- Performance improvements
+- Various code cleanup
+- Images support can now be disabled
 
 NEW in 2.8.1 (05/05/2012)
 =============
