@@ -22,21 +22,21 @@ namespace GPaste {
         private Client client;
         private Settings settings;
 
+        private Gtk.CheckButton fifo_button;
+        private Gtk.CheckButton primary_to_history_button;
+        private Gtk.CheckButton save_history_button;
+        private Gtk.CheckButton synchronize_clipboards_button;
         private Gtk.CheckButton track_changes_button;
         private Gtk.CheckButton track_extension_state_button;
-        private Gtk.CheckButton primary_to_history_button;
-        private Gtk.CheckButton synchronize_clipboards_button;
-        private Gtk.CheckButton save_history_button;
         private Gtk.CheckButton trim_items_button;
-        private Gtk.CheckButton fifo_button;
-        private Gtk.SpinButton max_history_size_button;
-        private Gtk.SpinButton max_displayed_history_size_button;
         private Gtk.SpinButton element_size_button;
-        private Gtk.SpinButton min_text_item_size_button;
+        private Gtk.SpinButton max_displayed_history_size_button;
+        private Gtk.SpinButton max_history_size_button;
         private Gtk.SpinButton max_text_item_size_button;
-        private Gtk.Entry show_history_entry;
-        private Gtk.Entry paste_and_pop_entry;
+        private Gtk.SpinButton min_text_item_size_button;
         private Gtk.Entry backup_entry;
+        private Gtk.Entry paste_and_pop_entry;
+        private Gtk.Entry show_history_entry;
         private Gtk.ComboBoxText targets;
 
         public Window (Gtk.Application application) {
@@ -46,50 +46,50 @@ namespace GPaste {
             this.settings = new Settings ();
             this.settings.changed.connect ((key) => {
                 switch(key) {
+                case "element-size":
+                    this.element_size_button.set_value (this.settings.get_element_size ());
+                    break;
+                case "fifo":
+                    this.fifo_button.set_active (this.settings.get_fifo ());
+                    break;
+                case "history-name":
+                    this.backup_entry.set_text (this.settings.get_history_name () + "_backup");
+                    break;
+                case "max-displayed-history-size":
+                    this.max_displayed_history_size_button.set_value (this.settings.get_max_displayed_history_size ());
+                    break;
+                case "max-history-size":
+                    this.max_history_size_button.set_value (this.settings.get_max_history_size ());
+                    break;
+                case "max-text-item-size":
+                    this.max_text_item_size_button.set_value (this.settings.get_max_text_item_size ());
+                    break;
+                case "min-text-item-size":
+                    this.min_text_item_size_button.set_value (this.settings.get_min_text_item_size ());
+                    break;
+                case "paste-and-pop":
+                    this.paste_and_pop_entry.set_text (this.settings.get_paste_and_pop ());
+                    break;
+                case "primary-to-history":
+                    this.primary_to_history_button.set_active (this.settings.get_primary_to_history ());
+                    break;
+                case "save-history":
+                    this.save_history_button.set_active (this.settings.get_save_history ());
+                    break;
+                case "show-history":
+                    this.show_history_entry.set_text (this.settings.get_show_history ());
+                    break;
+                case "synchronize_clipboards":
+                    this.synchronize_clipboards_button.set_active (this.settings.get_synchronize_clipboards ());
+                    break;
                 case "track-changes":
                     this.track_changes_button.set_active (this.settings.get_track_changes ());
                     break;
                 case "track-extension-state":
                     this.track_extension_state_button.set_active (this.settings.get_track_extension_state ());
                     break;
-                case "primary-to-history":
-                    this.primary_to_history_button.set_active (this.settings.get_primary_to_history ());
-                    break;
-                case "synchronize_clipboards":
-                    this.synchronize_clipboards_button.set_active (this.settings.get_synchronize_clipboards ());
-                    break;
-                case "save-history":
-                    this.save_history_button.set_active (this.settings.get_save_history ());
-                    break;
                 case "trim-items":
                     this.trim_items_button.set_active (this.settings.get_trim_items ());
-                    break;
-                case "fifo":
-                    this.fifo_button.set_active (this.settings.get_fifo ());
-                    break;
-                case "max-history-size":
-                    this.max_history_size_button.set_value (this.settings.get_max_history_size ());
-                    break;
-                case "max-displayed-history-size":
-                    this.max_displayed_history_size_button.set_value (this.settings.get_max_displayed_history_size ());
-                    break;
-                case "element-size":
-                    this.element_size_button.set_value (this.settings.get_element_size ());
-                    break;
-                case "min-text-item-size":
-                    this.min_text_item_size_button.set_value (this.settings.get_min_text_item_size ());
-                    break;
-                case "max-text-item-size":
-                    this.max_text_item_size_button.set_value (this.settings.get_max_text_item_size ());
-                    break;
-                case "show-history":
-                    this.show_history_entry.set_text (this.settings.get_show_history ());
-                    break;
-                case "paste-and-pop":
-                    this.paste_and_pop_entry.set_text (this.settings.get_paste_and_pop ());
-                    break;
-                case "history-name":
-                    this.backup_entry.set_text (this.settings.get_history_name () + "_backup");
                     break;
                 }
             });
