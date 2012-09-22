@@ -30,7 +30,7 @@
 
 G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
-#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num)                 \
+#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num,error)           \
     GPasteDaemonPrivate *priv = self->priv;                         \
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
@@ -38,10 +38,11 @@ G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
                                    G_PASTE_BUS_NAME,                \
                                    sig,                             \
                                    g_variant_new_tuple (data, num), \
-                                   NULL); /* error */
+                                   error);
 
-#define G_PASTE_SEND_DBUS_SIGNAL(sig) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,NULL,0)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,data) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,&data,1)
+#define G_PASTE_SEND_DBUS_SIGNAL(sig)                  G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, NULL)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)       G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, error)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,data)   G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, &data, 1, NULL)
 
 #define NEW_SIGNAL(name) \
     g_signal_new (name, \
@@ -341,17 +342,19 @@ g_paste_daemon_name_lost (GPasteDaemon *self,
 /**
  * g_paste_daemon_show_history:
  * @self: (transfer none): the #GPasteDaemon
+ * @error: a #GError
  *
  * Emit the signal to show history
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_daemon_show_history (GPasteDaemon *self)
+g_paste_daemon_show_history (GPasteDaemon *self,
+                             GError      **error)
 {
     g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
-    G_PASTE_SEND_DBUS_SIGNAL (SIG_SHOW_HISTORY)
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SIG_SHOW_HISTORY)
 }
 
 static void
