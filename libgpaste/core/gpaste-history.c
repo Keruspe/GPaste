@@ -524,13 +524,15 @@ g_paste_history_switch (GPasteHistory *self,
 /**
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
+ * @error: a #GError
  *
  * Delete the current #GPasteHistory
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_history_delete (GPasteHistory *self)
+g_paste_history_delete (GPasteHistory *self,
+                        GError       **error)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
@@ -546,7 +548,7 @@ g_paste_history_delete (GPasteHistory *self)
     {
         g_file_delete (history_file,
                        NULL, /* cancellable */
-                       NULL); /* error */
+                       error);
     }
 
     g_object_unref (history_file);
@@ -669,6 +671,7 @@ g_paste_history_new (GPasteSettings *settings)
 
 /**
  * g_paste_history_list:
+ * @error: a #GError
  *
  * Get the list of available histories
  *
@@ -676,15 +679,19 @@ g_paste_history_new (GPasteSettings *settings)
  *                           free it with g_strfreev
  */
 G_PASTE_VISIBLE gchar **
-g_paste_history_list (void)
+g_paste_history_list (GError **error)
 {
     gchar *history_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
     GFile *history_dir = g_file_new_for_path (history_dir_path);
+    gchar **ret = NULL;
     GFileEnumerator *histories = g_file_enumerate_children (history_dir,
                                                             G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
                                                             G_FILE_QUERY_INFO_NONE,
                                                             NULL, /* cancellable */
-                                                            NULL); /* error */
+                                                            error);
+    if (error)
+        goto dir_err;
+
     GArray *history_names = g_array_new (TRUE, /* zero-terminated */
                                          TRUE, /* clear */
                                          sizeof (gchar *));
@@ -692,8 +699,11 @@ g_paste_history_list (void)
 
     while ((history = g_file_enumerator_next_file (histories,
                                                    NULL, /* cancellable */
-                                                   NULL))) /* error */
+                                                   error))) /* error */
     {
+        if (error)
+            goto file_err;
+
         const gchar *raw_name = g_file_info_get_display_name (history);
 
         if (g_str_has_suffix (raw_name, ".xml"))
@@ -706,14 +716,16 @@ g_paste_history_list (void)
         }
     }
 
+    ret = (gchar **) history_names->data;
+
+file_err:
     g_object_unref (histories);
-    g_object_unref (history_dir);
-    g_free (history_dir_path);
-
-    gchar **ret = (gchar **) history_names->data;
-
     g_array_free (history_names,
                   FALSE); /* free_segment */
+
+dir_err:
+    g_object_unref (history_dir);
+    g_free (history_dir_path);
 
     return ret;
 }

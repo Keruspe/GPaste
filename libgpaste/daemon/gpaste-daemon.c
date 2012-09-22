@@ -206,7 +206,7 @@ g_paste_daemon_delete_history (GPasteDaemon          *self,
 
     if (!delete_current)
         g_paste_history_switch (history, name);
-    g_paste_history_delete (history);
+    g_paste_history_delete (history, NULL);
     g_paste_history_switch (history, delete_current ? DEFAULT_HISTORY : old_history);
 
     g_free (name);
@@ -219,7 +219,7 @@ static void
 g_paste_daemon_list_histories (GDBusConnection       *connection,
                                GDBusMethodInvocation *invocation)
 {
-    gchar **history_names = g_paste_history_list ();
+    gchar **history_names = g_paste_history_list (NULL);
     GVariant *variant = g_variant_new_strv ((const gchar **) history_names, -1);
 
     g_strfreev (history_names);
