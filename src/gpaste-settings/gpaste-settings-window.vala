@@ -23,6 +23,7 @@ namespace GPaste {
         private Settings settings;
 
         private Gtk.CheckButton fifo_button;
+        private Gtk.CheckButton images_support_button;
         private Gtk.CheckButton primary_to_history_button;
         private Gtk.CheckButton save_history_button;
         private Gtk.CheckButton synchronize_clipboards_button;
@@ -54,6 +55,9 @@ namespace GPaste {
                     break;
                 case "history-name":
                     this.backup_entry.set_text (this.settings.get_history_name () + "_backup");
+                    break;
+                case "images-support":
+                    this.images_support_button.set_active (this.settings.get_images_support ());
                     break;
                 case "max-displayed-history-size":
                     this.max_displayed_history_size_button.set_value (this.settings.get_max_displayed_history_size ());
@@ -126,16 +130,22 @@ namespace GPaste {
                                                                                 this.settings.set_synchronize_clipboards (value);
                                                                             });
             panel.add_separator ();
-            this.save_history_button = panel.add_boolean_setting (_("_Save history"),
-                                                                  this.settings.get_save_history (),
-                                                                  (value) => {
-                                                                      this.settings.set_save_history (value);
-                                                                  });
+            this.images_support_button = panel.add_boolean_setting (_("_Images support"),
+                                                                    this.settings.get_images_support (),
+                                                                    (value) => {
+                                                                        this.settings.set_images_support (value);
+                                                                    });
             this.trim_items_button = panel.add_boolean_setting (_("_Trim items"),
                                                                 this.settings.get_trim_items (),
                                                                 (value) => {
                                                                     this.settings.set_trim_items (value);
                                                                 });
+            panel.add_separator ();
+            this.save_history_button = panel.add_boolean_setting (_("_Save history"),
+                                                                  this.settings.get_save_history (),
+                                                                  (value) => {
+                                                                      this.settings.set_save_history (value);
+                                                                  });
             this.fifo_button = panel.add_boolean_setting (_("_Copy to end of history"),
                                                           this.settings.get_fifo (),
                                                           (value) => {
