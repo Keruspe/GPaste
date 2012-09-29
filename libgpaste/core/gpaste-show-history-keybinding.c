@@ -64,6 +64,6 @@ g_paste_show_history_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
                                                                      settings,
                                                                      SHOW_HISTORY_KEY,
                                                                      g_paste_settings_get_show_history,
-                                                                     (GPasteKeybindingFunc) g_paste_daemon_show_history,
+                                                                     (GPasteKeybindingFunc) g_paste_show_history_keybinding_show_history,
                                                                      daemon));
 }
