@@ -4,8 +4,8 @@
         Tracking
         ReexecuteSelf
         Active
-    libgpaste-daemon:
-        fix pop from paste & pop
+    libgpaste-core:
+        fix paste & pop
     gpaste:
         defer file reading to daemon
     gnome-shell:
