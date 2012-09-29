@@ -40,6 +40,7 @@ AM_VALAFLAGS = \
 AM_CFLAGS = \
 	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/settings \
+	-I$(srcdir)/libgpaste/keybinder \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/client \
@@ -82,6 +83,7 @@ noinst_LTLIBRARIES = $(NULL)
 
 include libgpaste/common.mk
 include libgpaste/settings.mk
+include libgpaste/keybinder.mk
 include libgpaste/core.mk
 include libgpaste/client.mk
 include libgpaste/daemon.mk

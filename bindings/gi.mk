@@ -25,23 +25,27 @@ libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 $(libgpaste_gir_file): $(libgpaste_core_la_file) $(libgpaste_daemon_la_file) $(libgpaste_client_la_file)
 bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_settings_libgpaste_settings_la_SOURCES) \
+	$(libgpaste_keybinder_libgpaste_keybinder_la_SOURCES) \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
 	$(libgpaste_daemon_libgpaste_daemon_la_SOURCES) \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
 	-I$(srcdir)/libgpaste/settings \
+	-I$(srcdir)/libgpaste/keybinder \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/client \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_LIBS = \
+	$(libgpaste_keybinder_la_file) \
 	$(libgpaste_core_la_file) \
 	$(libgpaste_daemon_la_file) \
 	$(libgpaste_client_la_file) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
 	libgpaste-settings \
+	libgpaste-keybinder \
 	libgpaste-core \
 	libgpaste-daemon \
 	libgpaste-client \

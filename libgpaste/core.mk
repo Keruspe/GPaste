@@ -30,13 +30,8 @@ libgpaste_core_public_headers = \
 	libgpaste/core/gpaste-history.h \
 	libgpaste/core/gpaste-image-item.h \
 	libgpaste/core/gpaste-item.h \
-	libgpaste/core/gpaste-keybinder.h \
-	libgpaste/core/gpaste-keybinding.h \
-	libgpaste/core/gpaste-paste-and-pop-keybinding.h \
-	libgpaste/core/gpaste-show-history-keybinding.h \
 	libgpaste/core/gpaste-text-item.h \
 	libgpaste/core/gpaste-uris-item.h \
-	libgpaste/core/gpaste-xcb-wrapper.h \
 	$(NULL)
 
 libgpaste_core_private_headers = \
@@ -45,13 +40,8 @@ libgpaste_core_private_headers = \
 	libgpaste/core/gpaste-history-private.h \
 	libgpaste/core/gpaste-image-item-private.h \
 	libgpaste/core/gpaste-item-private.h \
-	libgpaste/core/gpaste-keybinder-private.h \
-	libgpaste/core/gpaste-keybinding-private.h \
-	libgpaste/core/gpaste-paste-and-pop-keybinding-private.h \
-	libgpaste/core/gpaste-show-history-keybinding-private.h \
 	libgpaste/core/gpaste-text-item-private.h \
 	libgpaste/core/gpaste-uris-item-private.h \
-	libgpaste/core/gpaste-xcb-wrapper-private.h \
 	$(NULL)
 
 libgpaste_core_libgpaste_core_la_SOURCES = \
@@ -62,20 +52,13 @@ libgpaste_core_libgpaste_core_la_SOURCES = \
 	libgpaste/core/gpaste-history.c \
 	libgpaste/core/gpaste-image-item.c \
 	libgpaste/core/gpaste-item.c \
-	libgpaste/core/gpaste-keybinder.c \
-	libgpaste/core/gpaste-keybinding.c \
-	libgpaste/core/gpaste-paste-and-pop-keybinding.c \
-	libgpaste/core/gpaste-show-history-keybinding.c \
 	libgpaste/core/gpaste-text-item.c \
 	libgpaste/core/gpaste-uris-item.c \
-	libgpaste/core/gpaste-xcb-wrapper.c \
 	$(NULL)
 
 libgpaste_core_libgpaste_core_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
-	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
-	$(XCB_CFLAGS) \
 	$(XML_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
@@ -83,7 +66,6 @@ libgpaste_core_libgpaste_core_la_CFLAGS = \
 libgpaste_core_libgpaste_core_la_LIBADD = \
 	$(libgpaste_common_la_file) \
 	$(libgpaste_settings_la_file) \
-	$(XCB_LIBS) \
 	$(XML_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)

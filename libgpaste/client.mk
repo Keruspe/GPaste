@@ -17,7 +17,7 @@
 
 libgpaste_client_la_file = libgpaste/client/libgpaste-client.la
 
-LIBGPASTE_CLIENT_CURRENT=1
+LIBGPASTE_CLIENT_CURRENT=0
 LIBGPASTE_CLIENT_REVISION=0
 LIBGPASTE_CLIENT_AGE=0
 
