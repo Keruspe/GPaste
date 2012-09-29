@@ -4,7 +4,7 @@
         Tracking
         ReexecuteSelf
         Active
-    libgpaste-core:
+    libgpaste-keybinder:
         fix paste & pop
     gpaste:
         defer file reading to daemon
