@@ -32,6 +32,13 @@ g_paste_show_history_keybinding_init (GPasteShowHistoryKeybinding *self G_GNUC_U
 {
 }
 
+static void
+g_paste_show_history_keybinding_show_history (GPasteDaemon *daemon)
+{
+    g_paste_daemon_show_history (daemon,
+                                 NULL); /* error */
+}
+
 /**
  * g_paste_show_history_keybinding_new:
  * @xcb_wrapper: a #GPasteXcbWrapper instance
