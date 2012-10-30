@@ -35,5 +35,8 @@ bin_gpasted_CFLAGS = \
 
 bin_gpasted_LDADD = \
 	$(libgpaste_common_la_file) \
+	$(libgpaste_core_la_file) \
 	$(libgpaste_daemon_la_file) \
+	$(libgpaste_keybinder_la_file) \
+	$(libgpaste_settings_la_file) \
 	$(NULL)
