@@ -51,7 +51,7 @@ GType g_paste_show_history_keybinding_get_type (void);
 
 GPasteShowHistoryKeybinding *g_paste_show_history_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
                                                                   GPasteSettings   *settings,
-                                                                  GPasteDaemon     *daemon);
+                                                                  GPasteDaemon     *gpaste_daemon);
 
 G_END_DECLS
 
