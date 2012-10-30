@@ -27,7 +27,6 @@ G_DEFINE_TYPE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 
 struct _GPasteKeybindingPrivate
 {
-    GPasteXcbWrapper      *xcb_wrapper;
     gchar                 *binding;
     xcb_keycode_t         *keycodes;
     guint16                modifiers;
@@ -55,7 +54,7 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
 
     g_return_if_fail (!priv->active);
 
-    GPasteXcbWrapper *xcb_wrapper = priv->xcb_wrapper;
+    GPasteXcbWrapper *xcb_wrapper = self->xcb_wrapper;
     xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
     xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
     guint keysym;
@@ -99,7 +98,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
 
     g_return_if_fail (priv->active);
 
-    GPasteXcbWrapper *xcb_wrapper = priv->xcb_wrapper;
+    GPasteXcbWrapper *xcb_wrapper = self->xcb_wrapper;
 
     for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
     {
@@ -132,15 +131,6 @@ g_paste_keybinding_rebind (GPasteKeybinding  *self,
         g_paste_keybinding_deactivate (self);
         g_paste_keybinding_activate (self);
     }
-}
-
-/**
- * g_paste_keybinding_get_xcb_wrapper: (skip)
- */
-GPasteXcbWrapper *
-g_paste_keybinding_get_xcb_wrapper (GPasteKeybinding *self)
-{
-    return self->priv->xcb_wrapper;
 }
 
 /**
@@ -221,7 +211,7 @@ g_paste_keybinding_dispose (GObject *object)
 
     if (priv->active)
         g_paste_keybinding_deactivate (self);
-    g_object_unref (priv->xcb_wrapper);
+    g_object_unref (self->xcb_wrapper);
     g_object_unref (priv->settings);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->dispose (object);
@@ -271,7 +261,8 @@ _g_paste_keybinding_new (GType                  type,
     GPasteKeybinding *self = g_object_new (type, NULL);
     GPasteKeybindingPrivate *priv = self->priv;
 
-    priv->xcb_wrapper = g_object_ref (xcb_wrapper);
+    self->xcb_wrapper = g_object_ref (xcb_wrapper);
+
     priv->settings = g_object_ref (settings);
     priv->binding = g_strdup (getter (settings));
     priv->getter = getter;

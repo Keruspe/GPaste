@@ -102,7 +102,7 @@ paste_and_pop_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
 static void
 paste_and_pop (GPasteKeybinding *data)
 {
-    GPasteXcbWrapper *xcb_wrapper = g_paste_keybinding_get_xcb_wrapper (data);
+    GPasteXcbWrapper *xcb_wrapper = data->xcb_wrapper;
     xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
     xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
 

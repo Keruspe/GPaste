@@ -30,6 +30,9 @@ struct _GPasteKeybinding
 {
     GObject parent_instance;
 
+    /*< protected >*/
+    GPasteXcbWrapper      *xcb_wrapper;
+
     /*< private >*/
     GPasteKeybindingPrivate *priv;
 };
@@ -38,8 +41,6 @@ struct _GPasteKeybindingClass
 {
     GObjectClass parent_class;
 };
-
-GPasteXcbWrapper *g_paste_keybinding_get_xcb_wrapper (GPasteKeybinding *self);
 
 GPasteKeybinding *_g_paste_keybinding_new (GType                  type,
                                            GPasteXcbWrapper      *xcb_wrapper,
