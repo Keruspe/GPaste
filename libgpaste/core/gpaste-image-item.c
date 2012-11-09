@@ -110,7 +110,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
     switch (state)
     {
     case G_PASTE_ITEM_STATE_IDLE:
-        g_clear_object (&priv->image);
+        if (priv->image)
+            g_clear_object (&priv->image);
         break;
     case G_PASTE_ITEM_STATE_ACTIVE:
         if (!priv->image)
@@ -126,7 +127,8 @@ g_paste_image_item_dispose (GObject *object)
     GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (object)->priv;
 
     g_date_time_unref (priv->date);
-    g_object_unref (priv->image);
+    if (priv->image)
+        g_object_unref (priv->image);
 
     G_OBJECT_CLASS (g_paste_image_item_parent_class)->dispose (object);
 }
@@ -174,8 +176,6 @@ _g_paste_image_item_new (const gchar *path,
 
     priv->date = date;
     priv->image = image;
-    g_paste_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE); /* We're active when we're created */
-    image = priv->image;
 
     if (image)
     {

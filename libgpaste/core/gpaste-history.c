@@ -512,6 +512,9 @@ g_paste_history_load (GPasteHistory *self)
     g_object_unref (history_file);
     g_free (history_file_path);
     g_free (history_file_name);
+
+    if (priv->history)
+        g_paste_item_set_state (priv->history->data, G_PASTE_ITEM_STATE_ACTIVE);
 }
 
 /**

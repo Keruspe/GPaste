@@ -262,7 +262,8 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
     GPasteClipboardPrivate *priv = self->priv;
-    GdkPixbuf *image = gtk_clipboard_wait_for_image (priv->real), *ret = image;
+    GdkPixbuf *image = gtk_clipboard_wait_for_image (priv->real);
+    GdkPixbuf *ret = image;
 
     if (image)
     {
