@@ -517,7 +517,7 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     G_OBJECT_CLASS (klass)->finalize = g_paste_settings_finalize;
 
     signals[CHANGED] = NEW_SIGNAL_DETAILED("changed", G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE)
-    signals[CHANGED] = NEW_SIGNAL_DETAILED("rebind" , G_TYPE_STRING)
+    signals[REBIND]  = NEW_SIGNAL_DETAILED("rebind" , G_TYPE_STRING)
     signals[TRACK]   = NEW_SIGNAL         ("track"  , G_TYPE_BOOLEAN)
 }
 
