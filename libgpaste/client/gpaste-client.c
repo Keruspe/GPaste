@@ -37,6 +37,7 @@ enum
     NAME_LOST,
     REEXECUTE_SELF,
     SHOW_HISTORY,
+    TRACKING,
 
     LAST_SIGNAL
 };
@@ -385,6 +386,7 @@ g_paste_client_handle_signal (GPasteClient *self,
     else HANDLE_SIGNAL (NAME_LOST)
     else HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
+    else HANDLE_SIGNAL (TRACKING)
 }
 
 static void
@@ -422,6 +424,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
     signals[NAME_LOST]      = NEW_SIGNAL ("name-lost")
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self")
     signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history")
+    signals[TRACKING]       = NEW_SIGNAL ("tracking")
 }
 
 static void
