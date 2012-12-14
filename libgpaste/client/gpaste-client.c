@@ -182,6 +182,23 @@ g_paste_client_add (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_add_file:
+ * @self: a #GPasteClient instance
+ * @file: the file to add
+ * @error: a #GError
+ *
+ * Add the file contents to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_file (GPasteClient *self,
+                         const gchar  *file,
+                         GError      **error)
+{
+    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD_FILE, string, file)
+}
+/**
  * g_paste_client_select:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to select

@@ -228,14 +228,10 @@ g_paste_daemon_list_histories (GDBusConnection       *connection,
 }
 
 static void
-g_paste_daemon_add (GPasteDaemon          *self,
-                    GDBusConnection       *connection,
-                    GDBusMethodInvocation *invocation,
-                    GVariant              *parameters)
+g_paste_daemon_do_add (GPasteDaemon *self,
+                       gchar        *text,
+                       gsize         length)
 {
-    gsize length;
-    gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
-
     g_return_if_fail (text != NULL);
 
     GPasteDaemonPrivate *priv = self->priv;
@@ -252,6 +248,43 @@ g_paste_daemon_add (GPasteDaemon          *self,
     }
     g_free (text);
     g_free (stripped);
+}
+
+static void
+g_paste_daemon_add (GPasteDaemon          *self,
+                    GDBusConnection       *connection,
+                    GDBusMethodInvocation *invocation,
+                    GVariant              *parameters)
+{
+    gsize length;
+    gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
+
+    g_paste_daemon_do_add (self, text, length);
+
+    g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
+}
+
+static void
+g_paste_daemon_add_file (GPasteDaemon          *self,
+                         GDBusConnection       *connection,
+                         GDBusMethodInvocation *invocation,
+                         GVariant              *parameters)
+{
+    gsize length;
+    gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
+
+    g_return_if_fail (file != NULL);
+
+    gchar *content = NULL;
+
+    if (g_file_get_contents (file,
+                             &content,
+                             &length,
+                             NULL)) /* error */
+    {
+        g_paste_daemon_do_add (self, content, length);
+    }
+    g_free (file);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
@@ -429,6 +462,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
         g_paste_daemon_list_histories (connection, invocation);
     else if (g_strcmp0 (method_name, ADD) == 0)
         g_paste_daemon_add (self, connection, invocation, parameters);
+    else if (g_strcmp0 (method_name, ADD_FILE) == 0)
+        g_paste_daemon_add_file (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, GET_ELEMENT) == 0)
         g_paste_daemon_get_element (self, connection, invocation, parameters);
     else if (g_strcmp0 (method_name, SELECT) == 0)
@@ -640,6 +675,9 @@ g_paste_daemon_init (GPasteDaemon *self)
         "           <arg type='as' direction='out' />"
         "       </method>"
         "       <method name='" ADD "'>"
+        "           <arg type='s' direction='in' />"
+        "       </method>"
+        "       <method name='" ADD_FILE "'>"
         "           <arg type='s' direction='in' />"
         "       </method>"
         "       <method name='" GET_ELEMENT "'>"

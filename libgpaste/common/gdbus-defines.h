@@ -25,6 +25,7 @@
 #define G_PASTE_INTERFACE_NAME "org.gnome.GPaste"
 
 #define ADD                        "Add"
+#define ADD_FILE                   "AddFile"
 #define BACKUP_HISTORY             "BackupHistory"
 #define DELETE                     "Delete"
 #define DELETE_HISTORY             "DeleteHistory"

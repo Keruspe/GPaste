@@ -59,6 +59,9 @@ gchar **g_paste_client_list_histories             (GPasteClient *self,
 void    g_paste_client_add                        (GPasteClient *self,
                                                    const gchar  *text,
                                                    GError      **error);
+void    g_paste_client_add_file                   (GPasteClient *self,
+                                                   const gchar  *file,
+                                                   GError      **error);
 gchar  *g_paste_client_get_element                (GPasteClient *self,
                                                    guint32       index,
                                                    GError      **error);

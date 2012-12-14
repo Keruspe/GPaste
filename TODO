@@ -6,8 +6,6 @@
         Active
     libgpaste-keybinder:
         fix paste & pop
-    gpaste:
-        defer file reading to daemon
     gnome-shell:
         port to libgpaste-client
         prefs.js

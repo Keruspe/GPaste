@@ -273,22 +273,7 @@ main (int argc, char *argv[])
             else if (g_strcmp0 (arg1, "f") == 0 ||
                      g_strcmp0 (arg1, "file") == 0)
             {
-               gchar *content = NULL;
-
-               if (g_file_get_contents (arg2,
-                                        &content,
-                                        NULL, /* length */
-                                        &error))
-               {
-                   g_paste_client_add (client, content, &error);
-                   g_free (content);
-               }
-               else
-               {
-                   fprintf (stderr, _("Could not read file: %s\n"), arg2);
-                   g_clear_error (&error);
-                   status = EXIT_FAILURE;
-               }
+                g_paste_client_add_file (client, arg2, &error);
             }
             else
             {
