@@ -1,6 +1,5 @@
 3.0:
     libgpaste-client:
-        NameLost
         Tracking
         ReexecuteSelf
         Active
