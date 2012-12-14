@@ -35,6 +35,7 @@ enum
 {
     CHANGED,
     NAME_LOST,
+    REEXECUTE_SELF,
     SHOW_HISTORY,
 
     LAST_SIGNAL
@@ -382,6 +383,7 @@ g_paste_client_handle_signal (GPasteClient *self,
 {
     HANDLE_SIGNAL (CHANGED)
     else HANDLE_SIGNAL (NAME_LOST)
+    else HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
 }
 
@@ -416,9 +418,10 @@ g_paste_client_class_init (GPasteClientClass *klass)
     object_class->dispose = g_paste_client_dispose;
     object_class->finalize = g_paste_client_finalize;
 
-    signals[CHANGED]      = NEW_SIGNAL ("changed")
-    signals[NAME_LOST]    = NEW_SIGNAL ("name-lost")
-    signals[SHOW_HISTORY] = NEW_SIGNAL ("show-history")
+    signals[CHANGED]        = NEW_SIGNAL ("changed")
+    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost")
+    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self")
+    signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history")
 }
 
 static void

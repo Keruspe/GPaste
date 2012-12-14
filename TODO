@@ -1,7 +1,6 @@
 3.0:
     libgpaste-client:
         Tracking
-        ReexecuteSelf
         Active
     libgpaste-keybinder:
         fix paste & pop
