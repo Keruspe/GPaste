@@ -28,8 +28,6 @@ G_DEFINE_TYPE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 struct _GPasteKeybindingPrivate
 {
     gchar                 *binding;
-    xcb_keycode_t         *keycodes;
-    guint16                modifiers;
     GPasteSettings        *settings;
     GPasteKeybindingGetter getter;
     GPasteKeybindingFunc   callback;
@@ -54,28 +52,12 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
 
     g_return_if_fail (!priv->active);
 
-    GPasteXcbWrapper *xcb_wrapper = self->xcb_wrapper;
-    xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
-    xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
     guint keysym;
-
-    g_return_if_fail (screen); /* This should never happen */
-
-    gtk_accelerator_parse (priv->binding, &keysym, (GdkModifierType *) &priv->modifiers);
-    priv->keycodes = xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
+    GdkModifierType mods;
+    gtk_accelerator_parse (priv->binding, &keysym, &mods);
 
     gdk_error_trap_push ();
-    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
-    {
-        xcb_grab_key (connection,
-                      FALSE,
-                      screen->root,
-                      priv->modifiers,
-                      *keycode,
-                      XCB_GRAB_MODE_ASYNC,
-                      XCB_GRAB_MODE_ASYNC);
-    }
-    xcb_flush (connection);
+    // TODO
     gdk_error_trap_pop_ignored ();
 
     priv->active = TRUE;
@@ -98,19 +80,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
 
     g_return_if_fail (priv->active);
 
-    GPasteXcbWrapper *xcb_wrapper = self->xcb_wrapper;
-
-    for (xcb_keycode_t *keycode = priv->keycodes; *keycode; ++keycode)
-    {
-        xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
-
-        xcb_ungrab_key ((xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper),
-                        *keycode,
-                        screen->root,
-                        priv->modifiers);
-    }
-
-    g_free (priv->keycodes);
+    // TODO
 
     priv->active = FALSE;
 }
@@ -134,42 +104,6 @@ g_paste_keybinding_rebind (GPasteKeybinding  *self,
 }
 
 /**
- * g_paste_keybinding_get_keycodes:
- * @self: a #GPasteKeybinding instance
- *
- * Get the keycodes corresponding to the binding
- *
- * Returns: (array zero-terminated=1): an array of keycodes or NULL
- */
-G_PASTE_VISIBLE const GPasteKeycode *
-g_paste_keybinding_get_keycodes (GPasteKeybinding *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
-
-    GPasteKeybindingPrivate *priv = self->priv;
-
-    return (priv->active) ? (GPasteKeycode *) priv->keycodes : NULL;
-}
-
-/**
- * g_paste_keybinding_get_modifirs:
- * @self: a #GPasteKeybinding instance
- *
- * Get the modifiers required by the binding
- *
- * Returns: the modifiers required
- */
-G_PASTE_VISIBLE guint16
-g_paste_keybinding_get_modifiers (GPasteKeybinding *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
-
-    GPasteKeybindingPrivate *priv = self->priv;
-
-    return (priv->active) ? priv->modifiers : 0;
-}
-
-/**
  * g_paste_keybinding_is_active:
  * @self: a #GPasteKeybinding instance
  *
@@ -185,24 +119,6 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
     return self->priv->active;
 }
 
-/**
- * g_paste_keybinding_run_callback:
- * @self: a #GPasteKeybinding instance
- *
- * Runs the callback associated to the keybinding
- *
- * Returns: The return value of the callback
- */
-G_PASTE_VISIBLE void
-g_paste_keybinding_notify (GPasteKeybinding *self)
-{
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
-
-    GPasteKeybindingPrivate *priv = self->priv;
-
-    priv->callback (priv->user_data);
-}
-
 static void
 g_paste_keybinding_dispose (GObject *object)
 {
@@ -211,7 +127,6 @@ g_paste_keybinding_dispose (GObject *object)
 
     if (priv->active)
         g_paste_keybinding_deactivate (self);
-    g_object_unref (self->xcb_wrapper);
     g_object_unref (priv->settings);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->dispose (object);
@@ -251,7 +166,6 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  */
 GPasteKeybinding *
 _g_paste_keybinding_new (GType                  type,
-                         GPasteXcbWrapper      *xcb_wrapper,
                          GPasteSettings        *settings,
                          const gchar           *dconf_key,
                          GPasteKeybindingGetter getter,
@@ -260,8 +174,6 @@ _g_paste_keybinding_new (GType                  type,
 {
     GPasteKeybinding *self = g_object_new (type, NULL);
     GPasteKeybindingPrivate *priv = self->priv;
-
-    self->xcb_wrapper = g_object_ref (xcb_wrapper);
 
     priv->settings = g_object_ref (settings);
     priv->binding = g_strdup (getter (settings));
@@ -283,7 +195,6 @@ _g_paste_keybinding_new (GType                  type,
 
 /**
  * g_paste_keybinding_new:
- * @xcb_wrapper: a #GPasteXcbWrapper instance
  * @settings: a #GPasteSettings instance
  * @dconf_key: the dconf key to watch
  * @getter: (closure settings) (scope notified): the getter to use to get the binding
@@ -296,21 +207,18 @@ _g_paste_keybinding_new (GType                  type,
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_keybinding_new (GPasteXcbWrapper      *xcb_wrapper,
-                        GPasteSettings        *settings,
+g_paste_keybinding_new (GPasteSettings        *settings,
                         const gchar           *dconf_key,
                         GPasteKeybindingGetter getter,
                         GPasteKeybindingFunc   callback,
                         gpointer               user_data)
 {
-    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (dconf_key != NULL, NULL);
     g_return_val_if_fail (getter != NULL, NULL);
     g_return_val_if_fail (callback != NULL, NULL);
 
     return _g_paste_keybinding_new (G_PASTE_TYPE_KEYBINDING,
-                                    xcb_wrapper,
                                     settings,
                                     dconf_key,
                                     getter,

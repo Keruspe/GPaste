@@ -134,7 +134,6 @@ paste_and_pop (GPasteKeybinding *data)
 
 /**
  * g_paste_paste_and_pop_keybinding_new:
- * @xcb_wrapper: a #GPasteXcbWrapper instance
  * @settings: a #GPasteSettings instance
  * @history: a #GPasteHistory instance
  *
@@ -144,16 +143,13 @@ paste_and_pop (GPasteKeybinding *data)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPastePasteAndPopKeybinding *
-g_paste_paste_and_pop_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
-                                      GPasteSettings   *settings,
+g_paste_paste_and_pop_keybinding_new (GPasteSettings   *settings,
                                       GPasteHistory    *history)
 {
-    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
 
     GPastePasteAndPopKeybinding *self = G_PASTE_PASTE_AND_POP_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING,
-                                                                                                   xcb_wrapper,
                                                                                                    settings,
                                                                                                    PASTE_AND_POP_KEY,
                                                                                                    g_paste_settings_get_paste_and_pop,

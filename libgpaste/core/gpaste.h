@@ -27,7 +27,6 @@
 #include <gpaste-history.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-settings.h>
-#include <gpaste-xcb-wrapper.h>
 
 #undef __G_PASTE_H_INSIDE__
 

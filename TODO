@@ -10,7 +10,7 @@
 future:
     gpaste:
         GSubProcess
-    libgpaste:
-        handle keyboard layout changes
     libgpaste-client:
         specify errors types when possible in g-i
+    libgpaste-keybinder:
+        disconnect-signal

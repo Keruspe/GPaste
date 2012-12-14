@@ -45,10 +45,10 @@ GType g_paste_keybinder_get_type (void);
 
 void g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
                                        GPasteKeybinding *binding);
-void g_paste_keybinder_activate_all   (GPasteKeybinder *self);
-void g_paste_keybinder_deactivate_all (GPasteKeybinder *self);
+void g_paste_keybinder_activate_all   (GPasteKeybinder  *self);
+void g_paste_keybinder_deactivate_all (GPasteKeybinder  *self);
 
-GPasteKeybinder *g_paste_keybinder_new (GPasteXcbWrapper *xcb_wrapper);
+GPasteKeybinder *g_paste_keybinder_new (void);
 
 G_END_DECLS
 
