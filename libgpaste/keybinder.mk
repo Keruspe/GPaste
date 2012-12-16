@@ -49,12 +49,14 @@ libgpaste_keybinder_libgpaste_keybinder_la_SOURCES = \
 libgpaste_keybinder_libgpaste_keybinder_la_CFLAGS = \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
+	$(X11_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 
 libgpaste_keybinder_libgpaste_keybinder_la_LIBADD = \
 	$(libgpaste_common_la_file) \
 	$(libgpaste_settings_la_file) \
+	$(X11_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)
 

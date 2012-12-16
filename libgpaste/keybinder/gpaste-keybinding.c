@@ -19,11 +19,8 @@
 
 #include "gpaste-keybinding-private.h"
 
-#include <stdbool.h>
-
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
-#include <X11/Xlib.h>
 
 #define G_PASTE_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_KEYBINDING, GPasteKeybindingPrivate))
 
@@ -37,7 +34,6 @@ struct _GPasteKeybindingPrivate
     GPasteKeybindingFunc   callback;
     gpointer               user_data;
     gboolean               active;
-    GdkDisplay            *display;
     XID                    xid;
     GdkModifierType        mods;
     gint                   keycode;
@@ -63,13 +59,12 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
     guint keysym;
     gtk_accelerator_parse (priv->binding, &keysym, &priv->mods);
 
-    Display *display = GDK_DISPLAY_XDISPLAY (priv->display);
-    priv->keycode = XKeysymToKeycode (display, keysym);
+    priv->keycode = XKeysymToKeycode (self->display, keysym);
 
     if (priv->keycode)
     {
         gdk_error_trap_push ();
-        XGrabKey (display, priv->keycode, priv->mods, priv->xid, false, GrabModeAsync, GrabModeAsync);
+        XGrabKey (self->display, priv->keycode, priv->mods, priv->xid, false, GrabModeAsync, GrabModeAsync);
         gdk_flush ();
         gdk_error_trap_pop_ignored ();
     }
@@ -97,7 +92,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
     if (priv->keycode)
     {
         gdk_error_trap_push ();
-        XUnrabKey (GDK_DISPLAY_XDISPLAY (priv->display), priv->keycode, priv->mods, priv->xid);
+        XUngrabKey (self->display, priv->keycode, priv->mods, priv->xid);
         gdk_flush ();
         gdk_error_trap_pop_ignored ();
     }
@@ -178,9 +173,9 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 {
     GPasteKeybindingPrivate *priv = self->priv = G_PASTE_KEYBINDING_GET_PRIVATE (self);
 
-    GdkWindow *window = gdk_get_default_root_window ();
-    priv->xid = gdk_x11_window_get_xid (window);
-    priv->display = gdk_display_get_default ();
+    self->display = gdk_x11_get_default_xdisplay ();
+
+    priv->xid = gdk_x11_window_get_xid (gdk_get_default_root_window ());
     priv->active = FALSE;
 }
 

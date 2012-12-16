@@ -22,6 +22,9 @@
 
 #include "gpaste-keybinding.h"
 
+#include <stdbool.h>
+#include <X11/Xlib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _GPasteKeybindingPrivate GPasteKeybindingPrivate;
@@ -29,6 +32,9 @@ typedef struct _GPasteKeybindingPrivate GPasteKeybindingPrivate;
 struct _GPasteKeybinding
 {
     GObject parent_instance;
+
+    /*< protected >*/
+    Display *display;
 
     /*< private >*/
     GPasteKeybindingPrivate *priv;

@@ -141,6 +141,8 @@ PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0])
 
 PKG_CHECK_MODULES(XML, [libxml-2.0])
 
+PKG_CHECK_MODULES(X11, [x11 xtst])
+
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 AC_ARG_WITH([dbusservicesdir],
         AS_HELP_STRING([--with-dbusservicesdir=DIR], [D-Bus system service directory]),
