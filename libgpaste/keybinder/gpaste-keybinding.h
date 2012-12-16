@@ -24,7 +24,10 @@
 #include "config.h"
 #endif
 
+#include <gdk/gdkx.h>
 #include <gpaste-settings.h>
+#include <stdbool.h>
+#include <X11/Xlib.h>
 
 G_BEGIN_DECLS
 
@@ -45,10 +48,12 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_keybinding_get_type (void);
 
-void                 g_paste_keybinding_activate      (GPasteKeybinding *self);
-void                 g_paste_keybinding_deactivate    (GPasteKeybinding *self);
-gboolean             g_paste_keybinding_is_active     (GPasteKeybinding *self);
-void                 g_paste_keybinding_notify        (GPasteKeybinding *self);
+void            g_paste_keybinding_activate      (GPasteKeybinding *self);
+void            g_paste_keybinding_deactivate    (GPasteKeybinding *self);
+guint           g_paste_keybinding_get_keycode   (GPasteKeybinding *self);
+GdkModifierType g_paste_keybinding_get_modifiers (GPasteKeybinding *self);
+gboolean        g_paste_keybinding_is_active     (GPasteKeybinding *self);
+void            g_paste_keybinding_notify        (GPasteKeybinding *self);
 
 GPasteKeybinding *g_paste_keybinding_new (GPasteSettings        *settings,
                                           const gchar           *dconf_key,

@@ -19,7 +19,6 @@
 
 #include "gpaste-keybinding-private.h"
 
-#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
 #define G_PASTE_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_KEYBINDING, GPasteKeybindingPrivate))
@@ -35,8 +34,8 @@ struct _GPasteKeybindingPrivate
     gpointer               user_data;
     gboolean               active;
     XID                    xid;
-    GdkModifierType        mods;
-    gint                   keycode;
+    GdkModifierType        modifiers;
+    guint                  keycode;
 };
 
 /**
@@ -57,14 +56,14 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
     g_return_if_fail (!priv->active);
 
     guint keysym;
-    gtk_accelerator_parse (priv->binding, &keysym, &priv->mods);
+    gtk_accelerator_parse (priv->binding, &keysym, &priv->modifiers);
 
     priv->keycode = XKeysymToKeycode (self->display, keysym);
 
     if (priv->keycode)
     {
         gdk_error_trap_push ();
-        XGrabKey (self->display, priv->keycode, priv->mods, priv->xid, false, GrabModeAsync, GrabModeAsync);
+        XGrabKey (self->display, priv->keycode, priv->modifiers, priv->xid, false, GrabModeAsync, GrabModeAsync);
         gdk_flush ();
         gdk_error_trap_pop_ignored ();
     }
@@ -92,7 +91,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
     if (priv->keycode)
     {
         gdk_error_trap_push ();
-        XUngrabKey (self->display, priv->keycode, priv->mods, priv->xid);
+        XUngrabKey (self->display, priv->keycode, priv->modifiers, priv->xid);
         gdk_flush ();
         gdk_error_trap_pop_ignored ();
     }
@@ -119,6 +118,42 @@ g_paste_keybinding_rebind (GPasteKeybinding  *self,
 }
 
 /**
+ * g_paste_keybinding_get_keycode:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the keycode corresponding to the binding
+ *
+ * Returns: a keycode or 0
+ */
+G_PASTE_VISIBLE guint
+g_paste_keybinding_get_keycode (GPasteKeybinding *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
+
+    GPasteKeybindingPrivate *priv = self->priv;
+
+    return (priv->active) ? priv->keycode : 0;
+}
+
+/**
+ * g_paste_keybinding_get_modifirs:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the modifiers required by the binding
+ *
+ * Returns: the modifiers required
+ */
+G_PASTE_VISIBLE GdkModifierType
+g_paste_keybinding_get_modifiers (GPasteKeybinding *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
+
+    GPasteKeybindingPrivate *priv = self->priv;
+
+    return (priv->active) ? priv->modifiers : 0;
+}
+
+/**
  * g_paste_keybinding_is_active:
  * @self: a #GPasteKeybinding instance
  *
@@ -132,6 +167,24 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
     g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), FALSE);
 
     return self->priv->active;
+}
+
+/**
+ * g_paste_keybinding_notify:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Runs the callback associated to the keybinding
+ *
+ * Returns: The return value of the callback
+ */
+G_PASTE_VISIBLE void
+g_paste_keybinding_notify (GPasteKeybinding *self)
+{
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+
+    GPasteKeybindingPrivate *priv = self->priv;
+
+    priv->callback (priv->user_data);
 }
 
 static void

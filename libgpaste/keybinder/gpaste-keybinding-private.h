@@ -22,9 +22,6 @@
 
 #include "gpaste-keybinding.h"
 
-#include <stdbool.h>
-#include <X11/Xlib.h>
-
 G_BEGIN_DECLS
 
 typedef struct _GPasteKeybindingPrivate GPasteKeybindingPrivate;

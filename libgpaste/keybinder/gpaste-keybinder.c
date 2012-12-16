@@ -27,7 +27,8 @@ G_DEFINE_TYPE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 
 struct _GPasteKeybinderPrivate
 {
-    GSList           *keybindings;
+    Display *display;
+    GSList  *keybindings;
 };
 
 /**
@@ -108,6 +109,38 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
                      self);
 }
 
+static GdkFilterReturn
+g_paste_keybinder_filter (GdkXEvent *xevent,
+                          GdkEvent  *event G_GNUC_UNUSED,
+                          gpointer   data)
+{
+    g_debug ("In filter");
+    GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (data)->priv;
+    Display *display = (Display *) priv->display;
+    XEvent *ev = (XEvent *) xevent;
+
+    if (ev->type == KeyPress)
+    {
+        g_debug ("In Keypress");
+        XKeyEvent key = ev->xkey;
+        for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
+        {
+            GPasteKeybinding *real_keybinding = keybinding->data;
+            if (g_paste_keybinding_is_active (real_keybinding) &&
+                key.keycode == g_paste_keybinding_get_keycode (real_keybinding) &&
+                key.state == g_paste_keybinding_get_modifiers (real_keybinding))
+            {
+                XUngrabKeyboard (display, CurrentTime);
+                XSync (display, false);
+                g_paste_keybinding_notify (real_keybinding);
+                break;
+            }
+        }
+    }
+
+    return GDK_FILTER_CONTINUE;
+}
+
 static void
 g_paste_keybinder_dispose (GObject *object)
 {
@@ -132,7 +165,12 @@ g_paste_keybinder_init (GPasteKeybinder *self)
 {
     GPasteKeybinderPrivate *priv = self->priv = G_PASTE_KEYBINDER_GET_PRIVATE (self);
 
+    priv->display = gdk_x11_get_default_xdisplay ();
     priv->keybindings = NULL;
+
+    gdk_window_add_filter (gdk_get_default_root_window (),
+                           g_paste_keybinder_filter,
+                           self);
 }
 
 /**
