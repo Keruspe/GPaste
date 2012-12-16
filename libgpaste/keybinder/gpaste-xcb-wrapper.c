@@ -19,6 +19,8 @@
 
 #include "gpaste-xcb-wrapper-private.h"
 
+#include <xcb/xkb.h>
+
 #define G_PASTE_XCB_WRAPPER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_XCB_WRAPPER, GPasteXcbWrapperPrivate))
 
 G_DEFINE_TYPE (GPasteXcbWrapper, g_paste_xcb_wrapper, G_TYPE_OBJECT)
@@ -110,12 +112,23 @@ g_paste_xcb_wrapper_init (GPasteXcbWrapper *self)
     priv->keysyms = xcb_key_symbols_alloc (priv->connection);
     priv->screen = NULL;
 
-    if ((setup = xcb_get_setup (priv->connection))) {
+    if ((setup = xcb_get_setup (priv->connection)))
+    {
         xcb_screen_iterator_t iter = xcb_setup_roots_iterator (setup);
         for (; iter.rem; --connection_screen, xcb_screen_next (&iter))
             if (0 == connection_screen)
                 priv->screen = iter.data;
     }
+
+    xcb_xkb_select_events (priv->connection,
+                           XCB_XKB_ID_USE_CORE_KBD,
+                           XCB_XKB_EVENT_TYPE_STATE_NOTIFY,
+                           0,
+                           XCB_XKB_EVENT_TYPE_STATE_NOTIFY,
+                           0,
+                           0,
+                           NULL);
+    xcb_flush (priv->connection);
 }
 
 /**
