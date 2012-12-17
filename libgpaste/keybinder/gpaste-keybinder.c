@@ -118,14 +118,18 @@ g_paste_keybinder_key_pressed (GdkModifierType modifiers,
     for (; keybinding; keybinding = g_slist_next (keybinding))
     {
         GPasteKeybinding *real_keybinding = keybinding->data;
+        g_debug ("%u %u", modifiers, g_paste_keybinding_get_modifiers (real_keybinding));
         g_debug ("%u %u", keycode, g_paste_keybinding_get_keycode (real_keybinding));
-        if (g_paste_keybinding_is_active (real_keybinding) &&
-            keycode == g_paste_keybinding_get_keycode (real_keybinding) &&
-            modifiers == g_paste_keybinding_get_modifiers (real_keybinding))
+        if (g_paste_keybinding_is_active (real_keybinding))
         {
-            g_debug ("notify");
-            g_paste_keybinding_notify (real_keybinding);
-            break;
+            GdkModifierType mods = g_paste_keybinding_get_modifiers (real_keybinding);
+            if (keycode == g_paste_keybinding_get_keycode (real_keybinding) &&
+                mods == (mods & modifiers))
+            {
+                g_debug ("notify");
+                g_paste_keybinding_notify (real_keybinding);
+                break;
+            }
         }
     }
 }
@@ -145,12 +149,12 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
     if (ev->type == KeyPress)
     {
         XKeyEvent key = ev->xkey;
-        g_paste_keybinder_key_pressed (key.keycode, key.state, priv->keybindings);
+        g_paste_keybinder_key_pressed (key.state, key.keycode, priv->keybindings);
     }
     else if (ev->type == GenericEvent && ev->xgeneric.evtype == XI_KeyPress)
     {
         XIDeviceEvent *xi_ev = (XIDeviceEvent*) ev;
-        g_paste_keybinder_key_pressed (xi_ev->detail, xi_ev->mods.effective, priv->keybindings);
+        g_paste_keybinder_key_pressed (xi_ev->mods.effective, xi_ev->detail, priv->keybindings);
     }
 
     return GDK_FILTER_CONTINUE;
