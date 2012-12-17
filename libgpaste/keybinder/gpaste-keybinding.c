@@ -110,9 +110,7 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
     guint keysym;
     gtk_accelerator_parse (priv->binding, &keysym, &priv->modifiers);
 
-    priv->keycode = XKeysymToKeycode (self->display, keysym);
-
-    if (priv->keycode)
+    if ((priv->keycode = XKeysymToKeycode (self->display, keysym)))
         g_paste_keybinding_change_grab (self, TRUE);
 
     priv->active = TRUE;

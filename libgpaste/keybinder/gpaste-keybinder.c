@@ -31,6 +31,8 @@ struct _GPasteKeybinderPrivate
     GSList  *keybindings;
 };
 
+static gint xinput_opcode; /* TODO: get me anywhere else */
+
 /**
  * g_paste_keybinder_add_keybinding:
  * @self: a #GPasteKeybinder instance
@@ -114,19 +116,15 @@ g_paste_keybinder_key_pressed (GdkModifierType modifiers,
                                guint           keycode,
                                GSList         *keybinding)
 {
-    g_debug ("In Keypress");
     for (; keybinding; keybinding = g_slist_next (keybinding))
     {
         GPasteKeybinding *real_keybinding = keybinding->data;
-        g_debug ("%u %u", modifiers, g_paste_keybinding_get_modifiers (real_keybinding));
-        g_debug ("%u %u", keycode, g_paste_keybinding_get_keycode (real_keybinding));
         if (g_paste_keybinding_is_active (real_keybinding))
         {
             GdkModifierType mods = g_paste_keybinding_get_modifiers (real_keybinding);
             if (keycode == g_paste_keybinding_get_keycode (real_keybinding) &&
                 mods == (mods & modifiers))
             {
-                g_debug ("notify");
                 g_paste_keybinding_notify (real_keybinding);
                 break;
             }
@@ -142,19 +140,21 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
     GPasteKeybinderPrivate *priv = G_PASTE_KEYBINDER (data)->priv;
     Display *display = (Display *) priv->display;
     XEvent *ev = (XEvent *) xevent;
+    XGenericEventCookie cookie = ev->xcookie;
 
     XIUngrabDevice (display, 3, CurrentTime);
     XSync (display, FALSE);
 
-    if (ev->type == KeyPress)
+    if (cookie.type == KeyPress)
     {
         XKeyEvent key = ev->xkey;
         g_paste_keybinder_key_pressed (key.state, key.keycode, priv->keybindings);
     }
-    else if (ev->type == GenericEvent && ev->xgeneric.evtype == XI_KeyPress)
+    else if (cookie.type == GenericEvent && cookie.extension == xinput_opcode)
     {
-        XIDeviceEvent *xi_ev = (XIDeviceEvent*) ev;
-        g_paste_keybinder_key_pressed (xi_ev->mods.effective, xi_ev->detail, priv->keybindings);
+        XIDeviceEvent *xi_ev = (XIDeviceEvent *) cookie.data;
+        if (xi_ev->evtype == XI_KeyPress)
+            g_paste_keybinder_key_pressed (xi_ev->mods.effective, xi_ev->detail, priv->keybindings);
     }
 
     return GDK_FILTER_CONTINUE;
@@ -194,7 +194,6 @@ g_paste_keybinder_init (GPasteKeybinder *self)
     gint major = 2, minor = 2;
     gint xinput_error_base;
     gint xinput_event_base;
-    gint xinput_opcode;
 
     if (XQueryExtension (priv->display,
                          "XInputExtension",
