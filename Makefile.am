@@ -28,7 +28,6 @@ AM_VALAFLAGS = \
 	--enable-checking \
 	--enable-experimental \
 	--enable-experimental-non-null \
-	--fatal-warnings \
 	--target-glib=2.30 \
 	--vapidir=$(srcdir)/bindings/vapi \
 	--pkg=config \
