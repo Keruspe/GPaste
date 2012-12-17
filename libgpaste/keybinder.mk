@@ -28,7 +28,6 @@ libgpaste_keybinder_public_headers = \
 	libgpaste/keybinder/gpaste-keybinding.h \
 	libgpaste/keybinder/gpaste-paste-and-pop-keybinding.h \
 	libgpaste/keybinder/gpaste-show-history-keybinding.h \
-	libgpaste/keybinder/gpaste-xcb-wrapper.h \
 	$(NULL)
 
 libgpaste_keybinder_private_headers = \
@@ -36,7 +35,6 @@ libgpaste_keybinder_private_headers = \
 	libgpaste/keybinder/gpaste-keybinding-private.h \
 	libgpaste/keybinder/gpaste-paste-and-pop-keybinding-private.h \
 	libgpaste/keybinder/gpaste-show-history-keybinding-private.h \
-	libgpaste/keybinder/gpaste-xcb-wrapper-private.h \
 	$(NULL)
 
 libgpaste_keybinder_libgpaste_keybinder_la_SOURCES = \
@@ -46,20 +44,19 @@ libgpaste_keybinder_libgpaste_keybinder_la_SOURCES = \
 	libgpaste/keybinder/gpaste-keybinding.c \
 	libgpaste/keybinder/gpaste-paste-and-pop-keybinding.c \
 	libgpaste/keybinder/gpaste-show-history-keybinding.c \
-	libgpaste/keybinder/gpaste-xcb-wrapper.c \
 	$(NULL)
 
 libgpaste_keybinder_libgpaste_keybinder_la_CFLAGS = \
 	$(GDK_CFLAGS) \
 	$(GTK_CFLAGS) \
-	$(XCB_CFLAGS) \
+	$(X11_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 
 libgpaste_keybinder_libgpaste_keybinder_la_LIBADD = \
 	$(libgpaste_common_la_file) \
 	$(libgpaste_settings_la_file) \
-	$(XCB_LIBS) \
+	$(X11_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)
 

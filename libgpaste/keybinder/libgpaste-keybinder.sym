@@ -9,20 +9,16 @@ global:
     g_paste_keybinding_get_type;
     g_paste_keybinding_activate;
     g_paste_keybinding_deactivate;
-    g_paste_keybinding_get_keycodes;
+    g_paste_keybinding_get_keycode;
     g_paste_keybinding_get_modifiers;
     g_paste_keybinding_is_active;
     g_paste_keybinding_notify;
     g_paste_keybinding_new;
+
     g_paste_paste_and_pop_keybinding_get_type;
     g_paste_paste_and_pop_keybinding_new;
-    g_paste_show_history_keybinding_get_type;
 
-    g_paste_xcb_wrapper_get_type;
-    g_paste_xcb_wrapper_get_connection;
-    g_paste_xcb_wrapper_get_screen;
-    g_paste_xcb_wrapper_get_keysyms;
-    g_paste_xcb_wrapper_new;
+    g_paste_show_history_keybinding_get_type;
     g_paste_show_history_keybinding_new;
 local:
     *;

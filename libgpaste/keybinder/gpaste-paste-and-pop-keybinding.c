@@ -21,7 +21,7 @@
 #include "gpaste-clipboard-common.h"
 #include "gpaste-settings-keys.h"
 
-#include <xcb/xtest.h>
+#include <X11/extensions/XTest.h>
 
 #define G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING, GPastePasteAndPopKeybindingPrivate))
 
@@ -55,29 +55,6 @@ g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self)
 }
 
 static void
-fake_keyboard (GPasteXcbWrapper *xcb_wrapper,
-               xcb_connection_t *connection,
-               xcb_screen_t     *screen,
-               xcb_keysym_t      keysym,
-               guint8            delay,
-               guint8            event)
-{
-    xcb_keycode_t *keycode = (xcb_keycode_t *) xcb_key_symbols_get_keycode ((xcb_key_symbols_t *) g_paste_xcb_wrapper_get_keysyms (xcb_wrapper), keysym);
-
-    if (!keycode)
-        return;
-
-    xcb_test_fake_input (connection,
-                         event,
-                         *keycode,
-                         delay,
-                         screen->root,
-                         0, 0, 0);
-
-    xcb_flush (connection);
-}
-
-static void
 paste_and_pop_get_clipboard_data (GtkClipboard     *clipboard,
                                   GtkSelectionData *selection_data,
                                   guint             info,
@@ -102,12 +79,6 @@ paste_and_pop_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
 static void
 paste_and_pop (GPasteKeybinding *data)
 {
-    GPasteXcbWrapper *xcb_wrapper = data->xcb_wrapper;
-    xcb_connection_t *connection = (xcb_connection_t *) g_paste_xcb_wrapper_get_connection (xcb_wrapper);
-    xcb_screen_t *screen = (xcb_screen_t *) g_paste_xcb_wrapper_get_screen (xcb_wrapper);
-
-    g_return_if_fail (screen); /* This should never happen */
-
     GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
     gtk_target_list_add_text_targets (target_list, 0);
@@ -123,10 +94,15 @@ paste_and_pop (GPasteKeybinding *data)
                                  paste_and_pop_clear_clipboard_data,
                                  data);
 
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, 0, XCB_KEY_PRESS);
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, 200, XCB_KEY_PRESS);
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Shift_L, 0, XCB_KEY_RELEASE);
-    fake_keyboard (xcb_wrapper, connection, screen, GDK_KEY_Insert, 0, XCB_KEY_RELEASE);
+    Display *display = data->display;
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L),  TRUE, CurrentTime);
+    XFlush (display);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),   TRUE, CurrentTime);
+    XFlush (display);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L), FALSE, CurrentTime);
+    XFlush (display);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),  FALSE, CurrentTime);
+    XFlush (display);
 
     gtk_target_table_free (targets, n_targets);
     gtk_target_list_unref (target_list);
@@ -134,7 +110,6 @@ paste_and_pop (GPasteKeybinding *data)
 
 /**
  * g_paste_paste_and_pop_keybinding_new:
- * @xcb_wrapper: a #GPasteXcbWrapper instance
  * @settings: a #GPasteSettings instance
  * @history: a #GPasteHistory instance
  *
@@ -144,16 +119,13 @@ paste_and_pop (GPasteKeybinding *data)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPastePasteAndPopKeybinding *
-g_paste_paste_and_pop_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
-                                      GPasteSettings   *settings,
+g_paste_paste_and_pop_keybinding_new (GPasteSettings   *settings,
                                       GPasteHistory    *history)
 {
-    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
 
     GPastePasteAndPopKeybinding *self = G_PASTE_PASTE_AND_POP_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING,
-                                                                                                   xcb_wrapper,
                                                                                                    settings,
                                                                                                    PASTE_AND_POP_KEY,
                                                                                                    g_paste_settings_get_paste_and_pop,

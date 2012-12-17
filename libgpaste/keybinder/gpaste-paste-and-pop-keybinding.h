@@ -48,9 +48,8 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_paste_and_pop_keybinding_get_type (void);
 
-GPastePasteAndPopKeybinding *g_paste_paste_and_pop_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
-                                                                   GPasteSettings   *settings,
-                                                                   GPasteHistory    *history);
+GPastePasteAndPopKeybinding *g_paste_paste_and_pop_keybinding_new (GPasteSettings *settings,
+                                                                   GPasteHistory  *history);
 
 G_END_DECLS
 

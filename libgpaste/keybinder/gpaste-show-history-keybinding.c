@@ -41,7 +41,6 @@ g_paste_show_history_keybinding_show_history (GPasteDaemon *gpaste_daemon)
 
 /**
  * g_paste_show_history_keybinding_new:
- * @xcb_wrapper: a #GPasteXcbWrapper instance
  * @settings: a #GPasteSettings instance
  * @gpaste_daemon: a #GPasteDaemon instance
  *
@@ -51,16 +50,13 @@ g_paste_show_history_keybinding_show_history (GPasteDaemon *gpaste_daemon)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteShowHistoryKeybinding *
-g_paste_show_history_keybinding_new (GPasteXcbWrapper *xcb_wrapper,
-                                     GPasteSettings   *settings,
+g_paste_show_history_keybinding_new (GPasteSettings   *settings,
                                      GPasteDaemon     *gpaste_daemon)
 {
-    g_return_val_if_fail (G_PASTE_IS_XCB_WRAPPER (xcb_wrapper), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_DAEMON (gpaste_daemon), NULL);
 
     return G_PASTE_SHOW_HISTORY_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
-                                                                     xcb_wrapper,
                                                                      settings,
                                                                      SHOW_HISTORY_KEY,
                                                                      g_paste_settings_get_show_history,

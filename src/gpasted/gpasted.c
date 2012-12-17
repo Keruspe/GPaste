@@ -78,18 +78,15 @@ main (int argc, char *argv[])
     GPasteSettings *settings = g_paste_settings_new ();
     GPasteHistory *history = g_paste_history_new (settings);
     GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
-    GPasteXcbWrapper *xcb_wrapper = g_paste_xcb_wrapper_new ();
-    GPasteKeybinder *keybinder = g_paste_keybinder_new (xcb_wrapper);
+    GPasteKeybinder *keybinder = g_paste_keybinder_new ();
     GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
     GPasteKeybinding *keybindings[] = {
-        G_PASTE_KEYBINDING (g_paste_paste_and_pop_keybinding_new (xcb_wrapper,
-                                                                  settings,
+        G_PASTE_KEYBINDING (g_paste_paste_and_pop_keybinding_new (settings,
                                                                   history)),
-        G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (xcb_wrapper,
-                                                                 settings,
+        G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (settings,
                                                                  g_paste_daemon))
     };
 
@@ -113,7 +110,6 @@ main (int argc, char *argv[])
 
     g_object_unref (history);
     g_object_unref (clipboards_manager);
-    g_object_unref (xcb_wrapper);
     g_object_unref (keybinder);
     g_object_unref (clipboard);
     g_object_unref (primary);
