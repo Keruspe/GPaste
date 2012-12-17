@@ -24,10 +24,10 @@
 #include "config.h"
 #endif
 
-#include <gdk/gdkx.h>
 #include <gpaste-settings.h>
-#include <stdbool.h>
-#include <X11/Xlib.h>
+
+#include <gdk/gdkx.h>
+#include <X11/extensions/XInput2.h>
 
 G_BEGIN_DECLS
 

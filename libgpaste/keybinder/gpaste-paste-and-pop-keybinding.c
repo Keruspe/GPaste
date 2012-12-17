@@ -95,13 +95,13 @@ paste_and_pop (GPasteKeybinding *data)
                                  data);
 
     Display *display = data->display;
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L),  true, CurrentTime);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L),  TRUE, CurrentTime);
     XFlush (display);
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),   true, CurrentTime);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),   TRUE, CurrentTime);
     XFlush (display);
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L), false, CurrentTime);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L), FALSE, CurrentTime);
     XFlush (display);
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),  false, CurrentTime);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),  FALSE, CurrentTime);
     XFlush (display);
 
     gtk_target_table_free (targets, n_targets);

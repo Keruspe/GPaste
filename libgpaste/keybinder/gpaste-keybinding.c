@@ -19,6 +19,7 @@
 
 #include "gpaste-keybinding-private.h"
 
+#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
 #define G_PASTE_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_KEYBINDING, GPasteKeybindingPrivate))
@@ -33,10 +34,61 @@ struct _GPasteKeybindingPrivate
     GPasteKeybindingFunc   callback;
     gpointer               user_data;
     gboolean               active;
-    XID                    xid;
+    Window                 window;
     GdkModifierType        modifiers;
     guint                  keycode;
 };
+
+static void
+g_paste_keybinding_change_grab (GPasteKeybinding *self,
+                                gboolean          grab)
+{
+    GPasteKeybindingPrivate *priv = self->priv;
+
+    guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
+    XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
+
+    XISetMask (mask.mask, XI_KeyPress);
+
+    gdk_error_trap_push ();
+
+    guint mod_masks [] = {
+        0, /* modifier only */
+        GDK_MOD2_MASK,
+        GDK_LOCK_MASK,
+        GDK_MOD2_MASK | GDK_LOCK_MASK,
+    };
+
+    for (guint i = 0; i < G_N_ELEMENTS (mod_masks); i++) {
+        XIGrabModifiers mods = { mod_masks[i] | priv->modifiers, 0 };
+
+        if (grab)
+        {
+            XIGrabKeycode (self->display,
+                           3,
+                           priv->keycode,
+                           priv->window,
+                           XIGrabModeSync,
+                           XIGrabModeAsync,
+                           False,
+                           &mask,
+                           1,
+                           &mods);
+        }
+        else
+        {
+            XIUngrabKeycode (self->display,
+                             3,
+                             priv->keycode,
+                             priv->window,
+                             1,
+                             &mods);
+        }
+    }
+
+    gdk_flush ();
+    gdk_error_trap_pop_ignored ();
+}
 
 /**
  * g_paste_keybinding_activate:
@@ -61,12 +113,7 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
     priv->keycode = XKeysymToKeycode (self->display, keysym);
 
     if (priv->keycode)
-    {
-        gdk_error_trap_push ();
-        XGrabKey (self->display, priv->keycode, priv->modifiers, priv->xid, false, GrabModeAsync, GrabModeAsync);
-        gdk_flush ();
-        gdk_error_trap_pop_ignored ();
-    }
+        g_paste_keybinding_change_grab (self, TRUE);
 
     priv->active = TRUE;
 }
@@ -89,12 +136,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
     g_return_if_fail (priv->active);
 
     if (priv->keycode)
-    {
-        gdk_error_trap_push ();
-        XUngrabKey (self->display, priv->keycode, priv->modifiers, priv->xid);
-        gdk_flush ();
-        gdk_error_trap_pop_ignored ();
-    }
+        g_paste_keybinding_change_grab (self, FALSE);
 
     priv->active = FALSE;
 }
@@ -228,7 +270,7 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 
     self->display = gdk_x11_get_default_xdisplay ();
 
-    priv->xid = gdk_x11_window_get_xid (gdk_get_default_root_window ());
+    priv->window = gdk_x11_window_get_xid (gdk_get_default_root_window ());
     priv->active = FALSE;
 }
 
