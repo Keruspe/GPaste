@@ -192,7 +192,6 @@ g_paste_keybinder_init (GPasteKeybinder *self)
                            self);
 
     gint major = 2, minor = 2;
-    gboolean has_xi = FALSE;
     gint xinput_error_base;
     gint xinput_event_base;
     gint xinput_opcode;
@@ -203,15 +202,9 @@ g_paste_keybinder_init (GPasteKeybinder *self)
                          &xinput_error_base,
                          &xinput_event_base))
     {
-        if (XIQueryVersion (priv->display, &major, &minor) == Success)
-        {
-            if (((major * 10) + minor) >= 22)
-                has_xi = TRUE;
-        }
+        if (XIQueryVersion (priv->display, &major, &minor) != Success)
+            g_warning ("XInput 2 not found, keybinder won't work");
     }
-
-    if (!has_xi)
-        g_warning ("XInput 2 not found, keybinder won't work");
 }
 
 /**
