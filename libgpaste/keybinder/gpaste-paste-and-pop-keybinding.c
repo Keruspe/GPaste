@@ -21,6 +21,8 @@
 #include "gpaste-clipboard-common.h"
 #include "gpaste-settings-keys.h"
 
+#include <X11/extensions/XTest.h>
+
 #define G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING, GPastePasteAndPopKeybindingPrivate))
 
 G_DEFINE_TYPE (GPastePasteAndPopKeybinding, g_paste_paste_and_pop_keybinding, G_PASTE_TYPE_KEYBINDING)
