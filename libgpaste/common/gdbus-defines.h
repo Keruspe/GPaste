@@ -47,4 +47,56 @@
 
 #define PROP_ACTIVE "Active"
 
+#define G_PASTE_IFACE_INFO                                                  \
+        "<node>"                                                            \
+        "   <interface name='" G_PASTE_INTERFACE_NAME "'>"                  \
+        "       <method name='" GET_HISTORY "'>"                            \
+        "           <arg type='as' direction='out' />"                      \
+        "       </method>"                                                  \
+        "       <method name='" BACKUP_HISTORY "'>"                         \
+        "           <arg type='s' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" SWITCH_HISTORY "'>"                         \
+        "           <arg type='s' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" DELETE_HISTORY "'>"                         \
+        "           <arg type='s' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" LIST_HISTORIES "'>"                         \
+        "           <arg type='as' direction='out' />"                      \
+        "       </method>"                                                  \
+        "       <method name='" ADD "'>"                                    \
+        "           <arg type='s' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" ADD_FILE "'>"                               \
+        "           <arg type='s' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" GET_ELEMENT "'>"                            \
+        "           <arg type='u' direction='in' />"                        \
+        "           <arg type='s' direction='out' />"                       \
+        "       </method>"                                                  \
+        "       <method name='" SELECT "'>"                                 \
+        "           <arg type='u' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" DELETE "'>"                                 \
+        "           <arg type='u' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" EMPTY "' />"                                \
+        "       <method name='" TRACK "'>"                                  \
+        "           <arg type='b' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" ON_EXTENSION_STATE_CHANGED "'>"             \
+        "           <arg type='b' direction='in' />"                        \
+        "       </method>"                                                  \
+        "       <method name='" REEXECUTE "' />"                            \
+        "       <signal name='" SIG_REEXECUTE_SELF "' />"                   \
+        "       <signal name='" SIG_TRACKING "'>"                           \
+        "           <arg type='b' direction='out' />"                       \
+        "       </signal>"                                                  \
+        "       <signal name='" SIG_CHANGED "' />"                          \
+        "       <signal name='" SIG_NAME_LOST "' />"                        \
+        "       <signal name='" SIG_SHOW_HISTORY "' />"                     \
+        "       <property name='" PROP_ACTIVE "' type='b' access='read' />" \
+        "   </interface>"                                                   \
+        "</node>"
 #endif /*__GDBUS_DEFINES_H__*/

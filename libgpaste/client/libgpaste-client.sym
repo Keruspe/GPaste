@@ -15,6 +15,7 @@ global:
     g_paste_client_track;
     g_paste_client_on_extension_state_changed;
     g_paste_client_reexecute;
+    g_paste_client_is_active;
     g_paste_client_new;
 local:
     *;

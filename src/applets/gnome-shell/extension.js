@@ -26,37 +26,11 @@ const Pango = imports.gi.Pango;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const Gettext = imports.gettext;
+const GPaste = imports.gi.GPaste;
 
 const _ = Gettext.domain('GPaste').gettext;
 const BUS_NAME = 'org.gnome.GPaste';
 const OBJECT_PATH = '/org/gnome/GPaste';
-
-const GPasteInterface =
-    <interface name="org.gnome.GPaste">
-        <method name="GetHistory">
-            <arg type="as" direction="out" />
-        </method>
-        <method name="Select">
-            <arg type="u" direction="in" />
-        </method>
-        <method name="Delete">
-            <arg type="u" direction="in" />
-        </method>
-        <method name="Empty" />
-        <method name="Track">
-            <arg type="b" direction="in" />
-        </method>
-        <method name="OnExtensionStateChanged">
-            <arg type="b" direction="in" />
-        </method>
-        <signal name="Changed" />
-        <signal name="ShowHistory" />
-        <signal name="Tracking">
-            <arg type="b" direction="out" />
-        </signal>
-        <property name="Active" type="b" access="read" />
-    </interface>;
-const GPasteProxy = Gio.DBusProxy.makeProxyWrapper(GPasteInterface);
 
 const GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
@@ -66,10 +40,10 @@ const GPasteIndicator = new Lang.Class({
         this.parent('edit-paste-symbolic');
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
-        this._proxy = new GPasteProxy(Gio.DBus.session, BUS_NAME, OBJECT_PATH);
-        this._proxy.connectSignal('Changed', Lang.bind(this, this._updateHistory));
-        this._proxy.connectSignal('ShowHistory', Lang.bind(this, this._showHistory));
-        this._proxy.connectSignal('Tracking', Lang.bind(this, function(proxy, sender, [trackingState]) {
+        this._client = new GPaste.Client();
+        this._client.connect('changed', Lang.bind(this, this._updateHistory));
+        this._client.connect('show-history', Lang.bind(this, this._showHistory));
+        this._client.connect('tracking', Lang.bind(this, function(trackingState) {
             this._trackingStateChanged(trackingState);
         }));
         this._createHistory();
@@ -81,15 +55,15 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _select: function(index) {
-        this._proxy.SelectRemote(index);
+        this._client.select(index);
     },
 
     _delete: function(index) {
-        this._proxy.DeleteRemote(index);
+        this._client.delete(index);
     },
 
     _empty: function() {
-        this._proxy.EmptyRemote();
+        this._client.empty();
     },
 
     _trackingStateChanged: function(trackingState) {
@@ -97,11 +71,11 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _toggleDaemon: function() {
-        this._proxy.TrackRemote(this._killSwitch.state);
+        this._client.track(this._killSwitch.state);
     },
 
     _fillMenu: function() {
-        let active = this._proxy.Active;
+        let active = this._client.is_active();
         if (active != null)
             this._killSwitch.setToggleState(active);
         this.menu.addMenuItem(this._killSwitch);
@@ -115,22 +89,20 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _updateHistory: function() {
-        this._proxy.GetHistoryRemote(Lang.bind(this, function(result, err) {
-            let [history] = err ? [null] : result;
-            if (history != null && history.length != 0) {
-                let limit = Math.min(history.length, this._history.length);
-                for (let index = 0; index < limit; ++index)
-                    this._updateHistoryItem(index, history[index]);
-                this._hideHistory(limit);
-                this._noHistory.actor.hide();
-                this._emptyHistory.actor.show();
-            } else {
-                this._noHistory.label.text = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
-                this._hideHistory();
-                this._emptyHistory.actor.hide();
-                this._noHistory.actor.show();
-            }
-        }));
+        let history = this._client.get_history();
+        if (history != null && history.length != 0) {
+            let limit = Math.min(history.length, this._history.length);
+            for (let index = 0; index < limit; ++index)
+                this._updateHistoryItem(index, history[index]);
+            this._hideHistory(limit);
+            this._noHistory.actor.hide();
+            this._emptyHistory.actor.show();
+        } else {
+            this._noHistory.label.text = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
+            this._hideHistory();
+            this._emptyHistory.actor.hide();
+            this._noHistory.actor.show();
+        }
     },
 
     _showHistory: function() {
@@ -180,7 +152,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onStateChanged: function (state) {
-        this._proxy.OnExtensionStateChangedRemote(state);
+        this._client.on_extension_state_changed(state);
     }
 });
 
