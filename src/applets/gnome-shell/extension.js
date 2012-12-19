@@ -66,7 +66,7 @@ const GPasteIndicator = new Lang.Class({
         this._client.empty();
     },
 
-    _trackingStateChanged: function(trackingState) {
+    _trackingStateChanged: function(client, trackingState) {
         this._killSwitch.setToggleState(trackingState);
     },
 
