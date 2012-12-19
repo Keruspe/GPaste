@@ -421,7 +421,7 @@ g_paste_client_list_histories (GPasteClient *self,
 G_PASTE_VISIBLE gboolean
 g_paste_client_is_active (GPasteClient *self)
 {
-    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean, FALSE)
+    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean, TRUE) /* FIXME */
 }
 
 static void
