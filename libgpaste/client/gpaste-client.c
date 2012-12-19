@@ -112,6 +112,13 @@ static gulong c_signals[C_LAST_SIGNAL] = { 0 };
     g_variant_unref (result);                                                                  \
     return_stmt;
 
+#define DBUS_GET_PROPERTY(property, ans_type, variant_type)                 \
+    GVariant *result = g_dbus_proxy_get_cached_property (self->priv->proxy, \
+                                                         property);         \
+    ans_type answer = g_variant_get_##variant_type (result);                \
+    g_variant_unref (result);                                               \
+    return answer;
+
 #define HANDLE_SIGNAL(sig)                       \
     if (g_strcmp0 (signal_name, SIG_##sig) == 0) \
     {                                            \
@@ -386,6 +393,20 @@ g_paste_client_list_histories (GPasteClient *self,
                                GError      **error)
 {
     DBUS_CALL_NO_PARAM (LIST_HISTORIES, gchar**, strv, NULL)
+}
+
+/**
+ * g_paste_client_is_active:
+ * @self: a #GPasteClient instance
+ *
+ * Check if the daemon is active
+ *
+ * Returns: whether the daemon is active or not
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_client_is_active (GPasteClient *self)
+{
+    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean)
 }
 
 static void
