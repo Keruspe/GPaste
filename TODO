@@ -6,8 +6,6 @@
         fix paste & pop
     gnome-shell:
         prefs.js
-    all:
-        check if all connected signals are tracked
 
 future:
     gpaste:

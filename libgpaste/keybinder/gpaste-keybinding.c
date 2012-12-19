@@ -39,6 +39,15 @@ struct _GPasteKeybindingPrivate
     guint                  keycode;
 };
 
+enum
+{
+    C_REBIND,
+
+    C_LAST_SIGNAL
+};
+
+static gulong c_signals[C_LAST_SIGNAL] = { 0 };
+
 static void
 g_paste_keybinding_change_grab (GPasteKeybinding *self,
                                 gboolean          grab)
@@ -235,6 +244,7 @@ g_paste_keybinding_dispose (GObject *object)
 
     if (priv->active)
         g_paste_keybinding_deactivate (self);
+    g_signal_handler_disconnect (priv->settings, c_signals[C_REBIND]);
     g_object_unref (priv->settings);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->dispose (object);
@@ -294,10 +304,10 @@ _g_paste_keybinding_new (GType                  type,
 
     gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
 
-    g_signal_connect_swapped (G_OBJECT (settings),
-                              detailed_signal,
-                              G_CALLBACK (g_paste_keybinding_rebind),
-                              self);
+    c_signals[C_REBIND] = g_signal_connect_swapped (G_OBJECT (settings),
+                                                    detailed_signal,
+                                                    G_CALLBACK (g_paste_keybinding_rebind),
+                                                    self);
 
     g_free (detailed_signal);
 
