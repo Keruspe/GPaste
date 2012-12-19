@@ -43,7 +43,7 @@ const GPasteIndicator = new Lang.Class({
         this._client = new GPaste.Client();
         this._client.connect('changed', Lang.bind(this, this._updateHistory));
         this._client.connect('show-history', Lang.bind(this, this._showHistory));
-        this._client.connect('tracking', Lang.bind(this, function(trackingState) {
+        this._client.connect('tracking', Lang.bind(this, function(client, trackingState) {
             this._trackingStateChanged(trackingState);
         }));
         this._createHistory();

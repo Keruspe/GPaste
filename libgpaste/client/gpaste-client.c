@@ -143,8 +143,8 @@ static gulong c_signals[C_LAST_SIGNAL] = { 0 };
                        answer);                                       \
     }
 
-#define NEW_SIGNAL(name) \
-    g_signal_new (name, \
+#define NEW_SIGNAL(name)                         \
+    g_signal_new (name,                          \
                   G_PASTE_TYPE_CLIENT,           \
                   G_SIGNAL_RUN_LAST,             \
                   0, /* class offset */          \
@@ -153,6 +153,17 @@ static gulong c_signals[C_LAST_SIGNAL] = { 0 };
                   g_cclosure_marshal_VOID__VOID, \
                   G_TYPE_NONE,                   \
                   0); /* number of params */
+#define NEW_SIGNAL_WITH_DATA(name, type)         \
+    g_signal_new (name,                          \
+                  G_PASTE_TYPE_CLIENT,           \
+                  G_SIGNAL_RUN_LAST,             \
+                  0, /* class offset */          \
+                  NULL, /* accumulator */        \
+                  NULL, /* accumulator data */   \
+                  g_cclosure_marshal_VOID__VOID, \
+                  G_TYPE_NONE,                   \
+                  1,                             \
+                  type);
 
 /**
  * g_paste_client_get_element:
@@ -474,7 +485,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
     signals[NAME_LOST]      = NEW_SIGNAL ("name-lost")
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self")
     signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history")
-    signals[TRACKING]       = NEW_SIGNAL ("tracking")
+    signals[TRACKING]       = NEW_SIGNAL_WITH_DATA ("tracking", G_TYPE_BOOLEAN)
 }
 
 static void
