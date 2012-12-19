@@ -32,14 +32,6 @@ const _ = Gettext.domain('GPaste').gettext;
 const BUS_NAME = 'org.gnome.GPaste';
 const OBJECT_PATH = '/org/gnome/GPaste';
 
-const GPasteInterface =
-    <interface name="org.gnome.GPaste">
-        <method name="OnExtensionStateChanged">
-            <arg type="b" direction="in" />
-        </method>
-    </interface>;
-const GPasteProxy = Gio.DBusProxy.makeProxyWrapper(GPasteInterface);
-
 const GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
     Extends: PanelMenu.SystemStatusButton,
@@ -54,7 +46,6 @@ const GPasteIndicator = new Lang.Class({
         this._client.connect('tracking', Lang.bind(this, function(trackingState) {
             this._trackingStateChanged(trackingState);
         }));
-        this._proxy = new GPasteProxy(Gio.DBus.session, BUS_NAME, OBJECT_PATH);
         this._createHistory();
         this._noHistory = new PopupMenu.PopupMenuItem("");
         this._noHistory.setSensitive(false);
@@ -161,7 +152,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onStateChanged: function (state) {
-        this._proxy.OnExtensionStateChangedRemote(state);
+        this._client.on_extension_state_changed(state);
     }
 });
 
