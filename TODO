@@ -1,7 +1,6 @@
 3.0:
     libgpaste-client:
         Active
-        fix Tracking data
         for OnExtensionStateChanged (timeout)
     libgpaste-daemon:
         fix file reading

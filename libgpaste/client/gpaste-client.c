@@ -119,6 +119,19 @@ static gulong c_signals[C_LAST_SIGNAL] = { 0 };
                        signals[sig],             \
                        0); /* detail */          \
     }
+#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)          \
+    if (g_strcmp0 (signal_name, SIG_##sig) == 0)                      \
+    {                                                                 \
+        GVariantIter params_iter;                                     \
+        g_variant_iter_init (&params_iter, parameters);               \
+        GVariant *variant = g_variant_iter_next_value (&params_iter); \
+        ans_type answer = g_variant_get_##variant_type (variant);     \
+        g_variant_unref (variant);                                    \
+        g_signal_emit (self,                                          \
+                       signals[sig],                                  \
+                       0, /* detail */                                \
+                       answer);                                       \
+    }
 
 #define NEW_SIGNAL(name) \
     g_signal_new (name, \
@@ -379,14 +392,14 @@ static void
 g_paste_client_handle_signal (GPasteClient *self,
                               gchar        *sender_name G_GNUC_UNUSED,
                               gchar        *signal_name,
-                              GVariant     *parameters G_GNUC_UNUSED,
+                              GVariant     *parameters,
                               gpointer      user_data G_GNUC_UNUSED)
 {
     HANDLE_SIGNAL (CHANGED)
     else HANDLE_SIGNAL (NAME_LOST)
     else HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
-    else HANDLE_SIGNAL (TRACKING)
+    else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, boolean)
 }
 
 static void
