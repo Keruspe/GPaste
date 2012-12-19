@@ -37,7 +37,6 @@ const GPasteInterface =
         <method name="OnExtensionStateChanged">
             <arg type="b" direction="in" />
         </method>
-        <property name="Active" type="b" access="read" />
     </interface>;
 const GPasteProxy = Gio.DBusProxy.makeProxyWrapper(GPasteInterface);
 
@@ -85,7 +84,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _fillMenu: function() {
-        let active = this._proxy.Active;
+        let active = this._client.is_active();
         if (active != null)
             this._killSwitch.setToggleState(active);
         this.menu.addMenuItem(this._killSwitch);
