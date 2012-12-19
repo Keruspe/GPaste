@@ -425,6 +425,8 @@ g_paste_daemon_on_extension_state_changed (GPasteDaemon          *self,
 {
     if (g_paste_settings_get_track_extension_state (self->priv->settings))
         g_paste_daemon_track (self, connection, invocation, parameters);
+    else
+        g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
 static void
