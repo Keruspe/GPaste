@@ -388,20 +388,20 @@ BOOLEAN_SETTING (track_changes, TRACK_CHANGES_KEY)
  * g_paste_settings_get_track_extension_state:
  * @self: a #GPasteSettings instance
  *
- * Get the TRACK_EXTENTION_STATE_KEY setting
+ * Get the TRACK_EXTENSION_STATE_KEY setting
  *
- * Returns: the value of the TRACK_EXTENTION_STATE_KEY setting
+ * Returns: the value of the TRACK_EXTENSION_STATE_KEY setting
  */
 /**
  * g_paste_settings_set_track_extension_state:
  * @self: a #GPasteSettings instance
  * @value: whether to stop tracking or not the clipboard changes when an applet exits
  *
- * Change the TRACK_EXTENTION_STATE_KEY setting
+ * Change the TRACK_EXTENSION_STATE_KEY setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (track_extension_state, TRACK_EXTENTION_STATE_KEY)
+BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE_KEY)
 
 /**
  * g_paste_settings_get_trim_items:
@@ -472,7 +472,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                        0, /* detail */
                        priv->track_changes);
     }
-    else if (g_strcmp0 (key, TRACK_EXTENTION_STATE_KEY) == 0)
+    else if (g_strcmp0 (key, TRACK_EXTENSION_STATE_KEY) == 0)
         g_paste_settings_set_track_extension_state_from_dconf (self);
     else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
         g_paste_settings_set_trim_items_from_dconf (self);

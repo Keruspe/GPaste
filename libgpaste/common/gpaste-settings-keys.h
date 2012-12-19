@@ -34,7 +34,7 @@
 #define SHOW_HISTORY_KEY               "show-history"
 #define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
 #define TRACK_CHANGES_KEY              "track-changes"
-#define TRACK_EXTENTION_STATE_KEY      "track-extension-state"
+#define TRACK_EXTENSION_STATE_KEY      "track-extension-state"
 #define TRIM_ITEMS_KEY                 "trim-items"
 
 #endif /*__GPASTE_SETTINGS_KEYS_H__*/
