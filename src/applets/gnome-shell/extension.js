@@ -75,9 +75,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _fillMenu: function() {
-        let active = this._client.is_active();
-        if (active != null)
-            this._killSwitch.setToggleState(active);
+        this._killSwitch.setToggleState(this._client.is_active());
         this.menu.addMenuItem(this._killSwitch);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._addHistoryItems();
