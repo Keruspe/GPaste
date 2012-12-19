@@ -1,13 +1,9 @@
 3.0:
     libgpaste-client:
-        Active
-        for OnExtensionStateChanged (timeout)
-    libgpaste-daemon:
-        fix file reading
+        fix Active
     libgpaste-keybinder:
         fix paste & pop
     gnome-shell:
-        port to libgpaste-client
         prefs.js
     all:
         check if all connected signals are tracked
