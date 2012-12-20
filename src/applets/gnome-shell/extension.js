@@ -43,8 +43,8 @@ const GPasteIndicator = new Lang.Class({
         this._client = new GPaste.Client();
         this._client.connect('changed', Lang.bind(this, this._updateHistory));
         this._client.connect('show-history', Lang.bind(this, this._showHistory));
-        this._client.connect('tracking', Lang.bind(this, function(client, trackingState) {
-            this._trackingStateChanged(trackingState);
+        this._client.connect('tracking', Lang.bind(this, function(c, state) {
+            this._killSwitch.setToggleState(state);
         }));
         this._createHistory();
         this._noHistory = new PopupMenu.PopupMenuItem("");
@@ -64,10 +64,6 @@ const GPasteIndicator = new Lang.Class({
 
     _empty: function() {
         this._client.empty();
-    },
-
-    _trackingStateChanged: function(client, trackingState) {
-        this._killSwitch.setToggleState(trackingState);
     },
 
     _toggleDaemon: function() {
