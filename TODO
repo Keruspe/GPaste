@@ -1,6 +1,4 @@
 3.0:
-    libgpaste-client:
-        fix Active
     libgpaste-keybinder:
         fix paste & pop
     gnome-shell:

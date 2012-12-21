@@ -432,7 +432,7 @@ g_paste_client_list_histories (GPasteClient *self,
 G_PASTE_VISIBLE gboolean
 g_paste_client_is_active (GPasteClient *self)
 {
-    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean, TRUE) /* FIXME */
+    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean, FALSE)
 }
 
 static void
@@ -497,7 +497,7 @@ g_paste_client_init (GPasteClient *self)
                                                                    NULL); /* Error */
 
     GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                     G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                                     G_DBUS_PROXY_FLAGS_NONE,
                                                                      priv->g_paste_daemon_dbus_info->interfaces[0],
                                                                      G_PASTE_BUS_NAME,
                                                                      G_PASTE_OBJECT_PATH,
