@@ -1,6 +1,4 @@
 3.0:
-    libgpaste-keybinder:
-        fix paste & pop
     gnome-shell:
         prefs.js
 

@@ -25,6 +25,14 @@
 
 #define G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING, GPastePasteAndPopKeybindingPrivate))
 
+#define PASTE_AND_POP_WATCH_CLIPBOARD(clipboard)                     \
+    gtk_clipboard_set_with_data (gtk_clipboard_get (clipboard),      \
+                                 targets,                            \
+                                 n_targets,                          \
+                                 paste_and_pop_get_clipboard_data,   \
+                                 paste_and_pop_clear_clipboard_data, \
+                                 data);
+
 G_DEFINE_TYPE (GPastePasteAndPopKeybinding, g_paste_paste_and_pop_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 struct _GPastePasteAndPopKeybindingPrivate
@@ -85,14 +93,9 @@ paste_and_pop (GPasteKeybinding *data)
 
     gint n_targets;
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
-    GtkClipboard *clipboard = gtk_clipboard_get (GDK_SELECTION_PRIMARY);
 
-    gtk_clipboard_set_with_data (clipboard,
-                                 targets,
-                                 n_targets,
-                                 paste_and_pop_get_clipboard_data,
-                                 paste_and_pop_clear_clipboard_data,
-                                 data);
+    PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
+    PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
 
     Display *display = data->display;
     XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L),  TRUE, CurrentTime);
