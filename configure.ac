@@ -166,9 +166,6 @@ if test x$enable_systemd = xyes; then
             systemduserunitdir="$with_systemduserunitdir"
             ;;
     esac
-    AC_CHECK_HEADERS([sys/socket.h])
-    PKG_CHECK_MODULES(SYSTEMD, [libsystemd-daemon])
-    AC_DEFINE([ENABLE_SYSTEMD], [1], [Enable systemd activation support])
     AC_SUBST(systemduserunitdir)
 fi
 AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
