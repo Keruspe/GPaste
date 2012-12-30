@@ -19,13 +19,15 @@ nodist_dbusservices_DATA = \
 	data/dbus/org.gnome.GPaste.service \
 	$(NULL)
 
-SUFFIXES += .service .service.in
-.service.in.service:
+SUFFIXES += .service .dbus.in
+.dbus.in.service:
 	@ $(MKDIR_P) data/dbus
-	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' <$^ >$@
+	$(AM_V_GEN) $(SED) \
+	    -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' \
+	    <$^ >$@
 
 EXTRA_DIST += \
-	$(nodist_dbusservices_DATA:.service=.service.in) \
+	$(nodist_dbusservices_DATA:.service=.dbus.in) \
 	$(NULL)
 
 CLEANFILES += \
