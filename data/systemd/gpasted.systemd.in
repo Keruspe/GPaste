@@ -1,0 +1,11 @@
+[Unit]
+Description=GPaste daemon
+
+[Service]
+BusName=org.gnome.GPaste
+ExecStart=@pkglibexecdir@/gpasted
+ExecReload=@bindir@/eventdctl reload
+
+[Install]
+WantedBy=default.target
+Alias=dbus-org.gnome.GPaste.service

@@ -148,8 +148,30 @@ PKG_CHECK_MODULES(DBUS, [dbus-1])
 AC_ARG_WITH([dbusservicesdir],
         AS_HELP_STRING([--with-dbusservicesdir=DIR], [D-Bus system service directory]),
         [],
-        [with_dbusservicesdir=`pkg-config --variable=session_bus_services_dir dbus-1`])
+        [with_dbusservicesdir=`$PKG_CONFIG --variable=session_bus_services_dir dbus-1`])
 AC_SUBST([dbusservicesdir], [$with_dbusservicesdir])
+
+AC_ARG_ENABLE(systemd, AS_HELP_STRING([--enable-systemd], [Enable systemd activation support]), [], enable_systemd=no)
+AC_ARG_WITH(systemduserunitdir, AS_HELP_STRING([--with-systemduserunitdir=DIR], [Directory for systemd user unit files]), [], with_systemduserunitdir=auto)
+if test x$enable_systemd = xyes; then
+        case "$with_systemduserunitdir" in
+                no|"")
+                        AC_MSG_ERROR([*** You must specify systemduserunitdir when enabling systemd support])
+                        ;;
+                auto)
+                        PKG_CHECK_MODULES(DBUS, [systemd])
+                        systemduserunitdir="`$PKG_CONFIG --variable=systemduserunitdir systemd`"
+                        ;;
+                *)
+                        systemduserunitdir="$with_systemduserunitdir"
+                        ;;
+        esac
+        AC_CHECK_HEADERS([sys/socket.h])
+        PKG_CHECK_MODULES(SYSTEMD, [libsystemd-daemon])
+        AC_DEFINE([ENABLE_SYSTEMD], [1], [Enable systemd activation support])
+        AC_SUBST(systemduserunitdir)
+fi
+AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)

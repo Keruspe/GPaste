@@ -20,7 +20,8 @@ SUBDIRS = po
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 AM_MAKEFLAGS = --no-print-directory
 AM_DISTCHECK_CONFIGURE_FLAGS = \
-	--with-dbusservicesdir=$$dc_install_base/$(dbusservicesdir) \
+	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)" \
+	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
 	--enable-applet \
 	$(NULL)
 
@@ -77,6 +78,8 @@ pkginclude_HEADERS = $(NULL)
 pkglibexec_PROGRAMS = $(NULL)
 lib_LTLIBRARIES = $(NULL)
 noinst_LTLIBRARIES = $(NULL)
+nodist_systemduserunit_DATA = $(NULL)
+
 
 # Real stuff goes in these subfiles
 
