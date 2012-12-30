@@ -4,7 +4,6 @@ Description=GPaste daemon
 [Service]
 BusName=org.gnome.GPaste
 ExecStart=@pkglibexecdir@/gpasted
-ExecReload=@bindir@/eventdctl reload
 
 [Install]
 WantedBy=default.target
