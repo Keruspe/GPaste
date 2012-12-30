@@ -23,6 +23,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)" \
 	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
 	--enable-applet \
+	--enable-systemd \
 	$(NULL)
 
 AM_VALAFLAGS = \
