@@ -203,5 +203,5 @@ AC_MSG_RESULT([
 
     Legacy applet:          ${enable_applet}
     Gnome-Shell extension:  ${enable_extension}
-    systemd support:        ${enable_systemd} (${with_systemduserunitdir})
+    systemd support:        ${enable_systemd} (${systemduserunitdir})
 ])
