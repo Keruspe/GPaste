@@ -146,30 +146,30 @@ AC_CHECK_HEADERS([X11/extensions/XInput2.h])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 AC_ARG_WITH([dbusservicesdir],
-        AS_HELP_STRING([--with-dbusservicesdir=DIR], [D-Bus system service directory]),
-        [],
-        [with_dbusservicesdir=`$PKG_CONFIG --variable=session_bus_services_dir dbus-1`])
+            AS_HELP_STRING([--with-dbusservicesdir=DIR], [D-Bus system service directory]),
+            [],
+            [with_dbusservicesdir=`$PKG_CONFIG --variable=session_bus_services_dir dbus-1`])
 AC_SUBST([dbusservicesdir], [$with_dbusservicesdir])
 
 AC_ARG_ENABLE(systemd, AS_HELP_STRING([--enable-systemd], [Enable systemd activation support]), [], enable_systemd=no)
 AC_ARG_WITH(systemduserunitdir, AS_HELP_STRING([--with-systemduserunitdir=DIR], [Directory for systemd user unit files]), [], with_systemduserunitdir=auto)
 if test x$enable_systemd = xyes; then
-        case "$with_systemduserunitdir" in
-                no|"")
-                        AC_MSG_ERROR([*** You must specify systemduserunitdir when enabling systemd support])
-                        ;;
-                auto)
-                        PKG_CHECK_MODULES(DBUS, [systemd])
-                        systemduserunitdir="`$PKG_CONFIG --variable=systemduserunitdir systemd`"
-                        ;;
-                *)
-                        systemduserunitdir="$with_systemduserunitdir"
-                        ;;
-        esac
-        AC_CHECK_HEADERS([sys/socket.h])
-        PKG_CHECK_MODULES(SYSTEMD, [libsystemd-daemon])
-        AC_DEFINE([ENABLE_SYSTEMD], [1], [Enable systemd activation support])
-        AC_SUBST(systemduserunitdir)
+    case "$with_systemduserunitdir" in
+        no|"")
+            AC_MSG_ERROR([*** You must specify systemduserunitdir when enabling systemd support])
+            ;;
+        auto)
+            PKG_CHECK_MODULES(DBUS, [systemd])
+            systemduserunitdir="`$PKG_CONFIG --variable=systemduserunitdir systemd`"
+            ;;
+        *)
+            systemduserunitdir="$with_systemduserunitdir"
+            ;;
+    esac
+    AC_CHECK_HEADERS([sys/socket.h])
+    PKG_CHECK_MODULES(SYSTEMD, [libsystemd-daemon])
+    AC_DEFINE([ENABLE_SYSTEMD], [1], [Enable systemd activation support])
+    AC_SUBST(systemduserunitdir)
 fi
 AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
 
@@ -185,22 +185,22 @@ AC_CONFIG_FILES([
 ])
 AC_OUTPUT
 AC_MSG_RESULT([
-        $PACKAGE_NAME $VERSION
-        ========
+    $PACKAGE_NAME $VERSION
+    ========
 
-        prefix:                 ${prefix}
-        exec_prefix:            ${exec_prefix}
-        sysconfdir:             ${sysconfdir}
-        libdir:                 ${libdir}
-        includedir:             ${includedir}
+    prefix:                 ${prefix}
+    exec_prefix:            ${exec_prefix}
+    sysconfdir:             ${sysconfdir}
+    libdir:                 ${libdir}
+    includedir:             ${includedir}
 
-        compiler:               ${CC}
-        cflags:                 ${CFLAGS}
-        ldflags:                ${LDFLAGS}
+    compiler:               ${CC}
+    cflags:                 ${CFLAGS}
+    ldflags:                ${LDFLAGS}
 
-        vala compiler:          ${VALAC}
-        vapi generator:         ${VAPIGEN}
+    vala compiler:          ${VALAC}
+    vapi generator:         ${VAPIGEN}
 
-        Legacy applet:          ${enable_applet}
-        Gnome-Shell extension:  ${enable_extension}
+    Legacy applet:          ${enable_applet}
+    Gnome-Shell extension:  ${enable_extension}
 ])
