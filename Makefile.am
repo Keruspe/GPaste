@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ AM_VALAFLAGS = \
 AM_CFLAGS = \
 	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/settings \
+	-I$(srcdir)/libgpaste/settings/ui \
 	-I$(srcdir)/libgpaste/keybinder \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
@@ -86,6 +87,7 @@ nodist_systemduserunit_DATA = $(NULL)
 
 include libgpaste/common.mk
 include libgpaste/settings.mk
+include libgpaste/settings/ui.mk
 include libgpaste/keybinder.mk
 include libgpaste/core.mk
 include libgpaste/client.mk
