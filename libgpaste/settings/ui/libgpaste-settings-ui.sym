@@ -12,6 +12,9 @@ global:
     g_paste_settings_ui_panel_add_text_confirm_setting;
     g_paste_settings_ui_panel_add_multi_action_setting;
     g_paste_settings_ui_panel_new;
+
+    g_paste_settings_ui_window_get_type;
+    g_paste_settings_ui_window_new;
 local:
     *;
 };
