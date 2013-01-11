@@ -1,5 +1,9 @@
 LIBGPASTE_SETTINGS_UI_1 {
 global:
+    g_paste_settings_ui_notebook_get_type;
+    g_paste_settings_ui_notebook_add_panel;
+    g_paste_settings_ui_notebook_new;
+
     g_paste_settings_ui_panel_get_type;
     g_paste_settings_ui_panel_add_boolean_setting;
     g_paste_settings_ui_panel_add_separator;
