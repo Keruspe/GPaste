@@ -282,7 +282,7 @@ namespace GPaste {
         }
 
         private void fill () {
-            var notebook = new Notebook ();
+            var notebook = new SettingsUiNotebook ();
 
             notebook.add_panel (_("General behaviour"), this.make_behaviour_panel ());
             notebook.add_panel (_("History settings"), this.make_history_settings_panel ());
