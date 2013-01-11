@@ -23,7 +23,7 @@ namespace GPaste {
             this.margin = 12;
         }
 
-        public void add_panel (string label, Panel panel) {
+        public void add_panel (string label, SettingsUiPanel panel) {
             this.append_page (panel, new Gtk.Label (label));
         }
     }

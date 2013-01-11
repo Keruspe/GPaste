@@ -105,8 +105,8 @@ namespace GPaste {
             this.fill ();
         }
 
-        private Panel make_behaviour_panel () {
-            var panel = new Panel ();
+        private SettingsUiPanel make_behaviour_panel () {
+            var panel = new SettingsUiPanel ();
 
             this.track_changes_button = panel.add_boolean_setting (_("_Track clipboard changes"),
                                                                    this.settings.get_track_changes (),
@@ -155,8 +155,8 @@ namespace GPaste {
             return panel;
         }
 
-        private Panel make_history_settings_panel () {
-            var panel = new Panel ();
+        private SettingsUiPanel make_history_settings_panel () {
+            var panel = new SettingsUiPanel ();
 
             this.max_history_size_button = panel.add_range_setting (_("Max history size: "),
                                                                     (double)this.settings.get_max_history_size (),
@@ -192,8 +192,8 @@ namespace GPaste {
             return panel;
         }
 
-        private Panel make_keybindings_panel () {
-            var panel = new Panel ();
+        private SettingsUiPanel make_keybindings_panel () {
+            var panel = new SettingsUiPanel ();
 
             /* translators: Keyboard shortcut to display the history */
             this.show_history_entry = panel.add_text_setting (_("Display the history: "),
@@ -224,8 +224,8 @@ namespace GPaste {
             }
         }
 
-        private Panel make_histories_panel () {
-            var panel = new Panel ();
+        private SettingsUiPanel make_histories_panel () {
+            var panel = new SettingsUiPanel ();
 
             this.backup_entry = panel.add_text_confirm_setting (_("Backup history as: "),
                                                                 this.settings.get_history_name () + "_backup",
@@ -258,7 +258,7 @@ namespace GPaste {
             }
 
             /* translators: This is the text displayed on the button used to perform a multi-history management action */
-            this.targets = panel.add_multi_action_setting (actions, histories, _("Ok"), (action, target) => {
+            this.targets = panel.add_multi_action_setting ((string[])actions, _("Ok"), (action, target) => {
                                try {
                                    switch (action) {
                                    case "switch":
