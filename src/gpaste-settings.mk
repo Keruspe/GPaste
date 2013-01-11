@@ -25,7 +25,6 @@ nodist_bin_gpaste_settings_SOURCES = \
 
 bin_gpaste_settings_SOURCES = \
 	src/gpaste-settings/gpaste-settings.vala \
-	src/gpaste-settings/gpaste-settings-window.vala \
 	$(NULL)
 
 bin_gpaste_settings_vala.stamp: $(libgpaste_vapi_file)
@@ -40,10 +39,7 @@ bin_gpaste_settings_CFLAGS = \
 	$(NULL)
 
 bin_gpaste_settings_LDADD = \
-	$(libgpaste_settings_la_file) \
 	$(libgpaste_settings_ui_la_file) \
-	$(libgpaste_client_la_file) \
-	$(GTK_LIBS) \
 	$(NULL)
 
 CLEANFILES += \
