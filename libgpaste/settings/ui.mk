@@ -17,6 +17,8 @@
 
 libgpaste_settings_ui_la_file = libgpaste/settings/ui/libgpaste-settings-ui.la
 
+$(libgpaste_settings_ui_la_file): $(libgpaste_client_la_file) $(libgpaste_settings_la_file)
+
 LIBGPASTE_SETTINGS_UI_CURRENT=1
 LIBGPASTE_SETTINGS_UI_REVISION=0
 LIBGPASTE_SETTINGS_UI_AGE=0
