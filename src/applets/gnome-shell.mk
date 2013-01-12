@@ -33,8 +33,8 @@ SUFFIXES += .json .json.in
 
 if ENABLE_EXTENSION
 nodist_gnomeshell_DATA = \
-	$(gnomeshell_extension_file) \
-	$(gnomeshell_metadata_file) \
+	$(gnomeshell_extension_files) \
+	$(gnomeshell_metadata_file)   \
 	$(NULL)
 
 CLEANFILES += \
@@ -43,6 +43,6 @@ CLEANFILES += \
 endif
 
 EXTRA_DIST += \
-	$(gnomeshell_extension_file) \
+	$(gnomeshell_extension_files)              \
 	$(gnomeshell_metadata_file:.json=.json.in) \
 	$(NULL)
