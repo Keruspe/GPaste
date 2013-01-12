@@ -364,6 +364,8 @@ g_paste_settings_ui_notebook_settings_changed (GSettings   *gsettings G_GNUC_UNU
         gtk_entry_set_text (priv->backup_entry, text);
         g_free (text);
     }
+    else if (g_strcmp0 (key, IMAGES_SUPPORT_KEY) == 0)
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->images_support_button), g_paste_settings_get_images_support (settings));
     else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)

@@ -436,6 +436,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_fifo_from_dconf (self);
     else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
         g_paste_settings_set_history_name_from_dconf (self);
+    else if (g_strcmp0 (key, IMAGES_SUPPORT_KEY) == 0)
+        g_paste_settings_set_images_support_from_dconf (self);
     else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
         g_paste_settings_set_max_displayed_history_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)

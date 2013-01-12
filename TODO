@@ -1,8 +1,6 @@
 3.0:
     all:
         don't static c_signals
-    settings:
-        images-support
 
 future:
     gpaste:
