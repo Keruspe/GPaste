@@ -1,7 +1,3 @@
-3.0:
-    all:
-        don't static c_signals
-
 future:
     gpaste:
         GSubProcess

@@ -34,6 +34,8 @@ struct _GPasteHistoryPrivate
 {
     GPasteSettings *settings;
     GSList         *history;
+
+    gulong          changed_signal;
 };
 
 enum
@@ -45,14 +47,6 @@ enum
 };
 
 static guint signals[LAST_SIGNAL] = { 0 };
-
-enum
-{
-    C_CHANGED,
-    C_LAST_SIGNAL
-};
-
-static gulong c_signals[C_LAST_SIGNAL] = { 0 };
 
 static GSList *
 _g_paste_history_remove (GPasteHistory *self,
@@ -595,7 +589,7 @@ g_paste_history_dispose (GObject *object)
 
     if (settings)
     {
-        g_signal_handler_disconnect (self, c_signals[C_CHANGED]);
+        g_signal_handler_disconnect (self, priv->changed_signal);
         g_object_unref (settings);
         priv->settings = NULL;
     }
@@ -652,7 +646,7 @@ g_paste_history_init (GPasteHistory *self)
 
     priv->history = NULL;
 
-    c_signals[C_CHANGED] = g_signal_connect (G_OBJECT (self),
+    priv->changed_signal = g_signal_connect (G_OBJECT (self),
                                              "changed",
                                              G_CALLBACK (g_paste_history_self_changed),
                                              NULL); /* user data */

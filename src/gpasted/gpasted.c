@@ -39,8 +39,6 @@ enum
     C_LAST_SIGNAL
 };
 
-static gulong c_signals[C_LAST_SIGNAL] = { 0 };
-
 static void
 signal_handler (int signum)
 {
@@ -90,14 +88,16 @@ main (int argc, char *argv[])
                                                                  g_paste_daemon))
     };
 
-    c_signals[C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
-                                               "name-lost",
-                                               G_CALLBACK (on_name_lost),
-                                               NULL); /* user_data */
-    c_signals[C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
-                                                    "reexecute-self",
-                                                    G_CALLBACK (reexec),
-                                                    NULL); /* user_data */
+    gulong c_signals[C_LAST_SIGNAL] = {
+        [C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
+                                          "name-lost",
+                                          G_CALLBACK (on_name_lost),
+                                          NULL), /* user_data */
+        [C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
+                                               "reexecute-self",
+                                               G_CALLBACK (reexec),
+                                               NULL) /* user_data */
+    };
 
     for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
         g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);

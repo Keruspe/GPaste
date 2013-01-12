@@ -55,6 +55,16 @@ G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
                   G_TYPE_NONE,                   \
                   0);
 
+enum
+{
+    C_CHANGED,
+    C_NAME_LOST,
+    C_REEXECUTE_SELF,
+    C_TRACK,
+
+    C_LAST_SIGNAL
+};
+
 struct _GPasteDaemonPrivate
 {
     GDBusConnection         *connection;
@@ -67,6 +77,8 @@ struct _GPasteDaemonPrivate
     GPasteKeybinder         *keybinder;
     GDBusNodeInfo           *g_paste_daemon_dbus_info;
     GDBusInterfaceVTable     g_paste_daemon_dbus_vtable;
+
+    gulong                   c_signals[C_LAST_SIGNAL];
 };
 
 enum
@@ -78,18 +90,6 @@ enum
 };
 
 static guint signals[LAST_SIGNAL] = { 0 };
-
-enum
-{
-    C_CHANGED,
-    C_NAME_LOST,
-    C_REEXECUTE_SELF,
-    C_TRACK,
-
-    C_LAST_SIGNAL
-};
-
-static gulong c_signals[C_LAST_SIGNAL] = { 0 };
 
 static void
 g_paste_daemon_send_dbus_reply (GDBusConnection       *connection,
@@ -506,6 +506,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = self->priv;
+    gulong *c_signals = priv->c_signals;
 
     g_signal_handler_disconnect (self, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
@@ -538,6 +539,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     if (!result)
         return 0;
 
+    gulong *c_signals = priv->c_signals;
     c_signals[C_NAME_LOST] = g_signal_connect (G_OBJECT (self),
                                               "name-lost",
                                                G_CALLBACK (g_paste_daemon_name_lost),

@@ -46,6 +46,8 @@ struct _GPasteSettingsPrivate
     gboolean   track_changes;
     gboolean   track_extension_state;
     gboolean   trim_items;
+
+    gulong     changed_signal;
 };
 
 enum
@@ -58,14 +60,6 @@ enum
 };
 
 static guint signals[LAST_SIGNAL] = { 0 };
-
-enum
-{
-    C_CHANGED,
-    C_LAST_SIGNAL
-};
-
-static gulong c_signals[C_LAST_SIGNAL] = { 0 };
 
 #define SETTING(name, key, type, setting_type, fail, guards, clear_func, dup_func) \
     G_PASTE_VISIBLE type \
@@ -494,7 +488,7 @@ g_paste_settings_dispose (GObject *object)
 
     if (settings)
     {
-        g_signal_handler_disconnect (settings, c_signals[C_CHANGED]);
+        g_signal_handler_disconnect (settings, priv->changed_signal);
         g_object_unref (settings);
         priv->settings = NULL;
     }
@@ -556,7 +550,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_track_extension_state_from_dconf (self);
     g_paste_settings_set_trim_items_from_dconf (self);
 
-    c_signals[C_CHANGED] = g_signal_connect (G_OBJECT (settings),
+    priv->changed_signal = g_signal_connect (G_OBJECT (settings),
                                              "changed",
                                              G_CALLBACK (g_paste_settings_settings_changed),
                                              self);

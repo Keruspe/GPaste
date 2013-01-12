@@ -30,6 +30,8 @@ struct _GPasteClientPrivate
 {
     GDBusProxy    *proxy;
     GDBusNodeInfo *g_paste_daemon_dbus_info;
+
+    gulong         g_signal;
 };
 
 enum
@@ -44,14 +46,6 @@ enum
 };
 
 static guint signals[LAST_SIGNAL] = { 0 };
-
-enum
-{
-    C_G_SIGNAL,
-    C_LAST_SIGNAL
-};
-
-static gulong c_signals[C_LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_NO_PARAM(method, ans_type, variant_type, fail) \
     DBUS_CALL_WITH_RETURN(method,                                \
@@ -460,7 +454,7 @@ g_paste_client_dispose (GObject *object)
     {
         if (proxy)
         {
-            g_signal_handler_disconnect (proxy, c_signals[C_G_SIGNAL]);
+            g_signal_handler_disconnect (proxy, priv->g_signal);
             g_object_unref (proxy);
         }
         g_dbus_node_info_unref (g_paste_daemon_dbus_info);
@@ -512,10 +506,10 @@ g_paste_client_init (GPasteClient *self)
 
     if (proxy)
     {
-        c_signals[C_G_SIGNAL] = g_signal_connect_swapped (G_OBJECT (proxy),
-                                                          "g-signal",
-                                                          G_CALLBACK (g_paste_client_handle_signal),
-                                                          self); /* user_data */
+        priv->g_signal = g_signal_connect_swapped (G_OBJECT (proxy),
+                                                   "g-signal",
+                                                   G_CALLBACK (g_paste_client_handle_signal),
+                                                   self); /* user_data */
     }
 }
 

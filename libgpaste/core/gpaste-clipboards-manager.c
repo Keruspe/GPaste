@@ -31,15 +31,9 @@ struct _GPasteClipboardsManagerPrivate
     GSList         *clipboards;
     GPasteHistory  *history;
     GPasteSettings *settings;
-};
 
-enum
-{
-    C_SELECTED,
-    C_LAST_SIGNAL
+    gulong          selected_signal;
 };
-
-static gulong c_signals[C_LAST_SIGNAL] = { 0 };
 
 /**
  * g_paste_clipboards_manager_add_clipboard:
@@ -233,7 +227,7 @@ g_paste_clipboards_manager_dispose (GObject *object)
 
     if (settings)
     {
-        g_signal_handler_disconnect (settings, c_signals[C_SELECTED]);
+        g_signal_handler_disconnect (settings, priv->selected_signal);
         g_object_unref (settings);
         g_object_unref (priv->history);
         priv->settings = NULL;
@@ -295,7 +289,7 @@ g_paste_clipboards_manager_new (GPasteHistory  *history,
     priv->history = g_object_ref (history);
     priv->settings = g_object_ref (settings);
 
-    c_signals[C_SELECTED] = g_signal_connect_swapped (G_OBJECT (history),
+    priv->selected_signal = g_signal_connect_swapped (G_OBJECT (history),
                                                       "selected",
                                                       G_CALLBACK (on_item_selected),
                                                       self);
