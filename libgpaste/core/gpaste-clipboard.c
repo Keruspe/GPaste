@@ -328,8 +328,13 @@ static void
 g_paste_clipboard_dispose (GObject *object)
 {
     GPasteClipboardPrivate *priv = G_PASTE_CLIPBOARD (object)->priv;
+    GPasteSettings *settings = priv->settings;
 
-    g_object_unref (priv->settings);
+    if (settings)
+    {
+        g_object_unref (settings);
+        priv->settings = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_clipboard_parent_class)->dispose (object);
 }

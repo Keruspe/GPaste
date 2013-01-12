@@ -43,7 +43,14 @@ struct _GPastePasteAndPopKeybindingPrivate
 static void
 g_paste_paste_and_pop_keybinding_dispose (GObject *object)
 {
-    g_object_unref (G_PASTE_PASTE_AND_POP_KEYBINDING (object)->priv->history);
+    GPastePasteAndPopKeybindingPrivate *priv = G_PASTE_PASTE_AND_POP_KEYBINDING (object)->priv;
+    GPasteHistory *history = priv->history;
+
+    if (history)
+    {
+        g_object_unref (history);
+        priv->history = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_paste_and_pop_keybinding_parent_class)->dispose (object);
 }

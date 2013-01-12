@@ -231,9 +231,13 @@ g_paste_clipboards_manager_dispose (GObject *object)
     GPasteClipboardsManagerPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
 
-    g_signal_handler_disconnect (settings, c_signals[C_SELECTED]);
-    g_object_unref (priv->settings);
-    g_object_unref (priv->history);
+    if (settings)
+    {
+        g_signal_handler_disconnect (settings, c_signals[C_SELECTED]);
+        g_object_unref (settings);
+        g_object_unref (priv->history);
+        priv->settings = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_clipboards_manager_parent_class)->dispose (object);
 }

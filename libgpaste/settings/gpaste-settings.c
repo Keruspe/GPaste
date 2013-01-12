@@ -487,11 +487,15 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 static void
 g_paste_settings_dispose (GObject *object)
 {
-    GPasteSettings *self = G_PASTE_SETTINGS (object);
-    GSettings *settings = self->priv->settings;
+    GPasteSettingsPrivate *priv = G_PASTE_SETTINGS (object)->priv;
+    GSettings *settings = priv->settings;
 
-    g_signal_handler_disconnect (settings, c_signals[C_CHANGED]);
-    g_object_unref (settings);
+    if (settings)
+    {
+        g_signal_handler_disconnect (settings, c_signals[C_CHANGED]);
+        g_object_unref (settings);
+        priv->settings = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
 }
@@ -513,8 +517,10 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteSettingsPrivate));
 
-    G_OBJECT_CLASS (klass)->dispose = g_paste_settings_dispose;
-    G_OBJECT_CLASS (klass)->finalize = g_paste_settings_finalize;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_settings_dispose;
+    object_class->finalize = g_paste_settings_finalize;
 
     signals[CHANGED] = NEW_SIGNAL_DETAILED("changed", G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE)
     signals[REBIND]  = NEW_SIGNAL_DETAILED("rebind" , G_TYPE_STRING)

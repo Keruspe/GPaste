@@ -454,13 +454,18 @@ g_paste_client_dispose (GObject *object)
 {
     GPasteClientPrivate *priv = G_PASTE_CLIENT (object)->priv;
     GDBusProxy *proxy = priv->proxy;
+    GDBusNodeInfo *g_paste_daemon_dbus_info = priv->g_paste_daemon_dbus_info;
 
-    if (proxy)
+    if (g_paste_daemon_dbus_info)
     {
-        g_signal_handler_disconnect (proxy, c_signals[C_G_SIGNAL]);
-        g_object_unref (proxy);
+        if (proxy)
+        {
+            g_signal_handler_disconnect (proxy, c_signals[C_G_SIGNAL]);
+            g_object_unref (proxy);
+        }
+        g_dbus_node_info_unref (g_paste_daemon_dbus_info);
+        priv->g_paste_daemon_dbus_info = NULL;
     }
-    g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
 
     G_OBJECT_CLASS (g_paste_client_parent_class)->dispose (object);
 }

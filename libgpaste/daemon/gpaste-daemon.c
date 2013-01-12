@@ -619,14 +619,19 @@ static void
 g_paste_daemon_dispose (GObject *object)
 {
     GPasteDaemonPrivate *priv = G_PASTE_DAEMON (object)->priv;
+    GPasteSettings *settings = priv->settings;
 
-    g_bus_unown_name (priv->id_on_bus);
-    g_object_unref (priv->connection);
-    g_object_unref (priv->history);
-    g_object_unref (priv->settings);
-    g_object_unref (priv->clipboards_manager);
-    g_object_unref (priv->keybinder);
-    g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
+    if (settings)
+    {
+        g_bus_unown_name (priv->id_on_bus);
+        g_object_unref (priv->connection);
+        g_object_unref (priv->history);
+        g_object_unref (settings);
+        g_object_unref (priv->clipboards_manager);
+        g_object_unref (priv->keybinder);
+        g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
+        priv->settings = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->dispose (object);
 }
@@ -644,8 +649,10 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
 {
     g_type_class_add_private (klass, sizeof (GPasteDaemonPrivate));
 
-    G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
-    G_OBJECT_CLASS (klass)->finalize = g_paste_daemon_finalize;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_daemon_dispose;
+    object_class->finalize = g_paste_daemon_finalize;
 
     signals[NAME_LOST]      = NEW_SIGNAL ("name-lost")
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self")

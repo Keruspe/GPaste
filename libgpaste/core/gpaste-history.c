@@ -591,9 +591,14 @@ g_paste_history_dispose (GObject *object)
 {
     GPasteHistory *self = G_PASTE_HISTORY (object);
     GPasteHistoryPrivate *priv = self->priv;
+    GPasteSettings *settings = priv->settings;
 
-    g_signal_handler_disconnect (self, c_signals[C_CHANGED]);
-    g_object_unref (priv->settings);
+    if (settings)
+    {
+        g_signal_handler_disconnect (self, c_signals[C_CHANGED]);
+        g_object_unref (settings);
+        priv->settings = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->dispose (object);
 }

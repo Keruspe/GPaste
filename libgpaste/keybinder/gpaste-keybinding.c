@@ -241,11 +241,16 @@ g_paste_keybinding_dispose (GObject *object)
 {
     GPasteKeybinding *self = G_PASTE_KEYBINDING (object);
     GPasteKeybindingPrivate *priv = self->priv;
+    GPasteSettings *settings = priv->settings;
 
-    if (priv->active)
-        g_paste_keybinding_deactivate (self);
-    g_signal_handler_disconnect (priv->settings, c_signals[C_REBIND]);
-    g_object_unref (priv->settings);
+    if (settings)
+    {
+        if (priv->active)
+            g_paste_keybinding_deactivate (self);
+        g_signal_handler_disconnect (priv->settings, c_signals[C_REBIND]);
+        g_object_unref (settings);
+        priv->settings = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->dispose (object);
 }
