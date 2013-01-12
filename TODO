@@ -4,8 +4,6 @@
         don't static c_signals
     settings:
         images-support
-    gnome-shell:
-        prefs.js
 
 future:
     gpaste:

@@ -17,7 +17,11 @@
 
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
 
-gnomeshell_extension_file = src/applets/gnome-shell/extension.js
+gnomeshell_extension_files =                 \
+	src/applets/gnome-shell/extension.js \
+	src/applets/gnome-shell/prefs.js     \
+	$(NULL)
+
 gnomeshell_metadata_file = src/applets/gnome-shell/metadata.json
 
 SUFFIXES += .json .json.in
