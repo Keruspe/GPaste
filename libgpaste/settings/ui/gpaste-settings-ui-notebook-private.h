@@ -24,9 +24,14 @@
 
 G_BEGIN_DECLS
 
+typedef struct _GPasteSettingsUiNotebookPrivate GPasteSettingsUiNotebookPrivate;
+
 struct _GPasteSettingsUiNotebook
 {
     GtkNotebook parent_instance;
+
+    /*< private >*/
+    GPasteSettingsUiNotebookPrivate *priv;
 };
 
 struct _GPasteSettingsUiNotebookClass

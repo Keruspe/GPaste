@@ -24,14 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteSettingsUiWindowPrivate GPasteSettingsUiWindowPrivate;
-
 struct _GPasteSettingsUiWindow
 {
     GtkWindow parent_instance;
-
-    /*< private >*/
-    GPasteSettingsUiWindowPrivate *priv;
 };
 
 struct _GPasteSettingsUiWindowClass

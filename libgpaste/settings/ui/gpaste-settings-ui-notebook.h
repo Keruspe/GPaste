@@ -42,6 +42,7 @@ GType g_paste_settings_ui_notebook_get_type (void);
 void g_paste_settings_ui_notebook_add_panel (GPasteSettingsUiNotebook *self,
                                              const gchar              *label,
                                              GPasteSettingsUiPanel    *panel);
+void g_paste_settings_ui_notebook_fill      (GPasteSettingsUiNotebook *self);
 
 GPasteSettingsUiNotebook *g_paste_settings_ui_notebook_new (void);
 
