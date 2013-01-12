@@ -170,7 +170,7 @@ namespace GPaste {
                     this.window.show_history ();
                 });
             } catch (Error e) {
-                stderr.printf (_("Couldn't connect to GPaste daemon.\n"));
+                stderr.printf ("%s\n", _("Couldn't connect to GPaste daemon."));
                 Posix.exit(1);
             }
             this.window = new Window (this);

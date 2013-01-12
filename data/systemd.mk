@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+gpasted_systemd_file = data/systemd/gpasted.service
+
 if ENABLE_SYSTEMD
 
-nodist_systemduserunit_DATA += \
-	data/systemd/gpasted.service \
+nodist_systemduserunit_DATA +=  \
+	$(gpasted_systemd_file) \
 	$(NULL)
 
 endif
@@ -32,7 +34,7 @@ SUFFIXES += .service .systemd.in
 	    < $< > $@
 
 EXTRA_DIST += \
-	$(nodist_systemduserunit_DATA:.service=.systemd.in) \
+	$(gpasted_systemd_file:.service=.systemd.in) \
 	$(NULL)
 
 CLEANFILES += \

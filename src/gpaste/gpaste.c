@@ -89,7 +89,7 @@ is_help (const gchar *option)
 static void
 failure_exit (void)
 {
-    fprintf (stderr, _("Couldn't connect to GPaste daemon.\n"));
+    fprintf (stderr, "%s\n", _("Couldn't connect to GPaste daemon."));
     exit (EXIT_FAILURE);
 }
 
