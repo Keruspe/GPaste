@@ -1,4 +1,9 @@
 3.0:
+    all:
+        guard multi dispose calls
+        don't static c_signals
+    settings:
+        images-support
     gnome-shell:
         prefs.js
 

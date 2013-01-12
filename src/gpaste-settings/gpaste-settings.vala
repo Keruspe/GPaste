@@ -26,7 +26,7 @@ namespace GPaste {
         }
 
         private void init() {
-            new Window (this).show_all ();
+            new SettingsUiWindow (this).show_all ();
         }
 
         public static int main (string[] args) {

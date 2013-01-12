@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -17,14 +17,23 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace GPaste {
-    public class Notebook : Gtk.Notebook {
-        public Notebook () {
-            this.margin = 12;
-        }
+#ifndef __G_PASTE_SETTINGS_UI_NOTEBOOK_PRIVATE_H__
+#define __G_PASTE_SETTINGS_UI_NOTEBOOK_PRIVATE_H__
 
-        public void add_panel (string label, Panel panel) {
-            this.append_page (panel, new Gtk.Label (label));
-        }
-    }
-}
+#include "gpaste-settings-ui-notebook.h"
+
+G_BEGIN_DECLS
+
+struct _GPasteSettingsUiNotebook
+{
+    GtkNotebook parent_instance;
+};
+
+struct _GPasteSettingsUiNotebookClass
+{
+    GtkNotebookClass parent_class;
+};
+
+G_END_DECLS
+
+#endif /*__G_PASTE_SETTINGS_UI_NOTEBOOK_PRIVATE_H__*/

@@ -548,7 +548,6 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_track_extension_state_from_dconf (self);
     g_paste_settings_set_trim_items_from_dconf (self);
 
-
     c_signals[C_CHANGED] = g_signal_connect (G_OBJECT (settings),
                                              "changed",
                                              G_CALLBACK (g_paste_settings_settings_changed),
