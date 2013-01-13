@@ -1,6 +1,5 @@
 3.0:
     all:
-        includable headers
         pkg-config split
         optionalize g-i
     applet:
