@@ -2,9 +2,13 @@
     all:
         includable headers
         pkg-config split
+        optionalize g-i
     settings:
         close button
         conditional gnome-shell stuff
+    applet:
+        autostart
+        don't close on right click
 
 future:
     gpaste:
