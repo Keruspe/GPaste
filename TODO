@@ -4,7 +4,6 @@
         pkg-config split
         optionalize g-i
     settings:
-        close button
         conditional gnome-shell stuff
     applet:
         autostart

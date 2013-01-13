@@ -29,6 +29,14 @@ init (GApplication *app,
     gtk_widget_show_all (GTK_WIDGET (user_data));
 }
 
+static void
+quit (GtkWidget *widget G_GNUC_UNUSED,
+      GdkEvent  *event  G_GNUC_UNUSED,
+      gpointer   user_data)
+{
+    g_application_quit (G_APPLICATION (user_data));
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -46,12 +54,25 @@ main (int argc, char *argv[])
                                         "window-position", GTK_WIN_POS_CENTER,
                                         "resizable", FALSE,
                                         NULL);
+    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    GtkContainer *box = GTK_CONTAINER (vbox);
     GPasteSettingsUiNotebook *notebook = g_paste_settings_ui_notebook_new ();
 
     g_paste_settings_ui_notebook_fill (notebook);
-    gtk_container_add (GTK_CONTAINER (window), GTK_WIDGET (notebook));
+    gtk_container_add (GTK_CONTAINER (vbox), GTK_WIDGET (notebook));
+
+    GtkWidget *close_button = gtk_widget_new (GTK_TYPE_BUTTON,
+                                              "label", _("Close"),
+                                              "margin", 12,
+                                              "margin-top", 0,
+                                              NULL);
+
+    gtk_widget_set_halign (close_button, GTK_ALIGN_END);
+    gtk_container_add (box, close_button);
+    gtk_container_add (GTK_CONTAINER (window), vbox);
 
     gulong activate_signal = g_signal_connect (app, "activate", G_CALLBACK (init), window);
+    gulong quit_signal = g_signal_connect(close_button, "button-press-event", G_CALLBACK (quit), app);
 
     GApplication *gapp = G_APPLICATION (app);
     GError *error = NULL;
@@ -67,6 +88,7 @@ main (int argc, char *argv[])
 
     int ret =  g_application_run (gapp, argc, argv);
 
+    g_signal_handler_disconnect (close_button, quit_signal);
     g_signal_handler_disconnect (app, activate_signal);
 
     return ret;
