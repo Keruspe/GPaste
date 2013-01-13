@@ -15,14 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+autostartdir = $(sysconfdir)/xdg/autostart
 applicationsdir = $(datadir)/applications
 
 gpaste_applet_desktop_file = data/desktop/gpaste-applet.desktop
 gpaste_settings_desktop_file = data/desktop/gpaste-settings.desktop
 
-nodist_applications_DATA = \
+nodist_autostart_DATA = \
+	$(NULL)
+
+if ENABLE_APPLET
+nodist_autostart_DATA += \
 	$(gpaste_applet_desktop_file) \
+	$(NULL)
+endif
+
+nodist_applications_DATA = \
 	$(gpaste_settings_desktop_file) \
+	$(nodist_autostart_DATA) \
 	$(NULL)
 
 @INTLTOOL_DESKTOP_RULE@
