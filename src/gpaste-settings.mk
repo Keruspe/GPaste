@@ -19,29 +19,15 @@ pkglibexec_PROGRAMS += \
 	bin/gpaste-settings \
 	$(NULL)
 
-nodist_bin_gpaste_settings_SOURCES = \
-	$(libgpaste_vapi_file) \
-	$(NULL)
-
 bin_gpaste_settings_SOURCES = \
-	src/gpaste-settings/gpaste-settings.vala \
-	$(NULL)
-
-bin_gpaste_settings_vala.stamp: $(libgpaste_vapi_file)
-
-bin_gpaste_settings_VALAFLAGS = \
-	$(libgpaste_vapi_file) \
-	$(AM_VALAFLAGS) \
+	src/gpaste-settings/gpaste-settings.c \
 	$(NULL)
 
 bin_gpaste_settings_CFLAGS = \
-	$(VALA_CFLAGS) \
+	$(GTK_CFLAGS) \
+	$(AM_CFLAGS) \
 	$(NULL)
 
 bin_gpaste_settings_LDADD = \
 	$(libgpaste_settings_ui_la_file) \
-	$(NULL)
-
-CLEANFILES += \
-	$(gpaste_settings_SOURCES:.vala=.c) \
 	$(NULL)
