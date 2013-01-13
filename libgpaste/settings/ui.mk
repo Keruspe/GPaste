@@ -46,7 +46,7 @@ libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS = \
 	$(NULL)
 
 if ENABLE_EXTENSION
-bin_gpaste_CFLAGS += \
+libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS += \
 	-DENABLE_EXTENSION \
 	$(NULL)
 endif
