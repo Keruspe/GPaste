@@ -30,7 +30,7 @@ AM_VALAFLAGS = \
 	--enable-checking \
 	--enable-experimental \
 	--enable-experimental-non-null \
-	--target-glib=2.30 \
+	--target-glib=2.32 \
 	--vapidir=$(srcdir)/bindings/vapi \
 	--pkg=config \
 	--pkg=posix \
