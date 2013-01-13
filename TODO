@@ -1,3 +1,11 @@
+3.0:
+    all:
+        includable headers
+        pkg-config split
+    settings:
+        close button
+        conditional gnome-shell stuff
+
 future:
     gpaste:
         GSubProcess
