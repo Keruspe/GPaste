@@ -28,7 +28,6 @@
 #include <gpaste-keybinder.h>
 #include <gpaste-settings.h>
 #include <gpaste-settings-ui-notebook.h>
-#include <gpaste-settings-ui-panel.h>
 
 #undef __G_PASTE_H_INSIDE__
 
