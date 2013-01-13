@@ -3,8 +3,6 @@
         includable headers
         pkg-config split
         optionalize g-i
-    settings:
-        conditional gnome-shell stuff
     applet:
         autostart
         don't close on right click
