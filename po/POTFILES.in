@@ -1,4 +1,4 @@
-src/gpaste-settings/gpaste-settings.vala
+src/gpaste-settings/gpaste-settings.c
 src/applets/legacy/gpaste-applet.vala
 src/applets/gnome-shell/extension.js
 src/gpaste/gpaste.c
@@ -11,4 +11,3 @@ libgpaste/core/gpaste-image-item.c
 libgpaste/core/gpaste-uris-item.c
 libgpaste/core/gpaste-history.c
 libgpaste/settings/ui/gpaste-settings-ui-notebook.c
-libgpaste/settings/ui/gpaste-settings-ui-window.c

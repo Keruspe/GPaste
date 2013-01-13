@@ -1,4 +1,3 @@
 data/desktop/gpaste-applet.desktop.in
 data/desktop/gpaste-settings.desktop.in
 src/applets/legacy/gpaste-applet.c
-src/gpaste-settings/gpaste-settings.c
