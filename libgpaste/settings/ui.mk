@@ -26,13 +26,11 @@ LIBGPASTE_SETTINGS_UI_AGE=0
 libgpaste_settings_ui_public_headers = \
 	libgpaste/settings/ui/gpaste-settings-ui-notebook.h \
 	libgpaste/settings/ui/gpaste-settings-ui-panel.h \
-	libgpaste/settings/ui/gpaste-settings-ui-window.h \
 	$(NULL)
 
 libgpaste_settings_ui_private_headers = \
 	libgpaste/settings/ui/gpaste-settings-ui-notebook-private.h \
 	libgpaste/settings/ui/gpaste-settings-ui-panel-private.h \
-	libgpaste/settings/ui/gpaste-settings-ui-window-private.h \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES = \
@@ -40,7 +38,6 @@ libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES = \
 	$(libgpaste_settings_ui_private_headers) \
 	libgpaste/settings/ui/gpaste-settings-ui-notebook.c \
 	libgpaste/settings/ui/gpaste-settings-ui-panel.c \
-	libgpaste/settings/ui/gpaste-settings-ui-window.c \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS = \

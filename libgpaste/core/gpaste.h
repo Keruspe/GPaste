@@ -29,7 +29,6 @@
 #include <gpaste-settings.h>
 #include <gpaste-settings-ui-notebook.h>
 #include <gpaste-settings-ui-panel.h>
-#include <gpaste-settings-ui-window.h>
 
 #undef __G_PASTE_H_INSIDE__
 
