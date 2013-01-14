@@ -18,7 +18,7 @@ utility pop, and `gpaste-applet` which starts the legacy applet in your notifica
 
 A native gnome-shell extension is provided.
 
-/!\ Don't forget to run "gpaste dr" aka "gpaste daemon-reexec" after upgrading gpaste to activate new functionalities ;)
+/!\ Don't forget to run `gpaste dr` aka `gpaste daemon-reexec` after upgrading GPaste to activate new functionalities ;)
 
 Steps to install it after cloning:
 
