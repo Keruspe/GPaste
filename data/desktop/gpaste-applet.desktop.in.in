@@ -5,6 +5,3 @@ _Comment=Tray icon to manage GPaste
 Icon=gtk-paste
 Exec=@pkglibexecdir@/gpaste-applet
 Terminal=false
-NoDisplay=true
-OnlyShowIn=GNOME;Unity;
-AutostartCondition=GNOME3 if-session gnome-fallback
