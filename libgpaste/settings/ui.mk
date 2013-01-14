@@ -45,12 +45,6 @@ libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
 
-if ENABLE_EXTENSION
-libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS += \
-	-DENABLE_EXTENSION \
-	$(NULL)
-endif
-
 libgpaste_settings_ui_libgpaste_settings_ui_la_LIBADD = \
 	$(libgpaste_client_la_file) \
 	$(libgpaste_settings_la_file) \

@@ -28,12 +28,6 @@ bin_gpaste_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
 
-if ENABLE_APPLET
-bin_gpaste_CFLAGS += \
-	-DENABLE_APPLET \
-	$(NULL)
-endif
-
 bin_gpaste_LDADD = \
 	$(libgpaste_client_la_file) \
 	$(NULL)

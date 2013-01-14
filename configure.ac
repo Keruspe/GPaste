@@ -183,14 +183,20 @@ AC_SUBST(systemduserunitdir)
 AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
-if test x$enable_applet = xyes && test x$enable_vala != xyes; then
-    AC_MSG_ERROR([*** Vala support is required to build the applet])
+if test x$enable_applet = xyesi; then
+    if test x$enable_vala != xyes; then
+        AC_MSG_ERROR([*** Vala support is required to build the applet])
+    fi
+    AC_DEFINE([ENABLE_APPLET], [1], [Whether the applet is built])
 fi
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
-if test x$enable_extension = xyes && test x$enable_introspection != xyes; then
-    AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
+if test x$enable_extension = xyes; then
+    if test x$enable_introspection != xyes; then
+        AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
+    fi
+    AC_DEFINE([ENABLE_EXTENSION], [1], [Whether the extension is enabled])
 fi
 AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 
