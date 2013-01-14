@@ -189,6 +189,9 @@ fi
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
+if test x$enable_extension = xyes && test x$enable_introspection != xyes; then
+    AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
+fi
 AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 
 AC_CONFIG_FILES([
