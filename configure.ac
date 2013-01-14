@@ -128,10 +128,20 @@ AC_SUBST(GIO_VALAFLAGS)
 
 GLIB_GSETTINGS
 
-GOBJECT_INTROSPECTION_REQUIRE([$GIR_REQUIRED])
-AM_PROG_VALAC([$VALA_REQUIRED])
-AC_PATH_PROG(VAPIGEN, vapigen, vapigen)
-AC_SUBST(VAPIGEN)
+m4_ifdef([GOBJECT_INTROSPECTION_CHECK],
+         [GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])],
+         [enable_introspection=no])
+
+AC_ARG_ENABLE(vala, AS_HELP_STRING([--enable-vala], [Build vala bindings]), enable_vala=$enableval, enable_vala=no)
+if test x$enable_vala = xyes; then
+    if test x$enable_introspection != xyes; then
+        AC_MSG_ERROR([*** Introspection support is required to build vala bindings])
+    fi
+    AM_PROG_VALAC([$VALA_REQUIRED])
+    AC_PATH_PROG(VAPIGEN, vapigen, vapigen)
+    AC_SUBST(VAPIGEN)
+fi
+AM_CONDITIONAL(ENABLE_VALA, test x$enable_vala = xyes)
 
 PKG_CHECK_MODULES(GTK, [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED])
 GTK_VALAFLAGS="--pkg=gtk+-3.0"
@@ -171,6 +181,9 @@ fi
 AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
+if test x$enable_applet = xyes && test x$enable_vala != xyes; then
+    AC_MSG_ERROR([*** Vala support is required to build the applet])
+fi
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)

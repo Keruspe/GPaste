@@ -19,6 +19,7 @@
 
 INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h --c-include=gpaste-client.h --c-include=gpaste-daemon.h
 INTROSPECTION_COMPILER_ARGS = $(NULL)
+INTROSPECTION_GIRS = $(NULL)
 
 libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
@@ -63,9 +64,11 @@ bindings_gi_GPaste_1_0_gir_INCLUDES = \
 	libxml2-2.0 \
 	$(NULL)
 
-INTROSPECTION_GIRS = \
+if HAVE_INTROSPECTION
+INTROSPECTION_GIRS += \
 	$(libgpaste_gir_file) \
 	$(NULL)
+endif
 
 girdir = $(datadir)/gir-1.0
 gir_DATA = $(INTROSPECTION_GIRS)

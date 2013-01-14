@@ -22,13 +22,16 @@ $(libgpaste_vapi_file): $(libgpaste_gir_file)
 	$(AM_V_GEN) $(VAPIGEN) --directory bindings/vapi --library gpaste-1.0 --pkg gdk-pixbuf-2.0 --pkg gio-2.0 --pkg gobject-2.0 --pkg gtk+-3.0 $^
 
 vapidir = $(datadir)/vala/vapi
-nodist_vapi_DATA = \
-	$(libgpaste_vapi_file) \
-	$(NULL)
 dist_vapi_DATA = \
 	$(libgpaste_vapi_file:.vapi=.deps) \
+	$(NULL)
+
+if ENABLE_VALA
+nodist_vapi_DATA = \
+	$(libgpaste_vapi_file) \
 	$(NULL)
 
 CLEANFILES += \
 	$(libgpaste_vapi_file) \
 	$(NULL)
+endif

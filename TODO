@@ -1,7 +1,6 @@
 3.0:
     all:
-        pkg-config split
-        optionalize g-i
+        optionalize keybinder
     applet:
         don't close on right click
 
