@@ -1,7 +1,3 @@
-3.0:
-    all:
-        optionalize keybinder
-
 future:
     gpaste:
         GSubProcess
