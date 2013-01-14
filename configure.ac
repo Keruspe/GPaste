@@ -176,8 +176,10 @@ if test x$enable_systemd = xyes; then
             systemduserunitdir="$with_systemduserunitdir"
             ;;
     esac
-    AC_SUBST(systemduserunitdir)
+else
+    systemduserunitdir="/dev/null"
 fi
+AC_SUBST(systemduserunitdir)
 AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
