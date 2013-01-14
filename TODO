@@ -1,8 +1,6 @@
 3.0:
     all:
         optionalize keybinder
-    applet:
-        don't close on right click
 
 future:
     gpaste:
