@@ -93,7 +93,7 @@ g_paste_settings_ui_notebook_add_panel (GPasteSettingsUiNotebook *self,
 }
 
 BOOLEAN_CALLBACK (track_changes)
-#ifdef HAVE_EXTENSION
+#ifdef ENABLE_EXTENSION
 BOOLEAN_CALLBACK (track_extension_state)
 #endif
 BOOLEAN_CALLBACK (primary_to_history)
@@ -115,7 +115,7 @@ g_paste_settings_ui_notebook_make_behaviour_panel (GPasteSettingsUiNotebook *sel
                                                                                 g_paste_settings_get_track_changes (settings),
                                                                                 track_changes_callback,
                                                                                 settings);
-#ifdef HAVE_EXTENSION
+#ifdef ENABLE_EXTENSION
     priv->track_extension_state_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                          _("Sync the daemon state with the _extension's one"),
                                                                                         g_paste_settings_get_track_extension_state (settings),
@@ -390,7 +390,7 @@ g_paste_settings_ui_notebook_settings_changed (GSettings   *gsettings G_GNUC_UNU
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
     else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->track_changes_button), g_paste_settings_get_track_changes (settings));
-#ifdef HAVE_EXTENSION
+#ifdef ENABLE_EXTENSION
     else if (g_strcmp0 (key, TRACK_EXTENSION_STATE_KEY) == 0)
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->track_extension_state_button), g_paste_settings_get_track_extension_state (settings));
 #endif

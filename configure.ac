@@ -183,7 +183,7 @@ AC_SUBST(systemduserunitdir)
 AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
-if test x$enable_applet = xyesi; then
+if test x$enable_applet = xyes; then
     if test x$enable_vala != xyes; then
         AC_MSG_ERROR([*** Vala support is required to build the applet])
     fi
