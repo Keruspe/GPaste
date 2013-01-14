@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2013-01-12 17:46+0100\n"
+"POT-Creation-Date: 2013-01-14 18:54+0100\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -16,10 +16,19 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:43
-#: ../src/applets/legacy/gpaste-applet.vala:189
-#, c-format
-msgid "Fail to register the gtk application.\n"
+#: ../src/gpaste-settings/gpaste-settings.c:53
+#: ../src/applets/gnome-shell/extension.js:81
+#: ../data/desktop/gpaste-settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "GPaste palvelun asetukset"
+
+#: ../src/gpaste-settings/gpaste-settings.c:65
+msgid "Close"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.c:84
+#, fuzzy
+msgid "Failed to register the gtk application."
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui.\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:86
@@ -56,21 +65,20 @@ msgid "Quit"
 msgstr "Lopeta"
 
 #: ../src/applets/legacy/gpaste-applet.vala:173 ../src/gpaste/gpaste.c:92
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:233
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:266
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:292
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:237
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:270
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:296
 msgid "Couldn't connect to GPaste daemon."
 msgstr "GPaste-palveluun ei saatu yhteyttä."
+
+#: ../src/applets/legacy/gpaste-applet.vala:189
+#, c-format
+msgid "Fail to register the gtk application.\n"
+msgstr "Gtk-ohjelman rekisteröiminen epäonnistui.\n"
 
 #: ../src/applets/gnome-shell/extension.js:41
 msgid "Track changes"
 msgstr "Pidä kirjaa tapahtumista"
-
-#: ../src/applets/gnome-shell/extension.js:81
-#: ../data/desktop/gpaste-settings.desktop.in.in.h:1
-#: ../libgpaste/settings/ui/gpaste-settings-ui-window.c:51
-msgid "GPaste daemon settings"
-msgstr "GPaste palvelun asetukset"
 
 #: ../src/applets/gnome-shell/extension.js:95
 msgid "(Couldn't connect to GPaste daemon)"
@@ -208,12 +216,12 @@ msgstr "GPaste-härpäkkeen esiintaikominen epäonnistui.\n"
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Palvelun uudelleenkäynnistäminen onnistui\n"
 
-#: ../src/gpasted/gpasted.c:47
+#: ../src/gpasted/gpasted.c:45
 #, c-format
 msgid "Signal %d received, exiting\n"
 msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
 
-#: ../src/gpasted/gpasted.c:55
+#: ../src/gpasted/gpasted.c:53
 msgid "Could not acquire DBus name."
 msgstr "DBus-nimen selvitys epäonnistui."
 
@@ -391,12 +399,12 @@ msgid "Manage the GPaste daemon settings"
 msgstr "Hallitse GPaste palvelun asetuksia"
 
 #. This is the date format "month/day/year time"
-#: ../libgpaste/core/gpaste-image-item.c:193
+#: ../libgpaste/core/gpaste-image-item.c:198
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: ../libgpaste/core/gpaste-image-item.c:195
+#: ../libgpaste/core/gpaste-image-item.c:200
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Kuva, %d x %d (%s)]"
@@ -406,106 +414,106 @@ msgstr "[Kuva, %d x %d (%s)]"
 msgid "[Files] "
 msgstr "[Tiedostot]"
 
-#: ../libgpaste/core/gpaste-history.c:356
+#: ../libgpaste/core/gpaste-history.c:350
 msgid "Could not create history dir"
 msgstr "Historiakansion luominen epäonnistui"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:112
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:114
 msgid "_Track clipboard changes"
 msgstr "_Pidä kirjaa leikepöydän tapahtumista"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:117
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:120
 msgid "Sync the daemon state with the _extension's one"
 msgstr "Synkronoi palvelun ja _liitännäisen tilat"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:123
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:127
 msgid "_Primary selection affects history"
 msgstr "_Maalaminen vaikuttaa historiaan"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:128
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:132
 msgid "_Synchronize clipboard with primary selection"
 msgstr "_Synkronoi leikepöytä ja maalaaminen"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:134
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:138
 msgid "_Images support"
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:139
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:143
 msgid "_Trim items"
 msgstr "_Trimmaa leikkeet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:145
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:149
 msgid "_Save history"
 msgstr "_Tallenna historia"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:150
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:154
 msgid "_Copy to end of history"
 msgstr "_Kopioi historian loppuun"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:172
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:176
 msgid "Max element size when displaying: "
 msgstr "Suurin koko elementtejä näytettäessä:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:177
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:181
 msgid "Max displayed history size: "
 msgstr "Historian suurin koko:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:182
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:186
 msgid "Max history size: "
 msgstr "Historian suurin koko:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:187
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:191
 msgid "Max text item length: "
 msgstr "Pisin sallittu tekstileikkeen pituus:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:192
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:196
 msgid "Min text item length: "
 msgstr "Lyhin sallittu tekstileikkeen pituus:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:212
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:216
 msgid "Paste and then delete the first item in history: "
 msgstr "Liitä ja poista uusin leike historiasta:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:217
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:221
 msgid "Display the history: "
 msgstr "Näytä historia:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:309
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:313
 msgid "Backup history as: "
 msgstr "Historian varmuuskopio:"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:314
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:318
 msgid "Backup"
 msgstr "Varmuuskopioi"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:322
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:326
 msgid "Ok"
 msgstr "Ok"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:342
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:346
 msgid "General behaviour"
 msgstr "Yleiset ominaisuudet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:343
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:347
 msgid "History settings"
 msgstr "Historian asetukset"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:344
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:348
 msgid "Keyboard shortcuts"
 msgstr "Pikanäppäimet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:345
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:349
 msgid "Histories"
 msgstr "Historiat"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:450
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:458
 msgid "Switch to"
 msgstr "Vaihda kohteeseen"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:455
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:463
 msgid "Delete"
 msgstr "Poista"
 

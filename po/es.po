@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2013-01-12 17:46+0100\n"
+"POT-Creation-Date: 2013-01-14 18:54+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -17,10 +17,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/gpaste-settings/gpaste-settings.vala:43
-#: ../src/applets/legacy/gpaste-applet.vala:189
-#, c-format
-msgid "Fail to register the gtk application.\n"
+#: ../src/gpaste-settings/gpaste-settings.c:53
+#: ../src/applets/gnome-shell/extension.js:81
+#: ../data/desktop/gpaste-settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "Ajustes del servicio GPaste"
+
+#: ../src/gpaste-settings/gpaste-settings.c:65
+msgid "Close"
+msgstr ""
+
+#: ../src/gpaste-settings/gpaste-settings.c:84
+#, fuzzy
+msgid "Failed to register the gtk application."
 msgstr "Fallo al registrar la aplicación gtk\n"
 
 #: ../src/applets/legacy/gpaste-applet.vala:86
@@ -57,21 +66,20 @@ msgid "Quit"
 msgstr "Salir"
 
 #: ../src/applets/legacy/gpaste-applet.vala:173 ../src/gpaste/gpaste.c:92
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:233
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:266
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:292
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:237
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:270
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:296
 msgid "Couldn't connect to GPaste daemon."
 msgstr "No se pudo conectar al servicio GPaste."
+
+#: ../src/applets/legacy/gpaste-applet.vala:189
+#, c-format
+msgid "Fail to register the gtk application.\n"
+msgstr "Fallo al registrar la aplicación gtk\n"
 
 #: ../src/applets/gnome-shell/extension.js:41
 msgid "Track changes"
 msgstr "Seguimiento de cambios"
-
-#: ../src/applets/gnome-shell/extension.js:81
-#: ../data/desktop/gpaste-settings.desktop.in.in.h:1
-#: ../libgpaste/settings/ui/gpaste-settings-ui-window.c:51
-msgid "GPaste daemon settings"
-msgstr "Ajustes del servicio GPaste"
 
 #: ../src/applets/gnome-shell/extension.js:95
 msgid "(Couldn't connect to GPaste daemon)"
@@ -219,12 +227,12 @@ msgstr "No se pudo iniciar el applet de gpaste.\n"
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Servicio reiniciado con éxito\n"
 
-#: ../src/gpasted/gpasted.c:47
+#: ../src/gpasted/gpasted.c:45
 #, c-format
 msgid "Signal %d received, exiting\n"
 msgstr "Recibida señal %d, saliendo\n"
 
-#: ../src/gpasted/gpasted.c:55
+#: ../src/gpasted/gpasted.c:53
 msgid "Could not acquire DBus name."
 msgstr "No se pudo obtener nombre en DBus"
 
@@ -407,12 +415,12 @@ msgid "Manage the GPaste daemon settings"
 msgstr "Gestionar los ajustes del servicio GPaste"
 
 #. This is the date format "month/day/year time"
-#: ../libgpaste/core/gpaste-image-item.c:193
+#: ../libgpaste/core/gpaste-image-item.c:198
 msgid "%m/%d/%y %T"
 msgstr "%d/%m/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: ../libgpaste/core/gpaste-image-item.c:195
+#: ../libgpaste/core/gpaste-image-item.c:200
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Imagen, %d x %d (%s)]"
@@ -422,106 +430,106 @@ msgstr "[Imagen, %d x %d (%s)]"
 msgid "[Files] "
 msgstr "[Ficheros] "
 
-#: ../libgpaste/core/gpaste-history.c:356
+#: ../libgpaste/core/gpaste-history.c:350
 msgid "Could not create history dir"
 msgstr "No se pudo crear directorio de historial"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:112
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:114
 msgid "_Track clipboard changes"
 msgstr "Seguimiento de cambios en el portapapeles"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:117
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:120
 msgid "Sync the daemon state with the _extension's one"
 msgstr "Sincronizar el estado del _servicio con el de la _extensión"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:123
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:127
 msgid "_Primary selection affects history"
 msgstr "Selección _principal afecta al historial"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:128
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:132
 msgid "_Synchronize clipboard with primary selection"
 msgstr "_Sincronizar el portapapeles con selección principal"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:134
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:138
 msgid "_Images support"
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:139
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:143
 msgid "_Trim items"
 msgstr "Recor_tar elementos"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:145
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:149
 msgid "_Save history"
 msgstr "_Guardar historial"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:150
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:154
 msgid "_Copy to end of history"
 msgstr "_Copiar al final del historial"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:172
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:176
 msgid "Max element size when displaying: "
 msgstr "Tamaño máximo de los elementos al visualizarlos: "
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:177
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:181
 msgid "Max displayed history size: "
 msgstr "Tamaño máximo a mostrar: "
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:182
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:186
 msgid "Max history size: "
 msgstr "Tamaño máximo del historial: "
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:187
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:191
 msgid "Max text item length: "
 msgstr "Tamaño máximo de texto"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:192
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:196
 msgid "Min text item length: "
 msgstr "Tamaño mínimo de texto"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:212
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:216
 msgid "Paste and then delete the first item in history: "
 msgstr "Pegar y luego eliminar el primer elemento del historial"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:217
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:221
 msgid "Display the history: "
 msgstr "Mostrar el historial"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:309
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:313
 msgid "Backup history as: "
 msgstr "Respaldar historial como: "
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:314
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:318
 msgid "Backup"
 msgstr "Copia de seguridad"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:322
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:326
 msgid "Ok"
 msgstr "Ok"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:342
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:346
 msgid "General behaviour"
 msgstr "Comportamiento general"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:343
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:347
 msgid "History settings"
 msgstr "Ajustes del historial"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:344
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:348
 msgid "Keyboard shortcuts"
 msgstr "Atajos de teclado "
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:345
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:349
 msgid "Histories"
 msgstr "Histórico"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:450
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:458
 msgid "Switch to"
 msgstr "Cambiar a"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:455
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:463
 msgid "Delete"
 msgstr "Suprimir"
 

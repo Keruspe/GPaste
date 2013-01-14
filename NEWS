@@ -1,5 +1,19 @@
-NEW in 2.99 (01/12/2012)
+NEW in 2.99 (14/01/2013)
 =============
+
+- Compatibility with recent development releases of gnome-shell
+- "gpaste f" now defers the file reading to the GPaste daemon
+- libgpaste-client does now fully cover the GPaste DBus API
+- libgpaste-keybinder has been ported to use XInput2
+- keybindings have been fixed
+- The gnome-shell extension has been ported to use libgpaste-client
+- A systemd user unit is now provided
+- New library: libgpaste-settings-ui
+- gpaste-settings has been ported to libgpaste-settings-ui
+- The gnome-shell extension now has a pref.js module based on libgpaste-settings-ui
+- An autostart desktop file is now provided with the legacy applet
+- gobject-introspection and vala support are now optional
+- Various code cleanup
 
 NEW in 2.9.1 (01/12/2012)
 =============
