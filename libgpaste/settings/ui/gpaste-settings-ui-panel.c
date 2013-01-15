@@ -74,7 +74,7 @@ static void
 boolean_wrapper (GtkToggleButton *togglebutton,
                  gpointer         user_data)
 {
-    G_PASTE_CALLBACK (GPasteBooleanCallback) (gtk_toggle_button_get_active (togglebutton), data->user_data);
+    G_PASTE_CALLBACK (GPasteBooleanCallback) (gtk_toggle_button_get_active (togglebutton), data->custom_data);
 }
 
 /**
@@ -134,7 +134,7 @@ static void
 range_wrapper (GtkSpinButton *spinbutton,
                gpointer       user_data)
 {
-    G_PASTE_CALLBACK (GPasteRangeCallback) (gtk_spin_button_get_value (spinbutton), data->user_data);
+    G_PASTE_CALLBACK (GPasteRangeCallback) (gtk_spin_button_get_value (spinbutton), data->custom_data);
 }
 
 /**
@@ -177,7 +177,7 @@ static void
 text_wrapper (GtkEditable *editable,
               gpointer     user_data)
 {
-    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (editable)), data->user_data);
+    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (editable)), data->custom_data);
 }
 
 /**
@@ -227,7 +227,7 @@ text_confirm_wrapper (GtkWidget *widget G_GNUC_UNUSED,
                       GdkEvent  *event G_GNUC_UNUSED,
                       gpointer   user_data)
 {
-    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (data->user_data)), data->user_data);
+    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (data->user_data)), data->custom_data);
 }
 
 /**
@@ -281,7 +281,7 @@ multi_action_wrapper (GtkWidget *widget G_GNUC_UNUSED,
 {
     G_PASTE_CALLBACK (GPasteMultiActionCallback) (gtk_combo_box_get_active_id (GTK_COMBO_BOX (data->user_data)),
                                                   gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (data->user_data2)),
-                                                  data->user_data);
+                                                  data->custom_data);
 }
 
 /**
