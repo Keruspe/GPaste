@@ -70,6 +70,7 @@ AM_LIBS = \
 
 EXTRA_DIST = \
 	autogen.sh \
+	README.md
 	ChangeLog.pre2.2.1 \
 	bindings/vapi/config.vapi \
 	$(NULL)

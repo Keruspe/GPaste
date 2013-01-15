@@ -1,3 +1,10 @@
+NEW in 2.99.1 (15/01/2013)
+=============
+
+- Fix a few typos in the conditional code for applet and extension
+- Fix make install when GPaste is not yet installed
+- Clean desktop files
+
 NEW in 2.99 (14/01/2013)
 =============
 
