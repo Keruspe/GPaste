@@ -89,11 +89,11 @@ nodist_systemduserunit_DATA = $(NULL)
 
 include libgpaste/common.mk
 include libgpaste/settings.mk
-include libgpaste/settings/ui.mk
 include libgpaste/keybinder.mk
 include libgpaste/core.mk
 include libgpaste/client.mk
 include libgpaste/daemon.mk
+include libgpaste/settings/ui.mk
 
 include bindings/gi.mk
 include bindings/vapi.mk
