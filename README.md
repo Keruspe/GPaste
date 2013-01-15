@@ -34,3 +34,6 @@ You can see everything I'll post about GPaste [there](http://www.imagination-lan
 Latest release is: [GPaste 2.99.1](http://www.imagination-land.org/posts/2013-01-15-gpaste-2.99.1-released.html).
 
 Direct link to download: <http://www.imagination-land.org/files/gpaste-2.99.1.tar.xz>
+
+Packagers should backport this patch <https://github.com/Keruspe/GPaste/commit/61947fa2b5ea6b19b2a9cdb7db2b328e4a703f85>
+for this release
