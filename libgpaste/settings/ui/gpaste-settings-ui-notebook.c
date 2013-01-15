@@ -357,7 +357,6 @@ g_paste_settings_ui_notebook_settings_changed (GSettings   *gsettings G_GNUC_UNU
     GPasteSettingsUiNotebookPrivate *priv = G_PASTE_SETTINGS_UI_NOTEBOOK (user_data)->priv;
     GPasteSettings *settings = priv->settings;
 
-    /* TODO: images support */
     if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
     else if (g_strcmp0 (key, FIFO_KEY) == 0)
