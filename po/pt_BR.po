@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2013-01-14 18:54+0100\n"
-"PO-Revision-Date: 2012-05-01 19:34-0300\n"
+"PO-Revision-Date: 2013-01-15 20:24-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -24,10 +24,9 @@ msgstr "Configurações do daemon GPaste"
 
 #: ../src/gpaste-settings/gpaste-settings.c:65
 msgid "Close"
-msgstr ""
+msgstr "Fechar"
 
 #: ../src/gpaste-settings/gpaste-settings.c:84
-#, fuzzy
 msgid "Failed to register the gtk application."
 msgstr "Falha ao registrar a aplicação gtk.\n"
 
@@ -78,7 +77,7 @@ msgstr "Falha ao registrar a aplicação gtk.\n"
 
 #: ../src/applets/gnome-shell/extension.js:41
 msgid "Track changes"
-msgstr "Monitorar alterações"
+msgstr "Monitorar a área de transferência"
 
 #: ../src/applets/gnome-shell/extension.js:95
 msgid "(Couldn't connect to GPaste daemon)"
@@ -268,12 +267,11 @@ msgstr "O nome padrão é \"history\""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:7
 msgid "Do we save the images copied to history, or only text?"
-msgstr ""
+msgstr "Salvar as imagens copiadas para o histórico ou somente o texto?"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:8
-#, fuzzy
 msgid "By default, we're saving both"
-msgstr "Por padrão, ele é salvo"
+msgstr "Por padrão, ambos são salvos"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:9
 msgid "Max displayed history size"
@@ -446,7 +444,7 @@ msgstr "_Sincronizar área de transferência com a seleção primária"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:138
 msgid "_Images support"
-msgstr ""
+msgstr "Suporte a _Imagens"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:143
 msgid "_Trim items"
