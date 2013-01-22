@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -85,6 +85,12 @@ namespace GPaste {
                         } catch (Error e) {
                             stderr.printf (_("Couldn't update history.\n"));
                         }
+                    });
+                    item.button_release_event.connect ((event) => {
+                        if (event.button != 3)
+                            return false;
+                        this.show_history ();
+                        return true;
                     });
                     this.history.add (item);
                 }
