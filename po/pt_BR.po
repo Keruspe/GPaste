@@ -28,7 +28,7 @@ msgstr "Fechar"
 
 #: ../src/gpaste-settings/gpaste-settings.c:84
 msgid "Failed to register the gtk application."
-msgstr "Falha ao registrar a aplicação gtk.\n"
+msgstr "Falha ao registrar a aplicação gtk."
 
 #: ../src/applets/legacy/gpaste-applet.vala:86
 #, c-format

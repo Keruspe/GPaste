@@ -1,3 +1,11 @@
+NEW in 2.99.2 (22/01/2013)
+=============
+
+- Fix a bug making gpaste settings ui a no-op
+- Don't close legacy applet menu when deleting an item
+- Fix vala bindings
+- Updated portuguese translation
+
 NEW in 2.99.1 (15/01/2013)
 =============
 
