@@ -72,25 +72,21 @@ namespace GPaste {
                     }
                     if (i == 0)
                         label.set_markup ("<b>" + GLib.Markup.escape_text (label.get_text ()) + "</b>");
-                    item.activate.connect (() => {
+                    item.button_release_event.connect ((event) => {
                         try {
                             switch (Gtk.get_current_event ().button.button) {
                             case 1:
                                 app.client.select (current);
-                                break;
+                                return false;
                             case 3:
                                 app.client.delete (current);
-                                break;
+                                this.show_history ();
+                                return true;
                             }
                         } catch (Error e) {
                             stderr.printf (_("Couldn't update history.\n"));
                         }
-                    });
-                    item.button_release_event.connect ((event) => {
-                        if (event.button != 3)
-                            return false;
-                        this.show_history ();
-                        return true;
+                        return false;
                     });
                     this.history.add (item);
                 }
