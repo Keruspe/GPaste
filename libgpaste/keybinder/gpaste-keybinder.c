@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -193,7 +193,7 @@ g_paste_keybinder_init (GPasteKeybinder *self)
                            g_paste_keybinder_filter,
                            self);
 
-    gint major = 2, minor = 2;
+    gint major = 2, minor = 3;
     gint xinput_error_base;
     gint xinput_event_base;
 
