@@ -130,7 +130,10 @@ GLIB_GSETTINGS
 
 m4_ifdef([GOBJECT_INTROSPECTION_CHECK],
          [GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])],
-         [enable_introspection=no])
+         [
+             AM_CONDITIONAL([HAVE_INTROSPECTION], [false])
+             enable_introspection=no
+         ])
 
 AC_ARG_ENABLE(vala, AS_HELP_STRING([--enable-vala], [Build vala bindings]), enable_vala=$enableval, enable_vala=no)
 if test x$enable_vala = xyes; then
