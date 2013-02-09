@@ -2,6 +2,7 @@
     macros.h
     make keybinder optional
     use __cleanup__
+    fix gpaste version without daemon running
 
 future:
     gpaste:
