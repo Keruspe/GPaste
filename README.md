@@ -26,6 +26,7 @@ Steps to install it after cloning:
     ./configure --sysconfdir=/etc --enable-systemd
     make
     sudo make install
+    sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 
 If you also want to build the legacy applet, you'll have to pass `--enable-vala --enable-applet` to configure.
 
