@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@ struct _GPasteKeybindingPrivate
 
     gulong                 rebind_signal;
 };
+
+static gint xinput_opcode = 0;
 
 static void
 g_paste_keybinding_change_grab (GPasteKeybinding *self,
@@ -214,19 +216,40 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 /**
  * g_paste_keybinding_notify:
  * @self: a #GPasteKeybinding instance
+ * @xevent: The current X event
  *
- * Runs the callback associated to the keybinding
+ * Runs the callback associated to the keybinding if needed
  *
  * Returns: The return value of the callback
  */
 G_PASTE_VISIBLE void
-g_paste_keybinding_notify (GPasteKeybinding *self)
+g_paste_keybinding_notify (GPasteKeybinding *self,
+                           GdkXEvent        *xevent)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
     GPasteKeybindingPrivate *priv = self->priv;
+    XGenericEventCookie cookie = ((XEvent *) xevent)->xcookie;
+    Display *display = (Display *) self->display;
 
-    priv->callback (priv->user_data);
+    if (cookie.extension == xinput_opcode)
+    {
+        XIDeviceEvent *xi_ev = (XIDeviceEvent *) cookie.data;
+
+        if (xi_ev->evtype == XI_KeyPress)
+        {
+            GdkModifierType modifiers = xi_ev->mods.effective;
+            guint keycode = xi_ev->detail;
+
+            if (keycode == priv->keycode && priv->modifiers == (priv->modifiers & modifiers))
+            {
+                XIUngrabDevice (display, 3, CurrentTime);
+                XSync (display, FALSE);
+
+                priv->callback (priv->user_data);
+            }
+        }
+    }
 }
 
 static void
@@ -274,10 +297,27 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 {
     GPasteKeybindingPrivate *priv = self->priv = G_PASTE_KEYBINDING_GET_PRIVATE (self);
 
-    self->display = gdk_x11_get_default_xdisplay ();
+    Display *display = self->display = gdk_x11_get_default_xdisplay ();
 
     priv->window = gdk_x11_window_get_xid (gdk_get_default_root_window ());
     priv->active = FALSE;
+
+    if (!xinput_opcode)
+    {
+        gint major = 2, minor = 3;
+        gint xinput_error_base;
+        gint xinput_event_base;
+
+        if (XQueryExtension (display,
+                             "XInputExtension",
+                             &xinput_opcode,
+                             &xinput_error_base,
+                             &xinput_event_base))
+        {
+            if (XIQueryVersion (display, &major, &minor) != Success)
+                g_warning ("XInput 2 not found, keybinder won't work");
+        }
+    }
 }
 
 /**

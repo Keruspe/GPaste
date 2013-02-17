@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -53,7 +53,8 @@ void            g_paste_keybinding_deactivate    (GPasteKeybinding *self);
 guint           g_paste_keybinding_get_keycode   (GPasteKeybinding *self);
 GdkModifierType g_paste_keybinding_get_modifiers (GPasteKeybinding *self);
 gboolean        g_paste_keybinding_is_active     (GPasteKeybinding *self);
-void            g_paste_keybinding_notify        (GPasteKeybinding *self);
+void            g_paste_keybinding_notify        (GPasteKeybinding *self,
+                                                  GdkXEvent        *xevent);
 
 GPasteKeybinding *g_paste_keybinding_new (GPasteSettings        *settings,
                                           const gchar           *dconf_key,
