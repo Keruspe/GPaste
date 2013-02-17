@@ -75,16 +75,15 @@ EXTRA_DIST = \
 	bindings/vapi/config.vapi \
 	$(NULL)
 
-CLEANFILES = $(NULL)
-SUFFIXES = $(NULL)
+CLEANFILES =
+SUFFIXES =
 
-bin_PROGRAMS = $(NULL)
-pkginclude_HEADERS = $(NULL)
-pkglibexec_PROGRAMS = $(NULL)
-lib_LTLIBRARIES = $(NULL)
-noinst_LTLIBRARIES = $(NULL)
-nodist_systemduserunit_DATA = $(NULL)
-
+bin_PROGRAMS =
+pkginclude_HEADERS =
+pkglibexec_PROGRAMS =
+lib_LTLIBRARIES =
+noinst_LTLIBRARIES =
+nodist_systemduserunit_DATA =
 
 # Real stuff goes in these subfiles
 
