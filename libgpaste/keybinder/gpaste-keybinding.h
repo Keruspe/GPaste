@@ -50,8 +50,6 @@ GType g_paste_keybinding_get_type (void);
 
 void            g_paste_keybinding_activate      (GPasteKeybinding *self);
 void            g_paste_keybinding_deactivate    (GPasteKeybinding *self);
-guint           g_paste_keybinding_get_keycode   (GPasteKeybinding *self);
-GdkModifierType g_paste_keybinding_get_modifiers (GPasteKeybinding *self);
 gboolean        g_paste_keybinding_is_active     (GPasteKeybinding *self);
 void            g_paste_keybinding_notify        (GPasteKeybinding *self,
                                                   GdkXEvent        *xevent);

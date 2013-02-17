@@ -162,42 +162,6 @@ g_paste_keybinding_rebind (GPasteKeybinding  *self,
 }
 
 /**
- * g_paste_keybinding_get_keycode:
- * @self: a #GPasteKeybinding instance
- *
- * Get the keycode corresponding to the binding
- *
- * Returns: a keycode or 0
- */
-G_PASTE_VISIBLE guint
-g_paste_keybinding_get_keycode (GPasteKeybinding *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
-
-    GPasteKeybindingPrivate *priv = self->priv;
-
-    return (priv->active) ? priv->keycode : 0;
-}
-
-/**
- * g_paste_keybinding_get_modifirs:
- * @self: a #GPasteKeybinding instance
- *
- * Get the modifiers required by the binding
- *
- * Returns: the modifiers required
- */
-G_PASTE_VISIBLE GdkModifierType
-g_paste_keybinding_get_modifiers (GPasteKeybinding *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
-
-    GPasteKeybindingPrivate *priv = self->priv;
-
-    return (priv->active) ? priv->modifiers : 0;
-}
-
-/**
  * g_paste_keybinding_is_active:
  * @self: a #GPasteKeybinding instance
  *
