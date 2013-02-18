@@ -1,5 +1,6 @@
 [Unit]
 Description=GPaste daemon
+After=xorg.service
 
 [Service]
 BusName=org.gnome.GPaste
