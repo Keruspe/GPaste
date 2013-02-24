@@ -20,7 +20,7 @@ A native gnome-shell extension is provided.
 
 /!\ Don't forget to run `gpaste dr` aka `gpaste daemon-reexec` after upgrading GPaste to activate new functionalities ;)
 
-Steps to install it after cloning:
+Steps to install it after cloning (skip the `./autogen.sh` part if you're building it from a tarball):
 
     ./autogen.sh
     ./configure --sysconfdir=/etc --enable-systemd
