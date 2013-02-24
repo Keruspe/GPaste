@@ -30,4 +30,5 @@ bin_gpaste_CFLAGS = \
 
 bin_gpaste_LDADD = \
 	$(libgpaste_client_la_file) \
+	$(GLIB_LIBS) \
 	$(NULL)
