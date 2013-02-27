@@ -3,9 +3,11 @@
     make keybinder optional
     use __cleanup__
     fix gpaste version without daemon running
+    shortcuts in g-c-c
 
 future:
     gpaste:
         GSubProcess
     libgpaste-client:
         specify errors types when possible in g-i
+    unity support
