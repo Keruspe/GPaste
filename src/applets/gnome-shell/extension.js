@@ -101,6 +101,7 @@ const GPasteIndicator = new Lang.Class({
 
     _showHistory: function() {
         this.menu.open(true);
+        this._killSwitch.setActive(true);
     },
 
     _createHistoryItem: function(index) {
