@@ -1,5 +1,5 @@
 {
-    "shell-version": ["3.4", "3.5.2", "3.5.3", "3.5.4", "3.5.5", "3.5.90", "3.5.91", "3.5.92", "3.6", "3.7.2", "3.7.3", "3.7.4", "3.7.5", "3.7.90"],
+    "shell-version": ["3.4", "3.6", "3.7.2", "3.7.3", "3.7.4", "3.7.5", "3.7.90", "3.7.92"],
     "uuid": "GPaste@gnome-shell-extensions.gnome.org",
     "name": "GPaste",
     "description": "Clipboard management system",
