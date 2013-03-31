@@ -85,6 +85,8 @@ lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 nodist_systemduserunit_DATA =
 
+@INTLTOOL_XML_NOMERGE_RULE@
+
 # Real stuff goes in these subfiles
 
 include libgpaste/common.mk

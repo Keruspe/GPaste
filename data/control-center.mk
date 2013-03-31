@@ -25,3 +25,7 @@ EXTRA_DIST += \
 	$(nodist_controlcenter_DATA:.xml=.xml.in) \
 	$(NULL)
 
+CLEANFILES += \
+	$(nodist_controlcenter_DATA) \
+	$(NULL)
+

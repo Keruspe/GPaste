@@ -23,7 +23,6 @@ gsettings_SCHEMAS = \
 	$(NULL)
 
 @GSETTINGS_RULES@
-@INTLTOOL_XML_RULE@
 
 $(gpaste_gschema_file:.xml=.valid): $(gpaste_gschema_file)
 	@ $(MKDIR_P) data/gsettings
