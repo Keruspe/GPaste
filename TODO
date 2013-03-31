@@ -3,7 +3,6 @@
     macros.h
     make keybinder optional
     use __cleanup__
-    shortcuts in g-c-c
 
 future:
     gpaste:
