@@ -1,8 +1,8 @@
-3.0:
+3.1:
+    XFixes
     macros.h
     make keybinder optional
     use __cleanup__
-    fix gpaste version without daemon running
     shortcuts in g-c-c
 
 future:
