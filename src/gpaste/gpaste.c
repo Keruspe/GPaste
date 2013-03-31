@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -56,6 +56,12 @@ show_help (const gchar *caller)
 }
 
 static void
+show_version (void)
+{
+    printf ("%s\n", PACKAGE_STRING);
+}
+
+static void
 show_history (GPasteClient *client,
               gboolean      raw,
               gboolean      zero,
@@ -86,6 +92,15 @@ is_help (const gchar *option)
             g_strcmp0 (option, "--help") == 0);
 }
 
+static gboolean
+is_version (const gchar *option)
+{
+    return (g_strcmp0 (option, "v") == 0 ||
+            g_strcmp0 (option, "version") == 0 ||
+            g_strcmp0 (option, "-v") == 0 ||
+            g_strcmp0 (option, "--version") == 0);
+}
+
 static void
 failure_exit (void)
 {
@@ -100,6 +115,17 @@ main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
+    if (is_help (argv[1]))
+    {
+        show_help (argv[0]);
+        return EXIT_SUCCESS;
+    }
+    else if (is_version (argv[1]))
+    {
+        show_version ();
+        return EXIT_SUCCESS;
+    }
+
     int status = EXIT_SUCCESS;
 
     g_type_init ();
@@ -109,15 +135,7 @@ main (int argc, char *argv[])
     const gchar *arg1, *arg2;
 
     if (!client)
-    {
-        if (argc == 2 && is_help (argv[1]))
-        {
-            show_help (argv[0]);
-            return EXIT_SUCCESS;
-        }
-
         failure_exit ();
-    }
 
     if (!isatty (fileno (stdin)))
     {
@@ -143,13 +161,9 @@ main (int argc, char *argv[])
             break;
         case 2:
             arg1 = argv[1];
-            if (is_help (arg1))
-            {
-                show_help (argv[0]);
-            }
-            else if (g_strcmp0 (arg1, "start") == 0 ||
-                     g_strcmp0 (arg1, "d") == 0 ||
-                     g_strcmp0 (arg1, "daemon") == 0)
+            if (g_strcmp0 (arg1, "start") == 0 ||
+                g_strcmp0 (arg1, "d") == 0 ||
+                g_strcmp0 (arg1, "daemon") == 0)
             {
                 g_paste_client_track (client, TRUE, &error);
             }
@@ -163,13 +177,6 @@ main (int argc, char *argv[])
                      g_strcmp0 (arg1, "empty") == 0)
             {
                 g_paste_client_empty (client, &error);
-            }
-            else if (g_strcmp0 (arg1, "v") == 0 ||
-                     g_strcmp0 (arg1, "version") == 0 ||
-                     g_strcmp0 (arg1, "-v") == 0 ||
-                     g_strcmp0 (arg1, "--version") == 0)
-            {
-                printf ("%s\n", PACKAGE_STRING);
             }
 #ifdef ENABLE_APPLET
             else if (g_strcmp0 (arg1, "applet") == 0)
