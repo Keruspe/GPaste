@@ -1,6 +1,7 @@
 /Makefile
 /bin/*
 !/bin/*.mk
+/data/control-center/*.xml
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
 /data/dbus/*.service

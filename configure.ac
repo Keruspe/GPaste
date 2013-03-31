@@ -157,6 +157,10 @@ PKG_CHECK_MODULES(XML, [libxml-2.0])
 PKG_CHECK_MODULES(X11, [x11 xi xtst])
 AC_CHECK_HEADERS([X11/extensions/XInput2.h])
 
+PKG_CHECK_MODULES(GNOME_CONTROL_CENTER, [gnome-keybindings])
+GNOME_KEYBINDINGS_KEYSDIR=`$PKG_CONFIG --variable keysdir gnome-keybindings`
+AC_SUBST([GNOME_KEYBINDINGS_KEYSDIR])
+
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 AC_ARG_WITH([dbusservicesdir],
             AS_HELP_STRING([--with-dbusservicesdir=DIR], [D-Bus system service directory]),

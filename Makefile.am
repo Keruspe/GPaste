@@ -105,6 +105,7 @@ include src/applets/gnome-shell.mk
 include src/applets/legacy.mk
 
 include data/completions.mk
+include data/control-center.mk
 include data/dbus.mk
 include data/desktop.mk
 include data/gsettings.mk
