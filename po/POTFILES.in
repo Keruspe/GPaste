@@ -3,7 +3,7 @@ src/applets/legacy/gpaste-applet.vala
 src/applets/gnome-shell/extension.js
 src/gpaste/gpaste.c
 src/gpasted/gpasted.c
-data/control-center/42-gpaste.xml.in
+data/control-center/42-gpaste.xml.in.in
 data/desktop/gpaste-applet.desktop.in.in
 data/desktop/gpaste-settings.desktop.in.in
 data/gsettings/org.gnome.GPaste.gschema.xml

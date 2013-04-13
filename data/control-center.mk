@@ -17,15 +17,21 @@
 
 controlcenterdir = @GNOME_KEYBINDINGS_KEYSDIR@
 
+SUFFIXES += .xml.in .xml.in.in
+.xml.in.in.xml.in:
+	@ $(MKDIR_P) data/control-center
+	@ cp $< $@
+
 nodist_controlcenter_DATA = \
 	data/control-center/42-gpaste.xml \
 	$(NULL)	
 
 EXTRA_DIST += \
-	$(nodist_controlcenter_DATA:.xml=.xml.in) \
+	$(nodist_controlcenter_DATA:.xml=.xml.in.in) \
 	$(NULL)
 
 CLEANFILES += \
 	$(nodist_controlcenter_DATA) \
+	$(nodist_controlcenter_DATA:.xml=.xml.in) \
 	$(NULL)
 

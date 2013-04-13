@@ -22,6 +22,7 @@ AM_MAKEFLAGS = --no-print-directory
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)" \
 	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
+	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
 	--enable-applet \
 	--enable-introspection \
 	--enable-vala \

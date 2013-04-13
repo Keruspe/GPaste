@@ -1,3 +1,4 @@
+data/control-center/42-gpaste.xml.in
 data/desktop/gpaste-applet.desktop.in
 data/desktop/gpaste-settings.desktop.in
 src/applets/legacy/gpaste-applet.c

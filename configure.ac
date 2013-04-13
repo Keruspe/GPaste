@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([GPaste],[2.99.2],[Marc-Antoine@Perennou.com],[gpaste])
+AC_INIT([GPaste],[3.0],[Marc-Antoine@Perennou.com],[gpaste])
 
 INTLTOOL_REQUIRED="0.50.0"
 PKGCONFIG_REQUIRED="0.22"
@@ -157,10 +157,11 @@ PKG_CHECK_MODULES(XML, [libxml-2.0])
 PKG_CHECK_MODULES(X11, [x11 xi xtst])
 AC_CHECK_HEADERS([X11/extensions/XInput2.h])
 
-PKG_CHECK_MODULES(GNOME_CONTROL_CENTER, [gnome-keybindings], [
-    GNOME_KEYBINDINGS_KEYSDIR=`$PKG_CONFIG --variable keysdir gnome-keybindings`
-])
-AC_SUBST([GNOME_KEYBINDINGS_KEYSDIR])
+AC_ARG_WITH([controlcenterdir],
+            AS_HELP_STRING([--with-controlcenterdir=DIR], [Gnome control-center keybindings directory]),
+            [],
+            [PKG_CHECK_MODULES(GNOME_CONTROL_CENTER, [gnome-keybindings], [with_controlcenterdir=`$PKG_CONFIG --variable keysdir gnome-keybindings`])])
+AC_SUBST([controlcenterdir], [$with_controlcenterdir])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 AC_ARG_WITH([dbusservicesdir],
