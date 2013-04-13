@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2013-01-14 18:54+0100\n"
+"POT-Creation-Date: 2013-04-13 13:45+0200\n"
 "PO-Revision-Date: 2013-01-15 20:24-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -30,47 +30,47 @@ msgstr "Fechar"
 msgid "Failed to register the gtk application."
 msgstr "Falha ao registrar a aplicação gtk."
 
-#: ../src/applets/legacy/gpaste-applet.vala:86
+#: ../src/applets/legacy/gpaste-applet.vala:87
 #, c-format
 msgid "Couldn't update history.\n"
 msgstr "Não foi possível atualizar o histórico.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:93
+#: ../src/applets/legacy/gpaste-applet.vala:95
 #: ../src/applets/gnome-shell/extension.js:95
 msgid "(Empty)"
 msgstr "(Vazio)"
 
-#: ../src/applets/legacy/gpaste-applet.vala:111
+#: ../src/applets/legacy/gpaste-applet.vala:113
 msgid "Settings"
 msgstr "Configurações"
 
-#: ../src/applets/legacy/gpaste-applet.vala:116
+#: ../src/applets/legacy/gpaste-applet.vala:118
 #, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "Não foi possível abrir o gpaste-settings.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:120
+#: ../src/applets/legacy/gpaste-applet.vala:122
 #: ../src/applets/gnome-shell/extension.js:52
 msgid "Empty history"
 msgstr "Esvaziar histórico"
 
-#: ../src/applets/legacy/gpaste-applet.vala:125
+#: ../src/applets/legacy/gpaste-applet.vala:127
 #, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Não foi possível esvaziar o histórico.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:129
+#: ../src/applets/legacy/gpaste-applet.vala:131
 msgid "Quit"
 msgstr "Sair"
 
-#: ../src/applets/legacy/gpaste-applet.vala:173 ../src/gpaste/gpaste.c:92
+#: ../src/applets/legacy/gpaste-applet.vala:175 ../src/gpaste/gpaste.c:107
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:237
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:270
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:296
 msgid "Couldn't connect to GPaste daemon."
 msgstr "Não foi possível se conectar ao daemon do GPaste."
 
-#: ../src/applets/legacy/gpaste-applet.vala:189
+#: ../src/applets/legacy/gpaste-applet.vala:191
 #, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Falha ao registrar a aplicação gtk.\n"
@@ -208,12 +208,12 @@ msgstr "%s version: mostra a versão\n"
 msgid "%s help: display this help\n"
 msgstr "%s help: mostra esta ajuda\n"
 
-#: ../src/gpaste/gpaste.c:180
+#: ../src/gpaste/gpaste.c:187
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Não foi possível abrir o gpaste-applet.\n"
 
-#: ../src/gpaste/gpaste.c:199
+#: ../src/gpaste/gpaste.c:206
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "O daemon foi reiniciado com sucesso\n"
@@ -230,6 +230,28 @@ msgstr "Não foi possível obter um nome DBus."
 #: ../src/gpasted/gpasted.c:134
 msgid "Could not register DBus service."
 msgstr "Não foi possível registrar o serviço DBus."
+
+#: ../data/control-center/42-gpaste.xml.in.h:1
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:216
+msgid "Paste and then delete the first item in history: "
+msgstr "Colar e apagar o primeiro item do histórico: "
+
+#: ../data/control-center/42-gpaste.xml.in.h:2
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:221
+msgid "Display the history: "
+msgstr "Mostrar histórico: "
+
+#: ../data/desktop/gpaste-applet.desktop.in.in.h:1
+msgid "GPaste Applet"
+msgstr "Applet do GPaste"
+
+#: ../data/desktop/gpaste-applet.desktop.in.in.h:2
+msgid "Tray icon to manage GPaste"
+msgstr "Ícone da bandeja para gerenciar o GPaste"
+
+#: ../data/desktop/gpaste-settings.desktop.in.in.h:2
+msgid "Manage the GPaste daemon settings"
+msgstr "Gerenciar as configurações do daemon GPaste"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"
@@ -394,18 +416,6 @@ msgstr ""
 "Aparar significa que espaços em branco antes e depois do texto serão "
 "removidos. Por padrão, é deixado como está."
 
-#: ../data/desktop/gpaste-applet.desktop.in.in.h:1
-msgid "GPaste Applet"
-msgstr "Applet do GPaste"
-
-#: ../data/desktop/gpaste-applet.desktop.in.in.h:2
-msgid "Tray icon to manage GPaste"
-msgstr "Ícone da bandeja para gerenciar o GPaste"
-
-#: ../data/desktop/gpaste-settings.desktop.in.in.h:2
-msgid "Manage the GPaste daemon settings"
-msgstr "Gerenciar as configurações do daemon GPaste"
-
 #. This is the date format "month/day/year time"
 #: ../libgpaste/core/gpaste-image-item.c:198
 msgid "%m/%d/%y %T"
@@ -478,14 +488,6 @@ msgstr "Tamanho máximo do item de texto:"
 msgid "Min text item length: "
 msgstr "Tamanho mínimo do item de texto:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:216
-msgid "Paste and then delete the first item in history: "
-msgstr "Colar e apagar o primeiro item do histórico: "
-
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:221
-msgid "Display the history: "
-msgstr "Mostrar histórico: "
-
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:313
 msgid "Backup history as: "
 msgstr "Backup do histórico como: "
@@ -516,12 +518,12 @@ msgid "Histories"
 msgstr "Históricos"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:458
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:457
 msgid "Switch to"
 msgstr "Alternar para"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:463
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:462
 msgid "Delete"
 msgstr "Apagar"
 
