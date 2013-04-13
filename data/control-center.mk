@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-controlcenterdir = @GNOME_KEYBINDINGS_KEYSDIR@
-
 SUFFIXES += .xml.in .xml.in.in
 .xml.in.in.xml.in:
 	@ $(MKDIR_P) data/control-center
