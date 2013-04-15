@@ -160,7 +160,7 @@ AC_CHECK_HEADERS([X11/extensions/XInput2.h])
 AC_ARG_WITH([controlcenterdir],
             AS_HELP_STRING([--with-controlcenterdir=DIR], [Gnome control-center keybindings directory]),
             [],
-            [PKG_CHECK_MODULES(GNOME_CONTROL_CENTER, [gnome-keybindings], [with_controlcenterdir=`$PKG_CONFIG --variable keysdir gnome-keybindings`])])
+            [with_controlcenterdir=`$PKG_CONFIG --variable keysdir gnome-keybindings`])
 AC_SUBST([controlcenterdir], [$with_controlcenterdir])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
