@@ -1,3 +1,9 @@
+NEW in 3.0.2 (01/06/2013)
+=============
+
+- Fix build without gnome-control-center installed
+- Fix focus when using <Ctrl><Alt><H< in gnome-shel extension
+
 NEW in 3.0.1 (13/04/2013)
 =============
 
