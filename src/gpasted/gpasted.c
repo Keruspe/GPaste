@@ -60,7 +60,7 @@ reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
         gpointer      user_data G_GNUC_UNUSED)
 {
     g_main_loop_quit (main_loop);
-    execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
+    //execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
 }
 
 int
