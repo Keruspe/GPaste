@@ -29,30 +29,30 @@ static void
 show_help (const gchar *caller)
 {
     printf (_("Usage:\n"));
-    printf (_("%s [history]: print the history with indexes\n"), caller);
-    printf (_("%s backup-history <name>: backup current history\n"), caller);
-    printf (_("%s switch-history <name>: switch to another history\n"), caller);
-    printf (_("%s delete-history <name>: delete a history\n"), caller);
-    printf (_("%s list-histories: list available histories\n"), caller);
-    printf (_("%s raw-history: print the history without indexes\n"), caller);
-    printf (_("%s zero-history: print the history with NUL as separator\n"), caller);
-    printf (_("%s add <text>: set text to clipboard\n"), caller);
-    printf (_("%s get <number>: get the <number>th item from the history\n"), caller);
-    printf (_("%s select <number>: set the <number>th item from the history to the clipboard\n"), caller);
-    printf (_("%s delete <number>: delete <number>th item of the history\n"), caller);
-    printf (_("%s file <path>: put the content of the file at <path> into the clipboard\n"), caller);
-    printf (_("whatever | %s: set the output of whatever to clipboard\n"), caller);
-    printf (_("%s empty: empty the history\n"), caller);
-    printf (_("%s start: start tracking clipboard changes\n"), caller);
-    printf (_("%s stop: stop tracking clipboard changes\n"), caller);
-    printf (_("%s quit: alias for stop\n"), caller);
-    printf (_("%s daemon-reexec: reexecute the daemon (after upgrading...)\n"), caller);
-    printf (_("%s settings: launch the configuration tool\n"), caller);
+    printf (_("  %s [history]: print the history with indexes\n"), caller);
+    printf (_("  %s backup-history <name>: backup current history\n"), caller);
+    printf (_("  %s switch-history <name>: switch to another history\n"), caller);
+    printf (_("  %s delete-history <name>: delete a history\n"), caller);
+    printf (_("  %s list-histories: list available histories\n"), caller);
+    printf (_("  %s raw-history: print the history without indexes\n"), caller);
+    printf (_("  %s zero-history: print the history with NUL as separator\n"), caller);
+    printf (_("  %s add <text>: set text to clipboard\n"), caller);
+    printf (_("  %s get <number>: get the <number>th item from the history\n"), caller);
+    printf (_("  %s select <number>: set the <number>th item from the history to the clipboard\n"), caller);
+    printf (_("  %s delete <number>: delete <number>th item of the history\n"), caller);
+    printf (_("  %s file <path>: put the content of the file at <path> into the clipboard\n"), caller);
+    printf (_("  whatever | %s: set the output of whatever to clipboard\n"), caller);
+    printf (_("  %s empty: empty the history\n"), caller);
+    printf (_("  %s start: start tracking clipboard changes\n"), caller);
+    printf (_("  %s stop: stop tracking clipboard changes\n"), caller);
+    printf (_("  %s quit: alias for stop\n"), caller);
+    printf (_("  %s daemon-reexec: reexecute the daemon (after upgrading...)\n"), caller);
+    printf (_("  %s settings: launch the configuration tool\n"), caller);
 #ifdef ENABLE_APPLET
-    printf ("%s applet: launch the applet\n", caller);
+    printf (_("  %s applet: launch the applet\n"), caller);
 #endif
-    printf (_("%s version: display the version\n"), caller);
-    printf (_("%s help: display this help\n"), caller);
+    printf (_("  %s version: display the version\n"), caller);
+    printf (_("  %s help: display this help\n"), caller);
 }
 
 static void
