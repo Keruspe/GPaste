@@ -25,6 +25,7 @@ const Gio = imports.gi.Gio;
 const Pango = imports.gi.Pango;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
+const St = imports.gi.St;
 const Gettext = imports.gettext;
 const GPaste = imports.gi.GPaste;
 
@@ -34,10 +35,16 @@ const OBJECT_PATH = '/org/gnome/GPaste';
 
 const GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
-    Extends: PanelMenu.SystemStatusButton,
+    Extends: PanelMenu.Button,
 
     _init: function() {
-        this.parent('edit-paste-symbolic');
+        this.parent(0.0, "GPaste");
+
+        this.actor.add_child(new St.Icon({
+            icon_name: 'edit-paste-symbolic',
+            style_class: 'system-status-icon'
+        }));
+
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._client = new GPaste.Client();
@@ -105,19 +112,19 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _createHistoryItem: function(index) {
-        let item = new PopupMenu.PopupAlternatingMenuItem("");
+        let item = new PopupMenu.PopupMenuItem("");
         item.actor.set_style_class_name('popup-menu-item');
         let label = item.label;
         label.clutter_text.max_length = 60;
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         item.connect('activate', Lang.bind(this, function(actor, event) {
-            if (item.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
+            //if (item.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
                 this._select(index);
                 return false;
-            } else {
-                this._delete(index);
-                return true;
-            }
+            //} else {
+            //    this._delete(index);
+            //    return true;
+            //}
         }));
         return item;
     },
@@ -137,7 +144,7 @@ const GPasteIndicator = new Lang.Class({
     _updateHistoryItem: function(index, element) {
         let displayStr = element.replace(/\n/g, ' ');
         let altDisplayStr = _("delete: %s").format(displayStr);
-        this._history[index].updateText(displayStr, altDisplayStr);
+        this._history[index].label.set_text (displayStr);
         this._history[index].actor.show();
     },
 
