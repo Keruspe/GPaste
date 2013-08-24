@@ -24,11 +24,7 @@
 #include <glib.h>
 #include <string.h>
 
-#define G_PASTE_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_DAEMON, GPasteDaemonPrivate))
-
 #define DEFAULT_HISTORY "history"
-
-G_DEFINE_TYPE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
 #define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num,error)           \
     GPasteDaemonPrivate *priv = self->priv;                         \
@@ -80,6 +76,8 @@ struct _GPasteDaemonPrivate
 
     gulong                   c_signals[C_LAST_SIGNAL];
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
 enum
 {
@@ -649,8 +647,6 @@ g_paste_daemon_finalize (GObject *object)
 static void
 g_paste_daemon_class_init (GPasteDaemonClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteDaemonPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_daemon_dispose;
@@ -663,7 +659,7 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
 static void
 g_paste_daemon_init (GPasteDaemon *self)
 {
-    GPasteDaemonPrivate *priv = self->priv = G_PASTE_DAEMON_GET_PRIVATE (self);
+    GPasteDaemonPrivate *priv = self->priv = g_paste_daemon_get_instance_private (self);
     GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
 
     priv->id_on_bus = 0;
