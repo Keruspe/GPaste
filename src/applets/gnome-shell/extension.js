@@ -130,6 +130,11 @@ const GPasteMenuItem = new Lang.Class({
         });
 
         this.actor.add(new GPasteDeleteMenuItemPart(client, index), { expand: true, x_align: St.Align.END });
+    },
+
+    setText: function(text) {
+        this.label.set_text(text);
+        this.actor.show();
     }
 });
 
@@ -168,32 +173,33 @@ const GPasteIndicator = new Lang.Class({
 
         this._client = new GPaste.Client();
 
-        this._killSwitch = new GPasteStateSwitch(this._client);
+        this._noHistory = new GPasteDummyHistory();
+
+        this.menu.addMenuItem(new GPasteStateSwitch(this._client));
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this.menu.addMenuItem(this._noHistory);
 
         this._history = [];
-        for (let index = 0; index < 20; ++index)
-            this._history[index] = new GPasteMenuItem(this._client, index);
+        for (let index = 0; index < 20; ++index) {
+            let item = new GPasteMenuItem(this._client, index);
+            this._history[index] = item;
+            this.menu.addMenuItem(item);
+        }
         this._history[0].label.set_style("font-weight: bold;");
-
-        this._noHistory = new GPasteDummyHistory();
 
         this._emptyHistory = new GPasteEmptyHistoryMenuItem(this._client);
 
-        this._fillMenu();
-
-        this._client.connect('changed', Lang.bind(this, this._updateHistory));
-        this._client.connect('show-history', Lang.bind(this, this._showHistory));
-    },
-
-    _fillMenu: function() {
-        this.menu.addMenuItem(this._killSwitch);
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._addHistoryItems();
-        this.menu.addMenuItem(this._noHistory);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addMenuItem(this._emptyHistory);
         this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
+
         this._updateHistory();
+
+        this._client.connect('changed', Lang.bind(this, this._updateHistory));
+        this._client.connect('show-history', Lang.bind(this, function() {
+            this.menu.open(true);
+            this.menu.firstMenuItem.setActive(true);
+        }));
     },
 
     _updateHistory: function() {
@@ -201,7 +207,7 @@ const GPasteIndicator = new Lang.Class({
         if (history != null && history.length != 0) {
             let limit = Math.min(history.length, this._history.length);
             for (let index = 0; index < limit; ++index)
-                this._updateHistoryItem(index, history[index]);
+                this._history[index].setText(history[index].replace(/\n/g, ' '));
             this._hideHistory(limit);
             this._noHistory.actor.hide();
             this._emptyHistory.actor.show();
@@ -211,23 +217,6 @@ const GPasteIndicator = new Lang.Class({
             this._emptyHistory.actor.hide();
             this._noHistory.actor.show();
         }
-    },
-
-    _showHistory: function() {
-        this.menu.open(true);
-        this.menu.firstMenuItem.setActive(true);
-    },
-
-    _addHistoryItems: function() {
-        for (let index = 0; index < this._history.length; ++index)
-            this.menu.addMenuItem(this._history[index]);
-    },
-
-    _updateHistoryItem: function(index, element) {
-        let displayStr = element.replace(/\n/g, ' ');
-        let altDisplayStr = _("delete: %s").format(displayStr);
-        this._history[index].label.set_text (displayStr);
-        this._history[index].actor.show();
     },
 
     _hideHistory: function(startIndex) {
