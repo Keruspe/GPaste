@@ -32,6 +32,26 @@ const _ = Gettext.domain('GPaste').gettext;
 const BUS_NAME = 'org.gnome.GPaste';
 const OBJECT_PATH = '/org/gnome/GPaste';
 
+const GPasteStatusIcon = new Lang.Class({
+    Name: 'GPasteStatusIcon',
+    Extends: St.BoxLayout,
+
+    _init: function() {
+        this.parent({ style_class: 'panel-status-menu-box' });
+
+        this.add_child(new St.Icon({
+            icon_name: 'edit-paste-symbolic',
+            style_class: 'system-status-icon'
+        }));
+
+        this.add_child(new St.Label({
+            text: '\u25BE',
+            y_expand: true,
+            y_align: Clutter.ActorAlign.CENTER
+        }));
+    }
+});
+
 const GPasteDeleteButton = new Lang.Class({
     Name: 'GPasteDeleteButton',
     Extends: St.Button,
@@ -98,17 +118,7 @@ const GPasteIndicator = new Lang.Class({
     _init: function() {
         this.parent(0.0, "GPaste");
 
-        let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
-        hbox.add_child(new St.Icon({
-            icon_name: 'edit-paste-symbolic',
-            style_class: 'system-status-icon'
-        }));
-        hbox.add_child(new St.Label({
-            text: '\u25BE',
-            y_expand: true,
-            y_align: Clutter.ActorAlign.CENTER
-        }));
-        this.actor.add_child(hbox);
+        this.actor.add_child(new GPasteStatusIcon());
 
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
@@ -124,14 +134,6 @@ const GPasteIndicator = new Lang.Class({
         this._emptyHistory = new PopupMenu.PopupMenuItem(_("Empty history"));
         this._emptyHistory.connect('activate', Lang.bind(this, this._empty));
         this._fillMenu();
-    },
-
-    _select: function(index) {
-        this._client.select(index);
-    },
-
-    _delete: function(index) {
-        this._client.delete(index);
     },
 
     _empty: function() {
