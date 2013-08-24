@@ -52,6 +52,28 @@ const GPasteStatusIcon = new Lang.Class({
     }
 });
 
+const GPasteStateSwitch = new Lang.Class({
+    Name: 'GPasteStateSwitch',
+    Extends: PopupMenu.PopupSwitchMenuItem,
+
+    _init: function(client) {
+        this.parent(_("Track changes"), client.is_active());
+
+        this._fromDaemon = false;
+
+        client.connect('tracking', Lang.bind(this, function(c, state) {
+            this._fromDaemon = true;
+            this.setToggleState(state);
+            this._fromDaemon = false;
+        }));
+
+        this.connect('toggled', Lang.bind(this, function() {
+            if (!this._fromDaemon)
+                client.track(this.state);
+        }));
+    }
+});
+
 const GPasteDeleteButton = new Lang.Class({
     Name: 'GPasteDeleteButton',
     Extends: St.Button,
@@ -111,25 +133,14 @@ const GPasteMenuItem = new Lang.Class({
     }
 });
 
-const GPasteStateSwitch = new Lang.Class({
-    Name: 'GPasteStateSwitch',
-    Extends: PopupMenu.PopupSwitchMenuItem,
+const GPasteDummyHistory = new Lang.Class({
+    Name: 'GPasteDummyHistory',
+    Extends: PopupMenu.PopupMenuItem,
 
-    _init: function(client) {
-        this.parent(_("Track changes"), client.is_active());
+    _init: function() {
+        this.parent("");
 
-        this._fromDaemon = false;
-
-        client.connect('tracking', Lang.bind(this, function(c, state) {
-            this._fromDaemon = true;
-            this.setToggleState(state);
-            this._fromDaemon = false;
-        }));
-
-        this.connect('toggled', Lang.bind(this, function() {
-            if (!this._fromDaemon);
-                client.track(this.state);
-        }));
+        this.setSensitive(false);
     }
 });
 
@@ -151,8 +162,8 @@ const GPasteIndicator = new Lang.Class({
             this._history[index] = new GPasteMenuItem(this._client, index);
         this._history[0].label.set_style("font-weight: bold;");
 
-        this._noHistory = new PopupMenu.PopupMenuItem("");
-        this._noHistory.setSensitive(false);
+        this._noHistory = new GPasteDummyHistory();
+
         this._emptyHistory = new PopupMenu.PopupMenuItem(_("Empty history"));
         this._emptyHistory.connect('activate', Lang.bind(this, this._empty));
         this._fillMenu();
