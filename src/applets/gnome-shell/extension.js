@@ -113,19 +113,26 @@ const GPasteIndicator = new Lang.Class({
 
     _createHistoryItem: function(index) {
         let item = new PopupMenu.PopupMenuItem("");
-        item.actor.set_style_class_name('popup-menu-item');
         let label = item.label;
         label.clutter_text.max_length = 60;
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         item.connect('activate', Lang.bind(this, function(actor, event) {
-            //if (item.state == PopupMenu.PopupAlternatingMenuItemState.DEFAULT) {
-                this._select(index);
-                return false;
-            //} else {
-            //    this._delete(index);
-            //    return true;
-            //}
+            this._select(index);
+            return false;
         }));
+        let deleteItem = new St.Button({
+            x_align: St.Align.END,
+            x_fill: true
+        });
+        deleteItem.child = new St.Icon({
+            icon_name: 'edit-delete-symbolic',
+            style_class: 'system-status-icon'
+        });
+        deleteItem.connect('clicked', Lang.bind(this, function(actor, event) {
+            this._delete(index);
+            return true;
+        }));
+        item.actor.insert_child_at_index(deleteItem, item.actor.get_n_children() - 1);
         return item;
     },
 
@@ -133,7 +140,7 @@ const GPasteIndicator = new Lang.Class({
         this._history = [];
         for (let index = 0; index < 20; ++index)
             this._history[index] = this._createHistoryItem(index);
-        this._history[0].actor.set_style("font-weight: bold;");
+        this._history[0].label.set_style("font-weight: bold;");
     },
 
     _addHistoryItems: function() {
