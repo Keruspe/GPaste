@@ -21,14 +21,12 @@
 
 #include <glib/gi18n-lib.h>
 
-#define G_PASTE_URIS_ITEM_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_URIS_ITEM, GPasteUrisItemPrivate))
-
-G_DEFINE_TYPE (GPasteUrisItem, g_paste_uris_item, G_PASTE_TYPE_TEXT_ITEM)
-
 struct _GPasteUrisItemPrivate
 {
     gchar **uris;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteUrisItem, g_paste_uris_item, G_PASTE_TYPE_TEXT_ITEM)
 
 /**
  * g_paste_uris_item_get_uris:
@@ -75,8 +73,6 @@ g_paste_uris_item_finalize (GObject *object)
 static void
 g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteUrisItemPrivate));
-
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
     item_class->equals = g_paste_uris_item_equals;
@@ -88,7 +84,7 @@ g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
 static void
 g_paste_uris_item_init (GPasteUrisItem *self)
 {
-    self->priv = G_PASTE_URIS_ITEM_GET_PRIVATE (self);
+    self->priv = g_paste_uris_item_get_instance_private (self);
 }
 
 /**

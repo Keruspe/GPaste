@@ -22,10 +22,6 @@
 #include "gpaste-text-item.h"
 #include "gpaste-uris-item.h"
 
-#define G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_CLIPBOARDS_MANAGER, GPasteClipboardsManagerPrivate))
-
-G_DEFINE_TYPE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)
-
 struct _GPasteClipboardsManagerPrivate
 {
     GSList         *clipboards;
@@ -34,6 +30,8 @@ struct _GPasteClipboardsManagerPrivate
 
     gulong          selected_signal;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)
 
 /**
  * g_paste_clipboards_manager_add_clipboard:
@@ -250,8 +248,6 @@ g_paste_clipboards_manager_finalize (GObject *object)
 static void
 g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteClipboardsManagerPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_clipboards_manager_dispose;
@@ -261,7 +257,7 @@ g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 static void
 g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 {
-    GPasteClipboardsManagerPrivate *priv = self->priv = G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE (self);
+    GPasteClipboardsManagerPrivate *priv = self->priv = g_paste_clipboards_manager_get_instance_private (self);
 
     priv->clipboards = NULL;
 }

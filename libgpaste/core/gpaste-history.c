@@ -26,10 +26,6 @@
 #include <libxml/xmlreader.h>
 #include <libxml/xmlwriter.h>
 
-#define G_PASTE_HISTORY_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_HISTORY, GPasteHistoryPrivate))
-
-G_DEFINE_TYPE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
-
 struct _GPasteHistoryPrivate
 {
     GPasteSettings *settings;
@@ -37,6 +33,8 @@ struct _GPasteHistoryPrivate
 
     gulong          changed_signal;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
 
 enum
 {
@@ -611,8 +609,6 @@ g_paste_history_finalize (GObject *object)
 static void
 g_paste_history_class_init (GPasteHistoryClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteHistoryPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_history_dispose;
@@ -642,7 +638,7 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
 static void
 g_paste_history_init (GPasteHistory *self)
 {
-    GPasteHistoryPrivate *priv = self->priv = G_PASTE_HISTORY_GET_PRIVATE (self);
+    GPasteHistoryPrivate *priv = self->priv = g_paste_history_get_instance_private (self);
 
     priv->history = NULL;
 

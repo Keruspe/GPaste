@@ -23,10 +23,6 @@
 
 #include <string.h>
 
-#define G_PASTE_CLIPBOARD_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_CLIPBOARD, GPasteClipboardPrivate))
-
-G_DEFINE_TYPE (GPasteClipboard, g_paste_clipboard, G_TYPE_OBJECT)
-
 struct _GPasteClipboardPrivate
 {
     GdkAtom target;
@@ -35,6 +31,8 @@ struct _GPasteClipboardPrivate
     gchar *text;
     gchar *image_checksum;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboard, g_paste_clipboard, G_TYPE_OBJECT)
 
 /**
  * g_paste_clipboard_get_target:
@@ -353,8 +351,6 @@ g_paste_clipboard_finalize (GObject *object)
 static void
 g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteClipboardPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_clipboard_dispose;
@@ -364,7 +360,7 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 static void
 g_paste_clipboard_init (GPasteClipboard *self)
 {
-    GPasteClipboardPrivate *priv = self->priv = G_PASTE_CLIPBOARD_GET_PRIVATE (self);
+    GPasteClipboardPrivate *priv = self->priv = g_paste_clipboard_get_instance_private (self);
 
     priv->text = NULL;
     priv->image_checksum = NULL;

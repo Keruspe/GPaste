@@ -22,16 +22,14 @@
 #include <glib/gi18n-lib.h>
 #include <sys/stat.h>
 
-#define G_PASTE_IMAGE_ITEM_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_IMAGE_ITEM, GPasteImageItemPrivate))
-
-G_DEFINE_TYPE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_ITEM)
-
 struct _GPasteImageItemPrivate
 {
     gchar     *checksum;
     GDateTime *date;
     GdkPixbuf *image;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_ITEM)
 
 /**
  * g_paste_image_item_get_checksum:
@@ -149,8 +147,6 @@ g_paste_image_item_finalize (GObject *object)
 static void
 g_paste_image_item_class_init (GPasteImageItemClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteImageItemPrivate));
-
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
     item_class->equals = g_paste_image_item_equals;
@@ -166,7 +162,7 @@ g_paste_image_item_class_init (GPasteImageItemClass *klass)
 static void
 g_paste_image_item_init (GPasteImageItem *self)
 {
-    self->priv = G_PASTE_IMAGE_ITEM_GET_PRIVATE (self);
+    self->priv = g_paste_image_item_get_instance_private (self);
 }
 
 static GPasteImageItem *
