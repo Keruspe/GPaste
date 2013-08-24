@@ -25,6 +25,7 @@ const Gio = imports.gi.Gio;
 const Pango = imports.gi.Pango;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
+const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 const Gettext = imports.gettext;
 const GPaste = imports.gi.GPaste;
@@ -113,17 +114,21 @@ const GPasteIndicator = new Lang.Class({
 
     _createHistoryItem: function(index) {
         let item = new PopupMenu.PopupMenuItem("");
-        let label = item.label;
-        label.clutter_text.max_length = 60;
-        label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        let text = item.label.clutter_text;
+        text.max_length = 60;
+        text.ellipsize = Pango.EllipsizeMode.END;
         item.connect('activate', Lang.bind(this, function(actor, event) {
             this._select(index);
+        }));
+        item.actor.connect('key-press-event', Lang.bind(this, function(actor, event) {
+            let symbol = event.get_key_symbol();
+            if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
+                this._delete(index);
+                return true;
+            }
             return false;
         }));
-        let deleteItem = new St.Button({
-            x_align: St.Align.END,
-            x_fill: true
-        });
+        let deleteItem = new St.Button();
         deleteItem.child = new St.Icon({
             icon_name: 'edit-delete-symbolic',
             style_class: 'system-status-icon'
