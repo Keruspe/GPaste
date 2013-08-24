@@ -22,10 +22,6 @@
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
-#define G_PASTE_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_KEYBINDING, GPasteKeybindingPrivate))
-
-G_DEFINE_TYPE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
-
 struct _GPasteKeybindingPrivate
 {
     gchar                 *binding;
@@ -40,6 +36,8 @@ struct _GPasteKeybindingPrivate
 
     gulong                 rebind_signal;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 
 static gint xinput_opcode = 0;
 
@@ -248,8 +246,6 @@ g_paste_keybinding_finalize (GObject *object)
 static void
 g_paste_keybinding_class_init (GPasteKeybindingClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteKeybindingPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_keybinding_dispose;
@@ -259,7 +255,7 @@ g_paste_keybinding_class_init (GPasteKeybindingClass *klass)
 static void
 g_paste_keybinding_init (GPasteKeybinding *self)
 {
-    GPasteKeybindingPrivate *priv = self->priv = G_PASTE_KEYBINDING_GET_PRIVATE (self);
+    GPasteKeybindingPrivate *priv = self->priv = g_paste_keybinding_get_instance_private (self);
 
     Display *display = self->display = gdk_x11_get_default_xdisplay ();
 

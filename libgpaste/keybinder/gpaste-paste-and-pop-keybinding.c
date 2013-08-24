@@ -23,8 +23,6 @@
 
 #include <X11/extensions/XTest.h>
 
-#define G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING, GPastePasteAndPopKeybindingPrivate))
-
 #define PASTE_AND_POP_WATCH_CLIPBOARD(clipboard)                     \
     gtk_clipboard_set_with_data (gtk_clipboard_get (clipboard),      \
                                  targets,                            \
@@ -33,12 +31,12 @@
                                  paste_and_pop_clear_clipboard_data, \
                                  data);
 
-G_DEFINE_TYPE (GPastePasteAndPopKeybinding, g_paste_paste_and_pop_keybinding, G_PASTE_TYPE_KEYBINDING)
-
 struct _GPastePasteAndPopKeybindingPrivate
 {
     GPasteHistory *history;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPastePasteAndPopKeybinding, g_paste_paste_and_pop_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
 g_paste_paste_and_pop_keybinding_dispose (GObject *object)
@@ -58,15 +56,13 @@ g_paste_paste_and_pop_keybinding_dispose (GObject *object)
 static void
 g_paste_paste_and_pop_keybinding_class_init (GPastePasteAndPopKeybindingClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPastePasteAndPopKeybindingPrivate));
-
     G_OBJECT_CLASS (klass)->dispose = g_paste_paste_and_pop_keybinding_dispose;
 }
 
 static void
 g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self)
 {
-    self->priv = G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE (self);
+    self->priv = g_paste_paste_and_pop_keybinding_get_instance_private (self);
 }
 
 static void

@@ -21,14 +21,12 @@
 
 #include <gdk/gdk.h>
 
-#define G_PASTE_KEYBINDER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_KEYBINDER, GPasteKeybinderPrivate))
-
-G_DEFINE_TYPE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
-
 struct _GPasteKeybinderPrivate
 {
     GSList  *keybindings;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 
 /**
  * g_paste_keybinder_add_keybinding:
@@ -139,15 +137,13 @@ g_paste_keybinder_dispose (GObject *object)
 static void
 g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteKeybinderPrivate));
-
     G_OBJECT_CLASS (klass)->dispose = g_paste_keybinder_dispose;
 }
 
 static void
 g_paste_keybinder_init (GPasteKeybinder *self)
 {
-    GPasteKeybinderPrivate *priv = self->priv = G_PASTE_KEYBINDER_GET_PRIVATE (self);
+    GPasteKeybinderPrivate *priv = self->priv = g_paste_keybinder_get_instance_private (self);
 
     priv->keybindings = NULL;
 
