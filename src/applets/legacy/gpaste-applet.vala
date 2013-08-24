@@ -28,7 +28,7 @@ namespace GPaste {
         public Window(Main app) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
             this.application = app;
-            this.tray_icon = new Gtk.StatusIcon.from_stock (Gtk.Stock.PASTE);
+            this.tray_icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
             this.tray_icon.set_tooltip_text ("GPaste");
             this.tray_icon.set_visible (true);
             this.fill_history ();
