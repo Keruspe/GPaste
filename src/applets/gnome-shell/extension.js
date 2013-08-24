@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -18,17 +18,15 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Main = imports.ui.main;
-const Panel = imports.ui.panel;
-const Lang = imports.lang;
-const Gio = imports.gi.Gio;
-const Pango = imports.gi.Pango;
-const PanelMenu = imports.ui.panelMenu;
-const PopupMenu = imports.ui.popupMenu;
 const Clutter = imports.gi.Clutter;
-const St = imports.gi.St;
 const Gettext = imports.gettext;
 const GPaste = imports.gi.GPaste;
+const Lang = imports.lang;
+const Main = imports.ui.main;
+const PanelMenu = imports.ui.panelMenu;
+const Pango = imports.gi.Pango;
+const PopupMenu = imports.ui.popupMenu;
+const St = imports.gi.St;
 
 const _ = Gettext.domain('GPaste').gettext;
 const BUS_NAME = 'org.gnome.GPaste';
