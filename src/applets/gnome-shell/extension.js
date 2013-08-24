@@ -111,6 +111,28 @@ const GPasteMenuItem = new Lang.Class({
     }
 });
 
+const GPasteStateSwitch = new Lang.Class({
+    Name: 'GPasteStateSwitch',
+    Extends: PopupMenu.PopupSwitchMenuItem,
+
+    _init: function(client) {
+        this.parent(_("Track changes"), client.is_active());
+
+        this._fromDaemon = false;
+
+        client.connect('tracking', Lang.bind(this, function(c, state) {
+            this._fromDaemon = true;
+            this.setToggleState(state);
+            this._fromDaemon = false;
+        }));
+
+        this.connect('toggled', Lang.bind(this, function() {
+            if (!this._fromDaemon);
+                client.track(this.state);
+        }));
+    }
+});
+
 const GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
     Extends: PanelMenu.Button,
@@ -120,20 +142,23 @@ const GPasteIndicator = new Lang.Class({
 
         this.actor.add_child(new GPasteStatusIcon());
 
-        this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
-        this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
         this._client = new GPaste.Client();
-        this._client.connect('changed', Lang.bind(this, this._updateHistory));
-        this._client.connect('show-history', Lang.bind(this, this._showHistory));
-        this._client.connect('tracking', Lang.bind(this, function(c, state) {
-            this._killSwitch.setToggleState(state);
-        }));
-        this._createHistory();
+
+        this._killSwitch = new GPasteStateSwitch(this._client);
+
+        this._history = [];
+        for (let index = 0; index < 20; ++index)
+            this._history[index] = new GPasteMenuItem(this._client, index);
+        this._history[0].label.set_style("font-weight: bold;");
+
         this._noHistory = new PopupMenu.PopupMenuItem("");
         this._noHistory.setSensitive(false);
         this._emptyHistory = new PopupMenu.PopupMenuItem(_("Empty history"));
         this._emptyHistory.connect('activate', Lang.bind(this, this._empty));
         this._fillMenu();
+
+        this._client.connect('changed', Lang.bind(this, this._updateHistory));
+        this._client.connect('show-history', Lang.bind(this, this._showHistory));
     },
 
     _empty: function() {
@@ -145,7 +170,6 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _fillMenu: function() {
-        this._killSwitch.setToggleState(this._client.is_active());
         this.menu.addMenuItem(this._killSwitch);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._addHistoryItems();
@@ -176,13 +200,6 @@ const GPasteIndicator = new Lang.Class({
     _showHistory: function() {
         this.menu.open(true);
         this.menu.firstMenuItem.setActive(true);
-    },
-
-    _createHistory: function() {
-        this._history = [];
-        for (let index = 0; index < 20; ++index)
-            this._history[index] = new GPasteMenuItem(this._client, index);
-        this._history[0].label.set_style("font-weight: bold;");
     },
 
     _addHistoryItems: function() {
