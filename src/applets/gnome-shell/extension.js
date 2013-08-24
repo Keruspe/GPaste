@@ -41,10 +41,17 @@ const GPasteIndicator = new Lang.Class({
     _init: function() {
         this.parent(0.0, "GPaste");
 
-        this.actor.add_child(new St.Icon({
+        let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
+        hbox.add_child(new St.Icon({
             icon_name: 'edit-paste-symbolic',
             style_class: 'system-status-icon'
         }));
+        hbox.add_child(new St.Label({
+            text: '\u25BE',
+            y_expand: true,
+            y_align: Clutter.ActorAlign.CENTER
+        }));
+        this.actor.add_child(hbox);
 
         this._killSwitch = new PopupMenu.PopupSwitchMenuItem(_("Track changes"), true);
         this._killSwitch.connect('toggled', Lang.bind(this, this._toggleDaemon));
