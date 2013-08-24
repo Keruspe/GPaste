@@ -12,5 +12,4 @@ future:
         GSubProcess
     libgpaste-client:
         specify errors types when possible in g-i
-    G_DEFINE_TYPE_WITH_PRIVATE
     unity support
