@@ -22,10 +22,6 @@
 
 #include <gio/gio.h>
 
-#define G_PASTE_SETTINGS_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_SETTINGS, GPasteSettingsPrivate))
-
-G_DEFINE_TYPE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
-
 struct _GPasteSettingsPrivate
 {
     GSettings *settings;
@@ -49,6 +45,8 @@ struct _GPasteSettingsPrivate
 
     gulong     changed_signal;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 
 enum
 {
@@ -511,8 +509,6 @@ g_paste_settings_finalize (GObject *object)
 static void
 g_paste_settings_class_init (GPasteSettingsClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteSettingsPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_settings_dispose;
@@ -526,7 +522,7 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
 static void
 g_paste_settings_init (GPasteSettings *self)
 {
-    GPasteSettingsPrivate *priv = self->priv = G_PASTE_SETTINGS_GET_PRIVATE (self);
+    GPasteSettingsPrivate *priv = self->priv = g_paste_settings_get_instance_private (self);
     GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
 
     priv->history_name = NULL;
