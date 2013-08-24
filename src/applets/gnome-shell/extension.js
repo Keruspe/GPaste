@@ -116,18 +116,18 @@ const GPasteMenuItem = new Lang.Class({
         text.max_length = 60;
         text.ellipsize = Pango.EllipsizeMode.END;
 
-        this.connect('activate', Lang.bind(this, function(actor, event) {
+        this.connect('activate', function(actor, event) {
             client.select(index);
-        }));
+        });
 
-        this.actor.connect('key-press-event', Lang.bind(this, function(actor, event) {
+        this.actor.connect('key-press-event', function(actor, event) {
             let symbol = event.get_key_symbol();
             if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
                 client.delete(index);
                 return true;
             }
             return false;
-        }));
+        });
 
         this.actor.add(new GPasteDeleteMenuItemPart(client, index), { expand: true, x_align: St.Align.END });
     }
@@ -141,6 +141,19 @@ const GPasteDummyHistory = new Lang.Class({
         this.parent("");
 
         this.setSensitive(false);
+    }
+});
+
+const GPasteEmptyHistoryMenuItem = new Lang.Class({
+    Name: 'GPasteEmptyHistoryMenuItem',
+    Extends: PopupMenu.PopupMenuItem,
+
+    _init: function(client) {
+        this.parent(_("Empty history"));
+
+        this.connect('activate', function() {
+            client.empty();
+        });
     }
 });
 
@@ -164,20 +177,12 @@ const GPasteIndicator = new Lang.Class({
 
         this._noHistory = new GPasteDummyHistory();
 
-        this._emptyHistory = new PopupMenu.PopupMenuItem(_("Empty history"));
-        this._emptyHistory.connect('activate', Lang.bind(this, this._empty));
+        this._emptyHistory = new GPasteEmptyHistoryMenuItem(this._client);
+
         this._fillMenu();
 
         this._client.connect('changed', Lang.bind(this, this._updateHistory));
         this._client.connect('show-history', Lang.bind(this, this._showHistory));
-    },
-
-    _empty: function() {
-        this._client.empty();
-    },
-
-    _toggleDaemon: function() {
-        this._client.track(this._killSwitch.state);
     },
 
     _fillMenu: function() {
