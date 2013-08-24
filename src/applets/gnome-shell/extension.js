@@ -32,6 +32,65 @@ const _ = Gettext.domain('GPaste').gettext;
 const BUS_NAME = 'org.gnome.GPaste';
 const OBJECT_PATH = '/org/gnome/GPaste';
 
+const GPasteDeleteButton = new Lang.Class({
+    Name: 'GPasteDeleteButton',
+    Extends: St.Button,
+
+    _init: function(client, index) {
+        this.parent();
+
+        this.child = new St.Icon({
+            icon_name: 'edit-delete-symbolic',
+            style_class: 'system-status-icon'
+        });
+
+        this.connect('clicked', function() {
+            client.delete(index);
+            return true;
+        });
+
+    }
+});
+
+const GPasteDeleteMenuItemPart = new Lang.Class({
+    Name: 'GPasteDeleteMenuItemPart',
+    Extends: St.Bin,
+
+    _init: function(client, index) {
+        this.parent({ x_align: St.Align.END });
+        
+        this.child = new GPasteDeleteButton(client, index);
+    }
+});
+
+const GPasteMenuItem = new Lang.Class({
+    Name: 'GPasteMenuItem',
+    Extends: PopupMenu.PopupMenuItem,
+
+    _init: function(client, index) {
+        this.parent("");
+
+        let text = this.label.clutter_text;
+        text.max_length = 60;
+        text.ellipsize = Pango.EllipsizeMode.END;
+
+        this.connect('activate', Lang.bind(this, function(actor, event) {
+            client.select(index);
+        }));
+
+        this.actor.connect('key-press-event', Lang.bind(this, function(actor, event) {
+            let symbol = event.get_key_symbol();
+            if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
+                client.delete(index);
+                return true;
+            }
+            return false;
+        }));
+
+        this.actor.add(new GPasteDeleteMenuItemPart(client, index), { expand: true, x_align: St.Align.END });
+    }
+});
+
 const GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
     Extends: PanelMenu.Button,
@@ -117,41 +176,10 @@ const GPasteIndicator = new Lang.Class({
         this.menu.firstMenuItem.setActive(true);
     },
 
-    _createHistoryItem: function(index) {
-        let item = new PopupMenu.PopupMenuItem("");
-        let text = item.label.clutter_text;
-        text.max_length = 60;
-        text.ellipsize = Pango.EllipsizeMode.END;
-        item.connect('activate', Lang.bind(this, function(actor, event) {
-            this._select(index);
-        }));
-        item.actor.connect('key-press-event', Lang.bind(this, function(actor, event) {
-            let symbol = event.get_key_symbol();
-            if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
-                this._delete(index);
-                return true;
-            }
-            return false;
-        }));
-        let deleteItem = new St.Button();
-        deleteItem.child = new St.Icon({
-            icon_name: 'edit-delete-symbolic',
-            style_class: 'system-status-icon'
-        });
-        deleteItem.connect('clicked', Lang.bind(this, function(actor, event) {
-            this._delete(index);
-            return true;
-        }));
-        let statusBin = new St.Bin({ x_align: St.Align.END });
-        item.actor.add(statusBin, { expand: true, x_align: St.Align.END });
-        statusBin.child = deleteItem;
-        return item;
-    },
-
     _createHistory: function() {
         this._history = [];
         for (let index = 0; index < 20; ++index)
-            this._history[index] = this._createHistoryItem(index);
+            this._history[index] = new GPasteMenuItem(this._client, index);
         this._history[0].label.set_style("font-weight: bold;");
     },
 
