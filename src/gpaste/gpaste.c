@@ -128,8 +128,6 @@ main (int argc, char *argv[])
 
     int status = EXIT_SUCCESS;
 
-    g_type_init ();
-
     GPasteClient *client = g_paste_client_new ();
     GError *error = NULL;
     const gchar *arg1, *arg2;
