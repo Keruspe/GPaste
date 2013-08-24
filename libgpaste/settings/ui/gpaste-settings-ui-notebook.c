@@ -26,10 +26,6 @@
 #include <gpaste-client.h>
 #include <gpaste-settings.h>
 
-#define G_PASTE_SETTINGS_UI_NOTEBOOK_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_SETTINGS_UI_NOTEBOOK, GPasteSettingsUiNotebookPrivate))
-
-G_DEFINE_TYPE (GPasteSettingsUiNotebook, g_paste_settings_ui_notebook, GTK_TYPE_NOTEBOOK)
-
 struct _GPasteSettingsUiNotebookPrivate
 {
     GPasteClient    *client;
@@ -54,6 +50,8 @@ struct _GPasteSettingsUiNotebookPrivate
     gchar         ***actions;
     gulong           settings_signal;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiNotebook, g_paste_settings_ui_notebook, GTK_TYPE_NOTEBOOK)
 
 #define SETTING_CALLBACK_FULL(setting, type, cast)                            \
     static void                                                               \
@@ -429,8 +427,6 @@ g_paste_settings_ui_notebook_finalize (GObject *object)
 static void
 g_paste_settings_ui_notebook_class_init (GPasteSettingsUiNotebookClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteSettingsUiNotebookPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_settings_ui_notebook_dispose;
@@ -440,7 +436,7 @@ g_paste_settings_ui_notebook_class_init (GPasteSettingsUiNotebookClass *klass)
 static void
 g_paste_settings_ui_notebook_init (GPasteSettingsUiNotebook *self)
 {
-    GPasteSettingsUiNotebookPrivate *priv = self->priv = G_PASTE_SETTINGS_UI_NOTEBOOK_GET_PRIVATE (self);
+    GPasteSettingsUiNotebookPrivate *priv = self->priv = g_paste_settings_ui_notebook_get_instance_private (self);
 
     priv->client = g_paste_client_new ();
     priv->settings = g_paste_settings_new ();

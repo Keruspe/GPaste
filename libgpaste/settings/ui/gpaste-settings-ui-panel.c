@@ -21,15 +21,13 @@
 
 #include <stdlib.h>
 
-#define G_PASTE_SETTINGS_UI_PANEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_SETTINGS_UI_PANEL, GPasteSettingsUiPanelPrivate))
-
-G_DEFINE_TYPE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)
-
 struct _GPasteSettingsUiPanelPrivate
 {
     GSList *callback_data;
     guint   current_line;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)
 
 #define CALLBACK_DATA_FULL(cb, w, d, d2)                                                        \
     GPasteSettingsUiPanelPrivate *priv = self->priv;                                               \
@@ -340,8 +338,6 @@ g_paste_settings_ui_panel_dispose (GObject *object)
 static void
 g_paste_settings_ui_panel_class_init (GPasteSettingsUiPanelClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteSettingsUiPanelPrivate));
-
     G_OBJECT_CLASS (klass)->dispose = g_paste_settings_ui_panel_dispose;
 }
 
@@ -349,7 +345,7 @@ static void
 g_paste_settings_ui_panel_init (GPasteSettingsUiPanel *self)
 {
     GtkGrid *grid = GTK_GRID (self);
-    GPasteSettingsUiPanelPrivate *priv = self->priv = G_PASTE_SETTINGS_UI_PANEL_GET_PRIVATE (self);
+    GPasteSettingsUiPanelPrivate *priv = self->priv = g_paste_settings_ui_panel_get_instance_private (self);
 
     priv->callback_data = NULL;
     priv->current_line = 0;
