@@ -1,9 +1,12 @@
 3.1:
+    delete via keyboard in gnome-shell applet
+
+3.2:
     macros.h
     use __cleanup__
     keybinding to sync primary -> clip and vice versa
 
-3.2:
+3.3:
     XFixes
     make keybinder optional
 
