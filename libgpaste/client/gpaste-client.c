@@ -22,10 +22,6 @@
 
 #include <gio/gio.h>
 
-#define G_PASTE_CLIENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_CLIENT, GPasteClientPrivate))
-
-G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_OBJECT)
-
 struct _GPasteClientPrivate
 {
     GDBusProxy    *proxy;
@@ -33,6 +29,8 @@ struct _GPasteClientPrivate
 
     gulong         g_signal;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteClient, g_paste_client, G_TYPE_OBJECT)
 
 enum
 {
@@ -473,8 +471,6 @@ g_paste_client_finalize (GObject *object)
 static void
 g_paste_client_class_init (GPasteClientClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteClientPrivate));
-
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_client_dispose;
@@ -490,7 +486,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
 static void
 g_paste_client_init (GPasteClient *self)
 {
-    GPasteClientPrivate *priv = self->priv = G_PASTE_CLIENT_GET_PRIVATE (self);
+    GPasteClientPrivate *priv = self->priv = g_paste_client_get_instance_private (self);
 
     priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_IFACE_INFO,
                                                                    NULL); /* Error */
