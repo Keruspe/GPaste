@@ -144,7 +144,9 @@ const GPasteIndicator = new Lang.Class({
             this._delete(index);
             return true;
         }));
-        item.actor.insert_child_at_index(deleteItem, item.actor.get_n_children() - 1);
+        let statusBin = new St.Bin({ x_align: St.Align.END });
+        item.actor.add(statusBin, { expand: true, x_align: St.Align.END });
+        statusBin.child = deleteItem;
         return item;
     },
 
