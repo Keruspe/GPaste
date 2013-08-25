@@ -157,10 +157,6 @@ const GPasteHistoryWrapper = new Lang.Class({
     Name: 'GPasteHistoryWrapper',
 
     _init: function(client, menu, emptyHistoryItem) {
-        this._dummyHistory = new GPasteDummyHistory();
-
-        menu.addMenuItem(this._dummyHistory);
-
         this._history = [];
 
         for (let index = 0; index < 20; ++index) {
@@ -170,6 +166,10 @@ const GPasteHistoryWrapper = new Lang.Class({
         }
 
         this._history[0].label.set_style("font-weight: bold;");
+
+        this._dummyHistory = new GPasteDummyHistory();
+
+        menu.addMenuItem(this._dummyHistory);
 
         this._update(client, emptyHistoryItem);
 
@@ -238,7 +238,7 @@ const GPasteIndicator = new Lang.Class({
 
         this._client.connect('show-history', Lang.bind(this, function() {
             this.menu.open(true);
-            this.menu.firstMenuItem.setActive(true);
+            this.menu._getMenuItems()[2].setActive(true);
         }));
     },
 
