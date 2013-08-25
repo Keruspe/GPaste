@@ -146,6 +146,58 @@ const GPasteDummyHistory = new Lang.Class({
         this.parent("");
 
         this.setSensitive(false);
+    },
+
+    update: function(error) {
+        this.label.text = (error) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
+    }
+});
+
+const GPasteHistoryWrapper = new Lang.Class({
+    Name: 'GPasteHistoryWrapper',
+
+    _init: function(client, menu, emptyHistoryItem) {
+        this._dummyHistory = new GPasteDummyHistory();
+
+        menu.addMenuItem(this._dummyHistory);
+
+        this._history = [];
+
+        for (let index = 0; index < 20; ++index) {
+            let item = new GPasteMenuItem(client, index);
+            this._history[index] = item;
+            menu.addMenuItem(item);
+        }
+
+        this._history[0].label.set_style("font-weight: bold;");
+
+        this._update(client, emptyHistoryItem);
+
+        client.connect('changed', Lang.bind(this, function() {
+            this._update(client, emptyHistoryItem);
+        }));
+    },
+
+    _update: function(client, emptyHistoryItem) {
+        let history = client.get_history();
+        if (history != null && history.length != 0) {
+            let limit = Math.min(history.length, this._history.length);
+            for (let index = 0; index < limit; ++index)
+                this._history[index].setText(history[index].replace(/\n/g, ' '));
+            this._hideHistory(limit);
+            this._dummyHistory.actor.hide();
+            emptyHistoryItem.actor.show();
+        } else {
+            this._dummyHistory.update(history == null);
+            this._hideHistory();
+            emptyHistoryItem.actor.hide();
+            this._dummyHistory.actor.show();
+        }
+    },
+
+    _hideHistory: function(startIndex) {
+        for (let index = startIndex || 0; index < this._history.length; ++index)
+            this._history[index].actor.hide();
     }
 });
 
@@ -173,55 +225,21 @@ const GPasteIndicator = new Lang.Class({
 
         this._client = new GPaste.Client();
 
-        this._noHistory = new GPasteDummyHistory();
-
         this.menu.addMenuItem(new GPasteStateSwitch(this._client));
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this.menu.addMenuItem(this._noHistory);
 
-        this._history = [];
-        for (let index = 0; index < 20; ++index) {
-            let item = new GPasteMenuItem(this._client, index);
-            this._history[index] = item;
-            this.menu.addMenuItem(item);
-        }
-        this._history[0].label.set_style("font-weight: bold;");
+        let emptyHistoryItem = new GPasteEmptyHistoryMenuItem(this._client);
 
-        this._emptyHistory = new GPasteEmptyHistoryMenuItem(this._client);
+        this._history = new GPasteHistoryWrapper(this._client, this.menu, emptyHistoryItem);
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this.menu.addMenuItem(this._emptyHistory);
+        this.menu.addMenuItem(emptyHistoryItem);
         this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
 
-        this._updateHistory();
-
-        this._client.connect('changed', Lang.bind(this, this._updateHistory));
         this._client.connect('show-history', Lang.bind(this, function() {
             this.menu.open(true);
             this.menu.firstMenuItem.setActive(true);
         }));
-    },
-
-    _updateHistory: function() {
-        let history = this._client.get_history();
-        if (history != null && history.length != 0) {
-            let limit = Math.min(history.length, this._history.length);
-            for (let index = 0; index < limit; ++index)
-                this._history[index].setText(history[index].replace(/\n/g, ' '));
-            this._hideHistory(limit);
-            this._noHistory.actor.hide();
-            this._emptyHistory.actor.show();
-        } else {
-            this._noHistory.label.text = (history == null) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
-            this._hideHistory();
-            this._emptyHistory.actor.hide();
-            this._noHistory.actor.show();
-        }
-    },
-
-    _hideHistory: function(startIndex) {
-        for (let index = startIndex || 0; index < this._history.length; ++index)
-            this._history[index].actor.hide();
     },
 
     _onStateChanged: function (state) {
