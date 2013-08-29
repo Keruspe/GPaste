@@ -245,10 +245,10 @@ const GPasteIndicator = new Lang.Class({
         this._onStateChanged (true);
     },
 
-    shutdown: funtion() {
+    shutdown: function() {
         this._onStateChanged (false);
         this.destroy();
-    }
+    },
 
     _onStateChanged: function (state) {
         this._client.on_extension_state_changed(state);
@@ -264,6 +264,6 @@ function enable() {
 }
 
 function disable() {
-    Main.panel.statusArea['gpaste'].shutDown();
+    Main.panel.statusArea['gpaste'].shutdown();
 }
 
