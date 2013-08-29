@@ -264,6 +264,6 @@ function enable() {
 }
 
 function disable() {
-    Main.panel.statusArea['gpaste'].shutdown();
+    Main.panel.statusArea.gpaste.shutdown();
 }
 
