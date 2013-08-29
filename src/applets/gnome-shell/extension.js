@@ -176,6 +176,12 @@ const GPasteHistoryWrapper = new Lang.Class({
         client.connect('changed', Lang.bind(this, function() {
             this._update(client, emptyHistoryItem);
         }));
+
+        client.connect('show-history', function() {
+            menu.open(true);
+            menu._getMenuItems()[2].setActive(true);
+        });
+
     },
 
     _update: function(client, emptyHistoryItem) {
@@ -235,11 +241,6 @@ const GPasteIndicator = new Lang.Class({
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addMenuItem(emptyHistoryItem);
         this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
-
-        this._client.connect('show-history', Lang.bind(this, function() {
-            this.menu.open(true);
-            this.menu._getMenuItems()[2].setActive(true);
-        }));
 
         this._onStateChanged (true);
     },
