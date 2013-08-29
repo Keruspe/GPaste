@@ -240,27 +240,29 @@ const GPasteIndicator = new Lang.Class({
             this.menu.open(true);
             this.menu._getMenuItems()[2].setActive(true);
         }));
+
+        this._onStateChanged (true);
     },
+
+    shutdown: funtion() {
+        this._onStateChanged (false);
+        this.destroy();
+    }
 
     _onStateChanged: function (state) {
         this._client.on_extension_state_changed(state);
     }
 });
 
-let _indicator;
-
 function init(extension) {
     Gettext.bindtextdomain('gpaste', extension.metadata.localedir);
 }
 
 function enable() {
-    _indicator = new GPasteIndicator();
-    _indicator._onStateChanged (true);
-    Main.panel.addToStatusArea('gpaste', _indicator);
+    Main.panel.addToStatusArea('gpaste', new GPasteIndicator());
 }
 
 function disable() {
-    _indicator._onStateChanged (false);
-    _indicator.destroy();
+    Main.panel.statusArea['gpaste'].shutDown();
 }
 
