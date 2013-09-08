@@ -1,11 +1,11 @@
-3.2:
-    macros.h
-    use __cleanup__
-    keybinding to sync primary -> clip and vice versa
-
-3.3:
+3.6:
     XFixes
     make keybinder optional
+    keybinding to sync primary -> clip and vice versa
+
+3.7:
+    macros.h
+    use __cleanup__
 
 future:
     gpaste:
@@ -13,3 +13,4 @@ future:
     libgpaste-client:
         specify errors types when possible in g-i
     unity support
+    ClipperSync support? (https://clippersync.com/)
