@@ -21,7 +21,11 @@
 #define __G_PASTE_DAEMON_H__
 
 #include <gpaste-clipboards-manager.h>
-#include <gpaste-keybinder.h>
+#ifdef ENABLE_X_KEYBINDER
+# include <gpaste-keybinder.h>
+#else
+# define GPasteKeybinder void
+#endif
 
 G_BEGIN_DECLS
 

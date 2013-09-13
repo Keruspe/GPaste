@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+if ENABLE_X_KEYBINDER
 libgpaste_keybinder_la_file = libgpaste/keybinder/libgpaste-keybinder.la
 
 LIBGPASTE_KEYBINDER_CURRENT=1
@@ -82,3 +83,4 @@ lib_LTLIBRARIES += \
 EXTRA_DIST += \
 	$(libgpaste_keybinder_symbols_file) \
 	$(NULL)
+endif

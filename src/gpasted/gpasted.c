@@ -75,17 +75,23 @@ main (int argc, char *argv[])
     GPasteSettings *settings = g_paste_settings_new ();
     GPasteHistory *history = g_paste_history_new (settings);
     GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
+#ifdef ENABLE_X_KEYBINDER
     GPasteKeybinder *keybinder = g_paste_keybinder_new ();
     GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
+#else
+    GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, NULL);
+#endif
     GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
+#ifdef ENABLE_X_KEYBINDER
     GPasteKeybinding *keybindings[] = {
         G_PASTE_KEYBINDING (g_paste_paste_and_pop_keybinding_new (settings,
                                                                   history)),
         G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (settings,
                                                                  g_paste_daemon))
     };
+#endif
 
     gulong c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
@@ -98,23 +104,31 @@ main (int argc, char *argv[])
                                                NULL) /* user_data */
     };
 
+#ifdef ENABLE_X_KEYBINDER
     for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
         g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
+#endif
 
     g_paste_history_load (history);
+#ifdef ENABLE_X_KEYBINDER
     g_paste_keybinder_activate_all (keybinder);
+#endif
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
     g_object_unref (history);
     g_object_unref (clipboards_manager);
+#ifdef ENABLE_X_KEYBINDER
     g_object_unref (keybinder);
+#endif
     g_object_unref (clipboard);
     g_object_unref (primary);
 
+#ifdef ENABLE_X_KEYBINDER
     for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
         g_object_unref (keybindings[k]);
+#endif
 
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);

@@ -214,6 +214,16 @@ if test x$enable_extension = xyes; then
 fi
 AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 
+AC_ARG_ENABLE(x-keybinder, AS_HELP_STRING([--disable-x-keybinder], [Disable the X keybinder]), enable_x_keybinder=$enableval, enable_x_keybinder=yes)
+if test x$enable_x_keybinder = xyes; then
+    PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= $GTK_REQUIRED])
+    AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
+    AC_SUBST([KEYBINDER_DEFINES], [-DENABLE_X_KEYBINDER])
+else
+    AC_SUBST([KEYBINDER_DEFINES], [-UENABLE_X_KEYBINDER])
+fi
+AM_CONDITIONAL(ENABLE_X_KEYBINDER, test x$enable_x_keybinder = xyes)
+
 AC_CONFIG_FILES([
     Makefile
     po/Makefile.in

@@ -628,7 +628,9 @@ g_paste_daemon_dispose (GObject *object)
         g_object_unref (priv->history);
         g_object_unref (settings);
         g_object_unref (priv->clipboards_manager);
+#ifdef ENABLE_X_KEYBINDER
         g_object_unref (priv->keybinder);
+#endif
         g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
         priv->settings = NULL;
     }
@@ -692,7 +694,9 @@ g_paste_daemon_new (GPasteHistory           *history,
     g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (clipboards_manager), NULL);
+#ifdef ENABLE_X_KEYBINDER
     g_return_val_if_fail (G_PASTE_IS_KEYBINDER (keybinder), NULL);
+#endif
 
     GPasteDaemon *self = g_object_new (G_PASTE_TYPE_DAEMON, NULL);
     GPasteDaemonPrivate *priv = self->priv;
@@ -700,7 +704,11 @@ g_paste_daemon_new (GPasteHistory           *history,
     priv->history = g_object_ref (history);
     priv->settings = g_object_ref (settings);
     priv->clipboards_manager = g_object_ref (clipboards_manager);
+#ifdef ENABLE_X_KEYBINDER
     priv->keybinder = g_object_ref (keybinder);
+#else
+    priv->keybinder = keybinder;
+#endif
 
     return self;
 }

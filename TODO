@@ -1,6 +1,5 @@
 3.6:
     XFixes
-    make keybinder optional
     keybinding to sync primary -> clip and vice versa
 
 3.7:
