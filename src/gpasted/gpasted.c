@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -85,7 +85,9 @@ main (int argc, char *argv[])
         G_PASTE_KEYBINDING (g_paste_paste_and_pop_keybinding_new (settings,
                                                                   history)),
         G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (settings,
-                                                                 g_paste_daemon))
+                                                                 g_paste_daemon)),
+        G_PASTE_KEYBINDING (g_paste_sync_primary_to_clipboard_keybinding_new (settings,
+                                                                              clipboards_manager))
     };
 
     gulong c_signals[C_LAST_SIGNAL] = {
