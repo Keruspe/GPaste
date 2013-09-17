@@ -50,6 +50,9 @@ GType g_paste_clipboards_manager_get_type (void);
 
 void g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
                                                GPasteClipboard         *clipboard);
+void g_paste_clipboards_manager_sync_from_to  (GPasteClipboardsManager *self,
+                                               GdkAtom                  from,
+                                               GdkAtom                  to);
 void g_paste_clipboards_manager_activate      (GPasteClipboardsManager *self);
 void g_paste_clipboards_manager_select        (GPasteClipboardsManager *self,
                                                GPasteItem              *item);

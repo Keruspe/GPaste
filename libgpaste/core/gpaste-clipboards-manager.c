@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -68,6 +68,45 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
         const GSList *history = g_paste_history_get_history (priv->history);
         if (history != NULL)
             g_paste_clipboard_select_item (clipboard, history->data);
+    }
+}
+
+/**
+ * g_paste_clipboards_manager_sync_from_to:
+ * @self: a #GPasteClipboardsManager instance
+ * @from: the Source clipboard type
+ * @to: the destination clipboard type
+ *
+ * Sync a clipboard into another
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
+                                         GdkAtom                  from,
+                                         GdkAtom                  to)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+
+    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GtkClipboard *_from = NULL, *_to = NULL;
+
+    for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+    {
+        GPasteClipboard *clip = clipboard->data;
+        GdkAtom cur = g_paste_clipboard_get_target (clip);
+
+        if (cur == from)
+            _from = g_paste_clipboard_get_real (clip);
+        else if (cur == to)
+            _to = g_paste_clipboard_get_real (clip);
+    }
+
+    if (_from && _to)
+    {
+        gchar *text = gtk_clipboard_wait_for_text (_from);
+        if (text)
+            gtk_clipboard_set_text (_to, text, -1);
     }
 }
 
