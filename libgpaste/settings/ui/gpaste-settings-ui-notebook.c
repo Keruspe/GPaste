@@ -50,6 +50,7 @@ struct _GPasteSettingsUiNotebookPrivate
     GtkEntry        *backup_entry;
     GtkEntry        *paste_and_pop_entry;
     GtkEntry        *show_history_entry;
+    GtkEntry        *sync_primary_to_clipboard_entry;
     GtkComboBoxText *targets;
     gchar         ***actions;
     gulong           settings_signal;
@@ -203,6 +204,7 @@ g_paste_settings_ui_notebook_make_history_settings_panel (GPasteSettingsUiNotebo
 
 STRING_CALLBACK (paste_and_pop)
 STRING_CALLBACK (show_history)
+STRING_CALLBACK (sync_primary_to_clipboard)
 
 static GPasteSettingsUiPanel *
 g_paste_settings_ui_notebook_make_keybindings_panel (GPasteSettingsUiNotebook *self)
@@ -221,6 +223,11 @@ g_paste_settings_ui_notebook_make_keybindings_panel (GPasteSettingsUiNotebook *s
                                                                            _("Display the history: "),
                                                                            g_paste_settings_get_show_history (settings),
                                                                            show_history_callback, settings);
+    /* translators: Keyboard shortcut to sync the primary selection to the clipboard */
+    priv->sync_primary_to_clipboard_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+                                                                                        _("Sync the primary selection to clipboard: "),
+                                                                                        g_paste_settings_get_sync_primary_to_clipboard (settings),
+                                                                                        sync_primary_to_clipboard_callback, settings);
 
     return panel;
 }
@@ -385,6 +392,8 @@ g_paste_settings_ui_notebook_settings_changed (GSettings   *gsettings G_GNUC_UNU
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->save_history_button), g_paste_settings_get_save_history (settings));
     else if (g_strcmp0 (key, SHOW_HISTORY_KEY) == 0)
         gtk_entry_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings));
+    else if (g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY) == 0)
+        gtk_entry_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings));
     else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
     else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)

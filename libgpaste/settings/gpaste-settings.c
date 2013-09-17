@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ struct _GPasteSettingsPrivate
     gboolean   primary_to_history;
     gboolean   save_history;
     gchar     *show_history;
+    gchar     *sync_primary_to_clipboard;
     gboolean   synchronize_clipboards;
     gboolean   track_changes;
     gboolean   track_extension_state;
@@ -341,6 +342,25 @@ BOOLEAN_SETTING (save_history, SAVE_HISTORY_KEY)
 STRING_SETTING (show_history, SHOW_HISTORY_KEY)
 
 /**
+ * g_paste_settings_get_sync_primary_to_clipboard:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the SYNC_PRIMARY_TO_CLIPBOARD_KEY setting
+ *
+ * Returns: the value of the SHOW_HISTORY_KEY setting
+ */
+/**
+ * g_paste_settings_set_sync_primary_to_clipboard:
+ * @self: a #GPasteSettings instance
+ * @value: the new keyboard shortcut
+ *
+ * Change the SYNC_PRIMARY_TO_CLIPBOARD_KEY setting
+ *
+ * Returns:
+ */
+STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD_KEY)
+
+/**
  * g_paste_settings_get_synchronize_clipboards:
  * @self: a #GPasteSettings instance
  *
@@ -458,6 +478,13 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                        signals[REBIND],
                        g_quark_from_string (SHOW_HISTORY_KEY));
     }
+    else if (g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY) == 0)
+    {
+        g_paste_settings_set_sync_primary_to_clipboard_from_dconf (self);
+        g_signal_emit (self,
+                       signals[REBIND],
+                       g_quark_from_string (SYNC_PRIMARY_TO_CLIPBOARD_KEY));
+    }
     else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
         g_paste_settings_set_synchronize_clipboards_from_dconf (self);
     else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
@@ -503,6 +530,7 @@ g_paste_settings_finalize (GObject *object)
 
     g_free (priv->history_name);
     g_free (priv->show_history);
+    g_free (priv->sync_primary_to_clipboard);
     g_free (priv->paste_and_pop);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
@@ -532,6 +560,7 @@ g_paste_settings_init (GPasteSettings *self)
     priv->history_name = NULL;
     priv->paste_and_pop = NULL;
     priv->show_history = NULL;
+    priv->sync_primary_to_clipboard = NULL;
 
     g_paste_settings_set_element_size_from_dconf (self);
     g_paste_settings_set_fifo_from_dconf (self);
@@ -545,6 +574,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_primary_to_history_from_dconf (self);
     g_paste_settings_set_save_history_from_dconf (self);
     g_paste_settings_set_show_history_from_dconf (self);
+    g_paste_settings_set_sync_primary_to_clipboard_from_dconf (self);
     g_paste_settings_set_synchronize_clipboards_from_dconf (self);
     g_paste_settings_set_track_changes_from_dconf (self);
     g_paste_settings_set_track_extension_state_from_dconf (self);
