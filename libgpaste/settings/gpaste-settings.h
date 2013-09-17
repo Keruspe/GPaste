@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ const gchar *g_paste_settings_get_paste_and_pop              (GPasteSettings *se
 gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *self);
 gboolean     g_paste_settings_get_save_history               (GPasteSettings *self);
 const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
+const gchar *g_paste_settings_get_sync_primary_to_clipboard  (GPasteSettings *self);
 gboolean     g_paste_settings_get_synchronize_clipboards     (GPasteSettings *self);
 gboolean     g_paste_settings_get_track_changes              (GPasteSettings *self);
 gboolean     g_paste_settings_get_track_extension_state      (GPasteSettings *self);
@@ -83,6 +84,8 @@ void g_paste_settings_set_primary_to_history         (GPasteSettings *self,
 void g_paste_settings_set_save_history               (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_show_history               (GPasteSettings *self,
+                                                      const gchar    *value);
+void g_paste_settings_set_sync_primary_to_clipboard  (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_synchronize_clipboards     (GPasteSettings *self,
                                                       gboolean        value);

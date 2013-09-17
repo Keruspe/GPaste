@@ -8,6 +8,11 @@ NEW in 3.5 (Not released yet)
 - Don't use deprecated stuff from gtk+
 - The X11 keybinder is now optional
 
+NEW in 3.1 (Not released yet)
+=============
+
+- Compatibility with gnome-shell up to 3.9.5
+
 NEW in 3.0.2 (01/06/2013)
 =============
 

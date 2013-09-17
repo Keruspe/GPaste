@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ libgpaste_keybinder_public_headers = \
 	libgpaste/keybinder/gpaste-keybinding.h \
 	libgpaste/keybinder/gpaste-paste-and-pop-keybinding.h \
 	libgpaste/keybinder/gpaste-show-history-keybinding.h \
+	libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.h \
 	$(NULL)
 
 libgpaste_keybinder_private_headers = \
@@ -36,6 +37,7 @@ libgpaste_keybinder_private_headers = \
 	libgpaste/keybinder/gpaste-keybinding-private.h \
 	libgpaste/keybinder/gpaste-paste-and-pop-keybinding-private.h \
 	libgpaste/keybinder/gpaste-show-history-keybinding-private.h \
+	libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding-private.h \
 	$(NULL)
 
 libgpaste_keybinder_libgpaste_keybinder_la_SOURCES = \
@@ -45,6 +47,7 @@ libgpaste_keybinder_libgpaste_keybinder_la_SOURCES = \
 	libgpaste/keybinder/gpaste-keybinding.c \
 	libgpaste/keybinder/gpaste-paste-and-pop-keybinding.c \
 	libgpaste/keybinder/gpaste-show-history-keybinding.c \
+	libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.c \
 	$(NULL)
 
 libgpaste_keybinder_libgpaste_keybinder_la_CFLAGS = \

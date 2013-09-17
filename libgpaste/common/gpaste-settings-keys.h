@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #define PRIMARY_TO_HISTORY_KEY         "primary-to-history"
 #define SAVE_HISTORY_KEY               "save-history"
 #define SHOW_HISTORY_KEY               "show-history"
+#define SYNC_PRIMARY_TO_CLIPBOARD_KEY  "sync-primary-to-clipboard"
 #define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
 #define TRACK_CHANGES_KEY              "track-changes"
 #define TRACK_EXTENSION_STATE_KEY      "track-extension-state"
