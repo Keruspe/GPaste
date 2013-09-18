@@ -19,6 +19,8 @@
 
 #include "gpaste-paste-and-pop-keybinding.h"
 #include "gpaste-show-history-keybinding.h"
+#include "gpaste-sync-clipboard-to-primary-keybinding.h"
+#include "gpaste-sync-primary-to-clipboard-keybinding.h"
 
 #include <gpaste.h>
 #include <gpaste-daemon.h>
@@ -86,6 +88,8 @@ main (int argc, char *argv[])
                                                                   history)),
         G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (settings,
                                                                  g_paste_daemon)),
+        G_PASTE_KEYBINDING (g_paste_sync_clipboard_to_primary_keybinding_new (settings,
+                                                                              clipboards_manager)),
         G_PASTE_KEYBINDING (g_paste_sync_primary_to_clipboard_keybinding_new (settings,
                                                                               clipboards_manager))
     };
