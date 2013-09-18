@@ -32,6 +32,7 @@
 #define PRIMARY_TO_HISTORY_KEY         "primary-to-history"
 #define SAVE_HISTORY_KEY               "save-history"
 #define SHOW_HISTORY_KEY               "show-history"
+#define SYNC_CLIPBOARD_TO_PRIMARY_KEY  "sync-clipboard-to-primary"
 #define SYNC_PRIMARY_TO_CLIPBOARD_KEY  "sync-primary-to-clipboard"
 #define SYNCHRONIZE_CLIPBOARDS_KEY     "synchronize-clipboards"
 #define TRACK_CHANGES_KEY              "track-changes"

@@ -104,6 +104,15 @@
       </description>
     </key>
 
+    <key name="sync-clipboard-to-primary" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;O'</default>
+      <summary>The keyboard shortcut to sync the clipboard to the primary selection</summary>
+      <description>
+        By default, hitting ctrl + alt + o syncs them ("&lt;Ctrl&gt;&lt;Alt&gt;P").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
     <key name="sync-primary-to-clipboard" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;P'</default>
       <summary>The keyboard shortcut to sync the primary selection to the clipboard</summary>

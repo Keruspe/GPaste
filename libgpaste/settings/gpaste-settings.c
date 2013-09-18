@@ -38,6 +38,7 @@ struct _GPasteSettingsPrivate
     gboolean   primary_to_history;
     gboolean   save_history;
     gchar     *show_history;
+    gchar     *sync_clipboard_to_primary;
     gchar     *sync_primary_to_clipboard;
     gboolean   synchronize_clipboards;
     gboolean   track_changes;
@@ -340,12 +341,31 @@ BOOLEAN_SETTING (save_history, SAVE_HISTORY_KEY)
 STRING_SETTING (show_history, SHOW_HISTORY_KEY)
 
 /**
+ * g_paste_settings_get_sync_clipboard_to_primary:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the SYNC_CLIPBOARD_TO_PRIMARY_KEY setting
+ *
+ * Returns: the value of the SYNC_CLIPBOARD_TO_PRIMARY_KEY setting
+ */
+/**
+ * g_paste_settings_set_sync_clipboard_to_primary:
+ * @self: a #GPasteSettings instance
+ * @value: the new keyboard shortcut
+ *
+ * Change the SYNC_CLIPBOARD_TO_PRIMARY_KEY setting
+ *
+ * Returns:
+ */
+STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY_KEY)
+
+/**
  * g_paste_settings_get_sync_primary_to_clipboard:
  * @self: a #GPasteSettings instance
  *
  * Get the SYNC_PRIMARY_TO_CLIPBOARD_KEY setting
  *
- * Returns: the value of the SHOW_HISTORY_KEY setting
+ * Returns: the value of the SYNC_PRIMARY_TO_CLIPBOARD_KEY setting
  */
 /**
  * g_paste_settings_set_sync_primary_to_clipboard:
@@ -476,6 +496,13 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                        signals[REBIND],
                        g_quark_from_string (SHOW_HISTORY_KEY));
     }
+    else if (g_strcmp0 (key, SYNC_CLIPBOARD_TO_PRIMARY_KEY) == 0)
+    {
+        g_paste_settings_set_sync_clipboard_to_primary_from_dconf (self);
+        g_signal_emit (self,
+                       signals[REBIND],
+                       g_quark_from_string (SYNC_CLIPBOARD_TO_PRIMARY_KEY));
+    }
     else if (g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY) == 0)
     {
         g_paste_settings_set_sync_primary_to_clipboard_from_dconf (self);
@@ -528,6 +555,7 @@ g_paste_settings_finalize (GObject *object)
 
     g_free (priv->history_name);
     g_free (priv->show_history);
+    g_free (priv->sync_clipboard_to_primary);
     g_free (priv->sync_primary_to_clipboard);
     g_free (priv->paste_and_pop);
 
@@ -556,6 +584,7 @@ g_paste_settings_init (GPasteSettings *self)
     priv->history_name = NULL;
     priv->paste_and_pop = NULL;
     priv->show_history = NULL;
+    priv->sync_clipboard_to_primary = NULL;
     priv->sync_primary_to_clipboard = NULL;
 
     g_paste_settings_set_element_size_from_dconf (self);
@@ -570,6 +599,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_primary_to_history_from_dconf (self);
     g_paste_settings_set_save_history_from_dconf (self);
     g_paste_settings_set_show_history_from_dconf (self);
+    g_paste_settings_set_sync_clipboard_to_primary_from_dconf (self);
     g_paste_settings_set_sync_primary_to_clipboard_from_dconf (self);
     g_paste_settings_set_synchronize_clipboards_from_dconf (self);
     g_paste_settings_set_track_changes_from_dconf (self);

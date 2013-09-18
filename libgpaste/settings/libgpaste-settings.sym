@@ -13,6 +13,7 @@ global:
     g_paste_settings_get_primary_to_history;
     g_paste_settings_get_save_history;
     g_paste_settings_get_show_history;
+    g_paste_settings_get_sync_clipboard_to_primary;
     g_paste_settings_get_sync_primary_to_clipboard;
     g_paste_settings_get_synchronize_clipboards;
     g_paste_settings_get_track_changes;
@@ -30,6 +31,7 @@ global:
     g_paste_settings_set_primary_to_history;
     g_paste_settings_set_save_history;
     g_paste_settings_set_show_history;
+    g_paste_settings_set_sync_clipboard_to_primary;
     g_paste_settings_set_sync_primary_to_clipboard;
     g_paste_settings_set_synchronize_clipboards;
     g_paste_settings_set_track_changes;
