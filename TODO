@@ -1,18 +1,16 @@
 GNOME <= 3.9.5
-=======
 
-3.1:
+3.2:
     Memory usage limits
     XFixes
 
 GNOME >= 3.9.90
-=======
 
 3.5:
     keybinding to sync primary -> clip and vice versa
 
 3.6:
-    merge 3.1
+    merge 3.2
 
 3.7:
     macros.h
