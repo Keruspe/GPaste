@@ -1,4 +1,3 @@
 3.2:
-    macros.h
-    use __cleanup__
+    Memory usage limits
     XFixes
