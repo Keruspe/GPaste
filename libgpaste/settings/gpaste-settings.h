@@ -55,6 +55,7 @@ const gchar *g_paste_settings_get_paste_and_pop              (GPasteSettings *se
 gboolean     g_paste_settings_get_primary_to_history         (GPasteSettings *self);
 gboolean     g_paste_settings_get_save_history               (GPasteSettings *self);
 const gchar *g_paste_settings_get_show_history               (GPasteSettings *self);
+const gchar *g_paste_settings_get_sync_clipboard_to_primary  (GPasteSettings *self);
 const gchar *g_paste_settings_get_sync_primary_to_clipboard  (GPasteSettings *self);
 gboolean     g_paste_settings_get_synchronize_clipboards     (GPasteSettings *self);
 gboolean     g_paste_settings_get_track_changes              (GPasteSettings *self);
@@ -84,6 +85,8 @@ void g_paste_settings_set_primary_to_history         (GPasteSettings *self,
 void g_paste_settings_set_save_history               (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_show_history               (GPasteSettings *self,
+                                                      const gchar    *value);
+void g_paste_settings_set_sync_clipboard_to_primary  (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_sync_primary_to_clipboard  (GPasteSettings *self,
                                                       const gchar    *value);
