@@ -17,7 +17,7 @@
 
 libgpaste_keybinder_la_file = libgpaste/keybinder/libgpaste-keybinder.la
 
-LIBGPASTE_KEYBINDER_CURRENT=1
+LIBGPASTE_KEYBINDER_CURRENT=2
 LIBGPASTE_KEYBINDER_REVISION=0
 LIBGPASTE_KEYBINDER_AGE=0
 

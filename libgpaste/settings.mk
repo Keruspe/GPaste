@@ -17,7 +17,7 @@
 
 libgpaste_settings_la_file = libgpaste/settings/libgpaste-settings.la
 
-LIBGPASTE_SETTINGS_CURRENT=1
+LIBGPASTE_SETTINGS_CURRENT=2
 LIBGPASTE_SETTINGS_REVISION=0
 LIBGPASTE_SETTINGS_AGE=0
 
