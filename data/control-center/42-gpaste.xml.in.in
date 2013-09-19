@@ -5,4 +5,8 @@
 
 	<KeyListEntry name="show-history" _description="Display the history: "></KeyListEntry>
 
+	<KeyListEntry name="sync-clipboard-to-primary" _description="Syn the clipboard to the primary selection: "></KeyListEntry>
+
+	<KeyListEntry name="sync-primary-to-clipboard" _description="Syn the primary selection to the clipboard: "></KeyListEntry>
+
 </KeyListEntries>
