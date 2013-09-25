@@ -152,7 +152,12 @@ namespace GPaste {
         public Main() {
             GLib.Object (application_id: "org.gnome.GPaste.Applet");
             this.settings = new GPaste.Settings ();
-            this.client = new GPaste.Client ();
+            try {
+                this.client = new GPaste.Client ();
+            } catch (Error e) {
+                stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
+                Posix.exit(1);
+            }
             this.element_size = this.settings.get_element_size ();
             this.activate.connect (init);
             this.settings.changed.connect ((key) => {
@@ -172,7 +177,7 @@ namespace GPaste {
                     this.window.show_history ();
                 });
             } catch (Error e) {
-                stderr.printf ("%s\n", _("Couldn't connect to GPaste daemon."));
+                stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
                 Posix.exit(1);
             }
             this.window = new Window (this);
