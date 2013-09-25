@@ -102,9 +102,10 @@ is_version (const gchar *option)
 }
 
 static void
-failure_exit (void)
+failure_exit (GError *error)
 {
-    fprintf (stderr, "%s\n", _("Couldn't connect to GPaste daemon."));
+    fprintf (stderr, "%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
+    g_error_free (error);
     exit (EXIT_FAILURE);
 }
 
@@ -130,12 +131,11 @@ main (int argc, char *argv[])
 
     g_type_init ();
 
-    GPasteClient *client = g_paste_client_new ();
     GError *error = NULL;
-    const gchar *arg1, *arg2;
+    GPasteClient *client = g_paste_client_new (&error);
 
     if (!client)
-        failure_exit ();
+        failure_exit (error);
 
     if (!isatty (fileno (stdin)))
     {
@@ -154,6 +154,7 @@ main (int argc, char *argv[])
     }
     else
     {
+        const gchar *arg1, *arg2;
         switch (argc)
         {
         case 1:
@@ -296,10 +297,7 @@ main (int argc, char *argv[])
     }
 
     if (error)
-    {
-        g_error_free (error);
-        failure_exit ();
-    }
+        failure_exit (error);
 
     g_object_unref (client);
 

@@ -32,6 +32,8 @@ struct _GPasteClientPrivate
     GDBusNodeInfo *g_paste_daemon_dbus_info;
 
     gulong         g_signal;
+
+    GError        *connection_error;
 };
 
 enum
@@ -495,6 +497,7 @@ g_paste_client_init (GPasteClient *self)
     priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_IFACE_INFO,
                                                                    NULL); /* Error */
 
+    priv->connection_error = NULL;
     GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                                      G_DBUS_PROXY_FLAGS_NONE,
                                                                      priv->g_paste_daemon_dbus_info->interfaces[0],
@@ -502,7 +505,7 @@ g_paste_client_init (GPasteClient *self)
                                                                      G_PASTE_OBJECT_PATH,
                                                                      G_PASTE_INTERFACE_NAME,
                                                                      NULL, /* cancellable */
-                                                                     NULL); /* error */
+                                                                     &priv->connection_error);
 
     if (proxy)
     {
@@ -522,12 +525,15 @@ g_paste_client_init (GPasteClient *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteClient *
-g_paste_client_new (void)
+g_paste_client_new (GError **error)
 {
     GPasteClient *self = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GPasteClientPrivate *priv = self->priv;
 
-    if (!self->priv->proxy)
+    if (!priv->proxy)
     {
+        if (error)
+            *error = priv->connection_error;
         g_object_unref (self);
         return NULL;
     }

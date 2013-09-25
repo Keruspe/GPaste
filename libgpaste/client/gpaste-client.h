@@ -83,7 +83,7 @@ gchar  **g_paste_client_list_histories             (GPasteClient *self,
                                                     GError      **error);
 gboolean g_paste_client_is_active                  (GPasteClient *self);
 
-GPasteClient *g_paste_client_new (void);
+GPasteClient *g_paste_client_new (GError **error);
 
 G_END_DECLS
 

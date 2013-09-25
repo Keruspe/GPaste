@@ -21,6 +21,8 @@
 
 #include "gpaste-settings-keys.h"
 
+#include <stdlib.h>
+
 #include <glib/gi18n.h>
 
 #include <gpaste-client.h>
@@ -239,6 +241,17 @@ g_paste_settings_ui_notebook_make_keybindings_panel (GPasteSettingsUiNotebook *s
     return panel;
 }
 
+static gboolean
+g_paste_settings_ui_check_connection_error (GError *error)
+{
+    if (!error)
+        return FALSE;
+
+    fprintf (stderr, "%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
+    g_error_free (error);
+    return TRUE;
+}
+
 static void
 g_paste_settings_ui_notebook_refill_histories (GPasteSettingsUiNotebook *self)
 {
@@ -246,12 +259,8 @@ g_paste_settings_ui_notebook_refill_histories (GPasteSettingsUiNotebook *self)
     GError *error = NULL;
     GStrv histories = g_paste_client_list_histories (priv->client, &error);
 
-    if (error)
-    {
-        fprintf (stderr, "%s\n", _("Couldn't connect to GPaste daemon."));
-        g_error_free (error);
+    if (g_paste_settings_ui_check_connection_error (error))
         return;
-    }
 
     GtkComboBoxText *targets = priv->targets;
 
@@ -279,12 +288,8 @@ backup_callback (const gchar *value,
 
     g_paste_client_backup_history (self->priv->client, value, &error);
 
-    if (error)
-    {
-        fprintf (stderr, "%s\n", _("Couldn't connect to GPaste daemon."));
-        g_error_free (error);
+    if (g_paste_settings_ui_check_connection_error (error))
         return;
-    }
 
     g_paste_settings_ui_notebook_refill_histories (self);
 }
@@ -305,12 +310,8 @@ targets_callback (const gchar *action,
     else
         fprintf (stderr, "unknown action: %s\n", action);
 
-    if (error)
-    {
-        fprintf(stderr, "%s\n", _("Couldn't connect to GPaste daemon."));
-        g_error_free (error);
+    if (g_paste_settings_ui_check_connection_error (error))
         return;
-    }
 
     g_paste_settings_ui_notebook_refill_histories (self);
 }
@@ -460,7 +461,12 @@ g_paste_settings_ui_notebook_init (GPasteSettingsUiNotebook *self)
 {
     GPasteSettingsUiNotebookPrivate *priv = self->priv = G_PASTE_SETTINGS_UI_NOTEBOOK_GET_PRIVATE (self);
 
-    priv->client = g_paste_client_new ();
+    GError *error = NULL;
+    priv->client = g_paste_client_new (&error);
+
+    if (g_paste_settings_ui_check_connection_error (error))
+        exit (EXIT_FAILURE);
+
     priv->settings = g_paste_settings_new ();
     priv->settings_signal = g_signal_connect (priv->settings,
                                               "changed",
