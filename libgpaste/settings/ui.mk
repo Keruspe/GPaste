@@ -19,25 +19,28 @@ libgpaste_settings_ui_la_file = libgpaste/settings/ui/libgpaste-settings-ui.la
 
 $(libgpaste_settings_ui_la_file): $(libgpaste_client_la_file) $(libgpaste_settings_la_file)
 
-LIBGPASTE_SETTINGS_UI_CURRENT=1
+LIBGPASTE_SETTINGS_UI_CURRENT=2
 LIBGPASTE_SETTINGS_UI_REVISION=0
 LIBGPASTE_SETTINGS_UI_AGE=0
 
 libgpaste_settings_ui_public_headers = \
-	libgpaste/settings/ui/gpaste-settings-ui-notebook.h \
 	libgpaste/settings/ui/gpaste-settings-ui-panel.h \
+	libgpaste/settings/ui/gpaste-settings-ui-stack.h \
+	libgpaste/settings/ui/gpaste-settings-ui-widget.h \
 	$(NULL)
 
 libgpaste_settings_ui_private_headers = \
-	libgpaste/settings/ui/gpaste-settings-ui-notebook-private.h \
 	libgpaste/settings/ui/gpaste-settings-ui-panel-private.h \
+	libgpaste/settings/ui/gpaste-settings-ui-stack-private.h \
+	libgpaste/settings/ui/gpaste-settings-ui-widget-private.h \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES = \
 	$(libgpaste_settings_ui_public_headers) \
 	$(libgpaste_settings_ui_private_headers) \
-	libgpaste/settings/ui/gpaste-settings-ui-notebook.c \
 	libgpaste/settings/ui/gpaste-settings-ui-panel.c \
+	libgpaste/settings/ui/gpaste-settings-ui-stack.c \
+	libgpaste/settings/ui/gpaste-settings-ui-widget.c \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS = \

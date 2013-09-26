@@ -17,28 +17,28 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_SETTINGS_UI_NOTEBOOK_PRIVATE_H__
-#define __G_PASTE_SETTINGS_UI_NOTEBOOK_PRIVATE_H__
+#ifndef __G_PASTE_SETTINGS_UI_WIDGET_PRIVATE_H__
+#define __G_PASTE_SETTINGS_UI_WIDGET_PRIVATE_H__
 
-#include "gpaste-settings-ui-notebook.h"
+#include "gpaste-settings-ui-widget.h"
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteSettingsUiNotebookPrivate GPasteSettingsUiNotebookPrivate;
+typedef struct _GPasteSettingsUiWidgetPrivate GPasteSettingsUiWidgetPrivate;
 
-struct _GPasteSettingsUiNotebook
+struct _GPasteSettingsUiWidget
 {
-    GtkNotebook parent_instance;
+    GtkGrid parent_instance;
 
     /*< private >*/
-    GPasteSettingsUiNotebookPrivate *priv;
+    GPasteSettingsUiWidgetPrivate *priv;
 };
 
-struct _GPasteSettingsUiNotebookClass
+struct _GPasteSettingsUiWidgetClass
 {
-    GtkNotebookClass parent_class;
+    GtkGridClass parent_class;
 };
 
 G_END_DECLS
 
-#endif /*__G_PASTE_SETTINGS_UI_NOTEBOOK_PRIVATE_H__*/
+#endif /*__G_PASTE_SETTINGS_UI_WIDGET_PRIVATE_H__*/

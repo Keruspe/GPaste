@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-settings-ui-notebook-private.h"
+#include "gpaste-settings-ui-stack-private.h"
 
 #include "gpaste-settings-keys.h"
 
@@ -28,7 +28,7 @@
 #include <gpaste-client.h>
 #include <gpaste-settings.h>
 
-struct _GPasteSettingsUiNotebookPrivate
+struct _GPasteSettingsUiStackPrivate
 {
     GPasteClient    *client;
     GPasteSettings  *settings;
@@ -55,7 +55,7 @@ struct _GPasteSettingsUiNotebookPrivate
     gulong           settings_signal;
 };
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiNotebook, g_paste_settings_ui_notebook, GTK_TYPE_NOTEBOOK)
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiStack, g_paste_settings_ui_stack, GTK_TYPE_STACK)
 
 #define SETTING_CALLBACK_FULL(setting, type, cast)                            \
     static void                                                               \
@@ -73,25 +73,27 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiNotebook, g_paste_settings_ui_notebo
 #define UINT_CALLBACK(setting) SETTING_CALLBACK_FULL (setting, gdouble, uint)
 
 /**
- * g_paste_settings_ui_notebook_add_panel:
- * @self: a #GPasteSettingsUiNotebook instance
+ * g_paste_settings_ui_stack_add_panel:
+ * @self: a #GPasteSettingsUiStack instance
+ * @name: the name of the panel
  * @label: the label to display
  * @panel: (transfer none): the #GPasteSettingsUiPanel to add
  *
- * Add a new panel to the #GPasteSettingsUiNotebook
+ * Add a new panel to the #GPasteSettingsUiStack
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_settings_ui_notebook_add_panel (GPasteSettingsUiNotebook *self,
-                                        const gchar              *label,
-                                        GPasteSettingsUiPanel    *panel)
+g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
+                                     const gchar              *name,
+                                     const gchar              *label,
+                                     GPasteSettingsUiPanel    *panel)
 {
-    g_return_if_fail (G_PASTE_IS_SETTINGS_UI_NOTEBOOK (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS_UI_STACK (self));
 
-    gtk_notebook_append_page (GTK_NOTEBOOK (self),
-                              GTK_WIDGET (panel),
-                              gtk_label_new (label));
+    gtk_stack_add_titled (GTK_STACK (self),
+                          GTK_WIDGET (panel),
+                          name, label);
 }
 
 BOOLEAN_CALLBACK (track_changes)
@@ -106,9 +108,9 @@ BOOLEAN_CALLBACK (save_history)
 BOOLEAN_CALLBACK (fifo)
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_notebook_make_behaviour_panel (GPasteSettingsUiNotebook *self)
+g_paste_settings_ui_stack_make_behaviour_panel (GPasteSettingsUiStack *self)
 {
-    GPasteSettingsUiNotebookPrivate *priv = self->priv;
+    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -168,9 +170,9 @@ UINT_CALLBACK (max_text_item_size)
 UINT_CALLBACK (min_text_item_size)
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_notebook_make_history_settings_panel (GPasteSettingsUiNotebook *self)
+g_paste_settings_ui_stack_make_history_settings_panel (GPasteSettingsUiStack *self)
 {
-    GPasteSettingsUiNotebookPrivate *priv = self->priv;
+    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -209,9 +211,9 @@ STRING_CALLBACK (sync_clipboard_to_primary)
 STRING_CALLBACK (sync_primary_to_clipboard)
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_notebook_make_keybindings_panel (GPasteSettingsUiNotebook *self)
+g_paste_settings_ui_stack_make_keybindings_panel (GPasteSettingsUiStack *self)
 {
-    GPasteSettingsUiNotebookPrivate *priv = self->priv;
+    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -251,9 +253,9 @@ g_paste_settings_ui_check_connection_error (GError *error)
 }
 
 static void
-g_paste_settings_ui_notebook_refill_histories (GPasteSettingsUiNotebook *self)
+g_paste_settings_ui_stack_refill_histories (GPasteSettingsUiStack *self)
 {
-    GPasteSettingsUiNotebookPrivate *priv = self->priv;
+    GPasteSettingsUiStackPrivate *priv = self->priv;
     GError *error = NULL;
     GStrv histories = g_paste_client_list_histories (priv->client, &error);
 
@@ -281,7 +283,7 @@ static void
 backup_callback (const gchar *value,
                  gpointer     user_data)
 {
-    GPasteSettingsUiNotebook *self = G_PASTE_SETTINGS_UI_NOTEBOOK (user_data);
+    GPasteSettingsUiStack *self = G_PASTE_SETTINGS_UI_STACK (user_data);
     GError *error = NULL;
 
     g_paste_client_backup_history (self->priv->client, value, &error);
@@ -289,7 +291,7 @@ backup_callback (const gchar *value,
     if (g_paste_settings_ui_check_connection_error (error))
         return;
 
-    g_paste_settings_ui_notebook_refill_histories (self);
+    g_paste_settings_ui_stack_refill_histories (self);
 }
 
 static void
@@ -297,7 +299,7 @@ targets_callback (const gchar *action,
                   const gchar *target,
                   gpointer     user_data)
 {
-    GPasteSettingsUiNotebook *self = G_PASTE_SETTINGS_UI_NOTEBOOK (user_data);
+    GPasteSettingsUiStack *self = G_PASTE_SETTINGS_UI_STACK (user_data);
     GPasteClient *client = self->priv->client;
     GError *error = NULL;
 
@@ -311,13 +313,13 @@ targets_callback (const gchar *action,
     if (g_paste_settings_ui_check_connection_error (error))
         return;
 
-    g_paste_settings_ui_notebook_refill_histories (self);
+    g_paste_settings_ui_stack_refill_histories (self);
 }
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_notebook_make_histories_panel (GPasteSettingsUiNotebook *self)
+g_paste_settings_ui_stack_make_histories_panel (GPasteSettingsUiStack *self)
 {
-    GPasteSettingsUiNotebookPrivate *priv = self->priv;
+    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -340,34 +342,34 @@ g_paste_settings_ui_notebook_make_histories_panel (GPasteSettingsUiNotebook *sel
                                                                         targets_callback,
                                                                         self);
 
-    g_paste_settings_ui_notebook_refill_histories (self);
+    g_paste_settings_ui_stack_refill_histories (self);
 
     return panel;
 }
 
 /**
- * g_paste_settings_ui_notebook_fill:
- * @self: a #GPasteSettingsUiNotebook instance
+ * g_paste_settings_ui_stack_fill:
+ * @self: a #GPasteSettingsUiStack instance
  *
- * Fill the #GPasteSettingsUiNotebook with default panels
+ * Fill the #GPasteSettingsUiStack with default panels
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_settings_ui_notebook_fill (GPasteSettingsUiNotebook *self)
+g_paste_settings_ui_stack_fill (GPasteSettingsUiStack *self)
 {
-    g_paste_settings_ui_notebook_add_panel (self, _("General behaviour"), g_paste_settings_ui_notebook_make_behaviour_panel (self));
-    g_paste_settings_ui_notebook_add_panel (self, _("History settings"), g_paste_settings_ui_notebook_make_history_settings_panel (self));
-    g_paste_settings_ui_notebook_add_panel (self, _("Keyboard shortcuts"), g_paste_settings_ui_notebook_make_keybindings_panel (self));
-    g_paste_settings_ui_notebook_add_panel (self, _("Histories"), g_paste_settings_ui_notebook_make_histories_panel (self));
+    g_paste_settings_ui_stack_add_panel (self, "general",   _("General behaviour"),  g_paste_settings_ui_stack_make_behaviour_panel (self));
+    g_paste_settings_ui_stack_add_panel (self, "history",   _("History settings"),   g_paste_settings_ui_stack_make_history_settings_panel (self));
+    g_paste_settings_ui_stack_add_panel (self, "keyboard",  _("Keyboard shortcuts"), g_paste_settings_ui_stack_make_keybindings_panel (self));
+    g_paste_settings_ui_stack_add_panel (self, "histories", _("Histories"),          g_paste_settings_ui_stack_make_histories_panel (self));
 }
 
 static void
-g_paste_settings_ui_notebook_settings_changed (GSettings   *gsettings G_GNUC_UNUSED,
+g_paste_settings_ui_stack_settings_changed (GSettings   *gsettings G_GNUC_UNUSED,
                                              const gchar *key,
                                              gpointer     user_data)
 {
-    GPasteSettingsUiNotebookPrivate *priv = G_PASTE_SETTINGS_UI_NOTEBOOK (user_data)->priv;
+    GPasteSettingsUiStackPrivate *priv = G_PASTE_SETTINGS_UI_STACK (user_data)->priv;
     GPasteSettings *settings = priv->settings;
 
     if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
@@ -415,9 +417,9 @@ g_paste_settings_ui_notebook_settings_changed (GSettings   *gsettings G_GNUC_UNU
 }
 
 static void
-g_paste_settings_ui_notebook_dispose (GObject *object)
+g_paste_settings_ui_stack_dispose (GObject *object)
 {
-    GPasteSettingsUiNotebookPrivate *priv = G_PASTE_SETTINGS_UI_NOTEBOOK (object)->priv;
+    GPasteSettingsUiStackPrivate *priv = G_PASTE_SETTINGS_UI_STACK (object)->priv;
     GPasteSettings *settings = priv->settings;
 
     if (settings) /* first dispose call */
@@ -428,34 +430,34 @@ g_paste_settings_ui_notebook_dispose (GObject *object)
         priv->settings = NULL;
     }
 
-    G_OBJECT_CLASS (g_paste_settings_ui_notebook_parent_class)->dispose (object);
+    G_OBJECT_CLASS (g_paste_settings_ui_stack_parent_class)->dispose (object);
 }
 
 static void
-g_paste_settings_ui_notebook_finalize (GObject *object)
+g_paste_settings_ui_stack_finalize (GObject *object)
 {
-    gchar ***actions = G_PASTE_SETTINGS_UI_NOTEBOOK (object)->priv->actions;
+    gchar ***actions = G_PASTE_SETTINGS_UI_STACK (object)->priv->actions;
 
     for (guint i = 0; actions[i]; ++i)
         g_free ((gchar **)actions[i]);
     g_free ((gchar ***)actions);
 
-    G_OBJECT_CLASS (g_paste_settings_ui_notebook_parent_class)->finalize (object);
+    G_OBJECT_CLASS (g_paste_settings_ui_stack_parent_class)->finalize (object);
 }
 
 static void
-g_paste_settings_ui_notebook_class_init (GPasteSettingsUiNotebookClass *klass)
+g_paste_settings_ui_stack_class_init (GPasteSettingsUiStackClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-    object_class->dispose = g_paste_settings_ui_notebook_dispose;
-    object_class->finalize = g_paste_settings_ui_notebook_finalize;
+    object_class->dispose = g_paste_settings_ui_stack_dispose;
+    object_class->finalize = g_paste_settings_ui_stack_finalize;
 }
 
 static void
-g_paste_settings_ui_notebook_init (GPasteSettingsUiNotebook *self)
+g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
 {
-    GPasteSettingsUiNotebookPrivate *priv = self->priv = g_paste_settings_ui_notebook_get_instance_private (self);
+    GPasteSettingsUiStackPrivate *priv = self->priv = g_paste_settings_ui_stack_get_instance_private (self);
 
     GError *error = NULL;
     priv->client = g_paste_client_new (&error);
@@ -466,7 +468,7 @@ g_paste_settings_ui_notebook_init (GPasteSettingsUiNotebook *self)
     priv->settings = g_paste_settings_new ();
     priv->settings_signal = g_signal_connect (priv->settings,
                                               "changed",
-                                              G_CALLBACK (g_paste_settings_ui_notebook_settings_changed),
+                                              G_CALLBACK (g_paste_settings_ui_stack_settings_changed),
                                               self);
 
     gchar ***actions = priv->actions = (gchar ***) g_malloc (3 * sizeof (gchar **));
@@ -482,19 +484,20 @@ g_paste_settings_ui_notebook_init (GPasteSettingsUiNotebook *self)
     action[1] = _("Delete");
 
     actions[2] = NULL;
-
 }
 
 /**
- * g_paste_settings_ui_notebook_new:
+ * g_paste_settings_ui_stack_new:
  *
- * Create a new instance of #GPasteSettingsUiNotebook
+ * Create a new instance of #GPasteSettingsUiStack
  *
- * Returns: a newly allocated #GPasteSettingsUiNotebook
+ * Returns: a newly allocated #GPasteSettingsUiStack
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteSettingsUiNotebook *
-g_paste_settings_ui_notebook_new (void)
+G_PASTE_VISIBLE GPasteSettingsUiStack *
+g_paste_settings_ui_stack_new (void)
 {
-    return G_PASTE_SETTINGS_UI_NOTEBOOK (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_NOTEBOOK, "margin", 12, NULL));
+    return G_PASTE_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_STACK,
+                                                      "homogeneous", TRUE,
+                                                      NULL));
 }

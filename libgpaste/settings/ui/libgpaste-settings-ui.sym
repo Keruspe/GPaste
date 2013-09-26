@@ -1,9 +1,9 @@
 LIBGPASTE_SETTINGS_UI_1 {
 global:
-    g_paste_settings_ui_notebook_get_type;
-    g_paste_settings_ui_notebook_add_panel;
-    g_paste_settings_ui_notebook_fill;
-    g_paste_settings_ui_notebook_new;
+    g_paste_settings_ui_stack_get_type;
+    g_paste_settings_ui_stack_add_panel;
+    g_paste_settings_ui_stack_fill;
+    g_paste_settings_ui_stack_new;
 
     g_paste_settings_ui_panel_get_type;
     g_paste_settings_ui_panel_add_boolean_setting;
@@ -13,6 +13,10 @@ global:
     g_paste_settings_ui_panel_add_text_confirm_setting;
     g_paste_settings_ui_panel_add_multi_action_setting;
     g_paste_settings_ui_panel_new;
+
+    g_paste_settings_ui_widget_get_type;
+    g_paste_settings_ui_widget_get_stack;
+    g_paste_settings_ui_widget_new;
 local:
     *;
 };

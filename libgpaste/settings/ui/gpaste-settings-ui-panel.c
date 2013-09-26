@@ -364,5 +364,5 @@ g_paste_settings_ui_panel_init (GPasteSettingsUiPanel *self)
  */
 G_PASTE_VISIBLE GPasteSettingsUiPanel *
 g_paste_settings_ui_panel_new (void) {
-    return G_PASTE_SETTINGS_UI_PANEL (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_PANEL, "margin", 10, NULL));
+    return G_PASTE_SETTINGS_UI_PANEL (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_PANEL, NULL));
 }
