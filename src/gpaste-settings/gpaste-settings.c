@@ -21,22 +21,6 @@
 
 #include <glib/gi18n.h>
 
-static void
-init (GApplication *app,
-      gpointer      user_data)
-{
-    gtk_application_add_window (GTK_APPLICATION (app), GTK_WINDOW (user_data));
-    gtk_widget_show_all (GTK_WIDGET (user_data));
-}
-
-static void
-quit (GtkWidget *widget G_GNUC_UNUSED,
-      GdkEvent  *event  G_GNUC_UNUSED,
-      gpointer   user_data)
-{
-    g_application_quit (G_APPLICATION (user_data));
-}
-
 int
 main (int argc, char *argv[])
 {
@@ -48,32 +32,6 @@ main (int argc, char *argv[])
     g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL);
     
     GtkApplication *app = gtk_application_new ("org.gnome.GPaste.Settings", G_APPLICATION_FLAGS_NONE);
-    GtkWidget *window = gtk_widget_new (GTK_TYPE_WINDOW,
-                                        "type", GTK_WINDOW_TOPLEVEL,
-                                        "title", _("GPaste daemon settings"),
-                                        "window-position", GTK_WIN_POS_CENTER,
-                                        "resizable", FALSE,
-                                        NULL);
-    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-    GtkContainer *box = GTK_CONTAINER (vbox);
-    GPasteSettingsUiNotebook *notebook = g_paste_settings_ui_notebook_new ();
-
-    g_paste_settings_ui_notebook_fill (notebook);
-    gtk_container_add (GTK_CONTAINER (vbox), GTK_WIDGET (notebook));
-
-    GtkWidget *close_button = gtk_widget_new (GTK_TYPE_BUTTON,
-                                              "label", _("Close"),
-                                              "margin", 12,
-                                              "margin-top", 0,
-                                              NULL);
-
-    gtk_widget_set_halign (close_button, GTK_ALIGN_END);
-    gtk_container_add (box, close_button);
-    gtk_container_add (GTK_CONTAINER (window), vbox);
-
-    gulong activate_signal = g_signal_connect (app, "activate", G_CALLBACK (init), window);
-    gulong quit_signal = g_signal_connect(close_button, "button-press-event", G_CALLBACK (quit), app);
-
     GApplication *gapp = G_APPLICATION (app);
     GError *error = NULL;
 
@@ -81,15 +39,28 @@ main (int argc, char *argv[])
 
     if (error)
     {
-        fprintf (stderr, "%s\n", _("Failed to register the gtk application."));
+        fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);
         g_error_free (error);
         return 1;
     }
 
-    int ret =  g_application_run (gapp, argc, argv);
+    GtkWidget *bar = gtk_header_bar_new ();
+    GtkHeaderBar *header_bar = GTK_HEADER_BAR (bar);
+    gtk_header_bar_set_title (header_bar, _("GPaste daemon settings"));
+    gtk_header_bar_set_show_close_button (header_bar, TRUE);
 
-    g_signal_handler_disconnect (close_button, quit_signal);
-    g_signal_handler_disconnect (app, activate_signal);
+    GPasteSettingsUiNotebook *notebook = g_paste_settings_ui_notebook_new ();
+    g_paste_settings_ui_notebook_fill (notebook);
 
-    return ret;
+    GtkWidget *win = gtk_widget_new (GTK_TYPE_APPLICATION_WINDOW,
+                                     "application",     app,
+                                     "type",            GTK_WINDOW_TOPLEVEL,
+                                     "window-position", GTK_WIN_POS_CENTER,
+                                     "resizable",       FALSE,
+                                     NULL);
+    gtk_window_set_titlebar(GTK_WINDOW (win), bar);
+    gtk_container_add (GTK_CONTAINER (win), GTK_WIDGET (notebook));
+    gtk_widget_show_all (win);
+
+    return g_application_run (gapp, argc, argv);
 }
