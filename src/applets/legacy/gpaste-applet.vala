@@ -63,7 +63,7 @@ namespace GPaste {
                 for (uint i = 0 ; i < hist.length ; ++i) {
                     uint current = i; // local, or weird closure behaviour
                     string elem = hist[i];
-                    var item = new Gtk.ImageMenuItem.with_label (elem);
+                    var item = new Gtk.MenuItem.with_label (elem);
                     var label = (Gtk.Label) item.get_child ();
                     if (element_size != 0) {
                         label.set_label (label.get_text ().replace ("\n", " "));
@@ -92,7 +92,7 @@ namespace GPaste {
                 }
             } catch (GLib.Error e) {}
             if (history_is_empty) {
-                var item = new Gtk.ImageMenuItem.with_label (_("(Empty)"));
+                var item = new Gtk.MenuItem.with_label (_("(Empty)"));
                 var label = (Gtk.Label) item.get_child ();
                 label.set_selectable (false);
                 this.history.add (item);
@@ -110,7 +110,7 @@ namespace GPaste {
 
         private void fill_options () {
             this.options = new Gtk.Menu ();
-            var settings = new Gtk.ImageMenuItem.with_label (_("Settings"));
+            var settings = new Gtk.MenuItem.with_label (_("Settings"));
             settings.activate.connect (() => {
                 try {
                     GLib.Process.spawn_command_line_async (Config.PKGLIBEXECDIR + "/gpaste-settings");
@@ -119,7 +119,7 @@ namespace GPaste {
                 }
             });
             this.options.add (settings);
-            var empty = new Gtk.ImageMenuItem.with_label (_("Empty history"));
+            var empty = new Gtk.MenuItem.with_label (_("Empty history"));
             empty.activate.connect (() => {
                 try {
                     ((Main) this.application).client.empty();
@@ -128,7 +128,7 @@ namespace GPaste {
                 }
             });
             this.options.add (empty);
-            var quit = new Gtk.ImageMenuItem.with_label (_("Quit"));
+            var quit = new Gtk.MenuItem.with_label (_("Quit"));
             quit.activate.connect (() => ((GLib.Application) this.application).quit_mainloop ());
             this.options.add (quit);
             this.options.show_all ();
