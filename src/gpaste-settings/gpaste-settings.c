@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-settings-ui-notebook.h"
+#include "gpaste-settings-ui-widget.h"
 
 #include <glib/gi18n.h>
 
@@ -49,9 +49,6 @@ main (int argc, char *argv[])
     gtk_header_bar_set_title (header_bar, _("GPaste daemon settings"));
     gtk_header_bar_set_show_close_button (header_bar, TRUE);
 
-    GPasteSettingsUiNotebook *notebook = g_paste_settings_ui_notebook_new ();
-    g_paste_settings_ui_notebook_fill (notebook);
-
     GtkWidget *win = gtk_widget_new (GTK_TYPE_APPLICATION_WINDOW,
                                      "application",     app,
                                      "type",            GTK_WINDOW_TOPLEVEL,
@@ -59,7 +56,7 @@ main (int argc, char *argv[])
                                      "resizable",       FALSE,
                                      NULL);
     gtk_window_set_titlebar(GTK_WINDOW (win), bar);
-    gtk_container_add (GTK_CONTAINER (win), GTK_WIDGET (notebook));
+    gtk_container_add (GTK_CONTAINER (win), g_paste_settings_ui_widget_new ());
     gtk_widget_show_all (win);
 
     return g_application_run (gapp, argc, argv);
