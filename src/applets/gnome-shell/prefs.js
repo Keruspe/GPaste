@@ -1,11 +1,11 @@
 const GPaste = imports.gi.GPaste;
+const Gtk = imports.gi.Gtk;
 
 function init() {
 }
 
 function buildPrefsWidget() {
-    let notebook = new GPaste.SettingsUiNotebook();
-    notebook.fill();
-    notebook.show_all();
-    return notebook;
+    let widget = new GPaste.SettingsUiWidget({ orientation: Gtk.Orientation.VERTICAL, margin: 12 });
+    widget.show_all();
+    return widget;
 }
