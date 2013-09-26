@@ -35,6 +35,7 @@ main (int argc, char *argv[])
     GApplication *gapp = G_APPLICATION (app);
     GError *error = NULL;
 
+    G_APPLICATION_GET_CLASS (gapp)->activate = NULL;
     g_application_register (gapp, NULL, &error);
 
     if (error)

@@ -420,14 +420,12 @@ static void
 g_paste_settings_ui_stack_dispose (GObject *object)
 {
     GPasteSettingsUiStackPrivate *priv = G_PASTE_SETTINGS_UI_STACK (object)->priv;
-    GPasteSettings *settings = priv->settings;
 
-    if (settings) /* first dispose call */
+    if (priv->settings) /* first dispose call */
     {
-        g_signal_handler_disconnect (settings, priv->settings_signal);
-        g_object_unref (settings);
-        g_object_unref (priv->client);
-        priv->settings = NULL;
+        g_signal_handler_disconnect (priv->settings, priv->settings_signal);
+        g_clear_object (&priv->settings);
+        g_clear_object (&priv->client);
     }
 
     G_OBJECT_CLASS (g_paste_settings_ui_stack_parent_class)->dispose (object);

@@ -22,7 +22,6 @@
 struct _GPasteSettingsUiWidgetPrivate
 {
     GPasteSettingsUiStack *stack;
-    GtkWidget             *stack_switcher;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiWidget, g_paste_settings_ui_widget, GTK_TYPE_BOX)
@@ -42,20 +41,8 @@ g_paste_settings_ui_widget_get_stack (GPasteSettingsUiWidget *self)
 }
 
 static void
-g_paste_settings_ui_widget_dispose (GObject *object)
+g_paste_settings_ui_widget_class_init (GPasteSettingsUiWidgetClass *klass G_GNUC_UNUSED)
 {
-    GPasteSettingsUiWidgetPrivate *priv = G_PASTE_SETTINGS_UI_WIDGET (object)->priv;
-
-    g_object_unref (priv->stack);
-    g_object_unref (priv->stack_switcher);
-
-    G_OBJECT_CLASS (g_paste_settings_ui_widget_parent_class)->dispose (object);
-}
-
-static void
-g_paste_settings_ui_widget_class_init (GPasteSettingsUiWidgetClass *klass)
-{
-    G_OBJECT_CLASS (klass)->dispose = g_paste_settings_ui_widget_dispose;
 }
 
 static void
@@ -67,13 +54,12 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
 
     GPasteSettingsUiStack *stack = priv->stack = g_paste_settings_ui_stack_new ();
     g_paste_settings_ui_stack_fill (stack);
-    GtkWidget *stack_switcher = priv->stack_switcher = gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
-                                                                       "stack",  GTK_STACK (stack),
-                                                                       "halign", GTK_ALIGN_CENTER,
-                                                                       NULL);
 
     GtkContainer *box = GTK_CONTAINER (self);
-    gtk_container_add (box, stack_switcher);
+    gtk_container_add (box, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
+                                            "stack",  GTK_STACK (stack),
+                                            "halign", GTK_ALIGN_CENTER,
+                                            NULL));
     gtk_container_add (box, GTK_WIDGET (stack));
 }
 
