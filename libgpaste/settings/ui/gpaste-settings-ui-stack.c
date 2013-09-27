@@ -496,6 +496,7 @@ G_PASTE_VISIBLE GPasteSettingsUiStack *
 g_paste_settings_ui_stack_new (void)
 {
     return G_PASTE_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_STACK,
+                                                      "margin",      12,
                                                       "homogeneous", TRUE,
                                                       NULL));
 }

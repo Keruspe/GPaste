@@ -45,9 +45,14 @@ main (int argc, char *argv[])
         return 1;
     }
 
+    GPasteSettingsUiStack *stack = g_paste_settings_ui_stack_new ();
+    g_paste_settings_ui_stack_fill (stack);
+
     GtkWidget *bar = gtk_header_bar_new ();
     GtkHeaderBar *header_bar = GTK_HEADER_BAR (bar);
-    gtk_header_bar_set_title (header_bar, _("GPaste daemon settings"));
+    gtk_header_bar_pack_start (header_bar, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
+                                                           "stack",  GTK_STACK (stack),
+                                                           NULL));
     gtk_header_bar_set_show_close_button (header_bar, TRUE);
 
     GtkWidget *win = gtk_widget_new (GTK_TYPE_APPLICATION_WINDOW,
@@ -57,7 +62,7 @@ main (int argc, char *argv[])
                                      "resizable",       FALSE,
                                      NULL);
     gtk_window_set_titlebar(GTK_WINDOW (win), bar);
-    gtk_container_add (GTK_CONTAINER (win), g_paste_settings_ui_widget_new ());
+    gtk_container_add (GTK_CONTAINER (win), GTK_WIDGET (stack));
     gtk_widget_show_all (win);
 
     return g_application_run (gapp, argc, argv);

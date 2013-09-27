@@ -96,6 +96,7 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
     GtkWidget *button = gtk_check_button_new_with_mnemonic (label);
     CALLBACK_DATA_DEFAULT (button)
 
+    gtk_widget_set_hexpand (button, TRUE);
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (button), value);
     _data->signal = g_signal_connect (button, "toggled", G_CALLBACK (boolean_wrapper), data);
     gtk_grid_attach (GTK_GRID (self), button, 0, self->priv->current_line++, 1, 1);
@@ -121,11 +122,12 @@ static GtkLabel *
 g_paste_settings_ui_panel_add_label (GPasteSettingsUiPanel *self,
                                      const gchar *label)
 {
-    GtkLabel *button_label = (GtkLabel *) gtk_widget_new (GTK_TYPE_LABEL, "label", label, "xalign", 0.0, NULL);
+    GtkWidget *button_label = gtk_widget_new (GTK_TYPE_LABEL, "label", label, "xalign", 0.0, NULL);
 
-    gtk_grid_attach (GTK_GRID (self), GTK_WIDGET (button_label), 0, self->priv->current_line++, 1, 1);
+    gtk_widget_set_hexpand (button_label, TRUE);
+    gtk_grid_attach (GTK_GRID (self), button_label, 0, self->priv->current_line++, 1, 1);
 
-    return button_label;
+    return GTK_LABEL (button_label);
 }
 
 static void
@@ -164,6 +166,7 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
     GtkSpinButton *b = GTK_SPIN_BUTTON (button);
     CALLBACK_DATA_DEFAULT (button)
 
+    gtk_widget_set_hexpand (button, TRUE);
     gtk_spin_button_set_value (b, value);
     _data->signal = g_signal_connect (button, "value-changed", G_CALLBACK (range_wrapper), data);
     gtk_grid_attach_next_to (GTK_GRID (self), button, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
@@ -201,6 +204,7 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
     GtkEntry *e = GTK_ENTRY (entry);
     CALLBACK_DATA_DEFAULT (entry)
 
+    gtk_widget_set_hexpand (entry, TRUE);
     gtk_entry_set_text (e, value);
     _data->signal = g_signal_connect (entry, "changed", G_CALLBACK (text_wrapper), data);
     gtk_grid_attach_next_to (GTK_GRID (self), entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);
@@ -215,6 +219,7 @@ g_paste_settings_ui_panel_add_confirm_button (GPasteSettingsUiPanel *self,
 {
     GtkWidget *button = gtk_button_new_with_label (label);
     
+    gtk_widget_set_hexpand (button, TRUE);
     gtk_grid_attach_next_to (GTK_GRID (self), button, GTK_WIDGET (attach_to), GTK_POS_RIGHT, 1, 1);
 
     return GTK_BUTTON (button);

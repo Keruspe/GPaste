@@ -75,6 +75,5 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_settings_ui_widget_new (void) {
     return gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET,
                            "orientation", GTK_ORIENTATION_VERTICAL,
-                           "margin",      12,
                            NULL);
 }
