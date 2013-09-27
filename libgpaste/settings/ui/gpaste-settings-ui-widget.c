@@ -24,7 +24,7 @@ struct _GPasteSettingsUiWidgetPrivate
     GPasteSettingsUiStack *stack;
 };
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiWidget, g_paste_settings_ui_widget, GTK_TYPE_BOX)
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiWidget, g_paste_settings_ui_widget, GTK_TYPE_GRID)
 
 /**
  * g_paste_settings_ui_widget_get_stack:
@@ -49,18 +49,17 @@ static void
 g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
 {
     GPasteSettingsUiWidgetPrivate *priv = self->priv = g_paste_settings_ui_widget_get_instance_private (self);
-
-    gtk_box_set_spacing (GTK_BOX (self), 10);
+    GtkGrid *grid = GTK_GRID (self);
+    guint current_line = 0;
 
     GPasteSettingsUiStack *stack = priv->stack = g_paste_settings_ui_stack_new ();
     g_paste_settings_ui_stack_fill (stack);
 
-    GtkContainer *box = GTK_CONTAINER (self);
-    gtk_container_add (box, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
-                                            "stack",  GTK_STACK (stack),
-                                            "halign", GTK_ALIGN_CENTER,
-                                            NULL));
-    gtk_container_add (box, GTK_WIDGET (stack));
+    gtk_grid_attach (grid, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
+                                           "stack",  GTK_STACK (stack),
+                                           "halign", GTK_ALIGN_CENTER,
+                                           NULL), 0, current_line++, 1, 1);
+    gtk_grid_attach (grid, GTK_WIDGET (stack), 0, current_line++, 1, 1);
 }
 
 /**
@@ -73,7 +72,5 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
  */
 G_PASTE_VISIBLE GtkWidget *
 g_paste_settings_ui_widget_new (void) {
-    return gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET,
-                           "orientation", GTK_ORIENTATION_VERTICAL,
-                           NULL);
+    return gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET, NULL);
 }
