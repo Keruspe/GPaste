@@ -74,11 +74,11 @@ namespace GPaste {
                         label.set_markup ("<b>" + GLib.Markup.escape_text (label.get_text ()) + "</b>");
                     item.button_release_event.connect ((event) => {
                         try {
-                            switch (Gtk.get_current_event ().button.button) {
-                            case 1:
+                            switch (event.button) {
+                            case Gdk.BUTTON_PRIMARY:
                                 app.client.select (current);
                                 return false;
-                            case 3:
+                            case Gdk.BUTTON_SECONDARY:
                                 app.client.delete (current);
                                 this.show_history ();
                                 return true;
