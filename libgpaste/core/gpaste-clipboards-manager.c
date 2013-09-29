@@ -22,9 +22,14 @@
 #include "gpaste-text-item.h"
 #include "gpaste-uris-item.h"
 
-#include <gdk/gdkx.h>
-#include <X11/Xatom.h>
-#include <X11/extensions/Xfixes.h>
+#ifdef GDK_WINDOWING_WAYLAND
+#  include <gdk/gdkwayland.h>
+#endif
+#ifdef GDK_WINDOWING_X11
+#  include <gdk/gdkx.h>
+#  include <X11/Xatom.h>
+#  include <X11/extensions/Xfixes.h>
+#endif
 
 struct _GPasteClipboardsManagerPrivate
 {
@@ -32,17 +37,19 @@ struct _GPasteClipboardsManagerPrivate
     GPasteHistory  *history;
     GPasteSettings *settings;
 
-    Display        *display;
-    Window          window;
+    GdkDisplay     *display;
+    GdkWindow      *window;
 
     gulong          selected_signal;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)
 
+#ifdef GDK_WINDOWING_X11
 static gint xfixes_event_base = 0;
 
 static Atom xa_clipboard;
+#endif
 
 /**
  * g_paste_clipboards_manager_add_clipboard:
@@ -236,16 +243,45 @@ _atom_to_gdk_atom (Atom atom)
     return 0;
 }
 
+#ifdef GDK_WINDOWING_WAYLAND
 static void
-_g_paste_clipboards_manager_activate (GPasteClipboardsManager *self,
-                                      GdkAtom                  atom)
+g_paste_clipboards_manager_activate_one_wayland (void)
+{
+    g_error ("Wayland is currently not supported.");
+}
+#endif
+
+#ifdef GDK_WINDOWING_X11
+static void
+g_paste_clipboards_manager_activate_one_x11 (GPasteClipboardsManager *self,
+                                             Atom                     atom)
 {
     GPasteClipboardsManagerPrivate *priv = self->priv;
 
-    XFixesSelectSelectionInput(priv->display,
-                               priv->window,
-                               _gdk_atom_to_atom (atom),
+    XFixesSelectSelectionInput(GDK_DISPLAY_XDISPLAY (priv->display),
+                               gdk_x11_window_get_xid (priv->window),
+                               atom,
                                XFixesSetSelectionOwnerNotifyMask | XFixesSelectionWindowDestroyNotifyMask | XFixesSelectionClientCloseNotifyMask);
+}
+#endif
+
+static void
+g_paste_clipboards_manager_activate_one (GPasteClipboardsManager *self,
+                                         GdkAtom                  atom)
+{
+    GdkDisplay *display = self->priv->display;
+
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY (display))
+        g_paste_clipboards_manager_activate_one_wayland ();
+    else
+#endif
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY (display))
+        g_paste_clipboards_manager_activate_one_x11 (self, _gdk_atom_to_atom (atom));
+    else
+#endif
+        g_error ("Unsupported GDK backend.");
 }
 
 /**
@@ -262,7 +298,7 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     for (GSList *clipboard = self->priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
-        _g_paste_clipboards_manager_activate (self, g_paste_clipboard_get_target (clipboard->data));
+        g_paste_clipboards_manager_activate_one (self, g_paste_clipboard_get_target (clipboard->data));
 }
 
 /**
@@ -353,14 +389,18 @@ g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
     object_class->finalize = g_paste_clipboards_manager_finalize;
 }
 
+#ifdef GDK_WINDOWING_WAYLAND
 static void
-g_paste_clipboards_manager_init_x11 (GPasteClipboardsManager *self)
+g_paste_clipboards_manager_init_wayland (void)
 {
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    g_error ("Wayland is currently not supported.");
+}
+#endif
 
-    Display *display = priv->display = gdk_x11_get_default_xdisplay ();
-    priv->window = gdk_x11_window_get_xid (gdk_get_default_root_window ());
-
+#ifdef GDK_WINDOWING_X11
+static void
+g_paste_clipboards_manager_init_x11 (Display *display)
+{
     if (!xfixes_event_base)
     {
         xa_clipboard = XInternAtom (display, "CLIPBOARD", False);
@@ -373,6 +413,7 @@ g_paste_clipboards_manager_init_x11 (GPasteClipboardsManager *self)
             g_error ("XFixes 5 not found, GPaste won't work");
     }
 }
+#endif
 
 static void
 g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
@@ -381,9 +422,22 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 
     priv->clipboards = NULL;
 
-    g_paste_clipboards_manager_init_x11 (self);
+    GdkDisplay *display = priv->display = gdk_display_get_default ();
+    GdkWindow *window = priv->window = gdk_get_default_root_window ();
 
-    gdk_window_add_filter (gdk_get_default_root_window (),
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY (display))
+        g_paste_clipboards_manager_init_wayland ();
+    else
+#endif
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY (display))
+        g_paste_clipboards_manager_init_x11 (GDK_DISPLAY_XDISPLAY (display));
+    else
+#endif
+        g_error ("Unsupported GDK backend.");
+
+    gdk_window_add_filter (window,
                            g_paste_clipboards_manager_filter,
                            self);
 }
