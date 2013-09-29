@@ -22,16 +22,27 @@
 #include "gpaste-text-item.h"
 #include "gpaste-uris-item.h"
 
+#include <gdk/gdkx.h>
+#include <X11/Xatom.h>
+#include <X11/extensions/Xfixes.h>
+
 struct _GPasteClipboardsManagerPrivate
 {
     GSList         *clipboards;
     GPasteHistory  *history;
     GPasteSettings *settings;
 
+    Display        *display;
+    Window          window;
+
     gulong          selected_signal;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)
+
+static gint xfixes_event_base = 0;
+
+static Atom xa_clipboard;
 
 /**
  * g_paste_clipboards_manager_add_clipboard:
@@ -108,22 +119,25 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     }
 }
 
-static gboolean
-g_paste_clipboards_manager_check_clipboards (gpointer user_data)
+static void
+g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
+                                   GdkAtom                  atom)
 {
-    GPasteClipboardsManager *self = G_PASTE_CLIPBOARDS_MANAGER (user_data);
     GPasteClipboardsManagerPrivate *priv = self->priv;
     GPasteHistory *history = priv->history;
     GPasteSettings *settings = priv->settings;
     const gchar *synchronized_text = NULL;
 
+    if (atom == GDK_SELECTION_PRIMARY &&
+        !g_paste_settings_get_primary_to_history (settings))
+            return;
+
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         GPasteClipboard *clip = clipboard->data;
 
-        if (g_paste_clipboard_get_target (clip) == GDK_SELECTION_PRIMARY &&
-            !g_paste_settings_get_primary_to_history (settings))
-                continue;
+        if (g_paste_clipboard_get_target (clip) != atom)
+            continue;
 
         gboolean something_in_clipboard = FALSE;
         GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
@@ -166,9 +180,7 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
 
                 if (image != NULL)
                 {
-                    if (g_paste_settings_get_track_changes (settings) &&
-                        (g_paste_clipboard_get_target (clip) == GDK_SELECTION_CLIPBOARD ||
-                            g_paste_settings_get_primary_to_history (settings)))
+                    if (g_paste_settings_get_track_changes (settings))
                     {
                         GPasteItem *item = G_PASTE_ITEM (g_paste_image_item_new (image));
 
@@ -202,8 +214,38 @@ g_paste_clipboards_manager_check_clipboards (gpointer user_data)
                     g_paste_clipboard_select_text (clip, synchronized_text);
         }
     }
+}
 
-    return TRUE;
+static Atom
+_gdk_atom_to_atom (GdkAtom atom)
+{
+    if (atom == GDK_SELECTION_CLIPBOARD)
+        return xa_clipboard;
+    if (atom == GDK_SELECTION_PRIMARY)
+        return XA_PRIMARY;
+    return 0;
+}
+
+static GdkAtom
+_atom_to_gdk_atom (Atom atom)
+{
+    if (atom == xa_clipboard)
+        return GDK_SELECTION_CLIPBOARD;
+    if (atom == XA_PRIMARY)
+        return GDK_SELECTION_PRIMARY;
+    return 0;
+}
+
+static void
+_g_paste_clipboards_manager_activate (GPasteClipboardsManager *self,
+                                      GdkAtom                  atom)
+{
+    GPasteClipboardsManagerPrivate *priv = self->priv;
+
+    XFixesSelectSelectionInput(priv->display,
+                               priv->window,
+                               _gdk_atom_to_atom (atom),
+                               XFixesSetSelectionOwnerNotifyMask | XFixesSelectionWindowDestroyNotifyMask | XFixesSelectionClientCloseNotifyMask);
 }
 
 /**
@@ -219,7 +261,8 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
-    g_timeout_add_seconds (1, g_paste_clipboards_manager_check_clipboards, self);
+    for (GSList *clipboard = self->priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+        _g_paste_clipboards_manager_activate (self, g_paste_clipboard_get_target (clipboard->data));
 }
 
 /**
@@ -253,6 +296,23 @@ on_item_selected (GPasteClipboardsManager *self,
     g_paste_clipboards_manager_select (self, item);
 
     return TRUE;
+}
+
+static GdkFilterReturn
+g_paste_clipboards_manager_filter (GdkXEvent *xevent,
+                                   GdkEvent  *event G_GNUC_UNUSED,
+                                   gpointer   data)
+{
+    XGenericEventCookie cookie = ((XEvent *) xevent)->xcookie;
+
+    if (cookie.type == xfixes_event_base + XFixesSelectionNotify)
+    {
+        XFixesSelectionNotifyEvent *xf_ev = (XFixesSelectionNotifyEvent *) xevent;
+        g_paste_clipboards_manager_notify (G_PASTE_CLIPBOARDS_MANAGER (data),
+                                           _atom_to_gdk_atom (xf_ev->selection));
+    }
+
+    return GDK_FILTER_CONTINUE;
 }
 
 static void
@@ -294,11 +354,38 @@ g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 }
 
 static void
+g_paste_clipboards_manager_init_x11 (GPasteClipboardsManager *self)
+{
+    GPasteClipboardsManagerPrivate *priv = self->priv;
+
+    Display *display = priv->display = gdk_x11_get_default_xdisplay ();
+    priv->window = gdk_x11_window_get_xid (gdk_get_default_root_window ());
+
+    if (!xfixes_event_base)
+    {
+        xa_clipboard = XInternAtom (display, "CLIPBOARD", False);
+
+        gint xfixes_error_base;
+
+        if (!XFixesQueryExtension (display,
+                                   &xfixes_event_base,
+                                   &xfixes_error_base))
+            g_error ("XFixes 5 not found, GPaste won't work");
+    }
+}
+
+static void
 g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 {
     GPasteClipboardsManagerPrivate *priv = self->priv = g_paste_clipboards_manager_get_instance_private (self);
 
     priv->clipboards = NULL;
+
+    g_paste_clipboards_manager_init_x11 (self);
+
+    gdk_window_add_filter (gdk_get_default_root_window (),
+                           g_paste_clipboards_manager_filter,
+                           self);
 }
 
 /**

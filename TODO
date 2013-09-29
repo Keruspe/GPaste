@@ -3,7 +3,6 @@ GNOME <= 3.9.5
 
 3.2:
     Memory usage limits
-    XFixes
 
 GNOME >= 3.9.90
 ======
