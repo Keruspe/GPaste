@@ -66,6 +66,7 @@ libgpaste_core_libgpaste_core_la_CFLAGS = \
 libgpaste_core_libgpaste_core_la_LIBADD = \
 	$(libgpaste_common_la_file) \
 	$(libgpaste_settings_la_file) \
+	$(X11_LIBS) \
 	$(XML_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)
