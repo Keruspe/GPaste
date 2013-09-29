@@ -31,7 +31,7 @@ struct _GPasteKeybinding
     GObject parent_instance;
 
     /*< protected >*/
-    Display *display;
+    GdkDisplay *display;
 
     /*< private >*/
     GPasteKeybindingPrivate *priv;

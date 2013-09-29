@@ -26,8 +26,14 @@
 
 #include <gpaste-settings.h>
 
-#include <gdk/gdkx.h>
-#include <X11/extensions/XInput2.h>
+#include <gdk/gdk.h>
+#ifdef GDK_WINDOWING_WAYLAND
+#  include <gdk/gdkwayland.h>
+#endif
+#ifdef GDK_WINDOWING_X11
+#  include <gdk/gdkx.h>
+#  include <X11/extensions/XInput2.h>
+#endif
 
 G_BEGIN_DECLS
 

@@ -100,7 +100,7 @@ paste_and_pop (GPasteKeybinding *data)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
 
-    Display *display = data->display;
+    Display *display = GDK_DISPLAY_XDISPLAY (data->display);
     XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L),  TRUE, CurrentTime);
     XFlush (display);
     XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),   TRUE, CurrentTime);
