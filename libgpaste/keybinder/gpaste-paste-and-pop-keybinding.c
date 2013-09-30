@@ -38,6 +38,7 @@ G_DEFINE_TYPE (GPastePasteAndPopKeybinding, g_paste_paste_and_pop_keybinding, G_
 struct _GPastePasteAndPopKeybindingPrivate
 {
     GPasteHistory *history;
+    gboolean       delete;
 };
 
 static void
@@ -66,7 +67,9 @@ g_paste_paste_and_pop_keybinding_class_init (GPastePasteAndPopKeybindingClass *k
 static void
 g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self)
 {
-    self->priv = G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE (self);
+    GPastePasteAndPopKeybindingPrivate *priv = self->priv = G_PASTE_PASTE_AND_POP_KEYBINDING_GET_PRIVATE (self);
+
+    priv->delete = FALSE;
 }
 
 static void
@@ -76,13 +79,18 @@ paste_and_pop_get_clipboard_data (GtkClipboard     *clipboard,
                                   gpointer          user_data_or_owner)
 {
     GPastePasteAndPopKeybinding *self = G_PASTE_PASTE_AND_POP_KEYBINDING (user_data_or_owner);
-    GPasteHistory *history = self->priv->history;
+    GPastePasteAndPopKeybindingPrivate *priv = self->priv;
+    GPasteHistory *history = priv->history;
+    gboolean delete = priv->delete;
+
+    priv->delete = FALSE;
 
     g_paste_clipboard_get_clipboard_data (clipboard,
                                           selection_data,
                                           info,
                                           G_OBJECT (g_paste_history_get (history, 0)));
-    g_paste_history_remove (history, 0);
+    if (delete)
+        g_paste_history_remove (history, 0);
 }
 
 static void
@@ -100,6 +108,8 @@ paste_and_pop (GPasteKeybinding *data)
 
     gint n_targets;
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
+
+    data->priv->delete = TRUE;
 
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
