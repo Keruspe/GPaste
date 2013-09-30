@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include "config.h"
 #endif
 
+#include "gpaste-clipboards-manager.h"
 #include "gpaste-keybinding.h"
 #include "gpaste-history.h"
 
@@ -48,8 +49,9 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_paste_and_pop_keybinding_get_type (void);
 
-GPastePasteAndPopKeybinding *g_paste_paste_and_pop_keybinding_new (GPasteSettings *settings,
-                                                                   GPasteHistory  *history);
+GPastePasteAndPopKeybinding *g_paste_paste_and_pop_keybinding_new (GPasteSettings          *settings,
+                                                                   GPasteHistory           *history,
+                                                                   GPasteClipboardsManager *clipboards_manager);
 
 G_END_DECLS
 
