@@ -261,6 +261,7 @@ g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
     }
 }
 
+#ifdef GDK_WINDOWING_X11
 static Atom
 _gdk_atom_to_atom (GdkAtom atom)
 {
@@ -280,6 +281,7 @@ _atom_to_gdk_atom (Atom atom)
         return GDK_SELECTION_PRIMARY;
     return 0;
 }
+#endif
 
 #ifdef GDK_WINDOWING_WAYLAND
 static void
@@ -372,19 +374,47 @@ on_item_selected (GPasteClipboardsManager *self,
     return TRUE;
 }
 
+#ifdef GDK_WINDOWING_WAYLAND
+static void
+g_paste_clipboards_manager_filter_wayland (void)
+{
+    g_error ("Wayland is currently not supported.");
+}
+#endif
+
+#ifdef GDK_WINDOWING_X11
+static void
+g_paste_clipboards_manager_filter_x11 (GPasteClipboardsManager *self,
+                                       XEvent                  *event)
+{
+    if (event->type == xfixes_event_base + XFixesSelectionNotify)
+    {
+        XFixesSelectionNotifyEvent *xf_ev = (XFixesSelectionNotifyEvent *) event;
+        g_paste_clipboards_manager_notify (self,
+                                           _atom_to_gdk_atom (xf_ev->selection));
+    }
+}
+#endif
+
 static GdkFilterReturn
 g_paste_clipboards_manager_filter (GdkXEvent *xevent,
                                    GdkEvent  *event G_GNUC_UNUSED,
                                    gpointer   data)
 {
-    XGenericEventCookie cookie = ((XEvent *) xevent)->xcookie;
+    GPasteClipboardsManager *self = G_PASTE_CLIPBOARDS_MANAGER (data);
+    GdkDisplay *display = self->priv->display;
 
-    if (cookie.type == xfixes_event_base + XFixesSelectionNotify)
-    {
-        XFixesSelectionNotifyEvent *xf_ev = (XFixesSelectionNotifyEvent *) xevent;
-        g_paste_clipboards_manager_notify (G_PASTE_CLIPBOARDS_MANAGER (data),
-                                           _atom_to_gdk_atom (xf_ev->selection));
-    }
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY (display))
+        g_paste_clipboards_manager_filter_wayland ();
+    else
+#endif
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY (display))
+        g_paste_clipboards_manager_filter_x11 (self, (XEvent *) xevent);
+    else
+#endif
+        g_error ("Unsupported GDK backend.");
 
     return GDK_FILTER_CONTINUE;
 }
