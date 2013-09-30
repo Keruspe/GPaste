@@ -19,6 +19,7 @@
 
 #include "gpaste-clipboard-common.h"
 #include "gpaste-image-item.h"
+#include "gpaste-text-item.h"
 #include "gpaste-uris-item.h"
 
 #include <string.h>
@@ -321,7 +322,7 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
             else  if (G_PASTE_IS_TEXT_ITEM (item))
                 g_paste_clipboard_select_text (self, text);
             else
-                g_assert_unreached ();
+                g_assert_not_reached ();
         }
     }
 }

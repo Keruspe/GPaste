@@ -97,7 +97,7 @@ paste_and_pop_get_clipboard_data (GtkClipboard     *clipboard,
 
     priv->delete = FALSE;
 
-    GObject *item = g_object_ref (g_paste_history_get (history, 0));
+    GObject *item = G_OBJECT (g_paste_history_dup (history, 0));
     g_paste_clipboard_get_clipboard_data (clipboard,
                                           selection_data,
                                           info,
