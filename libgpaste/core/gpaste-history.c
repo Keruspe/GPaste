@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -49,8 +49,7 @@ enum
 static guint signals[LAST_SIGNAL] = { 0 };
 
 static GSList *
-_g_paste_history_remove (GPasteHistory *self,
-                         GSList        *elem,
+_g_paste_history_remove (GSList        *elem,
                          gboolean       remove_leftovers)
 {
     GPasteItem *item = elem->data;
@@ -65,8 +64,7 @@ _g_paste_history_remove (GPasteHistory *self,
     }
 
     g_object_unref (item);
-    return g_slist_delete_link (self->priv->history,
-                                elem);
+    return g_slist_delete_link (elem, elem);
 }
 
 /**
@@ -92,11 +90,12 @@ g_paste_history_add (GPasteHistory *self,
     {
         if (g_paste_item_equals (history->data, item))
             return;
-        for (history = g_slist_next (history); history; history = g_slist_next (history))
+        GSList *prev = history;
+        for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history))
         {
             if (g_paste_item_equals (history->data, item))
             {
-                priv->history = _g_paste_history_remove (self, history, FALSE);
+                prev->next = _g_paste_history_remove (history, FALSE);
                 break;
             }
         }
@@ -106,40 +105,40 @@ g_paste_history_add (GPasteHistory *self,
         g_slist_append (priv->history, g_object_ref (item)) :
         g_slist_prepend (priv->history, g_object_ref (item));
 
-    GSList *next = history->next;
+    GSList *next = g_slist_next (history);
 
     if (next)
         g_paste_item_set_state (next->data, G_PASTE_ITEM_STATE_IDLE);
     g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
 
     guint32 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
+    guint length = g_slist_length (history);
 
-    if (g_slist_length (history) > max_history_size)
+    if (length > max_history_size)
     {
         if (fifo)
         {
-            GSList *previous = g_slist_nth(history, g_slist_length(history) - max_history_size - 1);
+            GSList *previous = g_slist_nth(history, length - max_history_size - 1);
             /* start the shortened list at the right place */
-            priv->history = previous->next;
+            priv->history = g_slist_next (previous);
             /* terminate the original list so that it can be freed (below) */
             previous->next = NULL;
         }
         else
-        {
-            for (guint32 i = 0; i < max_history_size - 1; ++i)
-                history = g_slist_next (history);
-        }
+            history = g_slist_nth (history, max_history_size - 1);
         g_slist_free_full (g_slist_next (history),
                            g_object_unref);
         history->next = NULL;
     }
 
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   0); /* detail */
-
     if (fifo)
         g_paste_history_select (self, 0);
+    else
+    {
+        g_signal_emit (self,
+                       signals[CHANGED],
+                       0); /* detail */
+    }
 }
 
 /**
@@ -162,16 +161,19 @@ g_paste_history_remove (GPasteHistory *self,
 
     g_return_if_fail (pos < g_slist_length (history));
 
-    for (guint32 i = 0; i < pos; ++i)
-        history = g_slist_next (history);
-    priv->history = _g_paste_history_remove (self, history, TRUE);
-
-    if (pos == 0)
+    if (pos)
+    {
+        GSList *prev = g_slist_nth (history, pos - 1);
+        prev->next = _g_paste_history_remove (g_slist_next (prev), TRUE);
+        g_signal_emit (self,
+                       signals[CHANGED],
+                       0); /* detail */
+    }
+    else
+    {
+        priv->history = _g_paste_history_remove (history, TRUE);
         g_paste_history_select (self, 0);
-
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   0); /* detail */
+    }
 }
 
 static GPasteItem *
