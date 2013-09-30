@@ -31,7 +31,7 @@ struct _GPasteKeybindingPrivate
     gboolean               active;
     GdkWindow             *window;
     GdkModifierType        modifiers;
-    guint                  keycode;
+    guint                 *keycodes;
 
     gulong                 rebind_signal;
 };
@@ -74,30 +74,32 @@ g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
     Display *display = GDK_DISPLAY_XDISPLAY (self->display);
     Window window = gdk_x11_window_get_xid (priv->window);
 
-    for (guint i = 0; i < G_N_ELEMENTS (mod_masks); i++) {
+    for (guint i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
         XIGrabModifiers mods = { mod_masks[i] | priv->modifiers, 0 };
-
-        if (grab)
+        for (guint *keycode = priv->keycodes; *keycode; ++keycode)
         {
-            XIGrabKeycode (display,
-                           3,
-                           priv->keycode,
-                           window,
-                           XIGrabModeSync,
-                           XIGrabModeAsync,
-                           False,
-                           &mask,
-                           1,
-                           &mods);
-        }
-        else
-        {
-            XIUngrabKeycode (display,
-                             3,
-                             priv->keycode,
-                             window,
-                             1,
-                             &mods);
+            if (grab)
+            {
+                XIGrabKeycode (display,
+                               3,
+                               *keycode,
+                               window,
+                               XIGrabModeSync,
+                               XIGrabModeAsync,
+                               False,
+                               &mask,
+                               1,
+                               &mods);
+            }
+            else
+            {
+                XIUngrabKeycode (display,
+                                 3,
+                                 *keycode,
+                                 window,
+                                 1,
+                                 &mods);
+            }
         }
     }
 
@@ -125,24 +127,6 @@ g_paste_keybinding_change_grab (GPasteKeybinding *self,
         g_error ("Unsupported GDK backend.");
 }
 
-#ifdef GDK_WINDOWING_WAYLAND
-static gboolean
-g_paste_keybinding_set_keysym_wayland (void)
-{
-    g_error ("Wayland is currently not supported.");
-    return FALSE;
-}
-#endif
-
-#ifdef GDK_WINDOWING_X11
-static gboolean
-g_paste_keybinding_set_keysym_x11 (GPasteKeybinding *self,
-                                   guint             keysym)
-{
-    return (self->priv->keycode = XKeysymToKeycode (GDK_DISPLAY_XDISPLAY (self->display), keysym));
-}
-#endif
-
 /**
  * g_paste_keybinding_activate:
  * @self: a #GPasteKeybinding instance
@@ -160,25 +144,9 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
 
     g_return_if_fail (!priv->active);
 
-    guint keysym;
-    gtk_accelerator_parse (priv->binding, &keysym, &priv->modifiers);
+    gtk_accelerator_parse_with_keycode (priv->binding, NULL, &priv->keycodes, &priv->modifiers);
 
-    GdkDisplay *display = self->display;
-    gboolean ks_ok;
-
-#ifdef GDK_WINDOWING_WAYLAND
-    if (GDK_IS_WAYLAND_DISPLAY (display))
-        ks_ok = g_paste_keybinding_set_keysym_wayland ();
-    else
-#endif
-#ifdef GDK_WINDOWING_X11
-    if (GDK_IS_X11_DISPLAY (display))
-        ks_ok = g_paste_keybinding_set_keysym_x11 (self, keysym);
-    else
-#endif
-        g_error ("Unsupported GDK backend.");
-
-    if (ks_ok)
+    if (priv->keycodes)
         g_paste_keybinding_change_grab (self, TRUE);
 
     priv->active = TRUE;
@@ -201,7 +169,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
 
     g_return_if_fail (priv->active);
 
-    if (priv->keycode)
+    if (priv->keycodes)
         g_paste_keybinding_change_grab (self, FALSE);
 
     priv->active = FALSE;
@@ -267,12 +235,20 @@ g_paste_keybinding_notify_x11 (GPasteKeybinding *self,
             GdkModifierType modifiers = xi_ev->mods.effective;
             guint keycode = xi_ev->detail;
 
-            if (keycode == priv->keycode && priv->modifiers == (priv->modifiers & modifiers))
+            if (priv->modifiers == (priv->modifiers & modifiers))
             {
-                XIUngrabDevice (display, 3, CurrentTime);
-                XSync (display, FALSE);
+                for (guint *_keycode = priv->keycodes; *_keycode; ++_keycode)
+                {
+                    if (keycode == *_keycode)
+                    {
+                        XIUngrabDevice (display, 3, CurrentTime);
+                        XSync (display, FALSE);
 
-                priv->callback (priv->user_data);
+                        priv->callback (priv->user_data);
+
+                        break;
+                    }
+                }
             }
         }
     }
@@ -334,6 +310,7 @@ g_paste_keybinding_finalize (GObject *object)
     GPasteKeybindingPrivate *priv = G_PASTE_KEYBINDING (object)->priv;
 
     g_free (priv->binding);
+    g_free (priv->keycodes);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->finalize (object);
 }
@@ -420,6 +397,7 @@ _g_paste_keybinding_new (GType                  type,
     priv->getter = getter;
     priv->callback = callback;
     priv->user_data = (user_data) ? user_data : self;
+    priv->keycodes = NULL;
 
     gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
 
