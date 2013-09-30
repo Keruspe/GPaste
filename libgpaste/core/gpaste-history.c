@@ -163,15 +163,16 @@ g_paste_history_remove (GPasteHistory *self,
     {
         GSList *prev = g_slist_nth (history, pos - 1);
         prev->next = _g_paste_history_remove (g_slist_next (prev), TRUE);
-        g_signal_emit (self,
-                       signals[CHANGED],
-                       0); /* detail */
     }
     else
     {
         priv->history = _g_paste_history_remove (history, TRUE);
         g_paste_history_select (self, 0);
     }
+
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   0); /* detail */
 }
 
 static GPasteItem *
