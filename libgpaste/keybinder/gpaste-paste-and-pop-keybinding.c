@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -37,20 +37,21 @@ G_DEFINE_TYPE (GPastePasteAndPopKeybinding, g_paste_paste_and_pop_keybinding, G_
 
 struct _GPastePasteAndPopKeybindingPrivate
 {
-    GPasteHistory *history;
-    gboolean       delete;
+    GPasteHistory           *history;
+    GPasteClipboardsManager *clipboards_manager;
+
+    gboolean                 delete;
 };
 
 static void
 g_paste_paste_and_pop_keybinding_dispose (GObject *object)
 {
     GPastePasteAndPopKeybindingPrivate *priv = G_PASTE_PASTE_AND_POP_KEYBINDING (object)->priv;
-    GPasteHistory *history = priv->history;
 
-    if (history)
+    if (priv->history)
     {
-        g_object_unref (history);
-        priv->history = NULL;
+        g_clear_object (&priv->history);
+        g_clear_object (&priv->clipboards_manager);
     }
 
     G_OBJECT_CLASS (g_paste_paste_and_pop_keybinding_parent_class)->dispose (object);
@@ -72,6 +73,17 @@ g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self)
     priv->delete = FALSE;
 }
 
+static gboolean
+do_pop (gpointer user_data)
+{
+    GPastePasteAndPopKeybinding *self = user_data;
+    GPastePasteAndPopKeybindingPrivate *priv = self->priv;
+
+    g_paste_history_remove (priv->history, 0);
+    g_paste_clipboards_manager_unlock (priv->clipboards_manager);
+    return FALSE;
+}
+
 static void
 paste_and_pop_get_clipboard_data (GtkClipboard     *clipboard,
                                   GtkSelectionData *selection_data,
@@ -85,12 +97,14 @@ paste_and_pop_get_clipboard_data (GtkClipboard     *clipboard,
 
     priv->delete = FALSE;
 
+    GObject *item = g_object_ref (g_paste_history_get (history, 0));
     g_paste_clipboard_get_clipboard_data (clipboard,
                                           selection_data,
                                           info,
-                                          G_OBJECT (g_paste_history_get (history, 0)));
+                                          item);
+
     if (delete)
-        g_paste_history_remove (history, 0);
+        g_idle_add (do_pop, self);
 }
 
 static void
@@ -102,6 +116,7 @@ paste_and_pop_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
 static void
 paste_and_pop (GPasteKeybinding *data)
 {
+    GPastePasteAndPopKeybindingPrivate *priv = G_PASTE_PASTE_AND_POP_KEYBINDING (data)->priv;
     GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
     gtk_target_list_add_text_targets (target_list, 0);
@@ -109,7 +124,8 @@ paste_and_pop (GPasteKeybinding *data)
     gint n_targets;
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
 
-    G_PASTE_PASTE_AND_POP_KEYBINDING (data)->priv->delete = TRUE;
+    priv->delete = TRUE;
+    g_paste_clipboards_manager_lock (priv->clipboards_manager);
 
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
@@ -140,10 +156,12 @@ paste_and_pop (GPasteKeybinding *data)
  */
 G_PASTE_VISIBLE GPastePasteAndPopKeybinding *
 g_paste_paste_and_pop_keybinding_new (GPasteSettings   *settings,
-                                      GPasteHistory    *history)
+                                      GPasteHistory    *history,
+                                      GPasteClipboardsManager *clipboards_manager)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (clipboards_manager), NULL);
 
     GPastePasteAndPopKeybinding *self = G_PASTE_PASTE_AND_POP_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING,
                                                                                                    settings,
@@ -152,6 +170,7 @@ g_paste_paste_and_pop_keybinding_new (GPasteSettings   *settings,
                                                                                                    (GPasteKeybindingFunc) paste_and_pop,
                                                                                                    NULL));
     self->priv->history = g_object_ref (history);
+    self->priv->clipboards_manager = g_object_ref (clipboards_manager);
 
     return self;
 }
