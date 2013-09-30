@@ -109,7 +109,7 @@ paste_and_pop (GPasteKeybinding *data)
     gint n_targets;
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
 
-    data->priv->delete = TRUE;
+    G_PASTE_PASTE_AND_POP_KEYBINDING (data)->priv->delete = TRUE;
 
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
