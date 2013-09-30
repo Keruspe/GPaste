@@ -24,6 +24,7 @@ global:
     g_paste_history_add;
     g_paste_history_remove;
     g_paste_history_get;
+    g_paste_history_dup;
     g_paste_history_get_value;
     g_paste_history_select;
     g_paste_history_empty;

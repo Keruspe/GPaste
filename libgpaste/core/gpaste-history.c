@@ -204,6 +204,23 @@ g_paste_history_get (GPasteHistory *self,
 }
 
 /**
+ * g_paste_history_dup:
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteItem
+ *
+ * Get a #GPasteItem from the #GPasteHistory
+ * free it with g_object_unref
+ *
+ * Returns: (transfer full): a #GPasteItem
+ */
+G_PASTE_VISIBLE GPasteItem *
+g_paste_history_dup (GPasteHistory *self,
+                     guint32        pos)
+{
+    return g_object_ref (_g_paste_history_get (self, pos));
+}
+
+/**
  * g_paste_history_get_value:
  * @self: a #GPasteHistory instance
  * @index: the index of the #GPasteItem
