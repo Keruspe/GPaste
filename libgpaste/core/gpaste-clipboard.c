@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -125,10 +125,10 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
 
     if (length < g_paste_settings_get_min_text_item_size (settings) ||
         length > g_paste_settings_get_max_text_item_size (settings) ||
-        strlen (stripped) == 0 ||
-        (priv->text &&
-            g_strcmp0 (priv->text, to_add) == 0))
-                goto ignore;
+        !strlen (stripped))
+            goto ignore;
+    if (priv->text && g_strcmp0 (priv->text, to_add) == 0)
+        goto ignore;
 
     if (trim_items &&
         priv->target == GDK_SELECTION_CLIPBOARD &&
@@ -165,7 +165,7 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 
     GtkClipboard *real = self->priv->real;
 
-    _g_paste_clipboard_set_text (self, text);
+    /* Let the clipboards manager handle our internal text */
     gtk_clipboard_set_text (real, text, -1);
     gtk_clipboard_store (real);
 }
@@ -316,8 +316,10 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
         {
             if (G_PASTE_IS_URIS_ITEM (item))
                 _g_paste_clipboard_select_uris (self, G_PASTE_URIS_ITEM (item));
-            else /* if (G_PASTE_IS_TEXT_ITEM (item)) */
+            else  if (G_PASTE_IS_TEXT_ITEM (item))
                 g_paste_clipboard_select_text (self, text);
+            else
+                g_assert_unreached ();
         }
     }
 }

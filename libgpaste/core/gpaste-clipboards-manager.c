@@ -134,10 +134,8 @@ g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
     GPasteHistory *history = priv->history;
     GPasteSettings *settings = priv->settings;
     const gchar *synchronized_text = NULL;
-
-    if (atom == GDK_SELECTION_PRIMARY &&
-        !g_paste_settings_get_primary_to_history (settings))
-            return;
+    gboolean track = ((atom != GDK_SELECTION_PRIMARY || g_paste_settings_get_primary_to_history (settings)) &&
+                      g_paste_settings_get_track_changes (settings));
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
@@ -152,27 +150,26 @@ g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
 
         if (targets)
         {
+            GPasteItem *item = NULL;
             gboolean uris_available = gtk_selection_data_targets_include_uri (targets);
 
             if (uris_available || gtk_selection_data_targets_include_text (targets))
             {
+                /* Update our cache from the real Clipboard */
                 const gchar *text = g_paste_clipboard_set_text (clip);
 
+                /* Did we already have some contents, or did we get some now? */
                 something_in_clipboard = (g_paste_clipboard_get_text (clip) != NULL);
 
-                if (text != NULL)
+                /* If our contents got updated */
+                if (text)
                 {
-                    if (g_paste_settings_get_track_changes (settings))
+                    if (track)
                     {
-                        GPasteItem *item;
-
                         if (uris_available)
                             item = G_PASTE_ITEM (g_paste_uris_item_new (text));
                         else
                             item = G_PASTE_ITEM (g_paste_text_item_new (text));
-
-                        g_paste_history_add (history, item);
-                        g_object_unref (item);
                     }
 
                     if (g_paste_settings_get_synchronize_clipboards (settings))
@@ -187,15 +184,18 @@ g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
 
                 if (image != NULL)
                 {
-                    if (g_paste_settings_get_track_changes (settings))
+                    if (track)
                     {
-                        GPasteItem *item = G_PASTE_ITEM (g_paste_image_item_new (image));
-
-                        g_paste_history_add (history, item);
+                        item = G_PASTE_ITEM (g_paste_image_item_new (image));
                         g_object_unref (image);
-                        g_object_unref (item);
                     }
                 }
+            }
+
+            if (item)
+            {
+                g_paste_history_add (history, item);
+                g_object_unref (item);
             }
 
             gtk_selection_data_free (targets);
