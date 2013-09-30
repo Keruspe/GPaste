@@ -14,6 +14,8 @@ global:
     g_paste_clipboards_manager_get_type;
     g_paste_clipboards_manager_add_clipboard;
     g_paste_clipboards_manager_sync_from_to;
+    g_paste_clipboards_manager_lock;
+    g_paste_clipboards_manager_unlock;
     g_paste_clipboards_manager_activate;
     g_paste_clipboards_manager_select;
     g_paste_clipboards_manager_new;

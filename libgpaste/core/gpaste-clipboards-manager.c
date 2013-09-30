@@ -37,6 +37,8 @@ struct _GPasteClipboardsManagerPrivate
     GPasteHistory  *history;
     GPasteSettings *settings;
 
+    guint           lock;
+
     GdkDisplay     *display;
     GdkWindow      *window;
 
@@ -126,11 +128,47 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     }
 }
 
+/**
+ * g_paste_clipboards_manager_lock:
+ * @self: a #GPasteClipboardsManager instance
+ *
+ * Lock the clipboards
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_lock (GPasteClipboardsManager *self)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+
+    self->priv->lock = 1;
+}
+
+/**
+ * g_paste_clipboards_manager_unlock:
+ * @self: a #GPasteClipboardsManager instance
+ *
+ * Unlock the clipboards
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_unlock (GPasteClipboardsManager *self)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+
+    self->priv->lock = 0;
+}
+
 static void
 g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
                                    GdkAtom                  atom)
 {
     GPasteClipboardsManagerPrivate *priv = self->priv;
+
+    if (priv->lock)
+        return;
+
     GPasteHistory *history = priv->history;
     GPasteSettings *settings = priv->settings;
     const gchar *synchronized_text = NULL;
@@ -421,6 +459,7 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
     GPasteClipboardsManagerPrivate *priv = self->priv = g_paste_clipboards_manager_get_instance_private (self);
 
     priv->clipboards = NULL;
+    priv->lock = 0;
 
     GdkDisplay *display = priv->display = gdk_display_get_default ();
     GdkWindow *window = priv->window = gdk_get_default_root_window ();
