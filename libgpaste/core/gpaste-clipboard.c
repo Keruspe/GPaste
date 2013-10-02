@@ -30,12 +30,23 @@ G_DEFINE_TYPE (GPasteClipboard, g_paste_clipboard, G_TYPE_OBJECT)
 
 struct _GPasteClipboardPrivate
 {
-    GdkAtom target;
-    GtkClipboard *real;
+    GdkAtom         target;
+    GtkClipboard   *real;
     GPasteSettings *settings;
-    gchar *text;
-    gchar *image_checksum;
+    gchar          *text;
+    gchar          *image_checksum;
+
+    gulong          owner_change_signal;
 };
+
+enum
+{
+    OWNER_CHANGE,
+
+    LAST_SIGNAL
+};
+
+static guint signals[LAST_SIGNAL] = { 0 };
 
 /**
  * g_paste_clipboard_get_target:
@@ -328,15 +339,28 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
 }
 
 static void
+g_paste_clipboard_owner_change (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                GdkEvent     *event,
+                                gpointer      user_data)
+{
+    GPasteClipboard *self = user_data;
+
+    g_signal_emit (self,
+		   signals[OWNER_CHANGE],
+                   0, /* detail */
+                   event,
+                   NULL);
+}
+
+static void
 g_paste_clipboard_dispose (GObject *object)
 {
     GPasteClipboardPrivate *priv = G_PASTE_CLIPBOARD (object)->priv;
-    GPasteSettings *settings = priv->settings;
 
-    if (settings)
+    if (priv->settings)
     {
-        g_object_unref (settings);
-        priv->settings = NULL;
+        g_signal_handler_disconnect (priv->real, priv->owner_change_signal);
+        g_clear_object (&priv->settings);
     }
 
     G_OBJECT_CLASS (g_paste_clipboard_parent_class)->dispose (object);
@@ -362,6 +386,17 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 
     object_class->dispose = g_paste_clipboard_dispose;
     object_class->finalize = g_paste_clipboard_finalize;
+
+    signals[OWNER_CHANGE] = g_signal_new ("owner-change",
+                                          G_PASTE_TYPE_CLIPBOARD,
+                                          G_SIGNAL_RUN_FIRST,
+                                          0,    /* class offset     */
+                                          NULL, /* accumulator      */
+                                          NULL, /* accumulator data */
+                                          g_cclosure_marshal_VOID__BOXED,
+                                          G_TYPE_NONE,
+                                          1,
+                                          GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
 }
 
 static void
@@ -393,8 +428,14 @@ g_paste_clipboard_new (GdkAtom         target,
     GPasteClipboardPrivate *priv = self->priv;
 
     priv->target = target;
-    priv->real = gtk_clipboard_get (target);
     priv->settings = g_object_ref (settings);
+
+    GtkClipboard *real = priv->real = gtk_clipboard_get (target);
+
+    priv->owner_change_signal = g_signal_connect (G_OBJECT (real),
+                                                  "owner-change",
+                                                  G_CALLBACK (g_paste_clipboard_owner_change),
+                                                  self);
 
     return self;
 }
