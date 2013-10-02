@@ -169,9 +169,9 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
     gboolean track = ((atom != GDK_SELECTION_PRIMARY || g_paste_settings_get_primary_to_history (settings)) &&
                       g_paste_settings_get_track_changes (settings));
 
-    for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+    for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
     {
-        GPasteClipboard *clip = clipboard->data;
+        GPasteClipboard *clip = _clipboard->data;
 
         if (g_paste_clipboard_get_target (clip) != atom)
             continue;
@@ -243,9 +243,9 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
 
     if (synchronized_text != NULL)
     {
-        for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+        for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
         {
-            GPasteClipboard *clip = clipboard->data;
+            GPasteClipboard *clip = _clipboard->data;
             const gchar *text = g_paste_clipboard_get_text (clip);
 
             if (text == NULL ||
@@ -270,9 +270,9 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 
     for (GSList *clipboard = self->priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
-        g_signal_connect (clipboard,
+        g_signal_connect (clipboard->data,
                           "owner-change",
-                          g_paste_clipboards_manager_notify,
+                          G_CALLBACK (g_paste_clipboards_manager_notify),
                           self);
     }
 }
@@ -362,7 +362,7 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
         gint xfixes_error_base;
 
         /* We only check for it, and then let gtk+ handle it. */
-        if (!XFixesQueryExtension (display,
+        if (!XFixesQueryExtension (GDK_DISPLAY_XDISPLAY (display),
                                    &xfixes_event_base,
                                    &xfixes_error_base))
             g_error ("XFixes 5 not found, GPaste won't work");

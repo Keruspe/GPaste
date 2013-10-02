@@ -1,3 +1,11 @@
+NEW in 3.6 (Not released yet)
+=============
+
+- GPaste settings look has been updated to better fit with recent GNOME
+- Performance improvements
+- Daemon now fully evenmential (no more polling, less power consuption)
+- GPasteClipboard now has a "owner-change" signal similar to GtkClipboard's one
+
 NEW in 3.5 (25/09/2013)
 =============
 
@@ -9,6 +17,13 @@ NEW in 3.5 (25/09/2013)
 - The X11 keybinder is now optional
 - New keybinding to sync the clipboard to the primary selection
 - New keybinding to sync the primary selection to the clipboard
+
+NEW in 3.2 (Not released yet)
+=============
+
+- Performance improvements
+- Daemon now fully evenmential (no more polling, less power consuption)
+- GPasteClipboard now has a "owner-change" signal similar to GtkClipboard's one
 
 NEW in 3.1 (23/09/2013)
 =============
