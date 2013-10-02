@@ -541,8 +541,7 @@ g_paste_settings_dispose (GObject *object)
     if (settings)
     {
         g_signal_handler_disconnect (settings, priv->changed_signal);
-        g_object_unref (settings);
-        priv->settings = NULL;
+        g_clear_object (&priv->settings);
     }
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
