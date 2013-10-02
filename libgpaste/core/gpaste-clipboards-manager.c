@@ -38,15 +38,8 @@ struct _GPasteClipboardsManagerPrivate
 
     guint           lock;
 
-    Display        *display;
-    Window          window;
-
     gulong          selected_signal;
 };
-
-static gint xfixes_event_base = 0;
-
-static Atom xa_clipboard;
 
 /**
  * g_paste_clipboards_manager_add_clipboard:
@@ -156,9 +149,11 @@ g_paste_clipboards_manager_unlock (GPasteClipboardsManager *self)
 }
 
 static void
-g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
-                                   GdkAtom                  atom)
+g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
+                                   GdkEvent        *event G_GNUC_UNUSED,
+                                   gpointer         user_data)
 {
+    GPasteClipboardsManager *self = user_data;
     GPasteClipboardsManagerPrivate *priv = self->priv;
 
     if (priv->lock)
@@ -167,6 +162,7 @@ g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
     GPasteHistory *history = priv->history;
     GPasteSettings *settings = priv->settings;
     const gchar *synchronized_text = NULL;
+    GdkAtom atom = g_paste_clipboard_get_target (clipboard);
     gboolean track = ((atom != GDK_SELECTION_PRIMARY || g_paste_settings_get_primary_to_history (settings)) &&
                       g_paste_settings_get_track_changes (settings));
 
@@ -256,38 +252,6 @@ g_paste_clipboards_manager_notify (GPasteClipboardsManager *self,
     }
 }
 
-static Atom
-_gdk_atom_to_atom (GdkAtom atom)
-{
-    if (atom == GDK_SELECTION_CLIPBOARD)
-        return xa_clipboard;
-    if (atom == GDK_SELECTION_PRIMARY)
-        return XA_PRIMARY;
-    return 0;
-}
-
-static GdkAtom
-_atom_to_gdk_atom (Atom atom)
-{
-    if (atom == xa_clipboard)
-        return GDK_SELECTION_CLIPBOARD;
-    if (atom == XA_PRIMARY)
-        return GDK_SELECTION_PRIMARY;
-    return 0;
-}
-
-static void
-_g_paste_clipboards_manager_activate (GPasteClipboardsManager *self,
-                                      GdkAtom                  atom)
-{
-    GPasteClipboardsManagerPrivate *priv = self->priv;
-
-    XFixesSelectSelectionInput(priv->display,
-                               priv->window,
-                               _gdk_atom_to_atom (atom),
-                               XFixesSetSelectionOwnerNotifyMask | XFixesSelectionWindowDestroyNotifyMask | XFixesSelectionClientCloseNotifyMask);
-}
-
 /**
  * g_paste_clipboards_manager_activate:
  * @self: a #GPasteClipboardsManager instance
@@ -302,7 +266,12 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     for (GSList *clipboard = self->priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
-        _g_paste_clipboards_manager_activate (self, g_paste_clipboard_get_target (clipboard->data));
+    {
+        g_signal_connect (clipboard,
+                          "owner-change",
+                          g_paste_clipboards_manager_notify,
+                          self);
+    }
 }
 
 /**
@@ -336,23 +305,6 @@ on_item_selected (GPasteClipboardsManager *self,
     g_paste_clipboards_manager_select (self, item);
 
     return TRUE;
-}
-
-static GdkFilterReturn
-g_paste_clipboards_manager_filter (GdkXEvent *xevent,
-                                   GdkEvent  *event G_GNUC_UNUSED,
-                                   gpointer   data)
-{
-    XGenericEventCookie cookie = ((XEvent *) xevent)->xcookie;
-
-    if (cookie.type == xfixes_event_base + XFixesSelectionNotify)
-    {
-        XFixesSelectionNotifyEvent *xf_ev = (XFixesSelectionNotifyEvent *) xevent;
-        g_paste_clipboards_manager_notify (G_PASTE_CLIPBOARDS_MANAGER (data),
-                                           _atom_to_gdk_atom (xf_ev->selection));
-    }
-
-    return GDK_FILTER_CONTINUE;
 }
 
 static void
@@ -396,39 +348,28 @@ g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 }
 
 static void
-g_paste_clipboards_manager_init_x11 (GPasteClipboardsManager *self)
+g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 {
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteClipboardsManagerPrivate *priv = self->priv = g_paste_clipboards_manager_get_instance_private (self);
 
-    Display *display = priv->display = gdk_x11_get_default_xdisplay ();
-    priv->window = gdk_x11_window_get_xid (gdk_get_default_root_window ());
+#ifdef GDK_WINDOWING_X11
+    GdkDisplay *display = gdk_display_get_default ();
 
-    if (!xfixes_event_base)
+    if (GDK_IS_X11_DISPLAY (display))
     {
-        xa_clipboard = XInternAtom (display, "CLIPBOARD", False);
-
+        gint xfixes_event_base;
         gint xfixes_error_base;
 
+        /* We only check for it, and then let gtk+ handle it. */
         if (!XFixesQueryExtension (display,
                                    &xfixes_event_base,
                                    &xfixes_error_base))
             g_error ("XFixes 5 not found, GPaste won't work");
     }
-}
-
-static void
-g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
-{
-    GPasteClipboardsManagerPrivate *priv = self->priv = G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE (self);
+#endif
 
     priv->clipboards = NULL;
     priv->lock = 0;
-
-    g_paste_clipboards_manager_init_x11 (self);
-
-    gdk_window_add_filter (gdk_get_default_root_window (),
-                           g_paste_clipboards_manager_filter,
-                           self);
 }
 
 /**
