@@ -156,7 +156,7 @@ PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0])
 
 PKG_CHECK_MODULES(XML, [libxml-2.0])
 
-PKG_CHECK_MODULES(X11, [x11 xfixes xi xtst])
+PKG_CHECK_MODULES(X11, [x11 xi xtst])
 AC_CHECK_HEADERS([X11/extensions/XInput2.h])
 
 AC_ARG_WITH([controlcenterdir],
