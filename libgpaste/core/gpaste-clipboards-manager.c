@@ -352,22 +352,6 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 {
     GPasteClipboardsManagerPrivate *priv = self->priv = g_paste_clipboards_manager_get_instance_private (self);
 
-#ifdef GDK_WINDOWING_X11
-    GdkDisplay *display = gdk_display_get_default ();
-
-    if (GDK_IS_X11_DISPLAY (display))
-    {
-        gint xfixes_event_base;
-        gint xfixes_error_base;
-
-        /* We only check for it, and then let gtk+ handle it. */
-        if (!XFixesQueryExtension (GDK_DISPLAY_XDISPLAY (display),
-                                   &xfixes_event_base,
-                                   &xfixes_error_base))
-            g_error ("XFixes 5 not found, GPaste won't work");
-    }
-#endif
-
     priv->clipboards = NULL;
     priv->lock = 0;
 }
