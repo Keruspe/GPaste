@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -91,6 +91,17 @@ g_paste_image_item_equals (const GPasteItem *self,
             (g_strcmp0 (G_PASTE_IMAGE_ITEM (self)->priv->checksum, G_PASTE_IMAGE_ITEM (other)->priv->checksum) == 0));
 }
 
+static gsize
+g_paste_image_item_get_size (const GPasteItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
+
+    GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (self)->priv;
+
+    return G_PASTE_ITEM_CLASS (g_paste_image_item_parent_class)->get_size (self) +
+        strlen (priv->checksum) + gdk_pixbuf_get_byte_length (priv->image);
+}
+
 static const gchar *
 g_paste_image_item_get_kind (const GPasteItem *self)
 {
@@ -154,6 +165,7 @@ g_paste_image_item_class_init (GPasteImageItemClass *klass)
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
     item_class->equals = g_paste_image_item_equals;
+    item_class->get_size = g_paste_image_item_get_size;
     item_class->get_kind = g_paste_image_item_get_kind;
     item_class->set_state = g_paste_image_item_set_state;
 
