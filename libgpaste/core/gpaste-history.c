@@ -586,7 +586,10 @@ g_paste_history_load (GPasteHistory *self)
     g_free (history_file_name);
 
     if (priv->history)
+    {
         g_paste_item_set_state (priv->history->data, G_PASTE_ITEM_STATE_ACTIVE);
+        g_paste_history_elect_new_biggest (self);
+    }
 }
 
 /**
