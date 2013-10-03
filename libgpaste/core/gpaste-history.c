@@ -36,8 +36,9 @@ struct _GPasteHistoryPrivate
     GSList         *history;
     gsize           size;
 
+    /* Note: we never track the first (active) item here */
     GPasteItem     *biggest_item;
-    gsize          *biggest_size;
+    gsize           biggest_size;
 
     gulong          changed_signal;
 };
@@ -61,19 +62,25 @@ g_paste_history_elect_new_biggest (GPasteHistory *self)
     priv->biggest_item = NULL;
     priv->biggest_size = 0;
 
-    for (GSList *history = priv->history; history; history = g_slist_next (history))
+    GSList *history = priv->history;
+
+    if (history)
     {
-        GPasteItem *item = history->data;
-
-        if (item == old_biggest_item)
-            continue;
-
-        gsize size = g_paste_item_get_size (item);
-
-        if (size > priv->biggest_size)
+        /* slip first item */
+        for (history = g_slist_next (history); history; history = g_slist_next (history))
         {
-            priv->biggest_item = item;
-            priv->biggest_size = size;
+            GPasteItem *item = history->data;
+
+            if (item == old_biggest_item)
+                continue;
+
+            gsize size = g_paste_item_get_size (item);
+
+            if (size > priv->biggest_size)
+            {
+                priv->biggest_item = item;
+                priv->biggest_size = size;
+            }
         }
     }
 }
@@ -125,8 +132,22 @@ g_paste_history_add (GPasteHistory *self,
 
     if (history)
     {
-        if (g_paste_item_equals (history->data, item))
+        GPasteItem *old_first = history->data;
+        if (g_paste_item_equals (old_first, item))
             return;
+
+        /* size may change when state is idle */
+        priv->size -= g_paste_item_get_size (old_first);
+        g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
+
+        gsize size = g_paste_item_get_size (old_first);
+        priv->size += size;
+        if (size >= priv->biggest_size)
+        {
+            priv->biggest_item = item;
+            priv->biggest_size = size;
+        }
+
         GSList *prev = history;
         for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history))
         {
@@ -140,21 +161,12 @@ g_paste_history_add (GPasteHistory *self,
 
     gsize size = g_paste_item_get_size (item);
     priv->size += size;
-    if (size >= priv->biggest_size)
-    {
-        priv->biggest_item = item;
-        priv->biggest_size = size;
-    }
 
     gboolean fifo = g_paste_settings_get_fifo (priv->settings);
     history = priv->history = fifo ?
         g_slist_append (priv->history, g_object_ref (item)) :
         g_slist_prepend (priv->history, g_object_ref (item));
 
-    GSList *next = g_slist_next (history);
-
-    if (next)
-        g_paste_item_set_state (next->data, G_PASTE_ITEM_STATE_IDLE);
     g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
 
     guint32 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
