@@ -26,6 +26,7 @@
 #define IMAGES_SUPPORT_KEY             "images-support"
 #define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
 #define MAX_HISTORY_SIZE_KEY           "max-history-size"
+#define MAX_MEMORY_USAGE_KEY           "max-memory-usage"
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
 #define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
 #define PASTE_AND_POP_KEY              "paste-and-pop"

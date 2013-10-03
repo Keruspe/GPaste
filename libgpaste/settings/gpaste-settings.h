@@ -49,6 +49,7 @@ const gchar *g_paste_settings_get_history_name               (GPasteSettings *se
 gboolean     g_paste_settings_get_images_support             (GPasteSettings *self);
 guint32      g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
 guint32      g_paste_settings_get_max_history_size           (GPasteSettings *self);
+guint32      g_paste_settings_get_max_memory_usage           (GPasteSettings *self);
 guint32      g_paste_settings_get_max_text_item_size         (GPasteSettings *self);
 guint32      g_paste_settings_get_min_text_item_size         (GPasteSettings *self);
 const gchar *g_paste_settings_get_paste_and_pop              (GPasteSettings *self);
@@ -73,6 +74,8 @@ void g_paste_settings_set_images_support             (GPasteSettings *self,
 void g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
                                                       guint32         value);
 void g_paste_settings_set_max_history_size           (GPasteSettings *self,
+                                                      guint32         value);
+void g_paste_settings_set_max_memory_usage           (GPasteSettings *self,
                                                       guint32         value);
 void g_paste_settings_set_max_text_item_size         (GPasteSettings *self,
                                                       guint32         value);

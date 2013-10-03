@@ -43,6 +43,7 @@ struct _GPasteSettingsUiStackPrivate
     GtkSpinButton   *element_size_button;
     GtkSpinButton   *max_displayed_history_size_button;
     GtkSpinButton   *max_history_size_button;
+    GtkSpinButton   *max_memory_usage_button;
     GtkSpinButton   *max_text_item_size_button;
     GtkSpinButton   *min_text_item_size_button;
     GtkEntry        *backup_entry;
@@ -166,6 +167,7 @@ g_paste_settings_ui_stack_make_behaviour_panel (GPasteSettingsUiStack *self)
 UINT_CALLBACK (element_size)
 UINT_CALLBACK (max_displayed_history_size)
 UINT_CALLBACK (max_history_size)
+UINT_CALLBACK (max_memory_usage)
 UINT_CALLBACK (max_text_item_size)
 UINT_CALLBACK (min_text_item_size)
 
@@ -191,6 +193,11 @@ g_paste_settings_ui_stack_make_history_settings_panel (GPasteSettingsUiStack *se
                                                                                  (gdouble) g_paste_settings_get_max_history_size (settings),
                                                                                  5, 255, 5,
                                                                                  max_history_size_callback, settings);
+    priv->max_memory_usage_button = g_paste_settings_ui_panel_add_range_setting (panel,
+                                                                                 _("Max memory usage (MB): "),
+                                                                                 (gdouble) g_paste_settings_get_max_memory_usage (settings),
+                                                                                 5, 2000, 5,
+                                                                                 max_memory_usage_callback, settings);
     priv->max_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Max text item length: "),
                                                                                    (gdouble) g_paste_settings_get_max_text_item_size (settings),
@@ -388,6 +395,8 @@ g_paste_settings_ui_stack_settings_changed (GSettings   *gsettings G_GNUC_UNUSED
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
         gtk_spin_button_set_value (priv->max_history_size_button, g_paste_settings_get_max_history_size (settings));
+    else if (g_strcmp0 (key, MAX_MEMORY_USAGE_KEY) == 0)
+        gtk_spin_button_set_value (priv->max_memory_usage_button, g_paste_settings_get_max_memory_usage (settings));
     else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
         gtk_spin_button_set_value (priv->max_text_item_size_button, g_paste_settings_get_max_text_item_size (settings));
     else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)

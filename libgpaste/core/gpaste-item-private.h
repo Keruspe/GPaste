@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -40,14 +40,14 @@ struct _GPasteItemClass
     GObjectClass parent_class;
 
     /*< virtual >*/
-    gboolean (*equals) (const GPasteItem *self,
-                        const GPasteItem *other);
+    gboolean (*equals)   (const GPasteItem *self,
+                          const GPasteItem *other);
+    gsize    (*get_size) (const GPasteItem *self);
+    void     (*set_state) (GPasteItem     *self,
+                           GPasteItemState state);
 
     /*< pure virtual >*/
-    gboolean (*has_value) (const GPasteItem *self);
     const gchar *(*get_kind) (const GPasteItem *self);
-    void (*set_state) (GPasteItem     *self,
-                       GPasteItemState state);
 };
 
 void g_paste_item_set_display_string (GPasteItem  *self,

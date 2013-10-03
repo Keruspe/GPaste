@@ -7,6 +7,7 @@ global:
     g_paste_settings_get_images_support;
     g_paste_settings_get_max_displayed_history_size;
     g_paste_settings_get_max_history_size;
+    g_paste_settings_get_max_memory_usage;
     g_paste_settings_get_max_text_item_size;
     g_paste_settings_get_min_text_item_size;
     g_paste_settings_get_paste_and_pop;
@@ -25,6 +26,7 @@ global:
     g_paste_settings_set_images_support;
     g_paste_settings_set_max_displayed_history_size;
     g_paste_settings_set_max_history_size;
+    g_paste_settings_set_max_memory_usage;
     g_paste_settings_set_max_text_item_size;
     g_paste_settings_set_min_text_item_size;
     g_paste_settings_set_paste_and_pop;

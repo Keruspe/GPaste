@@ -32,6 +32,7 @@ struct _GPasteSettingsPrivate
     gboolean   images_support;
     guint32    max_displayed_history_size;
     guint32    max_history_size;
+    guint32    max_memory_usage;
     guint32    max_text_item_size;
     guint32    min_text_item_size;
     gchar     *paste_and_pop;
@@ -225,6 +226,25 @@ UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE_KEY)
  * Returns:
  */
 UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE_KEY)
+
+/**
+ * g_paste_settings_get_max_memory_usage:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the MAX_MEMORY_USAGE_KEY setting
+ *
+ * Returns: the value of the MAX_MEMORY_USAGE_KEY setting
+ */
+/**
+ * g_paste_settings_set_max_memory_usage:
+ * @self: a #GPasteSettings instance
+ * @value: the maximum amout of memory we can use
+ *
+ * Change the MAX_MEMORY_USAGE_KEY setting
+ *
+ * Returns:
+ */
+UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE_KEY)
 
 /**
  * g_paste_settings_get_max_text_item_size:
@@ -474,6 +494,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_set_max_displayed_history_size_from_dconf (self);
     else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
         g_paste_settings_set_max_history_size_from_dconf (self);
+    else if (g_strcmp0 (key, MAX_MEMORY_USAGE_KEY) == 0)
+        g_paste_settings_set_max_memory_usage_from_dconf (self);
     else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
         g_paste_settings_set_max_text_item_size_from_dconf (self);
     else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)
@@ -592,6 +614,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_set_images_support_from_dconf (self);
     g_paste_settings_set_max_displayed_history_size_from_dconf (self);
     g_paste_settings_set_max_history_size_from_dconf (self);
+    g_paste_settings_set_max_memory_usage_from_dconf (self);
     g_paste_settings_set_max_text_item_size_from_dconf(self);
     g_paste_settings_set_min_text_item_size_from_dconf(self);
     g_paste_settings_set_paste_and_pop_from_dconf (self);

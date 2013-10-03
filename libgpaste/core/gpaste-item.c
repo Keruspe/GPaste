@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
  */
 
 #include "gpaste-item-private.h"
+
+#include <string.h>
 
 #define G_PASTE_ITEM_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_ITEM, GPasteItemPrivate))
 
@@ -97,7 +99,27 @@ g_paste_item_get_kind (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    return G_PASTE_ITEM_GET_CLASS (self)->get_kind (self);
+    GPasteItemClass *klass = G_PASTE_ITEM_GET_CLASS (self);
+
+    g_return_val_if_fail (klass->get_kind, NULL);
+
+    return klass->get_kind (self);
+}
+
+/**
+ * g_paste_item_get_size:
+ * @self: a #GPasteItem instance
+ *
+ * Get the size of the #GPasteItem
+ *
+ * Returns: The size of its contents
+ */
+G_PASTE_VISIBLE gsize
+g_paste_item_get_size (const GPasteItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
+
+    return G_PASTE_ITEM_GET_CLASS (self)->get_size (self);
 }
 
 /**
@@ -151,6 +173,18 @@ g_paste_item_default_equals (const GPasteItem *self,
     return (g_strcmp0 (self->priv->value, other->priv->value) == 0);
 }
 
+static gsize
+g_paste_item_default_get_size (const GPasteItem *self)
+{
+    gsize size = strlen (self->priv->value) + 1;
+    gchar *display_string = self->priv->display_string;
+
+    if (display_string)
+        size += strlen (display_string) + 1;
+
+    return size;
+}
+
 static void
 g_paste_item_default_set_state (GPasteItem     *self G_GNUC_UNUSED,
                                 GPasteItemState state G_GNUC_UNUSED)
@@ -163,6 +197,7 @@ g_paste_item_class_init (GPasteItemClass *klass)
     g_type_class_add_private (klass, sizeof (GPasteItemPrivate));
 
     klass->equals = g_paste_item_default_equals;
+    klass->get_size = g_paste_item_default_get_size;
     klass->get_kind = NULL;
     klass->set_state = g_paste_item_default_set_state;
 
