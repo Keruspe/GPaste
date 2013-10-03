@@ -98,8 +98,12 @@ g_paste_image_item_get_size (const GPasteItem *self)
 
     GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (self)->priv;
 
-    return G_PASTE_ITEM_CLASS (g_paste_image_item_parent_class)->get_size (self) +
-        strlen (priv->checksum) + gdk_pixbuf_get_byte_length (priv->image);
+    gsize size = G_PASTE_ITEM_CLASS (g_paste_image_item_parent_class)->get_size (self);
+
+    if (priv->image)
+        size += strlen (priv->checksum) + 1 + gdk_pixbuf_get_byte_length (priv->image);
+
+    return size;
 }
 
 static const gchar *
@@ -108,6 +112,20 @@ g_paste_image_item_get_kind (const GPasteItem *self)
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
     return "Image";
+}
+
+static gchar *
+g_paste_image_item_compute_checksum (GdkPixbuf *image)
+{
+    if (!image)
+        return NULL;
+
+    guint length;
+    const guchar *data = gdk_pixbuf_get_pixels_with_length (image,
+                                                            &length);
+    return g_compute_checksum_for_data (G_CHECKSUM_SHA256,
+                                        data,
+                                        length);
 }
 
 static void
@@ -122,12 +140,18 @@ g_paste_image_item_set_state (GPasteItem     *self,
     {
     case G_PASTE_ITEM_STATE_IDLE:
         if (priv->image)
+        {
             g_clear_object (&priv->image);
+            g_clear_pointer (&priv->checksum, g_free);
+        }
         break;
     case G_PASTE_ITEM_STATE_ACTIVE:
         if (!priv->image)
+        {
             priv->image = gdk_pixbuf_new_from_file (g_paste_item_get_value (G_PASTE_ITEM (self)),
                                                     NULL); /* Error */
+            priv->checksum = g_paste_image_item_compute_checksum (priv->image);
+        }
         break;
     }
 }
@@ -196,16 +220,8 @@ _g_paste_image_item_new (const gchar *path,
 
     if (image)
     {
-        if (!checksum)
-        {
-            guint length;
-            const guchar *data = gdk_pixbuf_get_pixels_with_length (image,
-                                                                    &length);
-            checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                    data,
-                                                    length);
-        }
-        priv->checksum = checksum;
+        priv->checksum = (checksum) ? checksum : g_paste_image_item_compute_checksum (image);
+
         /* This is the date format "month/day/year time" */
         gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
         /* This gets displayed in history when selecting an image */
