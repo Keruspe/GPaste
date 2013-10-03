@@ -34,6 +34,10 @@ struct _GPasteHistoryPrivate
 {
     GPasteSettings *settings;
     GSList         *history;
+    gsize           size;
+
+    GPasteItem     *biggest_item;
+    gsize          *biggest_size;
 
     gulong          changed_signal;
 };
@@ -48,11 +52,44 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+static void
+g_paste_history_elect_new_biggest (GPasteHistory *self)
+{
+    GPasteHistoryPrivate *priv = self->priv;
+    GPasteItem *old_biggest_item = priv->biggest_item;
+
+    priv->biggest_item = NULL;
+    priv->biggest_size = 0;
+
+    for (GSList *history = priv->history; history; history = g_slist_next (history))
+    {
+        GPasteItem *item = history->data;
+
+        if (item == old_biggest_item)
+            continue;
+
+        gsize size = g_paste_item_get_size (item);
+
+        if (size > priv->biggest_size)
+        {
+            priv->biggest_item = item;
+            priv->biggest_size = size;
+        }
+    }
+}
+
 static GSList *
-_g_paste_history_remove (GSList        *elem,
+_g_paste_history_remove (GPasteHistory *self,
+                         GSList        *elem,
                          gboolean       remove_leftovers)
 {
+    GPasteHistoryPrivate *priv = self->priv;
     GPasteItem *item = elem->data;
+
+    if (item == priv->biggest_item)
+        g_paste_history_elect_new_biggest (self);
+
+    priv->size -= g_paste_item_get_size (item);
 
     if (remove_leftovers && G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -95,11 +132,20 @@ g_paste_history_add (GPasteHistory *self,
         {
             if (g_paste_item_equals (history->data, item))
             {
-                prev->next = _g_paste_history_remove (history, FALSE);
+                prev->next = _g_paste_history_remove (self, history, FALSE);
                 break;
             }
         }
     }
+
+    gsize size = g_paste_item_get_size (item);
+    priv->size += size;
+    if (size >= priv->biggest_size)
+    {
+        priv->biggest_item = item;
+        priv->biggest_size = size;
+    }
+
     gboolean fifo = g_paste_settings_get_fifo (priv->settings);
     history = priv->history = fifo ?
         g_slist_append (priv->history, g_object_ref (item)) :
@@ -164,11 +210,11 @@ g_paste_history_remove (GPasteHistory *self,
     if (pos)
     {
         GSList *prev = g_slist_nth (history, pos - 1);
-        prev->next = _g_paste_history_remove (g_slist_next (prev), TRUE);
+        prev->next = _g_paste_history_remove (self, g_slist_next (prev), TRUE);
     }
     else
     {
-        priv->history = _g_paste_history_remove (history, TRUE);
+        priv->history = _g_paste_history_remove (self, history, TRUE);
         g_paste_history_select (self, 0);
     }
 
@@ -665,6 +711,9 @@ g_paste_history_init (GPasteHistory *self)
     GPasteHistoryPrivate *priv = self->priv = G_PASTE_HISTORY_GET_PRIVATE (self);
 
     priv->history = NULL;
+    priv->size = 0;
+    priv->biggest_item = NULL;
+    priv->biggest_size = 0;
 
     priv->changed_signal = g_signal_connect (G_OBJECT (self),
                                              "changed",
