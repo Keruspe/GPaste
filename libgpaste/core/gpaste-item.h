@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -58,6 +58,7 @@ const gchar *g_paste_item_get_display_string (const GPasteItem *self);
 gboolean     g_paste_item_equals             (const GPasteItem *self,
                                               const GPasteItem *other);
 const gchar *g_paste_item_get_kind           (const GPasteItem *self);
+gsize        g_paste_item_get_size           (const GPasteItem *self);
 
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
