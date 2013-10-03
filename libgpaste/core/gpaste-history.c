@@ -183,10 +183,22 @@ g_paste_history_add (GPasteHistory *self,
             previous->next = NULL;
         }
         else
+        {
             history = g_slist_nth (history, max_history_size - 1);
-        g_slist_free_full (g_slist_next (history),
+            history->next = NULL;
+            history = g_slist_next (history);
+        }
+
+        for (GSList *_history = history; _history; _history = g_slist_next (_history))
+        {
+            if (_history->data == priv->biggest_item)
+            {
+                g_paste_history_elect_new_biggest (self);
+                break;
+            }
+        }
+        g_slist_free_full (history,
                            g_object_unref);
-        history->next = NULL;
     }
 
     if (fifo)
