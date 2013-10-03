@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -56,6 +56,17 @@ g_paste_uris_item_equals (const GPasteItem *self,
             G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->equals (self, other));
 }
 
+static gsize
+g_paste_uris_item_get_size (const GPasteItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
+
+    GStrv uris = G_PASTE_URIS_ITEM (self)->priv->uris;
+
+    return G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->get_size (self) +
+        7 /* strlen ("file://") */ * g_strv_length (uris) + strlen (g_paste_item_get_value (self));
+}
+
 static const gchar *
 g_paste_uris_item_get_kind (const GPasteItem *self)
 {
@@ -80,6 +91,7 @@ g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
     item_class->equals = g_paste_uris_item_equals;
+    item_class->get_size = g_paste_uris_item_get_size;
     item_class->get_kind = g_paste_uris_item_get_kind;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_uris_item_finalize;
