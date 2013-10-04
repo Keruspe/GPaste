@@ -21,15 +21,13 @@
 
 #include <string.h>
 
-#define G_PASTE_ITEM_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), G_PASTE_TYPE_ITEM, GPasteItemPrivate))
-
-G_DEFINE_ABSTRACT_TYPE (GPasteItem, g_paste_item, G_TYPE_OBJECT)
-
 struct _GPasteItemPrivate
 {
     gchar *value;
     gchar *display_string;
 };
+
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteItem, g_paste_item, G_TYPE_OBJECT)
 
 /**
  * g_paste_item_get_value:
@@ -194,8 +192,6 @@ g_paste_item_default_set_state (GPasteItem     *self G_GNUC_UNUSED,
 static void
 g_paste_item_class_init (GPasteItemClass *klass)
 {
-    g_type_class_add_private (klass, sizeof (GPasteItemPrivate));
-
     klass->equals = g_paste_item_default_equals;
     klass->get_size = g_paste_item_default_get_size;
     klass->get_kind = NULL;
@@ -207,7 +203,7 @@ g_paste_item_class_init (GPasteItemClass *klass)
 static void
 g_paste_item_init (GPasteItem *self)
 {
-    self->priv = G_PASTE_ITEM_GET_PRIVATE (self);
+    self->priv = g_paste_item_get_instance_private (self);
 }
 
 /**
