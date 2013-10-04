@@ -273,7 +273,7 @@ g_paste_history_remove (GPasteHistory *self,
     }
     else
     {
-        priv->history = _g_paste_history_remove (self, history, TRUE, was_biggest);
+        priv->history = _g_paste_history_remove (self, history, TRUE, &was_biggest);
         g_paste_history_select (self, 0);
     }
 
