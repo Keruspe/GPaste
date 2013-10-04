@@ -108,7 +108,7 @@ g_paste_uris_item_init (GPasteUrisItem *self)
  * Returns: a newly allocated #GPasteUrisItem
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteUrisItem *
+G_PASTE_VISIBLE GPasteItem *
 g_paste_uris_item_new (const gchar *uris)
 {
     g_return_val_if_fail (uris != NULL, NULL);
@@ -163,5 +163,5 @@ g_paste_uris_item_new (const gchar *uris)
     priv->uris[length] = NULL;
     g_strfreev (paths);
 
-    return self;
+    return g_paste_item;
 }

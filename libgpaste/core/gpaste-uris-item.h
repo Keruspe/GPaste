@@ -49,7 +49,7 @@ GType g_paste_uris_item_get_type (void);
 
 const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
 
-GPasteUrisItem *g_paste_uris_item_new (const gchar *uris);
+GPasteItem *g_paste_uris_item_new (const gchar *uris);
 
 G_END_DECLS
 

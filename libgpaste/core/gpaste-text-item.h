@@ -49,7 +49,7 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_text_item_get_type (void);
 
-GPasteTextItem *g_paste_text_item_new (const gchar *text);
+GPasteItem *g_paste_text_item_new (const gchar *text);
 
 G_END_DECLS
 

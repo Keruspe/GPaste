@@ -240,8 +240,8 @@ g_paste_daemon_do_add (GPasteDaemon *self,
         length <= g_paste_settings_get_max_text_item_size (settings) &&
         strlen (stripped) != 0)
     {
-        GPasteTextItem *item = g_paste_text_item_new (g_paste_settings_get_trim_items (settings) ? stripped : text);
-        g_paste_clipboards_manager_select (priv->clipboards_manager, G_PASTE_ITEM (item));
+        GPasteItem *item = g_paste_text_item_new (g_paste_settings_get_trim_items (settings) ? stripped : text);
+        g_paste_clipboards_manager_select (priv->clipboards_manager, item);
         g_object_unref (item);
     }
     g_free (text);
