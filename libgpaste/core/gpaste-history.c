@@ -68,10 +68,6 @@ g_paste_history_elect_new_biggest (GPasteHistory *self)
         for (history = g_slist_next (history); history; history = g_slist_next (history))
         {
             GPasteItem *item = history->data;
-
-            if (item == old_biggest_item)
-                continue;
-
             gsize size = g_paste_item_get_size (item);
 
             if (size > priv->biggest_size)
@@ -95,7 +91,7 @@ _g_paste_history_remove (GPasteHistory *self,
     g_debug ("removing %p, biggest is %p", item, priv->biggest_item);
 
     if (was_biggest)
-        *was_biggest = (item == priv->biggest_item);
+        *was_biggest = g_paste_item_equals (item, priv->biggest_item);
 
     priv->size -= g_paste_item_get_size (item);
 
@@ -124,7 +120,7 @@ g_paste_history_check_memory_usage (GPasteHistory *self,
         g_debug ("%zu VS %zu (max %zu)", priv->size, max_memory, priv->biggest_size);
         for (GSList *prev = priv->history, *history = g_slist_next (priv->history); history; prev = history, history = g_slist_next (history))
         {
-            if (history->data == priv->biggest_item)
+            if (g_paste_item_equals (history->data, priv->biggest_item))
             {
                 prev->next = _g_paste_history_remove (self, history, TRUE, NULL);
                 g_paste_history_elect_new_biggest (self);
@@ -223,7 +219,7 @@ g_paste_history_add (GPasteHistory *self,
         {
             GPasteItem *_item = _history->data;
 
-            if (_item == priv->biggest_item)
+            if (g_paste_item_equals (_item, priv->biggest_item))
             {
                 priv->size -= g_paste_item_get_size (_item);
                 g_paste_history_elect_new_biggest (self);
