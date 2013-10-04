@@ -205,7 +205,7 @@ g_paste_image_item_init (GPasteImageItem *self)
     self->priv = G_PASTE_IMAGE_ITEM_GET_PRIVATE (self);
 }
 
-static GPasteImageItem *
+static GPasteItem *
 _g_paste_image_item_new (const gchar *path,
                          GDateTime   *date,
                          GdkPixbuf   *image,
@@ -234,7 +234,7 @@ _g_paste_image_item_new (const gchar *path,
         g_free (formatted_date);
     }
 
-    return self;
+    return g_paste_item;
 }
 
 /**
@@ -246,7 +246,7 @@ _g_paste_image_item_new (const gchar *path,
  * Returns: a newly allocated #GPasteImageItem
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteImageItem *
+G_PASTE_VISIBLE GPasteItem *
 g_paste_image_item_new (GdkPixbuf *img)
 {
     g_return_val_if_fail (GDK_IS_PIXBUF (img), NULL);
@@ -266,16 +266,16 @@ g_paste_image_item_new (GdkPixbuf *img)
 
     gchar *filename = g_strconcat (checksum, ".png", NULL);
     gchar *path = g_build_filename (images_dir_path, filename, NULL);
-    GPasteImageItem *self = _g_paste_image_item_new (path,
-                                                     g_date_time_new_now_local (),
-                                                     g_object_ref (img),
-                                                     checksum);
+    GPasteItem *self = _g_paste_image_item_new (path,
+                                                g_date_time_new_now_local (),
+                                                g_object_ref (img),
+                                                checksum);
     g_free (images_dir_path);
     g_free (filename);
     g_free (path);
 
     gdk_pixbuf_save (img,
-                     g_paste_item_get_value (G_PASTE_ITEM (self)),
+                     g_paste_item_get_value (self),
                      "png",
                      NULL, /* Error */
                      NULL); /* Params */
@@ -293,7 +293,7 @@ g_paste_image_item_new (GdkPixbuf *img)
  * Returns: a newly allocated #GPasteImageItem
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteImageItem *
+G_PASTE_VISIBLE GPasteItem *
 g_paste_image_item_new_from_file (const gchar *path,
                                   GDateTime   *date)
 {

@@ -572,11 +572,12 @@ g_paste_history_load (GPasteHistory *self)
             gchar *date = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "date");
             gchar *raw_value = (gchar *) xmlTextReaderReadString (reader);
             gchar *value = g_paste_history_decode (raw_value);
+            GPasteItem *item = NULL;
 
             if (g_strcmp0 (kind, "Text") == 0)
-                priv->history = g_slist_append (priv->history, g_paste_text_item_new (value));
+                item = g_paste_text_item_new (value);
             else if (g_strcmp0 (kind, "Uris") == 0)
-                priv->history = g_slist_append (priv->history, g_paste_uris_item_new (value));
+                item = g_paste_uris_item_new (value);
             else if (g_strcmp0 (kind, "Image") == 0)
             {
                 if (g_paste_settings_get_images_support (settings))
@@ -584,11 +585,7 @@ g_paste_history_load (GPasteHistory *self)
                     GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (date,
                                                                                              NULL, /* end */
                                                                                              0)); /* base */
-                    GPasteImageItem *item = g_paste_image_item_new_from_file (value, date_time);
-
-                    if (item != NULL)
-                        priv->history = g_slist_append (priv->history, item);
-
+                    item = g_paste_image_item_new_from_file (value, date_time);
                     g_date_time_unref (date_time);
                 }
                 else
@@ -605,6 +602,12 @@ g_paste_history_load (GPasteHistory *self)
 
                     g_object_unref (img_file);
                 }
+            }
+
+            if (item)
+            {
+                priv->size += g_paste_item_get_size (item);
+                priv->history = g_slist_append (priv->history, item);
             }
 
             g_free (raw_value);

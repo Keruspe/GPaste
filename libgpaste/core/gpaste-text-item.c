@@ -62,11 +62,11 @@ g_paste_text_item_init (GPasteTextItem *self G_GNUC_UNUSED)
  * Returns: a newly allocated #GPasteTextItem
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteTextItem *
+G_PASTE_VISIBLE GPasteItem *
 g_paste_text_item_new (const gchar *text)
 {
     g_return_val_if_fail (text != NULL, NULL);
     g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
 
-    return G_PASTE_TEXT_ITEM (g_paste_item_new (G_PASTE_TYPE_TEXT_ITEM, text));
+    return g_paste_item_new (G_PASTE_TYPE_TEXT_ITEM, text);
 }
