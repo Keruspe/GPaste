@@ -154,7 +154,7 @@ g_paste_history_add (GPasteHistory *self,
 
     gsize max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
     gsize size = g_paste_item_get_size (item);
-    g_return_if_fail (size > max_memory);
+    g_return_if_fail (size < max_memory);
     priv->size += size;
 
     if (history)
