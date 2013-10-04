@@ -123,7 +123,9 @@ g_paste_history_check_memory_usage (GPasteHistory *self,
             if (g_paste_item_equals (history->data, priv->biggest_item))
             {
                 prev->next = _g_paste_history_remove (self, history, TRUE, NULL);
+                GPasteItem *previous_biggest = priv->biggest_item;
                 g_paste_history_elect_new_biggest (self);
+                g_assert (priv->biggest_item != previous_biggest);
                 break;
             }
         }
