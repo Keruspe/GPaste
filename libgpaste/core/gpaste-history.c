@@ -384,6 +384,9 @@ g_paste_history_empty (GPasteHistory *self)
     g_slist_free_full (priv->history,
                        g_object_unref);
     priv->history = NULL;
+    priv->size = 0;
+
+    g_paste_history_elect_new_biggest (self);
 
     g_signal_emit (self,
                    signals[CHANGED],
