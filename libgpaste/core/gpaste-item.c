@@ -170,7 +170,7 @@ static gboolean
 g_paste_item_default_equals (const GPasteItem *self,
                              const GPasteItem *other)
 {
-    return (g_strcmp0 (self->priv->value, other->priv->value) == 0);
+    return self == other || (g_strcmp0 (self->priv->value, other->priv->value) == 0);
 }
 
 static gsize
