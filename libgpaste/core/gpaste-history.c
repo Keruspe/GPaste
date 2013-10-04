@@ -109,13 +109,11 @@ g_paste_history_check_memory_usage (GPasteHistory *self,
 {
     GPasteHistoryPrivate *priv = self->priv;
 
-    g_debug ("%zu VS %zu (max %zu)", priv->size, max_memory, priv->biggest_size);
     while (priv->size > max_memory && priv->biggest_index)
     {
         GSList *prev = g_slist_nth (priv->history, priv->biggest_index - 1);
         prev->next = _g_paste_history_remove (self, g_slist_next (prev), TRUE);
         g_paste_history_elect_new_biggest (self);
-        g_debug ("%zu VS %zu (max %zu)", priv->size, max_memory, priv->biggest_size);
     }
 }
 
@@ -140,9 +138,8 @@ g_paste_history_add (GPasteHistory *self,
     GPasteSettings *settings = priv->settings;
 
     gsize max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
-    gsize size = g_paste_item_get_size (item);
-    g_return_if_fail (size < max_memory);
-    priv->size += size;
+    gboolean election_needed = FALSE;
+    g_return_if_fail (g_paste_item_get_size (item) < max_memory);
 
     if (history)
     {
@@ -158,11 +155,9 @@ g_paste_history_add (GPasteHistory *self,
         priv->size += _size;
         if (_size >= priv->biggest_size)
         {
-            priv->biggest_index = 1;
+            priv->biggest_index = 0;
             priv->biggest_size = _size;
         }
-        else
-            ++priv->biggest_index;
 
         GSList *prev = history;
         guint32 index = 1;
@@ -172,10 +167,11 @@ g_paste_history_add (GPasteHistory *self,
             {
                 prev->next = _g_paste_history_remove (self, history, FALSE);
                 if (index == priv->biggest_index)
-                    g_paste_history_elect_new_biggest (self);
+                    election_needed = TRUE;
                 break;
             }
         }
+        ++priv->biggest_index;
     }
 
     gboolean fifo = g_paste_settings_get_fifo (settings);
@@ -183,7 +179,12 @@ g_paste_history_add (GPasteHistory *self,
         g_slist_append (priv->history, g_object_ref (item)) :
         g_slist_prepend (priv->history, g_object_ref (item));
 
+    if (election_needed)
+        g_paste_history_elect_new_biggest (self);
+
     g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
+    priv->size += g_paste_item_get_size (item);
+
 
     guint32 max_history_size = g_paste_settings_get_max_history_size (settings);
     guint length = g_slist_length (history);
@@ -246,7 +247,6 @@ g_paste_history_remove (GPasteHistory *self,
 
     g_return_if_fail (pos < g_slist_length (history));
 
-    g_debug ("removing %u, biggest is %u", pos, priv->biggest_index);
     if (pos)
     {
         GSList *prev = g_slist_nth (history, pos - 1);
