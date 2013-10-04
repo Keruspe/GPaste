@@ -4,6 +4,8 @@ NEW in 3.2 (Not released yet)
 - Performance improvements
 - Daemon now fully evenmential (no more polling, less power consuption)
 - GPasteClipboard now has a "owner-change" signal similar to GtkClipboard's one
+- Misc. bugfixes
+- New setting to set the maximum amount of memory used by data in history
 
 NEW in 3.1 (23/09/2013)
 =============
