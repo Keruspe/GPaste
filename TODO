@@ -1,26 +1,13 @@
-GNOME <= 3.9.5
-======
-
-3.2:
-    Memory usage limits
-
-GNOME >= 3.9.90
-======
-
-3.6:
-    merge 3.2
-
 3.7:
-    macros.h
-    use __cleanup__
-
-3.8:
     unity support
 
 4.0:
     wayland support
 
 future:
+    all:
+        macros.h
+        use __cleanup__
     gpaste:
         GSubProcess
     libgpaste-client:
