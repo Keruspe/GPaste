@@ -139,6 +139,53 @@ g_paste_history_check_memory_usage (GPasteHistory *self,
     }
 }
 
+static gboolean
+g_paste_history_check_size (GPasteHistory *self)
+{
+    GPasteHistoryPrivate *priv = self->priv;
+    GPasteSettings *settings = priv->settings;
+    GSList *history = priv->history;
+    gboolean fifo = g_paste_settings_get_fifo (settings);
+    guint32 max_history_size = g_paste_settings_get_max_history_size (settings);
+    guint length = g_slist_length (history);
+    gboolean election_needed = FALSE;
+
+    if (length > max_history_size)
+    {
+        if (fifo)
+        {
+            GSList *previous = g_slist_nth (history, length - max_history_size - 1);
+            /* start the shortened list at the right place */
+            priv->history = g_slist_next (previous);
+            /* terminate the original list so that it can be freed (below) */
+            previous->next = NULL;
+            /* Activate the new first item */
+            GPasteItem *first = priv->history->data;
+            priv->size -= g_paste_item_get_size (first);
+            g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
+            priv->size += g_paste_item_get_size (first);
+            election_needed = TRUE;
+        }
+        else
+        {
+            GSList *previous = g_slist_nth (history, max_history_size - 1);
+            history = g_slist_next (previous);
+            previous->next = NULL;
+        }
+
+        for (GSList *_history = history; _history; _history = g_slist_next (_history))
+        {
+            priv->size -= g_paste_item_get_size (_history->data);
+            if (fifo)
+                --priv->biggest_index;
+        }
+        g_slist_free_full (history,
+                           g_object_unref);
+    }
+
+    return election_needed;
+}
+
 /**
  * g_paste_history_add:
  * @self: a #GPasteHistory instance
@@ -216,41 +263,7 @@ g_paste_history_add (GPasteHistory *self,
         g_slist_append (priv->history, g_object_ref (item)) :
         g_slist_prepend (priv->history, g_object_ref (item));
 
-    guint32 max_history_size = g_paste_settings_get_max_history_size (settings);
-    guint length = g_slist_length (history);
-
-    if (length > max_history_size)
-    {
-        if (fifo)
-        {
-            GSList *previous = g_slist_nth (history, length - max_history_size - 1);
-            /* start the shortened list at the right place */
-            priv->history = g_slist_next (previous);
-            /* terminate the original list so that it can be freed (below) */
-            previous->next = NULL;
-            /* Activate the new first item */
-            GPasteItem *first = priv->history->data;
-            priv->size -= g_paste_item_get_size (first);
-            g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
-            priv->size += g_paste_item_get_size (first);
-            election_needed = TRUE;
-        }
-        else
-        {
-            history = g_slist_nth (history, max_history_size - 1);
-            history->next = NULL;
-            history = g_slist_next (history);
-        }
-
-        for (GSList *_history = history; _history; _history = g_slist_next (_history))
-        {
-            priv->size -= g_paste_item_get_size (_history->data);
-            if (fifo)
-                --priv->biggest_index;
-        }
-        g_slist_free_full (history,
-                           g_object_unref);
-    }
+    election_needed = g_paste_history_check_size (self) || election_needed;
 
     if (election_needed)
         g_paste_history_elect_new_biggest (self);
@@ -260,9 +273,7 @@ g_paste_history_add (GPasteHistory *self,
 
     g_paste_history_check_memory_usage (self, max_memory);
 
-    if (fifo)
-        g_paste_history_select (self, 0);
-    else
+    if (!fifo)
     {
         g_signal_emit (self,
                        signals[CHANGED],
