@@ -119,6 +119,17 @@ _g_paste_history_remove (GPasteHistory *self,
 }
 
 static void
+g_paste_history_activate_first (GPasteHistory *self)
+{
+    GPasteHistoryPrivate *priv = self->priv;
+    GPasteItem *first = priv->history->data;
+
+    priv->size -= g_paste_item_get_size (first);
+    g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
+    priv->size += g_paste_item_get_size (first);
+}
+
+static void
 g_paste_history_check_memory_usage (GPasteHistory *self)
 {
     GPasteHistoryPrivate *priv = self->priv;
@@ -131,7 +142,7 @@ g_paste_history_check_memory_usage (GPasteHistory *self)
         if (fifo && !priv->biggest_index)
         {
             priv->history = _g_paste_history_remove (self, priv->history, TRUE);
-            g_paste_history_select (self, 0);
+            g_paste_history_activate_first (self);
         }
         else
         {
@@ -163,10 +174,7 @@ g_paste_history_check_size (GPasteHistory *self)
             /* terminate the original list so that it can be freed (below) */
             previous->next = NULL;
             /* Activate the new first item */
-            GPasteItem *first = priv->history->data;
-            priv->size -= g_paste_item_get_size (first);
-            g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
-            priv->size += g_paste_item_get_size (first);
+            g_paste_history_activate_first (self);
             election_needed = TRUE;
         }
         else
@@ -312,7 +320,7 @@ g_paste_history_remove (GPasteHistory *self,
     else
     {
         priv->history = _g_paste_history_remove (self, history, TRUE);
-        g_paste_history_select (self, 0);
+        g_paste_history_activate_first (self);
     }
 
     if (pos == priv->biggest_index)
