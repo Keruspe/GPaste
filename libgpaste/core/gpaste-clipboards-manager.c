@@ -37,7 +37,7 @@ struct _GPasteClipboardsManagerPrivate
     GPasteHistory  *history;
     GPasteSettings *settings;
 
-    guint           lock;
+    gboolean        lock;
 
     gulong          selected_signal;
 };
@@ -132,7 +132,7 @@ g_paste_clipboards_manager_lock (GPasteClipboardsManager *self)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
-    self->priv->lock = 1;
+    self->priv->lock = TRUE;
 }
 
 /**
@@ -148,7 +148,7 @@ g_paste_clipboards_manager_unlock (GPasteClipboardsManager *self)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
-    self->priv->lock = 0;
+    self->priv->lock = FALSE;
 }
 
 static void
@@ -354,7 +354,7 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
     GPasteClipboardsManagerPrivate *priv = self->priv = g_paste_clipboards_manager_get_instance_private (self);
 
     priv->clipboards = NULL;
-    priv->lock = 0;
+    priv->lock = FALSE;
 }
 
 /**

@@ -27,6 +27,8 @@ struct _GPasteImageItemPrivate
     gchar     *checksum;
     GDateTime *date;
     GdkPixbuf *image;
+
+    gsize      additional_size;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_ITEM)
@@ -89,19 +91,26 @@ g_paste_image_item_equals (const GPasteItem *self,
             (g_strcmp0 (G_PASTE_IMAGE_ITEM (self)->priv->checksum, G_PASTE_IMAGE_ITEM (other)->priv->checksum) == 0));
 }
 
-static gsize
-g_paste_image_item_get_size (const GPasteItem *self)
+static void
+g_paste_image_item_set_size (GPasteImageItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
+    GPasteItem *g_paste_item = G_PASTE_ITEM (self);
+    GPasteImageItemPrivate *priv = self->priv;
+    GdkPixbuf *image = priv->image;
 
-    GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (self)->priv;
-
-    gsize size = G_PASTE_ITEM_CLASS (g_paste_image_item_parent_class)->get_size (self);
-
-    if (priv->image)
-        size += strlen (priv->checksum) + 1 + gdk_pixbuf_get_byte_length (priv->image);
-
-    return size;
+    if (image)
+    {
+        if (!priv->additional_size)
+        {
+            priv->additional_size += strlen (priv->checksum) + 1 + gdk_pixbuf_get_byte_length (image);
+            g_paste_item->size += priv->additional_size;
+        }
+    }
+    else
+    {
+        g_paste_item->size -= priv->additional_size;
+        priv->additional_size = 0;
+    }
 }
 
 static const gchar *
@@ -132,7 +141,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
 {
     g_return_if_fail (G_PASTE_IS_IMAGE_ITEM (self));
 
-    GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (self)->priv;
+    GPasteImageItem *image_item = G_PASTE_IMAGE_ITEM (self);
+    GPasteImageItemPrivate *priv = image_item->priv;
 
     switch (state)
     {
@@ -152,6 +162,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
         }
         break;
     }
+
+    g_paste_image_item_set_size (image_item);
 }
 
 static void
@@ -185,7 +197,6 @@ g_paste_image_item_class_init (GPasteImageItemClass *klass)
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
     item_class->equals = g_paste_image_item_equals;
-    item_class->get_size = g_paste_image_item_get_size;
     item_class->get_kind = g_paste_image_item_get_kind;
     item_class->set_state = g_paste_image_item_set_state;
 
@@ -229,6 +240,8 @@ _g_paste_image_item_new (const gchar *path,
         g_free (display_string);
         g_free (formatted_date);
     }
+
+    g_paste_image_item_set_size (self);
 
     return g_paste_item;
 }

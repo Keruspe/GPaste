@@ -53,6 +53,7 @@ struct _GPasteSettingsUiStackPrivate
     GtkEntry        *sync_primary_to_clipboard_entry;
     GtkComboBoxText *targets;
     gchar         ***actions;
+
     gulong           settings_signal;
 };
 
@@ -372,12 +373,11 @@ g_paste_settings_ui_stack_fill (GPasteSettingsUiStack *self)
 }
 
 static void
-g_paste_settings_ui_stack_settings_changed (GSettings   *gsettings G_GNUC_UNUSED,
-                                             const gchar *key,
-                                             gpointer     user_data)
+g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
+                                            const gchar    *key,
+                                            gpointer        user_data)
 {
     GPasteSettingsUiStackPrivate *priv = G_PASTE_SETTINGS_UI_STACK (user_data)->priv;
-    GPasteSettings *settings = priv->settings;
 
     if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));

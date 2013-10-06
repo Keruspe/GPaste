@@ -117,7 +117,7 @@ g_paste_item_get_size (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    return G_PASTE_ITEM_GET_CLASS (self)->get_size (self);
+    return self->size;
 }
 
 /**
@@ -131,8 +131,19 @@ g_paste_item_set_display_string (GPasteItem  *self,
 
     GPasteItemPrivate *priv = self->priv;
 
-    g_free (priv->display_string);
-    priv->display_string = g_strdup (display_string);
+    if (priv->display_string)
+    {
+        self->size -= (strlen (priv->display_string) + 1);
+        g_free (priv->display_string);
+    }
+
+    if (display_string)
+    {
+        priv->display_string = g_strdup (display_string);
+        self->size += strlen (display_string) + 1;
+    }
+    else
+        priv->display_string = NULL;
 }
 
 /**
@@ -171,18 +182,6 @@ g_paste_item_default_equals (const GPasteItem *self,
     return self == other || (g_strcmp0 (self->priv->value, other->priv->value) == 0);
 }
 
-static gsize
-g_paste_item_default_get_size (const GPasteItem *self)
-{
-    gsize size = strlen (self->priv->value) + 1;
-    gchar *display_string = self->priv->display_string;
-
-    if (display_string)
-        size += strlen (display_string) + 1;
-
-    return size;
-}
-
 static void
 g_paste_item_default_set_state (GPasteItem     *self G_GNUC_UNUSED,
                                 GPasteItemState state G_GNUC_UNUSED)
@@ -193,7 +192,6 @@ static void
 g_paste_item_class_init (GPasteItemClass *klass)
 {
     klass->equals = g_paste_item_default_equals;
-    klass->get_size = g_paste_item_default_get_size;
     klass->get_kind = NULL;
     klass->set_state = g_paste_item_default_set_state;
 
@@ -218,6 +216,8 @@ g_paste_item_new (GType        type,
 
     priv->value = g_strdup (value);
     priv->display_string = NULL;
+
+    self->size = strlen (self->priv->value) + 1;
 
     return self;
 }
