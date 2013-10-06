@@ -68,14 +68,11 @@ g_paste_history_elect_new_biggest (GPasteHistory *self)
     if (history)
     {
         gboolean fifo = g_paste_settings_get_fifo (priv->settings);
-        guint32 index = 0;
+        guint32 index = (fifo) ? 0 : 1;
 
         /* skip first item if not fifo */
         if (!fifo)
-        {
-            ++index;
             history = g_slist_next (history);
-        }
 
         for (GSList *next = g_slist_next (history); history; history = next, next = g_slist_next (history), ++index)
         {
@@ -434,6 +431,7 @@ g_paste_history_select (GPasteHistory *self,
 
     g_paste_history_add (self, item);
     g_paste_history_selected (self, item);
+    g_object_unref (item);
 }
 
 /**
