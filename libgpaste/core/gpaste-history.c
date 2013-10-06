@@ -66,14 +66,11 @@ g_paste_history_elect_new_biggest (GPasteHistory *self)
     if (history)
     {
         gboolean fifo = g_paste_settings_get_fifo (priv->settings);
-        guint32 index = 0;
+        guint32 index = (fifo) ? 0 : 1;
 
         /* skip first item if not fifo */
         if (!fifo)
-        {
-            ++index;
             history = g_slist_next (history);
-        }
 
         for (GSList *next = g_slist_next (history); history; history = next, next = g_slist_next (history), ++index)
         {
@@ -103,16 +100,18 @@ _g_paste_history_remove (GPasteHistory *self,
 
     priv->size -= g_paste_item_get_size (item);
 
-    if (remove_leftovers && G_PASTE_IS_IMAGE_ITEM (item))
+    if (remove_leftovers)
     {
-        GFile *image = g_file_new_for_path (g_paste_item_get_value (item));
-        g_file_delete (image,
-                       NULL, /* cancellable */
-                       NULL); /* error */
-        g_object_unref (image);
+        if (G_PASTE_IS_IMAGE_ITEM (item))
+        {
+            GFile *image = g_file_new_for_path (g_paste_item_get_value (item));
+            g_file_delete (image,
+                           NULL, /* cancellable */
+                           NULL); /* error */
+            g_object_unref (image);
+        }
+        g_object_unref (item);
     }
-
-    g_object_unref (item);
     return g_slist_delete_link (elem, elem);
 }
 
@@ -432,6 +431,7 @@ g_paste_history_select (GPasteHistory *self,
 
     g_paste_history_add (self, item);
     g_paste_history_selected (self, item);
+    g_object_unref (item);
 }
 
 /**
