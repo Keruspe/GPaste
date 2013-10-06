@@ -32,6 +32,7 @@ struct _GPasteItem
     GObject parent_instance;
 
     /*< protected >*/
+    gsize              size;
     GPasteItemPrivate *priv;
 };
 
@@ -42,7 +43,6 @@ struct _GPasteItemClass
     /*< virtual >*/
     gboolean (*equals)   (const GPasteItem *self,
                           const GPasteItem *other);
-    gsize    (*get_size) (const GPasteItem *self);
     void     (*set_state) (GPasteItem     *self,
                            GPasteItemState state);
 

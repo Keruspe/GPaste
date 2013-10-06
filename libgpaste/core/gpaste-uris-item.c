@@ -56,16 +56,7 @@ g_paste_uris_item_equals (const GPasteItem *self,
             G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->equals (self, other));
 }
 
-static gsize
-g_paste_uris_item_get_size (const GPasteItem *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
 
-    GStrv uris = G_PASTE_URIS_ITEM (self)->priv->uris;
-
-    return G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->get_size (self) +
-        7 /* strlen ("file://") */ * g_strv_length (uris) + strlen (g_paste_item_get_value (self));
-}
 
 static const gchar *
 g_paste_uris_item_get_kind (const GPasteItem *self)
@@ -91,7 +82,6 @@ g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
     item_class->equals = g_paste_uris_item_equals;
-    item_class->get_size = g_paste_uris_item_get_size;
     item_class->get_kind = g_paste_uris_item_get_kind;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_uris_item_finalize;
@@ -161,10 +151,15 @@ g_paste_uris_item_new (const gchar *uris)
     gchar **paths = g_strsplit (uris, "\n", 0);
     guint length = g_strv_length (paths);
 
-    priv->uris = g_new (gchar *, length + 1);
+    g_paste_item->size += length + 1;
+
+    GStrv _uris = priv->uris = g_new (gchar *, length + 1);
     for (guint i = 0; i < length; ++i)
-        priv->uris[i] = g_strconcat ("file://", paths[i], NULL);
-    priv->uris[length] = NULL;
+    {
+        _uris[i] = g_strconcat ("file://", paths[i], NULL);
+        g_paste_item->size += strlen (_uris[i]) + 1;
+    }
+    _uris[length] = NULL;
     g_strfreev (paths);
 
     return g_paste_item;
