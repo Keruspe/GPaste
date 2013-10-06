@@ -117,6 +117,16 @@ _g_paste_history_remove (GPasteHistory *self,
 }
 
 static void
+g_paste_history_selected (GPasteHistory *self,
+                          GPasteItem    *item)
+{
+    g_signal_emit (self,
+                   signals[SELECTED],
+                   0, /* detail */
+                   item);
+}
+
+static void
 g_paste_history_activate_first (GPasteHistory *self)
 {
     GPasteHistoryPrivate *priv = self->priv;
@@ -125,6 +135,8 @@ g_paste_history_activate_first (GPasteHistory *self)
     priv->size -= g_paste_item_get_size (first);
     g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
     priv->size += g_paste_item_get_size (first);
+
+    g_paste_history_selected (self, first);
 }
 
 static void
@@ -419,10 +431,7 @@ g_paste_history_select (GPasteHistory *self,
     GPasteItem *item = g_slist_nth_data (history, pos);
 
     g_paste_history_add (self, item);
-    g_signal_emit (self,
-                   signals[SELECTED],
-                   0, /* detail */
-                   item);
+    g_paste_history_selected (self, item);
 }
 
 /**
