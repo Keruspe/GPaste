@@ -418,10 +418,13 @@ g_paste_history_select (GPasteHistory *self,
 
     g_return_if_fail (pos < g_slist_length (history));
 
+    GPasteItem *item = g_slist_nth_data (history, pos);
+
+    g_paste_history_add (self, item);
     g_signal_emit (self,
                    signals[SELECTED],
                    0, /* detail */
-                   g_slist_nth_data (history, pos));
+                   item);
 }
 
 /**

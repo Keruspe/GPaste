@@ -292,7 +292,6 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
 
     GPasteClipboardsManagerPrivate *priv = self->priv;
 
-    g_paste_history_add (priv->history, item);
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
         g_paste_clipboard_select_item (clipboard->data, item);
 }
