@@ -102,16 +102,18 @@ _g_paste_history_remove (GPasteHistory *self,
 
     priv->size -= g_paste_item_get_size (item);
 
-    if (remove_leftovers && G_PASTE_IS_IMAGE_ITEM (item))
+    if (remove_leftovers)
     {
-        GFile *image = g_file_new_for_path (g_paste_item_get_value (item));
-        g_file_delete (image,
-                       NULL, /* cancellable */
-                       NULL); /* error */
-        g_object_unref (image);
+        if (G_PASTE_IS_IMAGE_ITEM (item))
+        {
+            GFile *image = g_file_new_for_path (g_paste_item_get_value (item));
+            g_file_delete (image,
+                           NULL, /* cancellable */
+                           NULL); /* error */
+            g_object_unref (image);
+        }
+        g_object_unref (item);
     }
-
-    g_object_unref (item);
     return g_slist_delete_link (elem, elem);
 }
 
