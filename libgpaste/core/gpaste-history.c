@@ -21,6 +21,7 @@
 #include "gpaste-image-item.h"
 #include "gpaste-text-item.h"
 #include "gpaste-uris-item.h"
+#include "gpaste-settings-keys.h"
 
 #include <glib/gi18n-lib.h>
 #include <libxml/xmlreader.h>
@@ -41,6 +42,7 @@ struct _GPasteHistoryPrivate
     gsize           biggest_size;
 
     gulong          changed_signal;
+    gulong          settings_signal;
 };
 
 enum
@@ -117,11 +119,12 @@ _g_paste_history_remove (GPasteHistory *self,
 }
 
 static void
-g_paste_history_check_memory_usage (GPasteHistory *self,
-                                    gsize          max_memory)
+g_paste_history_check_memory_usage (GPasteHistory *self)
 {
     GPasteHistoryPrivate *priv = self->priv;
-    gboolean fifo = g_paste_settings_get_fifo (priv->settings);
+    GPasteSettings *settings = priv->settings;
+    gsize max_memory = g_paste_settings_get_max_memory_usage (settings) * 1024 * 1024;
+    gboolean fifo = g_paste_settings_get_fifo (settings);
 
     while (priv->size > max_memory && priv->biggest_index != (guint32) -1)
     {
@@ -203,8 +206,8 @@ g_paste_history_add (GPasteHistory *self,
     g_return_if_fail (G_PASTE_IS_ITEM (item));
 
     GPasteHistoryPrivate *priv = self->priv;
-    GSList *history = priv->history;
     GPasteSettings *settings = priv->settings;
+    GSList *history = priv->history;
 
     gboolean fifo = g_paste_settings_get_fifo (settings);
     gsize max_memory = g_paste_settings_get_max_memory_usage (settings) * 1024 * 1024;
@@ -271,7 +274,7 @@ g_paste_history_add (GPasteHistory *self,
     g_paste_item_set_state (item, (fifo) ? G_PASTE_ITEM_STATE_IDLE : G_PASTE_ITEM_STATE_ACTIVE);
     priv->size += g_paste_item_get_size (item);
 
-    g_paste_history_check_memory_usage (self, max_memory);
+    g_paste_history_check_memory_usage (self);
 
     if (!fifo)
     {
@@ -755,6 +758,19 @@ g_paste_history_self_changed (GPasteHistory *self,
 }
 
 static void
+g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
+                                  const gchar    *key,
+                                  gpointer        user_data)
+{
+    GPasteHistory *self = user_data;
+
+    if (!g_strcmp0(key, MAX_HISTORY_SIZE_KEY))
+        g_paste_history_check_size (self);
+    else if (!g_strcmp0 (key, MAX_MEMORY_USAGE_KEY))
+        g_paste_history_check_memory_usage (self);
+}
+
+static void
 g_paste_history_dispose (GObject *object)
 {
     GPasteHistory *self = G_PASTE_HISTORY (object);
@@ -764,6 +780,7 @@ g_paste_history_dispose (GObject *object)
     if (settings)
     {
         g_signal_handler_disconnect (self, priv->changed_signal);
+        g_signal_handler_disconnect (settings, priv->settings_signal);
         g_object_unref (settings);
         priv->settings = NULL;
     }
@@ -860,8 +877,13 @@ g_paste_history_new (GPasteSettings *settings)
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
+    GPasteHistoryPrivate *priv = self->priv;
+    GPasteSettings *_settings = priv->settings = g_object_ref (settings);
 
-    self->priv->settings = g_object_ref (settings);
+    priv->settings_signal = g_signal_connect (_settings,
+                                              "changed",
+                                              G_CALLBACK (g_paste_history_settings_changed),
+                                              self);
 
     return self;
 }
