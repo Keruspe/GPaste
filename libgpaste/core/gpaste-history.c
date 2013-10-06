@@ -137,6 +137,8 @@ g_paste_history_activate_first (GPasteHistory *self)
     priv->size -= g_paste_item_get_size (first);
     g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
     priv->size += g_paste_item_get_size (first);
+
+    g_paste_history_selected (self, first);
 }
 
 static void
