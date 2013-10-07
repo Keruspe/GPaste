@@ -10,14 +10,6 @@
       </description>
     </key>
 
-    <key name="fifo" type="b">
-      <default>false</default>
-      <summary>Copy new items to the end of the list so that they are pasted last?</summary>
-      <description>
-        By default new items are added to the top of the list so that they are pasted first.
-      </description>
-    </key>
-
     <key name="history-name" type="s">
       <default>'history'</default>
       <summary>The name of the current history</summary>

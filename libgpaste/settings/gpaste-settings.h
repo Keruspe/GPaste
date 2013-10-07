@@ -44,7 +44,6 @@ G_PASTE_VISIBLE
 GType g_paste_settings_get_type (void);
 
 guint32      g_paste_settings_get_element_size               (GPasteSettings *self);
-gboolean     g_paste_settings_get_fifo                       (GPasteSettings *self);
 const gchar *g_paste_settings_get_history_name               (GPasteSettings *self);
 gboolean     g_paste_settings_get_images_support             (GPasteSettings *self);
 guint32      g_paste_settings_get_max_displayed_history_size (GPasteSettings *self);
@@ -65,8 +64,6 @@ gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *se
 
 void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint32         value);
-void g_paste_settings_set_fifo                       (GPasteSettings *self,
-                                                      gboolean        value);
 void g_paste_settings_set_history_name               (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_images_support             (GPasteSettings *self,

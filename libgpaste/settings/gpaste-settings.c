@@ -27,7 +27,6 @@ struct _GPasteSettingsPrivate
     GSettings *settings;
 
     guint32    element_size;
-    gboolean   fifo;
     gchar     *history_name;
     gboolean   images_support;
     guint32    max_displayed_history_size;
@@ -131,25 +130,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * Returns:
  */
 UNSIGNED_SETTING (element_size, ELEMENT_SIZE_KEY)
-
-/**
- * g_paste_settings_get_fifo:
- * @self: a #GPasteSettings instance
- *
- * Get the FIFO_KEY setting
- *
- * Returns: the value of the FIFO_KEY setting
- */
-/**
- * g_paste_settings_set_fifo:
- * @self: a #GPasteSettings instance
- * @value: whether to add the end of the history or not
- *
- * Change the FIFO_KEY setting
- *
- * Returns:
- */
-BOOLEAN_SETTING (fifo, FIFO_KEY)
 
 /**
  * g_paste_settings_get_history_name:
@@ -484,8 +464,6 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 
     if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
         g_paste_settings_set_element_size_from_dconf (self);
-    else if (g_strcmp0 (key, FIFO_KEY) == 0)
-        g_paste_settings_set_fifo_from_dconf (self);
     else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
         g_paste_settings_set_history_name_from_dconf (self);
     else if (g_strcmp0 (key, IMAGES_SUPPORT_KEY) == 0)
@@ -609,7 +587,6 @@ g_paste_settings_init (GPasteSettings *self)
     priv->sync_primary_to_clipboard = NULL;
 
     g_paste_settings_set_element_size_from_dconf (self);
-    g_paste_settings_set_fifo_from_dconf (self);
     g_paste_settings_set_history_name_from_dconf (self);
     g_paste_settings_set_images_support_from_dconf (self);
     g_paste_settings_set_max_displayed_history_size_from_dconf (self);
