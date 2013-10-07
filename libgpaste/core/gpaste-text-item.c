@@ -25,14 +25,12 @@ static gboolean
 g_paste_text_item_equals (const GPasteItem *self,
                           const GPasteItem *other)
 {
-    g_return_val_if_fail (G_PASTE_IS_TEXT_ITEM (self), FALSE);
-
     return (G_PASTE_IS_TEXT_ITEM (other) &&
             G_PASTE_ITEM_CLASS (g_paste_text_item_parent_class)->equals (self, other));
 }
 
 static const gchar *
-g_paste_text_item_get_kind (const GPasteItem *self)
+g_paste_text_item_get_kind (void)
 {
     return "Text";
 }

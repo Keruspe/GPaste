@@ -91,8 +91,6 @@ static gboolean
 g_paste_image_item_equals (const GPasteItem *self,
                            const GPasteItem *other)
 {
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
-
     GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
     GPasteImageItemPrivate *_priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (other));
 
@@ -121,7 +119,7 @@ g_paste_image_item_set_size (GPasteItem *self)
 }
 
 static const gchar *
-g_paste_image_item_get_kind (const GPasteItem *self)
+g_paste_image_item_get_kind (void)
 {
     return "Image";
 }

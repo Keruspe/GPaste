@@ -103,7 +103,7 @@ g_paste_item_get_kind (const GPasteItem *self)
 
     g_return_val_if_fail (klass->get_kind, NULL);
 
-    return klass->get_kind (self);
+    return klass->get_kind ();
 }
 
 /**

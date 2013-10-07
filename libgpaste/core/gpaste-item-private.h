@@ -46,7 +46,7 @@ struct _GPasteItemClass
                            GPasteItemState state);
 
     /*< pure virtual >*/
-    const gchar *(*get_kind) (const GPasteItem *self);
+    const gchar *(*get_kind) (void);
 };
 
 void g_paste_item_set_display_string (GPasteItem  *self,

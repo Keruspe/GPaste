@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -57,9 +57,11 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
             guint length = g_strv_length ((gchar **) uris);
 
             for (guint i = 0; i < length; ++i)
+            {
                 g_string_append (g_string_append (copy_string,
                                                   "\n"),
                                  uris[i]);
+            }
 
             gchar *str = copy_string->str;
             length = copy_string->len + 1;
