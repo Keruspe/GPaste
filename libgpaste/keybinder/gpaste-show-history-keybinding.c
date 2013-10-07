@@ -33,8 +33,11 @@ g_paste_show_history_keybinding_init (GPasteShowHistoryKeybinding *self G_GNUC_U
 }
 
 static void
-g_paste_show_history_keybinding_show_history (GPasteDaemon *gpaste_daemon)
+g_paste_show_history_keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUSED,
+                                              gpointer          user_data)
 {
+    GPasteDaemon *gpaste_daemon = user_data;
+
     g_paste_daemon_show_history (gpaste_daemon,
                                  NULL); /* error */
 }
@@ -53,13 +56,10 @@ G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_show_history_keybinding_new (GPasteSettings   *settings,
                                      GPasteDaemon     *gpaste_daemon)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (G_PASTE_IS_DAEMON (gpaste_daemon), NULL);
-
     return _g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
                                     settings,
                                     SHOW_HISTORY_KEY,
                                     g_paste_settings_get_show_history,
-                                    (GPasteKeybindingFunc) g_paste_show_history_keybinding_show_history,
+                                    g_paste_show_history_keybinding_show_history,
                                     gpaste_daemon);
 }

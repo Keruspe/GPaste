@@ -33,8 +33,11 @@ g_paste_sync_clipboard_to_primary_keybinding_init (GPasteSyncClipboardToPrimaryK
 }
 
 static void
-g_paste_sync_clipboard_to_primary_keybinding_sync (GPasteClipboardsManager *gcm)
+g_paste_sync_clipboard_to_primary_keybinding_sync (GPasteKeybinding *self G_GNUC_UNUSED,
+                                                   gpointer          user_data)
 {
+    GPasteClipboardsManager *gcm = user_data;
+
     g_paste_clipboards_manager_sync_from_to (gcm,
                                              GDK_SELECTION_CLIPBOARD,
                                              GDK_SELECTION_PRIMARY);
@@ -54,13 +57,10 @@ G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_sync_clipboard_to_primary_keybinding_new (GPasteSettings          *settings,
                                                   GPasteClipboardsManager *gcm)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (gcm), NULL);
-
     return _g_paste_keybinding_new (G_PASTE_TYPE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING,
                                     settings,
                                     SYNC_CLIPBOARD_TO_PRIMARY_KEY,
                                     g_paste_settings_get_sync_clipboard_to_primary,
-                                    (GPasteKeybindingFunc) g_paste_sync_clipboard_to_primary_keybinding_sync,
+                                    g_paste_sync_clipboard_to_primary_keybinding_sync,
                                     gcm);
 }
