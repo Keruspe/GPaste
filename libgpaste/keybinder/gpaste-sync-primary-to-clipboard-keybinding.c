@@ -34,9 +34,9 @@ g_paste_sync_primary_to_clipboard_keybinding_init (GPasteSyncPrimaryToClipboardK
 
 static void
 g_paste_sync_primary_to_clipboard_keybinding_sync (GPasteKeybinding *self G_GNUC_UNUSED,
-                                                   gpointer          user_data)
+                                                   gpointer          data)
 {
-    GPasteClipboardsManager *gcm = user_data;
+    GPasteClipboardsManager *gcm = data;
 
     g_paste_clipboards_manager_sync_from_to (gcm,
                                              GDK_SELECTION_PRIMARY,

@@ -29,7 +29,7 @@
                                  n_targets,                          \
                                  paste_and_pop_get_clipboard_data,   \
                                  paste_and_pop_clear_clipboard_data, \
-                                 data);
+                                 _data);
 
 struct _GPastePasteAndPopKeybindingPrivate
 {
@@ -84,7 +84,7 @@ paste_and_pop_clear_clipboard_data (GtkClipboard *clipboard          G_GNUC_UNUS
 
 static void
 paste_and_pop (GPasteKeybinding *self,
-               gpointer          user_data)
+               gpointer          data)
 {
     GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
@@ -94,14 +94,14 @@ paste_and_pop (GPasteKeybinding *self,
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
 
     GPastePasteAndPopKeybindingPrivate *priv = g_paste_paste_and_pop_keybinding_get_instance_private (G_PASTE_PASTE_AND_POP_KEYBINDING (self));
-    GPasteClipboardsManager *clipboards_manager = user_data;
+    GPasteClipboardsManager *clipboards_manager = data;
 
     priv->delete = TRUE;
     g_paste_clipboards_manager_lock (clipboards_manager);
 
-    gpointer *data = g_new (gpointer, 2);
-    data[0] = self;
-    data[1] = clipboards_manager;
+    gpointer *_data = g_new (gpointer, 2);
+    _data[0] = self;
+    _data[1] = clipboards_manager;
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
 

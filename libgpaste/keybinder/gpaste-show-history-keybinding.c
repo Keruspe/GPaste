@@ -34,9 +34,9 @@ g_paste_show_history_keybinding_init (GPasteShowHistoryKeybinding *self G_GNUC_U
 
 static void
 g_paste_show_history_keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUSED,
-                                              gpointer          user_data)
+                                              gpointer          data)
 {
-    GPasteDaemon *gpaste_daemon = user_data;
+    GPasteDaemon *gpaste_daemon = data;
 
     g_paste_daemon_show_history (gpaste_daemon,
                                  NULL); /* error */
