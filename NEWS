@@ -8,6 +8,7 @@ NEW in 3.6 (Not released yet)
 - Misc. bugfixes
 - New setting to set the maximum amount of memory used by data in history
 - FIFO mode has been dropped (lacking design)
+- Code cleanup and modernisation
 
 NEW in 3.5 (25/09/2013)
 =============
