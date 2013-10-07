@@ -59,7 +59,9 @@ g_paste_clipboard_get_target (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    return self->priv->target;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+
+    return priv->target;
 }
 
 /**
@@ -75,7 +77,9 @@ g_paste_clipboard_get_real (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    return self->priv->real;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+
+    return priv->real;
 }
 
 /**
@@ -91,17 +95,15 @@ g_paste_clipboard_get_text (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    return self->priv->text;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+
+    return priv->text;
 }
 
 static void
-_g_paste_clipboard_set_text (GPasteClipboard *self,
-                             const gchar     *text)
+g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
+                                    const gchar            *text)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
-
-    GPasteClipboardPrivate *priv = self->priv;
-
     g_free (priv->text);
     g_free (priv->image_checksum);
 
@@ -122,7 +124,7 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    GPasteClipboardPrivate *priv = self->priv;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     gchar *text = gtk_clipboard_wait_for_text (priv->real);
 
     if (!text)
@@ -139,15 +141,15 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
         length > g_paste_settings_get_max_text_item_size (settings) ||
         !strlen (stripped))
             goto ignore;
-    if (priv->text && g_strcmp0 (priv->text, to_add) == 0)
+    if (priv->text && !g_strcmp0 (priv->text, to_add))
         goto ignore;
 
     if (trim_items &&
         priv->target == GDK_SELECTION_CLIPBOARD &&
-        g_strcmp0 (text, stripped) != 0)
+        g_strcmp0 (text, stripped))
             g_paste_clipboard_select_text (self, stripped);
     else
-        _g_paste_clipboard_set_text (self, to_add);
+        g_paste_clipboard_private_set_text (priv, to_add);
 
     ret = priv->text;
 
@@ -175,7 +177,8 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     g_return_if_fail (text != NULL);
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
-    GtkClipboard *real = self->priv->real;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+    GtkClipboard *real = priv->real;
 
     /* Let the clipboards manager handle our internal text */
     gtk_clipboard_set_text (real, text, -1);
@@ -183,16 +186,13 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 }
 
 static void
-_g_paste_clipboard_select_uris (GPasteClipboard *self,
-                                GPasteUrisItem  *item)
+g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
+                                       GPasteUrisItem         *item)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
-    g_return_if_fail (G_PASTE_IS_URIS_ITEM (item));
-
-    GtkClipboard *real = self->priv->real;
+    GtkClipboard *real = priv->real;
     GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
-    _g_paste_clipboard_set_text (self, g_paste_item_get_value (G_PASTE_ITEM (item)));
+    g_paste_clipboard_private_set_text (priv, g_paste_item_get_value (G_PASTE_ITEM (item)));
 
     gtk_target_list_add_text_targets (target_list, 0);
     gtk_target_list_add_uri_targets (target_list, 0);
@@ -225,17 +225,15 @@ g_paste_clipboard_get_image_checksum (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    return self->priv->image_checksum;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+
+    return priv->image_checksum;
 }
 
 static void
-g_paste_clipboard_set_image_checksum (GPasteClipboard *self,
-                                      const gchar     *image_checksum)
+g_paste_clipboard_private_set_image_checksum (GPasteClipboardPrivate *priv,
+                                              const gchar            *image_checksum)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
-
-    GPasteClipboardPrivate *priv = self->priv;
-
     g_free (priv->text);
     g_free (priv->image_checksum);
 
@@ -244,18 +242,17 @@ g_paste_clipboard_set_image_checksum (GPasteClipboard *self,
 }
 
 static void
-_g_paste_clipboard_select_image (GPasteClipboard *self,
-                                 GdkPixbuf       *image,
-                                 const gchar     *checksum)
+g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
+                                        GdkPixbuf              *image,
+                                        const gchar            *checksum)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (image != NULL);
 
-    GtkClipboard *real = self->priv->real;
+    GtkClipboard *real = priv->real;
 
-    g_paste_clipboard_set_image_checksum (self, checksum);
+    g_paste_clipboard_private_set_image_checksum (priv, checksum);
     gtk_clipboard_set_image (real, image);
-    //gtk_clipboard_store (real);
+    gtk_clipboard_store (real);
 }
 
 /**
@@ -271,7 +268,7 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    GPasteClipboardPrivate *priv = self->priv;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GdkPixbuf *image = gtk_clipboard_wait_for_image (priv->real);
     GdkPixbuf *ret = image;
 
@@ -281,10 +278,12 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
                                                        (guchar *) gdk_pixbuf_get_pixels (image),
                                                        -1);
 
-        if (g_strcmp0 (checksum, self->priv->image_checksum) != 0)
-            _g_paste_clipboard_select_image (self,
-                                             image,
-                                             checksum);
+        if (g_strcmp0 (checksum, priv->image_checksum))
+        {
+            g_paste_clipboard_private_select_image (priv,
+                                                    image,
+                                                    checksum);
+        }
         else
             ret = NULL;
 
@@ -310,24 +309,28 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (G_PASTE_IS_ITEM (item));
 
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
     if (G_PASTE_IS_IMAGE_ITEM (item))
     {
         GPasteImageItem *image_item = G_PASTE_IMAGE_ITEM (item);
         const gchar *checksum = g_paste_image_item_get_checksum (image_item);
 
-        if (g_strcmp0 (checksum, self->priv->image_checksum) != 0)
-            _g_paste_clipboard_select_image (self,
-                                             g_paste_image_item_get_image (image_item),
-                                             checksum);
+        if (g_strcmp0 (checksum, priv->image_checksum))
+        {
+            g_paste_clipboard_private_select_image (priv,
+                                                    g_paste_image_item_get_image (image_item),
+                                                    checksum);
+        }
     }
     else
     {
         const gchar *text = g_paste_item_get_value (item);
 
-        if (g_strcmp0 (text, self->priv->text) != 0)
+        if (g_strcmp0 (text, priv->text))
         {
             if (G_PASTE_IS_URIS_ITEM (item))
-                _g_paste_clipboard_select_uris (self, G_PASTE_URIS_ITEM (item));
+                g_paste_clipboard_private_select_uris (priv, G_PASTE_URIS_ITEM (item));
             else  if (G_PASTE_IS_TEXT_ITEM (item))
                 g_paste_clipboard_select_text (self, text);
             else
@@ -353,7 +356,7 @@ g_paste_clipboard_owner_change (GtkClipboard *clipboard G_GNUC_UNUSED,
 static void
 g_paste_clipboard_dispose (GObject *object)
 {
-    GPasteClipboardPrivate *priv = G_PASTE_CLIPBOARD (object)->priv;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (G_PASTE_CLIPBOARD (object));
 
     if (priv->settings)
     {
@@ -367,7 +370,7 @@ g_paste_clipboard_dispose (GObject *object)
 static void
 g_paste_clipboard_finalize (GObject *object)
 {
-    GPasteClipboardPrivate *priv = G_PASTE_CLIPBOARD (object)->priv;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (G_PASTE_CLIPBOARD (object));
 
     g_free (priv->text);
     g_free (priv->image_checksum);
@@ -398,7 +401,7 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 static void
 g_paste_clipboard_init (GPasteClipboard *self)
 {
-    GPasteClipboardPrivate *priv = self->priv = g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     priv->text = NULL;
     priv->image_checksum = NULL;
@@ -424,7 +427,7 @@ g_paste_clipboard_new (GdkAtom         target,
         g_error ("Clipboard notifications not supported, GPaste won't work (XFixes not found).");
 
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
-    GPasteClipboardPrivate *priv = self->priv;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     priv->target = target;
     priv->settings = g_object_ref (settings);
