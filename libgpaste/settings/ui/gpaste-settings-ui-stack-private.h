@@ -29,9 +29,6 @@ typedef struct _GPasteSettingsUiStackPrivate GPasteSettingsUiStackPrivate;
 struct _GPasteSettingsUiStack
 {
     GtkStack parent_instance;
-
-    /*< private >*/
-    GPasteSettingsUiStackPrivate *priv;
 };
 
 struct _GPasteSettingsUiStackClass

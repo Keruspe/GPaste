@@ -86,9 +86,9 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiStack, g_paste_settings_ui_stack, GT
  */
 G_PASTE_VISIBLE void
 g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
-                                     const gchar              *name,
-                                     const gchar              *label,
-                                     GPasteSettingsUiPanel    *panel)
+                                     const gchar           *name,
+                                     const gchar           *label,
+                                     GPasteSettingsUiPanel *panel)
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS_UI_STACK (self));
 
@@ -108,9 +108,8 @@ BOOLEAN_CALLBACK (trim_items)
 BOOLEAN_CALLBACK (save_history)
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_make_behaviour_panel (GPasteSettingsUiStack *self)
+g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPrivate *priv)
 {
-    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -166,9 +165,8 @@ UINT_CALLBACK (max_text_item_size)
 UINT_CALLBACK (min_text_item_size)
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_make_history_settings_panel (GPasteSettingsUiStack *self)
+g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiStackPrivate *priv)
 {
-    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -212,9 +210,8 @@ STRING_CALLBACK (sync_clipboard_to_primary)
 STRING_CALLBACK (sync_primary_to_clipboard)
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_make_keybindings_panel (GPasteSettingsUiStack *self)
+g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackPrivate *priv)
 {
-    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -254,9 +251,8 @@ g_paste_settings_ui_check_connection_error (GError *error)
 }
 
 static void
-g_paste_settings_ui_stack_refill_histories (GPasteSettingsUiStack *self)
+g_paste_settings_ui_stack_private_refill_histories (GPasteSettingsUiStackPrivate *priv)
 {
-    GPasteSettingsUiStackPrivate *priv = self->priv;
     GError *error = NULL;
     GStrv histories = g_paste_client_list_histories (priv->client, &error);
 
@@ -284,15 +280,15 @@ static void
 backup_callback (const gchar *value,
                  gpointer     user_data)
 {
-    GPasteSettingsUiStack *self = G_PASTE_SETTINGS_UI_STACK (user_data);
+    GPasteSettingsUiStackPrivate *priv = user_data;
     GError *error = NULL;
 
-    g_paste_client_backup_history (self->priv->client, value, &error);
+    g_paste_client_backup_history (priv->client, value, &error);
 
     if (g_paste_settings_ui_check_connection_error (error))
         return;
 
-    g_paste_settings_ui_stack_refill_histories (self);
+    g_paste_settings_ui_stack_private_refill_histories (priv);
 }
 
 static void
@@ -300,8 +296,8 @@ targets_callback (const gchar *action,
                   const gchar *target,
                   gpointer     user_data)
 {
-    GPasteSettingsUiStack *self = G_PASTE_SETTINGS_UI_STACK (user_data);
-    GPasteClient *client = self->priv->client;
+    GPasteSettingsUiStackPrivate *priv = user_data;
+    GPasteClient *client = priv->client;
     GError *error = NULL;
 
     if (!g_strcmp0 (action, "switch"))
@@ -314,13 +310,12 @@ targets_callback (const gchar *action,
     if (g_paste_settings_ui_check_connection_error (error))
         return;
 
-    g_paste_settings_ui_stack_refill_histories (self);
+    g_paste_settings_ui_stack_private_refill_histories (priv);
 }
 
 static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_make_histories_panel (GPasteSettingsUiStack *self)
+g_paste_settings_ui_stack_private_make_histories_panel (GPasteSettingsUiStackPrivate *priv)
 {
-    GPasteSettingsUiStackPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
@@ -333,17 +328,17 @@ g_paste_settings_ui_stack_make_histories_panel (GPasteSettingsUiStack *self)
                                                                              /* translators: This is the name of a multi-history management action */
                                                                              _("Backup"),
                                                                              backup_callback,
-                                                                             self);
+                                                                             priv);
     g_free (backup_name);
 
     /* translators: This is the text displayed on the button used to perform a multi-history management action */
     priv->targets = g_paste_settings_ui_panel_add_multi_action_setting (panel,
-                                                                        (gchar ** const *) priv->actions,
+                                                                        (GStrv const *) priv->actions,
                                                                         _("Ok"),
                                                                         targets_callback,
-                                                                        self);
+                                                                        priv);
 
-    g_paste_settings_ui_stack_refill_histories (self);
+    g_paste_settings_ui_stack_private_refill_histories (priv);
 
     return panel;
 }
@@ -359,10 +354,12 @@ g_paste_settings_ui_stack_make_histories_panel (GPasteSettingsUiStack *self)
 G_PASTE_VISIBLE void
 g_paste_settings_ui_stack_fill (GPasteSettingsUiStack *self)
 {
-    g_paste_settings_ui_stack_add_panel (self, "general",   _("General behaviour"),  g_paste_settings_ui_stack_make_behaviour_panel (self));
-    g_paste_settings_ui_stack_add_panel (self, "history",   _("History settings"),   g_paste_settings_ui_stack_make_history_settings_panel (self));
-    g_paste_settings_ui_stack_add_panel (self, "keyboard",  _("Keyboard shortcuts"), g_paste_settings_ui_stack_make_keybindings_panel (self));
-    g_paste_settings_ui_stack_add_panel (self, "histories", _("Histories"),          g_paste_settings_ui_stack_make_histories_panel (self));
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
+
+    g_paste_settings_ui_stack_add_panel (self, "general",   _("General behaviour"),  g_paste_settings_ui_stack_private_make_behaviour_panel (priv));
+    g_paste_settings_ui_stack_add_panel (self, "history",   _("History settings"),   g_paste_settings_ui_stack_private_make_history_settings_panel (priv));
+    g_paste_settings_ui_stack_add_panel (self, "keyboard",  _("Keyboard shortcuts"), g_paste_settings_ui_stack_private_make_keybindings_panel (priv));
+    g_paste_settings_ui_stack_add_panel (self, "histories", _("Histories"),          g_paste_settings_ui_stack_private_make_histories_panel (priv));
 }
 
 static void
@@ -370,56 +367,56 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
                                             const gchar    *key,
                                             gpointer        user_data)
 {
-    GPasteSettingsUiStackPrivate *priv = G_PASTE_SETTINGS_UI_STACK (user_data)->priv;
+    GPasteSettingsUiStackPrivate *priv = user_data;
 
-    if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
+    if (!g_strcmp0 (key, ELEMENT_SIZE_KEY))
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
-    else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
+    else if (!g_strcmp0 (key, HISTORY_NAME_KEY))
     {
         gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
         gtk_entry_set_text (priv->backup_entry, text);
         g_free (text);
     }
-    else if (g_strcmp0 (key, IMAGES_SUPPORT_KEY) == 0)
+    else if (!g_strcmp0 (key, IMAGES_SUPPORT_KEY))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->images_support_button), g_paste_settings_get_images_support (settings));
-    else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
+    else if (!g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY))
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
-    else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
+    else if (!g_strcmp0 (key, MAX_HISTORY_SIZE_KEY))
         gtk_spin_button_set_value (priv->max_history_size_button, g_paste_settings_get_max_history_size (settings));
-    else if (g_strcmp0 (key, MAX_MEMORY_USAGE_KEY) == 0)
+    else if (!g_strcmp0 (key, MAX_MEMORY_USAGE_KEY))
         gtk_spin_button_set_value (priv->max_memory_usage_button, g_paste_settings_get_max_memory_usage (settings));
-    else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
+    else if (!g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY))
         gtk_spin_button_set_value (priv->max_text_item_size_button, g_paste_settings_get_max_text_item_size (settings));
-    else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)
+    else if (!g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY))
         gtk_spin_button_set_value (priv->min_text_item_size_button, g_paste_settings_get_min_text_item_size (settings));
-    else if (g_strcmp0 (key, PASTE_AND_POP_KEY) == 0)
+    else if (!g_strcmp0 (key, PASTE_AND_POP_KEY))
         gtk_entry_set_text (priv->paste_and_pop_entry, g_paste_settings_get_paste_and_pop (settings));
-    else if (g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ) == 0)
+    else if (!g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->primary_to_history_button), g_paste_settings_get_primary_to_history (settings));
-    else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
+    else if (!g_strcmp0 (key, SAVE_HISTORY_KEY))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->save_history_button), g_paste_settings_get_save_history (settings));
-    else if (g_strcmp0 (key, SHOW_HISTORY_KEY) == 0)
+    else if (!g_strcmp0 (key, SHOW_HISTORY_KEY))
         gtk_entry_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings));
-    else if (g_strcmp0 (key, SYNC_CLIPBOARD_TO_PRIMARY_KEY) == 0)
+    else if (!g_strcmp0 (key, SYNC_CLIPBOARD_TO_PRIMARY_KEY))
         gtk_entry_set_text (priv->sync_clipboard_to_primary_entry, g_paste_settings_get_sync_clipboard_to_primary (settings));
-    else if (g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY) == 0)
+    else if (!g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY))
         gtk_entry_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings));
-    else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
+    else if (!g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
-    else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
+    else if (!g_strcmp0 (key, TRACK_CHANGES_KEY))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->track_changes_button), g_paste_settings_get_track_changes (settings));
 #ifdef ENABLE_EXTENSION
-    else if (g_strcmp0 (key, TRACK_EXTENSION_STATE_KEY) == 0)
+    else if (!g_strcmp0 (key, TRACK_EXTENSION_STATE_KEY))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->track_extension_state_button), g_paste_settings_get_track_extension_state (settings));
 #endif
-    else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
+    else if (!g_strcmp0 (key, TRIM_ITEMS_KEY))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->trim_items_button), g_paste_settings_get_trim_items (settings));
 }
 
 static void
 g_paste_settings_ui_stack_dispose (GObject *object)
 {
-    GPasteSettingsUiStackPrivate *priv = G_PASTE_SETTINGS_UI_STACK (object)->priv;
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
 
     if (priv->settings) /* first dispose call */
     {
@@ -434,11 +431,12 @@ g_paste_settings_ui_stack_dispose (GObject *object)
 static void
 g_paste_settings_ui_stack_finalize (GObject *object)
 {
-    gchar ***actions = G_PASTE_SETTINGS_UI_STACK (object)->priv->actions;
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
+    GStrv *actions = priv->actions;
 
     for (guint i = 0; actions[i]; ++i)
-        g_free ((gchar **)actions[i]);
-    g_free ((gchar ***)actions);
+        g_free ((GStrv) actions[i]);
+    g_free ((GStrv *) actions);
 
     G_OBJECT_CLASS (g_paste_settings_ui_stack_parent_class)->finalize (object);
 }
@@ -455,7 +453,7 @@ g_paste_settings_ui_stack_class_init (GPasteSettingsUiStackClass *klass)
 static void
 g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
 {
-    GPasteSettingsUiStackPrivate *priv = self->priv = g_paste_settings_ui_stack_get_instance_private (self);
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
 
     GError *error = NULL;
     priv->client = g_paste_client_new (&error);
@@ -467,16 +465,16 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
     priv->settings_signal = g_signal_connect (priv->settings,
                                               "changed",
                                               G_CALLBACK (g_paste_settings_ui_stack_settings_changed),
-                                              self);
+                                              priv);
 
-    gchar ***actions = priv->actions = (gchar ***) g_malloc (3 * sizeof (gchar **));
+    GStrv *actions = priv->actions = (GStrv *) g_malloc (3 * sizeof (GStrv));
 
-    gchar **action = actions[0] = (gchar **) g_malloc (2 * sizeof (gchar *));
+    GStrv action = actions[0] = (GStrv) g_malloc (2 * sizeof (gchar *));
     action[0] = (gchar *) "switch";
     /* translators: This is the name of a multi-history management action */
     action[1] = _("Switch to");
 
-    action = actions[1] = (gchar **) g_malloc (2 * sizeof (gchar *));
+    action = actions[1] = (GStrv) g_malloc (2 * sizeof (gchar *));
     action[0] = (gchar *) "delete";
     /* translators: This is the name of a multi-history management action */
     action[1] = _("Delete");
