@@ -41,7 +41,9 @@ g_paste_uris_item_get_uris (const GPasteUrisItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
 
-    return (const gchar * const *) self->priv->uris;
+    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private ((GPasteUrisItem *) self);
+
+    return (const gchar * const *) priv->uris;
 }
 
 static gboolean
@@ -59,15 +61,15 @@ g_paste_uris_item_equals (const GPasteItem *self,
 static const gchar *
 g_paste_uris_item_get_kind (const GPasteItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), NULL);
-
     return "Uris";
 }
 
 static void
 g_paste_uris_item_finalize (GObject *object)
 {
-    g_strfreev (G_PASTE_URIS_ITEM (object)->priv->uris);
+    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (object));
+
+    g_strfreev (priv->uris);
 
     G_OBJECT_CLASS (g_paste_uris_item_parent_class)->finalize (object);
 }
@@ -84,9 +86,8 @@ g_paste_uris_item_class_init (GPasteUrisItemClass *klass)
 }
 
 static void
-g_paste_uris_item_init (GPasteUrisItem *self)
+g_paste_uris_item_init (GPasteUrisItem *self G_GNUC_UNUSED)
 {
-    self->priv = g_paste_uris_item_get_instance_private (self);
 }
 
 /**
@@ -104,9 +105,8 @@ g_paste_uris_item_new (const gchar *uris)
     g_return_val_if_fail (uris != NULL, NULL);
     g_return_val_if_fail (g_utf8_validate (uris, -1, NULL), NULL);
 
-    GPasteItem *g_paste_item = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
-    GPasteUrisItem *self = G_PASTE_URIS_ITEM (g_paste_item);
-    GPasteUrisItemPrivate *priv = self->priv;
+    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
+    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
 
     gchar *home_escaped = g_regex_escape_string (g_get_home_dir (), -1);
     GRegex *regex = g_regex_new (home_escaped,
@@ -140,23 +140,23 @@ g_paste_uris_item_new (const gchar *uris)
     // This is the prefix displayed in history to identify selected files
     gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);
 
-    g_paste_item_set_display_string (g_paste_item, full_display_string);
+    g_paste_item_set_display_string (self, full_display_string);
     g_free (full_display_string);
     g_free (display_string);
 
     gchar **paths = g_strsplit (uris, "\n", 0);
     guint length = g_strv_length (paths);
 
-    g_paste_item->size += length + 1;
+    self->size += length + 1;
 
     GStrv _uris = priv->uris = g_new (gchar *, length + 1);
     for (guint i = 0; i < length; ++i)
     {
         _uris[i] = g_strconcat ("file://", paths[i], NULL);
-        g_paste_item->size += strlen (_uris[i]) + 1;
+        self->size += strlen (_uris[i]) + 1;
     }
     _uris[length] = NULL;
     g_strfreev (paths);
 
-    return g_paste_item;
+    return self;
 }
