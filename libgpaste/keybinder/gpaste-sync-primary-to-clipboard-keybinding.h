@@ -49,8 +49,8 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_sync_primary_to_clipboard_keybinding_get_type (void);
 
-GPasteSyncPrimaryToClipboardKeybinding *g_paste_sync_primary_to_clipboard_keybinding_new (GPasteSettings          *settings,
-                                                                                          GPasteClipboardsManager *gcm);
+GPasteKeybinding *g_paste_sync_primary_to_clipboard_keybinding_new (GPasteSettings          *settings,
+                                                                    GPasteClipboardsManager *gcm);
 
 G_END_DECLS
 

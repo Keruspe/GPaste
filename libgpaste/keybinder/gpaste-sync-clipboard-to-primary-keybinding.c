@@ -35,7 +35,9 @@ g_paste_sync_clipboard_to_primary_keybinding_init (GPasteSyncClipboardToPrimaryK
 static void
 g_paste_sync_clipboard_to_primary_keybinding_sync (GPasteClipboardsManager *gcm)
 {
-    g_paste_clipboards_manager_sync_from_to (gcm, GDK_SELECTION_CLIPBOARD, GDK_SELECTION_PRIMARY);
+    g_paste_clipboards_manager_sync_from_to (gcm,
+                                             GDK_SELECTION_CLIPBOARD,
+                                             GDK_SELECTION_PRIMARY);
 }
 
 /**
@@ -48,17 +50,17 @@ g_paste_sync_clipboard_to_primary_keybinding_sync (GPasteClipboardsManager *gcm)
  * Returns: a newly allocated #GPasteSyncClipboardToPrimaryKeybinding
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteSyncClipboardToPrimaryKeybinding *
+G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_sync_clipboard_to_primary_keybinding_new (GPasteSettings          *settings,
                                                   GPasteClipboardsManager *gcm)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (gcm), NULL);
 
-    return G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING,
-                                                                                  settings,
-                                                                                  SYNC_CLIPBOARD_TO_PRIMARY_KEY,
-                                                                                  g_paste_settings_get_sync_clipboard_to_primary,
-                                                                                  (GPasteKeybindingFunc) g_paste_sync_clipboard_to_primary_keybinding_sync,
-                                                                                  gcm));
+    return _g_paste_keybinding_new (G_PASTE_TYPE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING,
+                                    settings,
+                                    SYNC_CLIPBOARD_TO_PRIMARY_KEY,
+                                    g_paste_settings_get_sync_clipboard_to_primary,
+                                    (GPasteKeybindingFunc) g_paste_sync_clipboard_to_primary_keybinding_sync,
+                                    gcm);
 }

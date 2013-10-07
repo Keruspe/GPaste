@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -49,17 +49,17 @@ g_paste_show_history_keybinding_show_history (GPasteDaemon *gpaste_daemon)
  * Returns: a newly allocated #GPasteShowHistoryKeybinding
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteShowHistoryKeybinding *
+G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_show_history_keybinding_new (GPasteSettings   *settings,
                                      GPasteDaemon     *gpaste_daemon)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_DAEMON (gpaste_daemon), NULL);
 
-    return G_PASTE_SHOW_HISTORY_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
-                                                                     settings,
-                                                                     SHOW_HISTORY_KEY,
-                                                                     g_paste_settings_get_show_history,
-                                                                     (GPasteKeybindingFunc) g_paste_show_history_keybinding_show_history,
-                                                                     gpaste_daemon));
+    return _g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
+                                    settings,
+                                    SHOW_HISTORY_KEY,
+                                    g_paste_settings_get_show_history,
+                                    (GPasteKeybindingFunc) g_paste_show_history_keybinding_show_history,
+                                    gpaste_daemon);
 }

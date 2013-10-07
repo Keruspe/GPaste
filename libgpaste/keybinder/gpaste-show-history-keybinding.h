@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -49,8 +49,8 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_show_history_keybinding_get_type (void);
 
-GPasteShowHistoryKeybinding *g_paste_show_history_keybinding_new (GPasteSettings *settings,
-                                                                  GPasteDaemon   *gpaste_daemon);
+GPasteKeybinding *g_paste_show_history_keybinding_new (GPasteSettings *settings,
+                                                       GPasteDaemon   *gpaste_daemon);
 
 G_END_DECLS
 
