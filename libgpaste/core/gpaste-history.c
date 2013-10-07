@@ -38,7 +38,6 @@ struct _GPasteHistoryPrivate
     gsize           biggest_size;
 
     gulong          changed_signal;
-    gulong          settings_signal;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
@@ -101,6 +100,17 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
         g_object_unref (item);
     }
     return g_slist_delete_link (elem, elem);
+}
+
+static void
+g_paste_history_changed (GPasteHistory *self)
+{
+    g_paste_history_save (self);
+
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   0, /* detail */
+                   NULL);
 }
 
 static void
@@ -232,11 +242,7 @@ g_paste_history_add (GPasteHistory *self,
         g_paste_history_private_elect_new_biggest (priv);
 
     g_paste_history_private_check_memory_usage (priv);
-
-    g_signal_emit (self, /* FIXME: externalise*/
-                   signals[CHANGED],
-                   0,
-                   NULL); /* detail */
+    g_paste_history_changed (self);
 }
 
 /**
@@ -275,10 +281,7 @@ g_paste_history_remove (GPasteHistory *self,
     else if (pos < priv->biggest_index)
         --priv->biggest_index;
 
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   0,
-                   NULL); /* detail */
+    g_paste_history_changed (self);
 }
 
 static GPasteItem *
@@ -399,11 +402,7 @@ g_paste_history_empty (GPasteHistory *self)
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
-
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   0,
-                   NULL); /* detail */
+    g_paste_history_changed (self);
 }
 
 static gchar *
@@ -451,6 +450,41 @@ g_paste_history_decode (const gchar *text)
     return decoded_text;
 }
 
+static gchar *
+g_paste_history_get_history_dir_path (void)
+{
+    return g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
+}
+
+static GFile *
+g_paste_history_get_history_dir (void)
+{
+    gchar *history_dir_path = g_paste_history_get_history_dir_path ();
+    GFile *history_dir = g_file_new_for_path (history_dir_path);
+    g_free (history_dir_path);
+    return history_dir;
+}
+
+static gchar *
+g_paste_history_get_history_file_path (GPasteSettings *settings)
+{
+    gchar *history_dir_path = g_paste_history_get_history_dir_path ();
+    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
+    gchar *history_file_path = g_build_filename (history_dir_path, history_file_name, NULL);
+    g_free (history_file_name);
+    g_free (history_dir_path);
+    return history_file_path;
+}
+
+static GFile *
+g_paste_history_get_history_file (GPasteSettings *settings)
+{
+    gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    GFile *history_file = g_file_new_for_path (history_file_path);
+    g_free (history_file_path);
+    return history_file;
+}
+
 /**
  * g_paste_history_save:
  * @self: a #GPasteHistory instance
@@ -466,9 +500,9 @@ g_paste_history_save (GPasteHistory *self)
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    gboolean save_history = g_paste_settings_get_save_history (priv->settings);
-    gchar *history_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
-    GFile *history_dir = g_file_new_for_path (history_dir_path);
+    GPasteSettings *settings = priv->settings;
+    gboolean save_history = g_paste_settings_get_save_history (settings);
+    GFile *history_dir = g_paste_history_get_history_dir ();
     GError *error = NULL;
 
     if (!g_file_query_exists (history_dir,
@@ -487,8 +521,7 @@ g_paste_history_save (GPasteHistory *self)
         }
     }
 
-    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
-    gchar *history_file_path = g_build_filename (history_dir_path, history_file_name, NULL);
+    gchar *history_file_path = g_paste_history_get_history_file_path (settings);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (!save_history)
@@ -538,10 +571,8 @@ g_paste_history_save (GPasteHistory *self)
 
     g_object_unref (history_file);
     g_free (history_file_path);
-    g_free (history_file_name);
 out:
     g_object_unref (history_dir);
-    g_free (history_dir_path);
 }
 
 /**
@@ -564,8 +595,7 @@ g_paste_history_load (GPasteHistory *self)
                        g_object_unref);
     priv->history = NULL;
 
-    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
-    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
+    gchar *history_file_path = g_paste_history_get_history_file_path (settings);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
@@ -644,7 +674,6 @@ g_paste_history_load (GPasteHistory *self)
 
     g_object_unref (history_file);
     g_free (history_file_path);
-    g_free (history_file_name);
 
     if (priv->history)
     {
@@ -674,11 +703,7 @@ g_paste_history_switch (GPasteHistory *self,
 
     g_paste_settings_set_history_name (priv->settings, name);
     g_paste_history_load (self);
-
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   0,
-                   NULL); /* detail */
+    g_paste_history_changed (self);
 }
 
 /**
@@ -698,10 +723,7 @@ g_paste_history_delete (GPasteHistory *self,
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    /* FIXME: externalise */
-    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (priv->settings), ".xml", NULL);
-    gchar *history_file_path = g_build_filename (g_get_user_data_dir (), "gpaste", history_file_name, NULL);
-    GFile *history_file = g_file_new_for_path (history_file_path);
+    GFile *history_file = g_paste_history_get_history_file (priv->settings);
 
     g_paste_history_empty (self);
     if (g_file_query_exists (history_file,
@@ -713,17 +735,6 @@ g_paste_history_delete (GPasteHistory *self,
     }
 
     g_object_unref (history_file);
-    g_free (history_file_path);
-    g_free (history_file_name);
-}
-
-static gboolean
-g_paste_history_self_changed (GPasteHistory *self,
-                              gpointer       user_data G_GNUC_UNUSED)
-{
-    g_paste_history_save (self);
-
-    return TRUE;
 }
 
 static void
@@ -748,8 +759,7 @@ g_paste_history_dispose (GObject *object)
 
     if (settings)
     {
-        g_signal_handler_disconnect (self, priv->changed_signal);
-        g_signal_handler_disconnect (settings, priv->settings_signal);
+        g_signal_handler_disconnect (settings, priv->changed_signal);
         g_clear_object (&priv->settings);
     }
 
@@ -805,11 +815,6 @@ g_paste_history_init (GPasteHistory *self)
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
-
-    priv->changed_signal = g_signal_connect (G_OBJECT (self),
-                                             "changed",
-                                             G_CALLBACK (g_paste_history_self_changed),
-                                             NULL); /* user data */
 }
 
 /**
@@ -848,10 +853,10 @@ g_paste_history_new (GPasteSettings *settings)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     priv->settings = g_object_ref (settings);
-    priv->settings_signal = g_signal_connect (settings,
-                                              "changed",
-                                              G_CALLBACK (g_paste_history_settings_changed),
-                                              priv);
+    priv->changed_signal = g_signal_connect (settings,
+                                             "changed",
+                                             G_CALLBACK (g_paste_history_settings_changed),
+                                             priv);
 
     return self;
 }
@@ -868,8 +873,7 @@ g_paste_history_new (GPasteSettings *settings)
 G_PASTE_VISIBLE GStrv
 g_paste_history_list (GError **error)
 {
-    gchar *history_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
-    GFile *history_dir = g_file_new_for_path (history_dir_path);
+    GFile *history_dir = g_paste_history_get_history_dir ();
     GStrv ret = NULL;
     GFileEnumerator *histories = g_file_enumerate_children (history_dir,
                                                             G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
@@ -912,7 +916,6 @@ file_err:
 
 dir_err:
     g_object_unref (history_dir);
-    g_free (history_dir_path);
 
     return ret;
 }
