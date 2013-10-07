@@ -36,7 +36,6 @@ struct _GPasteSettingsUiNotebookPrivate
 {
     GPasteClient    *client;
     GPasteSettings  *settings;
-    GtkCheckButton  *fifo_button;
     GtkCheckButton  *images_support_button;
     GtkCheckButton  *primary_to_history_button;
     GtkCheckButton  *save_history_button;
@@ -107,7 +106,6 @@ BOOLEAN_CALLBACK (synchronize_clipboards)
 BOOLEAN_CALLBACK (images_support)
 BOOLEAN_CALLBACK (trim_items)
 BOOLEAN_CALLBACK (save_history)
-BOOLEAN_CALLBACK (fifo)
 
 static GPasteSettingsUiPanel *
 g_paste_settings_ui_notebook_make_behaviour_panel (GPasteSettingsUiNotebook *self)
@@ -156,11 +154,6 @@ g_paste_settings_ui_notebook_make_behaviour_panel (GPasteSettingsUiNotebook *sel
                                                                                g_paste_settings_get_save_history (settings),
                                                                                save_history_callback,
                                                                                settings);
-    priv->fifo_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                       _("_Copy to end of history"),
-                                                                       g_paste_settings_get_fifo (settings),
-                                                                       fifo_callback,
-                                                                       settings);
 
     return panel;
 }
@@ -381,8 +374,6 @@ g_paste_settings_ui_notebook_settings_changed (GPasteSettings *settings,
 
     if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
-    else if (g_strcmp0 (key, FIFO_KEY) == 0)
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->fifo_button), g_paste_settings_get_fifo (settings));
     else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
     {
         gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);

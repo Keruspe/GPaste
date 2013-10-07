@@ -2,7 +2,6 @@ LIBGPASTE_SETTINGS_1 {
 global:
     g_paste_settings_get_type;
     g_paste_settings_get_element_size;
-    g_paste_settings_get_fifo;
     g_paste_settings_get_history_name;
     g_paste_settings_get_images_support;
     g_paste_settings_get_max_displayed_history_size;
@@ -21,7 +20,6 @@ global:
     g_paste_settings_get_track_extension_state;
     g_paste_settings_get_trim_items;
     g_paste_settings_set_element_size;
-    g_paste_settings_set_fifo;
     g_paste_settings_set_history_name;
     g_paste_settings_set_images_support;
     g_paste_settings_set_max_displayed_history_size;
