@@ -33,7 +33,6 @@ struct _GPasteItem
 
     /*< protected >*/
     gsize              size;
-    GPasteItemPrivate *priv;
 };
 
 struct _GPasteItemClass

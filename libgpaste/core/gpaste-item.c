@@ -42,7 +42,9 @@ g_paste_item_get_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    return self->priv->value;
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
+
+    return priv->value;
 }
 
 /**
@@ -58,7 +60,7 @@ g_paste_item_get_display_string (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    GPasteItemPrivate *priv = self->priv;
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
     const gchar *display_string = priv->display_string;
 
     return (display_string) ? display_string : priv->value;
@@ -129,7 +131,7 @@ g_paste_item_set_display_string (GPasteItem  *self,
 {
     g_return_if_fail (G_PASTE_IS_ITEM (self));
 
-    GPasteItemPrivate *priv = self->priv;
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     if (priv->display_string)
     {
@@ -167,7 +169,7 @@ g_paste_item_set_state (GPasteItem     *self,
 static void
 g_paste_item_finalize (GObject *object)
 {
-    GPasteItemPrivate *priv = G_PASTE_ITEM (object)->priv;
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (G_PASTE_ITEM (object));
 
     g_free (priv->value);
     g_free (priv->display_string);
@@ -179,11 +181,17 @@ static gboolean
 g_paste_item_default_equals (const GPasteItem *self,
                              const GPasteItem *other)
 {
-    return self == other || (g_strcmp0 (self->priv->value, other->priv->value) == 0);
+    if (self == other)
+        return TRUE;
+
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
+    GPasteItemPrivate *_priv = g_paste_item_get_instance_private ((GPasteItem *) other);
+
+    return !g_strcmp0 (priv->value, _priv->value);
 }
 
 static void
-g_paste_item_default_set_state (GPasteItem     *self G_GNUC_UNUSED,
+g_paste_item_default_set_state (GPasteItem     *self  G_GNUC_UNUSED,
                                 GPasteItemState state G_GNUC_UNUSED)
 {
 }
@@ -199,9 +207,8 @@ g_paste_item_class_init (GPasteItemClass *klass)
 }
 
 static void
-g_paste_item_init (GPasteItem *self)
+g_paste_item_init (GPasteItem *self G_GNUC_UNUSED)
 {
-    self->priv = g_paste_item_get_instance_private (self);
 }
 
 /**
@@ -212,12 +219,12 @@ g_paste_item_new (GType        type,
                   const gchar *value)
 {
     GPasteItem *self = g_object_new (type, NULL);
-    GPasteItemPrivate *priv = self->priv;
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     priv->value = g_strdup (value);
     priv->display_string = NULL;
 
-    self->size = strlen (self->priv->value) + 1;
+    self->size = strlen (priv->value) + 1;
 
     return self;
 }
