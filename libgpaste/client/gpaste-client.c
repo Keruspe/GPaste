@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -62,13 +62,11 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
     DBUS_CALL_NO_RETURN(method,              \
         NULL, 0,                             \
-        ans_type, variant_type,              \
         fail,                                \
         {})
 #define DBUS_CALL_WITH_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_NO_RETURN(method,                                        \
         &parameter, 1,                                                 \
-        ans_type, variant_type,                                        \
         fail,                                                          \
         GVariant *parameter = g_variant_new_##param_type (param_name))
 #define DBUS_CALL_WITH_RETURN(method, param, n_param, ans_type, variant_type, fail, decl) \
@@ -83,7 +81,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
         fail, decl,                                                                       \
         g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL),                            \
         return answer)
-#define DBUS_CALL_NO_RETURN(method, param, n_param, ans_type, variant_type, fail, decl) \
+#define DBUS_CALL_NO_RETURN(method, param, n_param, fail, decl) \
     DBUS_CALL_FULL(method,                                                              \
         param, n_param,                                                                 \
         {},                                                                             \
@@ -92,9 +90,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
         {})
 #define DBUS_CALL_FULL(method, param, n_param, extract_answer, fail, decl, guard, return_stmt) \
     guard;                                                                                     \
-    GDBusProxy *proxy = self->priv->proxy;                                                     \
+    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                    \
     decl;                                                                                      \
-    GVariant *result = g_dbus_proxy_call_sync (proxy,                                          \
+    GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                                    \
                                                method,                                         \
                                                g_variant_new_tuple (param, n_param),           \
                                                G_DBUS_CALL_FLAGS_NONE,                         \
@@ -105,26 +103,28 @@ static guint signals[LAST_SIGNAL] = { 0 };
         return fail;                                                                           \
     extract_answer;                                                                            \
     g_variant_unref (result);                                                                  \
-    return_stmt;
+    return_stmt
 
-#define DBUS_GET_PROPERTY(property, ans_type, variant_type, default)        \
-    GVariant *result = g_dbus_proxy_get_cached_property (self->priv->proxy, \
+#define DBUS_GET_PROPERTY(property, ans_type, variant_type, _default)       \
+    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self); \
+    GVariant *result = g_dbus_proxy_get_cached_property (priv->proxy,       \
                                                          property);         \
     if (!result)                                                            \
-        return default;                                                     \
+        return _default;                                                    \
     ans_type answer = g_variant_get_##variant_type (result);                \
     g_variant_unref (result);                                               \
-    return answer;
+    return answer
 
 #define HANDLE_SIGNAL(sig)                       \
-    if (g_strcmp0 (signal_name, SIG_##sig) == 0) \
+    if (!g_strcmp0 (signal_name, SIG_##sig))     \
     {                                            \
         g_signal_emit (self,                     \
                        signals[sig],             \
-                       0); /* detail */          \
+                       0, /* detail */           \
+                       NULL);                    \
     }
 #define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)          \
-    if (g_strcmp0 (signal_name, SIG_##sig) == 0)                      \
+    if (!g_strcmp0 (signal_name, SIG_##sig))                          \
     {                                                                 \
         GVariantIter params_iter;                                     \
         g_variant_iter_init (&params_iter, parameters);               \
@@ -134,7 +134,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_signal_emit (self,                                          \
                        signals[sig],                                  \
                        0, /* detail */                                \
-                       answer);                                       \
+                       answer,                                        \
+                       NULL);                                         \
     }
 
 #define NEW_SIGNAL(name)                         \
@@ -146,7 +147,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
                   NULL, /* accumulator data */   \
                   g_cclosure_marshal_VOID__VOID, \
                   G_TYPE_NONE,                   \
-                  0); /* number of params */
+                  0) /* number of params */
 #define NEW_SIGNAL_WITH_DATA(name, type)         \
     g_signal_new (name,                          \
                   G_PASTE_TYPE_CLIENT,           \
@@ -157,7 +158,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
                   g_cclosure_marshal_VOID__VOID, \
                   G_TYPE_NONE,                   \
                   1,                             \
-                  type);
+                  type)
 
 /**
  * g_paste_client_get_element:
@@ -175,7 +176,7 @@ g_paste_client_get_element (GPasteClient *self,
                             GError      **error)
 {
     DBUS_CALL_WITH_PARAM (GET_ELEMENT, gchar*, string, NULL,
-                          uint32, index)
+                          uint32, index);
 }
 
 /**
@@ -191,7 +192,7 @@ G_PASTE_VISIBLE gchar **
 g_paste_client_get_history (GPasteClient *self,
                             GError      **error)
 {
-    DBUS_CALL_NO_PARAM (GET_HISTORY, gchar**, strv, NULL)
+    DBUS_CALL_NO_PARAM (GET_HISTORY, GStrv, strv, NULL);
 }
 
 /**
@@ -209,7 +210,7 @@ g_paste_client_add (GPasteClient *self,
                     const gchar  *text,
                     GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD, string, text)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD, string, text);
 }
 
 /**
@@ -236,7 +237,7 @@ g_paste_client_add_file (GPasteClient *self,
         g_free (current_dir);
     }
 
-    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file))
+    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
 
     g_free (absolute_path);
 }
@@ -256,7 +257,7 @@ g_paste_client_select (GPasteClient *self,
                        guint32       index,
                        GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (SELECT, uint32, index)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (SELECT, uint32, index);
 }
 
 /**
@@ -274,7 +275,7 @@ g_paste_client_delete (GPasteClient *self,
                        guint32       index,
                        GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE, uint32, index)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE, uint32, index);
 }
 
 /**
@@ -290,7 +291,7 @@ G_PASTE_VISIBLE void
 g_paste_client_empty (GPasteClient *self,
                       GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN (EMPTY)
+    DBUS_CALL_NO_PARAM_NO_RETURN (EMPTY);
 }
 
 /**
@@ -308,7 +309,7 @@ g_paste_client_track (GPasteClient *self,
                       gboolean      state,
                       GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (TRACK, boolean, state)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (TRACK, boolean, state);
 }
 
 /**
@@ -326,7 +327,7 @@ g_paste_client_on_extension_state_changed (GPasteClient *self,
                                            gboolean      state,
                                            GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (ON_EXTENSION_STATE_CHANGED, boolean, state)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (ON_EXTENSION_STATE_CHANGED, boolean, state);
 }
 
 /**
@@ -342,7 +343,7 @@ G_PASTE_VISIBLE void
 g_paste_client_reexecute (GPasteClient *self,
                           GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN (REEXECUTE)
+    DBUS_CALL_NO_PARAM_NO_RETURN (REEXECUTE);
 }
 
 /**
@@ -360,7 +361,7 @@ g_paste_client_backup_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (BACKUP_HISTORY, string, name)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (BACKUP_HISTORY, string, name);
 }
 
 /**
@@ -378,7 +379,7 @@ g_paste_client_switch_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (SWITCH_HISTORY, string, name)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (SWITCH_HISTORY, string, name);
 }
 
 /**
@@ -396,7 +397,7 @@ g_paste_client_delete_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE_HISTORY, string, name)
+    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE_HISTORY, string, name);
 }
 
 /**
@@ -412,7 +413,7 @@ G_PASTE_VISIBLE gchar **
 g_paste_client_list_histories (GPasteClient *self,
                                GError      **error)
 {
-    DBUS_CALL_NO_PARAM (LIST_HISTORIES, gchar**, strv, NULL)
+    DBUS_CALL_NO_PARAM (LIST_HISTORIES, GStrv, strv, NULL);
 }
 
 /**
@@ -426,7 +427,7 @@ g_paste_client_list_histories (GPasteClient *self,
 G_PASTE_VISIBLE gboolean
 g_paste_client_is_active (GPasteClient *self)
 {
-    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean, FALSE)
+    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean, FALSE);
 }
 
 static void
@@ -446,12 +447,13 @@ g_paste_client_handle_signal (GPasteClient *self,
 static void
 g_paste_client_dispose (GObject *object)
 {
-    GPasteClientPrivate *priv = G_PASTE_CLIENT (object)->priv;
-    GDBusProxy *proxy = priv->proxy;
+    GPasteClientPrivate *priv = g_paste_client_get_instance_private (G_PASTE_CLIENT (object));
     GDBusNodeInfo *g_paste_daemon_dbus_info = priv->g_paste_daemon_dbus_info;
 
     if (g_paste_daemon_dbus_info)
     {
+        GDBusProxy *proxy = priv->proxy;
+
         if (proxy)
         {
             g_signal_handler_disconnect (proxy, priv->g_signal);
@@ -465,30 +467,23 @@ g_paste_client_dispose (GObject *object)
 }
 
 static void
-g_paste_client_finalize (GObject *object)
-{
-    G_OBJECT_CLASS (g_paste_client_parent_class)->finalize (object);
-}
-
-static void
 g_paste_client_class_init (GPasteClientClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     object_class->dispose = g_paste_client_dispose;
-    object_class->finalize = g_paste_client_finalize;
 
-    signals[CHANGED]        = NEW_SIGNAL ("changed")
-    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost")
-    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self")
-    signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history")
-    signals[TRACKING]       = NEW_SIGNAL_WITH_DATA ("tracking", G_TYPE_BOOLEAN)
+    signals[CHANGED]        = NEW_SIGNAL ("changed");
+    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
+    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
+    signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history");
+    signals[TRACKING]       = NEW_SIGNAL_WITH_DATA ("tracking", G_TYPE_BOOLEAN);
 }
 
 static void
 g_paste_client_init (GPasteClient *self)
 {
-    GPasteClientPrivate *priv = self->priv = g_paste_client_get_instance_private (self);
+    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);
 
     priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_IFACE_INFO,
                                                                    NULL); /* Error */
@@ -524,7 +519,7 @@ G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new (GError **error)
 {
     GPasteClient *self = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
-    GPasteClientPrivate *priv = self->priv;
+    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);
 
     if (!priv->proxy)
     {

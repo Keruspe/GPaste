@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -29,9 +29,6 @@ typedef struct _GPasteClientPrivate GPasteClientPrivate;
 struct _GPasteClient
 {
     GObject parent_instance;
-
-    /*< private >*/
-    GPasteClientPrivate *priv;
 };
 
 struct _GPasteClientClass
