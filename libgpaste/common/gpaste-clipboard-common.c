@@ -49,12 +49,12 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
         const gchar * const *uris = g_paste_uris_item_get_uris (G_PASTE_URIS_ITEM (item));
 
         if (gtk_targets_include_uri (targets, 1))
-            gtk_selection_data_set_uris (selection_data, (gchar **) uris);
+            gtk_selection_data_set_uris (selection_data, (GStrv) uris);
         /* The content is requested as special gnome-copied-files by nautilus */
         else
         {
             GString *copy_string = g_string_new ("copy");
-            guint length = g_strv_length ((gchar **) uris);
+            guint length = g_strv_length ((GStrv) uris);
 
             for (guint i = 0; i < length; ++i)
             {

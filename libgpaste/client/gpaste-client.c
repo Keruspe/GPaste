@@ -188,7 +188,7 @@ g_paste_client_get_element (GPasteClient *self,
  *
  * Returns: (transfer full): a newly allocated array of string
  */
-G_PASTE_VISIBLE gchar **
+G_PASTE_VISIBLE GStrv
 g_paste_client_get_history (GPasteClient *self,
                             GError      **error)
 {
@@ -409,7 +409,7 @@ g_paste_client_delete_history (GPasteClient *self,
  *
  * Returns: (transfer full): a newly allocated array of string
  */
-G_PASTE_VISIBLE gchar **
+G_PASTE_VISIBLE GStrv
 g_paste_client_list_histories (GPasteClient *self,
                                GError      **error)
 {

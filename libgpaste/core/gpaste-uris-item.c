@@ -23,7 +23,7 @@
 
 struct _GPasteUrisItemPrivate
 {
-    gchar **uris;
+    GStrv uris;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUrisItem, g_paste_uris_item, G_PASTE_TYPE_TEXT_ITEM)
@@ -142,7 +142,7 @@ g_paste_uris_item_new (const gchar *uris)
     g_free (full_display_string);
     g_free (display_string);
 
-    gchar **paths = g_strsplit (uris, "\n", 0);
+    GStrv paths = g_strsplit (uris, "\n", 0);
     guint length = g_strv_length (paths);
 
     self->size += length + 1;

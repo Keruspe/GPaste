@@ -120,7 +120,7 @@ g_paste_daemon_private_get_history (GPasteDaemonPrivate   *priv,
         displayed_history[i] = g_paste_item_get_display_string (history->data);
     displayed_history[length] = NULL;
 
-    GVariant *variant = g_variant_new_strv (displayed_history, -1);
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
 
     g_free (displayed_history);
     g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));
@@ -214,7 +214,7 @@ g_paste_daemon_list_histories (GDBusConnection       *connection,
                                GDBusMethodInvocation *invocation)
 {
     GStrv history_names = g_paste_history_list (NULL);
-    GVariant *variant = g_variant_new_strv ((const gchar **) history_names, -1);
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
 
     g_strfreev (history_names);
 
