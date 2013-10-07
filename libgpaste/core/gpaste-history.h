@@ -72,7 +72,7 @@ GSList      *g_paste_history_get_history (GPasteHistory *self);
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 
-gchar **g_paste_history_list (GError **error);
+GStrv g_paste_history_list (GError **error);
 
 G_END_DECLS
 
