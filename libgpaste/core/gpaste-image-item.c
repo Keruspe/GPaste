@@ -46,7 +46,9 @@ g_paste_image_item_get_checksum (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    return self->priv->checksum;
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private ((GPasteImageItem *) self);
+
+    return priv->checksum;
 }
 
 /**
@@ -62,7 +64,9 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    return self->priv->date;
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private ((GPasteImageItem *) self);
+
+    return priv->date;
 }
 
 /**
@@ -78,7 +82,9 @@ g_paste_image_item_get_image (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    return self->priv->image;
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private ((GPasteImageItem *) self);
+
+    return priv->image;
 }
 
 static gboolean
@@ -87,15 +93,16 @@ g_paste_image_item_equals (const GPasteItem *self,
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), FALSE);
 
-    return (G_PASTE_IS_IMAGE_ITEM (other) &&
-            (g_strcmp0 (G_PASTE_IMAGE_ITEM (self)->priv->checksum, G_PASTE_IMAGE_ITEM (other)->priv->checksum) == 0));
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
+    GPasteImageItemPrivate *_priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (other));
+
+    return (G_PASTE_IS_IMAGE_ITEM (other) && !g_strcmp0 (priv->checksum, _priv->checksum));
 }
 
 static void
-g_paste_image_item_set_size (GPasteImageItem *self)
+g_paste_image_item_set_size (GPasteItem *self)
 {
-    GPasteItem *g_paste_item = G_PASTE_ITEM (self);
-    GPasteImageItemPrivate *priv = self->priv;
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
     GdkPixbuf *image = priv->image;
 
     if (image)
@@ -103,12 +110,12 @@ g_paste_image_item_set_size (GPasteImageItem *self)
         if (!priv->additional_size)
         {
             priv->additional_size += strlen (priv->checksum) + 1 + gdk_pixbuf_get_byte_length (image);
-            g_paste_item->size += priv->additional_size;
+            self->size += priv->additional_size;
         }
     }
     else
     {
-        g_paste_item->size -= priv->additional_size;
+        self->size -= priv->additional_size;
         priv->additional_size = 0;
     }
 }
@@ -116,8 +123,6 @@ g_paste_image_item_set_size (GPasteImageItem *self)
 static const gchar *
 g_paste_image_item_get_kind (const GPasteItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
-
     return "Image";
 }
 
@@ -139,10 +144,7 @@ static void
 g_paste_image_item_set_state (GPasteItem     *self,
                               GPasteItemState state)
 {
-    g_return_if_fail (G_PASTE_IS_IMAGE_ITEM (self));
-
-    GPasteImageItem *image_item = G_PASTE_IMAGE_ITEM (self);
-    GPasteImageItemPrivate *priv = image_item->priv;
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
 
     switch (state)
     {
@@ -156,20 +158,20 @@ g_paste_image_item_set_state (GPasteItem     *self,
     case G_PASTE_ITEM_STATE_ACTIVE:
         if (!priv->image)
         {
-            priv->image = gdk_pixbuf_new_from_file (g_paste_item_get_value (G_PASTE_ITEM (self)),
+            priv->image = gdk_pixbuf_new_from_file (g_paste_item_get_value (self),
                                                     NULL); /* Error */
             priv->checksum = g_paste_image_item_compute_checksum (priv->image);
         }
         break;
     }
 
-    g_paste_image_item_set_size (image_item);
+    g_paste_image_item_set_size (self);
 }
 
 static void
 g_paste_image_item_dispose (GObject *object)
 {
-    GPasteImageItemPrivate *priv = G_PASTE_IMAGE_ITEM (object)->priv;
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
     GDateTime *date = priv->date;
 
     if (date)
@@ -186,7 +188,9 @@ g_paste_image_item_dispose (GObject *object)
 static void
 g_paste_image_item_finalize (GObject *object)
 {
-    g_free (G_PASTE_IMAGE_ITEM (object)->priv->checksum);
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
+
+    g_free (priv->checksum);
 
     G_OBJECT_CLASS (g_paste_image_item_parent_class)->finalize (object);
 }
@@ -207,9 +211,8 @@ g_paste_image_item_class_init (GPasteImageItemClass *klass)
 }
 
 static void
-g_paste_image_item_init (GPasteImageItem *self)
+g_paste_image_item_init (GPasteImageItem *self G_GNUC_UNUSED)
 {
-    self->priv = g_paste_image_item_get_instance_private (self);
 }
 
 static GPasteItem *
@@ -218,9 +221,8 @@ _g_paste_image_item_new (const gchar *path,
                          GdkPixbuf   *image,
                          gchar       *checksum)
 {
-    GPasteItem *g_paste_item = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, path);
-    GPasteImageItem *self = G_PASTE_IMAGE_ITEM (g_paste_item);
-    GPasteImageItemPrivate *priv = self->priv;
+    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, path);
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
 
     priv->date = date;
     priv->image = image;
@@ -236,14 +238,14 @@ _g_paste_image_item_new (const gchar *path,
                                                  gdk_pixbuf_get_width (image),
                                                  gdk_pixbuf_get_height (image),
                                                  formatted_date);
-        g_paste_item_set_display_string (g_paste_item, display_string);
+        g_paste_item_set_display_string (self, display_string);
         g_free (display_string);
         g_free (formatted_date);
     }
 
     g_paste_image_item_set_size (self);
 
-    return g_paste_item;
+    return self;
 }
 
 /**
@@ -260,12 +262,7 @@ g_paste_image_item_new (GdkPixbuf *img)
 {
     g_return_val_if_fail (GDK_IS_PIXBUF (img), NULL);
 
-    guint length;
-    const guchar *data = gdk_pixbuf_get_pixels_with_length (img,
-                                                            &length);
-    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                   data,
-                                                   length);
+    gchar *checksum = g_paste_image_item_compute_checksum (img);
     gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
     GFile *images_dir = g_file_new_for_path (images_dir_path);
 

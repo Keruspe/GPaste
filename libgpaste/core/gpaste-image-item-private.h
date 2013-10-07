@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -30,9 +30,6 @@ typedef struct _GPasteImageItemPrivate GPasteImageItemPrivate;
 struct _GPasteImageItem
 {
     GPasteItem parent_instance;
-
-    /*<private>*/
-    GPasteImageItemPrivate *priv;
 };
 
 struct _GPasteImageItemClass
