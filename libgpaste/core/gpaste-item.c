@@ -218,6 +218,8 @@ GPasteItem *
 g_paste_item_new (GType        type,
                   const gchar *value)
 {
+    g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_ITEM), NULL);
+
     GPasteItem *self = g_object_new (type, NULL);
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
