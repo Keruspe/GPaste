@@ -29,9 +29,6 @@ typedef struct _GPasteSettingsUiPanelPrivate GPasteSettingsUiPanelPrivate;
 struct _GPasteSettingsUiPanel
 {
     GtkGrid parent_instance;
-
-    /*< private >*/
-    GPasteSettingsUiPanelPrivate *priv;
 };
 
 struct _GPasteSettingsUiPanelClass
