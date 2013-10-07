@@ -44,7 +44,7 @@ g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
     g_return_if_fail (G_PASTE_IS_KEYBINDING (binding));
 
-    GPasteKeybinderPrivate *priv = self->priv;
+    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->keybindings = g_slist_prepend (priv->keybindings,
                                          g_object_ref (binding));
@@ -54,7 +54,7 @@ static void
 g_paste_keybinder_activate_keybinding_func (gpointer data,
                                             gpointer user_data G_GNUC_UNUSED)
 {
-    GPasteKeybinding *keybinding = G_PASTE_KEYBINDING (data);
+    GPasteKeybinding *keybinding = data;
 
     if (!g_paste_keybinding_is_active (keybinding))
         g_paste_keybinding_activate (keybinding);
@@ -73,16 +73,18 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
-    g_slist_foreach (self->priv->keybindings,
+    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
+
+    g_slist_foreach (priv->keybindings,
                      g_paste_keybinder_activate_keybinding_func,
-                     self);
+                     NULL);
 }
 
 static void
 g_paste_keybinder_deactivate_keybinding_func (gpointer data,
                                               gpointer user_data G_GNUC_UNUSED)
 {
-    GPasteKeybinding *keybinding = G_PASTE_KEYBINDING (data);
+    GPasteKeybinding *keybinding = data;
 
     if (g_paste_keybinding_is_active (keybinding))
         g_paste_keybinding_deactivate (keybinding);
@@ -101,9 +103,11 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
-    g_slist_foreach (self->priv->keybindings,
+    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
+
+    g_slist_foreach (priv->keybindings,
                      g_paste_keybinder_deactivate_keybinding_func,
-                     self);
+                     NULL);
 }
 
 static GdkFilterReturn
@@ -111,7 +115,9 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
                           GdkEvent  *event G_GNUC_UNUSED,
                           gpointer   data)
 {
-    for (GSList *keybinding = G_PASTE_KEYBINDER (data)->priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
+    GPasteKeybinderPrivate *priv = data;
+
+    for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
     {
         GPasteKeybinding *real_keybinding = keybinding->data;
         if (g_paste_keybinding_is_active (real_keybinding))
@@ -125,11 +131,14 @@ static void
 g_paste_keybinder_dispose (GObject *object)
 {
     GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
-    GPasteKeybinderPrivate *priv = self->priv;
+    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
-    g_paste_keybinder_deactivate_all (self);
-    g_slist_foreach (priv->keybindings, (GFunc) g_object_unref, NULL);
-    priv->keybindings = NULL;
+    if (priv->keybindings)
+    {
+        g_paste_keybinder_deactivate_all (self);
+        g_slist_foreach (priv->keybindings, (GFunc) g_object_unref, NULL);
+        priv->keybindings = NULL;
+    }
 
     G_OBJECT_CLASS (g_paste_keybinder_parent_class)->dispose (object);
 }
@@ -143,13 +152,13 @@ g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
 static void
 g_paste_keybinder_init (GPasteKeybinder *self)
 {
-    GPasteKeybinderPrivate *priv = self->priv = g_paste_keybinder_get_instance_private (self);
+    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->keybindings = NULL;
 
     gdk_window_add_filter (gdk_get_default_root_window (),
                            g_paste_keybinder_filter,
-                           self);
+                           priv);
 }
 
 /**
