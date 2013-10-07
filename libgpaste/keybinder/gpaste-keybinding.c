@@ -55,8 +55,6 @@ static void
 g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
                                     gboolean          grab)
 {
-    GPasteKeybindingPrivate *priv = self->priv;
-
     guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
     XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
 
@@ -72,6 +70,7 @@ g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
     };
 
     Display *display = GDK_DISPLAY_XDISPLAY (self->display);
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
     Window window = gdk_x11_window_get_xid (priv->window);
 
     for (guint i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
@@ -140,7 +139,7 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
-    GPasteKeybindingPrivate *priv = self->priv;
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     g_return_if_fail (!priv->active);
 
@@ -153,7 +152,7 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
 }
 
 /**
- * g_paste_keybinding_unbind:
+ * g_paste_keybinding_deactivate:
  * @self: a #GPasteKeybinding instance
  *
  * Deactivate the keybinding
@@ -161,11 +160,11 @@ g_paste_keybinding_activate (GPasteKeybinding  *self)
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_keybinding_deactivate (GPasteKeybinding  *self)
+g_paste_keybinding_deactivate (GPasteKeybinding *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
-    GPasteKeybindingPrivate *priv = self->priv;
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     g_return_if_fail (priv->active);
 
@@ -176,12 +175,10 @@ g_paste_keybinding_deactivate (GPasteKeybinding  *self)
 }
 
 static void
-g_paste_keybinding_rebind (GPasteKeybinding  *self,
-                           GPasteSettings    *settings G_GNUC_UNUSED)
+g_paste_keybinding_rebind (GPasteKeybinding *self,
+                           GPasteSettings   *settings G_GNUC_UNUSED)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
-
-    GPasteKeybindingPrivate *priv = self->priv;
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     g_free (priv->binding);
     priv->binding = g_strdup (priv->getter (priv->settings));
@@ -206,7 +203,9 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 {
     g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), FALSE);
 
-    return self->priv->active;
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+
+    return priv->active;
 }
 
 #ifdef GDK_WINDOWING_WAYLAND
@@ -222,9 +221,9 @@ static void
 g_paste_keybinding_notify_x11 (GPasteKeybinding *self,
                                XEvent           *event)
 {
-    GPasteKeybindingPrivate *priv = self->priv;
     XGenericEventCookie cookie = event->xcookie;
     Display *display = GDK_DISPLAY_XDISPLAY (self->display);
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     if (cookie.extension == xinput_opcode)
     {
@@ -241,10 +240,10 @@ g_paste_keybinding_notify_x11 (GPasteKeybinding *self,
                 {
                     if (keycode == *_keycode)
                     {
-                        XIUngrabDevice (display, 3, CurrentTime);
+                        XIUngrabDevice (display, 3 /* FIXME: comment magic value */, CurrentTime);
                         XSync (display, FALSE);
 
-                        priv->callback (priv->user_data);
+                        priv->callback (self, priv->user_data);
 
                         break;
                     }
@@ -289,7 +288,7 @@ static void
 g_paste_keybinding_dispose (GObject *object)
 {
     GPasteKeybinding *self = G_PASTE_KEYBINDING (object);
-    GPasteKeybindingPrivate *priv = self->priv;
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
 
     if (settings)
@@ -297,8 +296,7 @@ g_paste_keybinding_dispose (GObject *object)
         if (priv->active)
             g_paste_keybinding_deactivate (self);
         g_signal_handler_disconnect (priv->settings, priv->rebind_signal);
-        g_object_unref (settings);
-        priv->settings = NULL;
+        g_clear_object (&priv->settings);
     }
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->dispose (object);
@@ -307,7 +305,7 @@ g_paste_keybinding_dispose (GObject *object)
 static void
 g_paste_keybinding_finalize (GObject *object)
 {
-    GPasteKeybindingPrivate *priv = G_PASTE_KEYBINDING (object)->priv;
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (G_PASTE_KEYBINDING (object));
 
     g_free (priv->binding);
     g_free (priv->keycodes);
@@ -358,9 +356,8 @@ g_paste_keybinding_init_x11 (Display *display)
 static void
 g_paste_keybinding_init (GPasteKeybinding *self)
 {
-    GPasteKeybindingPrivate *priv = self->priv = g_paste_keybinding_get_instance_private (self);
-
     GdkDisplay *display = self->display = gdk_display_get_default ();
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     priv->window = gdk_get_default_root_window ();
     priv->active = FALSE;
@@ -389,14 +386,20 @@ _g_paste_keybinding_new (GType                  type,
                          GPasteKeybindingFunc   callback,
                          gpointer               user_data)
 {
+    g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_KEYBINDING), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (dconf_key != NULL, NULL);
+    g_return_val_if_fail (getter != NULL, NULL);
+    g_return_val_if_fail (callback != NULL, NULL);
+
     GPasteKeybinding *self = g_object_new (type, NULL);
-    GPasteKeybindingPrivate *priv = self->priv;
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     priv->settings = g_object_ref (settings);
     priv->binding = g_strdup (getter (settings));
     priv->getter = getter;
     priv->callback = callback;
-    priv->user_data = (user_data) ? user_data : self;
+    priv->user_data = user_data;
     priv->keycodes = NULL;
 
     gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
@@ -431,11 +434,6 @@ g_paste_keybinding_new (GPasteSettings        *settings,
                         GPasteKeybindingFunc   callback,
                         gpointer               user_data)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (dconf_key != NULL, NULL);
-    g_return_val_if_fail (getter != NULL, NULL);
-    g_return_val_if_fail (callback != NULL, NULL);
-
     return _g_paste_keybinding_new (G_PASTE_TYPE_KEYBINDING,
                                     settings,
                                     dconf_key,
