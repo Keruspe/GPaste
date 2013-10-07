@@ -57,7 +57,7 @@ g_paste_uris_item_equals (const GPasteItem *self,
 
 
 static const gchar *
-g_paste_uris_item_get_kind (void)
+g_paste_uris_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
 {
     return "Uris";
 }
