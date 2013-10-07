@@ -60,7 +60,7 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (clipboard));
 
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
     GtkClipboard *real = g_paste_clipboard_get_real (clipboard);
 
     priv->clipboards = g_slist_prepend (priv->clipboards, g_object_ref (clipboard));
@@ -71,8 +71,8 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     else if (gtk_clipboard_wait_is_image_available (real))
         g_paste_clipboard_set_image (clipboard);
 
-    if (g_paste_clipboard_get_text (clipboard) == NULL &&
-        g_paste_clipboard_get_image_checksum (clipboard) == NULL)
+    if (!g_paste_clipboard_get_text (clipboard) &&
+        !g_paste_clipboard_get_image_checksum (clipboard))
     {
         const GSList *history = g_paste_history_get_history (priv->history);
         if (history != NULL)
@@ -97,7 +97,7 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
     GtkClipboard *_from = NULL, *_to = NULL;
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
@@ -132,7 +132,9 @@ g_paste_clipboards_manager_lock (GPasteClipboardsManager *self)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
-    self->priv->lock = TRUE;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
+
+    priv->lock = TRUE;
 }
 
 /**
@@ -148,7 +150,9 @@ g_paste_clipboards_manager_unlock (GPasteClipboardsManager *self)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
-    self->priv->lock = FALSE;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
+
+    priv->lock = FALSE;
 }
 
 static void
@@ -156,8 +160,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
                                    GdkEvent        *event G_GNUC_UNUSED,
                                    gpointer         user_data)
 {
-    GPasteClipboardsManager *self = user_data;
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteClipboardsManagerPrivate *priv = user_data;
 
     if (priv->lock)
         return;
@@ -210,17 +213,18 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             }
             else if (g_paste_settings_get_images_support (settings) && gtk_selection_data_targets_include_image (targets, FALSE))
             {
+                /* Update our cache from the real Clipboard */
                 GdkPixbuf *image = g_paste_clipboard_set_image (clip);
 
-                something_in_clipboard = (g_paste_clipboard_get_image_checksum (clip) != NULL);
+                /* Did we already have some contents, or did we get some now? */
+                something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clip);
 
-                if (image != NULL)
+                /* If our contents got updated */
+                if (image)
                 {
                     if (track)
-                    {
                         item = G_PASTE_ITEM (g_paste_image_item_new (image));
-                        g_object_unref (image);
-                    }
+                    g_object_unref (image);
                 }
             }
 
@@ -235,22 +239,21 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             if (!something_in_clipboard)
             {
                 const GSList *hist = g_paste_history_get_history (history);
-                if (hist != NULL)
+                if (hist)
                     g_paste_clipboard_select_item (clip, hist->data);
             }
         }
     }
 
-    if (synchronized_text != NULL)
+    if (synchronized_text)
     {
         for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
         {
             GPasteClipboard *clip = _clipboard->data;
             const gchar *text = g_paste_clipboard_get_text (clip);
 
-            if (text == NULL ||
-                g_strcmp0 (text, synchronized_text) != 0)
-                    g_paste_clipboard_select_text (clip, synchronized_text);
+            if (!text || g_strcmp0 (text, synchronized_text))
+                g_paste_clipboard_select_text (clip, synchronized_text);
         }
     }
 }
@@ -268,12 +271,14 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
-    for (GSList *clipboard = self->priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
+
+    for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         g_signal_connect (clipboard->data,
                           "owner-change",
                           G_CALLBACK (g_paste_clipboards_manager_notify),
-                          self);
+                          priv);
     }
 }
 
@@ -293,7 +298,7 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
     g_return_if_fail (G_PASTE_IS_ITEM (item));
 
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
         g_paste_clipboard_select_item (clipboard->data, item);
@@ -312,16 +317,14 @@ on_item_selected (GPasteClipboardsManager *self,
 static void
 g_paste_clipboards_manager_dispose (GObject *object)
 {
-    GPasteClipboardsManager *self = G_PASTE_CLIPBOARDS_MANAGER (object);
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (G_PASTE_CLIPBOARDS_MANAGER (object));
     GPasteSettings *settings = priv->settings;
 
     if (settings)
     {
         g_signal_handler_disconnect (settings, priv->selected_signal);
-        g_object_unref (settings);
-        g_object_unref (priv->history);
-        priv->settings = NULL;
+        g_clear_object (&priv->settings);
+        g_clear_object (&priv->history);
     }
 
     G_OBJECT_CLASS (g_paste_clipboards_manager_parent_class)->dispose (object);
@@ -330,7 +333,7 @@ g_paste_clipboards_manager_dispose (GObject *object)
 static void
 g_paste_clipboards_manager_finalize (GObject *object)
 {
-    GPasteClipboardsManagerPrivate *priv = G_PASTE_CLIPBOARDS_MANAGER (object)->priv;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (G_PASTE_CLIPBOARDS_MANAGER (object));
 
     g_slist_free_full (priv->clipboards,
                        g_object_unref);
@@ -350,7 +353,7 @@ g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 static void
 g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 {
-    GPasteClipboardsManagerPrivate *priv = self->priv = g_paste_clipboards_manager_get_instance_private (self);
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
 
     priv->clipboards = NULL;
     priv->lock = FALSE;
@@ -374,7 +377,7 @@ g_paste_clipboards_manager_new (GPasteHistory  *history,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GPasteClipboardsManager *self = g_object_new (G_PASTE_TYPE_CLIPBOARDS_MANAGER, NULL);
-    GPasteClipboardsManagerPrivate *priv = self->priv;
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
 
     priv->history = g_object_ref (history);
     priv->settings = g_object_ref (settings);
