@@ -37,7 +37,11 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiWidget, g_paste_settings_ui_widget, 
 G_PASTE_VISIBLE GPasteSettingsUiStack *
 g_paste_settings_ui_widget_get_stack (GPasteSettingsUiWidget *self)
 {
-    return self->priv->stack;
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS_UI_WIDGET (self), NULL);
+
+    GPasteSettingsUiWidgetPrivate *priv = g_paste_settings_ui_widget_get_instance_private (self);
+
+    return priv->stack;
 }
 
 static void
@@ -48,7 +52,7 @@ g_paste_settings_ui_widget_class_init (GPasteSettingsUiWidgetClass *klass G_GNUC
 static void
 g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
 {
-    GPasteSettingsUiWidgetPrivate *priv = self->priv = g_paste_settings_ui_widget_get_instance_private (self);
+    GPasteSettingsUiWidgetPrivate *priv = g_paste_settings_ui_widget_get_instance_private (self);
     GtkGrid *grid = GTK_GRID (self);
     guint current_line = 0;
 
@@ -71,6 +75,7 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_settings_ui_widget_new (void) {
+g_paste_settings_ui_widget_new (void)
+{
     return gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET, NULL);
 }
