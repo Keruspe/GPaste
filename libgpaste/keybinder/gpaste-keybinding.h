@@ -46,7 +46,7 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteKeybinding GPasteKeybinding;
 typedef struct _GPasteKeybindingClass GPasteKeybindingClass;
-typedef const gchar *(*GPasteKeybindingGetter) (GPasteSettings *settings);
+typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
 typedef void  (*GPasteKeybindingFunc) (GPasteKeybinding *self, /* FIXME: g-i */
                                        gpointer          data);
 

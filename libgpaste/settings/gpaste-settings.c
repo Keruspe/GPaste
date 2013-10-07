@@ -61,30 +61,29 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-#define SETTING(name, key, type, setting_type, fail, guards, clear_func, dup_func) \
-    G_PASTE_VISIBLE type \
-    g_paste_settings_get_##name (GPasteSettings *self) \
-    { \
-        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail); \
-        return self->priv->name; \
-    } \
-    static void \
-    g_paste_settings_set_##name##_from_dconf (GPasteSettings *self) \
-    { \
-        g_return_if_fail (G_PASTE_IS_SETTINGS (self)); \
-        GPasteSettingsPrivate *priv = self->priv; \
-        priv->name = g_settings_get_##setting_type (priv->settings, key); \
-    } \
-    G_PASTE_VISIBLE void \
-    g_paste_settings_set_##name (GPasteSettings *self, \
-                                 type            value) \
-    { \
-        g_return_if_fail (G_PASTE_IS_SETTINGS (self)); \
-        guards \
-        GPasteSettingsPrivate *priv = self->priv; \
-        clear_func \
-        priv->name = dup_func (value); \
-        g_settings_set_##setting_type (priv->settings, key, value); \
+#define SETTING(name, key, type, setting_type, fail, guards, clear_func, dup_func)                     \
+    G_PASTE_VISIBLE type                                                                               \
+    g_paste_settings_get_##name (const GPasteSettings *self)                                           \
+    {                                                                                                  \
+        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                                       \
+        GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self); \
+        return priv->name;                                                                             \
+    }                                                                                                  \
+    static void                                                                                        \
+    g_paste_settings_private_set_##name##_from_dconf (GPasteSettingsPrivate *priv)                     \
+    {                                                                                                  \
+        priv->name = g_settings_get_##setting_type (priv->settings, key);                              \
+    }                                                                                                  \
+    G_PASTE_VISIBLE void                                                                               \
+    g_paste_settings_set_##name (GPasteSettings *self,                                                 \
+                                 type            value)                                                \
+    {                                                                                                  \
+        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                 \
+        guards                                                                                         \
+        GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);                    \
+        clear_func                                                                                     \
+        priv->name = dup_func (value);                                                                 \
+        g_settings_set_##setting_type (priv->settings, key, value);                                    \
     }
 
 #define TRIVIAL_SETTING(name, key, type, setting_type, fail) \
@@ -93,8 +92,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
 #define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint32, uint, 0)
 
-#define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL, \
-                                           g_return_if_fail (value != NULL); \
+#define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL,                \
+                                           g_return_if_fail (value);                              \
                                            g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
                                            g_free (priv->name);, g_strdup)
 
@@ -108,7 +107,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
                   g_cclosure_marshal_VOID__STRING, \
                   G_TYPE_NONE,                     \
                   1, /* number of params */        \
-                  arg);
+                  arg)
 #define NEW_SIGNAL(name, arg) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg)
 #define NEW_SIGNAL_DETAILED(name, arg) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg)
 
@@ -455,87 +454,91 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE_KEY)
 BOOLEAN_SETTING (trim_items, TRIM_ITEMS_KEY)
 
 static void
+g_paste_settings_rebind (GPasteSettings *self,
+                         const gchar    *key)
+{
+    g_signal_emit (self,
+                   signals[REBIND],
+                   g_quark_from_string (key),
+                   NULL);
+}
+
+static void
 g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    const gchar *key,
                                    gpointer     user_data)
 {
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
-    GPasteSettingsPrivate *priv = self->priv;
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
-    if (g_strcmp0 (key, ELEMENT_SIZE_KEY) == 0)
-        g_paste_settings_set_element_size_from_dconf (self);
-    else if (g_strcmp0 (key, HISTORY_NAME_KEY) == 0)
-        g_paste_settings_set_history_name_from_dconf (self);
-    else if (g_strcmp0 (key, IMAGES_SUPPORT_KEY) == 0)
-        g_paste_settings_set_images_support_from_dconf (self);
-    else if (g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY) == 0)
-        g_paste_settings_set_max_displayed_history_size_from_dconf (self);
-    else if (g_strcmp0 (key, MAX_HISTORY_SIZE_KEY) == 0)
-        g_paste_settings_set_max_history_size_from_dconf (self);
-    else if (g_strcmp0 (key, MAX_MEMORY_USAGE_KEY) == 0)
-        g_paste_settings_set_max_memory_usage_from_dconf (self);
-    else if (g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY) == 0)
-        g_paste_settings_set_max_text_item_size_from_dconf (self);
-    else if (g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY) == 0)
-        g_paste_settings_set_min_text_item_size_from_dconf (self);
-    else if (g_strcmp0 (key, PASTE_AND_POP_KEY) == 0)
+    if (!g_strcmp0 (key, ELEMENT_SIZE_KEY))
+        g_paste_settings_private_set_element_size_from_dconf (priv);
+    else if (!g_strcmp0 (key, HISTORY_NAME_KEY))
+        g_paste_settings_private_set_history_name_from_dconf (priv);
+    else if (!g_strcmp0 (key, IMAGES_SUPPORT_KEY))
+        g_paste_settings_private_set_images_support_from_dconf (priv);
+    else if (!g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY))
+        g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
+    else if (!g_strcmp0 (key, MAX_HISTORY_SIZE_KEY))
+        g_paste_settings_private_set_max_history_size_from_dconf (priv);
+    else if (!g_strcmp0 (key, MAX_MEMORY_USAGE_KEY))
+        g_paste_settings_private_set_max_memory_usage_from_dconf (priv);
+    else if (!g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY))
+        g_paste_settings_private_set_max_text_item_size_from_dconf (priv);
+    else if (!g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY))
+        g_paste_settings_private_set_min_text_item_size_from_dconf (priv);
+    else if (!g_strcmp0 (key, PASTE_AND_POP_KEY))
     {
-        g_paste_settings_set_paste_and_pop_from_dconf (self);
-        g_signal_emit (self,
-                       signals[REBIND],
-                       g_quark_from_string (PASTE_AND_POP_KEY));
+        g_paste_settings_private_set_paste_and_pop_from_dconf (priv);
+        g_paste_settings_rebind (self, PASTE_AND_POP_KEY);
     }
-    else if (g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ) == 0)
-        g_paste_settings_set_primary_to_history_from_dconf (self);
-    else if (g_strcmp0 (key, SAVE_HISTORY_KEY) == 0)
-        g_paste_settings_set_save_history_from_dconf (self);
-    else if (g_strcmp0 (key, SHOW_HISTORY_KEY) == 0)
+    else if (!g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ))
+        g_paste_settings_private_set_primary_to_history_from_dconf (priv);
+    else if (!g_strcmp0 (key, SAVE_HISTORY_KEY))
+        g_paste_settings_private_set_save_history_from_dconf (priv);
+    else if (!g_strcmp0 (key, SHOW_HISTORY_KEY))
     {
-        g_paste_settings_set_show_history_from_dconf (self);
-        g_signal_emit (self,
-                       signals[REBIND],
-                       g_quark_from_string (SHOW_HISTORY_KEY));
+        g_paste_settings_private_set_show_history_from_dconf (priv);
+        g_paste_settings_rebind (self, SHOW_HISTORY_KEY);
     }
-    else if (g_strcmp0 (key, SYNC_CLIPBOARD_TO_PRIMARY_KEY) == 0)
+    else if (!g_strcmp0 (key, SYNC_CLIPBOARD_TO_PRIMARY_KEY))
     {
-        g_paste_settings_set_sync_clipboard_to_primary_from_dconf (self);
-        g_signal_emit (self,
-                       signals[REBIND],
-                       g_quark_from_string (SYNC_CLIPBOARD_TO_PRIMARY_KEY));
+        g_paste_settings_private_set_sync_clipboard_to_primary_from_dconf (priv);
+        g_paste_settings_rebind (self, SYNC_CLIPBOARD_TO_PRIMARY_KEY);
     }
-    else if (g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY) == 0)
+    else if (!g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY))
     {
-        g_paste_settings_set_sync_primary_to_clipboard_from_dconf (self);
-        g_signal_emit (self,
-                       signals[REBIND],
-                       g_quark_from_string (SYNC_PRIMARY_TO_CLIPBOARD_KEY));
+        g_paste_settings_private_set_sync_primary_to_clipboard_from_dconf (priv);
+        g_paste_settings_rebind (self, SYNC_PRIMARY_TO_CLIPBOARD_KEY);
     }
-    else if (g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY) == 0)
-        g_paste_settings_set_synchronize_clipboards_from_dconf (self);
-    else if (g_strcmp0 (key, TRACK_CHANGES_KEY) == 0)
+    else if (!g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY))
+        g_paste_settings_private_set_synchronize_clipboards_from_dconf (priv);
+    else if (!g_strcmp0 (key, TRACK_CHANGES_KEY))
     {
-        g_paste_settings_set_track_changes_from_dconf (self);
+        g_paste_settings_private_set_track_changes_from_dconf (priv);
         g_signal_emit (self,
                        signals[TRACK],
                        0, /* detail */
-                       priv->track_changes);
+                       priv->track_changes,
+                       NULL);
     }
-    else if (g_strcmp0 (key, TRACK_EXTENSION_STATE_KEY) == 0)
-        g_paste_settings_set_track_extension_state_from_dconf (self);
-    else if (g_strcmp0 (key, TRIM_ITEMS_KEY) == 0)
-        g_paste_settings_set_trim_items_from_dconf (self);
+    else if (!g_strcmp0 (key, TRACK_EXTENSION_STATE_KEY))
+        g_paste_settings_private_set_track_extension_state_from_dconf (priv);
+    else if (!g_strcmp0 (key, TRIM_ITEMS_KEY))
+        g_paste_settings_private_set_trim_items_from_dconf (priv);
 
     /* Forward the signal */
     g_signal_emit (self,
                    signals[CHANGED],
                    g_quark_from_string (key),
-                   key);
+                   key,
+                   NULL);
 }
 
 static void
 g_paste_settings_dispose (GObject *object)
 {
-    GPasteSettingsPrivate *priv = G_PASTE_SETTINGS (object)->priv;
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
     GSettings *settings = priv->settings;
 
     if (settings)
@@ -550,7 +553,7 @@ g_paste_settings_dispose (GObject *object)
 static void
 g_paste_settings_finalize (GObject *object)
 {
-    GPasteSettingsPrivate *priv = G_PASTE_SETTINGS (object)->priv;
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
 
     g_free (priv->history_name);
     g_free (priv->show_history);
@@ -569,15 +572,15 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     object_class->dispose = g_paste_settings_dispose;
     object_class->finalize = g_paste_settings_finalize;
 
-    signals[CHANGED] = NEW_SIGNAL_DETAILED("changed", G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE)
-    signals[REBIND]  = NEW_SIGNAL_DETAILED("rebind" , G_TYPE_STRING)
-    signals[TRACK]   = NEW_SIGNAL         ("track"  , G_TYPE_BOOLEAN)
+    signals[CHANGED] = NEW_SIGNAL_DETAILED ("changed", G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE);
+    signals[REBIND]  = NEW_SIGNAL_DETAILED ("rebind" , G_TYPE_STRING);
+    signals[TRACK]   = NEW_SIGNAL          ("track"  , G_TYPE_BOOLEAN);
 }
 
 static void
 g_paste_settings_init (GPasteSettings *self)
 {
-    GPasteSettingsPrivate *priv = self->priv = g_paste_settings_get_instance_private (self);
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
     GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
 
     priv->history_name = NULL;
@@ -586,24 +589,24 @@ g_paste_settings_init (GPasteSettings *self)
     priv->sync_clipboard_to_primary = NULL;
     priv->sync_primary_to_clipboard = NULL;
 
-    g_paste_settings_set_element_size_from_dconf (self);
-    g_paste_settings_set_history_name_from_dconf (self);
-    g_paste_settings_set_images_support_from_dconf (self);
-    g_paste_settings_set_max_displayed_history_size_from_dconf (self);
-    g_paste_settings_set_max_history_size_from_dconf (self);
-    g_paste_settings_set_max_memory_usage_from_dconf (self);
-    g_paste_settings_set_max_text_item_size_from_dconf(self);
-    g_paste_settings_set_min_text_item_size_from_dconf(self);
-    g_paste_settings_set_paste_and_pop_from_dconf (self);
-    g_paste_settings_set_primary_to_history_from_dconf (self);
-    g_paste_settings_set_save_history_from_dconf (self);
-    g_paste_settings_set_show_history_from_dconf (self);
-    g_paste_settings_set_sync_clipboard_to_primary_from_dconf (self);
-    g_paste_settings_set_sync_primary_to_clipboard_from_dconf (self);
-    g_paste_settings_set_synchronize_clipboards_from_dconf (self);
-    g_paste_settings_set_track_changes_from_dconf (self);
-    g_paste_settings_set_track_extension_state_from_dconf (self);
-    g_paste_settings_set_trim_items_from_dconf (self);
+    g_paste_settings_private_set_element_size_from_dconf (priv);
+    g_paste_settings_private_set_history_name_from_dconf (priv);
+    g_paste_settings_private_set_images_support_from_dconf (priv);
+    g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
+    g_paste_settings_private_set_max_history_size_from_dconf (priv);
+    g_paste_settings_private_set_max_memory_usage_from_dconf (priv);
+    g_paste_settings_private_set_max_text_item_size_from_dconf (priv);
+    g_paste_settings_private_set_min_text_item_size_from_dconf (priv);
+    g_paste_settings_private_set_paste_and_pop_from_dconf (priv);
+    g_paste_settings_private_set_primary_to_history_from_dconf (priv);
+    g_paste_settings_private_set_save_history_from_dconf (priv);
+    g_paste_settings_private_set_show_history_from_dconf (priv);
+    g_paste_settings_private_set_sync_clipboard_to_primary_from_dconf (priv);
+    g_paste_settings_private_set_sync_primary_to_clipboard_from_dconf (priv);
+    g_paste_settings_private_set_synchronize_clipboards_from_dconf (priv);
+    g_paste_settings_private_set_track_changes_from_dconf (priv);
+    g_paste_settings_private_set_track_extension_state_from_dconf (priv);
+    g_paste_settings_private_set_trim_items_from_dconf (priv);
 
     priv->changed_signal = g_signal_connect (G_OBJECT (settings),
                                              "changed",
