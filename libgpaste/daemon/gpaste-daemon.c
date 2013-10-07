@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -27,18 +27,17 @@
 #define DEFAULT_HISTORY "history"
 
 #define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num,error)           \
-    GPasteDaemonPrivate *priv = self->priv;                         \
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
                                    priv->object_path,               \
                                    G_PASTE_BUS_NAME,                \
                                    sig,                             \
                                    g_variant_new_tuple (data, num), \
-                                   error);
+                                   error)
 
-#define G_PASTE_SEND_DBUS_SIGNAL(sig)                  G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, NULL)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)       G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, error)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,data)   G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, &data, 1, NULL)
+#define G_PASTE_SEND_DBUS_SIGNAL(sig)                G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, NULL)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)     G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, error)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,data) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, &data, 1, NULL)
 
 #define NEW_SIGNAL(name) \
     g_signal_new (name, \
@@ -49,7 +48,7 @@
                   NULL, /* accumulator data */   \
                   g_cclosure_marshal_VOID__VOID, \
                   G_TYPE_NONE,                   \
-                  0);
+                  0)
 
 enum
 {
@@ -109,11 +108,10 @@ g_paste_daemon_send_dbus_reply (GDBusConnection       *connection,
 }
 
 static void
-g_paste_daemon_get_history (GPasteDaemon          *self,
-                            GDBusConnection       *connection,
-                            GDBusMethodInvocation *invocation)
+g_paste_daemon_private_get_history (GPasteDaemonPrivate   *priv,
+                                    GDBusConnection       *connection,
+                                    GDBusMethodInvocation *invocation)
 {
-    GPasteDaemonPrivate *priv = self->priv;
     GSList *history = g_paste_history_get_history (priv->history);
     guint length = MIN (g_slist_length (history), g_paste_settings_get_max_displayed_history_size (priv->settings));
     const gchar **displayed_history = g_new (const gchar *, length + 1);
@@ -145,16 +143,15 @@ g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
 }
 
 static void
-g_paste_daemon_backup_history (GPasteDaemon          *self,
-                               GDBusConnection       *connection,
-                               GDBusMethodInvocation *invocation,
-                               GVariant              *parameters)
+g_paste_daemon_private_backup_history (GPasteDaemonPrivate   *priv,
+                                       GDBusConnection       *connection,
+                                       GDBusMethodInvocation *invocation,
+                                       GVariant              *parameters)
 {
     gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
     g_return_if_fail (name != NULL);
 
-    GPasteDaemonPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
 
     gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
@@ -170,16 +167,16 @@ g_paste_daemon_backup_history (GPasteDaemon          *self,
 }
 
 static void
-g_paste_daemon_switch_history (GPasteDaemon          *self,
-                               GDBusConnection       *connection,
-                               GDBusMethodInvocation *invocation,
-                               GVariant              *parameters)
+g_paste_daemon_private_switch_history (GPasteDaemonPrivate   *priv,
+                                       GDBusConnection       *connection,
+                                       GDBusMethodInvocation *invocation,
+                                       GVariant              *parameters)
 {
     gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
     g_return_if_fail (name != NULL);
 
-    g_paste_history_switch (self->priv->history, name);
+    g_paste_history_switch (priv->history, name);
 
     g_free (name);
 
@@ -187,25 +184,24 @@ g_paste_daemon_switch_history (GPasteDaemon          *self,
 }
 
 static void
-g_paste_daemon_delete_history (GPasteDaemon          *self,
-                               GDBusConnection       *connection,
-                               GDBusMethodInvocation *invocation,
-                               GVariant              *parameters)
+g_paste_daemon_private_delete_history (GPasteDaemonPrivate   *priv,
+                                       GDBusConnection       *connection,
+                                       GDBusMethodInvocation *invocation,
+                                       GVariant              *parameters)
 {
     gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
     g_return_if_fail (name != NULL);
 
-    GPasteDaemonPrivate *priv = self->priv;
     GPasteHistory *history = priv->history;
 
     gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
-    gboolean delete_current = g_strcmp0 (name, old_history) == 0;
+    gboolean delete_current = !g_strcmp0 (name, old_history);
 
     if (!delete_current)
         g_paste_history_switch (history, name);
     g_paste_history_delete (history, NULL);
-    g_paste_history_switch (history, delete_current ? DEFAULT_HISTORY : old_history);
+    g_paste_history_switch (history, (delete_current) ? DEFAULT_HISTORY : old_history);
 
     g_free (name);
     g_free (old_history);
@@ -217,7 +213,7 @@ static void
 g_paste_daemon_list_histories (GDBusConnection       *connection,
                                GDBusMethodInvocation *invocation)
 {
-    gchar **history_names = g_paste_history_list (NULL);
+    GStrv history_names = g_paste_history_list (NULL);
     GVariant *variant = g_variant_new_strv ((const gchar **) history_names, -1);
 
     g_strfreev (history_names);
@@ -226,13 +222,12 @@ g_paste_daemon_list_histories (GDBusConnection       *connection,
 }
 
 static void
-g_paste_daemon_do_add (GPasteDaemon *self,
-                       gchar        *text,
-                       gsize         length)
+g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
+                               gchar               *text,
+                               gsize                length)
 {
     g_return_if_fail (text != NULL);
 
-    GPasteDaemonPrivate *priv = self->priv;
     GPasteSettings *settings = priv->settings;
     gchar *stripped = g_strstrip (g_strdup (text));
 
@@ -250,24 +245,24 @@ g_paste_daemon_do_add (GPasteDaemon *self,
 }
 
 static void
-g_paste_daemon_add (GPasteDaemon          *self,
-                    GDBusConnection       *connection,
-                    GDBusMethodInvocation *invocation,
-                    GVariant              *parameters)
+g_paste_daemon_private_add (GPasteDaemonPrivate   *priv,
+                            GDBusConnection       *connection,
+                            GDBusMethodInvocation *invocation,
+                            GVariant              *parameters)
 {
     gsize length;
     gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
-    g_paste_daemon_do_add (self, text, length);
+    g_paste_daemon_private_do_add (priv, text, length);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
 static void
-g_paste_daemon_add_file (GPasteDaemon          *self,
-                         GDBusConnection       *connection,
-                         GDBusMethodInvocation *invocation,
-                         GVariant              *parameters)
+g_paste_daemon_private_add_file (GPasteDaemonPrivate   *priv,
+                                 GDBusConnection       *connection,
+                                 GDBusMethodInvocation *invocation,
+                                 GVariant              *parameters)
 {
     gsize length;
     gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
@@ -281,7 +276,7 @@ g_paste_daemon_add_file (GPasteDaemon          *self,
                              &length,
                              NULL)) /* error */
     {
-        g_paste_daemon_do_add (self, content, length);
+        g_paste_daemon_private_do_add (priv, content, length);
     }
     g_free (file);
 
@@ -304,12 +299,12 @@ g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
 }
 
 static void
-g_paste_daemon_get_element (GPasteDaemon          *self,
-                            GDBusConnection       *connection,
-                            GDBusMethodInvocation *invocation,
-                            GVariant              *parameters)
+g_paste_daemon_private_get_element (GPasteDaemonPrivate   *priv,
+                                    GDBusConnection       *connection,
+                                    GDBusMethodInvocation *invocation,
+                                    GVariant              *parameters)
 {
-    const gchar *value = g_paste_history_get_value (self->priv->history,
+    const gchar *value = g_paste_history_get_value (priv->history,
                                                     g_paste_daemon_get_dbus_uint32_parameter (parameters));
     GVariant *variant = g_variant_new_string ((value == NULL) ? "" : value);
 
@@ -317,33 +312,33 @@ g_paste_daemon_get_element (GPasteDaemon          *self,
 }
 
 static void
-g_paste_daemon_select (GPasteDaemon          *self,
-                       GDBusConnection       *connection,
-                       GDBusMethodInvocation *invocation,
-                       GVariant              *parameters)
+g_paste_daemon_private_select (GPasteDaemonPrivate   *priv,
+                               GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation,
+                               GVariant              *parameters)
 {
-    g_paste_history_select (self->priv->history,
+    g_paste_history_select (priv->history,
                             g_paste_daemon_get_dbus_uint32_parameter (parameters));
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
 static void
-g_paste_daemon_delete (GPasteDaemon          *self,
-                       GDBusConnection       *connection,
-                       GDBusMethodInvocation *invocation,
-                       GVariant              *parameters)
+g_paste_daemon_private_delete (GPasteDaemonPrivate   *priv,
+                               GDBusConnection       *connection,
+                               GDBusMethodInvocation *invocation,
+                               GVariant              *parameters)
 {
-    g_paste_history_remove (self->priv->history,
+    g_paste_history_remove (priv->history,
                             g_paste_daemon_get_dbus_uint32_parameter (parameters));
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
 static void
-g_paste_daemon_empty (GPasteDaemon          *self,
-                      GDBusConnection       *connection,
-                      GDBusMethodInvocation *invocation)
+g_paste_daemon_private_empty (GPasteDaemonPrivate   *priv,
+                              GDBusConnection       *connection,
+                              GDBusMethodInvocation *invocation)
 {
-    g_paste_history_empty (self->priv->history);
+    g_paste_history_empty (priv->history);
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
 
@@ -352,23 +347,26 @@ g_paste_daemon_tracking (GPasteDaemon *self,
                          gboolean      tracking_state,
                          gpointer      user_data G_GNUC_UNUSED)
 {
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GVariant *variant = g_variant_new_boolean (tracking_state);
 
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SIG_TRACKING, variant)
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SIG_TRACKING, variant);
 }
 
 static void
-g_paste_daemon_changed (GPasteDaemon *self,
-                        gpointer      user_data G_GNUC_UNUSED)
+g_paste_daemon_private_changed (GPasteDaemonPrivate *priv,
+                                gpointer             user_data G_GNUC_UNUSED)
 {
-    G_PASTE_SEND_DBUS_SIGNAL (SIG_CHANGED)
+    G_PASTE_SEND_DBUS_SIGNAL (SIG_CHANGED);
 }
 
 static void
 g_paste_daemon_name_lost (GPasteDaemon *self,
                           gpointer      user_data G_GNUC_UNUSED)
 {
-    G_PASTE_SEND_DBUS_SIGNAL (SIG_NAME_LOST)
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    G_PASTE_SEND_DBUS_SIGNAL (SIG_NAME_LOST);
 }
 
 /**
@@ -386,18 +384,22 @@ g_paste_daemon_show_history (GPasteDaemon *self,
 {
     g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SIG_SHOW_HISTORY)
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SIG_SHOW_HISTORY);
 }
 
 static void
 g_paste_daemon_reexecute_self (GPasteDaemon *self,
                                gpointer      user_data G_GNUC_UNUSED)
 {
-    G_PASTE_SEND_DBUS_SIGNAL (SIG_REEXECUTE_SELF)
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    G_PASTE_SEND_DBUS_SIGNAL (SIG_REEXECUTE_SELF);
 }
 
 static void
-g_paste_daemon_track (GPasteDaemon          *self,
+g_paste_daemon_track (GPasteDaemon *self,
                       GDBusConnection       *connection,
                       GDBusMethodInvocation *invocation,
                       GVariant              *parameters)
@@ -411,7 +413,9 @@ g_paste_daemon_track (GPasteDaemon          *self,
 
     g_variant_unref (variant);
 
-    g_paste_settings_set_track_changes (self->priv->settings, tracking_state);
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    g_paste_settings_set_track_changes (priv->settings, tracking_state);
     g_paste_daemon_tracking (self, tracking_state, NULL);
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
 }
@@ -422,7 +426,9 @@ g_paste_daemon_on_extension_state_changed (GPasteDaemon          *self,
                                            GDBusMethodInvocation *invocation,
                                            GVariant              *parameters)
 {
-    if (g_paste_settings_get_track_extension_state (self->priv->settings))
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    if (g_paste_settings_get_track_extension_state (priv->settings))
         g_paste_daemon_track (self, connection, invocation, parameters);
     else
         g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
@@ -436,7 +442,8 @@ g_paste_daemon_reexecute (GPasteDaemon          *self,
     g_paste_daemon_send_dbus_reply (connection, invocation, NULL);
     g_signal_emit (self,
                    signals[REEXECUTE_SELF],
-                   0); /* detail */
+                   0, /* detail */
+                   NULL);
 }
 
 static void
@@ -449,35 +456,36 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection,
                                  GDBusMethodInvocation *invocation,
                                  gpointer               user_data)
 {
-    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
+    GPasteDaemon *self = user_data;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
-    if (g_strcmp0 (method_name, GET_HISTORY) == 0)
-        g_paste_daemon_get_history (self, connection, invocation);
-    else if (g_strcmp0 (method_name, BACKUP_HISTORY) == 0)
-        g_paste_daemon_backup_history (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, SWITCH_HISTORY) == 0)
-        g_paste_daemon_switch_history (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, DELETE_HISTORY) == 0)
-        g_paste_daemon_delete_history (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, LIST_HISTORIES) == 0)
+    if (!g_strcmp0 (method_name, GET_HISTORY))
+        g_paste_daemon_private_get_history (priv, connection, invocation);
+    else if (!g_strcmp0 (method_name, BACKUP_HISTORY))
+        g_paste_daemon_private_backup_history (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, SWITCH_HISTORY))
+        g_paste_daemon_private_switch_history (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, DELETE_HISTORY))
+        g_paste_daemon_private_delete_history (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, LIST_HISTORIES))
         g_paste_daemon_list_histories (connection, invocation);
-    else if (g_strcmp0 (method_name, ADD) == 0)
-        g_paste_daemon_add (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, ADD_FILE) == 0)
-        g_paste_daemon_add_file (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, GET_ELEMENT) == 0)
-        g_paste_daemon_get_element (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, SELECT) == 0)
-        g_paste_daemon_select (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, DELETE) == 0)
-        g_paste_daemon_delete (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, EMPTY) == 0)
-        g_paste_daemon_empty (self, connection, invocation);
-    else if (g_strcmp0 (method_name, TRACK) == 0)
+    else if (!g_strcmp0 (method_name, ADD))
+        g_paste_daemon_private_add (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, ADD_FILE))
+        g_paste_daemon_private_add_file (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, GET_ELEMENT))
+        g_paste_daemon_private_get_element (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, SELECT))
+        g_paste_daemon_private_select (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, DELETE))
+        g_paste_daemon_private_delete (priv, connection, invocation, parameters);
+    else if (!g_strcmp0 (method_name, EMPTY))
+        g_paste_daemon_private_empty (priv, connection, invocation);
+    else if (!g_strcmp0 (method_name, TRACK))
         g_paste_daemon_track (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, ON_EXTENSION_STATE_CHANGED) == 0)
+    else if (!g_strcmp0 (method_name, ON_EXTENSION_STATE_CHANGED))
         g_paste_daemon_on_extension_state_changed (self, connection, invocation, parameters);
-    else if (g_strcmp0 (method_name, REEXECUTE) == 0)
+    else if (!g_strcmp0 (method_name, REEXECUTE))
         g_paste_daemon_reexecute (self, connection, invocation);
 
     g_object_unref (invocation);
@@ -492,9 +500,9 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
                                   GError         **error G_GNUC_UNUSED,
                                   gpointer         user_data)
 {
-    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (user_data)->priv;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (user_data));
 
-    if (g_strcmp0 (property_name, PROP_ACTIVE) == 0)
+    if (!g_strcmp0 (property_name, PROP_ACTIVE))
         return g_variant_new_boolean (g_paste_settings_get_track_changes (priv->settings));
 
     return NULL;
@@ -504,39 +512,39 @@ static void
 g_paste_daemon_unregister_object (gpointer user_data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (user_data);
-    GPasteDaemonPrivate *priv = self->priv;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     gulong *c_signals = priv->c_signals;
 
     g_signal_handler_disconnect (self, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
-    g_signal_handler_disconnect (priv->history, c_signals[C_CHANGED]);
+    g_signal_handler_disconnect (priv->history,  c_signals[C_CHANGED]);
 
     g_object_unref (self);
 }
 
-static guint
+static void
 g_paste_daemon_register_object (GPasteDaemon    *self,
                                 GDBusConnection *connection,
-                                const gchar     *path,
-                                GError         **error)
+                                const gchar     *path)
 {
     g_return_val_if_fail (G_PASTE_IS_DAEMON (self), 0);
 
-    GPasteDaemonPrivate *priv = self->priv;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
     priv->connection = g_object_ref (connection);
     priv->object_path = g_strdup (path);
 
-    guint result = g_dbus_connection_register_object (connection,
-                                                      path,
-                                                      priv->g_paste_daemon_dbus_info->interfaces[0],
-                                                      &priv->g_paste_daemon_dbus_vtable,
-                                                      g_object_ref (self),
-                                                      g_paste_daemon_unregister_object,
-                                                      error);
-    if (!result)
-        return 0;
+    if (!g_dbus_connection_register_object (connection,
+                                            path,
+                                            priv->g_paste_daemon_dbus_info->interfaces[0],
+                                            &priv->g_paste_daemon_dbus_vtable,
+                                            g_object_ref (self),
+                                            g_paste_daemon_unregister_object,
+                                            &priv->inner_error))
+    {
+            return;
+    }
 
     gulong *c_signals = priv->c_signals;
     c_signals[C_NAME_LOST] = g_signal_connect (G_OBJECT (self),
@@ -553,10 +561,8 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                                    self);
     c_signals[C_CHANGED] = g_signal_connect_swapped (G_OBJECT (priv->history),
                                                      "changed",
-                                                     G_CALLBACK (g_paste_daemon_changed),
-                                                     self);
-
-    return result;
+                                                     G_CALLBACK (g_paste_daemon_private_changed),
+                                                     priv);
 }
 
 static void
@@ -568,8 +574,7 @@ g_paste_daemon_on_bus_acquired (GDBusConnection *connection,
 
     g_paste_daemon_register_object (self,
                                     connection,
-                                    G_PASTE_OBJECT_PATH,
-                                    &self->priv->inner_error);
+                                    G_PASTE_OBJECT_PATH);
 }
 
 static void
@@ -579,7 +584,8 @@ g_paste_daemon_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
 {
     g_signal_emit (G_PASTE_DAEMON (user_data),
                    signals[NAME_LOST],
-                   0); /* detail */
+                   0, /* detail */
+                   NULL);
 }
 
 
@@ -598,7 +604,7 @@ g_paste_daemon_own_bus_name (GPasteDaemon *self,
 {
     g_return_val_if_fail (G_PASTE_IS_DAEMON (self), FALSE);
 
-    GPasteDaemonPrivate *priv = self->priv;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
     g_return_val_if_fail (!priv->id_on_bus, FALSE);
 
@@ -619,21 +625,19 @@ g_paste_daemon_own_bus_name (GPasteDaemon *self,
 static void
 g_paste_daemon_dispose (GObject *object)
 {
-    GPasteDaemonPrivate *priv = G_PASTE_DAEMON (object)->priv;
-    GPasteSettings *settings = priv->settings;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
 
-    if (settings)
+    if (priv->settings)
     {
         g_bus_unown_name (priv->id_on_bus);
-        g_object_unref (priv->connection);
-        g_object_unref (priv->history);
-        g_object_unref (settings);
-        g_object_unref (priv->clipboards_manager);
+        g_clear_object (&priv->connection);
+        g_clear_object (&priv->history);
+        g_clear_object (&priv->settings);
+        g_clear_object (&priv->clipboards_manager);
 #ifdef ENABLE_X_KEYBINDER
-        g_object_unref (priv->keybinder);
+        g_clear_object (&priv->keybinder);
 #endif
         g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
-        priv->settings = NULL;
     }
 
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->dispose (object);
@@ -642,7 +646,9 @@ g_paste_daemon_dispose (GObject *object)
 static void
 g_paste_daemon_finalize (GObject *object)
 {
-    g_free (G_PASTE_DAEMON (object)->priv->object_path);
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
+
+    g_free (priv->object_path);
 
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->finalize (object);
 }
@@ -655,14 +661,14 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
     object_class->dispose = g_paste_daemon_dispose;
     object_class->finalize = g_paste_daemon_finalize;
 
-    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost")
-    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self")
+    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
+    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
 }
 
 static void
 g_paste_daemon_init (GPasteDaemon *self)
 {
-    GPasteDaemonPrivate *priv = self->priv = g_paste_daemon_get_instance_private (self);
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
 
     priv->id_on_bus = 0;
@@ -700,7 +706,7 @@ g_paste_daemon_new (GPasteHistory           *history,
 #endif
 
     GPasteDaemon *self = g_object_new (G_PASTE_TYPE_DAEMON, NULL);
-    GPasteDaemonPrivate *priv = self->priv;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
     priv->history = g_object_ref (history);
     priv->settings = g_object_ref (settings);
