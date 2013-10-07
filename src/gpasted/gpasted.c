@@ -29,8 +29,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define ELEMENTSOF(foo) sizeof(foo)/sizeof(foo[0])
-
 static GMainLoop *main_loop;
 
 enum
@@ -50,7 +48,7 @@ signal_handler (int signum)
 
 static void
 on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-              gpointer      user_data G_GNUC_UNUSED)
+              gpointer      user_data      G_GNUC_UNUSED)
 {
     fprintf (stderr, "%s\n", _("Could not acquire DBus name."));
     g_main_loop_quit (main_loop);
@@ -59,14 +57,14 @@ on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 
 static void
 reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-        gpointer      user_data G_GNUC_UNUSED)
+        gpointer      user_data      G_GNUC_UNUSED)
 {
     g_main_loop_quit (main_loop);
     execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
     bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
@@ -79,24 +77,24 @@ main (int argc, char *argv[])
     GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
 #ifdef ENABLE_X_KEYBINDER
     GPasteKeybinder *keybinder = g_paste_keybinder_new ();
-    GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
 #else
-    GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, NULL);
+    gpointer keybinder = NULL;
 #endif
+    GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
 #ifdef ENABLE_X_KEYBINDER
     GPasteKeybinding *keybindings[] = {
-        G_PASTE_KEYBINDING (g_paste_paste_and_pop_keybinding_new (settings,
-                                                                  history,
-                                                                  clipboards_manager)),
-        G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (settings,
-                                                                 g_paste_daemon)),
-        G_PASTE_KEYBINDING (g_paste_sync_clipboard_to_primary_keybinding_new (settings,
-                                                                              clipboards_manager)),
-        G_PASTE_KEYBINDING (g_paste_sync_primary_to_clipboard_keybinding_new (settings,
-                                                                              clipboards_manager))
+        g_paste_paste_and_pop_keybinding_new (settings,
+                                              history,
+                                              clipboards_manager),
+        g_paste_show_history_keybinding_new (settings,
+                                             g_paste_daemon),
+        g_paste_sync_clipboard_to_primary_keybinding_new (settings,
+                                                          clipboards_manager),
+        g_paste_sync_primary_to_clipboard_keybinding_new (settings,
+                                                          clipboards_manager)
     };
 #endif
 
@@ -112,7 +110,7 @@ main (int argc, char *argv[])
     };
 
 #ifdef ENABLE_X_KEYBINDER
-    for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
+    for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
         g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
 #endif
 
@@ -133,7 +131,7 @@ main (int argc, char *argv[])
     g_object_unref (primary);
 
 #ifdef ENABLE_X_KEYBINDER
-    for (guint k = 0; k < ELEMENTSOF (keybindings); ++k)
+    for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
         g_object_unref (keybindings[k]);
 #endif
 
@@ -150,8 +148,8 @@ main (int argc, char *argv[])
     }
     else
     {
+        g_error ("%s: %s\n", _("Could not register DBus service."), error->message);
         g_error_free (error);
-        fprintf (stderr, "%s\n", _("Could not register DBus service."));
         exit_status = EXIT_FAILURE;
     }
 

@@ -67,13 +67,13 @@ show_history (GPasteClient *client,
               gboolean      zero,
               GError      **error)
 {
-    gchar **history = g_paste_client_get_history (client, error);
+    GStrv history = g_paste_client_get_history (client, error);
 
     if (!*error)
     {
         unsigned int i = 0;
 
-        for (gchar **h = history; *h; ++h)
+        for (GStrv h = history; *h; ++h)
         {
             if (!raw)
                 printf ("%d: ", i++);
@@ -87,30 +87,30 @@ show_history (GPasteClient *client,
 static gboolean
 is_help (const gchar *option)
 {
-    return (g_strcmp0 (option, "help") == 0 ||
-            g_strcmp0 (option, "-h") == 0 ||
-            g_strcmp0 (option, "--help") == 0);
+    return (!g_strcmp0 (option, "help") ||
+            !g_strcmp0 (option, "-h") ||
+            !g_strcmp0 (option, "--help"));
 }
 
 static gboolean
 is_version (const gchar *option)
 {
-    return (g_strcmp0 (option, "v") == 0 ||
-            g_strcmp0 (option, "version") == 0 ||
-            g_strcmp0 (option, "-v") == 0 ||
-            g_strcmp0 (option, "--version") == 0);
+    return (!g_strcmp0 (option, "v") ||
+            !g_strcmp0 (option, "version") ||
+            !g_strcmp0 (option, "-v") ||
+            !g_strcmp0 (option, "--version"));
 }
 
 static void
 failure_exit (GError *error)
 {
-    fprintf (stderr, "%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
+    g_error ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
     g_error_free (error);
     exit (EXIT_FAILURE);
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
     bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
@@ -160,44 +160,44 @@ main (int argc, char *argv[])
             break;
         case 2:
             arg1 = argv[1];
-            if (g_strcmp0 (arg1, "start") == 0 ||
-                g_strcmp0 (arg1, "d") == 0 ||
-                g_strcmp0 (arg1, "daemon") == 0)
+            if (!g_strcmp0 (arg1, "start") ||
+                !g_strcmp0 (arg1, "d") ||
+                !g_strcmp0 (arg1, "daemon"))
             {
                 g_paste_client_track (client, TRUE, &error);
             }
-            else if (g_strcmp0 (arg1, "stop") == 0 ||
-                     g_strcmp0 (arg1, "q") == 0 ||
-                     g_strcmp0 (arg1, "quit") == 0)
+            else if (!g_strcmp0 (arg1, "stop") ||
+                     !g_strcmp0 (arg1, "q") ||
+                     !g_strcmp0 (arg1, "quit"))
             {
                 g_paste_client_track (client, FALSE, &error);
             }
-            else if (g_strcmp0 (arg1, "e") == 0 ||
-                     g_strcmp0 (arg1, "empty") == 0)
+            else if (!g_strcmp0 (arg1, "e") ||
+                     !g_strcmp0 (arg1, "empty"))
             {
                 g_paste_client_empty (client, &error);
             }
 #ifdef ENABLE_APPLET
-            else if (g_strcmp0 (arg1, "applet") == 0)
+            else if (!g_strcmp0 (arg1, "applet"))
             {
                 g_spawn_command_line_async (PKGLIBEXECDIR "/gpaste-applet", &error);
                 if (error)
                 {
-                    fprintf (stderr, _("Couldn't spawn gpaste-applet.\n"));
+                    g_error ("%s: %s", _("Couldn't spawn gpaste-applet.\n"), error->message);
                     g_clear_error (&error);
                     status = EXIT_FAILURE;
                 }
             }
 #endif
-            else if (g_strcmp0 (arg1, "s") == 0 ||
-                     g_strcmp0 (arg1, "settings") == 0 ||
-                     g_strcmp0 (arg1, "p") == 0 ||
-                     g_strcmp0 (arg1, "preferences") == 0)
+            else if (!g_strcmp0 (arg1, "s") ||
+                     !g_strcmp0 (arg1, "settings") ||
+                     !g_strcmp0 (arg1, "p") ||
+                     !g_strcmp0 (arg1, "preferences"))
             {
                 execl (PKGLIBEXECDIR "/gpaste-settings", "GPaste-Settings", NULL);
             }
-            else if (g_strcmp0 (arg1, "dr") == 0 ||
-                     g_strcmp0 (arg1, "daemon-reexec") == 0)
+            else if (!g_strcmp0 (arg1, "dr") ||
+                     !g_strcmp0 (arg1, "daemon-reexec"))
             {
                 g_paste_client_reexecute (client, &error);
                 if (error && error->code == G_DBUS_ERROR_NO_REPLY)
@@ -205,28 +205,28 @@ main (int argc, char *argv[])
                     printf (_("Successfully reexecuted the daemon\n"));
                 }
             }
-            else if (g_strcmp0 (arg1, "h") == 0 ||
-                     g_strcmp0 (arg1, "history") == 0)
+            else if (!g_strcmp0 (arg1, "h") ||
+                     !g_strcmp0 (arg1, "history"))
             {
                 show_history (client, FALSE, FALSE, &error);
             }
-            else if (g_strcmp0 (arg1, "rh") == 0 ||
-                     g_strcmp0 (arg1, "raw-history") == 0)
+            else if (!g_strcmp0 (arg1, "rh") ||
+                     !g_strcmp0 (arg1, "raw-history"))
             {
                 show_history (client, TRUE, FALSE, &error);
             }
-            else if (g_strcmp0 (arg1, "zh") == 0 ||
-                     g_strcmp0 (arg1, "zero-history") == 0)
+            else if (!g_strcmp0 (arg1, "zh") ||
+                     !g_strcmp0 (arg1, "zero-history"))
             {
                 show_history (client, FALSE, TRUE, &error);
             }
-            else if (g_strcmp0 (arg1, "lh") == 0 ||
-                     g_strcmp0 (arg1, "list-histories") == 0)
+            else if (!g_strcmp0 (arg1, "lh") ||
+                     !g_strcmp0 (arg1, "list-histories"))
             {
-                gchar **histories = g_paste_client_list_histories (client, &error);
+                GStrv histories = g_paste_client_list_histories (client, &error);
                 if (!error)
                 {
-                    for (gchar **h = histories; *h; ++h)
+                    for (GStrv h = histories; *h; ++h)
                         printf ("%s\n", *h);
                     g_strfreev (histories);
                 }
@@ -240,44 +240,44 @@ main (int argc, char *argv[])
         case 3:
             arg1 = argv[1];
             arg2 = argv[2];
-            if (g_strcmp0 (arg1, "bh") == 0||
-                g_strcmp0 (arg1, "backup-history") == 0)
+            if (!g_strcmp0 (arg1, "bh")||
+                !g_strcmp0 (arg1, "backup-history"))
             {
                 g_paste_client_backup_history (client, arg2, &error);
             }
-            else if (g_strcmp0 (arg1, "sh") == 0 ||
-                     g_strcmp0 (arg1, "switch-history") == 0)
+            else if (!g_strcmp0 (arg1, "sh") ||
+                     !g_strcmp0 (arg1, "switch-history"))
             {
                 g_paste_client_switch_history (client, arg2, &error);
             }
-            else if (g_strcmp0 (arg1, "dh") == 0 ||
-                     g_strcmp0 (arg1, "delete-history") == 0)
+            else if (!g_strcmp0 (arg1, "dh") ||
+                     !g_strcmp0 (arg1, "delete-history"))
             {
                 g_paste_client_delete_history (client, arg2, &error);
             }
-            else if (g_strcmp0 (arg1, "a") == 0 ||
-                     g_strcmp0 (arg1, "add") == 0)
+            else if (!g_strcmp0 (arg1, "a") ||
+                     !g_strcmp0 (arg1, "add"))
             {
                 g_paste_client_add (client, arg2, &error);
             }
-            else if (g_strcmp0 (arg1, "g") == 0||
-                     g_strcmp0 (arg1, "get") == 0)
+            else if (!g_strcmp0 (arg1, "g")||
+                     !g_strcmp0 (arg1, "get"))
             {
                 printf ("%s", g_paste_client_get_element (client, g_ascii_strtoull (arg2, NULL, 0), &error));
             }
-            else if (g_strcmp0 (arg1, "s") == 0 ||
-                     g_strcmp0 (arg1, "set") == 0 ||
-                     g_strcmp0 (arg1, "select") == 0)
+            else if (!g_strcmp0 (arg1, "s") ||
+                     !g_strcmp0 (arg1, "set") ||
+                     !g_strcmp0 (arg1, "select"))
             {
                 g_paste_client_select (client, g_ascii_strtoull (arg2, NULL, 0), &error);
             }
-            else if (g_strcmp0 (arg1, "d") == 0 ||
-                     g_strcmp0 (arg1, "delete") == 0)
+            else if (!g_strcmp0 (arg1, "d") ||
+                     !g_strcmp0 (arg1, "delete"))
             {
                 g_paste_client_delete (client, g_ascii_strtoull (arg2, NULL, 0), &error);
             }
-            else if (g_strcmp0 (arg1, "f") == 0 ||
-                     g_strcmp0 (arg1, "file") == 0)
+            else if (!g_strcmp0 (arg1, "f") ||
+                     !g_strcmp0 (arg1, "file"))
             {
                 g_paste_client_add_file (client, arg2, &error);
             }
@@ -294,10 +294,10 @@ main (int argc, char *argv[])
         }
     }
 
+    g_object_unref (client);
+
     if (error)
         failure_exit (error);
-
-    g_object_unref (client);
 
     return status;
 }

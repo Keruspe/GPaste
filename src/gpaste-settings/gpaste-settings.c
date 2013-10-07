@@ -21,6 +21,8 @@
 
 #include <glib/gi18n.h>
 
+#include <stdlib.h>
+
 #define LICENSE                                                            \
     "GPaste is free software: you can redistribute it and/or modify"       \
     "it under the terms of the GNU General Public License as published by" \
@@ -38,7 +40,7 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data G_GNUC_UNUSED)
 {
-    const char *_authors[] = {
+    const gchar *_authors[] = {
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
     };
@@ -55,6 +57,7 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                            "website-label",  "Follow GPaste actuality",
                            "wrap-license",   TRUE,
                            NULL);
+    g_boxed_free (G_TYPE_STRV, authors);
 }
 
 static void
@@ -65,8 +68,8 @@ quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
     g_application_quit (user_data);
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
     bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
@@ -86,7 +89,7 @@ main (int argc, char *argv[])
     {
         fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);
         g_error_free (error);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     GActionEntry app_entries[] = {
