@@ -19,8 +19,7 @@
 
 #include "gpaste-daemon-private.h"
 
-#include "gdbus-defines.h"
-
+#include <gpaste-gdbus-defines.h>
 #include <gpaste-text-item.h>
 
 #include <glib.h>
@@ -33,7 +32,7 @@
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
                                    priv->object_path,               \
-                                   G_PASTE_BUS_NAME,                \
+                                   G_PASTE_DAEMON_BUS_NAME,         \
                                    sig,                             \
                                    g_variant_new_tuple (data, num), \
                                    error)
@@ -577,7 +576,7 @@ g_paste_daemon_on_bus_acquired (GDBusConnection *connection,
 
     g_paste_daemon_register_object (self,
                                     connection,
-                                    G_PASTE_OBJECT_PATH);
+                                    G_PASTE_DAEMON_OBJECT_PATH);
 }
 
 static void
@@ -613,7 +612,7 @@ g_paste_daemon_own_bus_name (GPasteDaemon *self,
 
     priv->inner_error = *error;
     priv->id_on_bus = g_bus_own_name (G_BUS_TYPE_SESSION,
-                                      G_PASTE_BUS_NAME,
+                                      G_PASTE_DAEMON_BUS_NAME,
                                       G_BUS_NAME_OWNER_FLAGS_NONE,
                                       g_paste_daemon_on_bus_acquired,
                                       NULL, /* on_name_acquired */
@@ -675,7 +674,7 @@ g_paste_daemon_init (GPasteDaemon *self)
     GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
 
     priv->id_on_bus = 0;
-    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_IFACE_INFO,
+    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE_INFO,
                                                                    NULL); /* Error */
 
     vtable->method_call = g_paste_daemon_dbus_method_call;

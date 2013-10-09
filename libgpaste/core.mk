@@ -27,9 +27,12 @@ libgpaste_core_public_headers = \
 	libgpaste/core/gpaste.h \
 	libgpaste/core/gpaste-clipboard.h \
 	libgpaste/core/gpaste-clipboards-manager.h \
+	libgpaste/core/gpaste-gdbus-defines.h  \
+	libgpaste/core/gpaste-gsettings-keys.h \
 	libgpaste/core/gpaste-history.h \
 	libgpaste/core/gpaste-image-item.h \
 	libgpaste/core/gpaste-item.h \
+	libgpaste/core/gpaste-macros.h \
 	libgpaste/core/gpaste-text-item.h \
 	libgpaste/core/gpaste-uris-item.h \
 	$(NULL)

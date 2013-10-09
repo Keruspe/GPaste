@@ -19,8 +19,6 @@
 
 #include "gpaste-sync-primary-to-clipboard-keybinding-private.h"
 
-#include <gpaste-settings-keys.h>
-
 G_DEFINE_TYPE (GPasteSyncPrimaryToClipboardKeybinding, g_paste_sync_primary_to_clipboard_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void

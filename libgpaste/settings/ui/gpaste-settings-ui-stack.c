@@ -19,8 +19,6 @@
 
 #include "gpaste-settings-ui-stack-private.h"
 
-#include "gpaste-settings-keys.h"
-
 #include <gpaste-client.h>
 #include <gpaste-settings.h>
 

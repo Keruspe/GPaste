@@ -19,8 +19,6 @@
 
 #include "gpaste-history-private.h"
 
-#include "gpaste-settings-keys.h"
-
 #include <gpaste-image-item.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>

@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,14 +17,12 @@
 
 libgpaste_common_la_file = libgpaste/common/libgpaste-common.la
 
-libgpaste_common_public_headers = \
-	libgpaste/common/gdbus-defines.h  \
+libgpaste_common_private_headers = \
 	libgpaste/common/gpaste-clipboard-common.h \
-	libgpaste/common/gpaste-settings-keys.h \
 	$(NULL)
 
 libgpaste_common_libgpaste_common_la_SOURCES = \
-	$(libgpaste_common_public_headers) \
+	$(libgpaste_common_private_headers) \
 	libgpaste/common/gpaste-clipboard-common.c \
 	$(NULL)
 

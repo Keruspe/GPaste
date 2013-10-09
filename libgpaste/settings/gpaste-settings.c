@@ -19,8 +19,6 @@
 
 #include "gpaste-settings-private.h"
 
-#include "gpaste-settings-keys.h"
-
 #include <gio/gio.h>
 
 struct _GPasteSettingsPrivate

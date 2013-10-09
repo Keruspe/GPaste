@@ -17,8 +17,12 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GPASTE_SETTINGS_KEYS_H__
-#define __GPASTE_SETTINGS_KEYS_H__
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
+#error "Only <gpaste.h> can be included directly."
+#endif
+
+#ifndef __GPASTE_GSETTINGS_KEYS_H__
+#define __GPASTE_GSETTINGS_KEYS_H__
 
 #define ELEMENT_SIZE_KEY               "element-size"
 #define HISTORY_NAME_KEY               "history-name"
@@ -39,4 +43,4 @@
 #define TRACK_EXTENSION_STATE_KEY      "track-extension-state"
 #define TRIM_ITEMS_KEY                 "trim-items"
 
-#endif /*__GPASTE_SETTINGS_KEYS_H__*/
+#endif /*__GPASTE_GSETTINGS_KEYS_H__*/

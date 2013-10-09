@@ -20,6 +20,7 @@
 #ifndef __G_PASTE_SETTINGS_H__
 #define __G_PASTE_SETTINGS_H__
 
+#include <gpaste-gsettings-keys.h>
 #include <gpaste-macros.h>
 
 #include <glib-object.h>

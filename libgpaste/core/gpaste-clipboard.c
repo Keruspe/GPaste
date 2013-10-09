@@ -187,6 +187,13 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 }
 
 static void
+g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                        gpointer      user_data_or_owner)
+{
+    g_object_unref (user_data_or_owner);
+}
+
+static void
 g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
                                        GPasteUrisItem         *item)
 {

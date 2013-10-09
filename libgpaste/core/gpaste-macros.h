@@ -17,9 +17,13 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GPASTE_SETTINGS_MACROS_H__
-#define __GPASTE_SETTINGS_MACROS_H__
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
+#error "Only <gpaste.h> can be included directly."
+#endif
+
+#ifndef __GPASTE_MACROS_H__
+#define __GPASTE_MACROS_H__
 
 #define G_PASTE_VISIBLE __attribute__((visibility("default")))
 
-#endif /*__GPASTE_SETTINGS_MACROS_H__*/
+#endif /*__GPASTE_MACROS_H__*/

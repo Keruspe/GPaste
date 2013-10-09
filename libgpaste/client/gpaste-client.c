@@ -19,7 +19,7 @@
 
 #include "gpaste-client-private.h"
 
-#include "gdbus-defines.h"
+#include <gpaste-gdbus-defines.h>
 
 #include <gio/gio.h>
 
@@ -486,16 +486,16 @@ g_paste_client_init (GPasteClient *self)
 {
     GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);
 
-    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_IFACE_INFO,
+    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE_INFO,
                                                                    NULL); /* Error */
 
     priv->connection_error = NULL;
     GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                                      G_DBUS_PROXY_FLAGS_NONE,
                                                                      priv->g_paste_daemon_dbus_info->interfaces[0],
-                                                                     G_PASTE_BUS_NAME,
-                                                                     G_PASTE_OBJECT_PATH,
-                                                                     G_PASTE_INTERFACE_NAME,
+                                                                     G_PASTE_DAEMON_BUS_NAME,
+                                                                     G_PASTE_DAEMON_OBJECT_PATH,
+                                                                     G_PASTE_DAEMON_INTERFACE_NAME,
                                                                      NULL, /* cancellable */
                                                                      &priv->connection_error);
 

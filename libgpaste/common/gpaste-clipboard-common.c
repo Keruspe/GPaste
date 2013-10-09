@@ -17,6 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gpaste-clipboard.h>
 #include <gpaste-image-item.h>
 #include <gpaste-uris-item.h>
 
@@ -74,11 +75,4 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
             g_string_free (copy_string, TRUE);
         }
     }
-}
-
-G_PASTE_VISIBLE void
-g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
-                                        gpointer      user_data_or_owner)
-{
-    g_object_unref (user_data_or_owner);
 }

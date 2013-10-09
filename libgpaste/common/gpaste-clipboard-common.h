@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -24,15 +24,10 @@
 
 G_BEGIN_DECLS
 
-#define g_paste_clipboard_copy_files_target gdk_atom_intern_static_string ("x-special/gnome-copied-files")
-
-
 void g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard,
                                            GtkSelectionData *selection_data,
                                            guint             info,
                                            gpointer          user_data_or_owner);
-void g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard,
-                                             gpointer      user_data_or_owner);
 
 G_END_DECLS
 

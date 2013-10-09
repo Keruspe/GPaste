@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -17,12 +17,16 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GDBUS_DEFINES_H__
-#define __GDBUS_DEFINES_H__
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
+#error "Only <gpaste.h> can be included directly."
+#endif
 
-#define G_PASTE_BUS_NAME       "org.gnome.GPaste"
-#define G_PASTE_OBJECT_PATH    "/org/gnome/GPaste"
-#define G_PASTE_INTERFACE_NAME "org.gnome.GPaste"
+#ifndef __G_PASTE_GDBUS_DEFINES_H__
+#define __G_PASTE_GDBUS_DEFINES_H__
+
+#define G_PASTE_DAEMON_BUS_NAME       "org.gnome.GPaste"
+#define G_PASTE_DAEMON_OBJECT_PATH    "/org/gnome/GPaste"
+#define G_PASTE_DAEMON_INTERFACE_NAME "org.gnome.GPaste"
 
 #define ADD                        "Add"
 #define ADD_FILE                   "AddFile"
@@ -47,9 +51,9 @@
 
 #define PROP_ACTIVE "Active"
 
-#define G_PASTE_IFACE_INFO                                                  \
+#define G_PASTE_DAEMON_INTERFACE_INFO                                       \
         "<node>"                                                            \
-        "   <interface name='" G_PASTE_INTERFACE_NAME "'>"                  \
+        "   <interface name='" G_PASTE_DAEMON_INTERFACE_NAME "'>"           \
         "       <method name='" GET_HISTORY "'>"                            \
         "           <arg type='as' direction='out' />"                      \
         "       </method>"                                                  \
@@ -99,4 +103,5 @@
         "       <property name='" PROP_ACTIVE "' type='b' access='read' />" \
         "   </interface>"                                                   \
         "</node>"
-#endif /*__GDBUS_DEFINES_H__*/
+
+#endif /*__G_PASTE_GDBUS_DEFINES_H__*/

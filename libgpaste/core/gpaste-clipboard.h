@@ -38,6 +38,8 @@ G_BEGIN_DECLS
 #define G_PASTE_IS_CLIPBOARD_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_CLIPBOARD))
 #define G_PASTE_CLIPBOARD_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_CLIPBOARD, GPasteClipboardClass))
 
+#define g_paste_clipboard_copy_files_target gdk_atom_intern_static_string ("x-special/gnome-copied-files")
+
 typedef struct _GPasteClipboard GPasteClipboard;
 typedef struct _GPasteClipboardClass GPasteClipboardClass;
 
