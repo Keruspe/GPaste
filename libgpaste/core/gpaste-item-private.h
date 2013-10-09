@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_ITEM_PRIVATE_H__
 #define __G_PASTE_ITEM_PRIVATE_H__
 
-#include "gpaste-item.h"
+#include <gpaste-item.h>
 
 G_BEGIN_DECLS
 

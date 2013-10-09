@@ -111,7 +111,6 @@ CC_CHECK_LDFLAGS_APPEND([ \
                           -Wl,--gc-sections \
                         ])
 
-AC_DEFINE_UNQUOTED([G_PASTE_VISIBLE], [__attribute__((visibility("default")))], [Export symbol])
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [$GLIB_API_REQUIRED], [The lower GLib API version supported])
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED], [$GLIB_API_REQUIRED], [The higher GLib API version supported])
 AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [$GDK_API_REQUIRED], [The lower Gdk API version supported])

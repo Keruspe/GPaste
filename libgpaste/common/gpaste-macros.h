@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -17,23 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_H__
-#define __G_PASTE_H__
+#ifndef __GPASTE_SETTINGS_MACROS_H__
+#define __GPASTE_SETTINGS_MACROS_H__
 
-#define __G_PASTE_H_INSIDE__
+#define G_PASTE_VISIBLE __attribute__((visibility("default")))
 
-#include <gpaste-macros.h>
-#include <gpaste-clipboard.h>
-#include <gpaste-clipboards-manager.h>
-#include <gpaste-history.h>
-#ifdef ENABLE_X_KEYBINDER
-# include <gpaste-keybinder.h>
-#else
-# define GPasteKeybinder void
-#endif
-#include <gpaste-settings.h>
-#include <gpaste-settings-ui-widget.h>
-
-#undef __G_PASTE_H_INSIDE__
-
-#endif /*__G_PASTE_H__*/
+#endif /*__GPASTE_SETTINGS_MACROS_H__*/

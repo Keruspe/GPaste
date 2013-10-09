@@ -24,10 +24,6 @@
 #ifndef __G_PASTE_SETTINGS_UI_WIDGET_H__
 #define __G_PASTE_SETTINGS_UI_WIDGET_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
 #include <gpaste-settings-ui-stack.h>
 
 G_BEGIN_DECLS
@@ -42,9 +38,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteSettingsUiWidget GPasteSettingsUiWidget;
 typedef struct _GPasteSettingsUiWidgetClass GPasteSettingsUiWidgetClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_settings_ui_widget_get_type (void);
 
 GPasteSettingsUiStack *g_paste_settings_ui_widget_get_stack (GPasteSettingsUiWidget *self);

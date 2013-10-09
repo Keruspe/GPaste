@@ -21,7 +21,8 @@
 #define __G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING_PRIVATE_H__
 
 #include "gpaste-keybinding-private.h"
-#include "gpaste-sync-clipboard-to-primary-keybinding.h"
+
+#include <gpaste-sync-clipboard-to-primary-keybinding.h>
 
 G_BEGIN_DECLS
 

@@ -20,6 +20,7 @@
 #include "gpaste-image-item-private.h"
 
 #include <glib/gi18n-lib.h>
+
 #include <sys/stat.h>
 
 struct _GPasteImageItemPrivate

@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_CLIENT_PRIVATE_H__
 #define __G_PASTE_CLIENT_PRIVATE_H__
 
-#include "gpaste-client.h"
+#include <gpaste-client.h>
 
 G_BEGIN_DECLS
 

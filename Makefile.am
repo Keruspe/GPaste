@@ -42,6 +42,7 @@ AM_VALAFLAGS = \
 	$(NULL)
 
 AM_CFLAGS = \
+	-include config.h \
 	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/settings \
 	-I$(srcdir)/libgpaste/settings/ui \

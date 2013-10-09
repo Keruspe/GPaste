@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_CLIPBOARDS_MANAGER_PRIVATE_H__
 #define __G_PASTE_CLIPBOARDS_MANAGER_PRIVATE_H__
 
-#include "gpaste-clipboards-manager.h"
+#include <gpaste-clipboards-manager.h>
 
 G_BEGIN_DECLS
 

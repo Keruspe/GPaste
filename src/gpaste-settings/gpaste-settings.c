@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-settings-ui-widget.h"
+#include <gpaste-settings-ui-widget.h>
 
 #include <glib/gi18n.h>
 

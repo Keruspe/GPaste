@@ -18,6 +18,7 @@
  */
 
 #include "gpaste-show-history-keybinding-private.h"
+
 #include "gpaste-settings-keys.h"
 
 G_DEFINE_TYPE (GPasteShowHistoryKeybinding, g_paste_show_history_keybinding, G_PASTE_TYPE_KEYBINDING)

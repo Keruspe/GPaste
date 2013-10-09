@@ -21,12 +21,12 @@
 
 #include "gpaste-settings-keys.h"
 
-#include <stdlib.h>
+#include <gpaste-client.h>
+#include <gpaste-settings.h>
 
 #include <glib/gi18n.h>
 
-#include <gpaste-client.h>
-#include <gpaste-settings.h>
+#include <stdlib.h>
 
 struct _GPasteSettingsUiStackPrivate
 {

@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@
 #define __G_PASTE_TEXT_ITEM_PRIVATE_H__
 
 #include "gpaste-item-private.h"
-#include "gpaste-text-item.h"
+
+#include <gpaste-text-item.h>
 
 G_BEGIN_DECLS
 

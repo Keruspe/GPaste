@@ -18,6 +18,7 @@
  */
 
 #include "gpaste-paste-and-pop-keybinding-private.h"
+
 #include "gpaste-clipboard-common.h"
 #include "gpaste-settings-keys.h"
 

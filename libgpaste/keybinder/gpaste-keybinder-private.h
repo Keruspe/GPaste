@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_KEYBINDER_PRIVATE_H__
 #define __G_PASTE_KEYBINDER_PRIVATE_H__
 
-#include "gpaste-keybinder.h"
+#include <gpaste-keybinder.h>
 
 G_BEGIN_DECLS
 

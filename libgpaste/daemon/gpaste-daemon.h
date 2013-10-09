@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -39,9 +39,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteDaemon GPasteDaemon;
 typedef struct _GPasteDaemonClass GPasteDaemonClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_daemon_get_type (void);
 
 gboolean g_paste_daemon_own_bus_name (GPasteDaemon *self,

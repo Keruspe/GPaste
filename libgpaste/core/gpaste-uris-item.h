@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -24,10 +24,6 @@
 #ifndef __G_PASTE_URIS_ITEM_H__
 #define __G_PASTE_URIS_ITEM_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
 #include <gpaste-item.h>
 
 G_BEGIN_DECLS
@@ -42,9 +38,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteUrisItem GPasteUrisItem;
 typedef struct _GPasteUrisItemClass GPasteUrisItemClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_uris_item_get_type (void);
 
 const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);

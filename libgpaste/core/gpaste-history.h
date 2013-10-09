@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-20123 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -24,12 +24,7 @@
 #ifndef __G_PASTE_HISTORY_H__
 #define __G_PASTE_HISTORY_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
-#include "gpaste-item.h"
-
+#include <gpaste-item.h>
 #include <gpaste-settings.h>
 
 G_BEGIN_DECLS
@@ -44,9 +39,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteHistory GPasteHistory;
 typedef struct _GPasteHistoryClass GPasteHistoryClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_history_get_type (void);
 
 void              g_paste_history_add       (GPasteHistory *self,

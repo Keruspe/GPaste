@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_SETTINGS_UI_STACK_H__
 #define __G_PASTE_SETTINGS_UI_STACK_H__
 
-#include "gpaste-settings-ui-panel.h"
+#include <gpaste-settings-ui-panel.h>
 
 G_BEGIN_DECLS
 
@@ -34,9 +34,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteSettingsUiStack GPasteSettingsUiStack;
 typedef struct _GPasteSettingsUiStackClass GPasteSettingsUiStackClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_settings_ui_stack_get_type (void);
 
 void g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,

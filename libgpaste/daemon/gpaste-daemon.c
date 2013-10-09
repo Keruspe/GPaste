@@ -18,10 +18,13 @@
  */
 
 #include "gpaste-daemon-private.h"
-#include "gpaste-text-item.h"
+
 #include "gdbus-defines.h"
 
+#include <gpaste-text-item.h>
+
 #include <glib.h>
+
 #include <string.h>
 
 #define DEFAULT_HISTORY "history"

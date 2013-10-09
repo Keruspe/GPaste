@@ -24,13 +24,8 @@
 #ifndef __G_PASTE_SHOW_HISTORY_KEYBINDING_H__
 #define __G_PASTE_SHOW_HISTORY_KEYBINDING_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
-#include "gpaste-keybinding.h"
-
 #include <gpaste-daemon.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 
@@ -44,9 +39,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteShowHistoryKeybinding GPasteShowHistoryKeybinding;
 typedef struct _GPasteShowHistoryKeybindingClass GPasteShowHistoryKeybindingClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_show_history_keybinding_get_type (void);
 
 GPasteKeybinding *g_paste_show_history_keybinding_new (GPasteSettings *settings,

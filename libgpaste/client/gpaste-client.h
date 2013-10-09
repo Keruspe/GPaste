@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -20,9 +20,7 @@
 #ifndef __G_PASTE_CLIENT_H__
 #define __G_PASTE_CLIENT_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
+#include <gpaste-macros.h>
 
 #include <glib-object.h>
 
@@ -38,9 +36,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteClient GPasteClient;
 typedef struct _GPasteClientClass GPasteClientClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_client_get_type (void);
 
 gchar   *g_paste_client_get_element                (GPasteClient *self,

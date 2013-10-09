@@ -24,9 +24,7 @@
 #ifndef __G_PASTE_SETTINGS_UI_PANEL_H__
 #define __G_PASTE_SETTINGS_UI_PANEL_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
+#include <gpaste-macros.h>
 
 #include <gtk/gtk.h>
 
@@ -42,9 +40,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteSettingsUiPanel GPasteSettingsUiPanel;
 typedef struct _GPasteSettingsUiPanelClass GPasteSettingsUiPanelClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_settings_ui_panel_get_type (void);
 
 typedef void (*GPasteBooleanCallback)     (gboolean data,

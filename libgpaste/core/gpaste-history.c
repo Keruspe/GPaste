@@ -18,12 +18,15 @@
  */
 
 #include "gpaste-history-private.h"
-#include "gpaste-image-item.h"
-#include "gpaste-text-item.h"
-#include "gpaste-uris-item.h"
+
 #include "gpaste-settings-keys.h"
 
+#include <gpaste-image-item.h>
+#include <gpaste-text-item.h>
+#include <gpaste-uris-item.h>
+
 #include <glib/gi18n-lib.h>
+
 #include <libxml/xmlreader.h>
 #include <libxml/xmlwriter.h>
 

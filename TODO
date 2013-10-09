@@ -6,7 +6,6 @@
 
 future:
     all:
-        macros.h
         use __cleanup__
     gpaste:
         GSubProcess

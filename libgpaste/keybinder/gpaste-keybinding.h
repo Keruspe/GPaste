@@ -20,10 +20,6 @@
 #ifndef __G_PASTE_KEYBINDING_H__
 #define __G_PASTE_KEYBINDING_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
 #include <gpaste-settings.h>
 
 #include <gdk/gdk.h>
@@ -50,9 +46,7 @@ typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
 typedef void  (*GPasteKeybindingFunc) (GPasteKeybinding *self, /* FIXME: g-i */
                                        gpointer          data);
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_keybinding_get_type (void);
 
 void            g_paste_keybinding_activate      (GPasteKeybinding *self);

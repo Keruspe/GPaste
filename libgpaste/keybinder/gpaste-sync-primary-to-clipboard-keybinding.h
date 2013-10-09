@@ -24,13 +24,8 @@
 #ifndef __G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING_H__
 #define __G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
-#include "gpaste-keybinding.h"
-
 #include <gpaste-clipboards-manager.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 
@@ -44,9 +39,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteSyncPrimaryToClipboardKeybinding GPasteSyncPrimaryToClipboardKeybinding;
 typedef struct _GPasteSyncPrimaryToClipboardKeybindingClass GPasteSyncPrimaryToClipboardKeybindingClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_sync_primary_to_clipboard_keybinding_get_type (void);
 
 GPasteKeybinding *g_paste_sync_primary_to_clipboard_keybinding_new (GPasteSettings          *settings,

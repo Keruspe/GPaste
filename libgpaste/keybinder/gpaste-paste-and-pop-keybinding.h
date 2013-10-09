@@ -24,13 +24,9 @@
 #ifndef __G_PASTE_PASTE_AND_POP_KEYBINDING_H__
 #define __G_PASTE_PASTE_AND_POP_KEYBINDING_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
-#include "gpaste-clipboards-manager.h"
-#include "gpaste-keybinding.h"
-#include "gpaste-history.h"
+#include <gpaste-clipboards-manager.h>
+#include <gpaste-history.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 
@@ -44,9 +40,7 @@ G_BEGIN_DECLS
 typedef struct _GPastePasteAndPopKeybinding GPastePasteAndPopKeybinding;
 typedef struct _GPastePasteAndPopKeybindingClass GPastePasteAndPopKeybindingClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_paste_and_pop_keybinding_get_type (void);
 
 GPasteKeybinding *g_paste_paste_and_pop_keybinding_new (GPasteSettings          *settings,

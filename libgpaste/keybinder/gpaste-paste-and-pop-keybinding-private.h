@@ -20,8 +20,9 @@
 #ifndef __G_PASTE_PASTE_AND_POP_KEYBINDING_PRIVATE_H__
 #define __G_PASTE_PASTE_AND_POP_KEYBINDING_PRIVATE_H__
 
-#include "gpaste-paste-and-pop-keybinding.h"
 #include "gpaste-keybinding-private.h"
+
+#include <gpaste-paste-and-pop-keybinding.h>
 
 G_BEGIN_DECLS
 

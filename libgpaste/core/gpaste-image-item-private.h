@@ -21,7 +21,8 @@
 #define __G_PASTE_IMAGE_ITEM_PRIVATE_H__
 
 #include "gpaste-item-private.h"
-#include "gpaste-image-item.h"
+
+#include <gpaste-image-item.h>
 
 G_BEGIN_DECLS
 

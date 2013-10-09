@@ -32,8 +32,12 @@ bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_settings_libgpaste_settings_la_SOURCES) \
 	$(libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES) \
 	$(NULL)
-bindings_gi_GPaste_1_0_gir_CFLAGS = $(INCLUDES) -DG_PASTE_COMPILATION \
+bindings_gi_GPaste_1_0_gir_CFLAGS = \
+	-include config.h \
+	$(INCLUDES) \
+	-DG_PASTE_COMPILATION \
 	-I$(srcdir)/libgpaste/client \
+	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/keybinder \

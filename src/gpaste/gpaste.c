@@ -17,11 +17,11 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include <gpaste-client.h>
 
 #include <gio/gio.h>
 #include <glib/gi18n-lib.h>
-#include <gpaste-client.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 

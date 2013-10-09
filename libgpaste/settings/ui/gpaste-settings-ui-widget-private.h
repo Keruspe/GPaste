@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_SETTINGS_UI_WIDGET_PRIVATE_H__
 #define __G_PASTE_SETTINGS_UI_WIDGET_PRIVATE_H__
 
-#include "gpaste-settings-ui-widget.h"
+#include <gpaste-settings-ui-widget.h>
 
 G_BEGIN_DECLS
 

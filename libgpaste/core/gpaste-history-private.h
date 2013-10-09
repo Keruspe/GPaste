@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_HISTORY_PRIVATE_H__
 #define __G_PASTE_HISTORY_PRIVATE_H__
 
-#include "gpaste-history.h"
+#include <gpaste-history.h>
 
 G_BEGIN_DECLS
 

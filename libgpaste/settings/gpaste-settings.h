@@ -20,9 +20,7 @@
 #ifndef __G_PASTE_SETTINGS_H__
 #define __G_PASTE_SETTINGS_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
+#include <gpaste-macros.h>
 
 #include <glib-object.h>
 
@@ -38,9 +36,7 @@ G_BEGIN_DECLS
 typedef struct _GPasteSettings GPasteSettings;
 typedef struct _GPasteSettingsClass GPasteSettingsClass;
 
-#ifdef G_PASTE_COMPILATION
 G_PASTE_VISIBLE
-#endif
 GType g_paste_settings_get_type (void);
 
 guint32      g_paste_settings_get_element_size               (const GPasteSettings *self);

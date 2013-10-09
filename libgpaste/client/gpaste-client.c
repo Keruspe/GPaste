@@ -18,6 +18,7 @@
  */
 
 #include "gpaste-client-private.h"
+
 #include "gdbus-defines.h"
 
 #include <gio/gio.h>
