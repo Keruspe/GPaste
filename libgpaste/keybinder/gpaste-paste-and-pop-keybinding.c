@@ -165,7 +165,7 @@ g_paste_paste_and_pop_keybinding_new (GPasteSettings          *settings,
 
     GPasteKeybinding *self = _g_paste_keybinding_new (G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING,
                                                       settings,
-                                                      PASTE_AND_POP_KEY,
+                                                      G_PASTE_PASTE_AND_POP_SETTING,
                                                       g_paste_settings_get_paste_and_pop,
                                                       paste_and_pop,
                                                       clipboards_manager);

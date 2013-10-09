@@ -58,7 +58,7 @@ g_paste_sync_primary_to_clipboard_keybinding_new (GPasteSettings          *setti
 {
     return _g_paste_keybinding_new (G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING,
                                     settings,
-                                    SYNC_PRIMARY_TO_CLIPBOARD_KEY,
+                                    G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING,
                                     g_paste_settings_get_sync_primary_to_clipboard,
                                     g_paste_sync_primary_to_clipboard_keybinding_sync,
                                     gcm);

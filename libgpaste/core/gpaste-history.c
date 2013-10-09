@@ -745,9 +745,9 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
 {
     GPasteHistoryPrivate *priv = user_data;
 
-    if (!g_strcmp0(key, MAX_HISTORY_SIZE_KEY))
+    if (!g_strcmp0(key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         g_paste_history_private_check_size (priv);
-    else if (!g_strcmp0 (key, MAX_MEMORY_USAGE_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_history_private_check_memory_usage (priv);
 }
 

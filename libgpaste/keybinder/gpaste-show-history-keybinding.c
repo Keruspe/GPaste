@@ -57,7 +57,7 @@ g_paste_show_history_keybinding_new (GPasteSettings   *settings,
 {
     return _g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
                                     settings,
-                                    SHOW_HISTORY_KEY,
+                                    G_PASTE_SHOW_HISTORY_SETTING,
                                     g_paste_settings_get_show_history,
                                     g_paste_show_history_keybinding_show_history,
                                     gpaste_daemon);

@@ -71,7 +71,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     static void                                                                                        \
     g_paste_settings_private_set_##name##_from_dconf (GPasteSettingsPrivate *priv)                     \
     {                                                                                                  \
-        priv->name = g_settings_get_##setting_type (priv->settings, key);                              \
+        priv->name = g_settings_get_##setting_type (priv->settings, G_PASTE_##key##_SETTING);          \
     }                                                                                                  \
     G_PASTE_VISIBLE void                                                                               \
     g_paste_settings_set_##name (GPasteSettings *self,                                                 \
@@ -82,7 +82,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
         GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);                    \
         clear_func                                                                                     \
         priv->name = dup_func (value);                                                                 \
-        g_settings_set_##setting_type (priv->settings, key, value);                                    \
+        g_settings_set_##setting_type (priv->settings, G_PASTE_##key##_SETTING, value);                \
     }
 
 #define TRIVIAL_SETTING(name, key, type, setting_type, fail) \
@@ -114,343 +114,343 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * g_paste_settings_get_element_size:
  * @self: a #GPasteSettings instance
  *
- * Get the ELEMENT_SIZE_KEY setting
+ * Get the "element-size" setting
  *
- * Returns: the value of the ELEMENT_SIZE_KEY setting
+ * Returns: the value of the "element-size" setting
  */
 /**
  * g_paste_settings_set_element_size:
  * @self: a #GPasteSettings instance
  * @value: the maximum displayed size of an item
  *
- * Change the ELEMENT_SIZE_KEY setting
+ * Change the "element-size" setting
  *
  * Returns:
  */
-UNSIGNED_SETTING (element_size, ELEMENT_SIZE_KEY)
+UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
 
 /**
  * g_paste_settings_get_history_name:
  * @self: a #GPasteSettings instance
  *
- * Get the HISTORY_NAME_KEY setting
+ * Get the "history-name" setting
  *
- * Returns: the value of the HISTORY_NAME_KEY setting
+ * Returns: the value of the "history-name" setting
  */
 /**
  * g_paste_settings_set_history_name:
  * @self: a #GPasteSettings instance
  * @value: the new history name
  *
- * Change the HISTORY_NAME_KEY setting
+ * Change the "history-name" setting
  *
  * Returns:
  */
-STRING_SETTING (history_name, HISTORY_NAME_KEY)
+STRING_SETTING (history_name, HISTORY_NAME)
 
 /**
  * g_paste_settings_get_images_support:
  * @self: a #GPasteSettings instance
  *
- * Get the IMAGES_SUPPORT_KEY setting
+ * Get the "images-support" setting
  *
- * Returns: the value of the IMAGES_SUPPORT_KEY setting
+ * Returns: the value of the "images-support" setting
  */
 /**
  * g_paste_settings_set_images_support:
  * @self: a #GPasteSettings instance
  * @value: the new history name
  *
- * Change the IMAGES_SUPPORT_KEY setting
+ * Change the "images-support" setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (images_support, IMAGES_SUPPORT_KEY)
+BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
 
 /**
  * g_paste_settings_get_max_displayed_history_size:
  * @self: a #GPasteSettings instance
  *
- * Get the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ * Get the "max-displayed-history-size" setting
  *
- * Returns: the value of the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ * Returns: the value of the "max-displayed-history-size" setting
  */
 /**
  * g_paste_settings_set_max_displayed_history_size:
  * @self: a #GPasteSettings instance
  * @value: the maximum number of items to display
  *
- * Change the MAX_DISPLAYED_HISTORY_SIZE_KEY setting
+ * Change the "max-displayed-history-size" setting
  *
  * Returns:
  */
-UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE_KEY)
+UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)
 
 /**
  * g_paste_settings_get_max_history_size:
  * @self: a #GPasteSettings instance
  *
- * Get the MAX_HISTORY_SIZE_KEY setting
+ * Get the "max-history-size" setting
  *
- * Returns: the value of the MAX_HISTORY_SIZE_KEY setting
+ * Returns: the value of the "max-history-size" setting
  */
 /**
  * g_paste_settings_set_max_history_size:
  * @self: a #GPasteSettings instance
  * @value: the maximum number of items the history can contain
  *
- * Change the MAX_HISTORY_SIZE_KEY setting
+ * Change the "max-history-size" setting
  *
  * Returns:
  */
-UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE_KEY)
+UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE)
 
 /**
  * g_paste_settings_get_max_memory_usage:
  * @self: a #GPasteSettings instance
  *
- * Get the MAX_MEMORY_USAGE_KEY setting
+ * Get the "max-memory-usage" setting
  *
- * Returns: the value of the MAX_MEMORY_USAGE_KEY setting
+ * Returns: the value of the "max-memory-usage" setting
  */
 /**
  * g_paste_settings_set_max_memory_usage:
  * @self: a #GPasteSettings instance
  * @value: the maximum amout of memory we can use
  *
- * Change the MAX_MEMORY_USAGE_KEY setting
+ * Change the "max-memory-usage" setting
  *
  * Returns:
  */
-UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE_KEY)
+UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE)
 
 /**
  * g_paste_settings_get_max_text_item_size:
  * @self: a #GPasteSettings instance
  *
- * Get the MAX_TEXT_ITEM_SIZE_KEY setting
+ * Get the "max-text-item-size" setting
  *
- * Returns: the value of the MAX_TEXT_ITEM_SIZE_KEY setting
+ * Returns: the value of the "max-text-item-size" setting
  */
 /**
  * g_paste_settings_set_max_text_item_size:
  * @self: a #GPasteSettings instance
  * @value: the maximum size for a textual item to be handled
  *
- * Change the MAX_TEXT_ITEM_SIZE_KEY setting
+ * Change the "max-text-item-size" setting
  *
  * Returns:
  */
-UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE_KEY)
+UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE)
 
 /**
  * g_paste_settings_get_min_text_item_size:
  * @self: a #GPasteSettings instance
  *
- * Get the MIN_TEXT_ITEM_SIZE_KEY setting
+ * Get the "min-text-item-size" setting
  *
- * Returns: the value of the MIN_TEXT_ITEM_SIZE_KEY setting
+ * Returns: the value of the "min-text-item-size" setting
  */
 /**
  * g_paste_settings_set_min_text_item_size:
  * @self: a #GPasteSettings instance
  * @value: the minimum size for a textual item to be handled
  *
- * Change the MIN_TEXT_ITEM_SIZE_KEY setting
+ * Change the "min-text-item-size" setting
  *
  * Returns:
  */
-UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE_KEY)
+UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE)
 
 /**
  * g_paste_settings_get_paste_and_pop:
  * @self: a #GPasteSettings instance
  *
- * Get the PASTE_AND_POP_KEY setting
+ * Get the "paste-and-pop" setting
  *
- * Returns: the value of the PASTE_AND_POP_KEY setting
+ * Returns: the value of the "paste-and-pop" setting
  */
 /**
  * g_paste_settings_set_paste_and_pop:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
  *
- * Change the PASTE_AND_POP_KEY setting
+ * Change the "paste-and-pop" setting
  *
  * Returns:
  */
-STRING_SETTING (paste_and_pop, PASTE_AND_POP_KEY)
+STRING_SETTING (paste_and_pop, PASTE_AND_POP)
 
 /**
  * g_paste_settings_get_primary_to_history:
  * @self: a #GPasteSettings instance
  *
- * Get the PRIMARY_TO_HISTORY_KEY setting
+ * Get the "primary-to-history" setting
  *
- * Returns: the value of the PRIMARY_TO_HISTORY_KEY setting
+ * Returns: the value of the "primary-to-history" setting
  */
 /**
  * g_paste_settings_set_primary_to_history:
  * @self: a #GPasteSettings instance
  * @value: whether to track or not the primary selection changes as clipboard ones
  *
- * Change the PRIMARY_TO_HISTORY_KEY setting
+ * Change the "primary-to-history" setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY_KEY)
+BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
 
 /**
  * g_paste_settings_get_save_history:
  * @self: a #GPasteSettings instance
  *
- * Get the SAVE_HISTORY_KEY setting
+ * Get the "save-history" setting
  *
- * Returns: the value of the SAVE_HISTORY_KEY setting
+ * Returns: the value of the "save-history" setting
  */
 /**
  * g_paste_settings_set_save_history:
  * @self: a #GPasteSettings instance
  * @value: whether to save or not the history
  *
- * Change the SAVE_HISTORY_KEY setting
+ * Change the "save-history" setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (save_history, SAVE_HISTORY_KEY)
+BOOLEAN_SETTING (save_history, SAVE_HISTORY)
 
 /**
  * g_paste_settings_get_show_history:
  * @self: a #GPasteSettings instance
  *
- * Get the SHOW_HISTORY_KEY setting
+ * Get the "show-history" setting
  *
- * Returns: the value of the SHOW_HISTORY_KEY setting
+ * Returns: the value of the "show-history" setting
  */
 /**
  * g_paste_settings_set_show_history:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
  *
- * Change the SHOW_HISTORY_KEY setting
+ * Change the "show-history" setting
  *
  * Returns:
  */
-STRING_SETTING (show_history, SHOW_HISTORY_KEY)
+STRING_SETTING (show_history, SHOW_HISTORY)
 
 /**
  * g_paste_settings_get_sync_clipboard_to_primary:
  * @self: a #GPasteSettings instance
  *
- * Get the SYNC_CLIPBOARD_TO_PRIMARY_KEY setting
+ * Get the "sync-clipboard-to-primary" setting
  *
- * Returns: the value of the SYNC_CLIPBOARD_TO_PRIMARY_KEY setting
+ * Returns: the value of the "sync-clipboard-to-primary" setting
  */
 /**
  * g_paste_settings_set_sync_clipboard_to_primary:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
  *
- * Change the SYNC_CLIPBOARD_TO_PRIMARY_KEY setting
+ * Change the "sync-clipboard-to-primary" setting
  *
  * Returns:
  */
-STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY_KEY)
+STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY)
 
 /**
  * g_paste_settings_get_sync_primary_to_clipboard:
  * @self: a #GPasteSettings instance
  *
- * Get the SYNC_PRIMARY_TO_CLIPBOARD_KEY setting
+ * Get the "sync-primary-to-clipboard" setting
  *
- * Returns: the value of the SYNC_PRIMARY_TO_CLIPBOARD_KEY setting
+ * Returns: the value of the "sync-primary-to-clipboard" setting
  */
 /**
  * g_paste_settings_set_sync_primary_to_clipboard:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
  *
- * Change the SYNC_PRIMARY_TO_CLIPBOARD_KEY setting
+ * Change the "sync-primary-to-clipboard" setting
  *
  * Returns:
  */
-STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD_KEY)
+STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD)
 
 /**
  * g_paste_settings_get_synchronize_clipboards:
  * @self: a #GPasteSettings instance
  *
- * Get the SYNCHRONIZE_CLIPBOARDS_KEY setting
+ * Get the "synchronize-clipboards" setting
  *
- * Returns: the value of the SYNCHRONIZE_CLIPBOARDS_KEY setting
+ * Returns: the value of the "synchronize-clipboards" setting
  */
 /**
  * g_paste_settings_set_synchronize_clipboards:
  * @self: a #GPasteSettings instance
  * @value: whether to synchronize the clipboard and the primary selection or not
  *
- * Change the SYNCHRONIZE_CLIPBOARDS_KEY setting
+ * Change the "synchronize-clipboards" setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS_KEY)
+BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS)
 
 /**
  * g_paste_settings_get_track_changes:
  * @self: a #GPasteSettings instance
  *
- * Get the TRACK_CHANGES_KEY setting
+ * Get the "track-changes" setting
  *
- * Returns: the value of the TRACK_CHANGES_KEY setting
+ * Returns: the value of the "track-changes" setting
  */
 /**
  * g_paste_settings_set_track_changes:
  * @self: a #GPasteSettings instance
  * @value: whether to track or not the clipboard changes
  *
- * Change the TRACK_CHANGES_KEY setting
+ * Change the "track-changes" setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (track_changes, TRACK_CHANGES_KEY)
+BOOLEAN_SETTING (track_changes, TRACK_CHANGES)
 
 /**
  * g_paste_settings_get_track_extension_state:
  * @self: a #GPasteSettings instance
  *
- * Get the TRACK_EXTENSION_STATE_KEY setting
+ * Get the "track-extension-state" setting
  *
- * Returns: the value of the TRACK_EXTENSION_STATE_KEY setting
+ * Returns: the value of the "track-extension-state" setting
  */
 /**
  * g_paste_settings_set_track_extension_state:
  * @self: a #GPasteSettings instance
  * @value: whether to stop tracking or not the clipboard changes when an applet exits
  *
- * Change the TRACK_EXTENSION_STATE_KEY setting
+ * Change the "track-extension-state" setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE_KEY)
+BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
 
 /**
  * g_paste_settings_get_trim_items:
  * @self: a #GPasteSettings instance
  *
- * Get the TRIM_ITEMS_KEY setting
+ * Get the "trim-items" setting
  *
- * Returns: the value of the TRIM_ITEMS_KEY setting
+ * Returns: the value of the "trim-items" setting
  */
 /**
  * g_paste_settings_set_trim_items:
  * @self: a #GPasteSettings instance
  * @value: whether to trim or not textual items
  *
- * Change the TRIM_ITEMS_KEY setting
+ * Change the "trim-items" setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (trim_items, TRIM_ITEMS_KEY)
+BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
 
 static void
 g_paste_settings_rebind (GPasteSettings *self,
@@ -470,49 +470,49 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
-    if (!g_strcmp0 (key, ELEMENT_SIZE_KEY))
+    if (!g_strcmp0 (key, G_PASTE_ELEMENT_SIZE_SETTING))
         g_paste_settings_private_set_element_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, HISTORY_NAME_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
         g_paste_settings_private_set_history_name_from_dconf (priv);
-    else if (!g_strcmp0 (key, IMAGES_SUPPORT_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         g_paste_settings_private_set_images_support_from_dconf (priv);
-    else if (!g_strcmp0 (key, MAX_DISPLAYED_HISTORY_SIZE_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, MAX_HISTORY_SIZE_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         g_paste_settings_private_set_max_history_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, MAX_MEMORY_USAGE_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_settings_private_set_max_memory_usage_from_dconf (priv);
-    else if (!g_strcmp0 (key, MAX_TEXT_ITEM_SIZE_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING))
         g_paste_settings_private_set_max_text_item_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, MIN_TEXT_ITEM_SIZE_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
         g_paste_settings_private_set_min_text_item_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, PASTE_AND_POP_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_PASTE_AND_POP_SETTING))
     {
         g_paste_settings_private_set_paste_and_pop_from_dconf (priv);
-        g_paste_settings_rebind (self, PASTE_AND_POP_KEY);
+        g_paste_settings_rebind (self, G_PASTE_PASTE_AND_POP_SETTING);
     }
-    else if (!g_strcmp0 (key, PRIMARY_TO_HISTORY_KEY ))
+    else if (!g_strcmp0 (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
         g_paste_settings_private_set_primary_to_history_from_dconf (priv);
-    else if (!g_strcmp0 (key, SAVE_HISTORY_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_SAVE_HISTORY_SETTING))
         g_paste_settings_private_set_save_history_from_dconf (priv);
-    else if (!g_strcmp0 (key, SHOW_HISTORY_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_SHOW_HISTORY_SETTING))
     {
         g_paste_settings_private_set_show_history_from_dconf (priv);
-        g_paste_settings_rebind (self, SHOW_HISTORY_KEY);
+        g_paste_settings_rebind (self, G_PASTE_SHOW_HISTORY_SETTING);
     }
-    else if (!g_strcmp0 (key, SYNC_CLIPBOARD_TO_PRIMARY_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
     {
         g_paste_settings_private_set_sync_clipboard_to_primary_from_dconf (priv);
-        g_paste_settings_rebind (self, SYNC_CLIPBOARD_TO_PRIMARY_KEY);
+        g_paste_settings_rebind (self, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING);
     }
-    else if (!g_strcmp0 (key, SYNC_PRIMARY_TO_CLIPBOARD_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
     {
         g_paste_settings_private_set_sync_primary_to_clipboard_from_dconf (priv);
-        g_paste_settings_rebind (self, SYNC_PRIMARY_TO_CLIPBOARD_KEY);
+        g_paste_settings_rebind (self, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING);
     }
-    else if (!g_strcmp0 (key, SYNCHRONIZE_CLIPBOARDS_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
         g_paste_settings_private_set_synchronize_clipboards_from_dconf (priv);
-    else if (!g_strcmp0 (key, TRACK_CHANGES_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))
     {
         g_paste_settings_private_set_track_changes_from_dconf (priv);
         g_signal_emit (self,
@@ -521,9 +521,9 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                        priv->track_changes,
                        NULL);
     }
-    else if (!g_strcmp0 (key, TRACK_EXTENSION_STATE_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
         g_paste_settings_private_set_track_extension_state_from_dconf (priv);
-    else if (!g_strcmp0 (key, TRIM_ITEMS_KEY))
+    else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
         g_paste_settings_private_set_trim_items_from_dconf (priv);
 
     /* Forward the signal */

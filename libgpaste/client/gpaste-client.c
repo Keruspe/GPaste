@@ -94,7 +94,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                    \
     decl;                                                                                      \
     GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                                    \
-                                               method,                                         \
+                                               G_PASTE_GDBUS_##method,                         \
                                                g_variant_new_tuple (param, n_param),           \
                                                G_DBUS_CALL_FLAGS_NONE,                         \
                                                -1,                                             \
@@ -116,16 +116,16 @@ static guint signals[LAST_SIGNAL] = { 0 };
     g_variant_unref (result);                                               \
     return answer
 
-#define HANDLE_SIGNAL(sig)                       \
-    if (!g_strcmp0 (signal_name, SIG_##sig))     \
-    {                                            \
-        g_signal_emit (self,                     \
-                       signals[sig],             \
-                       0, /* detail */           \
-                       NULL);                    \
+#define HANDLE_SIGNAL(sig)                                 \
+    if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig)) \
+    {                                                      \
+        g_signal_emit (self,                               \
+                       signals[sig],                       \
+                       0, /* detail */                     \
+                       NULL);                              \
     }
 #define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)          \
-    if (!g_strcmp0 (signal_name, SIG_##sig))                          \
+    if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig))            \
     {                                                                 \
         GVariantIter params_iter;                                     \
         g_variant_iter_init (&params_iter, parameters);               \
@@ -428,7 +428,7 @@ g_paste_client_list_histories (GPasteClient *self,
 G_PASTE_VISIBLE gboolean
 g_paste_client_is_active (GPasteClient *self)
 {
-    DBUS_GET_PROPERTY (PROP_ACTIVE, gboolean, boolean, FALSE);
+    DBUS_GET_PROPERTY (G_PASTE_GDBUS_PROP_ACTIVE, gboolean, boolean, FALSE);
 }
 
 static void
@@ -486,16 +486,16 @@ g_paste_client_init (GPasteClient *self)
 {
     GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);
 
-    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE_INFO,
+    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE_INFO,
                                                                    NULL); /* Error */
 
     priv->connection_error = NULL;
     GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                                      G_DBUS_PROXY_FLAGS_NONE,
                                                                      priv->g_paste_daemon_dbus_info->interfaces[0],
-                                                                     G_PASTE_DAEMON_BUS_NAME,
-                                                                     G_PASTE_DAEMON_OBJECT_PATH,
-                                                                     G_PASTE_DAEMON_INTERFACE_NAME,
+                                                                     G_PASTE_GDBUS_BUS_NAME,
+                                                                     G_PASTE_GDBUS_OBJECT_PATH,
+                                                                     G_PASTE_GDBUS_INTERFACE_NAME,
                                                                      NULL, /* cancellable */
                                                                      &priv->connection_error);
 
