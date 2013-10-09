@@ -27,7 +27,6 @@
 #include <gpaste-macros.h>
 
 #include <glib-object.h>
-#include <gdk-pixbuf/gdk-pixbuf.h>
 
 G_BEGIN_DECLS
 
