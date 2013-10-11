@@ -28,9 +28,9 @@
 struct _GPasteKeybinderPrivate
 {
     GSList     *keybindings;
+    GSList     *keyboards;
 
     /* TODO: share with keybindings */
-    GdkDisplay *display;
     GdkWindow  *window;
 };
 
@@ -118,39 +118,6 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
                      NULL);
 }
 
-#ifdef GDK_WINDOWING_WAYLAND
-static void
-g_paste_keybinder_unlock_wayland (void)
-{
-    g_error ("Wayland is currently not supported.");
-}
-#endif
-
-#ifdef GDK_WINDOWING_X11
-static void
-g_paste_keybinder_unlock_x11 (Display *display)
-{
-    XIUngrabDevice (display, XI_DeviceButtonPress, CurrentTime);
-    XSync (display, FALSE);
-}
-#endif
-
-static void
-g_paste_keybinder_unlock (GdkDisplay *display)
-{
-#ifdef GDK_WINDOWING_WAYLAND
-    if (GDK_IS_WAYLAND_DISPLAY (display))
-        g_paste_keybinder_unlock_wayland ();
-    else
-#endif
-#ifdef GDK_WINDOWING_X11
-    if (GDK_IS_X11_DISPLAY (display))
-        g_paste_keybinder_unlock_x11 (GDK_DISPLAY_XDISPLAY (display));
-    else
-#endif
-        g_error ("Unsupported GDK backend.");
-}
-
 static GdkFilterReturn
 g_paste_keybinder_filter (GdkXEvent *xevent,
                           GdkEvent  *event G_GNUC_UNUSED,
@@ -158,7 +125,8 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 {
     GPasteKeybinderPrivate *priv = data;
 
-    g_paste_keybinder_unlock (priv->display);
+    for (GSList *keyboard = priv->keyboards; keyboard; keyboard = g_slist_next (keyboard))
+        gdk_device_ungrab (keyboard->data, GDK_CURRENT_TIME);
 
     for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
     {
@@ -213,8 +181,17 @@ g_paste_keybinder_init (GPasteKeybinder *self)
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
     GdkWindow *window = priv->window = gdk_get_default_root_window ();
 
-    priv->display = gdk_display_get_default ();
     priv->keybindings = NULL;
+    priv->keyboards = NULL;
+
+    for (GList *dev = gdk_device_manager_list_devices (gdk_display_get_device_manager (gdk_display_get_default ()),
+                                                       GDK_DEVICE_TYPE_MASTER); dev; dev = g_list_next (dev))
+    {
+        GdkDevice *device = dev->data;
+
+        if (gdk_device_get_source (device) == GDK_SOURCE_KEYBOARD)
+            priv->keyboards = g_slist_prepend (priv->keyboards, device);
+    }
 
     gdk_window_add_filter (window,
                            g_paste_keybinder_filter,

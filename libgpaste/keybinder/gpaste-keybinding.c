@@ -359,8 +359,10 @@ g_paste_keybinding_init (GPasteKeybinding *self)
     priv->window = gdk_get_default_root_window ();
     priv->active = FALSE;
 
+#ifdef GDK_WINDOWING_X11
     /* Initialize */
     g_paste_keybinding_get_xinput_opcode (GDK_DISPLAY_XDISPLAY (display));
+#endif
 }
 
 /**
