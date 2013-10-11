@@ -21,7 +21,9 @@
 
 #include "gpaste-clipboard-common.h"
 
+#ifdef GDK_WINDOWING_X11
 #include <X11/extensions/XTest.h>
+#endif
 
 #define PASTE_AND_POP_WATCH_CLIPBOARD(clipboard)                     \
     gtk_clipboard_set_with_data (gtk_clipboard_get (clipboard),      \
@@ -82,6 +84,45 @@ paste_and_pop_clear_clipboard_data (GtkClipboard *clipboard          G_GNUC_UNUS
 {
 }
 
+#ifdef GDK_WINDOWING_WAYLAND
+static void
+ask_for_paste_wayland (void)
+{
+    g_error ("Wayland is currently not supported.");
+}
+#endif
+
+#ifdef GDK_WINDOWING_X11
+static void
+ask_for_paste_x11 (Display *display)
+{
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L),  TRUE, CurrentTime);
+    XFlush (display);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),   TRUE, CurrentTime);
+    XFlush (display);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L), FALSE, CurrentTime);
+    XFlush (display);
+    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),  FALSE, CurrentTime);
+    XFlush (display);
+}
+#endif
+
+static void
+ask_for_paste(GdkDisplay *display)
+{
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY (display))
+        ask_for_paste_wayland ();
+    else
+#endif
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY (display))
+        ask_for_paste_x11 (GDK_DISPLAY_XDISPLAY (display));
+    else
+#endif
+        g_error ("Unsupported GDK backend.");
+}
+
 static void
 paste_and_pop (GPasteKeybinding *self,
                gpointer          data)
@@ -105,16 +146,7 @@ paste_and_pop (GPasteKeybinding *self,
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
 
-    /* FIXME: split x11 stuff */
-    Display *display = GDK_DISPLAY_XDISPLAY (self->display);
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L),  TRUE, CurrentTime);
-    XFlush (display);
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),   TRUE, CurrentTime);
-    XFlush (display);
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Shift_L), FALSE, CurrentTime);
-    XFlush (display);
-    XTestFakeKeyEvent (display, XKeysymToKeycode (display, GDK_KEY_Insert),  FALSE, CurrentTime);
-    XFlush (display);
+    ask_for_paste (self->display);
 
     gtk_target_table_free (targets, n_targets);
     gtk_target_list_unref (target_list);
