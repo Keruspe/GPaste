@@ -263,7 +263,7 @@ g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
                                   GdkModifierType          modifiers,
                                   guint                    keycode)
 {
-    if (priv->modifiers == (priv->modifiers & modifiers))
+    if (priv->keycodes && priv->modifiers == (priv->modifiers & modifiers))
     {
         for (guint *_keycode = priv->keycodes; *_keycode; ++_keycode)
         {
