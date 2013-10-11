@@ -76,7 +76,7 @@ g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
             if (grab)
             {
                 XIGrabKeycode (display,
-                               3,
+                               XIAllMasterDevices,
                                *keycode,
                                window,
                                XIGrabModeSync,
@@ -89,7 +89,7 @@ g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
             else
             {
                 XIUngrabKeycode (display,
-                                 3,
+                                 XIAllMasterDevices,
                                  *keycode,
                                  window,
                                  1,
