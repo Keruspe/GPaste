@@ -530,7 +530,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                 GDBusConnection *connection,
                                 const gchar     *path)
 {
-    g_return_val_if_fail (G_PASTE_IS_DAEMON (self), 0);
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
