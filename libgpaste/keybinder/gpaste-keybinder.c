@@ -21,9 +21,17 @@
 
 #include <gdk/gdk.h>
 
+#ifdef GDK_WINDOWING_X11
+#  include <X11/extensions/XIproto.h>
+#endif
+
 struct _GPasteKeybinderPrivate
 {
-    GSList  *keybindings;
+    GSList     *keybindings;
+
+    /* TODO: share with keybindings */
+    GdkDisplay *display;
+    GdkWindow  *window;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
@@ -110,12 +118,47 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
                      NULL);
 }
 
+#ifdef GDK_WINDOWING_WAYLAND
+static void
+g_paste_keybinder_unlock_wayland (void)
+{
+    g_error ("Wayland is currently not supported.");
+}
+#endif
+
+#ifdef GDK_WINDOWING_X11
+static void
+g_paste_keybinder_unlock_x11 (Display *display)
+{
+    XIUngrabDevice (display, XI_DeviceButtonPress, CurrentTime);
+    XSync (display, FALSE);
+}
+#endif
+
+static void
+g_paste_keybinder_unlock (GdkDisplay *display)
+{
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY (display))
+        g_paste_keybinder_unlock_wayland ();
+    else
+#endif
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY (display))
+        g_paste_keybinder_unlock_x11 (GDK_DISPLAY_XDISPLAY (display));
+    else
+#endif
+        g_error ("Unsupported GDK backend.");
+}
+
 static GdkFilterReturn
 g_paste_keybinder_filter (GdkXEvent *xevent,
                           GdkEvent  *event G_GNUC_UNUSED,
                           gpointer   data)
 {
     GPasteKeybinderPrivate *priv = data;
+
+    g_paste_keybinder_unlock (priv->display);
 
     for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
     {
@@ -144,19 +187,36 @@ g_paste_keybinder_dispose (GObject *object)
 }
 
 static void
+g_paste_keybinder_finalize (GObject *object)
+{
+    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (G_PASTE_KEYBINDER (object));
+
+    gdk_window_remove_filter (priv->window,
+                              g_paste_keybinder_filter,
+                              priv);
+
+    G_OBJECT_CLASS (g_paste_keybinder_parent_class)->finalize (object);
+}
+
+static void
 g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_keybinder_dispose;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_keybinder_dispose;
+    object_class->finalize = g_paste_keybinder_finalize;
 }
 
 static void
 g_paste_keybinder_init (GPasteKeybinder *self)
 {
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
+    GdkWindow *window = priv->window = gdk_get_default_root_window ();
 
+    priv->display = gdk_display_get_default ();
     priv->keybindings = NULL;
 
-    gdk_window_add_filter (gdk_get_default_root_window (),
+    gdk_window_add_filter (window,
                            g_paste_keybinder_filter,
                            priv);
 }

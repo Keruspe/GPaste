@@ -38,10 +38,6 @@ struct _GPasteKeybindingPrivate
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 
-#ifdef GDK_WINDOWING_X11
-static gint xinput_opcode = 0;
-#endif
-
 #ifdef GDK_WINDOWING_WAYLAND
 static void
 g_paste_keybinding_change_grab_wayland (void)
@@ -210,49 +206,74 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 
 #ifdef GDK_WINDOWING_WAYLAND
 static void
-g_paste_keybinding_notify_wayland (void)
+g_paste_keybinding_parse_event_wayland (void)
 {
     g_error ("Wayland is currently not supported.");
 }
 #endif
 
 #ifdef GDK_WINDOWING_X11
+static gint
+g_paste_keybinding_get_xinput_opcode (Display *display)
+{
+    static gint xinput_opcode = 0;
+
+    if (!xinput_opcode)
+    {
+        gint major = 2, minor = 3;
+        gint xinput_error_base;
+        gint xinput_event_base;
+
+        if (XQueryExtension (display,
+                             "XInputExtension",
+                             &xinput_opcode,
+                             &xinput_error_base,
+                             &xinput_event_base))
+        {
+            if (XIQueryVersion (display, &major, &minor) != Success)
+                g_warning ("XInput 2 not found, keybinder won't work");
+        }
+    }
+
+    return xinput_opcode;
+}
+
 static void
-g_paste_keybinding_notify_x11 (GPasteKeybinding *self,
-                               XEvent           *event)
+g_paste_keybinding_parse_event_x11 (XEvent                  *event,
+                                    GdkModifierType         *modifiers,
+                                    guint                   *keycode)
 {
     XGenericEventCookie cookie = event->xcookie;
-    Display *display = GDK_DISPLAY_XDISPLAY (self->display);
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
-    if (cookie.extension == xinput_opcode)
+    if (cookie.extension == g_paste_keybinding_get_xinput_opcode (NULL))
     {
         XIDeviceEvent *xi_ev = (XIDeviceEvent *) cookie.data;
 
         if (xi_ev->evtype == XI_KeyPress)
         {
-            GdkModifierType modifiers = xi_ev->mods.effective;
-            guint keycode = xi_ev->detail;
-
-            if (priv->modifiers == (priv->modifiers & modifiers))
-            {
-                for (guint *_keycode = priv->keycodes; *_keycode; ++_keycode)
-                {
-                    if (keycode == *_keycode)
-                    {
-                        XIUngrabDevice (display, 3 /* FIXME: comment magic value */, CurrentTime);
-                        XSync (display, FALSE);
-
-                        priv->callback (self, priv->user_data);
-
-                        break;
-                    }
-                }
-            }
+            *modifiers = xi_ev->mods.effective;
+            *keycode = xi_ev->detail;
         }
     }
 }
 #endif
+
+static gboolean
+g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
+                                  GdkModifierType          modifiers,
+                                  guint                    keycode)
+{
+    if (priv->modifiers == (priv->modifiers & modifiers))
+    {
+        for (guint *_keycode = priv->keycodes; *_keycode; ++_keycode)
+        {
+            if (keycode == *_keycode)
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
 
 /**
  * g_paste_keybinding_notify:
@@ -269,19 +290,25 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
     GdkDisplay *display = self->display;
+    GdkModifierType modifiers;
+    guint keycode = 0;
 
 #ifdef GDK_WINDOWING_WAYLAND
     if (GDK_IS_WAYLAND_DISPLAY (display))
-        g_paste_keybinding_notify_wayland ();
+        g_paste_keybinding_parse_event_wayland ();
     else
 #endif
 #ifdef GDK_WINDOWING_X11
     if (GDK_IS_X11_DISPLAY (display))
-        g_paste_keybinding_notify_x11 (self, (XEvent *) xevent);
+        g_paste_keybinding_parse_event_x11 ((XEvent *) xevent, &modifiers, &keycode);
     else
 #endif
         g_error ("Unsupported GDK backend.");
+
+    if (keycode && g_paste_keybinding_private_match (priv, modifiers, keycode))
+        priv->callback (self, priv->user_data);
 }
 
 static void
@@ -322,57 +349,18 @@ g_paste_keybinding_class_init (GPasteKeybindingClass *klass)
     object_class->finalize = g_paste_keybinding_finalize;
 }
 
-#ifdef GDK_WINDOWING_WAYLAND
-static void
-g_paste_keybinding_init_wayland (void)
-{
-    g_error ("Wayland is currently not supported.");
-}
-#endif
-
-#ifdef GDK_WINDOWING_X11
-static void
-g_paste_keybinding_init_x11 (Display *display)
-{
-    if (!xinput_opcode)
-    {
-        gint major = 2, minor = 3;
-        gint xinput_error_base;
-        gint xinput_event_base;
-
-        if (XQueryExtension (display,
-                             "XInputExtension",
-                             &xinput_opcode,
-                             &xinput_error_base,
-                             &xinput_event_base))
-        {
-            if (XIQueryVersion (display, &major, &minor) != Success)
-                g_warning ("XInput 2 not found, keybinder won't work");
-        }
-    }
-}
-#endif
-
 static void
 g_paste_keybinding_init (GPasteKeybinding *self)
 {
-    GdkDisplay *display = self->display = gdk_display_get_default ();
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+
+    GdkDisplay *display = self->display = gdk_display_get_default ();
 
     priv->window = gdk_get_default_root_window ();
     priv->active = FALSE;
 
-#ifdef GDK_WINDOWING_WAYLAND
-    if (GDK_IS_WAYLAND_DISPLAY (display))
-        g_paste_keybinding_init_wayland ();
-    else
-#endif
-#ifdef GDK_WINDOWING_X11
-    if (GDK_IS_X11_DISPLAY (display))
-        g_paste_keybinding_init_x11 (GDK_DISPLAY_XDISPLAY (self->display));
-    else
-#endif
-        g_error ("Unsupported GDK backend.");
+    /* Initialize */
+    g_paste_keybinding_get_xinput_opcode (GDK_DISPLAY_XDISPLAY (display));
 }
 
 /**
