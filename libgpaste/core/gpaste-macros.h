@@ -24,6 +24,12 @@
 #ifndef __GPASTE_MACROS_H__
 #define __GPASTE_MACROS_H__
 
+#include <glib.h>
+
+G_BEGIN_DECLS
+
 #define G_PASTE_VISIBLE __attribute__((visibility("default")))
+
+G_END_DECLS
 
 #endif /*__GPASTE_MACROS_H__*/

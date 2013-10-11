@@ -24,6 +24,8 @@
 #ifndef __G_PASTE_GDBUS_DEFINES_H__
 #define __G_PASTE_GDBUS_DEFINES_H__
 
+G_BEGIN_DECLS
+
 #define G_PASTE_GDBUS_BUS_NAME       "org.gnome.GPaste"
 #define G_PASTE_GDBUS_OBJECT_PATH    "/org/gnome/GPaste"
 #define G_PASTE_GDBUS_INTERFACE_NAME "org.gnome.GPaste"
@@ -104,5 +106,7 @@
         "                 type='b' access='read' />"                          \
         "   </interface>"                                                     \
         "</node>"
+
+G_END_DECLS
 
 #endif /*__G_PASTE_GDBUS_DEFINES_H__*/

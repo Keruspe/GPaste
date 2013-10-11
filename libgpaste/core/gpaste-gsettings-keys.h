@@ -24,6 +24,10 @@
 #ifndef __GPASTE_GSETTINGS_KEYS_H__
 #define __GPASTE_GSETTINGS_KEYS_H__
 
+#include <glib.h>
+
+G_BEGIN_DECLS
+
 #define G_PASTE_ELEMENT_SIZE_SETTING               "element-size"
 #define G_PASTE_HISTORY_NAME_SETTING               "history-name"
 #define G_PASTE_IMAGES_SUPPORT_SETTING             "images-support"
@@ -42,5 +46,7 @@
 #define G_PASTE_TRACK_CHANGES_SETTING              "track-changes"
 #define G_PASTE_TRACK_EXTENSION_STATE_SETTING      "track-extension-state"
 #define G_PASTE_TRIM_ITEMS_SETTING                 "trim-items"
+
+G_END_DECLS
 
 #endif /*__GPASTE_GSETTINGS_KEYS_H__*/
