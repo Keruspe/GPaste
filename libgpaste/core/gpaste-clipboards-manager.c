@@ -230,10 +230,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             }
 
             if (item)
-            {
                 g_paste_history_add (history, item);
-                g_object_unref (item);
-            }
 
             gtk_selection_data_free (targets);
 

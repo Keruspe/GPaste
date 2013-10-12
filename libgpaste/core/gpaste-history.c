@@ -126,7 +126,8 @@ g_paste_history_selected (GPasteHistory *self,
 }
 
 static void
-g_paste_history_activate_first (GPasteHistory *self)
+g_paste_history_activate_first (GPasteHistory *self,
+                                gboolean       select)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteItem *first = priv->history->data;
@@ -135,7 +136,8 @@ g_paste_history_activate_first (GPasteHistory *self)
     g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
     priv->size += g_paste_item_get_size (first);
 
-    g_paste_history_selected (self, first);
+    if (select)
+        g_paste_history_selected (self, first);
 }
 
 static void
@@ -174,7 +176,7 @@ g_paste_history_private_check_size (GPasteHistoryPrivate *priv)
 /**
  * g_paste_history_add:
  * @self: a #GPasteHistory instance
- * @item: (transfer none): the #GPasteItem to add
+ * @item: (transfer full): the #GPasteItem to add
  *
  * Add a #GPasteItem to the #GPasteHistory
  *
@@ -232,9 +234,9 @@ g_paste_history_add (GPasteHistory *self,
         ++priv->biggest_index;
     }
 
-    priv->history = g_slist_prepend (priv->history, g_object_ref (item));
+    priv->history = g_slist_prepend (priv->history, item);
 
-    g_paste_history_activate_first (self);
+    g_paste_history_activate_first (self, FALSE);
     priv->size += g_paste_item_get_size (item);
 
     g_paste_history_private_check_size (priv);
@@ -274,7 +276,7 @@ g_paste_history_remove (GPasteHistory *self,
     else
     {
         priv->history = g_paste_history_private_remove (priv, history, TRUE);
-        g_paste_history_activate_first (self);
+        g_paste_history_activate_first (self, TRUE);
     }
 
     if (pos == priv->biggest_index)
@@ -379,7 +381,6 @@ g_paste_history_select (GPasteHistory *self,
 
     g_paste_history_add (self, item);
     g_paste_history_selected (self, item);
-    g_object_unref (item);
 }
 
 /**
@@ -678,7 +679,7 @@ g_paste_history_load (GPasteHistory *self)
 
     if (priv->history)
     {
-        g_paste_history_activate_first (self);
+        g_paste_history_activate_first (self, TRUE);
         g_paste_history_private_elect_new_biggest (priv);
     }
 }
