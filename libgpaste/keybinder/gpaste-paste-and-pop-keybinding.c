@@ -150,7 +150,7 @@ paste_and_pop (GPasteKeybinding *self,
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_CLIPBOARD)
     PASTE_AND_POP_WATCH_CLIPBOARD (GDK_SELECTION_PRIMARY)
 
-    ask_for_paste (self->display);
+    ask_for_paste (gdk_display_get_default ());
 
     gtk_target_table_free (targets, n_targets);
     gtk_target_list_unref (target_list);

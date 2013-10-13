@@ -37,7 +37,6 @@ struct _GPasteKeybindingPrivate
     GPasteKeybindingFunc   callback;
     gpointer               user_data;
     gboolean               active;
-    GdkWindow             *window;
     GdkModifierType        modifiers;
     guint                 *keycodes;
 
@@ -57,6 +56,7 @@ g_paste_keybinding_change_grab_wayland (void)
 #ifdef GDK_WINDOWING_X11
 static void
 g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
+                                    Display          *display,
                                     gboolean          grab)
 {
     guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
@@ -77,9 +77,8 @@ g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
         GDK_MOD2_MASK | GDK_MOD5_MASK | GDK_LOCK_MASK,
     };
 
-    Display *display = GDK_DISPLAY_XDISPLAY (self->display);
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
-    Window window = gdk_x11_window_get_xid (priv->window);
+    Window window = GDK_ROOT_WINDOW ();
 
     for (guint i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
         XIGrabModifiers mods = { mod_masks[i] | priv->modifiers, 0 };
@@ -119,7 +118,7 @@ static void
 g_paste_keybinding_change_grab (GPasteKeybinding *self,
                                 gboolean          grab)
 {
-    GdkDisplay *display = self->display;
+    GdkDisplay *display = gdk_display_get_default ();;
 
 #ifdef GDK_WINDOWING_WAYLAND
     if (GDK_IS_WAYLAND_DISPLAY (display))
@@ -128,7 +127,7 @@ g_paste_keybinding_change_grab (GPasteKeybinding *self,
 #endif
 #ifdef GDK_WINDOWING_X11
     if (GDK_IS_X11_DISPLAY (display))
-        g_paste_keybinding_change_grab_x11 (self, grab);
+        g_paste_keybinding_change_grab_x11 (self, GDK_DISPLAY_XDISPLAY (display), grab);
     else
 #endif
         g_error ("Unsupported GDK backend.");
@@ -303,7 +302,7 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
-    GdkDisplay *display = self->display;
+    GdkDisplay *display = gdk_display_get_default ();
     GdkModifierType modifiers;
     guint keycode = 0;
 
@@ -366,9 +365,8 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 {
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
-    GdkDisplay *display = self->display = gdk_display_get_default ();
+    GdkDisplay *display = gdk_display_get_default ();
 
-    priv->window = gdk_get_default_root_window ();
     priv->active = FALSE;
 
 #ifdef GDK_WINDOWING_X11

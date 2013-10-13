@@ -23,11 +23,7 @@
 
 struct _GPasteKeybinderPrivate
 {
-    GSList     *keybindings;
-    GSList     *keyboards;
-
-    /* TODO: share with keybindings */
-    GdkWindow  *window;
+    GSList    *keybindings;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
@@ -121,8 +117,14 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 {
     GPasteKeybinderPrivate *priv = data;
 
-    for (GSList *keyboard = priv->keyboards; keyboard; keyboard = g_slist_next (keyboard))
-        gdk_device_ungrab (keyboard->data, GDK_CURRENT_TIME);
+    for (GList *dev = gdk_device_manager_list_devices (gdk_display_get_device_manager (gdk_display_get_default ()),
+                                                       GDK_DEVICE_TYPE_MASTER); dev; dev = g_list_next (dev))
+    {
+        GdkDevice *device = dev->data;
+
+        if (gdk_device_get_source (device) == GDK_SOURCE_KEYBOARD)
+            gdk_device_ungrab (device, GDK_CURRENT_TIME);
+    }
 
     gdk_flush ();
 
@@ -157,7 +159,7 @@ g_paste_keybinder_finalize (GObject *object)
 {
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (G_PASTE_KEYBINDER (object));
 
-    gdk_window_remove_filter (priv->window,
+    gdk_window_remove_filter (gdk_get_default_root_window (),
                               g_paste_keybinder_filter,
                               priv);
 
@@ -177,21 +179,10 @@ static void
 g_paste_keybinder_init (GPasteKeybinder *self)
 {
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
-    GdkWindow *window = priv->window = gdk_get_default_root_window ();
 
     priv->keybindings = NULL;
-    priv->keyboards = NULL;
 
-    for (GList *dev = gdk_device_manager_list_devices (gdk_display_get_device_manager (gdk_display_get_default ()),
-                                                       GDK_DEVICE_TYPE_MASTER); dev; dev = g_list_next (dev))
-    {
-        GdkDevice *device = dev->data;
-
-        if (gdk_device_get_source (device) == GDK_SOURCE_KEYBOARD)
-            priv->keyboards = g_slist_prepend (priv->keyboards, device);
-    }
-
-    gdk_window_add_filter (window,
+    gdk_window_add_filter (gdk_get_default_root_window (),
                            g_paste_keybinder_filter,
                            priv);
 }

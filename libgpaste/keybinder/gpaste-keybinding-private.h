@@ -29,9 +29,6 @@ typedef struct _GPasteKeybindingPrivate GPasteKeybindingPrivate;
 struct _GPasteKeybinding
 {
     GObject parent_instance;
-
-    /*< protected >*/
-    GdkDisplay *display;
 };
 
 struct _GPasteKeybindingClass
