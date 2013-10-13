@@ -245,7 +245,6 @@ g_paste_daemon_do_add (GPasteDaemon *self,
         GPasteItem *item = g_paste_text_item_new (g_paste_settings_get_trim_items (settings) ? stripped : text);
         g_paste_history_add (priv->history, item);
         g_paste_clipboards_manager_select (priv->clipboards_manager, item);
-        g_object_unref (item);
     }
     g_free (text);
     g_free (stripped);

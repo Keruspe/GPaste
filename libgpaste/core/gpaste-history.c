@@ -169,7 +169,7 @@ g_paste_history_check_size (GPasteHistory *self)
 /**
  * g_paste_history_add:
  * @self: a #GPasteHistory instance
- * @item: (transfer none): the #GPasteItem to add
+ * @item: (transfer full): the #GPasteItem to add
  *
  * Add a #GPasteItem to the #GPasteHistory
  *
@@ -226,7 +226,7 @@ g_paste_history_add (GPasteHistory *self,
         ++priv->biggest_index;
     }
 
-    history = priv->history = g_slist_prepend (priv->history, g_object_ref (item));
+    history = priv->history = g_slist_prepend (priv->history, item);
 
     g_paste_item_set_state (item, G_PASTE_ITEM_STATE_ACTIVE);
     priv->size += g_paste_item_get_size (item);
@@ -373,7 +373,6 @@ g_paste_history_select (GPasteHistory *self,
 
     g_paste_history_add (self, item);
     g_paste_history_selected (self, item);
-    g_object_unref (item);
 }
 
 /**
