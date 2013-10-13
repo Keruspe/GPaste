@@ -124,6 +124,8 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
     for (GSList *keyboard = priv->keyboards; keyboard; keyboard = g_slist_next (keyboard))
         gdk_device_ungrab (keyboard->data, GDK_CURRENT_TIME);
 
+    gdk_flush ();
+
     for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
     {
         GPasteKeybinding *real_keybinding = keybinding->data;
