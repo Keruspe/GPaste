@@ -68,9 +68,13 @@ g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
 
     guint mod_masks [] = {
         0, /* modifier only */
-        GDK_MOD2_MASK,
-        GDK_LOCK_MASK,
+        GDK_MOD2_MASK, /* NumLock */
+        GDK_MOD5_MASK, /* ScrollLock */
+        GDK_LOCK_MASK, /* CapsLock */
+        GDK_MOD2_MASK | GDK_MOD5_MASK,
         GDK_MOD2_MASK | GDK_LOCK_MASK,
+        GDK_MOD5_MASK | GDK_LOCK_MASK,
+        GDK_MOD2_MASK | GDK_MOD5_MASK | GDK_LOCK_MASK,
     };
 
     Display *display = GDK_DISPLAY_XDISPLAY (self->display);
