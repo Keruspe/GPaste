@@ -21,10 +21,6 @@
 
 #include <gdk/gdk.h>
 
-#ifdef GDK_WINDOWING_X11
-#  include <X11/extensions/XIproto.h>
-#endif
-
 struct _GPasteKeybinderPrivate
 {
     GSList     *keybindings;
