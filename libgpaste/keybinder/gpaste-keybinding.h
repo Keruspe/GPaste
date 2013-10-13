@@ -23,13 +23,6 @@
 #include <gpaste-settings.h>
 
 #include <gdk/gdk.h>
-#ifdef GDK_WINDOWING_WAYLAND
-#  include <gdk/gdkwayland.h>
-#endif
-#ifdef GDK_WINDOWING_X11
-#  include <gdk/gdkx.h>
-#  include <X11/extensions/XInput2.h>
-#endif
 
 G_BEGIN_DECLS
 
@@ -42,9 +35,10 @@ G_BEGIN_DECLS
 
 typedef struct _GPasteKeybinding GPasteKeybinding;
 typedef struct _GPasteKeybindingClass GPasteKeybindingClass;
+
 typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
-typedef void  (*GPasteKeybindingFunc) (GPasteKeybinding *self, /* FIXME: g-i */
-                                       gpointer          data);
+typedef void         (*GPasteKeybindingFunc) (GPasteKeybinding *self, /* FIXME: g-i */
+                                              gpointer          data);
 
 G_PASTE_VISIBLE
 GType g_paste_keybinding_get_type (void);

@@ -21,8 +21,12 @@
 
 #include "gpaste-clipboard-common.h"
 
+#ifdef GDK_WINDOWING_WAYLAND
+#  include <gdk/gdkwayland.h>
+#endif
 #ifdef GDK_WINDOWING_X11
-#include <X11/extensions/XTest.h>
+#  include <gdk/gdkx.h>
+#  include <X11/extensions/XTest.h>
 #endif
 
 #define PASTE_AND_POP_WATCH_CLIPBOARD(clipboard)                     \
