@@ -201,10 +201,8 @@ static void
 g_paste_daemon_list_histories (GDBusConnection       *connection,
                                GDBusMethodInvocation *invocation)
 {
-    GStrv history_names = g_paste_history_list (NULL);
+    G_PASTE_CLEANUP_STRFREEV GStrv history_names = g_paste_history_list (NULL);
     GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
-
-    g_strfreev (history_names);
 
     g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));
 }

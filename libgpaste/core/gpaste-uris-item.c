@@ -138,7 +138,7 @@ g_paste_uris_item_new (const gchar *uris)
 
     g_paste_item_set_display_string (self, full_display_string);
 
-    GStrv paths = g_strsplit (uris, "\n", 0);
+    G_PASTE_CLEANUP_STRFREEV GStrv paths = g_strsplit (uris, "\n", 0);
     guint length = g_strv_length (paths);
 
     self->size += length + 1;
@@ -150,7 +150,6 @@ g_paste_uris_item_new (const gchar *uris)
         self->size += strlen (_uris[i]) + 1;
     }
     _uris[length] = NULL;
-    g_strfreev (paths);
 
     return self;
 }

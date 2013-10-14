@@ -67,7 +67,7 @@ show_history (GPasteClient *client,
               gboolean      zero,
               GError      **error)
 {
-    GStrv history = g_paste_client_get_history (client, error);
+    G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history (client, error);
 
     if (!*error)
     {
@@ -79,8 +79,6 @@ show_history (GPasteClient *client,
                 printf ("%d: ", i++);
             printf ("%s%c", *h, (zero) ? '\0' : '\n');
         }
-
-        g_strfreev (history);
     }
 }
 
@@ -222,12 +220,11 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "lh") ||
                      !g_strcmp0 (arg1, "list-histories"))
             {
-                GStrv histories = g_paste_client_list_histories (client, &error);
+                G_PASTE_CLEANUP_STRFREEV GStrv histories = g_paste_client_list_histories (client, &error);
                 if (!error)
                 {
                     for (GStrv h = histories; *h; ++h)
                         printf ("%s\n", *h);
-                    g_strfreev (histories);
                 }
             }
             else
