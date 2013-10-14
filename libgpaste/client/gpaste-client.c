@@ -107,7 +107,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_GET_PROPERTY(property, ans_type, variant_type, _default)                               \
     GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                         \
     G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_get_cached_property (priv->proxy, \
-                                                         property);                                 \
+                                                                                       property);   \
     if (!result)                                                                                    \
         return _default;                                                                            \
     ans_type answer = g_variant_get_##variant_type (result);                                        \
@@ -479,7 +479,7 @@ g_paste_client_init (GPasteClient *self)
 {
     GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);
 
-    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE_INFO,
+    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE,
                                                                    NULL); /* Error */
 
     priv->connection_error = NULL;

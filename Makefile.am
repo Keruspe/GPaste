@@ -50,6 +50,7 @@ AM_CFLAGS = \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/client \
+	-I$(srcdir)/libgpaste/gnome-shell-client \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
@@ -93,6 +94,7 @@ nodist_systemduserunit_DATA =
 
 include libgpaste/common.mk
 include libgpaste/settings.mk
+include libgpaste/gnome-shell-client.mk
 include libgpaste/keybinder.mk
 include libgpaste/core.mk
 include libgpaste/client.mk

@@ -1,0 +1,11 @@
+LIBGPASTE_CLIENT_1 {
+global:
+    g_paste_gnome_shell_client_get_type;
+    g_paste_gnome_shell_client_get_mode;
+    g_paste_gnome_shell_client_overview_is_active;
+    g_paste_gnome_shell_client_get_shell_version;
+    g_paste_gnome_shell_client_overview_set_active;
+    g_paste_gnome_shell_client_new;
+local:
+    *;
+};
