@@ -91,7 +91,7 @@ paste_and_pop_clear_clipboard_data (GtkClipboard *clipboard          G_GNUC_UNUS
 static void
 ask_for_paste_wayland (void)
 {
-    g_error ("Wayland is currently not supported.");
+    g_error ("Wayland is currently not supported outside of gnome-shell.");
 }
 #endif
 
@@ -123,7 +123,7 @@ ask_for_paste(GdkDisplay *display)
         ask_for_paste_x11 (GDK_DISPLAY_XDISPLAY (display));
     else
 #endif
-        g_warning ("Unsupported GDK backend.");
+        g_warning ("Unsupported GDK backend, keybinder won't work.");
 }
 
 static void

@@ -47,7 +47,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 static void
 g_paste_keybinding_change_grab_wayland (void)
 {
-    g_error ("Wayland is currently not supported.");
+    g_error ("Wayland is currently not supported outside of gnome-shell.");
 }
 #endif
 
@@ -128,7 +128,7 @@ g_paste_keybinding_change_grab (GPasteKeybinding *self,
         g_paste_keybinding_change_grab_x11 (self, GDK_DISPLAY_XDISPLAY (display), grab);
     else
 #endif
-        g_warning ("Unsupported GDK backend.");
+        g_warning ("Unsupported GDK backend, keybinder won't work.");
 }
 
 /**
@@ -217,7 +217,7 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 static void
 g_paste_keybinding_parse_event_wayland (void)
 {
-    g_error ("Wayland is currently not supported.");
+    g_error ("Wayland is currently not supported outside of gnome-shell.");
 }
 #endif
 
@@ -314,7 +314,7 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
         g_paste_keybinding_parse_event_x11 ((XEvent *) xevent, &modifiers, &keycode);
     else
 #endif
-        g_warning ("Unsupported GDK backend.");
+        g_warning ("Unsupported GDK backend, keybinder won't work.");
 
     if (keycode && g_paste_keybinding_private_match (priv, modifiers, keycode))
         priv->callback (self, priv->user_data);
