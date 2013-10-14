@@ -57,11 +57,10 @@ G_BEGIN_DECLS
 
 #define G_PASTE_CLEANUP_FUN_WITH_ARG(name, type, fun, arg) \
     static inline void                                     \
-    g_paste_##name##_ptr (gpointer ptr)                    \
+    g_paste_##name##_ptr (type *ptr)                       \
     {                                                      \
-        type *_ptr = ptr;                                  \
-        if (*_ptr)                                         \
-            fun (*_ptr, arg);                              \
+        if (*ptr)                                          \
+            fun (*ptr, arg);                               \
     }
 
 static inline void
@@ -70,12 +69,19 @@ g_paste_free_ptr (gpointer ptr)
     g_free (*((gpointer *) ptr));
 }
 
+static inline void
+g_paste_unref_ptr (gpointer ptr)
+{
+    GObject **object = ptr;
+    if (*object)
+        g_object_unref (*object);
+}
+
 #define G_PASTE_BOXED_FREE_REV(box, type) g_boxed_free (type, box)
 
 G_PASTE_TRIVIAL_CLEANUP_FUN  (error_free,    GError *,           g_error_free)
 G_PASTE_TRIVIAL_CLEANUP_FUN  (select_free,   GtkSelectionData *, gtk_selection_data_free)
 G_PASTE_TRIVIAL_CLEANUP_FUN  (strfreev,      GStrv,              g_strfreev)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (unref,         GObject *,          g_object_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN  (date_unref,    GDateTime *,        g_date_time_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN  (loop_unref,    GMainLoop *,        g_main_loop_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN  (regex_unref,   GRegex *,           g_regex_unref)
