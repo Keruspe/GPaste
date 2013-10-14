@@ -6,7 +6,7 @@
 
 future:
     all:
-        use __cleanup__
+        cleanup disconnect ?
     gpaste:
         GSubProcess
     libgpaste-client:
