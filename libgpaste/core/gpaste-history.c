@@ -412,20 +412,17 @@ g_paste_history_replace (const gchar *text,
                          const gchar *substitution)
 {
     G_PASTE_CLEANUP_FREE gchar *regex_string = g_regex_escape_string (pattern, -1);
-    GRegex *regex = g_regex_new (regex_string,
-                                 0, /* Compile options */
-                                 0, /* Match options */
-                                 NULL); /* Error */
-    gchar *encoded_text = g_regex_replace_literal (regex,
-                                                   text,
-                                                   (gssize) -1,
-                                                   0, /* Start position */
-                                                   substitution,
-                                                   0, /* Match options */
-                                                   NULL); /* Error */
-    g_regex_unref (regex);
-
-    return encoded_text;
+    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (regex_string,
+                                                             0, /* Compile options */
+                                                             0, /* Match options */
+                                                             NULL); /* Error */
+    return g_regex_replace_literal (regex,
+                                    text,
+                                    (gssize) -1,
+                                    0, /* Start position */
+                                    substitution,
+                                    0, /* Match options */
+                                    NULL); /* Error */
 }
 
 static gchar *

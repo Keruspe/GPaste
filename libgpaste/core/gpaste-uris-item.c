@@ -107,10 +107,10 @@ g_paste_uris_item_new (const gchar *uris)
     GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
 
     G_PASTE_CLEANUP_FREE gchar *home_escaped = g_regex_escape_string (g_get_home_dir (), -1);
-    GRegex *regex = g_regex_new (home_escaped,
-                                 0, /* Compile options */
-                                 0, /* Match options */
-                                 NULL); /* Error */
+    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (home_escaped,
+                                                             0, /* Compile options */
+                                                             0, /* Match options */
+                                                             NULL); /* Error */
     G_PASTE_CLEANUP_FREE gchar *display_string_with_newlines = g_regex_replace_literal (regex,
                                                                                         uris,
                                                                                         (gssize) -1,
@@ -118,12 +118,10 @@ g_paste_uris_item_new (const gchar *uris)
                                                                                         "~",
                                                                                         0, /* Match options */
                                                                                         NULL); /* Error */
-    g_regex_unref (regex);
-
-    regex = g_regex_new ("\\n",
-                         0, /* Compile options */
-                         0, /* Match options */
-                         NULL); /* Error */
+    G_PASTE_CLEANUP_REGEX_UNREF GRegex *_regex = g_regex_new ("\\n",
+                                                              0, /* Compile options */
+                                                              0, /* Match options */
+                                                              NULL); /* Error */
     G_PASTE_CLEANUP_FREE gchar *display_string = g_regex_replace_literal (regex,
                                                                           display_string_with_newlines,
                                                                           (gssize) -1,
@@ -131,7 +129,6 @@ g_paste_uris_item_new (const gchar *uris)
                                                                           " ",
                                                                           0, /* Match options */
                                                                           NULL); /* Error */
-    g_regex_unref (regex);
 
     // This is the prefix displayed in history to identify selected files
     G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);

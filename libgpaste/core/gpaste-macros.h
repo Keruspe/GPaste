@@ -37,6 +37,7 @@ G_BEGIN_DECLS
 #define G_PASTE_CLEANUP_ERROR_FREE    G_PASTE_CLEANUP (g_paste_error_free_ptr)
 #define G_PASYE_CLEANUP_STRFREEV      G_PASTE_CLEANUP (g_paste_strfreev_ptr)
 #define G_PASTE_CLEANUP_UNREF         G_PASTE_CLEANUP (g_paste_unref_ptr)
+#define G_PASTE_CLEANUP_REGEX_UNREF   G_PASTE_CLEANUP (g_paste_regex_unref_ptr)
 #define G_PASTE_CLEANUP_VARIANT_UNREF G_PASTE_CLEANUP (g_paste_variant_unref_ptr)
 
 #define G_PASTE_TRIVIAL_CLEANUP_FUN(name, type, fun) \
@@ -57,6 +58,7 @@ g_paste_free_ptr (gpointer ptr)
 G_PASTE_TRIVIAL_CLEANUP_FUN (error_free,    GError,   g_error_free)
 G_PASTE_TRIVIAL_CLEANUP_FUN (strfreev,      GStrv,    g_strfreev)
 G_PASTE_TRIVIAL_CLEANUP_FUN (unref,         GObject,  g_object_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (regex_unref,   GRegex,   g_regex_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN (variant_unref, GVariant, g_variant_unref)
 
 G_END_DECLS
