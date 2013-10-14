@@ -34,6 +34,7 @@ G_BEGIN_DECLS
 #define G_PASTE_CLEANUP(fun) __attribute__((cleanup(fun)))
 
 #define G_PASTE_CLEANUP_FREE          G_PASTE_CLEANUP (g_paste_free_ptr)
+#define G_PASTE_CLEANUP_ERROR_FREE    G_PASTE_CLEANUP (g_paste_error_free_ptr)
 #define G_PASTE_CLEANUP_UNREF         G_PASTE_CLEANUP (g_paste_unref_ptr)
 #define G_PASTE_CLEANUP_VARIANT_UNREF G_PASTE_CLEANUP (g_paste_variant_unref_ptr)
 
@@ -52,6 +53,7 @@ g_paste_free_ptr (gpointer ptr)
     g_free (*((gpointer *) ptr));
 }
 
+G_PASTE_TRIVIAL_CLEANUP_FUN (error_free, GError, g_error_free)
 G_PASTE_TRIVIAL_CLEANUP_FUN (unref, GObject, g_object_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN (variant_unref, GVariant, g_variant_unref)
 

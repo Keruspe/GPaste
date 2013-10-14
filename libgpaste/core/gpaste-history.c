@@ -491,20 +491,21 @@ g_paste_history_save (GPasteHistory *self)
     G_PASTE_CLEANUP_UNREF GFile *history_dir = g_paste_history_get_history_dir ();
     G_PASTE_CLEANUP_FREE gchar *history_file_path = NULL;
     G_PASTE_CLEANUP_UNREF GFile *history_file = NULL;
-    GError *error = NULL;
 
     if (!g_file_query_exists (history_dir,
                               NULL)) /* cancellable */
     {
         if (!save_history)
             return;
+
+        G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+
         g_file_make_directory_with_parents (history_dir,
                                             NULL, /* cancellable */
                                             &error);
-        if (error != NULL)
+        if (error)
         {
             g_error ("%s: %s", _("Could not create history dir"), error->message);
-            g_error_free (error);
             return;
         }
     }

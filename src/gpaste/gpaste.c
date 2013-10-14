@@ -105,7 +105,6 @@ static void
 failure_exit (GError *error)
 {
     g_error ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
-    g_error_free (error);
     exit (EXIT_FAILURE);
 }
 
@@ -129,7 +128,7 @@ main (gint argc, gchar *argv[])
 
     int status = EXIT_SUCCESS;
 
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new (&error);
 
     if (!client)

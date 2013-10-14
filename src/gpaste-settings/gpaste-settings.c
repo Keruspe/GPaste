@@ -80,7 +80,7 @@ main (gint argc, gchar *argv[])
     
     GtkApplication *app = gtk_application_new ("org.gnome.GPaste.Settings", G_APPLICATION_FLAGS_NONE);
     GApplication *gapp = G_APPLICATION (app);
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
     G_APPLICATION_GET_CLASS (gapp)->activate = NULL;
     g_application_register (gapp, NULL, &error);
@@ -88,7 +88,7 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);
-        g_error_free (error);
+
         return EXIT_FAILURE;
     }
 

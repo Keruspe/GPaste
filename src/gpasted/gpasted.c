@@ -134,7 +134,7 @@ main (gint argc, gchar *argv[])
     main_loop = g_main_loop_new (NULL, FALSE);
 
     gint exit_status = EXIT_SUCCESS;
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     if (g_paste_daemon_own_bus_name (g_paste_daemon, &error))
     {
         g_main_loop_run (main_loop);
@@ -142,7 +142,6 @@ main (gint argc, gchar *argv[])
     else
     {
         g_error ("%s: %s\n", _("Could not register DBus service."), error->message);
-        g_error_free (error);
         exit_status = EXIT_FAILURE;
     }
 

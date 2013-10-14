@@ -244,14 +244,13 @@ g_paste_settings_ui_check_connection_error (GError *error)
         return FALSE;
 
     fprintf (stderr, "%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
-    g_error_free (error);
     return TRUE;
 }
 
 static void
 g_paste_settings_ui_stack_private_refill_histories (GPasteSettingsUiStackPrivate *priv)
 {
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     GStrv histories = g_paste_client_list_histories (priv->client, &error);
 
     if (g_paste_settings_ui_check_connection_error (error))
@@ -279,7 +278,7 @@ backup_callback (const gchar *value,
                  gpointer     user_data)
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
     g_paste_client_backup_history (priv->client, value, &error);
 
@@ -296,7 +295,7 @@ targets_callback (const gchar *action,
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
     GPasteClient *client = priv->client;
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
     if (!g_strcmp0 (action, "switch"))
         g_paste_client_switch_history (client, target, &error);
