@@ -73,17 +73,17 @@ main (gint argc, gchar *argv[])
 
     gtk_init (&argc, &argv);
 
-    GPasteSettings *settings = g_paste_settings_new ();
-    GPasteHistory *history = g_paste_history_new (settings);
-    GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
+    G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
+    G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
+    G_PASTE_CLEANUP_UNREF GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
 #ifdef ENABLE_X_KEYBINDER
-    GPasteKeybinder *keybinder = g_paste_keybinder_new ();
+    G_PASTE_CLEANUP_UNREF GPasteKeybinder *keybinder = g_paste_keybinder_new ();
 #else
     gpointer keybinder = NULL;
 #endif
-    GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
-    GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
-    GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
+    G_PASTE_CLEANUP_UNREF GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
+    G_PASTE_CLEANUP_UNREF GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
+    G_PASTE_CLEANUP_UNREF GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
 #ifdef ENABLE_X_KEYBINDER
     GPasteKeybinding *keybindings[] = {
@@ -123,14 +123,6 @@ main (gint argc, gchar *argv[])
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
-    g_object_unref (history);
-    g_object_unref (clipboards_manager);
-#ifdef ENABLE_X_KEYBINDER
-    g_object_unref (keybinder);
-#endif
-    g_object_unref (clipboard);
-    g_object_unref (primary);
-
 #ifdef ENABLE_X_KEYBINDER
     for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
         g_object_unref (keybindings[k]);
@@ -156,8 +148,6 @@ main (gint argc, gchar *argv[])
 
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
-    g_object_unref (settings);
-    g_object_unref (g_paste_daemon);
     g_main_loop_unref (main_loop);
 
     return exit_status;

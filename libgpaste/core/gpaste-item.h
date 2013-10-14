@@ -26,8 +26,6 @@
 
 #include <gpaste-macros.h>
 
-#include <glib-object.h>
-
 G_BEGIN_DECLS
 
 typedef enum {

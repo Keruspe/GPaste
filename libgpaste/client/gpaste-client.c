@@ -455,7 +455,7 @@ g_paste_client_dispose (GObject *object)
         if (proxy)
         {
             g_signal_handler_disconnect (proxy, priv->g_signal);
-            g_object_unref (proxy);
+            g_clear_object (&priv->proxy);
         }
         g_dbus_node_info_unref (g_paste_daemon_dbus_info);
         priv->g_paste_daemon_dbus_info = NULL;

@@ -130,7 +130,7 @@ main (gint argc, gchar *argv[])
     int status = EXIT_SUCCESS;
 
     GError *error = NULL;
-    GPasteClient *client = g_paste_client_new (&error);
+    G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new (&error);
 
     if (!client)
         failure_exit (error);
@@ -293,8 +293,6 @@ main (gint argc, gchar *argv[])
             break;
         }
     }
-
-    g_object_unref (client);
 
     if (error)
         failure_exit (error);

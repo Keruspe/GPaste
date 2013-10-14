@@ -206,18 +206,14 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             else if (g_paste_settings_get_images_support (settings) && gtk_selection_data_targets_include_image (targets, FALSE))
             {
                 /* Update our cache from the real Clipboard */
-                GdkPixbuf *image = g_paste_clipboard_set_image (clip);
+                G_PASTE_CLEANUP_UNREF GdkPixbuf *image = g_paste_clipboard_set_image (clip);
 
                 /* Did we already have some contents, or did we get some now? */
                 something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clip);
 
                 /* If our contents got updated */
-                if (image)
-                {
-                    if (track)
-                        item = G_PASTE_ITEM (g_paste_image_item_new (image));
-                    g_object_unref (image);
-                }
+                if (image && track)
+                    item = G_PASTE_ITEM (g_paste_image_item_new (image));
             }
 
             if (item)

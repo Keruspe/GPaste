@@ -95,7 +95,7 @@ g_paste_daemon_send_dbus_reply (GDBusConnection       *connection,
                                 GDBusMethodInvocation *invocation,
                                 GVariant              *reply)
 {
-    GDBusMessage *reply_message = g_dbus_message_new_method_reply (g_dbus_method_invocation_get_message (invocation));
+    G_PASTE_CLEANUP_UNREF GDBusMessage *reply_message = g_dbus_message_new_method_reply (g_dbus_method_invocation_get_message (invocation));
 
     if (!reply)
         reply = g_variant_new_tuple (NULL, 0);
@@ -106,7 +106,6 @@ g_paste_daemon_send_dbus_reply (GDBusConnection       *connection,
                                     G_DBUS_SEND_MESSAGE_FLAGS_NONE,
                                     NULL, /* out serial */
                                     NULL); /* error */
-    g_object_unref (reply_message);
 }
 
 static void
@@ -500,7 +499,7 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
 static void
 g_paste_daemon_unregister_object (gpointer user_data)
 {
-    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
+    G_PASTE_CLEANUP_UNREF GPasteDaemon *self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     gulong *c_signals = priv->c_signals;
 
@@ -508,8 +507,6 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_CHANGED]);
-
-    g_object_unref (self);
 }
 
 static void
@@ -532,7 +529,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                             g_paste_daemon_unregister_object,
                                             &priv->inner_error))
     {
-            return;
+        return;
     }
 
     gulong *c_signals = priv->c_signals;

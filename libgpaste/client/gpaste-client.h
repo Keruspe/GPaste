@@ -22,8 +22,6 @@
 
 #include <gpaste-macros.h>
 
-#include <glib-object.h>
-
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_CLIENT            (g_paste_client_get_type ())
