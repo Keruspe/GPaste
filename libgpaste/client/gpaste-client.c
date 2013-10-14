@@ -70,50 +70,47 @@ static guint signals[LAST_SIGNAL] = { 0 };
         &parameter, 1,                                                 \
         fail,                                                          \
         GVariant *parameter = g_variant_new_##param_type (param_name))
-#define DBUS_CALL_WITH_RETURN(method, param, n_param, ans_type, variant_type, fail, decl) \
-    DBUS_CALL_FULL(method,                                                                \
-        param, n_param,                                                                   \
-        GVariantIter result_iter;                                                         \
-        g_variant_iter_init (&result_iter, result);                                       \
-        GVariant *variant = g_variant_iter_next_value (&result_iter);                     \
-        ans_type answer = g_variant_dup_##variant_type (variant,                          \
-                                                        NULL); /* length */               \
-        g_variant_unref (variant),                                                        \
-        fail, decl,                                                                       \
-        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL),                            \
+#define DBUS_CALL_WITH_RETURN(method, param, n_param, ans_type, variant_type, fail, decl)           \
+    DBUS_CALL_FULL(method,                                                                          \
+        param, n_param,                                                                             \
+        GVariantIter result_iter;                                                                   \
+        g_variant_iter_init (&result_iter, result);                                                 \
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&result_iter); \
+        ans_type answer = g_variant_dup_##variant_type (variant,                                    \
+                                                        NULL) /* length */,                         \
+        fail, decl,                                                                                 \
+        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL),                                      \
         return answer)
-#define DBUS_CALL_NO_RETURN(method, param, n_param, fail, decl) \
+#define DBUS_CALL_NO_RETURN(method, param, n_param, fail, decl)                         \
     DBUS_CALL_FULL(method,                                                              \
         param, n_param,                                                                 \
         {},                                                                             \
         ;, decl,                                                                        \
         g_return_if_fail (G_PASTE_IS_CLIENT (self)),                                    \
         {})
-#define DBUS_CALL_FULL(method, param, n_param, extract_answer, fail, decl, guard, return_stmt) \
-    guard;                                                                                     \
-    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                    \
-    decl;                                                                                      \
-    GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                                    \
-                                               G_PASTE_GDBUS_##method,                         \
-                                               g_variant_new_tuple (param, n_param),           \
-                                               G_DBUS_CALL_FLAGS_NONE,                         \
-                                               -1,                                             \
-                                               NULL, /* cancellable */                         \
-                                               error);                                         \
-    if (!result)                                                                               \
-        return fail;                                                                           \
-    extract_answer;                                                                            \
-    g_variant_unref (result);                                                                  \
+#define DBUS_CALL_FULL(method, param, n_param, extract_answer, fail, decl, guard, return_stmt)                     \
+    guard;                                                                                                         \
+    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                                        \
+    decl;                                                                                                          \
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                          \
+                                                                             G_PASTE_GDBUS_##method,               \
+                                                                             g_variant_new_tuple (param, n_param), \
+                                                                             G_DBUS_CALL_FLAGS_NONE,               \
+                                                                             -1,                                   \
+                                                                             NULL, /* cancellable */               \
+                                                                             error);                               \
+    if (!result)                                                                                                   \
+        return fail;                                                                                               \
+    extract_answer;                                                                                                \
     return_stmt
 
-#define DBUS_GET_PROPERTY(property, ans_type, variant_type, _default)       \
-    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self); \
-    GVariant *result = g_dbus_proxy_get_cached_property (priv->proxy,       \
-                                                         property);         \
-    if (!result)                                                            \
-        return _default;                                                    \
-    ans_type answer = g_variant_get_##variant_type (result);                \
-    g_variant_unref (result);                                               \
+#define DBUS_GET_PROPERTY(property, ans_type, variant_type, _default)                               \
+    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                         \
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_get_cached_property (priv->proxy, \
+                                                         property);                                 \
+    if (!result)                                                                                    \
+        return _default;                                                                            \
+    ans_type answer = g_variant_get_##variant_type (result);                                        \
     return answer
 
 #define HANDLE_SIGNAL(sig)                                 \
@@ -124,19 +121,18 @@ static guint signals[LAST_SIGNAL] = { 0 };
                        0, /* detail */                     \
                        NULL);                              \
     }
-#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)          \
-    if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig))            \
-    {                                                                 \
-        GVariantIter params_iter;                                     \
-        g_variant_iter_init (&params_iter, parameters);               \
-        GVariant *variant = g_variant_iter_next_value (&params_iter); \
-        ans_type answer = g_variant_get_##variant_type (variant);     \
-        g_variant_unref (variant);                                    \
-        g_signal_emit (self,                                          \
-                       signals[sig],                                  \
-                       0, /* detail */                                \
-                       answer,                                        \
-                       NULL);                                         \
+#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)                                        \
+    if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig))                                          \
+    {                                                                                               \
+        GVariantIter params_iter;                                                                   \
+        g_variant_iter_init (&params_iter, parameters);                                             \
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&params_iter); \
+        ans_type answer = g_variant_get_##variant_type (variant);                                   \
+        g_signal_emit (self,                                                                        \
+                       signals[sig],                                                                \
+                       0, /* detail */                                                              \
+                       answer,                                                                      \
+                       NULL);                                                                       \
     }
 
 #define NEW_SIGNAL(name)                         \

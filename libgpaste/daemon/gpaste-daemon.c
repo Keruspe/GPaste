@@ -134,12 +134,8 @@ g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    GVariant *variant = g_variant_iter_next_value (&parameters_iter);
-    gchar *value = g_variant_dup_string (variant, length);
-
-    g_variant_unref (variant);
-
-    return value;
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    return g_variant_dup_string (variant, length);
 }
 
 static void
@@ -278,12 +274,8 @@ g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    GVariant *variant = g_variant_iter_next_value (&parameters_iter);
-    guint32 value = g_variant_get_uint32 (variant);
-
-    g_variant_unref (variant);
-
-    return value;
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    return g_variant_get_uint32 (variant);
 }
 
 static void
@@ -396,10 +388,8 @@ g_paste_daemon_track (GPasteDaemon *self,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
     gboolean tracking_state = g_variant_get_boolean (variant);
-
-    g_variant_unref (variant);
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
