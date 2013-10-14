@@ -5,8 +5,9 @@
     wayland support
 
 future:
-    all:
-        cleanup disconnect ?
+    cleanup:
+        g_signal_handler_disconnect
+        gtk_target_table_free
     gpaste:
         GSubProcess
     libgpaste-client:
