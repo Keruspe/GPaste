@@ -850,10 +850,9 @@ g_paste_history_list (GError **error)
     if (error)
         return NULL;
 
-    GStrv ret = NULL;
-    GArray *history_names = g_array_new (TRUE, /* zero-terminated */
-                                         TRUE, /* clear */
-                                         sizeof (gchar *));
+    G_PASTE_CLEANUP_ARRAY_FREE GArray *history_names = g_array_new (TRUE, /* zero-terminated */
+                                                                    TRUE, /* clear */
+                                                                    sizeof (gchar *));
     GFileInfo *history;
 
     while ((history = g_file_enumerator_next_file (histories,
@@ -861,7 +860,7 @@ g_paste_history_list (GError **error)
                                                    error))) /* error */
     {
         if (error)
-            goto file_err;
+            return NULL;
 
         const gchar *raw_name = g_file_info_get_display_name (history);
 
@@ -875,11 +874,5 @@ g_paste_history_list (GError **error)
         }
     }
 
-    ret = (GStrv) history_names->data;
-
-file_err:
-    g_array_free (history_names,
-                  FALSE); /* free_segment */
-
-    return ret;
+    return (GStrv) history_names->data;
 }

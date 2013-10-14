@@ -33,6 +33,7 @@ G_BEGIN_DECLS
 #define G_PASTE_CLEANUP(fun) __attribute__((cleanup(fun)))
 
 #define G_PASTE_CLEANUP_FREE          G_PASTE_CLEANUP (g_paste_free_ptr)
+#define G_PASTE_CLEANUP_ARRAY_FREE    G_PASTE_CLEANUP (g_paste_array_free_ptr)
 #define G_PASTE_CLEANUP_ERROR_FREE    G_PASTE_CLEANUP (g_paste_error_free_ptr)
 #define G_PASTE_CLEANUP_STRING_FREE   G_PASTE_CLEANUP (g_paste_string_free_ptr)
 #define G_PASTE_CLEANUP_STRFREEV      G_PASTE_CLEANUP (g_paste_strfreev_ptr)
@@ -76,6 +77,7 @@ G_PASTE_TRIVIAL_CLEANUP_FUN  (regex_unref,   GRegex *,        g_regex_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN  (targets_unref, GtkTargetList *, gtk_target_list_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN  (variant_unref, GVariant *,      g_variant_unref)
 
+G_PASTE_CLEANUP_FUN_WITH_ARG (array_free,    GArray *,        g_array_free,  FALSE)
 G_PASTE_CLEANUP_FUN_WITH_ARG (string_free,   GString *,       g_string_free, TRUE)
 
 G_END_DECLS
