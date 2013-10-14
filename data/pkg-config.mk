@@ -22,7 +22,6 @@ SUFFIXES += .pc.in .pc
 	    -e 's,[@]libdir[@],$(libdir),g' \
 	    -e 's,[@]includedir[@],$(includedir),g' \
 	    -e 's,[@]VERSION[@],$(VERSION),g' \
-	    -e 's,[@]KEYBINDER_DEFINES[@],$(KEYBINDER_DEFINES),g' \
 	    < $< > $@
 
 pkgconfigdir = $(libdir)/pkgconfig

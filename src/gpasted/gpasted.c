@@ -80,16 +80,11 @@ main (gint argc, gchar *argv[])
     G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
     G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
-#ifdef ENABLE_X_KEYBINDER
     G_PASTE_CLEANUP_UNREF GPasteKeybinder *keybinder = g_paste_keybinder_new ();
-#else
-    gpointer keybinder = NULL;
-#endif
     G_PASTE_CLEANUP_UNREF GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     G_PASTE_CLEANUP_UNREF GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
-#ifdef ENABLE_X_KEYBINDER
     GPasteKeybinding *keybindings[] = {
         g_paste_paste_and_pop_keybinding_new (settings,
                                               history,
@@ -101,7 +96,6 @@ main (gint argc, gchar *argv[])
         g_paste_sync_primary_to_clipboard_keybinding_new (settings,
                                                           clipboards_manager)
     };
-#endif
 
     G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *main_loop = loop = g_main_loop_new (NULL, FALSE);
 
@@ -116,15 +110,11 @@ main (gint argc, gchar *argv[])
                                                main_loop)
     };
 
-#ifdef ENABLE_X_KEYBINDER
     for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
         g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
-#endif
 
     g_paste_history_load (history);
-#ifdef ENABLE_X_KEYBINDER
     g_paste_keybinder_activate_all (keybinder);
-#endif
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);

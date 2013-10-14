@@ -5,5 +5,5 @@ Name: libgpaste-daemon
 Description: Library to create a gpasted-like
 Version: @VERSION@
 Requires: gio-2.0 glib-2.0 gobject-2.0
-Cflags: -I${includedir}/gpaste @KEYBINDER_DEFINES@
+Cflags: -I${includedir}/gpaste
 Libs: -L${libdir} -lgpaste-daemon

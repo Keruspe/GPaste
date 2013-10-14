@@ -22,7 +22,7 @@
 #ifdef GDK_WINDOWING_WAYLAND
 #  include <gdk/gdkwayland.h>
 #endif
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 #  include <gdk/gdkx.h>
 #  include <X11/extensions/XInput2.h>
 #endif
@@ -51,7 +51,7 @@ g_paste_keybinding_change_grab_wayland (void)
 }
 #endif
 
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 static void
 g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
                                     Display          *display,
@@ -123,12 +123,12 @@ g_paste_keybinding_change_grab (GPasteKeybinding *self,
         g_paste_keybinding_change_grab_wayland ();
     else
 #endif
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     if (GDK_IS_X11_DISPLAY (display))
         g_paste_keybinding_change_grab_x11 (self, GDK_DISPLAY_XDISPLAY (display), grab);
     else
 #endif
-        g_error ("Unsupported GDK backend.");
+        g_warning ("Unsupported GDK backend.");
 }
 
 /**
@@ -221,7 +221,7 @@ g_paste_keybinding_parse_event_wayland (void)
 }
 #endif
 
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 static gint
 g_paste_keybinding_get_xinput_opcode (Display *display)
 {
@@ -309,12 +309,12 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
         g_paste_keybinding_parse_event_wayland ();
     else
 #endif
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     if (GDK_IS_X11_DISPLAY (display))
         g_paste_keybinding_parse_event_x11 ((XEvent *) xevent, &modifiers, &keycode);
     else
 #endif
-        g_error ("Unsupported GDK backend.");
+        g_warning ("Unsupported GDK backend.");
 
     if (keycode && g_paste_keybinding_private_match (priv, modifiers, keycode))
         priv->callback (self, priv->user_data);
@@ -367,7 +367,7 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 
     priv->active = FALSE;
 
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     /* Initialize */
     g_paste_keybinding_get_xinput_opcode (GDK_DISPLAY_XDISPLAY (display));
 #endif

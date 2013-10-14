@@ -24,7 +24,7 @@
 #ifdef GDK_WINDOWING_WAYLAND
 #  include <gdk/gdkwayland.h>
 #endif
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 #  include <gdk/gdkx.h>
 #  include <X11/extensions/XTest.h>
 #endif
@@ -95,7 +95,7 @@ ask_for_paste_wayland (void)
 }
 #endif
 
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 static void
 ask_for_paste_x11 (Display *display)
 {
@@ -118,12 +118,12 @@ ask_for_paste(GdkDisplay *display)
         ask_for_paste_wayland ();
     else
 #endif
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     if (GDK_IS_X11_DISPLAY (display))
         ask_for_paste_x11 (GDK_DISPLAY_XDISPLAY (display));
     else
 #endif
-        g_error ("Unsupported GDK backend.");
+        g_warning ("Unsupported GDK backend.");
 }
 
 static void
