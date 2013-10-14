@@ -131,7 +131,7 @@ main (gint argc, gchar *argv[])
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
 
-    main_loop = g_main_loop_new (NULL, FALSE);
+    G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *_loop = main_loop = g_main_loop_new (NULL, FALSE);
 
     gint exit_status = EXIT_SUCCESS;
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
@@ -147,7 +147,6 @@ main (gint argc, gchar *argv[])
 
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
-    g_main_loop_unref (main_loop);
 
     return exit_status;
 }
