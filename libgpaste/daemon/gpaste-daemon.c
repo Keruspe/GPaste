@@ -146,7 +146,7 @@ g_paste_daemon_private_backup_history (GPasteDaemonPrivate   *priv,
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name != NULL);
+    g_return_if_fail (name);
 
     GPasteSettings *settings = priv->settings;
 
@@ -167,7 +167,7 @@ g_paste_daemon_private_switch_history (GPasteDaemonPrivate   *priv,
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name != NULL);
+    g_return_if_fail (name);
 
     g_paste_history_switch (priv->history, name);
 
@@ -182,7 +182,7 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate   *priv,
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name != NULL);
+    g_return_if_fail (name);
 
     GPasteHistory *history = priv->history;
 
@@ -214,7 +214,7 @@ g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
                                gchar               *text,
                                gsize                length)
 {
-    g_return_if_fail (text != NULL);
+    g_return_if_fail (text);
 
     GPasteSettings *settings = priv->settings;
     G_PASTE_CLEANUP_FREE gchar *stripped = g_strstrip (g_strdup (text));
@@ -252,7 +252,7 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate   *priv,
     gsize length;
     G_PASTE_CLEANUP_FREE gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
-    g_return_if_fail (file != NULL);
+    g_return_if_fail (file);
 
     G_PASTE_CLEANUP_FREE gchar *content = NULL;
 
@@ -286,7 +286,7 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate   *priv,
 {
     const gchar *value = g_paste_history_get_value (priv->history,
                                                     g_paste_daemon_get_dbus_uint32_parameter (parameters));
-    GVariant *variant = g_variant_new_string ((value == NULL) ? "" : value);
+    GVariant *variant = g_variant_new_string ((value) ? value : "");
 
     g_paste_daemon_send_dbus_reply (connection, invocation, g_variant_new_tuple (&variant, 1));
 }

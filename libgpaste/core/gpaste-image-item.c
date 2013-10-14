@@ -296,9 +296,9 @@ G_PASTE_VISIBLE GPasteItem *
 g_paste_image_item_new_from_file (const gchar *path,
                                   GDateTime   *date)
 {
-    g_return_val_if_fail (path != NULL, NULL);
+    g_return_val_if_fail (path, NULL);
     g_return_val_if_fail (g_utf8_validate (path, -1, NULL), NULL);
-    g_return_val_if_fail (date != NULL, NULL);
+    g_return_val_if_fail (date, NULL);
 
     return _g_paste_image_item_new (path,
                                     g_date_time_ref (date),

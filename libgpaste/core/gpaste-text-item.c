@@ -61,7 +61,7 @@ g_paste_text_item_init (GPasteTextItem *self G_GNUC_UNUSED)
 G_PASTE_VISIBLE GPasteItem *
 g_paste_text_item_new (const gchar *text)
 {
-    g_return_val_if_fail (text != NULL, NULL);
+    g_return_val_if_fail (text, NULL);
     g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
 
     return g_paste_item_new (G_PASTE_TYPE_TEXT_ITEM, text);

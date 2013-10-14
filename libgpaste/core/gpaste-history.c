@@ -351,7 +351,7 @@ g_paste_history_get_value (GPasteHistory *self,
 
     GPasteItem *item = g_paste_history_private_get (g_paste_history_get_instance_private (self), pos);
 
-    g_return_val_if_fail (item != NULL, NULL);
+    g_return_val_if_fail (item, NULL);
 
     return g_paste_item_get_value (item);
 }
@@ -669,7 +669,7 @@ g_paste_history_switch (GPasteHistory *self,
                         const gchar   *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (name != NULL);
+    g_return_if_fail (name);
     g_return_if_fail (g_utf8_validate (name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);

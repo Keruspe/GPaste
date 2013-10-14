@@ -100,7 +100,7 @@ g_paste_uris_item_init (GPasteUrisItem *self G_GNUC_UNUSED)
 G_PASTE_VISIBLE GPasteItem *
 g_paste_uris_item_new (const gchar *uris)
 {
-    g_return_val_if_fail (uris != NULL, NULL);
+    g_return_val_if_fail (uris, NULL);
     g_return_val_if_fail (g_utf8_validate (uris, -1, NULL), NULL);
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);

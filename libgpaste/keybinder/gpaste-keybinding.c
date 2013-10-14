@@ -388,9 +388,9 @@ _g_paste_keybinding_new (GType                  type,
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_KEYBINDING), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (dconf_key != NULL, NULL);
-    g_return_val_if_fail (getter != NULL, NULL);
-    g_return_val_if_fail (callback != NULL, NULL);
+    g_return_val_if_fail (dconf_key, NULL);
+    g_return_val_if_fail (getter, NULL);
+    g_return_val_if_fail (callback, NULL);
 
     GPasteKeybinding *self = g_object_new (type, NULL);
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);

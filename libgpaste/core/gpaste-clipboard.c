@@ -168,7 +168,7 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
                                const gchar     *text)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
-    g_return_if_fail (text != NULL);
+    g_return_if_fail (text);
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
@@ -247,7 +247,7 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
                                         GdkPixbuf              *image,
                                         const gchar            *checksum)
 {
-    g_return_if_fail (image != NULL);
+    g_return_if_fail (image);
 
     GtkClipboard *real = priv->real;
 

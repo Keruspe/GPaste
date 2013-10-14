@@ -67,7 +67,7 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
         !g_paste_clipboard_get_image_checksum (clipboard))
     {
         const GSList *history = g_paste_history_get_history (priv->history);
-        if (history != NULL)
+        if (history)
             g_paste_clipboard_select_item (clipboard, history->data);
     }
 }
@@ -186,7 +186,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
                 const gchar *text = g_paste_clipboard_set_text (clip);
 
                 /* Did we already have some contents, or did we get some now? */
-                something_in_clipboard = (g_paste_clipboard_get_text (clip) != NULL);
+                something_in_clipboard = !!g_paste_clipboard_get_text (clip);
 
                 /* If our contents got updated */
                 if (text)

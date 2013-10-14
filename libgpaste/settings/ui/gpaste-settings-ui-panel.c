@@ -275,7 +275,7 @@ g_paste_settings_ui_panel_make_combo_box_text (const GStrv *labels)
 {
     GtkWidget *combo_box = gtk_combo_box_text_new ();
 
-    for (unsigned int i = 0; labels[i] != NULL; ++i)
+    for (unsigned int i = 0; labels[i]; ++i)
         gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (combo_box), labels[i][0], labels[i][1]);
     gtk_combo_box_set_active (GTK_COMBO_BOX (combo_box), 0);
 
