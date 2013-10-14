@@ -412,7 +412,7 @@ g_paste_history_replace (const gchar *text,
                          const gchar *pattern,
                          const gchar *substitution)
 {
-    gchar *regex_string = g_regex_escape_string (pattern, -1);
+    G_PASTE_CLEANUP_FREE gchar *regex_string = g_regex_escape_string (pattern, -1);
     GRegex *regex = g_regex_new (regex_string,
                                  0, /* Compile options */
                                  0, /* Match options */
@@ -425,7 +425,6 @@ g_paste_history_replace (const gchar *text,
                                                    0, /* Match options */
                                                    NULL); /* Error */
     g_regex_unref (regex);
-    g_free (regex_string);
 
     return encoded_text;
 }
@@ -433,23 +432,15 @@ g_paste_history_replace (const gchar *text,
 static gchar *
 g_paste_history_encode (const gchar *text)
 {
-    gchar *_encoded_text = g_paste_history_replace (text, "&", "&amp;");
-    gchar *encoded_text = g_paste_history_replace (_encoded_text, ">", "&gt;");
-
-    g_free (_encoded_text);
-
-    return encoded_text;
+    G_PASTE_CLEANUP_FREE gchar *_encoded_text = g_paste_history_replace (text, "&", "&amp;");
+    return g_paste_history_replace (_encoded_text, ">", "&gt;");
 }
 
 static gchar *
 g_paste_history_decode (const gchar *text)
 {
-    gchar *_decoded_text = g_paste_history_replace (text, "&gt;", ">");
-    gchar *decoded_text = g_paste_history_replace (_decoded_text, "&amp;", "&");
-
-    g_free (_decoded_text);
-
-    return decoded_text;
+    G_PASTE_CLEANUP_FREE gchar *_decoded_text = g_paste_history_replace (text, "&gt;", ">");
+    return g_paste_history_replace (_decoded_text, "&amp;", "&");
 }
 
 static gchar *
@@ -461,30 +452,24 @@ g_paste_history_get_history_dir_path (void)
 static GFile *
 g_paste_history_get_history_dir (void)
 {
-    gchar *history_dir_path = g_paste_history_get_history_dir_path ();
-    GFile *history_dir = g_file_new_for_path (history_dir_path);
-    g_free (history_dir_path);
-    return history_dir;
+    G_PASTE_CLEANUP_FREE gchar *history_dir_path = g_paste_history_get_history_dir_path ();
+    return g_file_new_for_path (history_dir_path);
 }
 
 static gchar *
 g_paste_history_get_history_file_path (GPasteSettings *settings)
 {
-    gchar *history_dir_path = g_paste_history_get_history_dir_path ();
-    gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
-    gchar *history_file_path = g_build_filename (history_dir_path, history_file_name, NULL);
-    g_free (history_file_name);
-    g_free (history_dir_path);
-    return history_file_path;
+    G_PASTE_CLEANUP_FREE gchar *history_dir_path = g_paste_history_get_history_dir_path ();
+    G_PASTE_CLEANUP_FREE gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
+    //return g_build_filename (history_dir_path, history_file_name, NULL);
+    return NULL;
 }
 
 static GFile *
 g_paste_history_get_history_file (GPasteSettings *settings)
 {
-    gchar *history_file_path = g_paste_history_get_history_file_path (settings);
-    GFile *history_file = g_file_new_for_path (history_file_path);
-    g_free (history_file_path);
-    return history_file;
+    G_PASTE_CLEANUP_FREE gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    return g_file_new_for_path (history_file_path);
 }
 
 /**
@@ -505,6 +490,7 @@ g_paste_history_save (GPasteHistory *self)
     GPasteSettings *settings = priv->settings;
     gboolean save_history = g_paste_settings_get_save_history (settings);
     GFile *history_dir = g_paste_history_get_history_dir ();
+    G_PASTE_CLEANUP_FREE gchar *history_file_path = NULL;
     GError *error = NULL;
 
     if (!g_file_query_exists (history_dir,
@@ -523,7 +509,7 @@ g_paste_history_save (GPasteHistory *self)
         }
     }
 
-    gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    history_file_path = g_paste_history_get_history_file_path (settings);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (!save_history)
@@ -556,9 +542,8 @@ g_paste_history_save (GPasteHistory *self)
                                                    g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item))));
             xmlTextWriterStartCDATA (writer);
 
-            gchar *data = g_paste_history_encode (g_paste_item_get_value (item));
+            G_PASTE_CLEANUP_FREE gchar *data = g_paste_history_encode (g_paste_item_get_value (item));
             xmlTextWriterWriteString (writer, BAD_CAST data);
-            g_free (data);
 
             xmlTextWriterEndCDATA (writer);
             xmlTextWriterEndElement (writer);
@@ -572,7 +557,6 @@ g_paste_history_save (GPasteHistory *self)
     }
 
     g_object_unref (history_file);
-    g_free (history_file_path);
 out:
     g_object_unref (history_dir);
 }
@@ -597,7 +581,7 @@ g_paste_history_load (GPasteHistory *self)
                        g_object_unref);
     priv->history = NULL;
 
-    gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    G_PASTE_CLEANUP_FREE gchar *history_file_path = g_paste_history_get_history_file_path (settings);
     GFile *history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
@@ -616,10 +600,10 @@ g_paste_history_load (GPasteHistory *self)
             if (!name || g_strcmp0 (name, "item"))
                 continue;
 
-            gchar *kind = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "kind");
-            gchar *date = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "date");
-            gchar *raw_value = (gchar *) xmlTextReaderReadString (reader);
-            gchar *value = g_paste_history_decode (raw_value);
+            G_PASTE_CLEANUP_FREE gchar *kind = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "kind");
+            G_PASTE_CLEANUP_FREE gchar *date = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "date");
+            G_PASTE_CLEANUP_FREE gchar *raw_value = (gchar *) xmlTextReaderReadString (reader);
+            G_PASTE_CLEANUP_FREE gchar *value = g_paste_history_decode (raw_value);
             GPasteItem *item = NULL;
 
             if (g_strcmp0 (kind, "Text") == 0)
@@ -658,11 +642,6 @@ g_paste_history_load (GPasteHistory *self)
                 priv->history = g_slist_append (priv->history, item);
             }
 
-            g_free (raw_value);
-            g_free (value);
-            g_free (date);
-            g_free (kind);
-
             ++i;
         }
 
@@ -675,7 +654,6 @@ g_paste_history_load (GPasteHistory *self)
     }
 
     g_object_unref (history_file);
-    g_free (history_file_path);
 
     if (priv->history)
     {

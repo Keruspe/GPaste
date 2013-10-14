@@ -402,14 +402,12 @@ _g_paste_keybinding_new (GType                  type,
     priv->user_data = user_data;
     priv->keycodes = NULL;
 
-    gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
+    G_PASTE_CLEANUP_FREE gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
 
     priv->rebind_signal = g_signal_connect_swapped (G_OBJECT (settings),
                                                     detailed_signal,
                                                     G_CALLBACK (g_paste_keybinding_rebind),
                                                     self);
-
-    g_free (detailed_signal);
 
     return self;
 }

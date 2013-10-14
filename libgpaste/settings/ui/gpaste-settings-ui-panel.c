@@ -329,10 +329,9 @@ static void
 clean_callback_data (gpointer data,
                      gpointer user_data G_GNUC_UNUSED)
 {
-    _CallbackDataWrapper *wrap = data;
+    G_PASTE_CLEANUP_FREE _CallbackDataWrapper *wrap = data; /* TODO: gpointer* */
 
     g_signal_handler_disconnect (wrap->widget, wrap->signal);
-    g_free (wrap);
 }
 
 static void

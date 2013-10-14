@@ -49,10 +49,9 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPastePasteAndPopKeybinding, g_paste_paste_and_pop_k
 static gboolean
 do_pop (gpointer data)
 {
-    gpointer *_data = data;
+    G_PASTE_CLEANUP_FREE gpointer *_data = data;
     GPastePasteAndPopKeybindingPrivate *priv = g_paste_paste_and_pop_keybinding_get_instance_private (G_PASTE_PASTE_AND_POP_KEYBINDING (_data[0]));
     GPasteClipboardsManager *clipboards_manager = _data[1];
-    g_free (_data);
 
     g_paste_history_remove (priv->history, 0);
     g_paste_clipboards_manager_unlock (clipboards_manager);

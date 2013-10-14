@@ -30,6 +30,24 @@ G_BEGIN_DECLS
 
 #define G_PASTE_VISIBLE __attribute__((visibility("default")))
 
+#define G_PASTE_CLEANUP(fun) __attribute__((cleanup(fun)))
+
+#define G_PASTE_CLEANUP_FREE G_PASTE_CLEANUP (g_paste_free_ptr)
+
+#define G_PASTE_TRIVIAL_CLEANUP_FUN(name, type, fun) \
+    static inline void                               \
+    g_paste_##name##_ptr (type *ptr)                 \
+    {                                                \
+        if (*ptr)                                    \
+            fun (*ptr);                              \
+    }
+
+static inline void
+g_paste_free_ptr (gpointer ptr)
+{
+    g_free (*((gpointer *) ptr));
+}
+
 G_END_DECLS
 
 #endif /*__GPASTE_MACROS_H__*/

@@ -229,18 +229,15 @@ g_paste_client_add_file (GPasteClient *self,
                          const gchar  *file,
                          GError      **error)
 {
-    gchar *absolute_path = NULL;
+    G_PASTE_CLEANUP_FREE gchar *absolute_path = NULL;
 
     if (!g_path_is_absolute (file))
     {
-        gchar *current_dir = g_get_current_dir ();
+        G_PASTE_CLEANUP_FREE gchar *current_dir = g_get_current_dir ();
         absolute_path = g_build_filename (current_dir, file, NULL);
-        g_free (current_dir);
     }
 
     DBUS_CALL_WITH_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
-
-    g_free (absolute_path);
 }
 
 /**

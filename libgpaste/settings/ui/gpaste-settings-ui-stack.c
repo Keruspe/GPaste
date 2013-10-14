@@ -317,7 +317,7 @@ g_paste_settings_ui_stack_private_make_histories_panel (GPasteSettingsUiStackPri
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
-    gchar *backup_name = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
+    G_PASTE_CLEANUP_FREE gchar *backup_name = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
     priv->backup_entry = g_paste_settings_ui_panel_add_text_confirm_setting (panel,
                                                                              _("Backup history as: "),
                                                                              backup_name,
@@ -327,7 +327,6 @@ g_paste_settings_ui_stack_private_make_histories_panel (GPasteSettingsUiStackPri
                                                                              _("Backup"),
                                                                              backup_callback,
                                                                              priv);
-    g_free (backup_name);
 
     /* translators: This is the text displayed on the button used to perform a multi-history management action */
     priv->targets = g_paste_settings_ui_panel_add_multi_action_setting (panel,
@@ -371,9 +370,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
     else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
     {
-        gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
+        G_PASTE_CLEANUP_FREE gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
         gtk_entry_set_text (priv->backup_entry, text);
-        g_free (text);
     }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->images_support_button), g_paste_settings_get_images_support (settings));
