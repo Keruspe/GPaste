@@ -55,7 +55,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
         /* The content is requested as special gnome-copied-files by nautilus */
         else
         {
-            GString *copy_string = g_string_new ("copy");
+            G_PASTE_CLEANUP_STRING_FREE GString *copy_string = g_string_new ("copy");
             guint length = g_strv_length ((GStrv) uris);
 
             for (guint i = 0; i < length; ++i)
@@ -71,7 +71,6 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
             for (guint i = 0; i < length; ++i)
                 copy_files_data[i] = (guchar) str[i];
             gtk_selection_data_set (selection_data, g_paste_clipboard_copy_files_target, 8, copy_files_data, length);
-            g_string_free (copy_string, TRUE);
         }
     }
 }

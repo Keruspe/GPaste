@@ -135,7 +135,7 @@ main (gint argc, gchar *argv[])
     if (!isatty (fileno (stdin)))
     {
         /* We are being piped */
-        GString *data = g_string_new ("");
+        G_PASTE_CLEANUP_STRING_FREE GString *data = g_string_new ("");
         gchar c;
 
         while ((c = fgetc (stdin)) != EOF)
@@ -144,8 +144,6 @@ main (gint argc, gchar *argv[])
         data->str[data->len - 1] = '\0';
 
         g_paste_client_add (client, data->str, &error);
-
-        g_string_free (data, TRUE);
     }
     else
     {
