@@ -130,7 +130,7 @@ static void
 paste_and_pop (GPasteKeybinding *self,
                gpointer          data)
 {
-    GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
+    G_PASTE_CLEANUP_TARGETS_UNREF GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
     gtk_target_list_add_text_targets (target_list, 0);
 
@@ -152,7 +152,6 @@ paste_and_pop (GPasteKeybinding *self,
     ask_for_paste (gdk_display_get_default ());
 
     gtk_target_table_free (targets, n_targets);
-    gtk_target_list_unref (target_list);
 }
 
 static void

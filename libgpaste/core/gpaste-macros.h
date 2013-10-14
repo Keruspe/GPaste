@@ -56,12 +56,13 @@ g_paste_free_ptr (gpointer ptr)
     g_free (*((gpointer *) ptr));
 }
 
-G_PASTE_TRIVIAL_CLEANUP_FUN (error_free,    GError,    g_error_free)
-G_PASTE_TRIVIAL_CLEANUP_FUN (strfreev,      GStrv,     g_strfreev)
-G_PASTE_TRIVIAL_CLEANUP_FUN (unref,         GObject,   g_object_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN (date_unref,    GDateTime, g_date_time_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN (regex_unref,   GRegex,    g_regex_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN (variant_unref, GVariant,  g_variant_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (error_free,    GError,        g_error_free)
+G_PASTE_TRIVIAL_CLEANUP_FUN (strfreev,      GStrv,         g_strfreev)
+G_PASTE_TRIVIAL_CLEANUP_FUN (unref,         GObject,       g_object_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (date_unref,    GDateTime,     g_date_time_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (regex_unref,   GRegex,        g_regex_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (targets_unref, GtkTargetList, gtk_target_list_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (variant_unref, GVariant,      g_variant_unref)
 
 G_END_DECLS
 
