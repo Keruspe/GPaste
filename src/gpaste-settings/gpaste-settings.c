@@ -44,7 +44,7 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
     };
-    GStrv authors = g_boxed_copy (G_TYPE_STRV, _authors);
+    G_PASTE_CLEANUP_B_STRV_FREE GStrv authors = g_boxed_copy (G_TYPE_STRV, _authors);
     gtk_show_about_dialog (NULL,
                            "program-name",   PACKAGE_NAME,
                            "version",        PACKAGE_VERSION,
@@ -57,7 +57,6 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                            "website-label",  "Follow GPaste actuality",
                            "wrap-license",   TRUE,
                            NULL);
-    g_boxed_free (G_TYPE_STRV, authors);
 }
 
 static void

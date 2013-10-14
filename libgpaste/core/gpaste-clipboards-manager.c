@@ -172,8 +172,8 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             continue;
 
         gboolean something_in_clipboard = FALSE;
-        GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
-                                                                     gdk_atom_intern_static_string ("TARGETS"));
+        G_PASTE_CLEANUP_SELECT_FREE GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
+                                                                                                 gdk_atom_intern_static_string ("TARGETS"));
 
         if (targets)
         {
@@ -218,8 +218,6 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
 
             if (item)
                 g_paste_history_add (history, item);
-
-            gtk_selection_data_free (targets);
 
             if (!something_in_clipboard)
             {

@@ -34,7 +34,9 @@ G_BEGIN_DECLS
 
 #define G_PASTE_CLEANUP_FREE          G_PASTE_CLEANUP (g_paste_free_ptr)
 #define G_PASTE_CLEANUP_ARRAY_FREE    G_PASTE_CLEANUP (g_paste_array_free_ptr)
+#define G_PASTE_CLEANUP_B_STRV_FREE   G_PASTE_CLEANUP (g_paste_b_strv_free_ptr)
 #define G_PASTE_CLEANUP_ERROR_FREE    G_PASTE_CLEANUP (g_paste_error_free_ptr)
+#define G_PASTE_CLEANUP_SELECT_FREE   G_PASTE_CLEANUP (g_paste_select_free_ptr)
 #define G_PASTE_CLEANUP_STRING_FREE   G_PASTE_CLEANUP (g_paste_string_free_ptr)
 #define G_PASTE_CLEANUP_STRFREEV      G_PASTE_CLEANUP (g_paste_strfreev_ptr)
 #define G_PASTE_CLEANUP_UNREF         G_PASTE_CLEANUP (g_paste_unref_ptr)
@@ -68,17 +70,21 @@ g_paste_free_ptr (gpointer ptr)
     g_free (*((gpointer *) ptr));
 }
 
-G_PASTE_TRIVIAL_CLEANUP_FUN  (error_free,    GError *,        g_error_free)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (strfreev,      GStrv,           g_strfreev)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (unref,         GObject *,       g_object_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (date_unref,    GDateTime *,     g_date_time_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (loop_unref,    GMainLoop *,     g_main_loop_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (regex_unref,   GRegex *,        g_regex_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (targets_unref, GtkTargetList *, gtk_target_list_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (variant_unref, GVariant *,      g_variant_unref)
+#define G_PASTE_BOXED_FREE_REV(box, type) g_boxed_free (type, box)
 
-G_PASTE_CLEANUP_FUN_WITH_ARG (array_free,    GArray *,        g_array_free,  FALSE)
-G_PASTE_CLEANUP_FUN_WITH_ARG (string_free,   GString *,       g_string_free, TRUE)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (error_free,    GError *,           g_error_free)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (select_free,   GtkSelectionData *, gtk_selection_data_free)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (strfreev,      GStrv,              g_strfreev)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (unref,         GObject *,          g_object_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (date_unref,    GDateTime *,        g_date_time_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (loop_unref,    GMainLoop *,        g_main_loop_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (regex_unref,   GRegex *,           g_regex_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (targets_unref, GtkTargetList *,    gtk_target_list_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (variant_unref, GVariant *,         g_variant_unref)
+
+G_PASTE_CLEANUP_FUN_WITH_ARG (array_free,    GArray *,           g_array_free,           FALSE)
+G_PASTE_CLEANUP_FUN_WITH_ARG (b_strv_free,   GStrv,              G_PASTE_BOXED_FREE_REV, G_TYPE_STRV)
+G_PASTE_CLEANUP_FUN_WITH_ARG (string_free,   GString *,          g_string_free,          TRUE)
 
 G_END_DECLS
 
