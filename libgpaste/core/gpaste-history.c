@@ -608,11 +608,10 @@ g_paste_history_load (GPasteHistory *self)
             {
                 if (g_paste_settings_get_images_support (settings))
                 {
-                    GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (date,
-                                                                                             NULL, /* end */
-                                                                                             0)); /* base */
+                    G_PASTE_CLEANUP_DATE_UNREF GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (date,
+                                                                                                       NULL, /* end */
+                                                                                                       0)); /* base */
                     item = g_paste_image_item_new_from_file (value, date_time);
-                    g_date_time_unref (date_time);
                 }
                 else
                 {
