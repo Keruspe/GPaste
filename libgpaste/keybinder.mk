@@ -55,7 +55,6 @@ libgpaste_keybinder_libgpaste_keybinder_la_SOURCES = \
 
 libgpaste_keybinder_libgpaste_keybinder_la_CFLAGS = \
 	$(GDK_CFLAGS) \
-	$(GTK_CFLAGS) \
 	$(X11_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)

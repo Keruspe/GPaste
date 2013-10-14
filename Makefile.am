@@ -54,6 +54,7 @@ AM_CFLAGS = \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
 	$(GLIB_CFLAGS) \
+	$(GTK_CFLAGS) \
 	$(NULL)
 
 VALA_CFLAGS = \
@@ -62,7 +63,6 @@ VALA_CFLAGS = \
 	-Wno-unused-variable \
 	-Wno-missing-field-initializers \
 	-Wno-unused-but-set-variable \
-	$(GTK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 

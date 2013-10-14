@@ -39,7 +39,6 @@ libgpaste_daemon_libgpaste_daemon_la_SOURCES = \
 
 libgpaste_daemon_libgpaste_daemon_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
-	$(GTK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 

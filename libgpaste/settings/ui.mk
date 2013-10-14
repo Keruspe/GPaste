@@ -44,7 +44,6 @@ libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES = \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS = \
-	$(GTK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 

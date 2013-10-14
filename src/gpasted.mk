@@ -29,7 +29,6 @@ bin_gpasted_SOURCES = \
 
 bin_gpasted_CFLAGS = \
 	-I$(srcdir)/libgpaste/daemon/ \
-	$(GTK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 

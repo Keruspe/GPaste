@@ -19,8 +19,6 @@
 
 #include "gpaste-keybinding-private.h"
 
-#include <gtk/gtk.h>
-
 #ifdef GDK_WINDOWING_WAYLAND
 #  include <gdk/gdkwayland.h>
 #endif

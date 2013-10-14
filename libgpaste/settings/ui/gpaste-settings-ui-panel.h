@@ -26,8 +26,6 @@
 
 #include <gpaste-macros.h>
 
-#include <gtk/gtk.h>
-
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_SETTINGS_UI_PANEL            (g_paste_settings_ui_panel_get_type ())
