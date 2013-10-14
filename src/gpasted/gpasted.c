@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static GMainLoop *main_loop;
+static GMainLoop *loop;
 
 enum
 {
@@ -44,13 +44,15 @@ static void
 signal_handler (int signum)
 {
     g_print (_("Signal %d received, exiting\n"), signum);
-    g_main_loop_quit (main_loop);
+    g_main_loop_quit (loop);
 }
 
 static void
 on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-              gpointer      user_data      G_GNUC_UNUSED)
+              gpointer      user_data)
 {
+    GMainLoop *main_loop = user_data;
+
     fprintf (stderr, "%s\n", _("Could not acquire DBus name."));
     g_main_loop_quit (main_loop);
     exit (EXIT_FAILURE);
@@ -58,8 +60,10 @@ on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 
 static void
 reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-        gpointer      user_data      G_GNUC_UNUSED)
+        gpointer      user_data)
 {
+    GMainLoop *main_loop = user_data;
+
     g_main_loop_quit (main_loop);
     execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
 }
@@ -99,15 +103,17 @@ main (gint argc, gchar *argv[])
     };
 #endif
 
+    G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *main_loop = loop = g_main_loop_new (NULL, FALSE);
+
     gulong c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
                                           "name-lost",
                                           G_CALLBACK (on_name_lost),
-                                          NULL), /* user_data */
+                                          main_loop),
         [C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
                                                "reexecute-self",
                                                G_CALLBACK (reexec),
-                                               NULL) /* user_data */
+                                               main_loop)
     };
 
 #ifdef ENABLE_X_KEYBINDER
@@ -123,22 +129,13 @@ main (gint argc, gchar *argv[])
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
-#ifdef ENABLE_X_KEYBINDER
-    for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
-        g_object_unref (keybindings[k]);
-#endif
-
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
-
-    G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *_loop = main_loop = g_main_loop_new (NULL, FALSE);
 
     gint exit_status = EXIT_SUCCESS;
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     if (g_paste_daemon_own_bus_name (g_paste_daemon, &error))
-    {
         g_main_loop_run (main_loop);
-    }
     else
     {
         g_error ("%s: %s\n", _("Could not register DBus service."), error->message);
