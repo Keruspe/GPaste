@@ -380,12 +380,12 @@ msgstr ""
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:25
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr ""
-"La séléction primaire et le presse-papier doivent-ils être synchronisés?"
+"La sélection primaire et le presse-papier doivent-ils être synchronisés?"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
-"Par défaut, la séléction primaire et le presse-papier sont indépendents."
+"Par défaut, la sélection primaire et le presse-papier sont indépendents."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
 msgid "Do we track the clipboard changes?"
@@ -450,11 +450,11 @@ msgstr "Synchroniser l'état du démon avec celui de l'_extension"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:127
 msgid "_Primary selection affects history"
-msgstr "La selection _primaire affecte l'historique"
+msgstr "La sélection _primaire affecte l'historique"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:132
 msgid "_Synchronize clipboard with primary selection"
-msgstr "_Synchroniser le presse-papier avec la séléction primaire"
+msgstr "_Synchroniser le presse-papier avec la sélection primaire"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:138
 msgid "_Images support"
