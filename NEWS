@@ -22,7 +22,7 @@ NEW in 3.5 (25/09/2013)
 - New keybinding to sync the clipboard to the primary selection
 - New keybinding to sync the primary selection to the clipboard
 
-NEW in 3.2 (Not released yet)
+NEW in 3.2 (16/10/2013)
 =============
 
 - Performance improvements
@@ -31,6 +31,7 @@ NEW in 3.2 (Not released yet)
 - Misc. bugfixes
 - New setting to set the maximum amount of memory used by data in history
 - FIFO mode has been dropped (lacking design)
+- g_paste_history_add is now transfer full
 
 NEW in 3.1 (23/09/2013)
 =============
