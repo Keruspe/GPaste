@@ -50,61 +50,17 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-#define DBUS_CALL_NO_PARAM(method, ans_type, variant_type, fail) \
-    DBUS_CALL_WITH_RETURN(method,                                \
-        NULL, 0,                                                 \
-        ans_type, variant_type,                                  \
-        fail,                                                    \
-        {})
-#define DBUS_CALL_WITH_PARAM(method, ans_type, variant_type, fail, param_type, param_name) \
-    DBUS_CALL_WITH_RETURN(method,                                                          \
-        &parameter, 1,                                                                     \
-        ans_type, variant_type,                                                            \
-        fail,                                                                              \
-        GVariant *parameter = g_variant_new_##param_type (param_name))
+#define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+
+#define DBUS_CALL_NO_PARAM_RET_STRV(method) \
+    DBUS_CALL_NO_PARAM_RET_STRV_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
+
+#define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_RETURN(method,              \
-        NULL, 0,                             \
-        fail,                                \
-        {})
-#define DBUS_CALL_WITH_PARAM_NO_RETURN(method, param_type, param_name) \
-    DBUS_CALL_NO_RETURN(method,                                        \
-        &parameter, 1,                                                 \
-        fail,                                                          \
-        GVariant *parameter = g_variant_new_##param_type (param_name))
-#define DBUS_CALL_WITH_RETURN(method, param, n_param, ans_type, variant_type, fail, decl)           \
-    DBUS_CALL_FULL(method,                                                                          \
-        param, n_param,                                                                             \
-        GVariantIter result_iter;                                                                   \
-        g_variant_iter_init (&result_iter, result);                                                 \
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&result_iter); \
-        ans_type answer = g_variant_dup_##variant_type (variant,                                    \
-                                                        NULL) /* length */,                         \
-        fail, decl,                                                                                 \
-        g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL),                                      \
-        return answer)
-#define DBUS_CALL_NO_RETURN(method, param, n_param, fail, decl)                         \
-    DBUS_CALL_FULL(method,                                                              \
-        param, n_param,                                                                 \
-        {},                                                                             \
-        ;, decl,                                                                        \
-        g_return_if_fail (G_PASTE_IS_CLIENT (self)),                                    \
-        {})
-#define DBUS_CALL_FULL(method, param, n_param, extract_answer, fail, decl, guard, return_stmt)                     \
-    guard;                                                                                                         \
-    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                                        \
-    decl;                                                                                                          \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                          \
-                                                                             G_PASTE_GDBUS_##method,               \
-                                                                             g_variant_new_tuple (param, n_param), \
-                                                                             G_DBUS_CALL_FLAGS_NONE,               \
-                                                                             -1,                                   \
-                                                                             NULL, /* cancellable */               \
-                                                                             error);                               \
-    if (!result)                                                                                                   \
-        return fail;                                                                                               \
-    extract_answer;                                                                                                \
-    return_stmt
+    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
 
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
     DBUS_GET_BOOLEAN_PROPERTY_BASE (GPasteClient, g_paste_client, G_PASTE_GDBUS_PROP_##property)
@@ -168,8 +124,7 @@ g_paste_client_get_element (GPasteClient *self,
                             guint32       index,
                             GError      **error)
 {
-    DBUS_CALL_WITH_PARAM (GET_ELEMENT, gchar*, string, NULL,
-                          uint32, index);
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, uint32, index);
 }
 
 /**
@@ -185,7 +140,7 @@ G_PASTE_VISIBLE GStrv
 g_paste_client_get_history (GPasteClient *self,
                             GError      **error)
 {
-    DBUS_CALL_NO_PARAM (GET_HISTORY, GStrv, strv, NULL);
+    DBUS_CALL_NO_PARAM_RET_STRV (GET_HISTORY);
 }
 
 /**
@@ -203,7 +158,7 @@ g_paste_client_add (GPasteClient *self,
                     const gchar  *text,
                     GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD, string, text);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (ADD, string, text);
 }
 
 /**
@@ -229,7 +184,7 @@ g_paste_client_add_file (GPasteClient *self,
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 
-    DBUS_CALL_WITH_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+    DBUS_CALL_ONE_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
 }
 
 /**
@@ -247,7 +202,7 @@ g_paste_client_select (GPasteClient *self,
                        guint32       index,
                        GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (SELECT, uint32, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (SELECT, uint32, index);
 }
 
 /**
@@ -265,7 +220,7 @@ g_paste_client_delete (GPasteClient *self,
                        guint32       index,
                        GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE, uint32, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE, uint32, index);
 }
 
 /**
@@ -299,7 +254,7 @@ g_paste_client_track (GPasteClient *self,
                       gboolean      state,
                       GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (TRACK, boolean, state);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (TRACK, boolean, state);
 }
 
 /**
@@ -317,7 +272,7 @@ g_paste_client_on_extension_state_changed (GPasteClient *self,
                                            gboolean      state,
                                            GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (ON_EXTENSION_STATE_CHANGED, boolean, state);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (ON_EXTENSION_STATE_CHANGED, boolean, state);
 }
 
 /**
@@ -351,7 +306,7 @@ g_paste_client_backup_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (BACKUP_HISTORY, string, name);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (BACKUP_HISTORY, string, name);
 }
 
 /**
@@ -369,7 +324,7 @@ g_paste_client_switch_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (SWITCH_HISTORY, string, name);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (SWITCH_HISTORY, string, name);
 }
 
 /**
@@ -387,7 +342,7 @@ g_paste_client_delete_history (GPasteClient *self,
                                const gchar  *name,
                                GError      **error)
 {
-    DBUS_CALL_WITH_PARAM_NO_RETURN (DELETE_HISTORY, string, name);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE_HISTORY, string, name);
 }
 
 /**
@@ -403,7 +358,7 @@ G_PASTE_VISIBLE GStrv
 g_paste_client_list_histories (GPasteClient *self,
                                GError      **error)
 {
-    DBUS_CALL_NO_PARAM (LIST_HISTORIES, GStrv, strv, NULL);
+    DBUS_CALL_NO_PARAM_RET_STRV (LIST_HISTORIES);
 }
 
 /**

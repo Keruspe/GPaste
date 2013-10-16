@@ -22,6 +22,62 @@
 
 G_BEGIN_DECLS
 
+/***********/
+/* Methods */
+/***********/
+
+#define DBUS_CALL_FULL(TypeName, type_name, guard, decl, method, params, n_params, if_fail, extract_answer, return_stmt) \
+    guard;                                                                                                               \
+    TypeName##Private *priv = type_name##_get_instance_private (self);                                                   \
+    decl;                                                                                                                \
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                                \
+                                                                             method,                                     \
+                                                                             g_variant_new_tuple (params, n_params),     \
+                                                                             G_DBUS_CALL_FLAGS_NONE,                     \
+                                                                             -1,                                         \
+                                                                             NULL, /* cancellable */                     \
+                                                                             error);                                     \
+    if (!result)                                                                                                         \
+        return if_fail;                                                                                                  \
+    extract_answer;                                                                                                      \
+    return_stmt
+
+#define DBUS_CALL_WITH_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params, if_fail, ans_type, variant_extract) \
+    DBUS_CALL_FULL (TypeName, type_name, g_return_val_if_fail (TYPE_CHECKER (self), if_fail), decl, method, params, n_params, if_fail,    \
+        GVariantIter result_iter;                                                                                                         \
+        g_variant_iter_init (&result_iter, result);                                                                                       \
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&result_iter);                                       \
+        ans_type answer = variant_extract;,                                                                                                \
+        return answer)
+
+#define DBUS_CALL_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params) \
+    DBUS_CALL_FULL (TypeName, type_name, g_return_if_fail (TYPE_CHECKER (self)), decl, method, params, n_params, ;, {}, {})
+
+#define DBUS_CALL_ONE_PARAM_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method, if_fail, ans_type, variant_extract) \
+    DBUS_CALL_WITH_RETURN_BASE (TypeName, type_name, TYPE_CHECKER,                                                                      \
+                                GVariant *parameter = g_variant_new_##param_type (param_name),                                          \
+                                method, &parameter, 1, if_fail, ans_type, variant_extract)
+
+#define DBUS_CALL_ONE_PARAM_RET_BOOL_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method) \
+    DBUS_CALL_ONE_PARAM_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method, FALSE, gboolean, g_variant_get_boolean (variant))
+
+#define DBUS_CALL_ONE_PARAM_RET_STRING_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method) \
+    DBUS_CALL_ONE_PARAM_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method, NULL, gchar *, g_variant_dup_string (variant, NULL /* length */))
+
+#define DBUS_CALL_NO_PARAM_BASE(TypeName, type_name, TYPE_CHECKER, method, if_fail, ans_type, variant_extract) \
+    DBUS_CALL_WITH_RETURN_BASE (TypeName, type_name, TYPE_CHECKER, {}, method, NULL, 0, if_fail, ans_type, variant_extract)
+
+#define DBUS_CALL_NO_PARAM_RET_STRV_BASE(TypeName, type_name, TYPE_CHECKER, method) \
+    DBUS_CALL_NO_PARAM_BASE(TypeName, type_name, TYPE_CHECKER, method, NULL, GStrv, g_variant_dup_strv (variant, NULL)) \
+
+#define DBUS_CALL_ONE_PARAM_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method) \
+    DBUS_CALL_NO_RETURN_BASE (TypeName, type_name, TYPE_CHECKER,                                              \
+                              GVariant *parameter = g_variant_new_##param_type (param_name),                  \
+                              method, &parameter, 1)
+
+#define DBUS_CALL_NO_PARAM_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, method) \
+    DBUS_CALL_NO_RETURN_BASE (TypeName, type_name, TYPE_CHECKER, {}, method, NULL, 0)
+
 /**************/
 /* Properties */
 /**************/
