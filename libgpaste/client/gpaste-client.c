@@ -19,6 +19,8 @@
 
 #include "gpaste-client-private.h"
 
+#include "gpaste-gdbus-macros.h"
+
 #include <gpaste-gdbus-defines.h>
 
 #include <gio/gio.h>
@@ -104,14 +106,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
     extract_answer;                                                                                                \
     return_stmt
 
-#define DBUS_GET_PROPERTY(property, ans_type, variant_type, _default)                               \
-    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);                         \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_get_cached_property (priv->proxy, \
-                                                                                       property);   \
-    if (!result)                                                                                    \
-        return _default;                                                                            \
-    ans_type answer = g_variant_get_##variant_type (result);                                        \
-    return answer
+#define DBUS_GET_BOOLEAN_PROPERTY(property) \
+    DBUS_GET_BOOLEAN_PROPERTY_BASE (GPasteClient, g_paste_client, G_PASTE_GDBUS_PROP_##property)
 
 #define HANDLE_SIGNAL(sig)                                 \
     if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig)) \
@@ -421,7 +417,7 @@ g_paste_client_list_histories (GPasteClient *self,
 G_PASTE_VISIBLE gboolean
 g_paste_client_is_active (GPasteClient *self)
 {
-    DBUS_GET_PROPERTY (G_PASTE_GDBUS_PROP_ACTIVE, gboolean, boolean, FALSE);
+    DBUS_GET_BOOLEAN_PROPERTY (ACTIVE);
 }
 
 static void
