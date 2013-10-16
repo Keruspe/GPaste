@@ -19,6 +19,8 @@
 
 #include "gpaste-gnome-shell-client-private.h"
 
+#include "gpaste-gdbus-macros.h"
+
 #include <gio/gio.h>
 
 #define G_PASTE_GNOME_SHELL_BUS_NAME       "org.gnome.Shell"
@@ -101,35 +103,13 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-#define DBUS_GET_PROPERTY_INIT(property,  _default)                                                 \
-    GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);   \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_get_cached_property (priv->proxy, \
-                                                                                       property);   \
-    if (!result)                                                                                    \
-        return _default
+#define DBUS_GET_BOOLEAN_PROPERTY(property) \
+    DBUS_GET_BOOLEAN_PROPERTY_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_PROP_##property)
+#define DBUS_GET_STRING_PROPERTY(property) \
+    DBUS_GET_STRING_PROPERTY_BASE  (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_PROP_##property)
 
-#define DBUS_GET_BOOLEAN_PROPERTY(property)  \
-    DBUS_GET_PROPERTY_INIT(property, FALSE); \
-    return g_variant_get_boolean (result);
-#define DBUS_GET_STRING_PROPERTY(property)  \
-    DBUS_GET_PROPERTY_INIT(property, NULL); \
-    return g_variant_get_string (result, NULL);
-
-#define DBUS_SET_BOOLEAN_PROPERTY(property, value)                                                                  \
-    GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);                   \
-    GVariant *prop[] = {                                                                                            \
-        g_variant_new_string (G_PASTE_GNOME_SHELL_INTERFACE_NAME),                                                  \
-        g_variant_new_string (property),                                                                            \
-        g_variant_new_boolean (value)                                                                               \
-    };                                                                                                              \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                           \
-                                                                             "org.freedesktop.DBus.Properties.Set", \
-                                                                             g_variant_new_tuple (prop, 3),         \
-                                                                             G_DBUS_CALL_FLAGS_NONE,                \
-                                                                             -1,                                    \
-                                                                             NULL, /* cancellable */                \
-                                                                             error);                                \
-    return !!result;
+#define DBUS_SET_BOOLEAN_PROPERTY(property, value) \
+    DBUS_SET_BOOLEAN_PROPERTY_BASE(GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
 
 /**
  * g_paste_gnome_shell_client_get_mode:
@@ -142,7 +122,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 G_PASTE_VISIBLE const gchar *
 g_paste_gnome_shell_client_get_mode (GPasteGnomeShellClient *self)
 {
-    DBUS_GET_STRING_PROPERTY (G_PASTE_GNOME_SHELL_PROP_MODE);
+    DBUS_GET_STRING_PROPERTY (MODE);
 }
 
 /**
@@ -156,7 +136,7 @@ g_paste_gnome_shell_client_get_mode (GPasteGnomeShellClient *self)
 G_PASTE_VISIBLE gboolean
 g_paste_gnome_shell_client_overview_is_active (GPasteGnomeShellClient *self)
 {
-    DBUS_GET_BOOLEAN_PROPERTY (G_PASTE_GNOME_SHELL_PROP_OVERVIEW_ACTIVE);
+    DBUS_GET_BOOLEAN_PROPERTY (OVERVIEW_ACTIVE);
 }
 
 /**
@@ -170,7 +150,7 @@ g_paste_gnome_shell_client_overview_is_active (GPasteGnomeShellClient *self)
 G_PASTE_VISIBLE const gchar *
 g_paste_gnome_shell_client_get_shell_version (GPasteGnomeShellClient *self)
 {
-    DBUS_GET_STRING_PROPERTY (G_PASTE_GNOME_SHELL_PROP_SHELL_VERSION);
+    DBUS_GET_STRING_PROPERTY (SHELL_VERSION);
 }
 
 /**
@@ -189,7 +169,7 @@ g_paste_gnome_shell_client_overview_set_active (GPasteGnomeShellClient *self,
                                                 GError                **error)
 {
     /* FIXME: No such interface 'org.freedesktop.DBus.Properties' on object at path '/org/gnome/Shell' */
-    DBUS_SET_BOOLEAN_PROPERTY (G_PASTE_GNOME_SHELL_PROP_OVERVIEW_ACTIVE, value);
+    DBUS_SET_BOOLEAN_PROPERTY (OVERVIEW_ACTIVE, value);
 }
 
 static void
