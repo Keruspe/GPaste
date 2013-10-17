@@ -89,7 +89,6 @@ msgstr "suprimir: %s"
 msgid "Usage:\n"
 msgstr "Modo de empleo:\n"
 
-# c-format
 #. Translators: help for gpaste history
 #: ../src/gpaste/gpaste.c:33
 msgid "print the history with indexes"
@@ -115,19 +114,16 @@ msgstr "cambiar a otro historial"
 msgid "delete a history"
 msgstr "suprimir el historial"
 
-# c-format
 #. Translators: help for gpaste list-histories
 #: ../src/gpaste/gpaste.c:41
 msgid "list available histories"
 msgstr "listar historial disponible"
 
-# c-format
 #. Translators: help for gpaste raw-history
 #: ../src/gpaste/gpaste.c:43
 msgid "print the history without indexes"
 msgstr "imprimir el historial sin índices"
 
-# c-format
 #. Translators: help for gpaste zero-history
 #: ../src/gpaste/gpaste.c:45
 msgid "print the history with NUL as separator"
