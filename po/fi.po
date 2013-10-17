@@ -1,13 +1,13 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Spanish translations for GPaste package.
+# Copyright (C) 2011 Listed translators
+# This file is distributed under the same license as the GPaste package.
+# Jesse Jaara <jesse.jaara@gmail.com>
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2013-04-13 13:45+0200\n"
+"POT-Creation-Date: 2013-10-17 13:30+0900\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -27,12 +27,10 @@ msgid "Close"
 msgstr ""
 
 #: ../src/gpaste-settings/gpaste-settings.c:84
-#, fuzzy
 msgid "Failed to register the gtk application."
-msgstr "Gtk-ohjelman rekisteröiminen epäonnistui.\n"
+msgstr "Gtk-ohjelman rekisteröiminen epäonnistui."
 
 #: ../src/applets/legacy/gpaste-applet.vala:87
-#, c-format
 msgid "Couldn't update history.\n"
 msgstr "Historian päivittäminen epäonnistui.\n"
 
@@ -46,7 +44,6 @@ msgid "Settings"
 msgstr "Asetukset"
 
 #: ../src/applets/legacy/gpaste-applet.vala:118
-#, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "GPaste-asetukset ikkunan esiintaikominen epäonnistui.\n"
 
@@ -56,7 +53,6 @@ msgid "Empty history"
 msgstr "Tyhjennä historia"
 
 #: ../src/applets/legacy/gpaste-applet.vala:127
-#, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Historian tyhjennys epäonnistui.\n"
 
@@ -64,15 +60,13 @@ msgstr "Historian tyhjennys epäonnistui.\n"
 msgid "Quit"
 msgstr "Lopeta"
 
-#: ../src/applets/legacy/gpaste-applet.vala:175 ../src/gpaste/gpaste.c:107
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:237
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:270
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:296
-msgid "Couldn't connect to GPaste daemon."
-msgstr "GPaste-palveluun ei saatu yhteyttä."
+#: ../src/applets/legacy/gpaste-applet.vala:158
+#: ../src/applets/legacy/gpaste-applet.vala:180 ../src/gpaste/gpaste.c:129
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:251
+msgid "Couldn't connect to GPaste daemon"
+msgstr "GPaste-palveluun ei saatu yhteyttä"
 
-#: ../src/applets/legacy/gpaste-applet.vala:191
-#, c-format
+#: ../src/applets/legacy/gpaste-applet.vala:196
 msgid "Fail to register the gtk application.\n"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui.\n"
 
@@ -84,8 +78,8 @@ msgstr "Pidä kirjaa tapahtumista"
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(GPaste-palveluun ei saatu yhteyttä)"
 
-#: ../src/applets/gnome-shell/extension.js:138
-#, c-format
+#: ../src/applets/gnome-shell/extension.js:139
+#, javascript-format
 msgid "delete: %s"
 msgstr "poista: %s"
 
@@ -94,150 +88,180 @@ msgstr "poista: %s"
 msgid "Usage:\n"
 msgstr "Käyttö:\n"
 
-#: ../src/gpaste/gpaste.c:32
-#, c-format
-msgid "%s [history]: print the history with indexes\n"
-msgstr "%s [history]: listaa historian indeksöitynä\n"
-
+#. Translators: help for gpaste history
 #: ../src/gpaste/gpaste.c:33
-#, c-format
-msgid "%s backup-history <name>: backup current history\n"
-msgstr "%s backup-history <nimi>: varmuuskopioi nykyinen historia\n"
+msgid "print the history with indexes"
+msgstr "listaa historian indeksöitynä"
 
-#: ../src/gpaste/gpaste.c:34
-#, c-format
-msgid "%s switch-history <name>: switch to another history\n"
-msgstr "%s switch-history  <nimi>: vaihda toiseen historiaan\n"
+#. Translators: help for gpaste backup-history <name>
+#. Translators: help for gpaste switch-history <name>
+#. Translators: help for gpaste delete-history <name>
+#: ../src/gpaste/gpaste.c:35 ../src/gpaste/gpaste.c:37
+#: ../src/gpaste/gpaste.c:39
+msgid "name"
+msgstr "nimi"
 
 #: ../src/gpaste/gpaste.c:35
-#, c-format
-msgid "%s delete-history <name>: delete a history\n"
-msgstr "%s delete-history <nimi>: poistaa määritellyn historian\n"
-
-#: ../src/gpaste/gpaste.c:36
-#, c-format
-msgid "%s list-histories: list available histories\n"
-msgstr "%s list-histories: antaa listan saatavilla olevista historioista\n"
+msgid "backup current history"
+msgstr "varmuuskopioi nykyinen historia"
 
 #: ../src/gpaste/gpaste.c:37
-#, c-format
-msgid "%s raw-history: print the history without indexes\n"
-msgstr "%s raw-history: listaa historian ilman indeksejä\n"
-
-#: ../src/gpaste/gpaste.c:38
-#, c-format
-msgid "%s zero-history: print the history with NUL as separator\n"
-msgstr ""
-"%s nolla-historia: tulostaa historian käyttäen NUL merkkiä erottimena\n"
+msgid "switch to another history"
+msgstr "vaihda toiseen historiaan"
 
 #: ../src/gpaste/gpaste.c:39
-#, c-format
-msgid "%s add <text>: set text to clipboard\n"
-msgstr "%s add <teskti>: asettaa leikkeen sisällön\n"
+msgid "delete a history"
+msgstr "poistaa määritellyn historian"
 
-#: ../src/gpaste/gpaste.c:40
-#, c-format
-msgid "%s get <number>: get the <number>th item from the history\n"
-msgstr "%s get <luku>: noutaa määritellyn leikkeen historiasta\n"
-
+#. Translators: help for gpaste list-histories
 #: ../src/gpaste/gpaste.c:41
-#, c-format
-msgid ""
-"%s select <number>: set the <number>th item from the history to the "
-"clipboard\n"
-msgstr ""
-"%s select <luku>: kopioi määrritellyn <luku> kohteen historiasta "
-"leikepöydälle\n"
+msgid "list available histories"
+msgstr "antaa listan saatavilla olevista historioista"
 
-#: ../src/gpaste/gpaste.c:42
-#, c-format
-msgid "%s delete <number>: delete <number>th item of the history\n"
-msgstr "%s delete <luku>: poistaa määritellyn leikkeen historiasta\n"
-
+#. Translators: help for gpaste raw-history
 #: ../src/gpaste/gpaste.c:43
-#, c-format
-msgid ""
-"%s file <path>: put the content of the file at <path> into the clipboard\n"
-msgstr "%s file <tiedosto>: kopioi tiedoston sisällön leikepöydälle\n"
+msgid "print the history without indexes"
+msgstr "listaa historian ilman indeksejä"
 
-#: ../src/gpaste/gpaste.c:44
-#, c-format
-msgid "whatever | %s: set the output of whatever to clipboard\n"
-msgstr "mitävaan | %s: asettaa putkitetun sisälllön leikepöydälle\n"
-
+#. Translators: help for gpaste zero-history
 #: ../src/gpaste/gpaste.c:45
-#, c-format
-msgid "%s empty: empty the history\n"
-msgstr "%s empty: tyhjentää historian\n"
+msgid "print the history with NUL as separator"
+msgstr "tulostaa historian käyttäen NUL merkkiä erottimena"
 
-#: ../src/gpaste/gpaste.c:46
-#, c-format
-msgid "%s start: start tracking clipboard changes\n"
-msgstr "%s start: aloittaa leikepöydän muutosten seuraamisen\n"
+#. Translators: help for gpaste add <text>
+#: ../src/gpaste/gpaste.c:47
+msgid "text"
+msgstr "teskti"
 
 #: ../src/gpaste/gpaste.c:47
-#, c-format
-msgid "%s stop: stop tracking clipboard changes\n"
-msgstr "%s stop: lopettaa leikepöydän muutosten seuraamisen\n"
+msgid "set text to clipboard"
+msgstr "asettaa leikkeen sisällön"
 
-#: ../src/gpaste/gpaste.c:48
-#, c-format
-msgid "%s quit: alias for stop\n"
-msgstr "%s quit: sama kuin stop\n"
+#. Translators: help for gpaste get <number>
+#. Translators: help for gpaste select <number>
+#. Translators: help for gpaste delete <number>
+#: ../src/gpaste/gpaste.c:49 ../src/gpaste/gpaste.c:51
+#: ../src/gpaste/gpaste.c:53
+msgid "number"
+msgstr "luku"
 
 #: ../src/gpaste/gpaste.c:49
-#, c-format
-msgid "%s daemon-reexec: reexecute the daemon (after upgrading...)\n"
-msgstr ""
-"%s daemon-reexec: käynnistää palvelun uudelleen (päivittämisen jälkeen...)\n"
+msgid "get the <number>th item from the history"
+msgstr "noutaa määritellyn leikkeen historiasta"
 
-#: ../src/gpaste/gpaste.c:50
-#, c-format
-msgid "%s settings: launch the configuration tool\n"
-msgstr "%s settings: käynnistää asetusten hallinan\n"
+#: ../src/gpaste/gpaste.c:51
+msgid "set the <number>th item from the history to the clipboard"
+msgstr "kopioi määrritellyn <luku> kohteen historiasta leikepöydälle"
 
-#: ../src/gpaste/gpaste.c:54
-#, c-format
-msgid "%s version: display the version\n"
-msgstr "%s version: tulostaa ohjelman version\n"
+#: ../src/gpaste/gpaste.c:53
+msgid "delete <number>th item of the history"
+msgstr "poistaa määritellyn leikkeen historiasta"
+
+#. Translators: help for gpaste file <path>
+#: ../src/gpaste/gpaste.c:55
+msgid "path"
+msgstr "tiedosto"
 
 #: ../src/gpaste/gpaste.c:55
-#, c-format
-msgid "%s help: display this help\n"
-msgstr "%s help: tulostaa tämän ohjeen\n"
+msgid "put the content of the file at <path> into the clipboard"
+msgstr "kopioi tiedoston sisällön leikepöydälle"
 
-#: ../src/gpaste/gpaste.c:187
+#. Translators: help for whatever | gpaste
+#: ../src/gpaste/gpaste.c:57
+msgid "whatever"
+msgstr "mitävaan"
+
+#: ../src/gpaste/gpaste.c:57
+msgid "set the output of whatever to clipboard"
+msgstr "asettaa putkitetun sisälllön leikepöydälle"
+
+#. Translators: help for gpaste empty
+#: ../src/gpaste/gpaste.c:59
+msgid "empty the history"
+msgstr "tyhjentää historian"
+
+#. Translators: help for gpaste start
+#: ../src/gpaste/gpaste.c:61
+msgid "start tracking clipboard changes"
+msgstr "aloittaa leikepöydän muutosten seuraamisen"
+
+#. Translators: help for gpaste stop
+#: ../src/gpaste/gpaste.c:63
+msgid "stop tracking clipboard changes"
+msgstr "lopettaa leikepöydän muutosten seuraamisen"
+
+#. Translators: help for gpaste quit
+#: ../src/gpaste/gpaste.c:65
+msgid "alias for stop"
+msgstr "sama kuin stop"
+
+#. Translators: help for gpaste daemon-reexec
+#: ../src/gpaste/gpaste.c:67
+msgid "reexecute the daemon (after upgrading...)"
+msgstr "käynnistää palvelun uudelleen (päivittämisen jälkeen...)"
+
+#. Translators: help for gpaste settings
+#: ../src/gpaste/gpaste.c:69
+msgid "launch the configuration tool"
+msgstr "käynnistää asetusten hallinan"
+
+#. Translators: help for gpaste applet
+#: ../src/gpaste/gpaste.c:72
+msgid "launch the applet"
+msgstr "käynnistää härpäkkeen"
+
+#. Translators: help for gpaste version
+#: ../src/gpaste/gpaste.c:75
+msgid "display the version"
+msgstr "tulostaa ohjelman version"
+
+#. Translators: help for gpaste help
+#: ../src/gpaste/gpaste.c:77
+msgid "display this help"
+msgstr "tulostaa tämän ohjeen"
+
+#: ../src/gpaste/gpaste.c:210
 #, c-format
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "GPaste-härpäkkeen esiintaikominen epäonnistui.\n"
 
-#: ../src/gpaste/gpaste.c:206
+#: ../src/gpaste/gpaste.c:229
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Palvelun uudelleenkäynnistäminen onnistui\n"
 
-#: ../src/gpasted/gpasted.c:45
+#: ../src/gpasted/gpasted.c:47
 #, c-format
 msgid "Signal %d received, exiting\n"
 msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
 
-#: ../src/gpasted/gpasted.c:53
+#: ../src/gpasted/gpasted.c:55
 msgid "Could not acquire DBus name."
 msgstr "DBus-nimen selvitys epäonnistui."
 
-#: ../src/gpasted/gpasted.c:134
+#: ../src/gpasted/gpasted.c:141
 msgid "Could not register DBus service."
 msgstr "DBus-palvelun rekisteröinti epäonnistui."
 
-#: ../data/control-center/42-gpaste.xml.in.h:1
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:216
+#: ../data/control-center/42-gpaste.xml.in.in.h:1
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:223
 msgid "Paste and then delete the first item in history: "
 msgstr "Liitä ja poista uusin leike historiasta:"
 
-#: ../data/control-center/42-gpaste.xml.in.h:2
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:221
+#: ../data/control-center/42-gpaste.xml.in.in.h:2
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:228
 msgid "Display the history: "
 msgstr "Näytä historia:"
+
+#: ../data/control-center/42-gpaste.xml.in.in.h:3
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:233
+msgid "Sync the clipboard to the primary selection: "
+msgstr ""
+
+#: ../data/control-center/42-gpaste.xml.in.in.h:4
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:238
+msgid "Sync the primary selection to the clipboard: "
+msgstr ""
 
 #: ../data/desktop/gpaste-applet.desktop.in.in.h:1
 msgid "GPaste Applet"
@@ -264,50 +288,44 @@ msgstr ""
 "merkillä härpäkeikkunassa, 0 poistaa käytöstä."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:3
-msgid "Copy new items to the end of the list so that they are pasted last?"
-msgstr ""
-"Kopioidaanko kohteet listan loppupäähän, niin että ne liitetään viimeisenä?"
-
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:4
-msgid ""
-"By default new items are added to the top of the list so that they are "
-"pasted first."
-msgstr ""
-"Oletuksena kohteet lisätään listan alkupäähän, niin että ne liitetään "
-"ensimmäisenä."
-
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:5
 msgid "The name of the current history"
 msgstr "Nykyisen historian nimi"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:6
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:4
 msgid "The default name is \"history\""
 msgstr "Oletusnimi on \"history\""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:7
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:5
 msgid "Do we save the images copied to history, or only text?"
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:8
-#, fuzzy
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:6
 msgid "By default, we're saving both"
-msgstr "Oletuksena tallennetaan."
+msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:9
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:7
 msgid "Max displayed history size"
 msgstr "Historian suurin koko"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:10
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:8
 msgid "Maximum number of items displayed in the history"
 msgstr "Suurin määrä historiassa näkyviä leikkeitä"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:11
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:9
 msgid "Max history size"
 msgstr "Historian suurin koko"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:12
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:10
 msgid "Maximum number of items in history"
 msgstr "Suurin määrä leikkeitä, joita historissa säilytettään"
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:11
+msgid "Max memory usage (MB)"
+msgstr ""
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:12
+msgid "Maximum amount of memory used to store contents"
+msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:13
 msgid "Max text item size"
@@ -369,22 +387,42 @@ msgstr ""
 "Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:25
+msgid "The keyboard shortcut to sync the clipboard to the primary selection"
+msgstr ""
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
+msgid ""
+"By default, hitting ctrl + alt + o syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
+"\"). An empty string here disables this functionnality."
+msgstr ""
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
+msgid "The keyboard shortcut to sync the primary selection to the clipboard"
+msgstr ""
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:28
+msgid ""
+"By default, hitting ctrl + alt + p syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
+"\"). An empty string here disables this functionnality."
+msgstr ""
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "Synkronoidaanko leikepäytä ja maalaaminen toisiinsa?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:30
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr "Oletuksena maalaminen ja leikkeet ovat erillään."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:31
 msgid "Do we track the clipboard changes?"
 msgstr "Seurataanko leikepöydän tapahtumia?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:28
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:32
 msgid "By default, we're tracking those changes."
 msgstr "Oletuksena muutoksia seurataan."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:33
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -392,15 +430,15 @@ msgstr ""
 "Synkronoidaanko palvelun tila gnome-shell liitännäisen tlaan?(ota palvelu "
 "pois käytöstä, kun poistat liitännäisen)"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:30
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:34
 msgid "By default, the daemon state keeps unchanged"
 msgstr "Oletuksena palvelun tilaa ei muuteta"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:31
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:35
 msgid "Do we trim the textual items before adding them to history?"
 msgstr "Trimmataanko tekstileikkeet, ennen lisäämistä historiaan?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:32
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:36
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
@@ -409,56 +447,52 @@ msgstr ""
 "Oletuksena niiden annetaan olla rauhassa."
 
 #. This is the date format "month/day/year time"
-#: ../libgpaste/core/gpaste-image-item.c:198
+#: ../libgpaste/core/gpaste-image-item.c:237
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: ../libgpaste/core/gpaste-image-item.c:200
+#: ../libgpaste/core/gpaste-image-item.c:239
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Kuva, %d x %d (%s)]"
 
 #. This is the prefix displayed in history to identify selected files
-#: ../libgpaste/core/gpaste-uris-item.c:143
+#: ../libgpaste/core/gpaste-uris-item.c:145
 msgid "[Files] "
 msgstr "[Tiedostot]"
 
-#: ../libgpaste/core/gpaste-history.c:350
+#: ../libgpaste/core/gpaste-history.c:480
 msgid "Could not create history dir"
 msgstr "Historiakansion luominen epäonnistui"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:114
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:118
 msgid "_Track clipboard changes"
 msgstr "_Pidä kirjaa leikepöydän tapahtumista"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:120
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:124
 msgid "Sync the daemon state with the _extension's one"
 msgstr "Synkronoi palvelun ja _liitännäisen tilat"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:127
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:131
 msgid "_Primary selection affects history"
 msgstr "_Maalaminen vaikuttaa historiaan"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:132
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:136
 msgid "_Synchronize clipboard with primary selection"
 msgstr "_Synkronoi leikepöytä ja maalaaminen"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:138
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:142
 msgid "_Images support"
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:143
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:147
 msgid "_Trim items"
 msgstr "_Trimmaa leikkeet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:149
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:153
 msgid "_Save history"
 msgstr "_Tallenna historia"
-
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:154
-msgid "_Copy to end of history"
-msgstr "_Kopioi historian loppuun"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:176
 msgid "Max element size when displaying: "
@@ -473,66 +507,52 @@ msgid "Max history size: "
 msgstr "Historian suurin koko:"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:191
+msgid "Max memory usage (MB): "
+msgstr ""
+
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:196
 msgid "Max text item length: "
 msgstr "Pisin sallittu tekstileikkeen pituus:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:196
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:201
 msgid "Min text item length: "
 msgstr "Lyhin sallittu tekstileikkeen pituus:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:313
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:329
 msgid "Backup history as: "
 msgstr "Historian varmuuskopio:"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:318
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:334
 msgid "Backup"
 msgstr "Varmuuskopioi"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:326
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:342
 msgid "Ok"
 msgstr "Ok"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:346
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:362
 msgid "General behaviour"
 msgstr "Yleiset ominaisuudet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:347
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:363
 msgid "History settings"
 msgstr "Historian asetukset"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:348
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:364
 msgid "Keyboard shortcuts"
 msgstr "Pikanäppäimet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:349
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:365
 msgid "Histories"
 msgstr "Historiat"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:457
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:481
 msgid "Switch to"
 msgstr "Vaihda kohteeseen"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:462
+#: ../libgpaste/settings/ui/gpaste-settings-ui-notebook.c:486
 msgid "Delete"
 msgstr "Poista"
-
-#~ msgid "Could not read file: %s\n"
-#~ msgstr "Tiedostoa %s ei voitu lukea\n"
-
-#~ msgid "%s %s is deprecated: use \"%s file\" instead\n"
-#~ msgstr "%s %s on vanhentunut: käytä \"%s file\" komentoa sen sijaan\n"
-
-#~ msgid "Could not delete history file.\n"
-#~ msgstr "Historiatiedoston poistaminen epäonnistui.\n"
-
-#~ msgid "Error while saving pixbuf: %s\n"
-#~ msgstr "Pixbufin tallennus epäonnistui: %s\n"
-
-#~ msgid "Error while loading pixbuf: %s\n"
-#~ msgstr "Pixbufin lataus epäonnistui: %s\n"
-
-#~ msgid "%s applet: launch the applet\n"
-#~ msgstr "%s applet: käynnistää härpäkkeen\n"
