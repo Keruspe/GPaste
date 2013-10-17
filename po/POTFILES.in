@@ -11,4 +11,4 @@ libgpaste/core/gpaste-item.c
 libgpaste/core/gpaste-image-item.c
 libgpaste/core/gpaste-uris-item.c
 libgpaste/core/gpaste-history.c
-libgpaste/settings/ui/gpaste-settings-ui-notebook.c
+libgpaste/settings/ui/gpaste-settings-ui-stack.c
