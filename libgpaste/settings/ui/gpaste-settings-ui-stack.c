@@ -230,7 +230,7 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
                                                                                         sync_clipboard_to_primary_callback, settings);
     /* translators: Keyboard shortcut to sync the primary selection to the clipboard */
     priv->sync_primary_to_clipboard_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                                        _("Sync the primary selection to clipboard: "),
+                                                                                        _("Sync the primary selection to the clipboard: "),
                                                                                         g_paste_settings_get_sync_primary_to_clipboard (settings),
                                                                                         sync_primary_to_clipboard_callback, settings);
 
