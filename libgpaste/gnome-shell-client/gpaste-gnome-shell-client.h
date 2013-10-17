@@ -37,6 +37,10 @@ typedef struct _GPasteGnomeShellClientClass GPasteGnomeShellClientClass;
 G_PASTE_VISIBLE
 GType g_paste_gnome_shell_client_get_type (void);
 
+gboolean g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
+                                          const gchar            *script,
+                                          gchar                 **result,
+                                          GError                **error);
 void g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
                                               GError               **error);
 void g_paste_gnome_shell_client_focus_app    (GPasteGnomeShellClient *self,

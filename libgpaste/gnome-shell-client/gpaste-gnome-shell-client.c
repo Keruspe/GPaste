@@ -19,7 +19,9 @@
 
 #include "gpaste-gnome-shell-client-private.h"
 
+#define __G_PASTE_NEEDS_BS__
 #include "gpaste-gdbus-macros.h"
+#undef __G_PASTE_NEEDS_BS__
 
 #include <gio/gio.h>
 
@@ -106,6 +108,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_RET_BOOL(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_BOOL_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
+#define DBUS_CALL_ONE_PARAM_RET_BS(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_BS_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
@@ -121,9 +126,21 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_SET_BOOLEAN_PROPERTY(property, value) \
     DBUS_SET_BOOLEAN_PROPERTY_BASE(GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
 
+G_PASTE_VISIBLE gboolean
+g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
+                                 const gchar            *script,
+                                 gchar                 **result,
+                                 GError                **error)
+{
+    DBUS_CALL_ONE_PARAM_RET_BS (EVAL, string, script);
+    if (result)
+        *result = bs.s;
+    return bs.b;
+}
+
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
-                                         GError               **error)
+                                         GError                **error)
 {
     DBUS_CALL_NO_PARAM_NO_RETURN (FOCUS_SEARCH);
 }
