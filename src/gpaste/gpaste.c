@@ -32,7 +32,7 @@ show_help (const gchar *caller)
     /* Translators: help for gpaste history */
     printf ("  %s [history]: %s\n", caller, _("print the history with indexes"));
     /* Translators: help for gpaste backup-history <name> */
-    printf ("  %s backup-history <%s>: %s\n", caller; _("name"), _("backup current history"));
+    printf ("  %s backup-history <%s>: %s\n", caller, _("name"), _("backup current history"));
     /* Translators: help for gpaste switch-history <name> */
     printf ("  %s switch-history <%s>: %s\n", caller, _("name"), _("switch to another history"));
     /* Translators: help for gpaste delete-history <name> */
