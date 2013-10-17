@@ -29,30 +29,52 @@ static void
 show_help (const gchar *caller)
 {
     printf (_("Usage:\n"));
-    printf (_("  %s [history]: print the history with indexes\n"), caller);
-    printf (_("  %s backup-history <name>: backup current history\n"), caller);
-    printf (_("  %s switch-history <name>: switch to another history\n"), caller);
-    printf (_("  %s delete-history <name>: delete a history\n"), caller);
-    printf (_("  %s list-histories: list available histories\n"), caller);
-    printf (_("  %s raw-history: print the history without indexes\n"), caller);
-    printf (_("  %s zero-history: print the history with NUL as separator\n"), caller);
-    printf (_("  %s add <text>: set text to clipboard\n"), caller);
-    printf (_("  %s get <number>: get the <number>th item from the history\n"), caller);
-    printf (_("  %s select <number>: set the <number>th item from the history to the clipboard\n"), caller);
-    printf (_("  %s delete <number>: delete <number>th item of the history\n"), caller);
-    printf (_("  %s file <path>: put the content of the file at <path> into the clipboard\n"), caller);
-    printf (_("  whatever | %s: set the output of whatever to clipboard\n"), caller);
-    printf (_("  %s empty: empty the history\n"), caller);
-    printf (_("  %s start: start tracking clipboard changes\n"), caller);
-    printf (_("  %s stop: stop tracking clipboard changes\n"), caller);
-    printf (_("  %s quit: alias for stop\n"), caller);
-    printf (_("  %s daemon-reexec: reexecute the daemon (after upgrading...)\n"), caller);
-    printf (_("  %s settings: launch the configuration tool\n"), caller);
+    /* Translators: help for gpaste history */
+    printf ("  %s [history]: %s\n", caller, _("print the history with indexes"));
+    /* Translators: help for gpaste backup-history <name> */
+    printf ("  %s backup-history <%s>: %s\n", caller; _("name"), _("backup current history"));
+    /* Translators: help for gpaste switch-history <name> */
+    printf ("  %s switch-history <%s>: %s\n", caller, _("name"), _("switch to another history"));
+    /* Translators: help for gpaste delete-history <name> */
+    printf ("  %s delete-history <%s>: %s\n", caller, _("name"),  _("delete a history"));
+    /* Translators: help for gpaste list-histories */
+    printf ("  %s list-histories: %s\n", caller, _("list available histories"));
+    /* Translators: help for gpaste raw-history */
+    printf ("  %s raw-history: %s\n", caller, _("print the history without indexes"));
+    /* Translators: help for gpaste zero-history */
+    printf ("  %s zero-history: %s\n", caller, _("print the history with NUL as separator"));
+    /* Translators: help for gpaste add <text> */
+    printf ("  %s add <%s>: %s\n", caller, _("text"), _("set text to clipboard"));
+    /* Translators: help for gpaste get <number> */
+    printf ("  %s get <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history"));
+    /* Translators: help for gpaste select <number> */
+    printf ("  %s select <%s>: %s\n", caller, _("number"), _("set the <number>th item from the history to the clipboard"));
+    /* Translators: help for gpaste delete <number> */
+    printf ("  %s delete <%s>: %s\n", caller, _("number"), _("delete <number>th item of the history"));
+    /* Translators: help for gpaste file <path> */
+    printf ("  %s file <%s>: %s\n", caller, _("path"), _("put the content of the file at <path> into the clipboard"));
+    /* Translators: help for whatever | gpaste */
+    printf ("  %s | %s: %s\n", _("whatever"), caller, _("set the output of whatever to clipboard"));
+    /* Translators: help for gpaste empty */
+    printf ("  %s empty: %s\n", caller, _("empty the history"));
+    /* Translators: help for gpaste start */
+    printf ("  %s start: %s\n", caller, _("start tracking clipboard changes"));
+    /* Translators: help for gpaste stop */
+    printf ("  %s stop: %s\n", caller, _("stop tracking clipboard changes"));
+    /* Translators: help for gpaste quit */
+    printf ("  %s quit: %s\n", caller, _("alias for stop"));
+    /* Translators: help for gpaste daemon-reexec */
+    printf ("  %s daemon-reexec: %s\n", caller, _("reexecute the daemon (after upgrading...)"));
+    /* Translators: help for gpaste settings */
+    printf ("  %s settings: %s\n", caller, _("launch the configuration tool"));
 #ifdef ENABLE_APPLET
-    printf (_("  %s applet: launch the applet\n"), caller);
+    /* Translators: help for gpaste applet */
+    printf ("  %s applet: %s\n", caller, _("launch the applet"));
 #endif
-    printf (_("  %s version: display the version\n"), caller);
-    printf (_("  %s help: display this help\n"), caller);
+    /* Translators: help for gpaste version */
+    printf ("  %s version: %s\n", caller, _("display the version"));
+    /* Translators: help for gpaste help */
+    printf ("  %s help: %s\n", caller, _("display this help"));
 }
 
 static void
