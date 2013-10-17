@@ -1,4 +1,4 @@
-NEW in 3.6 (Not released yet)
+NEW in 3.6 (17/10/2013)
 =============
 
 - GPaste settings look has been updated to better fit with recent GNOME
@@ -9,6 +9,8 @@ NEW in 3.6 (Not released yet)
 - New setting to set the maximum amount of memory used by data in history
 - FIFO mode has been dropped (lacking design)
 - Code cleanup and modernisation
+- g_paste_history_add is now transfer full
+- g_paste_keybinder_add_keybinding is now transfer full
 
 NEW in 3.5 (25/09/2013)
 =============
