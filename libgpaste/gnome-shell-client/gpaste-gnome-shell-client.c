@@ -288,7 +288,7 @@ g_paste_gnome_shell_client_class_init (GPasteGnomeShellClientClass *klass)
                                                    0, /* class offset */
                                                    NULL, /* accumulator */
                                                    NULL, /* accumulator data */
-                                                   g_cclosure_marshal_VOID__VOID,
+                                                   g_cclosure_marshal_generic,
                                                    G_TYPE_NONE,
                                                    3,
                                                    G_TYPE_UINT,
