@@ -34,6 +34,12 @@ G_BEGIN_DECLS
 typedef struct _GPasteGnomeShellClient GPasteGnomeShellClient;
 typedef struct _GPasteGnomeShellClientClass GPasteGnomeShellClientClass;
 
+typedef struct
+{
+    gchar  *accelerator;
+    guint32 flags; // TODO: provide flags
+} GPasteGnomeShellAccelerator;
+
 G_PASTE_VISIBLE
 GType g_paste_gnome_shell_client_get_type (void);
 
@@ -48,6 +54,10 @@ void g_paste_gnome_shell_client_focus_app    (GPasteGnomeShellClient *self,
                                               GError                **error);
 void g_paste_gnome_shell_client_show_applications      (GPasteGnomeShellClient *self,
                                                         GError                **error);
+guint32 *g_paste_gnome_shell_client_grab_accelerators  (GPasteGnomeShellClient      *self,
+                                                        GPasteGnomeShellAccelerator *accelerators,
+                                                        guint32                      n_accelerators,
+                                                        GError                     **error);
 gboolean g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
                                                         guint32                 action,
                                                         GError                **error);

@@ -56,6 +56,29 @@ g_paste_dbus_get_bs_result (GVariant *variant)
 }
 #endif /* __G_PASTE_NEEDS_BS__ */
 
+#ifdef __G_PASTE_NEEDS_AU__
+static guint32 *
+g_paste_dbus_get_au_result (GVariant *variant,
+                            guint32   n_results)
+{
+    GVariantIter iter;
+    g_variant_iter_init (&iter, variant);
+    GVariant *loop;
+    guint32 *res = g_new (guint32, n_results);
+
+    for (guint32 i = 0; (loop = g_variant_iter_next_value (&iter)) && i < n_results; ++i)
+    {
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v = loop;
+        res[i] = g_variant_get_uint32 (v);
+    }
+
+    if (loop)
+        g_warning ("Expected %u results but got more.", n_results);
+
+    return res;
+}
+#endif /* __G_PASTE_NEEDS_AU__ */
+
 /***********/
 /* Methods */
 /***********/
@@ -84,6 +107,12 @@ g_paste_dbus_get_bs_result (GVariant *variant)
 
 #define DBUS_CALL_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params) \
     DBUS_CALL_FULL (TypeName, type_name, g_return_if_fail (TYPE_CHECKER (self)), decl, method, params, n_params, ;, {})
+
+#define DBUS_CALL_PARAMS_BASE(TypeName, type_name, TYPE_CHECKER, method, params, n_params, if_fail, variant_extract) \
+    DBUS_CALL_WITH_RETURN_BASE (TypeName, type_name, TYPE_CHECKER, {}, method, params, n_params, if_fail, variant_extract)
+
+#define DBUS_CALL_ONE_PARAMV_RET_AU_BASE(TypeName, type_name, TYPE_CHECKER, method, paramv, n_items) \
+    DBUS_CALL_PARAMS_BASE(TypeName, type_name, TYPE_CHECKER, method, &paramv, 1, FALSE, return g_paste_dbus_get_au_result (variant, n_items))
 
 #define DBUS_CALL_ONE_PARAM_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method, if_fail, variant_extract) \
     DBUS_CALL_WITH_RETURN_BASE (TypeName, type_name, TYPE_CHECKER,                                                            \

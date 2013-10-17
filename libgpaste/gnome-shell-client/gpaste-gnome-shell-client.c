@@ -19,9 +19,9 @@
 
 #include "gpaste-gnome-shell-client-private.h"
 
+#define __G_PASTE_NEEDS_AU__
 #define __G_PASTE_NEEDS_BS__
 #include "gpaste-gdbus-macros.h"
-#undef __G_PASTE_NEEDS_BS__
 
 #include <gio/gio.h>
 
@@ -111,6 +111,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_RET_BS(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_BS_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
+#define DBUS_CALL_ONE_PARAMV_RET_AU(method, paramv, n_items) \
+    DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv, n_items)
+
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
@@ -158,6 +161,29 @@ g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
                                               GError                **error)
 {
     DBUS_CALL_NO_PARAM_NO_RETURN (SHOW_APPLICATIONS);
+}
+
+G_PASTE_VISIBLE guint32 *
+g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
+                                              GPasteGnomeShellAccelerator *accelerators,
+                                              guint32                      n_accelerators,
+                                              GError                     **error)
+{
+    GVariant **data = alloca (n_accelerators * sizeof (GVariant *));
+
+    for (guint32 i = 0; i < n_accelerators; ++i)
+    {
+        GPasteGnomeShellAccelerator accelerator = accelerators[i];
+        GVariant *v[] = {
+            g_variant_new_string (accelerator.accelerator),
+            g_variant_new_uint32 (accelerator.flags)
+        };
+        data[i] = g_variant_new_tuple (v, 2);
+    }
+
+    GVariant *array = g_variant_new_array (G_VARIANT_TYPE_TUPLE, data, n_accelerators);
+
+    DBUS_CALL_ONE_PARAMV_RET_AU (GRAB_ACCELERATORS, array, n_accelerators);
 }
 
 G_PASTE_VISIBLE gboolean
