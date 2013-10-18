@@ -88,6 +88,11 @@ lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 nodist_systemduserunit_DATA =
 
+TESTS=
+noinst_PROGRAMS= \
+	$(TESTS) \
+	$(NULL)
+
 @INTLTOOL_XML_NOMERGE_RULE@
 
 # Real stuff goes in these subfiles
@@ -119,6 +124,10 @@ include data/pkg-config.mk
 include data/systemd.mk
 
 include man/1.mk
+
+# Tests stuff
+
+include tests/gnome-shell-client.mk
 
 # Maintainance stuff
 
