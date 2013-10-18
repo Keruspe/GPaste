@@ -117,6 +117,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
+#define DBUS_CALL_ONE_PARAMV_NO_RETURN(method, paramv) \
+    DBUS_CALL_ONE_PARAMV_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
+
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
     DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
 
@@ -146,6 +149,39 @@ g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
                                          GError                **error)
 {
     DBUS_CALL_NO_PARAM_NO_RETURN (FOCUS_SEARCH);
+}
+
+static void
+_g_variant_builder_add_vardict_entry (GVariantBuilder *builder,
+                                      const gchar     *key,
+                                      GVariant        *value)
+{
+    g_variant_builder_add_value (builder, g_variant_new_dict_entry (g_variant_new_string (key),
+                                                                    g_variant_new_variant (value)));
+}
+
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
+                                     const gchar            *icon,
+                                     const gchar            *label,
+                                     gint32                  level,
+                                     GError                **error)
+{
+    G_PASTE_CLEANUP_VT_FREE GVariantType *vardict_entry = g_variant_type_new_dict_entry (G_VARIANT_TYPE_STRING, G_VARIANT_TYPE_VARIANT);
+    GVariantBuilder builder;
+
+    g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
+
+    if (icon)
+        _g_variant_builder_add_vardict_entry (&builder, "icon", g_variant_new_string (icon));
+    if (label)
+        _g_variant_builder_add_vardict_entry (&builder, "label", g_variant_new_string (label));
+    if (level >= 0)
+        _g_variant_builder_add_vardict_entry (&builder, "level", g_variant_new_int32 (level));
+
+    GVariant *vardict = g_variant_builder_end (&builder);
+
+    DBUS_CALL_ONE_PARAMV_NO_RETURN (SHOW_OSD, vardict);
 }
 
 G_PASTE_VISIBLE void

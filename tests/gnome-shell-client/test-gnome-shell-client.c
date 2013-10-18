@@ -33,7 +33,7 @@ main (gint argc, gchar *argv[])
     g_setenv ("G_MESSAGES_DEBUG", "all", TRUE);
 
     GError *error = NULL;
-    GPasteGnomeShellClient *client = g_paste_gnome_shell_client_new (&error); // TODO: cleanup func
+    G_PASTE_CLEANUP_UNREF GPasteGnomeShellClient *client = g_paste_gnome_shell_client_new (&error);
     if (!client)
     {
         g_error ("Couldn't connect to gnome-shell: %s", error->message);
@@ -88,7 +88,7 @@ main (gint argc, gchar *argv[])
     g_print ("As expected, couldn't eval \"foobar\"\n");
     g_clear_error (&error);
 
-    g_print ("Should now focus search, please press escape twice afterwards\n");
+    g_print ("Should now focus search\n");
     g_usleep (1000000);
     g_paste_gnome_shell_client_focus_search (client, &error);
     if (error)
@@ -97,12 +97,27 @@ main (gint argc, gchar *argv[])
         g_error_free (error);
         return EXIT_FAILURE;
     }
-    g_usleep (3000000);
+    g_usleep (1500000);
 
-    // TODO: show OSD
+    if (!g_paste_gnome_shell_client_overview_set_active (client, expected, &error))
+    {
+        g_error ("Couldn't set gnome-shell overview state: %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
 
-    g_print ("Should now focus firefox, please press escape twice afterwards\n");
+    g_print ("Now testing OSD\n");
     g_usleep (1000000);
+    g_paste_gnome_shell_client_show_osd (client, "gtk-paste", "Test GPaste OSD", 80, &error);
+    if (error)
+    {
+        g_error ("Couldn't show OSD: %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
+
+    g_print ("Should now focus firefox\n");
+    g_usleep (3000000);
     g_paste_gnome_shell_client_focus_app (client, "firefox.desktop", &error);
     if (error)
     {
@@ -112,7 +127,14 @@ main (gint argc, gchar *argv[])
     }
     g_usleep (3000000);
 
-    g_print ("Should now show applications, please press escape twice afterwards\n");
+    if (!g_paste_gnome_shell_client_overview_set_active (client, expected, &error))
+    {
+        g_error ("Couldn't set gnome-shell overview state: %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
+
+    g_print ("Should now show applications\n");
     g_usleep (1000000);
     g_paste_gnome_shell_client_show_applications (client, &error);
     if (error)
@@ -123,11 +145,17 @@ main (gint argc, gchar *argv[])
     }
     g_usleep (3000000);
 
+    if (!g_paste_gnome_shell_client_overview_set_active (client, expected, &error))
+    {
+        g_error ("Couldn't set gnome-shell overview state: %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
+
     // TODO: grab accelerator
     // TODO: grab accelerators
     // TODO: ungrab accelerator
     // TODO: signal accelerator-activated
 
-    g_object_unref (client);
     return EXIT_SUCCESS;
 }

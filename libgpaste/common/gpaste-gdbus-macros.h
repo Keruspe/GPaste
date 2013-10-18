@@ -149,6 +149,9 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_CALL_NO_PARAM_RET_STRV_BASE(TypeName, type_name, TYPE_CHECKER, method) \
     DBUS_CALL_NO_PARAM_BASE(TypeName, type_name, TYPE_CHECKER, method, NULL, return g_variant_dup_strv (variant, NULL)) \
 
+#define DBUS_CALL_ONE_PARAMV_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, paramv, method) \
+    DBUS_CALL_NO_RETURN_BASE (TypeName, type_name, TYPE_CHECKER, {}, method, &paramv, 1)
+
 #define DBUS_CALL_ONE_PARAM_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method) \
     DBUS_CALL_NO_RETURN_BASE (TypeName, type_name, TYPE_CHECKER,                                              \
                               GVariant *parameter = g_variant_new_##param_type (param_name),                  \

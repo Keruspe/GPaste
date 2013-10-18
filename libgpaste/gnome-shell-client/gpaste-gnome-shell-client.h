@@ -47,6 +47,11 @@ gboolean g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
                                           const gchar            *script,
                                           gchar                 **result,
                                           GError                **error);
+void g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
+                                          const gchar            *icon,
+                                          const gchar            *label,
+                                          gint32                  level,
+                                          GError                **error);
 void g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
                                               GError               **error);
 void g_paste_gnome_shell_client_focus_app    (GPasteGnomeShellClient *self,
