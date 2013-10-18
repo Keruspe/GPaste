@@ -189,7 +189,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
     GVariant *prop[] = {                                                                                            \
         g_variant_new_string (iface),                                                                               \
         g_variant_new_string (property),                                                                            \
-        g_variant_new_##vtype (value)                                                                               \
+        g_variant_new_variant (g_variant_new_##vtype (value))                                                       \
     };                                                                                                              \
     G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_call_sync (priv->proxy,                           \
                                                                              "org.freedesktop.DBus.Properties.Set", \

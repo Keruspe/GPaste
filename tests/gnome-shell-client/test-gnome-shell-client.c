@@ -50,9 +50,7 @@ main (gint argc, gchar *argv[])
     for (guint i = 0; i < 3; ++i)
     {
         gboolean active = g_paste_gnome_shell_client_overview_is_active (client);
-        g_print ("Overview is %sactive\n", active ? "" : "in");
-#if 0
-        g_assert (active == expected);
+        g_print ("Overview is %sactive (should be %sactive)\n", active ? "" : "in", expected ? "" : "in");
         if (i != 2)
         {
             expected = !expected;
@@ -64,7 +62,6 @@ main (gint argc, gchar *argv[])
             }
             g_usleep (1000000);
         }
-#endif
     }
 
     gchar *result = NULL;
