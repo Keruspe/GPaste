@@ -67,15 +67,29 @@ main (gint argc, gchar *argv[])
 #endif
     }
 
-#if 0
-    g_assert (!g_paste_gnome_shell_client_eval (client, "foobar", &result, &error));
-    g_assert (!result);
-    g_print ("error: %s", error->message);
-    g_clear_error (&error);
+    gchar *result = NULL;
 
-    g_assert (g_paste_gnome_shell_client_eval (client, "3 + 2", &result, &error));
-    g_assert (!g_strcmp0 (result, "5"));
-#endif
+    if (!g_paste_gnome_shell_client_eval (client, "3 + 2", &result, &error))
+    {
+        g_error ("Failed to eval \"3 + 2\": %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
+    g_print ("Evaluated \"3 + 2\" as \"%s\"\n", result);
+
+    if (g_paste_gnome_shell_client_eval (client, "foobar", &result, &error))
+    {
+        g_error ("Did not fail to eval \"fobar\"");
+        return EXIT_FAILURE;
+    }
+    if (error)
+    {
+        g_error ("Error when trying to evaluate \"foobar\": %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
+    g_print ("As expected, couldn't eval \"foobar\"\n");
+    g_clear_error (&error);
 
     g_print ("Should now focus search, please press escape twice afterwards\n");
     g_usleep (1000000);
