@@ -61,7 +61,6 @@ void g_paste_gnome_shell_client_show_applications      (GPasteGnomeShellClient *
                                                         GError                **error);
 guint32 *g_paste_gnome_shell_client_grab_accelerators  (GPasteGnomeShellClient      *self,
                                                         GPasteGnomeShellAccelerator *accelerators,
-                                                        guint32                      n_accelerators,
                                                         GError                     **error);
 gboolean g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
                                                         guint32                 action,

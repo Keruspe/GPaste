@@ -202,22 +202,22 @@ g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
 G_PASTE_VISIBLE guint32 *
 g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
                                               GPasteGnomeShellAccelerator *accelerators,
-                                              guint32                      n_accelerators,
                                               GError                     **error)
 {
-    GVariant **data = alloca (n_accelerators * sizeof (GVariant *));
+    GVariantBuilder builder;
+    guint n_accelerators = 0;
 
-    for (guint32 i = 0; i < n_accelerators; ++i)
+    g_variant_builder_init (&builder, G_VARIANT_TYPE_ARRAY);
+
+    for (GPasteGnomeShellAccelerator *accelerator = &accelerators[0]; accelerator->accelerator; accelerator = &accelerators[++n_accelerators])
     {
-        GPasteGnomeShellAccelerator accelerator = accelerators[i];
-        GVariant *v[] = {
-            g_variant_new_string (accelerator.accelerator),
-            g_variant_new_uint32 (accelerator.flags)
-        };
-        data[i] = g_variant_new_tuple (v, 2);
+        g_variant_builder_open (&builder, G_VARIANT_TYPE_TUPLE);
+        g_variant_builder_add_value (&builder, g_variant_new_string (accelerator->accelerator));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->flags));
+        g_variant_builder_close (&builder);
     }
 
-    GVariant *array = g_variant_new_array (G_VARIANT_TYPE_TUPLE, data, n_accelerators);
+    GVariant *array = g_variant_builder_end (&builder);
 
     DBUS_CALL_ONE_PARAMV_RET_AU (GRAB_ACCELERATORS, array, n_accelerators);
 }
