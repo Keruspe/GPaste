@@ -96,20 +96,20 @@ static guint signals[LAST_SIGNAL] = { 0 };
                                            g_return_if_fail (g_utf8_validate (value, -1, NULL));, \
                                            g_free (priv->name);, g_strdup)
 
-#define NEW_SIGNAL_FULL(name, type, arg)           \
-    g_signal_new (name,                            \
-                  G_PASTE_TYPE_SETTINGS,           \
-                  type,                            \
-                  0, /* class offset */            \
-                  NULL, /* accumulator */          \
-                  NULL, /* accumulator data */     \
-                  g_cclosure_marshal_VOID__STRING, \
-                  G_TYPE_NONE,                     \
-                  1, /* number of params */        \
-                  arg)
-#define NEW_SIGNAL(name, arg) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg)
-#define NEW_SIGNAL_DETAILED(name, arg) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg)
-
+#define NEW_SIGNAL_FULL(name, type, MTYPE, arg_type) \
+    g_signal_new (name,                              \
+                  G_PASTE_TYPE_SETTINGS,             \
+                  type,                              \
+                  0, /* class offset */              \
+                  NULL, /* accumulator */            \
+                  NULL, /* accumulator data */       \
+                  g_cclosure_marshal_VOID__##MTYPE,  \
+                  G_TYPE_NONE,                       \
+                  1, /* number of params */          \
+                  G_TYPE_##arg_type)
+#define NEW_SIGNAL(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg_type, arg_type)
+#define NEW_SIGNAL_DETAILED(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type)
+#define NEW_SIGNAL_DETAILED_STATIC(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type | G_SIGNAL_TYPE_STATIC_SCOPE)
 /**
  * g_paste_settings_get_element_size:
  * @self: a #GPasteSettings instance
@@ -571,9 +571,9 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     object_class->dispose = g_paste_settings_dispose;
     object_class->finalize = g_paste_settings_finalize;
 
-    signals[CHANGED] = NEW_SIGNAL_DETAILED ("changed", G_TYPE_STRING | G_SIGNAL_TYPE_STATIC_SCOPE);
-    signals[REBIND]  = NEW_SIGNAL_DETAILED ("rebind" , G_TYPE_STRING);
-    signals[TRACK]   = NEW_SIGNAL          ("track"  , G_TYPE_BOOLEAN);
+    signals[CHANGED] = NEW_SIGNAL_DETAILED_STATIC ("changed", STRING);
+    signals[REBIND]  = NEW_SIGNAL_DETAILED        ("rebind" , STRING);
+    signals[TRACK]   = NEW_SIGNAL                 ("track"  , BOOLEAN);
 }
 
 static void

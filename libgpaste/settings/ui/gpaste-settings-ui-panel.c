@@ -29,15 +29,15 @@ struct _GPasteSettingsUiPanelPrivate
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)
 
-#define CALLBACK_DATA_FULL(cb, w, d, d2)                                                           \
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);    \
-    _CallbackDataWrapper *_data = (_CallbackDataWrapper *) malloc (sizeof (_CallbackDataWrapper)); \
-    CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                     \
-    priv->callback_data = g_slist_prepend (priv->callback_data, _data);                            \
-    _data->widget = GTK_WIDGET (w);                                                                \
-    data->callback = G_CALLBACK (cb);                                                              \
-    data->custom_data = user_data;                                                                 \
-    data->user_data = (d) ? GTK_WIDGET (d) : NULL;                                                 \
+#define CALLBACK_DATA_FULL(cb, w, d, d2)                                                             \
+    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);      \
+    _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc (sizeof (_CallbackDataWrapper)); \
+    CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                       \
+    priv->callback_data = g_slist_prepend (priv->callback_data, _data);                              \
+    _data->widget = GTK_WIDGET (w);                                                                  \
+    data->callback = G_CALLBACK (cb);                                                                \
+    data->custom_data = user_data;                                                                   \
+    data->user_data = (d) ? GTK_WIDGET (d) : NULL;                                                   \
     data->user_data2 = (d2) ? GTK_WIDGET (d2) : NULL;
 
 #define CALLBACK_DATA_DEFAULT(w) \

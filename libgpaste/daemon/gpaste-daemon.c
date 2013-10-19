@@ -642,7 +642,7 @@ g_paste_daemon_init (GPasteDaemon *self)
     GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
 
     priv->id_on_bus = 0;
-    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE_INFO,
+    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE,
                                                                    NULL); /* Error */
 
     vtable->method_call = g_paste_daemon_dbus_method_call;
