@@ -24,6 +24,40 @@
 
 #define EXIT_TEST_SKIP 77
 
+typedef struct
+{
+    const gchar *accelerator;
+    guint32      action;
+} Accelerator;
+
+static void
+on_accelerator_activated (GPasteGnomeShellClient *client G_GNUC_UNUSED,
+                          guint32                 action,
+                          guint32                 deviceid,
+                          guint32                 timestamp,
+                          gpointer                user_data)
+{
+    Accelerator *accels = user_data;
+
+    g_print ("Recieved action %u, deviceid %u, timestamp %u, was ", action, deviceid, timestamp);
+    for (guint i = 0; i < 2; ++i)
+    {
+        if (accels[i].action == action)
+        {
+            g_print ("%s\n", accels[i].accelerator);
+            return;
+        }
+    }
+    g_print ("not a known accelerator\n");
+}
+
+static gboolean
+kill_loop (gpointer user_data)
+{
+    g_main_loop_quit (user_data);
+    return G_SOURCE_REMOVE;
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -151,11 +185,57 @@ main (gint argc, gchar *argv[])
         g_error_free (error);
         return EXIT_FAILURE;
     }
+    g_usleep (1000000);
+
+    Accelerator accels[2] = {
+        { "<Ctrl><Alt>D",  0 },
+        { "<Super>F", 0 }
+    };
+    GPasteGnomeShellAccelerator gs_accels[3];
+
+    for (guint i = 0; i < 2; ++i)
+    {
+        gs_accels[i].accelerator = accels[i].accelerator;
+        gs_accels[i].flags = G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL;
+    }
+    gs_accels[2].accelerator = NULL;
+    guint signal_id = g_signal_connect (client, "accelerator-activated", G_CALLBACK (on_accelerator_activated), accels);
+
+
+    g_print ("Now testing KeyGrabber\n");
+    guint32 *actions = g_paste_gnome_shell_client_grab_accelerators (client, gs_accels, &error);
+    for (guint i = 0; i < 2; ++i)
+        accels[i].action = actions[i];
+    g_free (actions);
+    if (error)
+    {
+        g_error ("Couldn't grab accelerators: %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
+
+    g_print ("Now should recognize <Ctrl><Alt>D and <Super>F for 10 secondes.\n");
+    G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *loop = g_main_loop_new (NULL, FALSE);
+    g_main_loop_run (loop);
+    g_timeout_add_seconds (10, kill_loop, loop);
+    for (guint i = 0; i < 2; ++i)
+    {
+        g_paste_gnome_shell_client_ungrab_accelerator (client, accels[i].action, &error);
+        accels[i].action = 0;
+        if (error)
+        {
+            g_error ("Couldn't ungrab accelerator: %s", error->message);
+            g_error_free (error);
+            return EXIT_FAILURE;
+        }
+    }
+
+    g_print ("Now should no longer recognize <Ctrl><Alt>D and <Super>F for 3 secondes.\n");
+    g_usleep (3000000);
 
     // TODO: grab accelerator
-    // TODO: grab accelerators
-    // TODO: ungrab accelerator
-    // TODO: signal accelerator-activated
+
+    g_signal_handler_disconnect (client, signal_id);
 
     return EXIT_SUCCESS;
 }
