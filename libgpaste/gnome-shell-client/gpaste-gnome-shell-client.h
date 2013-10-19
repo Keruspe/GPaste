@@ -24,6 +24,45 @@
 
 G_BEGIN_DECLS
 
+/* ShellKeyBindingMode stolen from gnome-shell */
+/**
+ * GPasteGnomeShellKeyBindingMode:
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_NONE: block keybinding
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_NORMAL: allow keybinding when in window mode,
+ *     e.g. when the focus is in an application window
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_OVERVIEW: allow keybinding while the overview
+ *     is active
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_LOCK_SCREEN: allow keybinding when the screen
+ *     is locked, e.g. when the screen shield is shown
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_UNLOCK_SCREEN: allow keybinding in the unlock
+ *     dialog
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_LOGIN_SCREEN: allow keybinding in the login screen
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_MESSAGE_TRAY: allow keybinding while the message
+ *     tray is popped up
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_SYSTEM_MODAL: allow keybinding when a system modal
+ *     dialog (e.g. authentification or session dialogs) is open
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_LOOKING_GLASS: allow keybinding in looking glass
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_TOPBAR_POPUP: allow keybinding while a top bar menu
+ *     is open
+ * @G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL: always allow keybinding
+ *
+ * Controls in which GNOME Shell states a keybinding should be handled.
+*/
+typedef enum {
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_NONE          = 0,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_NORMAL        = 1 << 0,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_OVERVIEW      = 1 << 1,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_LOCK_SCREEN   = 1 << 2,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_UNLOCK_SCREEN = 1 << 3,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_LOGIN_SCREEN  = 1 << 4,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_MESSAGE_TRAY  = 1 << 5,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_SYSTEM_MODAL  = 1 << 6,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_LOOKING_GLASS = 1 << 7,
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_TOPBAR_POPUP  = 1 << 8,
+
+  G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL = ~0,
+} GPasteGnomeShellKeyBindingMode;
+
 #define G_PASTE_TYPE_GNOME_SHELL_CLIENT            (g_paste_gnome_shell_client_get_type ())
 #define G_PASTE_GNOME_SHELL_CLIENT(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_GNOME_SHELL_CLIENT, GPasteGnomeShellClient))
 #define G_PASTE_IS_GNOME_SHELL_CLIENT(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_GNOME_SHELL_CLIENT))
@@ -36,8 +75,8 @@ typedef struct _GPasteGnomeShellClientClass GPasteGnomeShellClientClass;
 
 typedef struct
 {
-    gchar  *accelerator;
-    guint32 flags; // TODO: provide flags
+    const gchar                   *accelerator;
+    GPasteGnomeShellKeyBindingMode flags;
 } GPasteGnomeShellAccelerator;
 
 G_PASTE_VISIBLE
