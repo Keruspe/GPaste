@@ -96,8 +96,11 @@ void g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
 void g_paste_gnome_shell_client_focus_app    (GPasteGnomeShellClient *self,
                                               const gchar            *id,
                                               GError                **error);
-void g_paste_gnome_shell_client_show_applications      (GPasteGnomeShellClient *self,
+void     g_paste_gnome_shell_client_show_applications  (GPasteGnomeShellClient *self,
                                                         GError                **error);
+guint32  g_paste_gnome_shell_client_grab_accelerator   (GPasteGnomeShellClient     *self,
+                                                        GPasteGnomeShellAccelerator accelerator,
+                                                        GError                     **error);
 guint32 *g_paste_gnome_shell_client_grab_accelerators  (GPasteGnomeShellClient      *self,
                                                         GPasteGnomeShellAccelerator *accelerators,
                                                         GError                     **error);

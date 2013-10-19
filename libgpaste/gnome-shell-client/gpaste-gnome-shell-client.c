@@ -120,6 +120,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAMV_NO_RETURN(method, paramv) \
     DBUS_CALL_ONE_PARAMV_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
 
+#define DBUS_CALL_TWO_PARAMS_RET_UINT32(method, params) \
+    DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
+
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
     DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
 
@@ -197,6 +200,18 @@ g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
                                               GError                **error)
 {
     DBUS_CALL_NO_PARAM_NO_RETURN (SHOW_APPLICATIONS);
+}
+
+G_PASTE_VISIBLE guint32
+g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
+                                             GPasteGnomeShellAccelerator accelerator,
+                                             GError                     **error)
+{
+    GVariant *accel[] = {
+        g_variant_new_string (accelerator.accelerator),
+        g_variant_new_uint32 (accelerator.flags)
+    };
+    DBUS_CALL_TWO_PARAMS_RET_UINT32 (GRAB_ACCELERATOR, accel);
 }
 
 G_PASTE_VISIBLE guint32 *

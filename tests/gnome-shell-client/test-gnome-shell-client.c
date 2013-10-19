@@ -40,7 +40,7 @@ on_accelerator_activated (GPasteGnomeShellClient *client G_GNUC_UNUSED,
     Accelerator *accels = user_data;
 
     g_print ("Recieved action %u, deviceid %u, timestamp %u, was ", action, deviceid, timestamp);
-    for (guint i = 0; i < 2; ++i)
+    for (guint i = 0; i < 3; ++i)
     {
         if (accels[i].action == action)
         {
@@ -187,11 +187,16 @@ main (gint argc, gchar *argv[])
     }
     g_usleep (1000000);
 
-    Accelerator accels[2] = {
+    Accelerator accels[3] = {
         { "<Ctrl><Alt>D",  0 },
-        { "<Super>F", 0 }
+        { "<Super>F", 0 },
+        { "<Super><Alt>G", 0 }
     };
     GPasteGnomeShellAccelerator gs_accels[3];
+    GPasteGnomeShellAccelerator gs_accel = {
+        accels[2].accelerator,
+        G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL
+    };
 
     for (guint i = 0; i < 2; ++i)
     {
@@ -200,7 +205,6 @@ main (gint argc, gchar *argv[])
     }
     gs_accels[2].accelerator = NULL;
     guint signal_id = g_signal_connect (client, "accelerator-activated", G_CALLBACK (on_accelerator_activated), accels);
-
 
     g_print ("Now testing KeyGrabber\n");
     guint32 *actions = g_paste_gnome_shell_client_grab_accelerators (client, gs_accels, &error);
@@ -214,7 +218,15 @@ main (gint argc, gchar *argv[])
         return EXIT_FAILURE;
     }
 
-    g_print ("Now should recognize <Ctrl><Alt>D and <Super>F for 10 secondes.\n");
+    accels[2].action = g_paste_gnome_shell_client_grab_accelerator (client, gs_accel, &error);
+    if (error)
+    {
+        g_error ("Couldn't grab accelerator: %s", error->message);
+        g_error_free (error);
+        return EXIT_FAILURE;
+    }
+
+    g_print ("Now should recognize <Ctrl><Alt>D, <Super>F and <Super><Alt>G for 10 secondes.\n");
     G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *loop = g_main_loop_new (NULL, FALSE);
     g_main_loop_run (loop);
     g_timeout_add_seconds (10, kill_loop, loop);
@@ -230,7 +242,7 @@ main (gint argc, gchar *argv[])
         }
     }
 
-    g_print ("Now should no longer recognize <Ctrl><Alt>D and <Super>F for 3 secondes.\n");
+    g_print ("Now should no longer recognize keybindings for 3 secondes.\n");
     g_usleep (3000000);
 
     // TODO: grab accelerator
