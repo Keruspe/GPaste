@@ -32,6 +32,6 @@ If you also want to build the legacy applet, you'll have to pass `--enable-vala 
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
-Latest release is: [GPaste 3.2](http://www.imagination-land.org/posts/2013-10-16-gpaste-3.2-released.html).
+Latest release is: [GPaste 3.2.1](http://www.imagination-land.org/posts/2013-10-16-gpaste-3.2.1-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste-3.2.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste-3.2.1.tar.xz>
