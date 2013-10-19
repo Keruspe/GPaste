@@ -118,11 +118,8 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_CALL_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params) \
     DBUS_CALL_FULL (TypeName, type_name, g_return_if_fail (TYPE_CHECKER (self)), decl, method, params, n_params, ;, {})
 
-#define DBUS_CALL_PARAMS_RAW_BASE(TypeName, type_name, TYPE_CHECKER, method, params, n_params, if_fail, variant_extract) \
-    DBUS_CALL_WITH_RETURN_RAW_BASE (TypeName, type_name, TYPE_CHECKER, {}, method, params, n_params, if_fail, variant_extract)
-
 #define DBUS_CALL_ONE_PARAMV_RET_AU_BASE(TypeName, type_name, TYPE_CHECKER, method, paramv, n_items) \
-    DBUS_CALL_PARAMS_RAW_BASE(TypeName, type_name, TYPE_CHECKER, method, &paramv, 1, FALSE, return g_paste_dbus_get_au_result (variant, n_items))
+    DBUS_CALL_WITH_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, {}, method, &paramv, 1, FALSE, return g_paste_dbus_get_au_result (variant, n_items))
 
 #define DBUS_CALL_ONE_PARAM_RAW_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method, if_fail, variant_extract) \
     DBUS_CALL_WITH_RETURN_RAW_BASE (TypeName, type_name, TYPE_CHECKER,                                                            \
