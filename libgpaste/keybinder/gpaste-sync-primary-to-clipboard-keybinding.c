@@ -44,7 +44,6 @@ g_paste_sync_primary_to_clipboard_keybinding_sync (GPasteKeybinding *self G_GNUC
 
 /**
  * g_paste_sync_primary_to_clipboard_keybinding_new:
- * @settings: a #GPasteSettings instance
  * @gcm: a #GPasteClipboardManager instance
  *
  * Create a new instance of #GPasteSyncPrimaryToClipboardKeybinding
@@ -53,11 +52,9 @@ g_paste_sync_primary_to_clipboard_keybinding_sync (GPasteKeybinding *self G_GNUC
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_sync_primary_to_clipboard_keybinding_new (GPasteSettings          *settings,
-                                                  GPasteClipboardsManager *gcm)
+g_paste_sync_primary_to_clipboard_keybinding_new (GPasteClipboardsManager *gcm)
 {
     return _g_paste_keybinding_new (G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING,
-                                    settings,
                                     G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING,
                                     g_paste_settings_get_sync_primary_to_clipboard,
                                     g_paste_sync_primary_to_clipboard_keybinding_sync,

@@ -43,8 +43,7 @@ typedef struct _GPastePasteAndPopKeybindingClass GPastePasteAndPopKeybindingClas
 G_PASTE_VISIBLE
 GType g_paste_paste_and_pop_keybinding_get_type (void);
 
-GPasteKeybinding *g_paste_paste_and_pop_keybinding_new (GPasteSettings          *settings,
-                                                        GPasteHistory           *history,
+GPasteKeybinding *g_paste_paste_and_pop_keybinding_new (GPasteHistory           *history,
                                                         GPasteClipboardsManager *clipboards_manager);
 
 G_END_DECLS

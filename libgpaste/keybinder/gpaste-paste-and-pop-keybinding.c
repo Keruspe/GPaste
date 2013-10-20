@@ -181,7 +181,6 @@ g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self)
 
 /**
  * g_paste_paste_and_pop_keybinding_new:
- * @settings: a #GPasteSettings instance
  * @history: a #GPasteHistory instance
  *
  * Create a new instance of #GPastePasteAndPopKeybinding
@@ -190,15 +189,13 @@ g_paste_paste_and_pop_keybinding_init (GPastePasteAndPopKeybinding *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_paste_and_pop_keybinding_new (GPasteSettings          *settings,
-                                      GPasteHistory           *history,
+g_paste_paste_and_pop_keybinding_new (GPasteHistory           *history,
                                       GPasteClipboardsManager *clipboards_manager)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (clipboards_manager), NULL);
 
     GPasteKeybinding *self = _g_paste_keybinding_new (G_PASTE_TYPE_PASTE_AND_POP_KEYBINDING,
-                                                      settings,
                                                       G_PASTE_PASTE_AND_POP_SETTING,
                                                       g_paste_settings_get_paste_and_pop,
                                                       paste_and_pop,

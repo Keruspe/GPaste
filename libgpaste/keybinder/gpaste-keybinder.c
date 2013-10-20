@@ -21,12 +21,77 @@
 
 #include <gdk/gdk.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
+#  include <gdk/gdkwayland.h>
+#endif
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
+#  include <gdk/gdkx.h>
+#  include <X11/extensions/XInput2.h>
+#endif
+
 struct _GPasteKeybinderPrivate
 {
-    GSList    *keybindings;
+    GSList         *keybindings;
+    GPasteSettings *settings;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
+
+/*
+ * Wrapper around GPasteKeybinding
+ */
+
+typedef struct
+{
+    GPasteKeybinding *binding;
+    GPasteSettings   *settings;
+
+    gulong            rebind_signal;
+} _Keybinding;
+
+static void
+_keybinding_activate (_Keybinding *k)
+{
+    g_paste_keybinding_activate (k->binding,
+                                 g_paste_keybinding_get_setting_getter (k->binding) (k->settings));
+}
+
+static void
+_keybinding_rebind (_Keybinding    *k,
+                    GPasteSettings *setting G_GNUC_UNUSED)
+{
+    g_paste_keybinding_deactivate (k->binding);
+    _keybinding_activate (k);
+}
+
+static _Keybinding *
+_keybinding_new (GPasteKeybinding *binding,
+                 GPasteSettings   *settings)
+{
+    _Keybinding *k = g_new (_Keybinding, 1);
+
+    k->binding = binding;
+    k->settings = g_object_ref (settings);
+
+    G_PASTE_CLEANUP_FREE gchar *detailed_signal = g_strdup_printf ("rebind::%s",
+                                                                   g_paste_keybinding_get_dconf_key (binding));
+    k->rebind_signal = g_signal_connect_swapped (G_OBJECT (settings),
+                                                 detailed_signal,
+                                                 G_CALLBACK (_keybinding_rebind),
+                                                 k);
+    return k;
+}
+
+static void
+_keybinding_free (_Keybinding *k)
+{
+    g_signal_handler_disconnect (k->settings, k->rebind_signal);
+    g_object_unref (k->binding);
+    g_object_unref (k->settings);
+    g_free (k);
+}
+
+#define GET_BINDING(k) ((_Keybinding *) k)->binding
 
 /**
  * g_paste_keybinder_add_keybinding:
@@ -47,17 +112,113 @@ g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->keybindings = g_slist_prepend (priv->keybindings,
-                                         binding);
+                                         _keybinding_new (binding, priv->settings));
+}
+
+#ifdef GDK_WINDOWING_WAYLAND
+static void
+g_paste_keybinder_change_grab_wayland (void)
+{
+    g_error ("Wayland is currently not supported outside of gnome-shell.");
+}
+#endif
+
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
+static void
+g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
+                                   Display          *display,
+                                   gboolean          grab)
+{
+    if (!g_paste_keybinding_is_active (binding))
+        return;
+
+    guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
+    XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
+
+    XISetMask (mask.mask, XI_KeyPress);
+
+    gdk_error_trap_push ();
+
+    guint mod_masks [] = {
+        0, /* modifier only */
+        GDK_MOD2_MASK, /* NumLock */
+        GDK_MOD5_MASK, /* ScrollLock */
+        GDK_LOCK_MASK, /* CapsLock */
+        GDK_MOD2_MASK | GDK_MOD5_MASK,
+        GDK_MOD2_MASK | GDK_LOCK_MASK,
+        GDK_MOD5_MASK | GDK_LOCK_MASK,
+        GDK_MOD2_MASK | GDK_MOD5_MASK | GDK_LOCK_MASK,
+    };
+
+    Window window = GDK_ROOT_WINDOW ();
+    GdkModifierType modifiers = g_paste_keybinding_get_modifiers (binding);
+    const guint *keycodes = g_paste_keybinding_get_keycodes (binding);
+
+    for (guint i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
+        XIGrabModifiers mods = { mod_masks[i] | modifiers, 0 };
+        for (const guint *keycode = keycodes; *keycode; ++keycode)
+        {
+            if (grab)
+            {
+                XIGrabKeycode (display,
+                               XIAllMasterDevices,
+                               *keycode,
+                               window,
+                               XIGrabModeSync,
+                               XIGrabModeAsync,
+                               False,
+                               &mask,
+                               1,
+                               &mods);
+            }
+            else
+            {
+                XIUngrabKeycode (display,
+                                 XIAllMasterDevices,
+                                 *keycode,
+                                 window,
+                                 1,
+                                 &mods);
+            }
+        }
+    }
+
+    gdk_flush ();
+    gdk_error_trap_pop_ignored ();
+}
+#endif
+
+static void
+g_paste_keybinder_change_grab_internal (GPasteKeybinding *binding,
+                                        gboolean          grab)
+{
+    GdkDisplay *display = gdk_display_get_default ();;
+
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY (display))
+        g_paste_keybinder_change_grab_wayland ();
+    else
+#endif
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
+    if (GDK_IS_X11_DISPLAY (display))
+        g_paste_keybinder_change_grab_x11 (binding, GDK_DISPLAY_XDISPLAY (display), grab);
+    else
+#endif
+        g_warning ("Unsupported GDK backend, keybinder won't work.");
 }
 
 static void
 g_paste_keybinder_activate_keybinding_func (gpointer data,
                                             gpointer user_data G_GNUC_UNUSED)
 {
-    GPasteKeybinding *keybinding = data;
+    _Keybinding *k = data;
+    GPasteKeybinding *keybinding = k->binding;;
 
     if (!g_paste_keybinding_is_active (keybinding))
-        g_paste_keybinding_activate (keybinding);
+    {
+        _keybinding_activate (k);
+        g_paste_keybinder_change_grab_internal (keybinding, TRUE);
+    }
 }
 
 /**
@@ -84,10 +245,13 @@ static void
 g_paste_keybinder_deactivate_keybinding_func (gpointer data,
                                               gpointer user_data G_GNUC_UNUSED)
 {
-    GPasteKeybinding *keybinding = data;
+    GPasteKeybinding *keybinding = GET_BINDING (data);
 
     if (g_paste_keybinding_is_active (keybinding))
+    {
+        g_paste_keybinder_change_grab_internal (keybinding, FALSE);
         g_paste_keybinding_deactivate (keybinding);
+    }
 }
 
 /**
@@ -130,7 +294,7 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 
     for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
     {
-        GPasteKeybinding *real_keybinding = keybinding->data;
+        GPasteKeybinding *real_keybinding = GET_BINDING (keybinding->data);
         if (g_paste_keybinding_is_active (real_keybinding))
             g_paste_keybinding_notify (real_keybinding, xevent);
     }
@@ -144,10 +308,11 @@ g_paste_keybinder_dispose (GObject *object)
     GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
-    if (priv->keybindings)
+    if (priv->settings)
     {
+        g_clear_object (&priv->settings);
         g_paste_keybinder_deactivate_all (self);
-        g_slist_foreach (priv->keybindings, (GFunc) g_object_unref, NULL);
+        g_slist_foreach (priv->keybindings, (GFunc) _keybinding_free, NULL);
         priv->keybindings = NULL;
     }
 
@@ -189,6 +354,7 @@ g_paste_keybinder_init (GPasteKeybinder *self)
 
 /**
  * g_paste_keybinder_new:
+ * @settings: a #GPasteSettings instance
  *
  * Create a new instance of #GPasteKeybinder
  *
@@ -196,7 +362,14 @@ g_paste_keybinder_init (GPasteKeybinder *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinder *
-g_paste_keybinder_new (void)
+g_paste_keybinder_new (GPasteSettings *settings)
 {
-    return g_object_new (G_PASTE_TYPE_KEYBINDER, NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
+    GPasteKeybinder *self = G_PASTE_KEYBINDER (g_object_new (G_PASTE_TYPE_KEYBINDER, NULL));
+    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
+
+    priv->settings = g_object_ref (settings);
+
+    return self;
 }

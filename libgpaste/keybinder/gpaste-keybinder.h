@@ -42,7 +42,7 @@ void g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
 void g_paste_keybinder_activate_all   (GPasteKeybinder  *self);
 void g_paste_keybinder_deactivate_all (GPasteKeybinder  *self);
 
-GPasteKeybinder *g_paste_keybinder_new (void);
+GPasteKeybinder *g_paste_keybinder_new (GPasteSettings *settings);
 
 G_END_DECLS
 
