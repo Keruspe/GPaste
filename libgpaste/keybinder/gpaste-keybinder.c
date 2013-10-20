@@ -52,8 +52,7 @@ typedef struct
 static void
 _keybinding_activate (_Keybinding *k)
 {
-    g_paste_keybinding_activate (k->binding,
-                                 g_paste_keybinding_get_setting_getter (k->binding) (k->settings));
+    g_paste_keybinding_activate (k->binding, k->settings);
 }
 
 static void
@@ -96,7 +95,7 @@ _keybinding_free (_Keybinding *k)
 /**
  * g_paste_keybinder_add_keybinding:
  * @self: a #GPasteKeybinder instance
- * @binding; (transfer full): a #GPasteKeybinding instance
+ * @binding: (transfer full): a #GPasteKeybinding instance
  *
  * Add a new keybinding
  *

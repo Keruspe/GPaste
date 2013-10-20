@@ -43,13 +43,12 @@ typedef void         (*GPasteKeybindingFunc) (GPasteKeybinding *self, /* FIXME: 
 G_PASTE_VISIBLE
 GType g_paste_keybinding_get_type (void);
 
-const guint           *g_paste_keybinding_get_keycodes       (const GPasteKeybinding *self);
-GdkModifierType        g_paste_keybinding_get_modifiers      (const GPasteKeybinding *self);
-GPasteKeybindingGetter g_paste_keybinding_get_setting_getter (const GPasteKeybinding *self);
-const gchar           *g_paste_keybinding_get_dconf_key      (const GPasteKeybinding *self);
+const guint    *g_paste_keybinding_get_keycodes  (const GPasteKeybinding *self);
+GdkModifierType g_paste_keybinding_get_modifiers (const GPasteKeybinding *self);
+const gchar    *g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self);
 
 void            g_paste_keybinding_activate      (GPasteKeybinding *self,
-                                                  const gchar      *binding);
+                                                  GPasteSettings   *settings);
 void            g_paste_keybinding_deactivate    (GPasteKeybinding *self);
 gboolean        g_paste_keybinding_is_active     (GPasteKeybinding *self);
 void            g_paste_keybinding_notify        (GPasteKeybinding *self,

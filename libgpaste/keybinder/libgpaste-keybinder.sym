@@ -32,6 +32,5 @@ LIBGPASTE_KEYBINDER_3 {
 global:
     g_paste_keybinding_get_modifiers;
     g_paste_keybinding_get_keycodes;
-    g_paste_keybinding_get_setting_getter;
     g_paste_keybinding_get_dconf_key;
 } LIBGPASTE_KEYBINDER_1;

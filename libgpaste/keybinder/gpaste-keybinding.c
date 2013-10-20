@@ -77,24 +77,6 @@ g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 }
 
 /**
- * g_paste_keybinding_get_settings_getter:
- * @self: a #GPasteKeybinding instance
- *
- * Get the #GPasteKeybindingGetter for this keybinding
- *
- * Returns: the getter
- */
-G_PASTE_VISIBLE GPasteKeybindingGetter
-g_paste_keybinding_get_setting_getter (const GPasteKeybinding *self)
-{
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
-
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
-
-    return priv->getter;
-}
-
-/**
  * g_paste_keybinding_get_dconf_key:
  * @self: a #GPasteKeybinding instance
  *
@@ -115,21 +97,24 @@ g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
 /**
  * g_paste_keybinding_activate:
  * @self: a #GPasteKeybinding instance
- * @binding: the binding to use
+ * @settings: a #GPasteSettings instance
  *
  * Activate the keybinding
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_keybinding_activate (GPasteKeybinding  *self,
-                             const gchar       *binding)
+g_paste_keybinding_activate (GPasteKeybinding *self,
+                             GPasteSettings   *settings)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     g_return_if_fail (!priv->active);
+
+    const gchar *binding = priv->getter (settings);
 
     if (binding)
     {
