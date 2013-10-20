@@ -170,7 +170,6 @@ g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
                                      gint32                  level,
                                      GError                **error)
 {
-    G_PASTE_CLEANUP_VT_FREE GVariantType *vardict_entry = g_variant_type_new_dict_entry (G_VARIANT_TYPE_STRING, G_VARIANT_TYPE_VARIANT);
     GVariantBuilder builder;
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
