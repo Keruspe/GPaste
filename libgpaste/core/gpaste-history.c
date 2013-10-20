@@ -457,8 +457,7 @@ g_paste_history_get_history_file_path (GPasteSettings *settings)
 {
     G_PASTE_CLEANUP_FREE gchar *history_dir_path = g_paste_history_get_history_dir_path ();
     G_PASTE_CLEANUP_FREE gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
-    //return g_build_filename (history_dir_path, history_file_name, NULL);
-    return NULL;
+    return g_build_filename (history_dir_path, history_file_name, NULL);
 }
 
 static GFile *
