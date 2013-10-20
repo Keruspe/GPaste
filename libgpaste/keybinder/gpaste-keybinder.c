@@ -37,6 +37,8 @@ struct _GPasteKeybinderPrivate
 
     GPasteSettings         *settings;
     GPasteGnomeShellClient *shell_client;
+
+    gulong                  accel_signal;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
@@ -103,6 +105,27 @@ _keybinding_free (_Keybinding *k)
     if (k->shell_client)
         g_object_unref (k->shell_client);
     g_free (k);
+}
+
+static gboolean
+_keybinding_grab_gnome_shell (_Keybinding *k)
+{
+    GPasteGnomeShellAccelerator accel = {
+        g_paste_keybinding_get_accelerator (k->binding, k->settings),
+        G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL
+    };
+    GError *error = NULL;
+
+    k->action = g_paste_gnome_shell_client_grab_accelerator (k->shell_client, accel, &error);
+
+    if (error)
+    {
+        g_warning ("Couldn't grab keybinding: %s", error->message);
+        g_error_free (error);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 #define GET_BINDING(k) ((_Keybinding *) k)->binding
@@ -221,26 +244,70 @@ g_paste_keybinder_change_grab_internal (GPasteKeybinding *binding,
         g_warning ("Unsupported GDK backend, keybinder won't work.");
 }
 
+static gboolean
+g_paste_keybinder_private_grab_all_gnome_shell (GPasteKeybinderPrivate *priv)
+{
+    GPasteGnomeShellAccelerator accels[MAX_BINDINGS + 1];
+    GPasteSettings *settings = priv->settings;
+
+    guint index = 0;
+    for (GSList *binding = priv->keybindings; binding; binding = g_slist_next (binding))
+    {
+        GPasteKeybinding *keybinding = GET_BINDING (binding->data);
+        if (g_paste_keybinding_is_active (keybinding))
+        {
+            accels[index].accelerator = g_paste_keybinding_get_accelerator (keybinding, settings);
+            accels[index++].flags = G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL;
+        }
+    }
+    accels[index].accelerator = NULL;
+
+    GError *error = NULL;
+    G_PASTE_CLEANUP_FREE guint *actions = g_paste_gnome_shell_client_grab_accelerators (priv->shell_client,
+                                                                                        accels,
+                                                                                        &error);
+
+    if (error)
+    {
+        g_warning ("Couldn't grab keybindings: %s", error->message);
+        g_error_free (error);
+        return FALSE;
+    }
+
+    index = 0;
+    for (GSList *binding = priv->keybindings; binding; binding = g_slist_next (binding))
+    {
+        _Keybinding *k = binding->data;
+        if (g_paste_keybinding_is_active (k->binding))
+            k->action = actions[index++];
+    }
+
+    return TRUE;
+}
+
 static void
 g_paste_keybinder_activate_keybinding_func (gpointer data,
-                                            gpointer user_data)
+                                            gpointer user_data G_GNUC_UNUSED)
 {
     _Keybinding *k = data;
     GPasteKeybinding *keybinding = k->binding;;
-    gboolean grab = !user_data;
+
+    if (!g_paste_keybinding_is_active (keybinding))
+        _keybinding_activate (k);
+}
+
+static void
+g_paste_keybinder_grab_keybinding_func (gpointer data,
+                                        gpointer user_data G_GNUC_UNUSED)
+{
+    _Keybinding *k = data;
+    GPasteKeybinding *keybinding = k->binding;;
 
     if (!g_paste_keybinding_is_active (keybinding))
     {
-        _keybinding_activate (k);
-        if (grab)
+        if (!(k->shell_client && _keybinding_grab_gnome_shell (k)))
             g_paste_keybinder_change_grab_internal (keybinding, TRUE);
     }
-}
-
-static gboolean
-g_paste_keybinder_private_activate_all_gnome_shell (GPasteKeybinderPrivate *priv)
-{
-    return FALSE;
 }
 
 /**
@@ -257,11 +324,17 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
-    gpointer grabber = (priv->shell_client && g_paste_keybinder_private_activate_all_gnome_shell (priv)) ? priv->shell_client : NULL;
 
     g_slist_foreach (priv->keybindings,
                      g_paste_keybinder_activate_keybinding_func,
-                     grabber);
+                     NULL);
+
+    if (!(priv->shell_client && g_paste_keybinder_private_grab_all_gnome_shell (priv)))
+    {
+        g_slist_foreach (priv->keybindings,
+                         g_paste_keybinder_grab_keybinding_func,
+                         NULL);
+    }
 }
 
 static void
@@ -326,15 +399,43 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 }
 
 static void
+on_accelerator_activated (GPasteGnomeShellClient *client    G_GNUC_UNUSED,
+                          guint32                 action,
+                          guint32                 deviceid  G_GNUC_UNUSED,
+                          guint32                 timestamp G_GNUC_UNUSED,
+                          gpointer                user_data)
+{
+    GPasteKeybinderPrivate *priv = user_data;
+
+    for (GSList *binding = priv->keybindings; binding; binding = g_slist_next (binding))
+    {
+        _Keybinding *k = binding->data;
+
+        if (action == k->action)
+        {
+            GPasteKeybinding *keybinding = k->binding;
+            if (g_paste_keybinding_is_active (keybinding))
+                g_paste_keybinding_perform (keybinding);
+            return;
+        }
+    }
+}
+
+static void
 g_paste_keybinder_dispose (GObject *object)
 {
     GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
+    if (priv->shell_client)
+    {
+        g_signal_handler_disconnect (priv->shell_client, priv->accel_signal);
+        g_clear_object (&priv->shell_client);
+    }
+
     if (priv->settings)
     {
         g_clear_object (&priv->settings);
-        g_clear_object (&priv->shell_client);
         g_paste_keybinder_deactivate_all (self);
         g_slist_foreach (priv->keybindings, (GFunc) _keybinding_free, NULL);
         priv->keybindings = NULL;
@@ -396,7 +497,15 @@ g_paste_keybinder_new (GPasteSettings         *settings,
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->settings = g_object_ref (settings);
-    priv->shell_client = g_object_ref (shell_client);
+    priv->shell_client = (shell_client) ? g_object_ref (shell_client) : NULL;
+
+    if (shell_client)
+    {
+        priv->accel_signal = g_signal_connect (G_OBJECT (shell_client),
+                                               "accelerator-activated",
+                                               G_CALLBACK (on_accelerator_activated),
+                                               priv);
+    }
 
     return self;
 }

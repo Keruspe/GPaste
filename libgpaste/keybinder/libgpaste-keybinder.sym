@@ -33,4 +33,6 @@ global:
     g_paste_keybinding_get_modifiers;
     g_paste_keybinding_get_keycodes;
     g_paste_keybinding_get_dconf_key;
+    g_paste_keybinding_get_accelerator;
+    g_paste_keybinding_perform;
 } LIBGPASTE_KEYBINDER_1;

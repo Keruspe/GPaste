@@ -95,6 +95,26 @@ g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
 }
 
 /**
+ * g_paste_keybinding_get_accelerator:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the accelerator for this keybinding
+ *
+ * Returns: the accelerator
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
+                                    const GPasteSettings   *settings)
+{
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
+
+    return priv->getter (settings);
+}
+
+/**
  * g_paste_keybinding_activate:
  * @self: a #GPasteKeybinding instance
  * @settings: a #GPasteSettings instance
@@ -240,7 +260,7 @@ g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
  *
  * Runs the callback associated to the keybinding if needed
  *
- * Returns: The return value of the callback
+ * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinding_notify (GPasteKeybinding *self,
@@ -267,6 +287,24 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
 
     if (keycode && g_paste_keybinding_private_match (priv, modifiers, keycode))
         priv->callback (self, priv->user_data);
+}
+
+/**
+ * g_paste_keybinding_perform:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Runs the callback associated to the keybinding
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_keybinding_perform (GPasteKeybinding *self)
+{
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+
+    priv->callback (self, priv->user_data);
 }
 
 static void
