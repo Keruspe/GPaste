@@ -29,10 +29,14 @@
 #  include <X11/extensions/XInput2.h>
 #endif
 
+#define MAX_BINDINGS 7
+
 struct _GPasteKeybinderPrivate
 {
-    GSList         *keybindings;
-    GPasteSettings *settings;
+    GSList                 *keybindings;
+
+    GPasteSettings         *settings;
+    GPasteGnomeShellClient *shell_client;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
@@ -43,10 +47,13 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 
 typedef struct
 {
-    GPasteKeybinding *binding;
-    GPasteSettings   *settings;
+    GPasteKeybinding       *binding;
+    GPasteSettings         *settings;
+    GPasteGnomeShellClient *shell_client;
 
-    gulong            rebind_signal;
+    guint32                 action;
+
+    gulong                  rebind_signal;
 } _Keybinding;
 
 static void
@@ -64,13 +71,17 @@ _keybinding_rebind (_Keybinding    *k,
 }
 
 static _Keybinding *
-_keybinding_new (GPasteKeybinding *binding,
-                 GPasteSettings   *settings)
+_keybinding_new (GPasteKeybinding       *binding,
+                 GPasteSettings         *settings,
+                 GPasteGnomeShellClient *shell_client)
 {
     _Keybinding *k = g_new (_Keybinding, 1);
 
     k->binding = binding;
     k->settings = g_object_ref (settings);
+    k->shell_client = (shell_client) ? g_object_ref (shell_client) : NULL;
+
+    k->action = 0;
 
     G_PASTE_CLEANUP_FREE gchar *detailed_signal = g_strdup_printf ("rebind::%s",
                                                                    g_paste_keybinding_get_dconf_key (binding));
@@ -84,9 +95,13 @@ _keybinding_new (GPasteKeybinding *binding,
 static void
 _keybinding_free (_Keybinding *k)
 {
+    if (k->action)
+        g_paste_gnome_shell_client_ungrab_accelerator (k->shell_client, k->action, NULL);
     g_signal_handler_disconnect (k->settings, k->rebind_signal);
     g_object_unref (k->binding);
     g_object_unref (k->settings);
+    if (k->shell_client)
+        g_object_unref (k->shell_client);
     g_free (k);
 }
 
@@ -111,7 +126,7 @@ g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->keybindings = g_slist_prepend (priv->keybindings,
-                                         _keybinding_new (binding, priv->settings));
+                                         _keybinding_new (binding, priv->settings, priv->shell_client));
 }
 
 #ifdef GDK_WINDOWING_WAYLAND
@@ -208,16 +223,24 @@ g_paste_keybinder_change_grab_internal (GPasteKeybinding *binding,
 
 static void
 g_paste_keybinder_activate_keybinding_func (gpointer data,
-                                            gpointer user_data G_GNUC_UNUSED)
+                                            gpointer user_data)
 {
     _Keybinding *k = data;
     GPasteKeybinding *keybinding = k->binding;;
+    gboolean grab = !user_data;
 
     if (!g_paste_keybinding_is_active (keybinding))
     {
         _keybinding_activate (k);
-        g_paste_keybinder_change_grab_internal (keybinding, TRUE);
+        if (grab)
+            g_paste_keybinder_change_grab_internal (keybinding, TRUE);
     }
+}
+
+static gboolean
+g_paste_keybinder_private_activate_all_gnome_shell (GPasteKeybinderPrivate *priv)
+{
+    return FALSE;
 }
 
 /**
@@ -234,10 +257,11 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
+    gpointer grabber = (priv->shell_client && g_paste_keybinder_private_activate_all_gnome_shell (priv)) ? priv->shell_client : NULL;
 
     g_slist_foreach (priv->keybindings,
                      g_paste_keybinder_activate_keybinding_func,
-                     NULL);
+                     grabber);
 }
 
 static void
@@ -310,6 +334,7 @@ g_paste_keybinder_dispose (GObject *object)
     if (priv->settings)
     {
         g_clear_object (&priv->settings);
+        g_clear_object (&priv->shell_client);
         g_paste_keybinder_deactivate_all (self);
         g_slist_foreach (priv->keybindings, (GFunc) _keybinding_free, NULL);
         priv->keybindings = NULL;
@@ -361,14 +386,17 @@ g_paste_keybinder_init (GPasteKeybinder *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinder *
-g_paste_keybinder_new (GPasteSettings *settings)
+g_paste_keybinder_new (GPasteSettings         *settings,
+                       GPasteGnomeShellClient *shell_client)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (!shell_client || G_PASTE_IS_GNOME_SHELL_CLIENT (shell_client), NULL);
 
     GPasteKeybinder *self = G_PASTE_KEYBINDER (g_object_new (G_PASTE_TYPE_KEYBINDER, NULL));
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->settings = g_object_ref (settings);
+    priv->shell_client = g_object_ref (shell_client);
 
     return self;
 }

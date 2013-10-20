@@ -20,6 +20,7 @@
 #ifndef __G_PASTE_KEYBINDER_H__
 #define __G_PASTE_KEYBINDER_H__
 
+#include <gpaste-gnome-shell-client.h>
 #include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
@@ -42,7 +43,8 @@ void g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
 void g_paste_keybinder_activate_all   (GPasteKeybinder  *self);
 void g_paste_keybinder_deactivate_all (GPasteKeybinder  *self);
 
-GPasteKeybinder *g_paste_keybinder_new (GPasteSettings *settings);
+GPasteKeybinder *g_paste_keybinder_new (GPasteSettings         *settings,
+                                        GPasteGnomeShellClient *shell_client);
 
 G_END_DECLS
 

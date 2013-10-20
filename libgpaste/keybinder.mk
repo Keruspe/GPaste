@@ -60,6 +60,7 @@ libgpaste_keybinder_libgpaste_keybinder_la_CFLAGS = \
 
 libgpaste_keybinder_libgpaste_keybinder_la_LIBADD = \
 	$(libgpaste_common_la_file) \
+	$(libgpaste_gnome_shell_client_la_file) \
 	$(libgpaste_settings_la_file) \
 	$(X11_LIBS) \
 	$(AM_LIBS) \
