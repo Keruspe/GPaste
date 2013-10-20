@@ -80,21 +80,17 @@ main (gint argc, gchar *argv[])
     G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
     G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
-    G_PASTE_CLEANUP_UNREF GPasteKeybinder *keybinder = g_paste_keybinder_new ();
+    G_PASTE_CLEANUP_UNREF GPasteKeybinder *keybinder = g_paste_keybinder_new (settings);
     G_PASTE_CLEANUP_UNREF GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     G_PASTE_CLEANUP_UNREF GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
     GPasteKeybinding *keybindings[] = {
-        g_paste_paste_and_pop_keybinding_new (settings,
-                                              history,
+        g_paste_paste_and_pop_keybinding_new (history,
                                               clipboards_manager),
-        g_paste_show_history_keybinding_new (settings,
-                                             g_paste_daemon),
-        g_paste_sync_clipboard_to_primary_keybinding_new (settings,
-                                                          clipboards_manager),
-        g_paste_sync_primary_to_clipboard_keybinding_new (settings,
-                                                          clipboards_manager)
+        g_paste_show_history_keybinding_new (g_paste_daemon),
+        g_paste_sync_clipboard_to_primary_keybinding_new (clipboards_manager),
+        g_paste_sync_primary_to_clipboard_keybinding_new (clipboards_manager)
     };
 
     G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *main_loop = loop = g_main_loop_new (NULL, FALSE);
