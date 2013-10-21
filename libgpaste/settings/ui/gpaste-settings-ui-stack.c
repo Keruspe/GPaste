@@ -30,13 +30,13 @@ struct _GPasteSettingsUiStackPrivate
 {
     GPasteClient    *client;
     GPasteSettings  *settings;
-    GtkCheckButton  *images_support_button;
-    GtkCheckButton  *primary_to_history_button;
-    GtkCheckButton  *save_history_button;
-    GtkCheckButton  *synchronize_clipboards_button;
-    GtkCheckButton  *track_changes_button;
-    GtkCheckButton  *track_extension_state_button;
-    GtkCheckButton  *trim_items_button;
+    GtkSwitch       *images_support_button;
+    GtkSwitch       *primary_to_history_button;
+    GtkSwitch       *save_history_button;
+    GtkSwitch       *synchronize_clipboards_button;
+    GtkSwitch       *track_changes_button;
+    GtkSwitch       *track_extension_state_button;
+    GtkSwitch       *trim_items_button;
     GtkSpinButton   *element_size_button;
     GtkSpinButton   *max_displayed_history_size_button;
     GtkSpinButton   *max_history_size_button;
@@ -376,7 +376,7 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         g_free (text);
     }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->images_support_button), g_paste_settings_get_images_support (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->images_support_button), g_paste_settings_get_images_support (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
@@ -390,9 +390,9 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     else if (!g_strcmp0 (key, G_PASTE_PASTE_AND_POP_SETTING))
         gtk_entry_set_text (priv->paste_and_pop_entry, g_paste_settings_get_paste_and_pop (settings));
     else if (!g_strcmp0 (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->primary_to_history_button), g_paste_settings_get_primary_to_history (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->primary_to_history_button), g_paste_settings_get_primary_to_history (settings));
     else if (!g_strcmp0 (key, G_PASTE_SAVE_HISTORY_SETTING))
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->save_history_button), g_paste_settings_get_save_history (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->save_history_button), g_paste_settings_get_save_history (settings));
     else if (!g_strcmp0 (key, G_PASTE_SHOW_HISTORY_SETTING))
         gtk_entry_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings));
     else if (!g_strcmp0 (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
@@ -400,15 +400,15 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     else if (!g_strcmp0 (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
         gtk_entry_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings));
     else if (!g_strcmp0 (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
     else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->track_changes_button), g_paste_settings_get_track_changes (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->track_changes_button), g_paste_settings_get_track_changes (settings));
 #ifdef ENABLE_EXTENSION
     else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->track_extension_state_button), g_paste_settings_get_track_extension_state (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->track_extension_state_button), g_paste_settings_get_track_extension_state (settings));
 #endif
     else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->trim_items_button), g_paste_settings_get_trim_items (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->trim_items_button), g_paste_settings_get_trim_items (settings));
 }
 
 static void

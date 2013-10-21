@@ -53,11 +53,11 @@ typedef void (*GPasteMultiActionCallback) (const gchar *action,
                                            const gchar *target,
                                            gpointer     user_data);
 
-GtkCheckButton *g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
-                                                               const gchar           *label,
-                                                               gboolean               value,
-                                                               GPasteBooleanCallback  on_value_changed,
-                                                               gpointer               user_data);
+GtkSwitch *g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
+                                                          const gchar           *label,
+                                                          gboolean               value,
+                                                          GPasteBooleanCallback  on_value_changed,
+                                                          gpointer               user_data);
 void g_paste_settings_ui_panel_add_separator (GPasteSettingsUiPanel *self);
 GtkSpinButton *g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
                                                             const gchar           *label,
