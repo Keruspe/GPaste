@@ -22,8 +22,6 @@
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-text-item.h>
 
-#include <glib.h>
-
 #include <string.h>
 
 #define DEFAULT_HISTORY "history"
@@ -95,15 +93,13 @@ g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
     GSList *history = g_paste_history_get_history (priv->history);
     guint length = MIN (g_slist_length (history), g_paste_settings_get_max_displayed_history_size (priv->settings));
-    const gchar **displayed_history = g_new (const gchar *, length + 1);
+    G_PASTE_CLEANUP_FREE const gchar **displayed_history = g_new (const gchar *, length + 1);
 
     for (guint i = 0; i < length; ++i, history = g_slist_next (history))
         displayed_history[i] = g_paste_item_get_display_string (history->data);
     displayed_history[length] = NULL;
 
     GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
-
-    g_free (displayed_history);
 
     return g_variant_new_tuple (&variant, 1);
 }
@@ -116,76 +112,62 @@ g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    GVariant *variant = g_variant_iter_next_value (&parameters_iter);
-    gchar *value = g_variant_dup_string (variant, length);
-
-    g_variant_unref (variant);
-
-    return value;
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    return g_variant_dup_string (variant, length);
 }
 
 static void
 g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
                                        GVariant            *parameters)
 {
-    gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name != NULL);
+    g_return_if_fail (name);
 
     GPasteSettings *settings = priv->settings;
 
-    gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
+    G_PASTE_CLEANUP_FREE gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
 
     g_paste_settings_set_history_name (settings, name);
     g_paste_history_save (priv->history);
     g_paste_settings_set_history_name (settings, old_name);
-
-    g_free (old_name);
-    g_free (name);
 }
 
 static void
 g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
                                        GVariant            *parameters)
 {
-    gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name != NULL);
+    g_return_if_fail (name);
 
     g_paste_history_switch (priv->history, name);
-
-    g_free (name);
 }
 
 static void
 g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
                                        GVariant            *parameters)
 {
-    gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name != NULL);
+    g_return_if_fail (name);
 
     GPasteHistory *history = priv->history;
 
-    gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
+    G_PASTE_CLEANUP_FREE gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
     gboolean delete_current = !g_strcmp0 (name, old_history);
 
     if (!delete_current)
         g_paste_history_switch (history, name);
     g_paste_history_delete (history, NULL);
     g_paste_history_switch (history, (delete_current) ? DEFAULT_HISTORY : old_history);
-
-    g_free (name);
-    g_free (old_history);
 }
 
 static GVariant *
 g_paste_daemon_list_histories (void)
 {
-    GStrv history_names = g_paste_history_list (NULL);
+    G_PASTE_CLEANUP_STRFREEV GStrv history_names = g_paste_history_list (NULL);
     GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
-
-    g_strfreev (history_names);
 
     return g_variant_new_tuple (&variant, 1);
 }
@@ -195,10 +177,10 @@ g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
                                gchar               *text,
                                gsize                length)
 {
-    g_return_if_fail (text != NULL);
+    g_return_if_fail (text);
 
     GPasteSettings *settings = priv->settings;
-    gchar *stripped = g_strstrip (g_strdup (text));
+    G_PASTE_CLEANUP_FREE gchar *stripped = g_strstrip (g_strdup (text));
 
     if (length >= g_paste_settings_get_min_text_item_size (settings) &&
         length <= g_paste_settings_get_max_text_item_size (settings) &&
@@ -208,8 +190,6 @@ g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
         g_paste_history_add (priv->history, item);
         g_paste_clipboards_manager_select (priv->clipboards_manager, item);
     }
-    g_free (text);
-    g_free (stripped);
 }
 
 static void
@@ -217,7 +197,7 @@ g_paste_daemon_private_add (GPasteDaemonPrivate *priv,
                             GVariant            *parameters)
 {
     gsize length;
-    gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
+    G_PASTE_CLEANUP_FREE gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
     g_paste_daemon_private_do_add (priv, text, length);
 }
@@ -227,11 +207,11 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
                                  GVariant            *parameters)
 {
     gsize length;
-    gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
+    G_PASTE_CLEANUP_FREE gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
-    g_return_if_fail (file != NULL);
+    g_return_if_fail (file);
 
-    gchar *content = NULL;
+    G_PASTE_CLEANUP_FREE gchar *content = NULL;
 
     if (g_file_get_contents (file,
                              &content,
@@ -240,7 +220,6 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
     {
         g_paste_daemon_private_do_add (priv, content, length);
     }
-    g_free (file);
 }
 
 static guint32
@@ -250,12 +229,8 @@ g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    GVariant *variant = g_variant_iter_next_value (&parameters_iter);
-    guint32 value = g_variant_get_uint32 (variant);
-
-    g_variant_unref (variant);
-
-    return value;
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    return g_variant_get_uint32 (variant);
 }
 
 static GVariant *
@@ -264,7 +239,7 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
 {
     const gchar *value = g_paste_history_get_value (priv->history,
                                                     g_paste_daemon_get_dbus_uint32_parameter (parameters));
-    GVariant *variant = g_variant_new_string ((value == NULL) ? "" : value);
+    GVariant *variant = g_variant_new_string ((value) ? value : "");
 
     return g_variant_new_tuple (&variant, 1);
 }
@@ -355,10 +330,8 @@ g_paste_daemon_track (GPasteDaemon *self,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
     gboolean tracking_state = g_variant_get_boolean (variant);
-
-    g_variant_unref (variant);
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
@@ -451,7 +424,7 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
 static void
 g_paste_daemon_unregister_object (gpointer user_data)
 {
-    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
+    G_PASTE_CLEANUP_UNREF GPasteDaemon *self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     gulong *c_signals = priv->c_signals;
 
@@ -459,8 +432,6 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_CHANGED]);
-
-    g_object_unref (self);
 }
 
 static void
@@ -483,7 +454,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                             g_paste_daemon_unregister_object,
                                             &priv->inner_error))
     {
-            return;
+        return;
     }
 
     gulong *c_signals = priv->c_signals;

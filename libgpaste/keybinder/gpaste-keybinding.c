@@ -19,8 +19,6 @@
 
 #include "gpaste-keybinding-private.h"
 
-#include <gtk/gtk.h>
-
 #ifdef GDK_WINDOWING_WAYLAND
 #  include <gdk/gdkwayland.h>
 #endif
@@ -388,9 +386,9 @@ _g_paste_keybinding_new (GType                  type,
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_KEYBINDING), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (dconf_key != NULL, NULL);
-    g_return_val_if_fail (getter != NULL, NULL);
-    g_return_val_if_fail (callback != NULL, NULL);
+    g_return_val_if_fail (dconf_key, NULL);
+    g_return_val_if_fail (getter, NULL);
+    g_return_val_if_fail (callback, NULL);
 
     GPasteKeybinding *self = g_object_new (type, NULL);
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
@@ -402,14 +400,12 @@ _g_paste_keybinding_new (GType                  type,
     priv->user_data = user_data;
     priv->keycodes = NULL;
 
-    gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
+    G_PASTE_CLEANUP_FREE gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
 
     priv->rebind_signal = g_signal_connect_swapped (G_OBJECT (settings),
                                                     detailed_signal,
                                                     G_CALLBACK (g_paste_keybinding_rebind),
                                                     self);
-
-    g_free (detailed_signal);
 
     return self;
 }

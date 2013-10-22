@@ -65,7 +65,7 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
         !g_paste_clipboard_get_image_checksum (clipboard))
     {
         const GSList *history = g_paste_history_get_history (priv->history);
-        if (history != NULL)
+        if (history)
             g_paste_clipboard_select_item (clipboard, history->data);
     }
 }
@@ -131,8 +131,8 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             continue;
 
         gboolean something_in_clipboard = FALSE;
-        GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
-                                                                     gdk_atom_intern_static_string ("TARGETS"));
+        G_PASTE_CLEANUP_SELECT_FREE GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
+                                                                                                 gdk_atom_intern_static_string ("TARGETS"));
 
         if (targets)
         {
@@ -145,7 +145,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
                 const gchar *text = g_paste_clipboard_set_text (clip);
 
                 /* Did we already have some contents, or did we get some now? */
-                something_in_clipboard = (g_paste_clipboard_get_text (clip) != NULL);
+                something_in_clipboard = !!g_paste_clipboard_get_text (clip);
 
                 /* If our contents got updated */
                 if (text)
@@ -165,24 +165,18 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             else if (g_paste_settings_get_images_support (settings) && gtk_selection_data_targets_include_image (targets, FALSE))
             {
                 /* Update our cache from the real Clipboard */
-                GdkPixbuf *image = g_paste_clipboard_set_image (clip);
+                G_PASTE_CLEANUP_UNREF GdkPixbuf *image = g_paste_clipboard_set_image (clip);
 
                 /* Did we already have some contents, or did we get some now? */
                 something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clip);
 
                 /* If our contents got updated */
-                if (image)
-                {
-                    if (track)
-                        item = G_PASTE_ITEM (g_paste_image_item_new (image));
-                    g_object_unref (image);
-                }
+                if (image && track)
+                    item = G_PASTE_ITEM (g_paste_image_item_new (image));
             }
 
             if (item)
                 g_paste_history_add (history, item);
-
-            gtk_selection_data_free (targets);
 
             if (!something_in_clipboard)
             {

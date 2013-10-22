@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static GMainLoop *main_loop;
+static GMainLoop *loop;
 
 enum
 {
@@ -44,13 +44,15 @@ static void
 signal_handler (int signum)
 {
     g_print (_("Signal %d received, exiting\n"), signum);
-    g_main_loop_quit (main_loop);
+    g_main_loop_quit (loop);
 }
 
 static void
 on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-              gpointer      user_data      G_GNUC_UNUSED)
+              gpointer      user_data)
 {
+    GMainLoop *main_loop = user_data;
+
     fprintf (stderr, "%s\n", _("Could not acquire DBus name."));
     g_main_loop_quit (main_loop);
     exit (EXIT_FAILURE);
@@ -58,8 +60,10 @@ on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 
 static void
 reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-        gpointer      user_data      G_GNUC_UNUSED)
+        gpointer      user_data)
 {
+    GMainLoop *main_loop = user_data;
+
     g_main_loop_quit (main_loop);
     execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
 }
@@ -73,17 +77,17 @@ main (gint argc, gchar *argv[])
 
     gtk_init (&argc, &argv);
 
-    GPasteSettings *settings = g_paste_settings_new ();
-    GPasteHistory *history = g_paste_history_new (settings);
-    GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
+    G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
+    G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
+    G_PASTE_CLEANUP_UNREF GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
 #ifdef ENABLE_X_KEYBINDER
-    GPasteKeybinder *keybinder = g_paste_keybinder_new ();
+    G_PASTE_CLEANUP_UNREF GPasteKeybinder *keybinder = g_paste_keybinder_new ();
 #else
     gpointer keybinder = NULL;
 #endif
-    GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
-    GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
-    GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
+    G_PASTE_CLEANUP_UNREF GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
+    G_PASTE_CLEANUP_UNREF GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
+    G_PASTE_CLEANUP_UNREF GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
 #ifdef ENABLE_X_KEYBINDER
     GPasteKeybinding *keybindings[] = {
@@ -98,15 +102,17 @@ main (gint argc, gchar *argv[])
     };
 #endif
 
+    G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *main_loop = loop = g_main_loop_new (NULL, FALSE);
+
     gulong c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
                                           "name-lost",
                                           G_CALLBACK (on_name_lost),
-                                          NULL), /* user_data */
+                                          main_loop),
         [C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
                                                "reexecute-self",
                                                G_CALLBACK (reexec),
-                                               NULL) /* user_data */
+                                               main_loop)
     };
 
 #ifdef ENABLE_X_KEYBINDER
@@ -122,42 +128,21 @@ main (gint argc, gchar *argv[])
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
-    g_object_unref (history);
-    g_object_unref (clipboards_manager);
-#ifdef ENABLE_X_KEYBINDER
-    g_object_unref (keybinder);
-#endif
-    g_object_unref (clipboard);
-    g_object_unref (primary);
-
-#ifdef ENABLE_X_KEYBINDER
-    for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
-        g_object_unref (keybindings[k]);
-#endif
-
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
 
-    main_loop = g_main_loop_new (NULL, FALSE);
-
     gint exit_status = EXIT_SUCCESS;
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     if (g_paste_daemon_own_bus_name (g_paste_daemon, &error))
-    {
         g_main_loop_run (main_loop);
-    }
     else
     {
         g_error ("%s: %s\n", _("Could not register DBus service."), error->message);
-        g_error_free (error);
         exit_status = EXIT_FAILURE;
     }
 
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
-    g_object_unref (settings);
-    g_object_unref (g_paste_daemon);
-    g_main_loop_unref (main_loop);
 
     return exit_status;
 }

@@ -100,49 +100,42 @@ g_paste_uris_item_init (GPasteUrisItem *self G_GNUC_UNUSED)
 G_PASTE_VISIBLE GPasteItem *
 g_paste_uris_item_new (const gchar *uris)
 {
-    g_return_val_if_fail (uris != NULL, NULL);
+    g_return_val_if_fail (uris, NULL);
     g_return_val_if_fail (g_utf8_validate (uris, -1, NULL), NULL);
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
     GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
 
-    gchar *home_escaped = g_regex_escape_string (g_get_home_dir (), -1);
-    GRegex *regex = g_regex_new (home_escaped,
-                                 0, /* Compile options */
-                                 0, /* Match options */
-                                 NULL); /* Error */
-    gchar *display_string_with_newlines = g_regex_replace_literal (regex,
-                                                                   uris,
-                                                                   (gssize) -1,
-                                                                   0, /* Start position */
-                                                                   "~",
-                                                                   0, /* Match options */
-                                                                   NULL); /* Error */
-    g_regex_unref (regex);
-    g_free (home_escaped);
-
-    regex = g_regex_new ("\\n",
-                         0, /* Compile options */
-                         0, /* Match options */
-                         NULL); /* Error */
-    gchar *display_string = g_regex_replace_literal (regex,
-                                                     display_string_with_newlines,
-                                                     (gssize) -1,
-                                                     0, /* Start position */
-                                                     " ",
-                                                     0, /* Match options */
-                                                     NULL); /* Error */
-    g_regex_unref (regex);
-    g_free (display_string_with_newlines);
+    G_PASTE_CLEANUP_FREE gchar *home_escaped = g_regex_escape_string (g_get_home_dir (), -1);
+    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (home_escaped,
+                                                             0, /* Compile options */
+                                                             0, /* Match options */
+                                                             NULL); /* Error */
+    G_PASTE_CLEANUP_FREE gchar *display_string_with_newlines = g_regex_replace_literal (regex,
+                                                                                        uris,
+                                                                                        (gssize) -1,
+                                                                                        0, /* Start position */
+                                                                                        "~",
+                                                                                        0, /* Match options */
+                                                                                        NULL); /* Error */
+    G_PASTE_CLEANUP_REGEX_UNREF GRegex *_regex = g_regex_new ("\\n",
+                                                              0, /* Compile options */
+                                                              0, /* Match options */
+                                                              NULL); /* Error */
+    G_PASTE_CLEANUP_FREE gchar *display_string = g_regex_replace_literal (regex,
+                                                                          display_string_with_newlines,
+                                                                          (gssize) -1,
+                                                                          0, /* Start position */
+                                                                          " ",
+                                                                          0, /* Match options */
+                                                                          NULL); /* Error */
 
     // This is the prefix displayed in history to identify selected files
-    gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);
+    G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);
 
     g_paste_item_set_display_string (self, full_display_string);
-    g_free (full_display_string);
-    g_free (display_string);
 
-    GStrv paths = g_strsplit (uris, "\n", 0);
+    G_PASTE_CLEANUP_STRFREEV GStrv paths = g_strsplit (uris, "\n", 0);
     guint length = g_strv_length (paths);
 
     self->size += length + 1;
@@ -154,7 +147,6 @@ g_paste_uris_item_new (const gchar *uris)
         self->size += strlen (_uris[i]) + 1;
     }
     _uris[length] = NULL;
-    g_strfreev (paths);
 
     return self;
 }

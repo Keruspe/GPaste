@@ -23,8 +23,6 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-macros.h>
 
-#include <glib-object.h>
-
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_SETTINGS            (g_paste_settings_get_type ())

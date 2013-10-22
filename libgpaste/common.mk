@@ -27,7 +27,6 @@ libgpaste_common_libgpaste_common_la_SOURCES = \
 	$(NULL)
 
 libgpaste_common_libgpaste_common_la_CFLAGS = \
-	$(GTK_CFLAGS) \
 	$(GDK_PIXBUF_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)

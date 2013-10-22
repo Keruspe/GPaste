@@ -31,7 +31,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 /**
  * g_paste_keybinder_add_keybinding:
  * @self: a #GPasteKeybinder instance
- * @binding; a #GPasteKeybinding instance
+ * @binding; (transfer full): a #GPasteKeybinding instance
  *
  * Add a new keybinding
  *
@@ -47,7 +47,7 @@ g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->keybindings = g_slist_prepend (priv->keybindings,
-                                         g_object_ref (binding));
+                                         binding);
 }
 
 static void

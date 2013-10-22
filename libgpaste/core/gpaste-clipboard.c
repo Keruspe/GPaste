@@ -126,24 +126,23 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
-    gchar *text = gtk_clipboard_wait_for_text (priv->real);
+    G_PASTE_CLEANUP_FREE gchar *text = gtk_clipboard_wait_for_text (priv->real);
 
     if (!text)
         return NULL;
 
     GPasteSettings *settings = priv->settings;
-    gchar *stripped = g_strstrip (g_strdup (text));
+    G_PASTE_CLEANUP_FREE gchar *stripped = g_strstrip (g_strdup (text));
     gboolean trim_items = g_paste_settings_get_trim_items (settings);
     const gchar *to_add = trim_items ? stripped : text;
-    const gchar *ret = NULL;
     gsize length = strlen (to_add);
 
     if (length < g_paste_settings_get_min_text_item_size (settings) ||
         length > g_paste_settings_get_max_text_item_size (settings) ||
         !strlen (stripped))
-            goto ignore;
+            return NULL;
     if (priv->text && !g_strcmp0 (priv->text, to_add))
-        goto ignore;
+        return NULL;
 
     if (trim_items &&
         priv->target == GDK_SELECTION_CLIPBOARD &&
@@ -152,13 +151,7 @@ g_paste_clipboard_set_text (GPasteClipboard *self)
     else
         g_paste_clipboard_private_set_text (priv, to_add);
 
-    ret = priv->text;
-
-ignore:
-    g_free (stripped);
-    g_free (text);
-
-    return ret;
+    return priv->text;
 }
 
 /**
@@ -175,7 +168,7 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
                                const gchar     *text)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
-    g_return_if_fail (text != NULL);
+    g_return_if_fail (text);
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
@@ -198,7 +191,7 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
                                        GPasteUrisItem         *item)
 {
     GtkClipboard *real = priv->real;
-    GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
+    G_PASTE_CLEANUP_TARGETS_UNREF GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
     g_paste_clipboard_private_set_text (priv, g_paste_item_get_value (G_PASTE_ITEM (item)));
 
@@ -217,7 +210,6 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
     gtk_clipboard_store (real);
 
     gtk_target_table_free (targets, n_targets);
-    gtk_target_list_unref (target_list);
 }
 
 /**
@@ -254,7 +246,7 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
                                         GdkPixbuf              *image,
                                         const gchar            *checksum)
 {
-    g_return_if_fail (image != NULL);
+    g_return_if_fail (image);
 
     GtkClipboard *real = priv->real;
 
@@ -282,9 +274,9 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
 
     if (image)
     {
-        gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                       (guchar *) gdk_pixbuf_get_pixels (image),
-                                                       -1);
+        G_PASTE_CLEANUP_FREE gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
+                                                                            (guchar *) gdk_pixbuf_get_pixels (image),
+                                                                            -1);
 
         if (g_strcmp0 (checksum, priv->image_checksum))
         {
@@ -294,8 +286,6 @@ g_paste_clipboard_set_image (GPasteClipboard *self)
         }
         else
             ret = NULL;
-
-        g_free (checksum);
     }
 
     return ret;

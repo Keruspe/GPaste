@@ -24,7 +24,6 @@ bin_gpaste_settings_SOURCES = \
 	$(NULL)
 
 bin_gpaste_settings_CFLAGS = \
-	$(GTK_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 

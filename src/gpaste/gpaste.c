@@ -89,7 +89,7 @@ show_history (GPasteClient *client,
               gboolean      zero,
               GError      **error)
 {
-    GStrv history = g_paste_client_get_history (client, error);
+    G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history (client, error);
 
     if (!*error)
     {
@@ -101,8 +101,6 @@ show_history (GPasteClient *client,
                 printf ("%d: ", i++);
             printf ("%s%c", *h, (zero) ? '\0' : '\n');
         }
-
-        g_strfreev (history);
     }
 }
 
@@ -127,7 +125,6 @@ static void
 failure_exit (GError *error)
 {
     g_error ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
-    g_error_free (error);
     exit (EXIT_FAILURE);
 }
 
@@ -151,8 +148,8 @@ main (gint argc, gchar *argv[])
 
     int status = EXIT_SUCCESS;
 
-    GError *error = NULL;
-    GPasteClient *client = g_paste_client_new (&error);
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new (&error);
 
     if (!client)
         failure_exit (error);
@@ -160,7 +157,7 @@ main (gint argc, gchar *argv[])
     if (!isatty (fileno (stdin)))
     {
         /* We are being piped */
-        GString *data = g_string_new ("");
+        G_PASTE_CLEANUP_STRING_FREE GString *data = g_string_new ("");
         gchar c;
 
         while ((c = fgetc (stdin)) != EOF)
@@ -169,8 +166,6 @@ main (gint argc, gchar *argv[])
         data->str[data->len - 1] = '\0';
 
         g_paste_client_add (client, data->str, &error);
-
-        g_string_free (data, TRUE);
     }
     else
     {
@@ -245,12 +240,11 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "lh") ||
                      !g_strcmp0 (arg1, "list-histories"))
             {
-                GStrv histories = g_paste_client_list_histories (client, &error);
+                G_PASTE_CLEANUP_STRFREEV GStrv histories = g_paste_client_list_histories (client, &error);
                 if (!error)
                 {
                     for (GStrv h = histories; *h; ++h)
                         printf ("%s\n", *h);
-                    g_strfreev (histories);
                 }
             }
             else
@@ -315,8 +309,6 @@ main (gint argc, gchar *argv[])
             break;
         }
     }
-
-    g_object_unref (client);
 
     if (error)
         failure_exit (error);

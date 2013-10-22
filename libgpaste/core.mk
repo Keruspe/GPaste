@@ -61,7 +61,6 @@ libgpaste_core_libgpaste_core_la_SOURCES = \
 
 libgpaste_core_libgpaste_core_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
-	$(GTK_CFLAGS) \
 	$(XML_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)

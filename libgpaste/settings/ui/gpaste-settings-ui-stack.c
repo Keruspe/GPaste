@@ -244,14 +244,13 @@ g_paste_settings_ui_check_connection_error (GError *error)
         return FALSE;
 
     fprintf (stderr, "%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
-    g_error_free (error);
     return TRUE;
 }
 
 static void
 g_paste_settings_ui_stack_private_refill_histories (GPasteSettingsUiStackPrivate *priv)
 {
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     GStrv histories = g_paste_client_list_histories (priv->client, &error);
 
     if (g_paste_settings_ui_check_connection_error (error))
@@ -279,7 +278,7 @@ backup_callback (const gchar *value,
                  gpointer     user_data)
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
     g_paste_client_backup_history (priv->client, value, &error);
 
@@ -296,7 +295,7 @@ targets_callback (const gchar *action,
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
     GPasteClient *client = priv->client;
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
     if (!g_strcmp0 (action, "switch"))
         g_paste_client_switch_history (client, target, &error);
@@ -317,7 +316,7 @@ g_paste_settings_ui_stack_private_make_histories_panel (GPasteSettingsUiStackPri
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
-    gchar *backup_name = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
+    G_PASTE_CLEANUP_FREE gchar *backup_name = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
     priv->backup_entry = g_paste_settings_ui_panel_add_text_confirm_setting (panel,
                                                                              _("Backup history as: "),
                                                                              backup_name,
@@ -327,7 +326,6 @@ g_paste_settings_ui_stack_private_make_histories_panel (GPasteSettingsUiStackPri
                                                                              _("Backup"),
                                                                              backup_callback,
                                                                              priv);
-    g_free (backup_name);
 
     /* translators: This is the text displayed on the button used to perform a multi-history management action */
     priv->targets = g_paste_settings_ui_panel_add_multi_action_setting (panel,
@@ -371,9 +369,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
     else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
     {
-        gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
+        G_PASTE_CLEANUP_FREE gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
         gtk_entry_set_text (priv->backup_entry, text);
-        g_free (text);
     }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->images_support_button), g_paste_settings_get_images_support (settings));
