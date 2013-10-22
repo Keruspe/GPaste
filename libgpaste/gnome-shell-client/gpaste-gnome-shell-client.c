@@ -135,6 +135,17 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_SET_BOOLEAN_PROPERTY(property, value) \
     DBUS_SET_BOOLEAN_PROPERTY_BASE(GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
 
+/**
+ * g_paste_gnome_shell_client_eval:
+ * @self: a #GPasteGnomeShellClient instance
+ * @script: The script to eval
+ * @result: (allow none): a plate to put the result in
+ * @error: a #GError
+ *
+ * Evaluate a javascript script
+ *
+ * Returns: Whether the eval was successful or not
+ */
 G_PASTE_VISIBLE gboolean
 g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
                                  const gchar            *script,
@@ -147,6 +158,15 @@ g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
     return bs.b;
 }
 
+/**
+ * g_paste_gnome_shell_client_focus_seach:
+ * @self: a #GPasteGnomeShellClient instance
+ * @error: a #GError
+ *
+ * Focus the search field in overview
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
                                          GError                **error)
@@ -163,6 +183,18 @@ _g_variant_builder_add_vardict_entry (GVariantBuilder *builder,
                                                                     g_variant_new_variant (value)));
 }
 
+/**
+ * g_paste_gnome_shell_client_show_osd:
+ * @self: a #GPasteGnomeShellClient instance
+ * @icon: (allow none): the icon to display
+ * @label: (allow none): the text to display
+ * @level: percentage to fill the bar with (-1 for none)
+ * @error: a #GError
+ *
+ * Display something to the user
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
                                      const gchar            *icon,
@@ -186,6 +218,16 @@ g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
     DBUS_CALL_ONE_PARAMV_NO_RETURN (SHOW_OSD, vardict);
 }
 
+/**
+ * g_paste_gnome_shell_client_focus_app:
+ * @self: a #GPasteGnomeShellClient instance
+ * @id: the application id
+ * @error: a #GError
+ *
+ * Focus an app in overview
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_focus_app (GPasteGnomeShellClient *self,
                                       const gchar            *id,
@@ -194,6 +236,15 @@ g_paste_gnome_shell_client_focus_app (GPasteGnomeShellClient *self,
     DBUS_CALL_ONE_PARAM_NO_RETURN (FOCUS_APP, string, id);
 }
 
+/**
+ * g_paste_gnome_shell_client_show_applications:
+ * @self: a #GPasteGnomeShellClient instance
+ * @error: a #GError
+ *
+ * Display the application pane in the overview
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
                                               GError                **error)
@@ -201,6 +252,16 @@ g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
     DBUS_CALL_NO_PARAM_NO_RETURN (SHOW_APPLICATIONS);
 }
 
+/**
+ * g_paste_gnome_shell_client_grab_accelerator:
+ * @self: a #GPasteGnomeShellClient instance
+ * @accelerator: a #GPasteGnomeShellAccelerator instance
+ * @error: a #GError
+ *
+ * Grab a keybinding
+ *
+ * Returns: the action id corresponding
+ */
 G_PASTE_VISIBLE guint32
 g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
                                              GPasteGnomeShellAccelerator accelerator,
@@ -213,6 +274,16 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
     DBUS_CALL_TWO_PARAMS_RET_UINT32 (GRAB_ACCELERATOR, accel);
 }
 
+/**
+ * g_paste_gnome_shell_client_grab_accelerators:
+ * @self: a #GPasteGnomeShellClient instance
+ * @accelerators: an array of #GPasteGnomeShellAccelerator instances
+ * @error: a #GError
+ *
+ * Grab some keybindings
+ *
+ * Returns: the action ids corresponding
+ */
 G_PASTE_VISIBLE guint32 *
 g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
                                               GPasteGnomeShellAccelerator *accelerators,
@@ -236,6 +307,16 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
     DBUS_CALL_ONE_PARAMV_RET_AU (GRAB_ACCELERATORS, array, n_accelerators);
 }
 
+/**
+ * g_paste_gnome_shell_client_ungrab_accelerator:
+ * @self: a #GPasteGnomeShellClient instance
+ * @action: the action id corresponding to the keybinding
+ * @error: a #GError
+ *
+ * Ungrab a keybinding
+ *
+ * Returns: whether the ungrab was succesful or not
+ */
 G_PASTE_VISIBLE gboolean
 g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
                                                guint32                 action,
@@ -290,7 +371,7 @@ g_paste_gnome_shell_client_get_shell_version (GPasteGnomeShellClient *self)
  * g_paste_gnome_shell_client_overview_set_active:
  * @self: a #GPasteGnomeShellClient instance
  * @value: the active state
- * @error: a pointer to a GError
+ * @error: a #GError
  *
  * Set whether the overview is active or not
  *
