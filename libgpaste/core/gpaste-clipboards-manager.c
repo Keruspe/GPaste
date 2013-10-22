@@ -29,8 +29,6 @@ struct _GPasteClipboardsManagerPrivate
     GPasteHistory  *history;
     GPasteSettings *settings;
 
-    gboolean        lock;
-
     gulong          selected_signal;
 };
 
@@ -111,51 +109,12 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     }
 }
 
-/**
- * g_paste_clipboards_manager_lock:
- * @self: a #GPasteClipboardsManager instance
- *
- * Lock the clipboards
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_clipboards_manager_lock (GPasteClipboardsManager *self)
-{
-    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
-
-    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
-
-    priv->lock = TRUE;
-}
-
-/**
- * g_paste_clipboards_manager_unlock:
- * @self: a #GPasteClipboardsManager instance
- *
- * Unlock the clipboards
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_clipboards_manager_unlock (GPasteClipboardsManager *self)
-{
-    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
-
-    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
-
-    priv->lock = FALSE;
-}
-
 static void
 g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
                                    GdkEvent        *event G_GNUC_UNUSED,
                                    gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
-
-    if (priv->lock)
-        return;
 
     GPasteHistory *history = priv->history;
     GPasteSettings *settings = priv->settings;
@@ -345,7 +304,6 @@ g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
 
     priv->clipboards = NULL;
-    priv->lock = FALSE;
 }
 
 /**
