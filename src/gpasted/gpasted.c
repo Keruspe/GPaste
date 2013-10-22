@@ -85,8 +85,7 @@ main (int argc, char *argv[])
 
     GPasteKeybinding *keybindings[] = {
         G_PASTE_KEYBINDING (g_paste_paste_and_pop_keybinding_new (settings,
-                                                                  history,
-                                                                  clipboards_manager)),
+                                                                  history)),
         G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (settings,
                                                                  g_paste_daemon)),
         G_PASTE_KEYBINDING (g_paste_sync_clipboard_to_primary_keybinding_new (settings,
