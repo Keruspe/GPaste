@@ -22,138 +22,126 @@
 #ifdef GDK_WINDOWING_WAYLAND
 #  include <gdk/gdkwayland.h>
 #endif
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 #  include <gdk/gdkx.h>
 #  include <X11/extensions/XInput2.h>
 #endif
 
 struct _GPasteKeybindingPrivate
 {
-    gchar                 *binding;
-    GPasteSettings        *settings;
     GPasteKeybindingGetter getter;
+    gchar                 *dconf_key;
     GPasteKeybindingFunc   callback;
     gpointer               user_data;
     gboolean               active;
     GdkModifierType        modifiers;
     guint                 *keycodes;
-
-    gulong                 rebind_signal;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 
-#ifdef GDK_WINDOWING_WAYLAND
-static void
-g_paste_keybinding_change_grab_wayland (void)
+/**
+ * g_paste_keybinding_get_modifiers:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the modifiers for this keybinding
+ *
+ * Returns: the modifiers
+ */
+G_PASTE_VISIBLE GdkModifierType
+g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
 {
-    g_error ("Wayland is currently not supported.");
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
+
+    return priv->modifiers;
 }
-#endif
 
-#ifdef GDK_WINDOWING_X11
-static void
-g_paste_keybinding_change_grab_x11 (GPasteKeybinding *self,
-                                    Display          *display,
-                                    gboolean          grab)
+/**
+ * g_paste_keybinding_get_keycodes:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the keycodes for this keybinding
+ *
+ * Returns: the keycodes
+ */
+G_PASTE_VISIBLE const guint *
+g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 {
-    guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
-    XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
-    XISetMask (mask.mask, XI_KeyPress);
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 
-    gdk_error_trap_push ();
-
-    guint mod_masks [] = {
-        0, /* modifier only */
-        GDK_MOD2_MASK, /* NumLock */
-        GDK_MOD5_MASK, /* ScrollLock */
-        GDK_LOCK_MASK, /* CapsLock */
-        GDK_MOD2_MASK | GDK_MOD5_MASK,
-        GDK_MOD2_MASK | GDK_LOCK_MASK,
-        GDK_MOD5_MASK | GDK_LOCK_MASK,
-        GDK_MOD2_MASK | GDK_MOD5_MASK | GDK_LOCK_MASK,
-    };
-
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
-    Window window = GDK_ROOT_WINDOW ();
-
-    for (guint i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
-        XIGrabModifiers mods = { mod_masks[i] | priv->modifiers, 0 };
-        for (guint *keycode = priv->keycodes; *keycode; ++keycode)
-        {
-            if (grab)
-            {
-                XIGrabKeycode (display,
-                               XIAllMasterDevices,
-                               *keycode,
-                               window,
-                               XIGrabModeSync,
-                               XIGrabModeAsync,
-                               False,
-                               &mask,
-                               1,
-                               &mods);
-            }
-            else
-            {
-                XIUngrabKeycode (display,
-                                 XIAllMasterDevices,
-                                 *keycode,
-                                 window,
-                                 1,
-                                 &mods);
-            }
-        }
-    }
-
-    gdk_flush ();
-    gdk_error_trap_pop_ignored ();
+    return priv->keycodes;
 }
-#endif
 
-static void
-g_paste_keybinding_change_grab (GPasteKeybinding *self,
-                                gboolean          grab)
+/**
+ * g_paste_keybinding_get_dconf_key:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the dconf key for this keybinding
+ *
+ * Returns: the dconf key
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
 {
-    GdkDisplay *display = gdk_display_get_default ();;
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
-#ifdef GDK_WINDOWING_WAYLAND
-    if (GDK_IS_WAYLAND_DISPLAY (display))
-        g_paste_keybinding_change_grab_wayland ();
-    else
-#endif
-#ifdef GDK_WINDOWING_X11
-    if (GDK_IS_X11_DISPLAY (display))
-        g_paste_keybinding_change_grab_x11 (self, GDK_DISPLAY_XDISPLAY (display), grab);
-    else
-#endif
-        g_error ("Unsupported GDK backend.");
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
+
+    return priv->dconf_key;
+}
+
+/**
+ * g_paste_keybinding_get_accelerator:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the accelerator for this keybinding
+ *
+ * Returns: the accelerator
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
+                                    const GPasteSettings   *settings)
+{
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
+
+    return priv->getter (settings);
 }
 
 /**
  * g_paste_keybinding_activate:
  * @self: a #GPasteKeybinding instance
+ * @settings: a #GPasteSettings instance
  *
  * Activate the keybinding
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_keybinding_activate (GPasteKeybinding  *self)
+g_paste_keybinding_activate (GPasteKeybinding *self,
+                             GPasteSettings   *settings)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     g_return_if_fail (!priv->active);
 
-    gtk_accelerator_parse_with_keycode (priv->binding, NULL, &priv->keycodes, &priv->modifiers);
+    const gchar *binding = priv->getter (settings);
 
-    if (priv->keycodes)
-        g_paste_keybinding_change_grab (self, TRUE);
+    if (binding)
+    {
+        gtk_accelerator_parse_with_keycode (binding, NULL, &priv->keycodes, &priv->modifiers);
 
-    priv->active = TRUE;
+        priv->active = priv->keycodes != NULL;
+    }
 }
 
 /**
@@ -173,26 +161,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding *self)
 
     g_return_if_fail (priv->active);
 
-    if (priv->keycodes)
-        g_paste_keybinding_change_grab (self, FALSE);
-
     priv->active = FALSE;
-}
-
-static void
-g_paste_keybinding_rebind (GPasteKeybinding *self,
-                           GPasteSettings   *settings G_GNUC_UNUSED)
-{
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
-
-    g_free (priv->binding);
-    priv->binding = g_strdup (priv->getter (priv->settings));
-
-    if (priv->active)
-    {
-        g_paste_keybinding_deactivate (self);
-        g_paste_keybinding_activate (self);
-    }
 }
 
 /**
@@ -217,11 +186,11 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 static void
 g_paste_keybinding_parse_event_wayland (void)
 {
-    g_error ("Wayland is currently not supported.");
+    g_error ("Wayland is currently not supported outside of gnome-shell.");
 }
 #endif
 
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 static gint
 g_paste_keybinding_get_xinput_opcode (Display *display)
 {
@@ -291,7 +260,7 @@ g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
  *
  * Runs the callback associated to the keybinding if needed
  *
- * Returns: The return value of the callback
+ * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinding_notify (GPasteKeybinding *self,
@@ -309,15 +278,33 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
         g_paste_keybinding_parse_event_wayland ();
     else
 #endif
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     if (GDK_IS_X11_DISPLAY (display))
         g_paste_keybinding_parse_event_x11 ((XEvent *) xevent, &modifiers, &keycode);
     else
 #endif
-        g_error ("Unsupported GDK backend.");
+        g_warning ("Unsupported GDK backend, keybinder won't work.");
 
     if (keycode && g_paste_keybinding_private_match (priv, modifiers, keycode))
         priv->callback (self, priv->user_data);
+}
+
+/**
+ * g_paste_keybinding_perform:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Runs the callback associated to the keybinding
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_keybinding_perform (GPasteKeybinding *self)
+{
+    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+
+    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+
+    priv->callback (self, priv->user_data);
 }
 
 static void
@@ -325,15 +312,9 @@ g_paste_keybinding_dispose (GObject *object)
 {
     GPasteKeybinding *self = G_PASTE_KEYBINDING (object);
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
-    GPasteSettings *settings = priv->settings;
 
-    if (settings)
-    {
-        if (priv->active)
-            g_paste_keybinding_deactivate (self);
-        g_signal_handler_disconnect (priv->settings, priv->rebind_signal);
-        g_clear_object (&priv->settings);
-    }
+    if (priv->active)
+        g_paste_keybinding_deactivate (self);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->dispose (object);
 }
@@ -343,8 +324,8 @@ g_paste_keybinding_finalize (GObject *object)
 {
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (G_PASTE_KEYBINDING (object));
 
-    g_free (priv->binding);
     g_free (priv->keycodes);
+    g_free (priv->dconf_key);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->finalize (object);
 }
@@ -367,7 +348,7 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 
     priv->active = FALSE;
 
-#ifdef GDK_WINDOWING_X11
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     /* Initialize */
     g_paste_keybinding_get_xinput_opcode (GDK_DISPLAY_XDISPLAY (display));
 #endif
@@ -378,14 +359,12 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  */
 GPasteKeybinding *
 _g_paste_keybinding_new (GType                  type,
-                         GPasteSettings        *settings,
                          const gchar           *dconf_key,
                          GPasteKeybindingGetter getter,
                          GPasteKeybindingFunc   callback,
                          gpointer               user_data)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_KEYBINDING), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (dconf_key, NULL);
     g_return_val_if_fail (getter, NULL);
     g_return_val_if_fail (callback, NULL);
@@ -393,28 +372,19 @@ _g_paste_keybinding_new (GType                  type,
     GPasteKeybinding *self = g_object_new (type, NULL);
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
-    priv->settings = g_object_ref (settings);
-    priv->binding = g_strdup (getter (settings));
     priv->getter = getter;
+    priv->dconf_key = g_strdup (dconf_key);
     priv->callback = callback;
     priv->user_data = user_data;
     priv->keycodes = NULL;
-
-    G_PASTE_CLEANUP_FREE gchar *detailed_signal = g_strdup_printf ("rebind::%s", dconf_key);
-
-    priv->rebind_signal = g_signal_connect_swapped (G_OBJECT (settings),
-                                                    detailed_signal,
-                                                    G_CALLBACK (g_paste_keybinding_rebind),
-                                                    self);
 
     return self;
 }
 
 /**
  * g_paste_keybinding_new:
- * @settings: a #GPasteSettings instance
  * @dconf_key: the dconf key to watch
- * @getter: (closure settings) (scope notified): the getter to use to get the binding
+ * @getter: (scope notified): the getter to use to get the binding
  * @callback: (closure user_data) (scope notified): the callback to call when activated
  * @user_data: (closure): the data to pass to @callback, defaults to self/this
  *
@@ -424,14 +394,12 @@ _g_paste_keybinding_new (GType                  type,
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_keybinding_new (GPasteSettings        *settings,
-                        const gchar           *dconf_key,
+g_paste_keybinding_new (const gchar           *dconf_key,
                         GPasteKeybindingGetter getter,
                         GPasteKeybindingFunc   callback,
                         gpointer               user_data)
 {
     return _g_paste_keybinding_new (G_PASTE_TYPE_KEYBINDING,
-                                    settings,
                                     dconf_key,
                                     getter,
                                     callback,

@@ -15,10 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-if ENABLE_X_KEYBINDER
 libgpaste_keybinder_la_file = libgpaste/keybinder/libgpaste-keybinder.la
 
-LIBGPASTE_KEYBINDER_CURRENT=2
+LIBGPASTE_KEYBINDER_CURRENT=3
 LIBGPASTE_KEYBINDER_REVISION=0
 LIBGPASTE_KEYBINDER_AGE=0
 
@@ -61,6 +60,7 @@ libgpaste_keybinder_libgpaste_keybinder_la_CFLAGS = \
 
 libgpaste_keybinder_libgpaste_keybinder_la_LIBADD = \
 	$(libgpaste_common_la_file) \
+	$(libgpaste_gnome_shell_client_la_file) \
 	$(libgpaste_settings_la_file) \
 	$(X11_LIBS) \
 	$(AM_LIBS) \
@@ -88,4 +88,3 @@ lib_LTLIBRARIES += \
 EXTRA_DIST += \
 	$(libgpaste_keybinder_symbols_file) \
 	$(NULL)
-endif

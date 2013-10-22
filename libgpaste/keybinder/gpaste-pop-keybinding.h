@@ -48,8 +48,7 @@ G_PASTE_VISIBLE
 #endif
 GType g_paste_pop_keybinding_get_type (void);
 
-GPastePopKeybinding *g_paste_pop_keybinding_new (GPasteSettings *settings,
-                                                 GPasteHistory  *history);
+GPasteKeybinding *g_paste_pop_keybinding_new (GPasteHistory *history);
 
 G_END_DECLS
 

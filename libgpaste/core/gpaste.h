@@ -26,11 +26,7 @@
 #include <gpaste-clipboard.h>
 #include <gpaste-clipboards-manager.h>
 #include <gpaste-history.h>
-#ifdef ENABLE_X_KEYBINDER
-# include <gpaste-keybinder.h>
-#else
-# define GPasteKeybinder void
-#endif
+#include <gpaste-keybinder.h>
 #include <gpaste-settings.h>
 #include <gpaste-settings-ui-widget.h>
 

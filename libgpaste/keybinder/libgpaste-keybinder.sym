@@ -1,4 +1,4 @@
-LIBGPASTE_CORE_1 {
+LIBGPASTE_KEYBINDER_1 {
 global:
     g_paste_keybinder_get_type;
     g_paste_keybinder_add_keybinding;
@@ -27,3 +27,12 @@ global:
 local:
     *;
 };
+
+LIBGPASTE_KEYBINDER_3 {
+global:
+    g_paste_keybinding_get_modifiers;
+    g_paste_keybinding_get_keycodes;
+    g_paste_keybinding_get_dconf_key;
+    g_paste_keybinding_get_accelerator;
+    g_paste_keybinding_perform;
+} LIBGPASTE_KEYBINDER_1;

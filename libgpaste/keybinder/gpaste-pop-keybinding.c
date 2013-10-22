@@ -60,7 +60,6 @@ pop (GPasteKeybinding *self,
 
 /**
  * g_paste_pop_keybinding_new:
- * @settings: a #GPasteSettings instance
  * @history: a #GPasteHistory instance
  *
  * Create a new instance of #GPastePopKeybinding
@@ -68,20 +67,17 @@ pop (GPasteKeybinding *self,
  * Returns: a newly allocated #GPastePopKeybinding
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPastePopKeybinding *
-g_paste_pop_keybinding_new (GPasteSettings *settings,
-                            GPasteHistory  *history)
+G_PASTE_VISIBLE GPasteKeybinding *
+g_paste_pop_keybinding_new (GPasteHistory *history)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
 
-    GPastePopKeybinding *self = G_PASTE_POP_KEYBINDING (_g_paste_keybinding_new (G_PASTE_TYPE_POP_KEYBINDING,
-                                                                                 settings,
-                                                                                 G_PASTE_POP_SETTING,
-                                                                                 g_paste_settings_get_pop,
-                                                                                 pop,
-                                                                                 NULL));
-    GPastePopKeybindingPrivate *priv = g_paste_pop_keybinding_get_instance_private (self);
+    GPasteKeybinding *self = _g_paste_keybinding_new (G_PASTE_TYPE_POP_KEYBINDING,
+                                                      G_PASTE_POP_SETTING,
+                                                      g_paste_settings_get_pop,
+                                                      pop,
+                                                      NULL);
+    GPastePopKeybindingPrivate *priv = g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (self));
 
     priv->history = g_object_ref (history);
 

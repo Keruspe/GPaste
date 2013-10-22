@@ -42,8 +42,7 @@ typedef struct _GPasteSyncPrimaryToClipboardKeybindingClass GPasteSyncPrimaryToC
 G_PASTE_VISIBLE
 GType g_paste_sync_primary_to_clipboard_keybinding_get_type (void);
 
-GPasteKeybinding *g_paste_sync_primary_to_clipboard_keybinding_new (GPasteSettings          *settings,
-                                                                    GPasteClipboardsManager *gcm);
+GPasteKeybinding *g_paste_sync_primary_to_clipboard_keybinding_new (GPasteClipboardsManager *gcm);
 
 G_END_DECLS
 

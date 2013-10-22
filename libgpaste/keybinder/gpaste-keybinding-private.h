@@ -37,7 +37,6 @@ struct _GPasteKeybindingClass
 };
 
 GPasteKeybinding *_g_paste_keybinding_new (GType                  type,
-                                           GPasteSettings        *settings,
                                            const gchar           *dconf_key,
                                            GPasteKeybindingGetter getter,
                                            GPasteKeybindingFunc   callback,
