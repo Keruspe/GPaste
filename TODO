@@ -1,6 +1,8 @@
 3.7:
     keybinder:
-        fix regrab
+        fix ungrab?
+        fix regrab (ptiv->active failed)
+        freeze when activated from gnome-shell?
     gnome-shell-client:
         add guards
         G_PASTE_MAKE_KEYBINDING()
