@@ -53,7 +53,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_GDBUS_PROP_ACTIVE "Active"
 
-#define G_PASTE_GDBUS_INTERFACE_INFO                                          \
+#define G_PASTE_GDBUS_INTERFACE                                               \
         "<node>"                                                              \
         "   <interface name='" G_PASTE_GDBUS_INTERFACE_NAME "'>"              \
         "       <method name='" G_PASTE_GDBUS_GET_HISTORY "'>"                \

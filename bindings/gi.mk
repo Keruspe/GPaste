@@ -28,6 +28,7 @@ bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
 	$(libgpaste_daemon_libgpaste_daemon_la_SOURCES) \
+	$(libgpaste_gnome_shell_client_libgpaste_gnome_shell_client_la_SOURCES) \
 	$(libgpaste_keybinder_libgpaste_keybinder_la_SOURCES) \
 	$(libgpaste_settings_libgpaste_settings_la_SOURCES) \
 	$(libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES) \
@@ -40,6 +41,7 @@ bindings_gi_GPaste_1_0_gir_CFLAGS = \
 	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
+	-I$(srcdir)/libgpaste/gnome-shell-client \
 	-I$(srcdir)/libgpaste/keybinder \
 	-I$(srcdir)/libgpaste/settings \
 	-I$(srcdir)/libgpaste/settings/ui \
@@ -48,6 +50,7 @@ bindings_gi_GPaste_1_0_gir_LIBS = \
 	$(libgpaste_client_la_file) \
 	$(libgpaste_core_la_file) \
 	$(libgpaste_daemon_la_file) \
+	$(libgpaste_gnome_shell_client_la_file) \
 	$(libgpaste_keybinder_la_file) \
 	$(libgpaste_settings_la_file) \
 	$(libgpaste_settings_ui_la_file) \
@@ -56,6 +59,7 @@ bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
 	libgpaste-client \
 	libgpaste-core \
 	libgpaste-daemon \
+	libgpaste-gnome-shell-client \
 	libgpaste-keybinder \
 	libgpaste-settings \
 	libgpaste-settings-ui \

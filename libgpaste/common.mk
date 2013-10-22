@@ -19,6 +19,7 @@ libgpaste_common_la_file = libgpaste/common/libgpaste-common.la
 
 libgpaste_common_private_headers = \
 	libgpaste/common/gpaste-clipboard-common.h \
+	libgpaste/common/gpaste-gdbus-macros.h \
 	$(NULL)
 
 libgpaste_common_libgpaste_common_la_SOURCES = \

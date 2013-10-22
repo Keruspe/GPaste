@@ -50,6 +50,7 @@ AM_CFLAGS = \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/client \
+	-I$(srcdir)/libgpaste/gnome-shell-client \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
@@ -87,12 +88,18 @@ lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 nodist_systemduserunit_DATA =
 
+TESTS=
+noinst_PROGRAMS= \
+	$(TESTS) \
+	$(NULL)
+
 @INTLTOOL_XML_NOMERGE_RULE@
 
 # Real stuff goes in these subfiles
 
 include libgpaste/common.mk
 include libgpaste/settings.mk
+include libgpaste/gnome-shell-client.mk
 include libgpaste/keybinder.mk
 include libgpaste/core.mk
 include libgpaste/client.mk
@@ -117,6 +124,10 @@ include data/pkg-config.mk
 include data/systemd.mk
 
 include man/1.mk
+
+# Tests stuff
+
+include tests/gnome-shell-client.mk
 
 # Maintainance stuff
 

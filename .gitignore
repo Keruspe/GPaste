@@ -1,6 +1,6 @@
 /Makefile
 /bin/*
-!/bin/*.mk
+/tests/bin/*
 /data/control-center/*.xml
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
@@ -14,4 +14,4 @@
 /src/applets/legacy/*.c
 /src/gpaste-settings/*.c
 /bindings/vapi/*.vapi
-!bindings/vapi/config.vapi
+!/bindings/vapi/config.vapi
