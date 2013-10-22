@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-paste-and-pop-keybinding.h"
+#include "gpaste-pop-keybinding.h"
 #include "gpaste-show-history-keybinding.h"
 #include "gpaste-sync-clipboard-to-primary-keybinding.h"
 #include "gpaste-sync-primary-to-clipboard-keybinding.h"
@@ -84,8 +84,8 @@ main (int argc, char *argv[])
     GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
     GPasteKeybinding *keybindings[] = {
-        G_PASTE_KEYBINDING (g_paste_paste_and_pop_keybinding_new (settings,
-                                                                  history)),
+        G_PASTE_KEYBINDING (g_paste_pop_keybinding_new (settings,
+                                                        history)),
         G_PASTE_KEYBINDING (g_paste_show_history_keybinding_new (settings,
                                                                  g_paste_daemon)),
         G_PASTE_KEYBINDING (g_paste_sync_clipboard_to_primary_keybinding_new (settings,

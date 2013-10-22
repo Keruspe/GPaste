@@ -26,7 +26,7 @@ $(libgpaste_keybinder_la_file): $(libgpaste_common_la_file) $(libgpaste_settings
 libgpaste_keybinder_public_headers = \
 	libgpaste/keybinder/gpaste-keybinder.h \
 	libgpaste/keybinder/gpaste-keybinding.h \
-	libgpaste/keybinder/gpaste-paste-and-pop-keybinding.h \
+	libgpaste/keybinder/gpaste-pop-keybinding.h \
 	libgpaste/keybinder/gpaste-show-history-keybinding.h \
 	libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.h \
 	libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.h \
@@ -35,7 +35,7 @@ libgpaste_keybinder_public_headers = \
 libgpaste_keybinder_private_headers = \
 	libgpaste/keybinder/gpaste-keybinder-private.h \
 	libgpaste/keybinder/gpaste-keybinding-private.h \
-	libgpaste/keybinder/gpaste-paste-and-pop-keybinding-private.h \
+	libgpaste/keybinder/gpaste-pop-keybinding-private.h \
 	libgpaste/keybinder/gpaste-show-history-keybinding-private.h \
 	libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding-private.h \
 	libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding-private.h \
@@ -46,7 +46,7 @@ libgpaste_keybinder_libgpaste_keybinder_la_SOURCES = \
 	$(libgpaste_keybinder_private_headers) \
 	libgpaste/keybinder/gpaste-keybinder.c \
 	libgpaste/keybinder/gpaste-keybinding.c \
-	libgpaste/keybinder/gpaste-paste-and-pop-keybinding.c \
+	libgpaste/keybinder/gpaste-pop-keybinding.c \
 	libgpaste/keybinder/gpaste-show-history-keybinding.c \
 	libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.c \
 	libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.c \

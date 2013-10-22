@@ -28,7 +28,7 @@
 #define MAX_MEMORY_USAGE_KEY           "max-memory-usage"
 #define MAX_TEXT_ITEM_SIZE_KEY         "max-text-item-size"
 #define MIN_TEXT_ITEM_SIZE_KEY         "min-text-item-size"
-#define PASTE_AND_POP_KEY              "paste-and-pop"
+#define POP_KEY                        "pop"
 #define PRIMARY_TO_HISTORY_KEY         "primary-to-history"
 #define SAVE_HISTORY_KEY               "save-history"
 #define SHOW_HISTORY_KEY               "show-history"

@@ -71,9 +71,9 @@
       </description>
     </key>
 
-    <key name="paste-and-pop" type="s">
+    <key name="pop" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;V'</default>
-      <summary>The keyboard shortcut to paste and then delete the first element in history</summary>
+      <summary>The keyboard shortcut to delete the first element in history</summary>
       <description>
         By default, hitting ctrl + alt + v does that ("&lt;Ctrl&gt;&lt;Alt&gt;V").
         An empty string here disables this functionnality.
