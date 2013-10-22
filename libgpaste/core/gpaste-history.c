@@ -129,7 +129,12 @@ g_paste_history_activate_first (GPasteHistory *self,
                                 gboolean       select)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    GPasteItem *first = priv->history->data;
+    GSList *history = priv->history;
+
+    if (!history)
+        return;
+
+    GPasteItem *first = history->data;
 
     priv->size -= g_paste_item_get_size (first);
     g_paste_item_set_state (first, G_PASTE_ITEM_STATE_ACTIVE);
