@@ -139,7 +139,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * g_paste_gnome_shell_client_eval:
  * @self: a #GPasteGnomeShellClient instance
  * @script: The script to eval
- * @result: (allow none): a plate to put the result in
+ * @result: (out callee-allocates) (allow-none): a plate to put the result in
  * @error: a #GError
  *
  * Evaluate a javascript script
@@ -186,8 +186,8 @@ _g_variant_builder_add_vardict_entry (GVariantBuilder *builder,
 /**
  * g_paste_gnome_shell_client_show_osd:
  * @self: a #GPasteGnomeShellClient instance
- * @icon: (allow none): the icon to display
- * @label: (allow none): the text to display
+ * @icon: (allow-none): the icon to display
+ * @label: (allow-none): the text to display
  * @level: percentage to fill the bar with (-1 for none)
  * @error: a #GError
  *
@@ -277,7 +277,7 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
 /**
  * g_paste_gnome_shell_client_grab_accelerators:
  * @self: a #GPasteGnomeShellClient instance
- * @accelerators: an array of #GPasteGnomeShellAccelerator instances
+ * @accelerators: (array): an array of #GPasteGnomeShellAccelerator instances
  * @error: a #GError
  *
  * Grab some keybindings
