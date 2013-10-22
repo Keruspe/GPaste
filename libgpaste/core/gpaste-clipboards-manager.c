@@ -346,7 +346,7 @@ g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 static void
 g_paste_clipboards_manager_init (GPasteClipboardsManager *self)
 {
-    GPasteClipboardsManagerPrivate *priv = G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE (self);
+    GPasteClipboardsManagerPrivate *priv = self->priv = G_PASTE_CLIPBOARDS_MANAGER_GET_PRIVATE (self);
 
     priv->clipboards = NULL;
     priv->lock = FALSE;
