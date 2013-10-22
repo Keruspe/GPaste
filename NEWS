@@ -2,6 +2,7 @@ NEW in 3.7 (Not released yet)
 =============
 
 - "Paste and Pop" is now only "Pop"
+- Fix SEGV when deleting last item of history
 
 NEW in 3.6 (17/10/2013)
 =============
@@ -28,10 +29,12 @@ NEW in 3.5 (25/09/2013)
 - New keybinding to sync the clipboard to the primary selection
 - New keybinding to sync the primary selection to the clipboard
 
-NEW in 3.3 (Not released yet)
+NEW in 3.2.2 (22/10/2013)
 =============
 
 - "Paste and Pop" is now only "Pop"
+- Fix SEGV at startup
+- Fix SEGV when deleting last item of history
 
 NEW in 3.2.1 (19/10/2013)
 =============
