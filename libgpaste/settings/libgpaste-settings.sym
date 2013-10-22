@@ -9,7 +9,6 @@ global:
     g_paste_settings_get_max_memory_usage;
     g_paste_settings_get_max_text_item_size;
     g_paste_settings_get_min_text_item_size;
-    g_paste_settings_get_paste_and_pop;
     g_paste_settings_get_primary_to_history;
     g_paste_settings_get_save_history;
     g_paste_settings_get_show_history;
@@ -27,7 +26,6 @@ global:
     g_paste_settings_set_max_memory_usage;
     g_paste_settings_set_max_text_item_size;
     g_paste_settings_set_min_text_item_size;
-    g_paste_settings_set_paste_and_pop;
     g_paste_settings_set_primary_to_history;
     g_paste_settings_set_save_history;
     g_paste_settings_set_show_history;
@@ -41,3 +39,9 @@ global:
 local:
     *;
 };
+
+LIBGPASTE_SETTINGS_4 {
+global:
+    g_paste_settings_get_pop;
+    g_paste_settings_set_pop;
+} LIBGPASTE_SETTINGS_1;

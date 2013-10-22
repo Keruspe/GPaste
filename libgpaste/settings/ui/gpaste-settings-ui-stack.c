@@ -44,7 +44,7 @@ struct _GPasteSettingsUiStackPrivate
     GtkSpinButton   *max_text_item_size_button;
     GtkSpinButton   *min_text_item_size_button;
     GtkEntry        *backup_entry;
-    GtkEntry        *paste_and_pop_entry;
+    GtkEntry        *pop_entry;
     GtkEntry        *show_history_entry;
     GtkEntry        *sync_clipboard_to_primary_entry;
     GtkEntry        *sync_primary_to_clipboard_entry;
@@ -202,7 +202,7 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     return panel;
 }
 
-STRING_CALLBACK (paste_and_pop)
+STRING_CALLBACK (pop)
 STRING_CALLBACK (show_history)
 STRING_CALLBACK (sync_clipboard_to_primary)
 STRING_CALLBACK (sync_primary_to_clipboard)
@@ -214,10 +214,10 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
     /* translators: Keyboard shortcut to paste and then delete the first item in history */
-    priv->paste_and_pop_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                            _("Paste and then delete the first item in history: "),
-                                                                            g_paste_settings_get_paste_and_pop (settings),
-                                                                            paste_and_pop_callback, settings);
+    priv->pop_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+                                                                  _("Delete the first item in history: "),
+                                                                  g_paste_settings_get_pop (settings),
+                                                                  pop_callback, settings);
     /* translators: Keyboard shortcut to display the history */
     priv->show_history_entry = g_paste_settings_ui_panel_add_text_setting (panel,
                                                                            _("Display the history: "),
@@ -387,8 +387,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_spin_button_set_value (priv->max_text_item_size_button, g_paste_settings_get_max_text_item_size (settings));
     else if (!g_strcmp0 (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
         gtk_spin_button_set_value (priv->min_text_item_size_button, g_paste_settings_get_min_text_item_size (settings));
-    else if (!g_strcmp0 (key, G_PASTE_PASTE_AND_POP_SETTING))
-        gtk_entry_set_text (priv->paste_and_pop_entry, g_paste_settings_get_paste_and_pop (settings));
+    else if (!g_strcmp0 (key, G_PASTE_POP_SETTING))
+        gtk_entry_set_text (priv->pop_entry, g_paste_settings_get_pop (settings));
     else if (!g_strcmp0 (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->primary_to_history_button), g_paste_settings_get_primary_to_history (settings));
     else if (!g_strcmp0 (key, G_PASTE_SAVE_HISTORY_SETTING))

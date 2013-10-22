@@ -1,3 +1,8 @@
+NEW in 3.7 (Not released yet)
+=============
+
+- "Paste and Pop" is now only "Pop"
+
 NEW in 3.6 (17/10/2013)
 =============
 
@@ -10,7 +15,6 @@ NEW in 3.6 (17/10/2013)
 - FIFO mode has been dropped (lacking design)
 - Code cleanup and modernisation
 - g_paste_history_add is now transfer full
-- g_paste_keybinder_add_keybinding is now transfer full
 
 NEW in 3.5 (25/09/2013)
 =============
@@ -23,6 +27,17 @@ NEW in 3.5 (25/09/2013)
 - The X11 keybinder is now optional
 - New keybinding to sync the clipboard to the primary selection
 - New keybinding to sync the primary selection to the clipboard
+
+NEW in 3.3 (Not released yet)
+=============
+
+- "Paste and Pop" is now only "Pop"
+
+NEW in 3.2.1 (19/10/2013)
+=============
+
+- Update translations
+- Fix build with old glib
 
 NEW in 3.2 (16/10/2013)
 =============

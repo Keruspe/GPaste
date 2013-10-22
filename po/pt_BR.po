@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2013-10-17 14:33+0900\n"
+"POT-Creation-Date: 2013-10-22 17:08+0900\n"
 "PO-Revision-Date: 2013-01-15 20:24-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -228,14 +228,14 @@ msgstr "Sinal %d recebido, saindo\n"
 msgid "Could not acquire DBus name."
 msgstr "Não foi possível obter um nome DBus."
 
-#: ../src/gpasted/gpasted.c:152
+#: ../src/gpasted/gpasted.c:151
 msgid "Could not register DBus service."
 msgstr "Não foi possível registrar o serviço DBus."
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:218
-msgid "Paste and then delete the first item in history: "
-msgstr "Colar e apagar o primeiro item do histórico: "
+msgid "Delete the first item in history: "
+msgstr "Apagar o primeiro item do histórico: "
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:223
@@ -337,11 +337,9 @@ msgstr ""
 "ignorado."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:17
-msgid ""
-"The keyboard shortcut to paste and then delete the first element in history"
+msgid "The keyboard shortcut to delete the first element in history"
 msgstr ""
-"O atalho do teclado para colar e então apagar o primeiro elemento no "
-"histórico"
+"O atalho do teclado para apagar o primeiro elemento no histórico"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:18
 msgid ""

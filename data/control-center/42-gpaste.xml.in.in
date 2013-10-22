@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <KeyListEntries schema="org.gnome.GPaste" group="system" name="GPaste">
 
-	<KeyListEntry name="paste-and-pop" _description="Paste and then delete the first item in history: "></KeyListEntry>
+	<KeyListEntry name="pop" _description="Delete the first item in history: "></KeyListEntry>
 
 	<KeyListEntry name="show-history" _description="Display the history: "></KeyListEntry>
 

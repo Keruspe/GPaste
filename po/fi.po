@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2013-10-17 14:33+0900\n"
+"POT-Creation-Date: 2013-10-22 17:08+0900\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -228,14 +228,14 @@ msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
 msgid "Could not acquire DBus name."
 msgstr "DBus-nimen selvitys epäonnistui."
 
-#: ../src/gpasted/gpasted.c:152
+#: ../src/gpasted/gpasted.c:151
 msgid "Could not register DBus service."
 msgstr "DBus-palvelun rekisteröinti epäonnistui."
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:218
-msgid "Paste and then delete the first item in history: "
-msgstr "Liitä ja poista uusin leike historiasta:"
+msgid "Delete the first item in history: "
+msgstr ""
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:223
@@ -333,11 +333,8 @@ msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr "Pienin sallittu tekstileikkeen koko, lyhempiä leikkeitä ei huomioida."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:17
-msgid ""
-"The keyboard shortcut to paste and then delete the first element in history"
+msgid "The keyboard shortcut to delete the first element in history"
 msgstr ""
-"Näppäinyhdistelmä joka liittää ja sitten poistaa ensimmäisen leikkeen "
-"historiasta"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:18
 msgid ""
