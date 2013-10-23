@@ -184,25 +184,23 @@ const GPasteHistoryWrapper = new Lang.Class({
 
     },
 
-    _updateFinish: function(client, result) {
-        let history = client.get_history_finish (result);
-        if (history != null && history.length != 0) {
-            let limit = Math.min(history.length, this._history.length);
-            for (let index = 0; index < limit; ++index)
-                this._history[index].setText(history[index].replace(/\n/g, ' '));
-            this._hideHistory(limit);
-            this._dummyHistory.actor.hide();
-            emptyHistoryItem.actor.show();
-        } else {
-            this._dummyHistory.update(history == null);
-            this._hideHistory();
-            emptyHistoryItem.actor.hide();
-            this._dummyHistory.actor.show();
-        }
-    },
-
     _update: function(client, emptyHistoryItem) {
-        client.get_history(Lang.bind (this, this._updateFinish));
+        client.get_history(Lang.bind (this, function (client, result) {
+            let history = client.get_history_finish (result);
+            if (history != null && history.length != 0) {
+                let limit = Math.min(history.length, this._history.length);
+                for (let index = 0; index < limit; ++index)
+                    this._history[index].setText(history[index].replace(/\n/g, ' '));
+                this._hideHistory(limit);
+                this._dummyHistory.actor.hide();
+                emptyHistoryItem.actor.show();
+            } else {
+                this._dummyHistory.update(history == null);
+                this._hideHistory();
+                emptyHistoryItem.actor.hide();
+                this._dummyHistory.actor.show();
+            }
+        }));
     },
 
     _hideHistory: function(startIndex) {
