@@ -162,6 +162,13 @@ _keybinding_activate (_Keybinding *k)
 }
 
 static void
+_keybinding_deactivate (_Keybinding *k)
+{
+    if (g_paste_keybinding_is_active (k->binding))
+        g_paste_keybinding_deactivate (k->binding);
+}
+
+static void
 _keybinding_grab_cb (GObject      *source,
                      GAsyncResult *result,
                      gpointer      user_data)
@@ -192,14 +199,10 @@ static void
 _keybinding_grab (_Keybinding *k)
 {
     _keybinding_activate (k);
-
-    if (g_paste_keybinding_is_active (k->binding))
-    {
-        if (k->shell_client)
-            _keybinding_grab_gnome_shell (k);
-        else
-            g_paste_keybinder_change_grab_internal (k->binding, TRUE);
-    }
+    if (k->shell_client)
+        _keybinding_grab_gnome_shell (k);
+    else
+        g_paste_keybinder_change_grab_internal (k->binding, TRUE);
 }
 
 static void
@@ -207,14 +210,17 @@ _keybinding_ungrab_cb (GObject      *source,
                        GAsyncResult *result,
                        gpointer      user_data)
 {
+    _Keybinding *k = user_data;
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     g_paste_gnome_shell_client_ungrab_accelerator_finish (G_PASTE_GNOME_SHELL_CLIENT (source), result, &error);
 
     if (error)
     {
         g_warning ("Couldn't grab keybinding: %s", error->message);
-        g_paste_keybinder_change_grab_internal (user_data, FALSE);
+        g_paste_keybinder_change_grab_internal (k->binding, FALSE);
     }
+
+    _keybinding_deactivate (k);
 }
 
 static void
@@ -222,7 +228,7 @@ _keybinding_ungrab_gnome_shell (_Keybinding *k)
 {
     if (k->action)
     {
-        g_paste_gnome_shell_client_ungrab_accelerator (k->shell_client, k->action, _keybinding_ungrab_cb, k->binding);
+        g_paste_gnome_shell_client_ungrab_accelerator (k->shell_client, k->action, _keybinding_ungrab_cb, k);
         k->action = 0;
     }
 }
@@ -233,10 +239,10 @@ _keybinding_ungrab (_Keybinding *k)
     if (k->shell_client)
         _keybinding_ungrab_gnome_shell (k);
     else
+    {
         g_paste_keybinder_change_grab_internal (k->binding, FALSE);
-
-    if (g_paste_keybinding_is_active (k->binding))
-        g_paste_keybinding_deactivate (k->binding);
+        _keybinding_deactivate (k);
+    }
 }
 
 static void
