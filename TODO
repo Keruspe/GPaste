@@ -1,7 +1,4 @@
 3.7:
-    keybinder:
-        fix ungrab?
-        fix regrab (ptiv->active failed)
     gnome-shell-client:
         async ctor
         add guards
