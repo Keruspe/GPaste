@@ -69,7 +69,7 @@ const GPasteStateSwitch = new Lang.Class({
 
         this.connect('toggled', Lang.bind(this, function() {
             if (!this._fromDaemon)
-                client.track(this.state);
+                client.track(this.state, null);
         }));
     }
 });
@@ -87,7 +87,7 @@ const GPasteDeleteButton = new Lang.Class({
         });
 
         this.connect('clicked', function() {
-            client.delete(index);
+            client.delete(index, null);
             return true;
         });
 
@@ -117,13 +117,13 @@ const GPasteMenuItem = new Lang.Class({
         text.ellipsize = Pango.EllipsizeMode.END;
 
         this.connect('activate', function(actor, event) {
-            client.select(index);
+            client.select(index, null);
         });
 
         this.actor.connect('key-press-event', function(actor, event) {
             let symbol = event.get_key_symbol();
             if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
-                client.delete(index);
+                client.delete(index, null);
                 return true;
             }
             return false;
@@ -184,8 +184,8 @@ const GPasteHistoryWrapper = new Lang.Class({
 
     },
 
-    _update: function(client, emptyHistoryItem) {
-        let history = client.get_history();
+    _updateFinish: function(client, result) {
+        let history = client.get_history_finish (result);
         if (history != null && history.length != 0) {
             let limit = Math.min(history.length, this._history.length);
             for (let index = 0; index < limit; ++index)
@@ -199,6 +199,10 @@ const GPasteHistoryWrapper = new Lang.Class({
             emptyHistoryItem.actor.hide();
             this._dummyHistory.actor.show();
         }
+    },
+
+    _update: function(client, emptyHistoryItem) {
+        client.get_history(Lang.bind (this, this._updateFinish));
     },
 
     _hideHistory: function(startIndex) {
@@ -215,7 +219,7 @@ const GPasteEmptyHistoryMenuItem = new Lang.Class({
         this.parent(_("Empty history"));
 
         this.connect('activate', function() {
-            client.empty();
+            client.empty(null);
         });
     }
 });
@@ -251,7 +255,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onStateChanged: function (state) {
-        this._client.on_extension_state_changed(state);
+        this._client.on_extension_state_changed(state, null);
     }
 });
 
