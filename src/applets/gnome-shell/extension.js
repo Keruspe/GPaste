@@ -233,7 +233,7 @@ const GPasteIndicator = new Lang.Class({
 
         this.actor.add_child(new GPasteStatusIcon());
 
-        this._client = new GPaste.Client();
+        this._client = GPaste.Client.new();
 
         this.menu.addMenuItem(new GPasteStateSwitch(this._client));
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
