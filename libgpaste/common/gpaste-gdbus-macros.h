@@ -59,22 +59,24 @@ g_paste_dbus_get_bs_result (GVariant *variant)
 
 #ifdef __G_PASTE_NEEDS_AU__
 static guint32 *
-g_paste_dbus_get_au_result (GVariant *variant,
-                            guint32   n_results)
+g_paste_dbus_get_au_result (GVariant *variant)
 {
     GVariantIter iter;
     g_variant_iter_init (&iter, variant);
     GVariant *loop;
-    guint32 *res = g_new (guint32, n_results);
+    guint alloc = 4;
+    guint32 *res = g_new (guint32, alloc);
 
-    for (guint32 i = 0; (loop = g_variant_iter_next_value (&iter)) && i < n_results; ++i)
+    for (guint32 i = 0; (loop = g_variant_iter_next_value (&iter)); ++i)
     {
+        if (i > alloc)
+        {
+            alloc *=2;
+            res = g_renew (guint32, res, alloc);
+        }
         G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v = loop;
         res[i] = g_variant_get_uint32 (v);
     }
-
-    if (loop)
-        g_warning ("Expected %u results but got more.", n_results);
 
     return res;
 }
@@ -133,8 +135,14 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_CALL_NO_PARAM_ASYNC_BASE(TYPE_CHECKER, method) \
     DBUS_CALL_ASYNC_FULL (TYPE_CHECKER, {}, method, NULL, 0)
 
-#define DBUS_CALL_ONE_PARAM_ASYNC_BASE(TYPE_CHECKER, param_type, param_name, method)     \
+#define DBUS_CALL_ONE_PARAM_ASYNC_BASE(TYPE_CHECKER, param_type, param_name, method) \
     DBUS_CALL_ASYNC_FULL (TYPE_CHECKER, GVariant *parameter = g_variant_new_##param_type (param_name), method, &parameter, 1)
+
+#define DBUS_CALL_ONE_PARAMV_ASYNC_BASE(TYPE_CHECKER, paramv, method) \
+    DBUS_CALL_ASYNC_FULL (TYPE_CHECKER, {}, method, &paramv, 1)
+
+#define DBUS_CALL_TWO_PARAMS_ASYNC_BASE(TYPE_CHECKER, params, method) \
+    DBUS_CALL_ASYNC_FULL (TYPE_CHECKER, {}, method, params, 2)
 
 /**************************************/
 /* Methods / Async / General - Finish */
@@ -159,11 +167,23 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_ASYNC_FINISH_NO_RETURN_BASE(TYPE_CHECKER) \
     DBUS_ASYNC_FINISH_FULL (g_return_if_fail (G_PASTE_IS_##TYPE_CHECKER (self)), ;, {})
 
+#define DBUS_ASYNC_FINISH_RET_BOOL_BASE(TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, FALSE, return g_variant_get_boolean (variant))
+
+#define DBUS_ASYNC_FINISH_RET_UINT32_BASE(TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, 0, return g_variant_get_uint32 (variant))
+
 #define DBUS_ASYNC_FINISH_RET_STRING_BASE(TYPE_CHECKER) \
     DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, NULL, return g_variant_dup_string (variant, NULL))
 
 #define DBUS_ASYNC_FINISH_RET_STRV_BASE(TYPE_CHECKER) \
     DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, NULL, return g_variant_dup_strv (variant, NULL))
+
+#define DBUS_ASYNC_FINISH_RET_AU_BASE(TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, NULL, return g_paste_dbus_get_au_result (variant))
+
+#define DBUS_ASYNC_FINISH_RET_BS_BASE(TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, FALSE, GPasteDBusBSResult bs = g_paste_dbus_get_bs_result (variant))
 
 /****************************/
 /* Methods / Sync / General */
@@ -226,8 +246,8 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_CALL_NO_PARAM_RET_STRV_BASE(TYPE_CHECKER, method) \
     DBUS_CALL_NO_PARAM_BASE(TYPE_CHECKER, method, NULL, return g_variant_dup_strv (variant, NULL)) \
 
-#define DBUS_CALL_ONE_PARAMV_RET_AU_BASE(TYPE_CHECKER, method, paramv, n_items) \
-    DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, FALSE, return g_paste_dbus_get_au_result (variant, n_items))
+#define DBUS_CALL_ONE_PARAMV_RET_AU_BASE(TYPE_CHECKER, method, paramv) \
+    DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, NULL, return g_paste_dbus_get_au_result (variant))
 
 /******************************************************/
 /* Methods / Sync / General - With return - One param */

@@ -93,14 +93,47 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-#define DBUS_CALL_ONE_PARAM_RET_BOOL(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_BOOL_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+/*******************/
+/* Methods / Async */
+/*******************/
 
-#define DBUS_CALL_ONE_PARAM_RET_BS(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_BS_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+#define DBUS_CALL_NO_PARAM_ASYNC(method) \
+    DBUS_CALL_NO_PARAM_ASYNC_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
 
-#define DBUS_CALL_ONE_PARAMV_RET_AU(method, paramv, n_items) \
-    DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv, n_items)
+#define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_ASYNC_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+
+#define DBUS_CALL_ONE_PARAMV_ASYNC(method, paramv) \
+    DBUS_CALL_ONE_PARAMV_ASYNC_BASE (GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
+
+#define DBUS_CALL_TWO_PARAMS_ASYNC(method, params) \
+    DBUS_CALL_TWO_PARAMS_ASYNC_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
+
+/****************************/
+/* Methods / Async - Finish */
+/****************************/
+
+#define DBUS_ASYNC_FINISH_NO_RETURN \
+    DBUS_ASYNC_FINISH_NO_RETURN_BASE (GNOME_SHELL_CLIENT)
+
+#define DBUS_ASYNC_FINISH_RET_BOOL \
+    DBUS_ASYNC_FINISH_RET_BOOL_BASE (GNOME_SHELL_CLIENT)
+
+#define DBUS_ASYNC_FINISH_RET_UINT32 \
+    DBUS_ASYNC_FINISH_RET_UINT32_BASE (GNOME_SHELL_CLIENT)
+
+#define DBUS_ASYNC_FINISH_RET_AU \
+    DBUS_ASYNC_FINISH_RET_AU_BASE (GNOME_SHELL_CLIENT)
+
+#define DBUS_ASYNC_FINISH_RET_BS \
+    DBUS_ASYNC_FINISH_RET_BS_BASE (GNOME_SHELL_CLIENT)
+
+/******************************/
+/* Methods / Sync - No return */
+/******************************/
+
+#define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
+    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
@@ -108,11 +141,25 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAMV_NO_RETURN(method, paramv) \
     DBUS_CALL_ONE_PARAMV_NO_RETURN_BASE (GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
 
+/********************************/
+/* Methods / Sync - With return */
+/********************************/
+
+#define DBUS_CALL_ONE_PARAM_RET_BOOL(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_BOOL_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+
+#define DBUS_CALL_ONE_PARAM_RET_BS(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_BS_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+
+#define DBUS_CALL_ONE_PARAMV_RET_AU(method, paramv) \
+    DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv)
+
 #define DBUS_CALL_TWO_PARAMS_RET_UINT32(method, params) \
     DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
 
-#define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
+/**************/
+/* Properties */
+/**************/
 
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
     DBUS_GET_BOOLEAN_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_PROP_##property)
@@ -123,45 +170,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_SET_BOOLEAN_PROPERTY(property, value) \
     DBUS_SET_BOOLEAN_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
 
-/**
- * g_paste_gnome_shell_client_eval:
- * @self: a #GPasteGnomeShellClient instance
- * @script: The script to eval
- * @result: (out callee-allocates) (allow-none): a plate to put the result in
- * @error: a #GError
- *
- * Evaluate a javascript script
- *
- * Returns: Whether the eval was successful or not
- */
-G_PASTE_VISIBLE gboolean
-g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
-                                 const gchar            *script,
-                                 gchar                 **result,
-                                 GError                **error)
-{
-    DBUS_CALL_ONE_PARAM_RET_BS (EVAL, string, script);
-    if (result)
-        *result = bs.s;
-    return bs.b;
-}
-
-/**
- * g_paste_gnome_shell_client_focus_seach:
- * @self: a #GPasteGnomeShellClient instance
- * @error: a #GError
- *
- * Focus the search field in overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
-                                         GError                **error)
-{
-    DBUS_CALL_NO_PARAM_NO_RETURN (FOCUS_SEARCH);
-}
-
 static void
 _g_variant_builder_add_vardict_entry (GVariantBuilder *builder,
                                       const gchar     *key,
@@ -171,8 +179,51 @@ _g_variant_builder_add_vardict_entry (GVariantBuilder *builder,
                                                                     g_variant_new_variant (value)));
 }
 
+/******************/
+/* Methods / Sync */
+/******************/
+
 /**
- * g_paste_gnome_shell_client_show_osd:
+ * g_paste_gnome_shell_client_eval_sync:
+ * @self: a #GPasteGnomeShellClient instance
+ * @script: The script to eval
+ * @output: (out callee-allocates) (allow-none): a plate to put the result in
+ * @error: a #GError
+ *
+ * Evaluate a javascript script
+ *
+ * Returns: Whether the eval was successful or not
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_gnome_shell_client_eval_sync (GPasteGnomeShellClient *self,
+                                      const gchar            *script,
+                                      gchar                 **output,
+                                      GError                **error)
+{
+    DBUS_CALL_ONE_PARAM_RET_BS (EVAL, string, script);
+    if (output)
+        *output = bs.s;
+    return bs.b;
+}
+
+/**
+ * g_paste_gnome_shell_client_focus_seach_sync:
+ * @self: a #GPasteGnomeShellClient instance
+ * @error: a #GError
+ *
+ * Focus the search field in overview
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_focus_search_sync (GPasteGnomeShellClient *self,
+                                              GError                **error)
+{
+    DBUS_CALL_NO_PARAM_NO_RETURN (FOCUS_SEARCH);
+}
+
+/**
+ * g_paste_gnome_shell_client_show_osd_sync:
  * @self: a #GPasteGnomeShellClient instance
  * @icon: (allow-none): the icon to display
  * @label: (allow-none): the text to display
@@ -184,11 +235,11 @@ _g_variant_builder_add_vardict_entry (GVariantBuilder *builder,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
-                                     const gchar            *icon,
-                                     const gchar            *label,
-                                     gint32                  level,
-                                     GError                **error)
+g_paste_gnome_shell_client_show_osd_sync (GPasteGnomeShellClient *self,
+                                          const gchar            *icon,
+                                          const gchar            *label,
+                                          gint32                  level,
+                                          GError                **error)
 {
     GVariantBuilder builder;
 
@@ -207,7 +258,7 @@ g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
 }
 
 /**
- * g_paste_gnome_shell_client_focus_app:
+ * g_paste_gnome_shell_client_focus_app_sync:
  * @self: a #GPasteGnomeShellClient instance
  * @id: the application id
  * @error: a #GError
@@ -217,15 +268,15 @@ g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_app (GPasteGnomeShellClient *self,
-                                      const gchar            *id,
-                                      GError                **error)
+g_paste_gnome_shell_client_focus_app_sync (GPasteGnomeShellClient *self,
+                                           const gchar            *id,
+                                           GError                **error)
 {
     DBUS_CALL_ONE_PARAM_NO_RETURN (FOCUS_APP, string, id);
 }
 
 /**
- * g_paste_gnome_shell_client_show_applications:
+ * g_paste_gnome_shell_client_show_applications_sync:
  * @self: a #GPasteGnomeShellClient instance
  * @error: a #GError
  *
@@ -234,14 +285,14 @@ g_paste_gnome_shell_client_focus_app (GPasteGnomeShellClient *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
-                                              GError                **error)
+g_paste_gnome_shell_client_show_applications_sync (GPasteGnomeShellClient *self,
+                                                   GError                **error)
 {
     DBUS_CALL_NO_PARAM_NO_RETURN (SHOW_APPLICATIONS);
 }
 
 /**
- * g_paste_gnome_shell_client_grab_accelerator:
+ * g_paste_gnome_shell_client_grab_accelerator_sync:
  * @self: a #GPasteGnomeShellClient instance
  * @accelerator: a #GPasteGnomeShellAccelerator instance
  * @error: a #GError
@@ -251,9 +302,9 @@ g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
  * Returns: the action id corresponding
  */
 G_PASTE_VISIBLE guint32
-g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
-                                             GPasteGnomeShellAccelerator accelerator,
-                                             GError                     **error)
+g_paste_gnome_shell_client_grab_accelerator_sync (GPasteGnomeShellClient     *self,
+                                                  GPasteGnomeShellAccelerator accelerator,
+                                                  GError                    **error)
 {
     GVariant *accel[] = {
         g_variant_new_string (accelerator.accelerator),
@@ -263,7 +314,7 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
 }
 
 /**
- * g_paste_gnome_shell_client_grab_accelerators:
+ * g_paste_gnome_shell_client_grab_accelerators_sync:
  * @self: a #GPasteGnomeShellClient instance
  * @accelerators: (array): an array of #GPasteGnomeShellAccelerator instances
  * @error: a #GError
@@ -273,9 +324,9 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
  * Returns: the action ids corresponding
  */
 G_PASTE_VISIBLE guint32 *
-g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
-                                              GPasteGnomeShellAccelerator *accelerators,
-                                              GError                     **error)
+g_paste_gnome_shell_client_grab_accelerators_sync (GPasteGnomeShellClient      *self,
+                                                   GPasteGnomeShellAccelerator *accelerators,
+                                                   GError                     **error)
 {
     GVariantBuilder builder;
     guint n_accelerators = 0;
@@ -292,11 +343,11 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
 
     GVariant *array = g_variant_builder_end (&builder);
 
-    DBUS_CALL_ONE_PARAMV_RET_AU (GRAB_ACCELERATORS, array, n_accelerators);
+    DBUS_CALL_ONE_PARAMV_RET_AU (GRAB_ACCELERATORS, array);
 }
 
 /**
- * g_paste_gnome_shell_client_ungrab_accelerator:
+ * g_paste_gnome_shell_client_ungrab_accelerator_sync:
  * @self: a #GPasteGnomeShellClient instance
  * @action: the action id corresponding to the keybinding
  * @error: a #GError
@@ -306,12 +357,373 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
  * Returns: whether the ungrab was succesful or not
  */
 G_PASTE_VISIBLE gboolean
-g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
-                                               guint32                 action,
-                                               GError                **error)
+g_paste_gnome_shell_client_ungrab_accelerator_sync (GPasteGnomeShellClient *self,
+                                                    guint32                 action,
+                                                    GError                **error)
 {
     DBUS_CALL_ONE_PARAM_RET_BOOL (UNGRAB_ACCELERATOR, uint32, action);
 }
+
+/*******************/
+/* Methods / Async */
+/*******************/
+
+/**
+ * g_paste_gnome_shell_client_eval:
+ * @self: a #GPasteGnomeShellClient instance
+ * @script: The script to eval
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Evaluate a javascript script
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
+                                 const gchar            *script,
+                                 GAsyncReadyCallback     callback,
+                                 gpointer                user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (EVAL, string, script);
+}
+
+/**
+ * g_paste_gnome_shell_client_focus_seach:
+ * @self: a #GPasteGnomeShellClient instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Focus the search field in overview
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
+                                         GAsyncReadyCallback     callback,
+                                         gpointer                user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (FOCUS_SEARCH);
+}
+
+/**
+ * g_paste_gnome_shell_client_show_osd:
+ * @self: a #GPasteGnomeShellClient instance
+ * @icon: (allow-none): the icon to display
+ * @label: (allow-none): the text to display
+ * @level: percentage to fill the bar with (-1 for none)
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Display something to the user
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
+                                     const gchar            *icon,
+                                     const gchar            *label,
+                                     gint32                  level,
+                                     GAsyncReadyCallback     callback,
+                                     gpointer                user_data)
+{
+    GVariantBuilder builder;
+
+    g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
+
+    if (icon)
+        _g_variant_builder_add_vardict_entry (&builder, "icon", g_variant_new_string (icon));
+    if (label)
+        _g_variant_builder_add_vardict_entry (&builder, "label", g_variant_new_string (label));
+    if (level >= 0)
+        _g_variant_builder_add_vardict_entry (&builder, "level", g_variant_new_int32 (level));
+
+    GVariant *vardict = g_variant_builder_end (&builder);
+
+    DBUS_CALL_ONE_PARAMV_ASYNC (SHOW_OSD, vardict);
+}
+
+/**
+ * g_paste_gnome_shell_client_focus_app:
+ * @self: a #GPasteGnomeShellClient instance
+ * @id: the application id
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Focus an app in overview
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_focus_app (GPasteGnomeShellClient *self,
+                                      const gchar            *id,
+                                      GAsyncReadyCallback     callback,
+                                      gpointer                user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (FOCUS_APP, string, id);
+}
+
+/**
+ * g_paste_gnome_shell_client_show_applications:
+ * @self: a #GPasteGnomeShellClient instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Display the application pane in the overview
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
+                                              GAsyncReadyCallback     callback,
+                                              gpointer                user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (SHOW_APPLICATIONS);
+}
+
+/**
+ * g_paste_gnome_shell_client_grab_accelerator:
+ * @self: a #GPasteGnomeShellClient instance
+ * @accelerator: a #GPasteGnomeShellAccelerator instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Grab a keybinding
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
+                                             GPasteGnomeShellAccelerator accelerator,
+                                             GAsyncReadyCallback         callback,
+                                             gpointer                    user_data)
+{
+    GVariant *accel[] = {
+        g_variant_new_string (accelerator.accelerator),
+        g_variant_new_uint32 (accelerator.flags)
+    };
+    DBUS_CALL_TWO_PARAMS_ASYNC (GRAB_ACCELERATOR, accel);
+}
+
+/**
+ * g_paste_gnome_shell_client_grab_accelerators:
+ * @self: a #GPasteGnomeShellClient instance
+ * @accelerators: (array): an array of #GPasteGnomeShellAccelerator instances
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Grab some keybindings
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
+                                              GPasteGnomeShellAccelerator *accelerators,
+                                              GAsyncReadyCallback          callback,
+                                              gpointer                     user_data)
+{
+    GVariantBuilder builder;
+    guint n_accelerators = 0;
+
+    g_variant_builder_init (&builder, G_VARIANT_TYPE_ARRAY);
+
+    for (GPasteGnomeShellAccelerator *accelerator = &accelerators[0]; accelerator->accelerator; accelerator = &accelerators[++n_accelerators])
+    {
+        g_variant_builder_open (&builder, G_VARIANT_TYPE_TUPLE);
+        g_variant_builder_add_value (&builder, g_variant_new_string (accelerator->accelerator));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->flags));
+        g_variant_builder_close (&builder);
+    }
+
+    GVariant *array = g_variant_builder_end (&builder);
+
+    DBUS_CALL_ONE_PARAMV_ASYNC (GRAB_ACCELERATORS, array);
+}
+
+/**
+ * g_paste_gnome_shell_client_ungrab_accelerator:
+ * @self: a #GPasteGnomeShellClient instance
+ * @action: the action id corresponding to the keybinding
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Ungrab a keybinding
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
+                                               guint32                 action,
+                                               GAsyncReadyCallback     callback,
+                                               gpointer                user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (UNGRAB_ACCELERATOR, uint32, action);
+}
+
+/****************************/
+/* Methods / Async - Finish */
+/****************************/
+
+/**
+ * g_paste_gnome_shell_client_eval_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @res: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @output: (out callee-allocates) (allow-none): a plate to put the result in
+ * @error: a #GError
+ *
+ * Evaluate a javascript script
+ *
+ * Returns: Whether the eval was successful or not
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_gnome_shell_client_eval_finish (GPasteGnomeShellClient *self,
+                                        GAsyncResult           *result,
+                                        gchar                 **output,
+                                        GError                **error)
+{
+    DBUS_ASYNC_FINISH_RET_BS;
+    if (output)
+        *output = bs.s;
+    return bs.b;
+}
+
+/**
+ * g_paste_gnome_shell_client_focus_seach_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @res: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Focus the search field in overview
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_focus_search_finish (GPasteGnomeShellClient *self,
+                                                GAsyncResult           *result,
+                                                GError                **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_gnome_shell_client_show_osd_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Display something to the user
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_show_osd_finish (GPasteGnomeShellClient *self,
+                                            GAsyncResult           *result,
+                                            GError                **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_gnome_shell_client_focus_app_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Focus an app in overview
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_focus_app_finish (GPasteGnomeShellClient *self,
+                                             GAsyncResult           *result,
+                                             GError                **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_gnome_shell_client_show_applications_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Display the application pane in the overview
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_show_applications_finish (GPasteGnomeShellClient *self,
+                                                     GAsyncResult           *result,
+                                                     GError                **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_gnome_shell_client_grab_accelerator_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Grab a keybinding
+ *
+ * Returns: the action id corresultponding
+ */
+G_PASTE_VISIBLE guint32
+g_paste_gnome_shell_client_grab_accelerator_finish (GPasteGnomeShellClient *self,
+                                                    GAsyncResult           *result,
+                                                    GError                **error)
+{
+    DBUS_ASYNC_FINISH_RET_UINT32;
+}
+
+/**
+ * g_paste_gnome_shell_client_grab_accelerators_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Grab some keybindings
+ *
+ * Returns: the action ids corresultponding
+ */
+G_PASTE_VISIBLE guint32 *
+g_paste_gnome_shell_client_grab_accelerators_finish (GPasteGnomeShellClient *self,
+                                                     GAsyncResult           *result,
+                                                     GError                **error)
+{
+    DBUS_ASYNC_FINISH_RET_AU;
+}
+
+/**
+ * g_paste_gnome_shell_client_ungrab_accelerator_finish:
+ * @self: a #GPasteGnomeShellClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Ungrab a keybinding
+ *
+ * Returns: whether the ungrab was succesful or not
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_gnome_shell_client_ungrab_accelerator_finish (GPasteGnomeShellClient *self,
+                                                      GAsyncResult           *result,
+                                                      GError                **error)
+{
+    DBUS_ASYNC_FINISH_RET_BOOL;
+}
+
+/**************/
+/* Properties */
+/**************/
 
 /**
  * g_paste_gnome_shell_client_get_mode:
@@ -370,7 +782,6 @@ g_paste_gnome_shell_client_overview_set_active (GPasteGnomeShellClient *self,
                                                 gboolean                value,
                                                 GError                **error)
 {
-    /* FIXME: No such interface 'org.freedesktop.DBus.Properties' on object at path '/org/gnome/Shell' */
     DBUS_SET_BOOLEAN_PROPERTY (OVERVIEW_ACTIVE, value);
 }
 
