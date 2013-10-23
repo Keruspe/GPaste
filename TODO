@@ -10,7 +10,6 @@
     all:
         check if there are missing allow-none
         g_clear_* doesn't need if
-        check if we use cleanup for all GError
         review GVariant stuff
 
 3.8:

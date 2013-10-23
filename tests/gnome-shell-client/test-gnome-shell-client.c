@@ -66,12 +66,11 @@ main (gint argc, gchar *argv[])
 
     g_setenv ("G_MESSAGES_DEBUG", "all", TRUE);
 
-    GError *error = NULL;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     G_PASTE_CLEANUP_UNREF GPasteGnomeShellClient *client = g_paste_gnome_shell_client_new (&error);
     if (!client)
     {
         g_error ("Couldn't connect to gnome-shell: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     } 
 
@@ -91,7 +90,6 @@ main (gint argc, gchar *argv[])
             if (!g_paste_gnome_shell_client_overview_set_active (client, expected, &error))
             {
                 g_error ("Couldn't set gnome-shell overview state: %s", error->message);
-                g_error_free (error);
                 return EXIT_FAILURE;
             }
             g_usleep (1000000);
@@ -103,7 +101,6 @@ main (gint argc, gchar *argv[])
     if (!g_paste_gnome_shell_client_eval_sync (client, "3 + 2", &result, &error))
     {
         g_error ("Failed to eval \"3 + 2\": %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
     g_print ("Evaluated \"3 + 2\" as \"%s\"\n", result);
@@ -116,7 +113,6 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         g_error ("Error when trying to evaluate \"foobar\": %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
     g_print ("As expected, couldn't eval \"foobar\"\n");
@@ -128,7 +124,6 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         g_error ("Couldn't focus search: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
     g_usleep (1500000);
@@ -136,7 +131,6 @@ main (gint argc, gchar *argv[])
     if (!g_paste_gnome_shell_client_overview_set_active (client, expected, &error))
     {
         g_error ("Couldn't set gnome-shell overview state: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
 
@@ -146,7 +140,6 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         g_error ("Couldn't show OSD: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
 
@@ -156,7 +149,6 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         g_error ("Couldn't focus firefox: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
     g_usleep (3000000);
@@ -164,7 +156,6 @@ main (gint argc, gchar *argv[])
     if (!g_paste_gnome_shell_client_overview_set_active (client, expected, &error))
     {
         g_error ("Couldn't set gnome-shell overview state: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
 
@@ -174,7 +165,6 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         g_error ("Couldn't show applications: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
     g_usleep (3000000);
@@ -182,7 +172,6 @@ main (gint argc, gchar *argv[])
     if (!g_paste_gnome_shell_client_overview_set_active (client, expected, &error))
     {
         g_error ("Couldn't set gnome-shell overview state: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
     g_usleep (1000000);
@@ -214,7 +203,6 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         g_error ("Couldn't grab accelerators: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
 
@@ -222,7 +210,6 @@ main (gint argc, gchar *argv[])
     if (error)
     {
         g_error ("Couldn't grab accelerator: %s", error->message);
-        g_error_free (error);
         return EXIT_FAILURE;
     }
 
@@ -237,7 +224,6 @@ main (gint argc, gchar *argv[])
         if (error)
         {
             g_error ("Couldn't ungrab accelerator: %s", error->message);
-            g_error_free (error);
             return EXIT_FAILURE;
         }
     }
