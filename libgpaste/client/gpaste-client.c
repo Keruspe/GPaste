@@ -50,7 +50,9 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+/*******************/
 /* Methods / Async */
+/*******************/
 
 #define DBUS_CALL_NO_PARAM_ASYNC(method) \
     DBUS_CALL_NO_PARAM_ASYNC_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
@@ -58,7 +60,22 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_ASYNC_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
 
+/****************************/
+/* Methods / Async - Finish */
+/****************************/
+
+#define DBUS_ASYNC_FINISH_NO_RETURN \
+    DBUS_ASYNC_FINISH_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT)
+
+#define DBUS_ASYNC_FINISH_RET_STRING \
+    DBUS_ASYNC_FINISH_RET_STRING_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT)
+
+#define DBUS_ASYNC_FINISH_RET_STRV \
+    DBUS_ASYNC_FINISH_RET_STRV_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT)
+
+/******************/
 /* Methods / Sync */
+/******************/
 
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
     DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
@@ -72,12 +89,16 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
 
+/**************/
 /* Properties */
+/**************/
 
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
     DBUS_GET_BOOLEAN_PROPERTY_BASE (GPasteClient, g_paste_client, G_PASTE_GDBUS_PROP_##property)
 
+/***********/
 /* Signals */
+/***********/
 
 #define HANDLE_SIGNAL(sig)                                 \
     if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig)) \
@@ -122,6 +143,10 @@ static guint signals[LAST_SIGNAL] = { 0 };
                   G_TYPE_NONE,                     \
                   1,                               \
                   G_TYPE_##type)
+
+/******************/
+/* Methods / Sync */
+/******************/
 
 /**
  * g_paste_client_get_element:
@@ -374,6 +399,10 @@ g_paste_client_list_histories (GPasteClient *self,
 {
     DBUS_CALL_NO_PARAM_RET_STRV (LIST_HISTORIES);
 }
+
+/*******************/
+/* Methods / Async */
+/*******************/
 
 /**
  * g_paste_client_get_element_async:
@@ -668,6 +697,266 @@ g_paste_client_list_histories_async (GPasteClient       *self,
 {
     DBUS_CALL_NO_PARAM_ASYNC (LIST_HISTORIES);
 }
+
+/****************************/
+/* Methods / Async - Finish */
+/****************************/
+
+/**
+ * g_paste_client_get_element_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: a newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_element_finish (GPasteClient *self,
+                                   GAsyncResult *result,
+                                   GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRING;
+}
+
+/**
+ * g_paste_client_get_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Get the history from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_client_get_history_finish (GPasteClient *self,
+                                   GAsyncResult *result,
+                                   GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRV;
+}
+
+/**
+ * g_paste_client_add_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Add an item to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_finish (GPasteClient *self,
+                           GAsyncResult *result,
+                           GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_add_file_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Add the file contents to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_file_finish (GPasteClient *self,
+                                GAsyncResult *result,
+                                GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_select_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Select an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_select_finish (GPasteClient *self,
+                              GAsyncResult *result,
+                              GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_delete_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Delete an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_finish (GPasteClient *self,
+                              GAsyncResult *result,
+                              GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_empty_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Empty the history from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_empty_finish (GPasteClient *self,
+                             GAsyncResult *result,
+                             GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_track_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Change the tracking state of the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_track_finish (GPasteClient *self,
+                             GAsyncResult *result,
+                             GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_on_extension_state_changed_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Call this when the extension changes its state
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
+                                                  GAsyncResult *result,
+                                                  GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_reexecute_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Reexecute the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_reexecute_finish (GPasteClient *self,
+                                 GAsyncResult *result,
+                                 GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_backup_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Backup the current history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_backup_history_finish (GPasteClient *self,
+                                      GAsyncResult *result,
+                                      GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_switch_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Switch to another history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_switch_history_finish (GPasteClient *self,
+                                      GAsyncResult *result,
+                                      GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_delete_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Delete an history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_history_finish (GPasteClient *self,
+                                      GAsyncResult *result,
+                                      GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_list_histories_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * List all available hisotries
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_client_list_histories_finish (GPasteClient *self,
+                                      GAsyncResult *result,
+                                      GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRV;
+}
+
+/**************/
+/* Properties */
+/**************/
 
 /**
  * g_paste_client_is_active:

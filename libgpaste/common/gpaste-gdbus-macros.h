@@ -80,9 +80,23 @@ g_paste_dbus_get_au_result (GVariant *variant,
 }
 #endif /* __G_PASTE_NEEDS_AU__ */
 
-/*******************/
-/* Methods / Async */
-/*******************/
+/********************/
+/* Methods / Common */
+/********************/
+
+#define DBUS_PREPARE_EXTRACTION                      \
+        GVariantIter result_iter;                    \
+        g_variant_iter_init (&result_iter, _result); \
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&result_iter)
+
+#define DBUS_RETURN(if_fail, extract_and_return_answer) \
+    if (!_result)                                       \
+        return if_fail;                                 \
+    extract_and_return_answer
+
+/*****************************/
+/* Methods / Async / General */
+/*****************************/
 
 #define DBUS_CALL_ASYNC_FULL(TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params) \
     g_return_if_fail (TYPE_CHECKER (self));                                                     \
@@ -97,6 +111,10 @@ g_paste_dbus_get_au_result (GVariant *variant,
                        callback,                                                                \
                        user_data)
 
+/**************************/
+/* Methods / Async / Impl */
+/**************************/
+
 #define DBUS_CALL_NO_PARAM_ASYNC_BASE(TypeName, type_name, TYPE_CHECKER, method) \
     DBUS_CALL_ASYNC_FULL (TypeName, type_name, TYPE_CHECKER, {}, method, NULL, 0)
 
@@ -104,6 +122,36 @@ g_paste_dbus_get_au_result (GVariant *variant,
     DBUS_CALL_ASYNC_FULL (TypeName, type_name, TYPE_CHECKER,                                              \
                           GVariant *parameter = g_variant_new_##param_type (param_name),                  \
                           method, &parameter, 1)
+
+/**************************************/
+/* Methods / Async / General - Finish */
+/**************************************/
+
+#define DBUS_ASYNC_FINISH_FULL(TypeName, type_name, TYPE_CHECKER, if_fail, extract_and_return_answer) \
+    g_return_if_fail (TYPE_CHECKER (self));                                                           \
+    TypeName##Private *priv = type_name##_get_instance_private (self);                                \
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *_result = g_dbus_proxy_call_finish (priv->proxy,          \
+                                                                                result,               \
+                                                                                error);               \
+    DBUS_RETURN (if_fail, extract_and_return_answer)
+
+#define DBUS_ASYNC_FINISH_WITH_RETURN(TypeName, type_name, TYPE_CHECKER, if_fail, extract_and_return_answer) \
+    DBUS_ASYNC_FINISH_FULL (TypeName, type_name, TYPE_CHECKER, if_fail,                                      \
+                            DBUS_PREPARE_EXTRACTION;                                                         \
+                            extract_and_return_answer)
+
+/***********************************/
+/* Methods / Async / Impl - Finish */
+/***********************************/
+
+#define DBUS_ASYNC_FINISH_NO_RETURN_BASE(TypeName, type_name, TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_FULL (TypeName, type_name, TYPE_CHECKER, ;, {})
+
+#define DBUS_ASYNC_FINISH_RET_STRING_BASE(TypeName, type_name, TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_WITH_RETURN (TypeName, type_name, TYPE_CHECKER, NULL, return g_variant_dup_string (variant, NULL))
+
+#define DBUS_ASYNC_FINISH_RET_STRV_BASE(TypeName, type_name, TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_WITH_RETURN (TypeName, type_name, TYPE_CHECKER, NULL, return g_variant_dup_strv (variant, NULL))
 
 /****************************/
 /* Methods / Sync / General */
@@ -120,9 +168,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
                                                                               -1,                                      \
                                                                               NULL, /* cancellable */                  \
                                                                               error);                                  \
-    if (!_result)                                                                                                      \
-        return if_fail;                                                                                                \
-    extract_and_return_answer
+    DBUS_RETURN (if_fail, extract_and_return_answer)
 
 /****************************************/
 /* Methods / Sync / General - No return */
@@ -145,10 +191,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
         GVariant *variant = _result)
 
 #define DBUS_CALL_WITH_RETURN_BASE(TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params, if_fail, variant_extract)   \
-    DBUS_CALL_WITH_RETURN_FULL_BASE (TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params, if_fail, variant_extract, \
-        GVariantIter result_iter;                                                                                                 \
-        g_variant_iter_init (&result_iter, _result);                                                                              \
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&result_iter))
+    DBUS_CALL_WITH_RETURN_FULL_BASE (TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params, if_fail, variant_extract, DBUS_PREPARE_EXTRACTION)
 
 /*************************************/
 /* Methods / Sync / Impl - No return */
