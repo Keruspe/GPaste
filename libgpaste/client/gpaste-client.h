@@ -190,7 +190,11 @@ gchar **g_paste_client_list_histories_finish             (GPasteClient *self,
 
 gboolean g_paste_client_is_active (GPasteClient *self);
 
-GPasteClient *g_paste_client_new (GError **error);
+GPasteClient *g_paste_client_new_sync   (GError            **error);
+void          g_paste_client_new        (GAsyncReadyCallback callback,
+                                         gpointer            user_data);
+GPasteClient *g_paste_client_new_finish (GAsyncResult       *result,
+                                         GError            **error);
 
 G_END_DECLS
 

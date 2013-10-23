@@ -575,7 +575,7 @@ g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
 /**
  * g_paste_gnome_shell_client_eval_finish:
  * @self: a #GPasteGnomeShellClient instance
- * @res: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
  * @output: (out callee-allocates) (allow-none): a plate to put the result in
  * @error: a #GError
  *

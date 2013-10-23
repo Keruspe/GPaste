@@ -153,7 +153,7 @@ namespace GPaste {
             GLib.Object (application_id: "org.gnome.GPaste.Applet");
             this.settings = new GPaste.Settings ();
             try {
-                this.client = new GPaste.Client ();
+                this.client = new GPaste.Client.sync ();
             } catch (Error e) {
                 stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
                 Posix.exit(1);
