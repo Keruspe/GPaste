@@ -20,3 +20,36 @@ global:
 local:
     *;
 };
+
+LIBGPASTE_CLIENT_2 {
+global:
+    g_paste_client_get_history_async;
+    g_paste_client_backup_history_async;
+    g_paste_client_switch_history_async;
+    g_paste_client_delete_history_async;
+    g_paste_client_list_histories_async;
+    g_paste_client_add_async;
+    g_paste_client_add_file_async;
+    g_paste_client_get_element_async;
+    g_paste_client_select_async;
+    g_paste_client_delete_async;
+    g_paste_client_empty_async;
+    g_paste_client_track_async;
+    g_paste_client_on_extension_state_changed_async;
+    g_paste_client_reexecute_async;
+
+    g_paste_client_get_history_finish;
+    g_paste_client_backup_history_finish;
+    g_paste_client_switch_history_finish;
+    g_paste_client_delete_history_finish;
+    g_paste_client_list_histories_finish;
+    g_paste_client_add_finish;
+    g_paste_client_add_file_finish;
+    g_paste_client_get_element_finish;
+    g_paste_client_select_finish;
+    g_paste_client_delete_finish;
+    g_paste_client_empty_finish;
+    g_paste_client_track_finish;
+    g_paste_client_on_extension_state_changed_finish;
+    g_paste_client_reexecute_finish;
+} LIBGPASTE_CLIENT_1;

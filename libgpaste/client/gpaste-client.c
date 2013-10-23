@@ -50,8 +50,18 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-#define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+/* Methods / Async */
+
+#define DBUS_CALL_NO_PARAM_ASYNC(method) \
+    DBUS_CALL_NO_PARAM_ASYNC_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
+
+#define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_ASYNC_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+
+/* Methods / Sync */
+
+#define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
+    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
 
 #define DBUS_CALL_NO_PARAM_RET_STRV(method) \
     DBUS_CALL_NO_PARAM_RET_STRV_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
@@ -59,11 +69,15 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
 
-#define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
+#define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+
+/* Properties */
 
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
     DBUS_GET_BOOLEAN_PROPERTY_BASE (GPasteClient, g_paste_client, G_PASTE_GDBUS_PROP_##property)
+
+/* Signals */
 
 #define HANDLE_SIGNAL(sig)                                 \
     if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig)) \
@@ -359,6 +373,300 @@ g_paste_client_list_histories (GPasteClient *self,
                                GError      **error)
 {
     DBUS_CALL_NO_PARAM_RET_STRV (LIST_HISTORIES);
+}
+
+/**
+ * g_paste_client_get_element_async:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to get
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_element_async (GPasteClient       *self,
+                                  guint32             index,
+                                  GAsyncReadyCallback callback,
+                                  gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT, uint32, index);
+}
+
+/**
+ * g_paste_client_get_history_async:
+ * @self: a #GPasteClient instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Get the history from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_history_async (GPasteClient       *self,
+                                  GAsyncReadyCallback callback,
+                                  gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (GET_HISTORY);
+}
+
+/**
+ * g_paste_client_add_async:
+ * @self: a #GPasteClient instance
+ * @text: the text to add
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Add an item to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_async (GPasteClient       *self,
+                          const gchar        *text,
+                          GAsyncReadyCallback callback,
+                          gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (ADD, string, text);
+}
+
+/**
+ * g_paste_client_add_file_async:
+ * @self: a #GPasteClient instance
+ * @file: the file to add
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Add the file contents to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_file_async (GPasteClient       *self,
+                               const gchar        *file,
+                               GAsyncReadyCallback callback,
+                               gpointer            user_data)
+{
+    G_PASTE_CLEANUP_FREE gchar *absolute_path = NULL;
+
+    if (!g_path_is_absolute (file))
+    {
+        G_PASTE_CLEANUP_FREE gchar *current_dir = g_get_current_dir ();
+        absolute_path = g_build_filename (current_dir, file, NULL);
+    }
+
+    DBUS_CALL_ONE_PARAM_ASYNC (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+}
+
+/**
+ * g_paste_client_select_async:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to select
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Select an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_select_async (GPasteClient       *self,
+                             guint32             index,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, uint32, index);
+}
+
+/**
+ * g_paste_client_delete_async:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to delete
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Delete an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_async (GPasteClient       *self,
+                             guint32             index,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (DELETE, uint32, index);
+}
+
+/**
+ * g_paste_client_empty_async:
+ * @self: a #GPasteClient instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Empty the history from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_empty_async (GPasteClient       *self,
+                            GAsyncReadyCallback callback,
+                            gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (EMPTY);
+}
+
+/**
+ * g_paste_client_track_async:
+ * @self: a #GPasteClient instance
+ * @state: the new tracking state of the #GPasteDaemon
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Change the tracking state of the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_track_async (GPasteClient *self,
+                            gboolean      state,
+                            GAsyncReadyCallback callback,
+                            gpointer             user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (TRACK, boolean, state);
+}
+
+/**
+ * g_paste_client_on_extension_state_changed_async:
+ * @self: a #GPasteClient instance
+ * @state: the new state of the extension
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Call this when the extension changes its state
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_on_extension_state_changed_async (GPasteClient       *self,
+                                                 gboolean            state,
+                                                 GAsyncReadyCallback callback,
+                                                 gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (ON_EXTENSION_STATE_CHANGED, boolean, state);
+}
+
+/**
+ * g_paste_client_reexecute_async:
+ * @self: a #GPasteClient instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Reexecute the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_reexecute_async (GPasteClient       *self,
+                                GAsyncReadyCallback callback,
+                                gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (REEXECUTE);
+}
+
+/**
+ * g_paste_client_backup_history_async:
+ * @self: a #GPasteClient instance
+ * @name: the name of the backup
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Backup the current history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_backup_history_async (GPasteClient       *self,
+                                     const gchar        *name,
+                                     GAsyncReadyCallback callback,
+                                     gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (BACKUP_HISTORY, string, name);
+}
+
+/**
+ * g_paste_client_switch_history_async:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history to switch to
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Switch to another history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_switch_history_async (GPasteClient       *self,
+                                     const gchar        *name,
+                                     GAsyncReadyCallback callback,
+                                     gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (SWITCH_HISTORY, string, name);
+}
+
+/**
+ * g_paste_client_delete_history_async:
+ * @self: a #GPasteClient instance
+ * @name: the name of the history to delete
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Delete an history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_history_async (GPasteClient       *self,
+                                     const gchar        *name,
+                                     GAsyncReadyCallback callback,
+                                     gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (DELETE_HISTORY, string, name);
+}
+
+/**
+ * g_paste_client_list_histories_async:
+ * @self: a #GPasteClient instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * List all available hisotries
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_list_histories_async (GPasteClient       *self,
+                                     GAsyncReadyCallback callback,
+                                     gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (LIST_HISTORIES);
 }
 
 /**

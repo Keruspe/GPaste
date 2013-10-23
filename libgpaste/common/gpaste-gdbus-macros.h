@@ -80,9 +80,34 @@ g_paste_dbus_get_au_result (GVariant *variant,
 }
 #endif /* __G_PASTE_NEEDS_AU__ */
 
-/***********/
-/* Methods */
-/***********/
+/*******************/
+/* Methods / Async */
+/*******************/
+
+#define DBUS_CALL_ASYNC_FULL(TypeName, type_name, TYPE_CHECKER, decl, method, params, n_params) \
+    g_return_if_fail (TYPE_CHECKER (self));                                                     \
+    TypeName##Private *priv = type_name##_get_instance_private (self);                          \
+    decl;                                                                                       \
+    g_dbus_proxy_call (priv->proxy,                                                             \
+                       method,                                                                  \
+                       g_variant_new_tuple (params, n_params),                                  \
+                       G_DBUS_CALL_FLAGS_NONE,                                                  \
+                       -1,                                                                      \
+                       NULL, /* cancellable */                                                  \
+                       callback,                                                                \
+                       user_data)
+
+#define DBUS_CALL_NO_PARAM_ASYNC_BASE(TypeName, type_name, TYPE_CHECKER, method) \
+    DBUS_CALL_ASYNC_FULL (TypeName, type_name, TYPE_CHECKER, {}, method, NULL, 0)
+
+#define DBUS_CALL_ONE_PARAM_ASYNC_BASE(TypeName, type_name, TYPE_CHECKER, param_type, param_name, method) \
+    DBUS_CALL_ASYNC_FULL (TypeName, type_name, TYPE_CHECKER,                                              \
+                          GVariant *parameter = g_variant_new_##param_type (param_name),                  \
+                          method, &parameter, 1)
+
+/******************/
+/* Methods / Sync */
+/******************/
 
 #define DBUS_CALL_FULL(TypeName, type_name, guard, decl, method, params, n_params, if_fail, extract_and_return_answer) \
     guard;                                                                                                             \
