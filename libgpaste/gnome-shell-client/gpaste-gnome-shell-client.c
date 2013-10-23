@@ -23,8 +23,6 @@
 #define __G_PASTE_NEEDS_BS__
 #include "gpaste-gdbus-macros.h"
 
-#include <gio/gio.h>
-
 #define G_PASTE_GNOME_SHELL_BUS_NAME       "org.gnome.Shell"
 #define G_PASTE_GNOME_SHELL_OBJECT_PATH    "/org/gnome/Shell"
 #define G_PASTE_GNOME_SHELL_INTERFACE_NAME "org.gnome.Shell"
@@ -84,17 +82,7 @@
         "</interface>"                                                                                     \
     "</node>"
 
-struct _GPasteGnomeShellClientPrivate
-{
-    GDBusProxy    *proxy;
-    GDBusNodeInfo *gnome_shell_dbus_info;
-
-    gulong         g_signal;
-
-    GError        *connection_error;
-};
-
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_TYPE_OBJECT)
+G_DEFINE_TYPE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_TYPE_DBUS_PROXY)
 
 enum
 {
@@ -106,34 +94,34 @@ enum
 static guint signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_ONE_PARAM_RET_BOOL(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_BOOL_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+    DBUS_CALL_ONE_PARAM_RET_BOOL_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_CALL_ONE_PARAM_RET_BS(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_BS_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+    DBUS_CALL_ONE_PARAM_RET_BS_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_CALL_ONE_PARAMV_RET_AU(method, paramv, n_items) \
-    DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv, n_items)
+    DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv, n_items)
 
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
+    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_CALL_ONE_PARAMV_NO_RETURN(method, paramv) \
-    DBUS_CALL_ONE_PARAMV_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
+    DBUS_CALL_ONE_PARAMV_NO_RETURN_BASE (GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_CALL_TWO_PARAMS_RET_UINT32(method, params) \
-    DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
+    DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_IS_GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
+    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
-    DBUS_GET_BOOLEAN_PROPERTY_BASE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_PROP_##property)
+    DBUS_GET_BOOLEAN_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_PROP_##property)
 
 #define DBUS_GET_STRING_PROPERTY(property) \
-    DBUS_GET_STRING_PROPERTY_BASE  (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_PROP_##property)
+    DBUS_GET_STRING_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_PROP_##property)
 
 #define DBUS_SET_BOOLEAN_PROPERTY(property, value) \
-    DBUS_SET_BOOLEAN_PROPERTY_BASE(GPasteGnomeShellClient, g_paste_gnome_shell_client, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
+    DBUS_SET_BOOLEAN_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
 
 /**
  * g_paste_gnome_shell_client_eval:
@@ -387,12 +375,13 @@ g_paste_gnome_shell_client_overview_set_active (GPasteGnomeShellClient *self,
 }
 
 static void
-g_paste_gnome_shell_client_handle_signal (GPasteGnomeShellClient *self,
-                                          gchar                  *sender_name G_GNUC_UNUSED,
-                                          gchar                  *signal_name,
-                                          GVariant               *parameters,
-                                          gpointer                user_data G_GNUC_UNUSED)
+g_paste_gnome_shell_client_g_signal (GDBusProxy  *proxy,
+                                     const gchar *sender_name G_GNUC_UNUSED,
+                                     const gchar *signal_name,
+                                     GVariant    *parameters)
 {
+    GPasteGnomeShellClient *self = G_PASTE_GNOME_SHELL_CLIENT (proxy);
+
     if (!g_strcmp0 (signal_name, G_PASTE_GNOME_SHELL_SIG_ACCELERATOR_ACTIVATED))
     {
         GVariantIter params_iter;
@@ -411,33 +400,9 @@ g_paste_gnome_shell_client_handle_signal (GPasteGnomeShellClient *self,
 }
 
 static void
-g_paste_gnome_shell_client_dispose (GObject *object)
+g_paste_gnome_shell_client_class_init (GPasteGnomeShellClientClass *klass G_GNUC_UNUSED)
 {
-    GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (G_PASTE_GNOME_SHELL_CLIENT (object));
-    GDBusNodeInfo *gnome_shell_dbus_info = priv->gnome_shell_dbus_info;
-
-    if (gnome_shell_dbus_info)
-    {
-        GDBusProxy *proxy = priv->proxy;
-
-        if (proxy)
-        {
-            g_signal_handler_disconnect (proxy, priv->g_signal);
-            g_clear_object (&priv->proxy);
-        }
-        g_dbus_node_info_unref (gnome_shell_dbus_info);
-        priv->gnome_shell_dbus_info = NULL;
-    }
-
-    G_OBJECT_CLASS (g_paste_gnome_shell_client_parent_class)->dispose (object);
-}
-
-static void
-g_paste_gnome_shell_client_class_init (GPasteGnomeShellClientClass *klass)
-{
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_gnome_shell_client_dispose;
+    G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_gnome_shell_client_g_signal;
 
     signals[ACCELERATOR_ACTIVATED] = g_signal_new ("accelerator-activated",
                                                    G_PASTE_TYPE_GNOME_SHELL_CLIENT,
@@ -456,28 +421,11 @@ g_paste_gnome_shell_client_class_init (GPasteGnomeShellClientClass *klass)
 static void
 g_paste_gnome_shell_client_init (GPasteGnomeShellClient *self)
 {
-    GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
+    GDBusProxy *proxy = G_DBUS_PROXY (self);
 
-    priv->gnome_shell_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GNOME_SHELL_INTERFACE,
-                                                                NULL); /* Error */
-
-    priv->connection_error = NULL;
-    GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                     G_DBUS_PROXY_FLAGS_NONE,
-                                                                     priv->gnome_shell_dbus_info->interfaces[0],
-                                                                     G_PASTE_GNOME_SHELL_BUS_NAME,
-                                                                     G_PASTE_GNOME_SHELL_OBJECT_PATH,
-                                                                     G_PASTE_GNOME_SHELL_INTERFACE_NAME,
-                                                                     NULL, /* cancellable */
-                                                                     &priv->connection_error);
-
-    if (proxy)
-    {
-        priv->g_signal = g_signal_connect_swapped (G_OBJECT (proxy),
-                                                   "g-signal",
-                                                   G_CALLBACK (g_paste_gnome_shell_client_handle_signal),
-                                                   self); /* user_data */
-    }
+    G_PASTE_CLEANUP_NODE_INFO_UNREF GDBusNodeInfo *gnome_shell_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GNOME_SHELL_INTERFACE,
+                                                                                                         NULL); /* Error */
+    g_dbus_proxy_set_interface_info (proxy, gnome_shell_dbus_info->interfaces[0]);
 }
 
 /**
@@ -491,16 +439,5 @@ g_paste_gnome_shell_client_init (GPasteGnomeShellClient *self)
 G_PASTE_VISIBLE GPasteGnomeShellClient *
 g_paste_gnome_shell_client_new (GError **error)
 {
-    GPasteGnomeShellClient *self = g_object_new (G_PASTE_TYPE_GNOME_SHELL_CLIENT, NULL);
-    GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
-
-    if (!priv->proxy)
-    {
-        if (error)
-            *error = priv->connection_error;
-        g_object_unref (self);
-        return NULL;
-    }
-
-    return self;
+    CUSTOM_PROXY_NEW (GNOME_SHELL_CLIENT, GNOME_SHELL);
 }

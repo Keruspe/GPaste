@@ -1,6 +1,29 @@
 LIBGPASTE_CLIENT_1 {
 global:
     g_paste_client_get_type;
+    g_paste_client_is_active;
+    g_paste_client_new;
+local:
+    *;
+};
+
+LIBGPASTE_CLIENT_2 {
+global:
+    g_paste_client_get_history_sync;
+    g_paste_client_backup_history_sync;
+    g_paste_client_switch_history_sync;
+    g_paste_client_delete_history_sync;
+    g_paste_client_list_histories_sync;
+    g_paste_client_add_sync;
+    g_paste_client_add_file_sync;
+    g_paste_client_get_element_sync;
+    g_paste_client_select_sync;
+    g_paste_client_delete_sync;
+    g_paste_client_empty_sync;
+    g_paste_client_track_sync;
+    g_paste_client_on_extension_state_changed_sync;
+    g_paste_client_reexecute_sync;
+
     g_paste_client_get_history;
     g_paste_client_backup_history;
     g_paste_client_switch_history;
@@ -15,8 +38,19 @@ global:
     g_paste_client_track;
     g_paste_client_on_extension_state_changed;
     g_paste_client_reexecute;
-    g_paste_client_is_active;
-    g_paste_client_new;
-local:
-    *;
-};
+
+    g_paste_client_get_history_finish;
+    g_paste_client_backup_history_finish;
+    g_paste_client_switch_history_finish;
+    g_paste_client_delete_history_finish;
+    g_paste_client_list_histories_finish;
+    g_paste_client_add_finish;
+    g_paste_client_add_file_finish;
+    g_paste_client_get_element_finish;
+    g_paste_client_select_finish;
+    g_paste_client_delete_finish;
+    g_paste_client_empty_finish;
+    g_paste_client_track_finish;
+    g_paste_client_on_extension_state_changed_finish;
+    g_paste_client_reexecute_finish;
+} LIBGPASTE_CLIENT_1;

@@ -22,18 +22,18 @@
 
 #include <gpaste-client.h>
 
-G_BEGIN_DECLS
+#include <gio/gio.h>
 
-typedef struct _GPasteClientPrivate GPasteClientPrivate;
+G_BEGIN_DECLS
 
 struct _GPasteClient
 {
-    GObject parent_instance;
+    GDBusProxy parent_instance;
 };
 
 struct _GPasteClientClass
 {
-    GObjectClass parent_class;
+    GDBusProxyClass parent_class;
 };
 
 G_END_DECLS

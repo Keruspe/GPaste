@@ -251,7 +251,7 @@ static void
 g_paste_settings_ui_stack_private_refill_histories (GPasteSettingsUiStackPrivate *priv)
 {
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-    GStrv histories = g_paste_client_list_histories (priv->client, &error);
+    GStrv histories = g_paste_client_list_histories_sync (priv->client, &error);
 
     if (g_paste_settings_ui_check_connection_error (error))
         return;
@@ -280,7 +280,7 @@ backup_callback (const gchar *value,
     GPasteSettingsUiStackPrivate *priv = user_data;
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
-    g_paste_client_backup_history (priv->client, value, &error);
+    g_paste_client_backup_history_sync (priv->client, value, &error);
 
     if (g_paste_settings_ui_check_connection_error (error))
         return;
@@ -298,9 +298,9 @@ targets_callback (const gchar *action,
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
     if (!g_strcmp0 (action, "switch"))
-        g_paste_client_switch_history (client, target, &error);
+        g_paste_client_switch_history_sync (client, target, &error);
     else if (!g_strcmp0 (action, "delete"))
-        g_paste_client_delete_history (client, target, &error);
+        g_paste_client_delete_history_sync (client, target, &error);
     else
         fprintf (stderr, "unknown action: %s\n", action);
 
