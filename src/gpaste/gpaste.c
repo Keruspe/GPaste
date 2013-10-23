@@ -149,7 +149,7 @@ main (gint argc, gchar *argv[])
     int status = EXIT_SUCCESS;
 
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-    G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new (&error);
+    G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new_sync (&error);
 
     if (!client)
         failure_exit (error);

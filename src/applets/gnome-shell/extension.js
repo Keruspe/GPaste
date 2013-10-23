@@ -231,20 +231,22 @@ const GPasteIndicator = new Lang.Class({
 
         this.actor.add_child(new GPasteStatusIcon());
 
-        this._client = GPaste.Client.new();
+        GPaste.Client.new(Lang.bind(this, function (obj, result) {
+            this._client = GPaste.Client.new_finish (result);
 
-        this.menu.addMenuItem(new GPasteStateSwitch(this._client));
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            this.menu.addMenuItem(new GPasteStateSwitch(this._client));
+            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        let emptyHistoryItem = new GPasteEmptyHistoryMenuItem(this._client);
+            let emptyHistoryItem = new GPasteEmptyHistoryMenuItem(this._client);
 
-        this._history = new GPasteHistoryWrapper(this._client, this.menu, emptyHistoryItem);
+            this._history = new GPasteHistoryWrapper(this._client, this.menu, emptyHistoryItem);
 
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this.menu.addMenuItem(emptyHistoryItem);
-        this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
+            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            this.menu.addMenuItem(emptyHistoryItem);
+            this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
 
-        this._onStateChanged (true);
+            this._onStateChanged (true);
+        }));
     },
 
     shutdown: function() {

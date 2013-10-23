@@ -451,7 +451,7 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
     GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
 
     GError *error = NULL;
-    priv->client = g_paste_client_new (&error);
+    priv->client = g_paste_client_new_sync (&error);
 
     if (g_paste_settings_ui_check_connection_error (error))
         exit (EXIT_FAILURE);

@@ -998,7 +998,8 @@ g_paste_client_init (GPasteClient *self)
 }
 
 /**
- * g_paste_client_new:
+ * g_paste_client_new_sync:
+ * @error: Return location for error or %NULL.
  *
  * Create a new instance of #GPasteClient
  *
@@ -1006,7 +1007,40 @@ g_paste_client_init (GPasteClient *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteClient *
-g_paste_client_new (GError **error)
+g_paste_client_new_sync (GError **error)
 {
     CUSTOM_PROXY_NEW (CLIENT, GDBUS);
+}
+
+/**
+ * g_paste_client_new:
+ * @callback: Callback function to invoke when the proxy is ready.
+ * @user_data: User data to pass to @callback.
+ *
+ * Create a new instance of #GPasteClient
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_new (GAsyncReadyCallback callback,
+                    gpointer            user_data)
+{
+    CUSTOM_PROXY_NEW_ASYNC (CLIENT, GDBUS);
+}
+
+/**
+ * g_paste_client_new_finish:
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback function passed to the async ctor.
+ * @error: Return location for error or %NULL.
+ *
+ * Create a new instance of #GPasteClient
+ *
+ * Returns: a newly allocated #GPasteClient
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteClient *
+g_paste_client_new_finish (GAsyncResult *result,
+                           GError      **error)
+{
+    CUSTOM_PROXY_NEW_FINISH (CLIENT);
 }
