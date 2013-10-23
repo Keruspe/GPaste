@@ -169,22 +169,6 @@ _keybinding_deactivate (_Keybinding *k)
 }
 
 static void
-_keybinding_grab_cb (GObject      *source,
-                     GAsyncResult *result,
-                     gpointer      user_data)
-{
-    _Keybinding *k = user_data;
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-    k->action = g_paste_gnome_shell_client_grab_accelerator_finish (G_PASTE_GNOME_SHELL_CLIENT (source), result, &error);
-
-    if (error)
-    {
-        g_warning ("Couldn't grab keybinding: %s", error->message);
-        g_paste_keybinder_change_grab_internal (k->binding, TRUE);
-    }
-}
-
-static void
 _keybinding_grab_gnome_shell (_Keybinding *k)
 {
     GPasteGnomeShellAccelerator accel = {
@@ -192,7 +176,14 @@ _keybinding_grab_gnome_shell (_Keybinding *k)
         G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL
     };
 
-    g_paste_gnome_shell_client_grab_accelerator (k->shell_client, accel, _keybinding_grab_cb, k->binding);
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    k->action = g_paste_gnome_shell_client_grab_accelerator_sync (k->shell_client, accel, &error);
+
+    if (error)
+    {
+        g_warning ("Couldn't grab keybinding: %s", error->message);
+        g_paste_keybinder_change_grab_internal (k->binding, TRUE);
+    }
 }
 
 static void
