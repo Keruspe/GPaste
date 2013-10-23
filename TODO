@@ -2,8 +2,8 @@
     keybinder:
         fix ungrab?
         fix regrab (ptiv->active failed)
-        freeze when activated from gnome-shell?
     gnome-shell-client:
+        async ctor
         add guards
         G_PASTE_MAKE_KEYBINDING()
     gpaste-settings:
