@@ -57,7 +57,7 @@ namespace GPaste {
             bool history_is_empty;
             var app = (Main) this.application;
             try {
-                var hist = app.client.get_history ();
+                var hist = app.client.get_history_sync ();
                 history_is_empty = (hist.length == 0);
                 uint element_size = app.element_size;
                 for (uint i = 0 ; i < hist.length ; ++i) {
@@ -76,10 +76,10 @@ namespace GPaste {
                         try {
                             switch (event.button) {
                             case Gdk.BUTTON_PRIMARY:
-                                app.client.select (current);
+                                app.client.select_sync (current);
                                 return false;
                             case Gdk.BUTTON_SECONDARY:
-                                app.client.delete (current);
+                                app.client.delete_sync (current);
                                 this.show_history ();
                                 return true;
                             }
@@ -122,7 +122,7 @@ namespace GPaste {
             var empty = new Gtk.MenuItem.with_label (_("Empty history"));
             empty.activate.connect (() => {
                 try {
-                    ((Main) this.application).client.empty();
+                    ((Main) this.application).client.empty_sync ();
                 } catch (Error e) {
                     stderr.printf (_("Couldn't empty history.\n"));
                 }
@@ -172,7 +172,7 @@ namespace GPaste {
 
         private void init () {
             try {
-                this.client.track (true); /* In case we exited the applet and we're launching it back */
+                this.client.track_sync (true); /* In case we exited the applet and we're launching it back */
                 this.client.show_history.connect (() => {
                     this.window.show_history ();
                 });
