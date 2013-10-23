@@ -206,30 +206,19 @@ _keybinding_grab (_Keybinding *k)
 }
 
 static void
-_keybinding_ungrab_cb (GObject      *source,
-                       GAsyncResult *result,
-                       gpointer      user_data)
+_keybinding_ungrab_gnome_shell (_Keybinding *k)
 {
-    _Keybinding *k = user_data;
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-    g_paste_gnome_shell_client_ungrab_accelerator_finish (G_PASTE_GNOME_SHELL_CLIENT (source), result, &error);
+    if (k->action)
+    {
+        g_paste_gnome_shell_client_ungrab_accelerator_sync (k->shell_client, k->action, &error);
+        k->action = 0;
+    }
 
     if (error)
     {
         g_warning ("Couldn't grab keybinding: %s", error->message);
         g_paste_keybinder_change_grab_internal (k->binding, FALSE);
-    }
-
-    _keybinding_deactivate (k);
-}
-
-static void
-_keybinding_ungrab_gnome_shell (_Keybinding *k)
-{
-    if (k->action)
-    {
-        g_paste_gnome_shell_client_ungrab_accelerator (k->shell_client, k->action, _keybinding_ungrab_cb, k);
-        k->action = 0;
     }
 }
 
@@ -239,10 +228,9 @@ _keybinding_ungrab (_Keybinding *k)
     if (k->shell_client)
         _keybinding_ungrab_gnome_shell (k);
     else
-    {
         g_paste_keybinder_change_grab_internal (k->binding, FALSE);
-        _keybinding_deactivate (k);
-    }
+
+    _keybinding_deactivate (k);
 }
 
 static void
