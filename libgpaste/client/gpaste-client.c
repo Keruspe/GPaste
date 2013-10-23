@@ -23,19 +23,7 @@
 
 #include <gpaste-gdbus-defines.h>
 
-#include <gio/gio.h>
-
-struct _GPasteClientPrivate
-{
-    GDBusProxy    *proxy;
-    GDBusNodeInfo *g_paste_daemon_dbus_info;
-
-    gulong         g_signal;
-
-    GError        *connection_error;
-};
-
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteClient, g_paste_client, G_TYPE_OBJECT)
+G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 
 enum
 {
@@ -55,46 +43,46 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /*******************/
 
 #define DBUS_CALL_NO_PARAM_ASYNC(method) \
-    DBUS_CALL_NO_PARAM_ASYNC_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
+    DBUS_CALL_NO_PARAM_ASYNC_BASE (CLIENT, G_PASTE_GDBUS_##method)
 
 #define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_ASYNC_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+    DBUS_CALL_ONE_PARAM_ASYNC_BASE (CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
 
 /****************************/
 /* Methods / Async - Finish */
 /****************************/
 
 #define DBUS_ASYNC_FINISH_NO_RETURN \
-    DBUS_ASYNC_FINISH_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT)
+    DBUS_ASYNC_FINISH_NO_RETURN_BASE (CLIENT)
 
 #define DBUS_ASYNC_FINISH_RET_STRING \
-    DBUS_ASYNC_FINISH_RET_STRING_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT)
+    DBUS_ASYNC_FINISH_RET_STRING_BASE (CLIENT)
 
 #define DBUS_ASYNC_FINISH_RET_STRV \
-    DBUS_ASYNC_FINISH_RET_STRV_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT)
+    DBUS_ASYNC_FINISH_RET_STRV_BASE (CLIENT)
 
 /******************/
 /* Methods / Sync */
 /******************/
 
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
+    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (CLIENT, G_PASTE_GDBUS_##method)
 
 #define DBUS_CALL_NO_PARAM_RET_STRV(method) \
-    DBUS_CALL_NO_PARAM_RET_STRV_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, G_PASTE_GDBUS_##method)
+    DBUS_CALL_NO_PARAM_RET_STRV_BASE (CLIENT, G_PASTE_GDBUS_##method)
 
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (GPasteClient, g_paste_client, G_PASTE_IS_CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
 
 /**************/
 /* Properties */
 /**************/
 
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
-    DBUS_GET_BOOLEAN_PROPERTY_BASE (GPasteClient, g_paste_client, G_PASTE_GDBUS_PROP_##property)
+    DBUS_GET_BOOLEAN_PROPERTY_BASE (CLIENT, G_PASTE_GDBUS_PROP_##property)
 
 /***********/
 /* Signals */
@@ -973,12 +961,13 @@ g_paste_client_is_active (GPasteClient *self)
 }
 
 static void
-g_paste_client_handle_signal (GPasteClient *self,
-                              gchar        *sender_name G_GNUC_UNUSED,
-                              gchar        *signal_name,
-                              GVariant     *parameters,
-                              gpointer      user_data G_GNUC_UNUSED)
+g_paste_client_g_signal (GDBusProxy  *proxy,
+                         const gchar *sender_name G_GNUC_UNUSED,
+                         const gchar *signal_name,
+                         GVariant    *parameters)
 {
+    GPasteClient *self = G_PASTE_CLIENT (proxy);
+
     HANDLE_SIGNAL (CHANGED)
     else HANDLE_SIGNAL (NAME_LOST)
     else HANDLE_SIGNAL (REEXECUTE_SELF)
@@ -987,33 +976,9 @@ g_paste_client_handle_signal (GPasteClient *self,
 }
 
 static void
-g_paste_client_dispose (GObject *object)
-{
-    GPasteClientPrivate *priv = g_paste_client_get_instance_private (G_PASTE_CLIENT (object));
-    GDBusNodeInfo *g_paste_daemon_dbus_info = priv->g_paste_daemon_dbus_info;
-
-    if (g_paste_daemon_dbus_info)
-    {
-        GDBusProxy *proxy = priv->proxy;
-
-        if (proxy)
-        {
-            g_signal_handler_disconnect (proxy, priv->g_signal);
-            g_clear_object (&priv->proxy);
-        }
-        g_dbus_node_info_unref (g_paste_daemon_dbus_info);
-        priv->g_paste_daemon_dbus_info = NULL;
-    }
-
-    G_OBJECT_CLASS (g_paste_client_parent_class)->dispose (object);
-}
-
-static void
 g_paste_client_class_init (GPasteClientClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_client_dispose;
+    G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_client_g_signal;
 
     signals[CHANGED]        = NEW_SIGNAL ("changed");
     signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
@@ -1025,28 +990,11 @@ g_paste_client_class_init (GPasteClientClass *klass)
 static void
 g_paste_client_init (GPasteClient *self)
 {
-    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);
+    GDBusProxy *proxy = G_DBUS_PROXY (self);
 
-    priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE,
-                                                                   NULL); /* Error */
-
-    priv->connection_error = NULL;
-    GDBusProxy *proxy = priv->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                     G_DBUS_PROXY_FLAGS_NONE,
-                                                                     priv->g_paste_daemon_dbus_info->interfaces[0],
-                                                                     G_PASTE_GDBUS_BUS_NAME,
-                                                                     G_PASTE_GDBUS_OBJECT_PATH,
-                                                                     G_PASTE_GDBUS_INTERFACE_NAME,
-                                                                     NULL, /* cancellable */
-                                                                     &priv->connection_error);
-
-    if (proxy)
-    {
-        priv->g_signal = g_signal_connect_swapped (G_OBJECT (proxy),
-                                                   "g-signal",
-                                                   G_CALLBACK (g_paste_client_handle_signal),
-                                                   self); /* user_data */
-    }
+    G_PASTE_CLEANUP_NODE_INFO_UNREF GDBusNodeInfo *g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE,
+                                                                                                            NULL); /* Error */
+    g_dbus_proxy_set_interface_info (proxy, g_paste_daemon_dbus_info->interfaces[0]);
 }
 
 /**
@@ -1060,16 +1008,5 @@ g_paste_client_init (GPasteClient *self)
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new (GError **error)
 {
-    GPasteClient *self = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
-    GPasteClientPrivate *priv = g_paste_client_get_instance_private (self);
-
-    if (!priv->proxy)
-    {
-        if (error)
-            *error = priv->connection_error;
-        g_object_unref (self);
-        return NULL;
-    }
-
-    return self;
+    CUSTOM_PROXY_NEW (CLIENT, GDBUS);
 }

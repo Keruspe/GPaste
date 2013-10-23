@@ -22,18 +22,18 @@
 
 #include <gpaste-gnome-shell-client.h>
 
-G_BEGIN_DECLS
+#include <gio/gio.h>
 
-typedef struct _GPasteGnomeShellClientPrivate GPasteGnomeShellClientPrivate;
+G_BEGIN_DECLS
 
 struct _GPasteGnomeShellClient
 {
-    GObject parent_instance;
+    GDBusProxy parent_instance;
 };
 
 struct _GPasteGnomeShellClientClass
 {
-    GObjectClass parent_class;
+    GDBusProxyClass parent_class;
 };
 
 G_END_DECLS
