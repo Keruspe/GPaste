@@ -43,10 +43,10 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /*******************/
 
 #define DBUS_CALL_NO_PARAM_ASYNC(method) \
-    DBUS_CALL_NO_PARAM_ASYNC_BASE (CLIENT, G_PASTE_GDBUS_##method)
+    DBUS_CALL_NO_PARAM_ASYNC_BASE (CLIENT, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_ASYNC_BASE (CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+    DBUS_CALL_ONE_PARAM_ASYNC_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
 /****************************/
 /* Methods / Async - Finish */
@@ -66,38 +66,38 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /******************/
 
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (CLIENT, G_PASTE_GDBUS_##method)
+    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (CLIENT, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_NO_PARAM_RET_STRV(method) \
-    DBUS_CALL_NO_PARAM_RET_STRV_BASE (CLIENT, G_PASTE_GDBUS_##method)
+    DBUS_CALL_NO_PARAM_RET_STRV_BASE (CLIENT, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_GDBUS_##method)
+    DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
 /**************/
 /* Properties */
 /**************/
 
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
-    DBUS_GET_BOOLEAN_PROPERTY_BASE (CLIENT, G_PASTE_GDBUS_PROP_##property)
+    DBUS_GET_BOOLEAN_PROPERTY_BASE (CLIENT, G_PASTE_DAEMON_PROP_##property)
 
 /***********/
 /* Signals */
 /***********/
 
-#define HANDLE_SIGNAL(sig)                                 \
-    if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig)) \
-    {                                                      \
-        g_signal_emit (self,                               \
-                       signals[sig],                       \
-                       0, /* detail */                     \
-                       NULL);                              \
+#define HANDLE_SIGNAL(sig)                                  \
+    if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_##sig)) \
+    {                                                       \
+        g_signal_emit (self,                                \
+                       signals[sig],                        \
+                       0, /* detail */                      \
+                       NULL);                               \
     }
 #define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)                                        \
-    if (!g_strcmp0 (signal_name, G_PASTE_GDBUS_SIG_##sig))                                          \
+    if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_##sig))                                         \
     {                                                                                               \
         GVariantIter params_iter;                                                                   \
         g_variant_iter_init (&params_iter, parameters);                                             \
@@ -992,7 +992,7 @@ g_paste_client_init (GPasteClient *self)
 {
     GDBusProxy *proxy = G_DBUS_PROXY (self);
 
-    G_PASTE_CLEANUP_NODE_INFO_UNREF GDBusNodeInfo *g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GDBUS_INTERFACE,
+    G_PASTE_CLEANUP_NODE_INFO_UNREF GDBusNodeInfo *g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE,
                                                                                                             NULL); /* Error */
     g_dbus_proxy_set_interface_info (proxy, g_paste_daemon_dbus_info->interfaces[0]);
 }
@@ -1009,7 +1009,7 @@ g_paste_client_init (GPasteClient *self)
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (CLIENT, GDBUS);
+    CUSTOM_PROXY_NEW (CLIENT, DAEMON);
 }
 
 /**
@@ -1025,7 +1025,7 @@ G_PASTE_VISIBLE void
 g_paste_client_new (GAsyncReadyCallback callback,
                     gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (CLIENT, GDBUS);
+    CUSTOM_PROXY_NEW_ASYNC (CLIENT, DAEMON);
 }
 
 /**

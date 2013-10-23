@@ -21,92 +21,92 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_GDBUS_DEFINES_H__
-#define __G_PASTE_GDBUS_DEFINES_H__
+#ifndef __G_PASTE_DAEMON_DEFINES_H__
+#define __G_PASTE_DAEMON_DEFINES_H__
 
 G_BEGIN_DECLS
 
-#define G_PASTE_GDBUS_BUS_NAME       "org.gnome.GPaste"
-#define G_PASTE_GDBUS_OBJECT_PATH    "/org/gnome/GPaste"
-#define G_PASTE_GDBUS_INTERFACE_NAME "org.gnome.GPaste"
+#define G_PASTE_DAEMON_BUS_NAME       "org.gnome.GPaste"
+#define G_PASTE_DAEMON_OBJECT_PATH    "/org/gnome/GPaste"
+#define G_PASTE_DAEMON_INTERFACE_NAME "org.gnome.GPaste"
 
-#define G_PASTE_GDBUS_ADD                        "Add"
-#define G_PASTE_GDBUS_ADD_FILE                   "AddFile"
-#define G_PASTE_GDBUS_BACKUP_HISTORY             "BackupHistory"
-#define G_PASTE_GDBUS_DELETE                     "Delete"
-#define G_PASTE_GDBUS_DELETE_HISTORY             "DeleteHistory"
-#define G_PASTE_GDBUS_EMPTY                      "Empty"
-#define G_PASTE_GDBUS_GET_ELEMENT                "GetElement"
-#define G_PASTE_GDBUS_GET_HISTORY                "GetHistory"
-#define G_PASTE_GDBUS_LIST_HISTORIES             "ListHistories"
-#define G_PASTE_GDBUS_ON_EXTENSION_STATE_CHANGED "OnExtensionStateChanged"
-#define G_PASTE_GDBUS_REEXECUTE                  "Reexecute"
-#define G_PASTE_GDBUS_SELECT                     "Select"
-#define G_PASTE_GDBUS_SWITCH_HISTORY             "SwitchHistory"
-#define G_PASTE_GDBUS_TRACK                      "Track"
+#define G_PASTE_DAEMON_ADD                        "Add"
+#define G_PASTE_DAEMON_ADD_FILE                   "AddFile"
+#define G_PASTE_DAEMON_BACKUP_HISTORY             "BackupHistory"
+#define G_PASTE_DAEMON_DELETE                     "Delete"
+#define G_PASTE_DAEMON_DELETE_HISTORY             "DeleteHistory"
+#define G_PASTE_DAEMON_EMPTY                      "Empty"
+#define G_PASTE_DAEMON_GET_ELEMENT                "GetElement"
+#define G_PASTE_DAEMON_GET_HISTORY                "GetHistory"
+#define G_PASTE_DAEMON_LIST_HISTORIES             "ListHistories"
+#define G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "OnExtensionStateChanged"
+#define G_PASTE_DAEMON_REEXECUTE                  "Reexecute"
+#define G_PASTE_DAEMON_SELECT                     "Select"
+#define G_PASTE_DAEMON_SWITCH_HISTORY             "SwitchHistory"
+#define G_PASTE_DAEMON_TRACK                      "Track"
 
-#define G_PASTE_GDBUS_SIG_CHANGED        "Changed"
-#define G_PASTE_GDBUS_SIG_NAME_LOST      "NameLost"
-#define G_PASTE_GDBUS_SIG_REEXECUTE_SELF "ReexecuteSelf"
-#define G_PASTE_GDBUS_SIG_SHOW_HISTORY   "ShowHistory"
-#define G_PASTE_GDBUS_SIG_TRACKING       "Tracking"
+#define G_PASTE_DAEMON_SIG_CHANGED        "Changed"
+#define G_PASTE_DAEMON_SIG_NAME_LOST      "NameLost"
+#define G_PASTE_DAEMON_SIG_REEXECUTE_SELF "ReexecuteSelf"
+#define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
+#define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
 
-#define G_PASTE_GDBUS_PROP_ACTIVE "Active"
+#define G_PASTE_DAEMON_PROP_ACTIVE "Active"
 
-#define G_PASTE_GDBUS_INTERFACE                                               \
-        "<node>"                                                              \
-        "   <interface name='" G_PASTE_GDBUS_INTERFACE_NAME "'>"              \
-        "       <method name='" G_PASTE_GDBUS_GET_HISTORY "'>"                \
-        "           <arg type='as' direction='out' />"                        \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_BACKUP_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_SWITCH_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_DELETE_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_LIST_HISTORIES "'>"             \
-        "           <arg type='as' direction='out' />"                        \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_ADD "'>"                        \
-        "           <arg type='s' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_ADD_FILE "'>"                   \
-        "           <arg type='s' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_GET_ELEMENT "'>"                \
-        "           <arg type='u' direction='in' />"                          \
-        "           <arg type='s' direction='out' />"                         \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_SELECT "'>"                     \
-        "           <arg type='u' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_DELETE "'>"                     \
-        "           <arg type='u' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_EMPTY "' />"                    \
-        "       <method name='" G_PASTE_GDBUS_TRACK "'>"                      \
-        "           <arg type='b' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_ON_EXTENSION_STATE_CHANGED "'>" \
-        "           <arg type='b' direction='in' />"                          \
-        "       </method>"                                                    \
-        "       <method name='" G_PASTE_GDBUS_REEXECUTE "' />"                \
-        "       <signal name='" G_PASTE_GDBUS_SIG_REEXECUTE_SELF "' />"       \
-        "       <signal name='" G_PASTE_GDBUS_SIG_TRACKING "'>"               \
-        "           <arg type='b' direction='out' />"                         \
-        "       </signal>"                                                    \
-        "       <signal name='" G_PASTE_GDBUS_SIG_CHANGED "' />"              \
-        "       <signal name='" G_PASTE_GDBUS_SIG_NAME_LOST "' />"            \
-        "       <signal name='" G_PASTE_GDBUS_SIG_SHOW_HISTORY "' />"         \
-        "       <property name='" G_PASTE_GDBUS_PROP_ACTIVE "'"               \
-        "                 type='b' access='read' />"                          \
-        "   </interface>"                                                     \
+#define G_PASTE_DAEMON_INTERFACE                                               \
+        "<node>"                                                               \
+        "   <interface name='" G_PASTE_DAEMON_INTERFACE_NAME "'>"              \
+        "       <method name='" G_PASTE_DAEMON_GET_HISTORY "'>"                \
+        "           <arg type='as' direction='out' />"                         \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_BACKUP_HISTORY "'>"             \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_SWITCH_HISTORY "'>"             \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_DELETE_HISTORY "'>"             \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_LIST_HISTORIES "'>"             \
+        "           <arg type='as' direction='out' />"                         \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_ADD "'>"                        \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_ADD_FILE "'>"                   \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
+        "           <arg type='u' direction='in' />"                           \
+        "           <arg type='s' direction='out' />"                          \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_SELECT "'>"                     \
+        "           <arg type='u' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_DELETE "'>"                     \
+        "           <arg type='u' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_EMPTY "' />"                    \
+        "       <method name='" G_PASTE_DAEMON_TRACK "'>"                      \
+        "           <arg type='b' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "'>" \
+        "           <arg type='b' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_REEXECUTE "' />"                \
+        "       <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \
+        "       <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
+        "           <arg type='b' direction='out' />"                          \
+        "       </signal>"                                                     \
+        "       <signal name='" G_PASTE_DAEMON_SIG_CHANGED "' />"              \
+        "       <signal name='" G_PASTE_DAEMON_SIG_NAME_LOST "' />"            \
+        "       <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
+        "       <property name='" G_PASTE_DAEMON_PROP_ACTIVE "'"               \
+        "                 type='b' access='read' />"                           \
+        "   </interface>"                                                      \
         "</node>"
 
 G_END_DECLS
 
-#endif /*__G_PASTE_GDBUS_DEFINES_H__*/
+#endif /*__G_PASTE_DAEMON_DEFINES_H__*/
