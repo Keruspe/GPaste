@@ -100,7 +100,7 @@ main (gint argc, gchar *argv[])
 
     gchar *result = NULL;
 
-    if (!g_paste_gnome_shell_client_eval (client, "3 + 2", &result, &error))
+    if (!g_paste_gnome_shell_client_eval_sync (client, "3 + 2", &result, &error))
     {
         g_error ("Failed to eval \"3 + 2\": %s", error->message);
         g_error_free (error);
@@ -108,7 +108,7 @@ main (gint argc, gchar *argv[])
     }
     g_print ("Evaluated \"3 + 2\" as \"%s\"\n", result);
 
-    if (g_paste_gnome_shell_client_eval (client, "foobar", &result, &error))
+    if (g_paste_gnome_shell_client_eval_sync (client, "foobar", &result, &error))
     {
         g_error ("Did not fail to eval \"fobar\"");
         return EXIT_FAILURE;
@@ -124,7 +124,7 @@ main (gint argc, gchar *argv[])
 
     g_print ("Should now focus search\n");
     g_usleep (1000000);
-    g_paste_gnome_shell_client_focus_search (client, &error);
+    g_paste_gnome_shell_client_focus_search_sync (client, &error);
     if (error)
     {
         g_error ("Couldn't focus search: %s", error->message);
@@ -142,7 +142,7 @@ main (gint argc, gchar *argv[])
 
     g_print ("Now testing OSD\n");
     g_usleep (1000000);
-    g_paste_gnome_shell_client_show_osd (client, "gtk-paste", "Test GPaste OSD", 80, &error);
+    g_paste_gnome_shell_client_show_osd_sync (client, "gtk-paste", "Test GPaste OSD", 80, &error);
     if (error)
     {
         g_error ("Couldn't show OSD: %s", error->message);
@@ -152,7 +152,7 @@ main (gint argc, gchar *argv[])
 
     g_print ("Should now focus firefox\n");
     g_usleep (3000000);
-    g_paste_gnome_shell_client_focus_app (client, "firefox.desktop", &error);
+    g_paste_gnome_shell_client_focus_app_sync (client, "firefox.desktop", &error);
     if (error)
     {
         g_error ("Couldn't focus firefox: %s", error->message);
@@ -170,7 +170,7 @@ main (gint argc, gchar *argv[])
 
     g_print ("Should now show applications\n");
     g_usleep (1000000);
-    g_paste_gnome_shell_client_show_applications (client, &error);
+    g_paste_gnome_shell_client_show_applications_sync (client, &error);
     if (error)
     {
         g_error ("Couldn't show applications: %s", error->message);
@@ -207,7 +207,7 @@ main (gint argc, gchar *argv[])
     guint signal_id = g_signal_connect (client, "accelerator-activated", G_CALLBACK (on_accelerator_activated), accels);
 
     g_print ("Now testing KeyGrabber\n");
-    guint32 *actions = g_paste_gnome_shell_client_grab_accelerators (client, gs_accels, &error);
+    guint32 *actions = g_paste_gnome_shell_client_grab_accelerators_sync (client, gs_accels, &error);
     for (guint i = 0; i < 2; ++i)
         accels[i].action = actions[i];
     g_free (actions);
@@ -218,7 +218,7 @@ main (gint argc, gchar *argv[])
         return EXIT_FAILURE;
     }
 
-    accels[2].action = g_paste_gnome_shell_client_grab_accelerator (client, gs_accel, &error);
+    accels[2].action = g_paste_gnome_shell_client_grab_accelerator_sync (client, gs_accel, &error);
     if (error)
     {
         g_error ("Couldn't grab accelerator: %s", error->message);
@@ -232,7 +232,7 @@ main (gint argc, gchar *argv[])
     g_main_loop_run (loop);
     for (guint i = 0; i < 2; ++i)
     {
-        g_paste_gnome_shell_client_ungrab_accelerator (client, accels[i].action, &error);
+        g_paste_gnome_shell_client_ungrab_accelerator_sync (client, accels[i].action, &error);
         accels[i].action = 0;
         if (error)
         {
