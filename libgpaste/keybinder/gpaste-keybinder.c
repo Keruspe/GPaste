@@ -355,10 +355,7 @@ g_paste_keybinder_private_grab_all_gnome_shell (GPasteKeybinderPrivate *priv)
     {
         GPasteKeybinding *keybinding = GET_BINDING (binding->data);
         if (g_paste_keybinding_is_active (keybinding))
-        {
-            accels[index].accelerator = g_paste_keybinding_get_accelerator (keybinding, settings);
-            accels[index++].flags = G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL;
-        }
+            accels[index] = G_PASTE_GNOME_SHELL_ACCELERATOR (g_paste_keybinding_get_accelerator (keybinding, settings));
     }
     accels[index].accelerator = NULL;
 

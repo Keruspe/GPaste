@@ -1,16 +1,10 @@
 3.7:
-    gnome-shell-client:
-        async ctor
-        add guards
-        G_PASTE_MAKE_KEYBINDING()
     gpaste-settings:
         enable/disable extension
     tests:
         split test, add interactive wrapper
     all:
         check if there are missing allow-none
-        g_clear_* doesn't need if
-        review GVariant stuff
 
 3.8:
     unity support

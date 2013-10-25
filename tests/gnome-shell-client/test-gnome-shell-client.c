@@ -182,16 +182,10 @@ main (gint argc, gchar *argv[])
         { "<Super><Alt>G", 0 }
     };
     GPasteGnomeShellAccelerator gs_accels[3];
-    GPasteGnomeShellAccelerator gs_accel = {
-        accels[2].accelerator,
-        G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL
-    };
+    GPasteGnomeShellAccelerator gs_accel = G_PASTE_GNOME_SHELL_ACCELERATOR (accels[2].accelerator);
 
     for (guint i = 0; i < 2; ++i)
-    {
-        gs_accels[i].accelerator = accels[i].accelerator;
-        gs_accels[i].flags = G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL;
-    }
+        gs_accels[i] = G_PASTE_GNOME_SHELL_ACCELERATOR (accels[i].accelerator);
     gs_accels[2].accelerator = NULL;
     guint signal_id = g_signal_connect (client, "accelerator-activated", G_CALLBACK (on_accelerator_activated), accels);
 

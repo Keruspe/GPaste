@@ -79,6 +79,8 @@ typedef struct
     GPasteGnomeShellKeyBindingMode flags;
 } GPasteGnomeShellAccelerator;
 
+#define G_PASTE_GNOME_SHELL_ACCELERATOR(accelerator) ((GPasteGnomeShellAccelerator) {accelerator, G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL})
+
 G_PASTE_VISIBLE
 GType g_paste_gnome_shell_client_get_type (void);
 
