@@ -67,7 +67,7 @@ main (gint argc, gchar *argv[])
     g_setenv ("G_MESSAGES_DEBUG", "all", TRUE);
 
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-    G_PASTE_CLEANUP_UNREF GPasteGnomeShellClient *client = g_paste_gnome_shell_client_new (&error);
+    G_PASTE_CLEANUP_UNREF GPasteGnomeShellClient *client = g_paste_gnome_shell_client_new_sync (&error);
     if (!client)
     {
         g_error ("Couldn't connect to gnome-shell: %s", error->message);

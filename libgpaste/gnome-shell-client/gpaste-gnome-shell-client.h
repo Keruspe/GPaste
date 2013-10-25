@@ -191,7 +191,15 @@ gboolean g_paste_gnome_shell_client_overview_set_active (GPasteGnomeShellClient 
                                                          gboolean                value,
                                                          GError                **error);
 
-GPasteGnomeShellClient *g_paste_gnome_shell_client_new (GError **error);
+/****************/
+/* Constructors */
+/****************/
+
+GPasteGnomeShellClient *g_paste_gnome_shell_client_new_sync   (GError **error);
+void                    g_paste_gnome_shell_client_new        (GAsyncReadyCallback callback,
+                                                               gpointer            user_data);
+GPasteGnomeShellClient *g_paste_gnome_shell_client_new_finish (GAsyncResult       *result,
+                                                               GError            **error);
 
 G_END_DECLS
 

@@ -80,7 +80,7 @@ main (gint argc, gchar *argv[])
     G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
     G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
-    G_PASTE_CLEANUP_UNREF GPasteGnomeShellClient *shell_client = g_paste_gnome_shell_client_new (NULL);
+    G_PASTE_CLEANUP_UNREF GPasteGnomeShellClient *shell_client = g_paste_gnome_shell_client_new_sync (NULL);
     G_PASTE_CLEANUP_UNREF GPasteKeybinder *keybinder = g_paste_keybinder_new (settings, shell_client);
     G_PASTE_CLEANUP_UNREF GPasteDaemon *g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     G_PASTE_CLEANUP_UNREF GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
