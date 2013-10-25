@@ -840,7 +840,8 @@ g_paste_gnome_shell_client_init (GPasteGnomeShellClient *self)
 }
 
 /**
- * g_paste_gnome_shell_client_new:
+ * g_paste_gnome_shell_client_new_sync:
+ * @error: Return location for error or %NULL.
  *
  * Create a new instance of #GPasteGnomeShellClient
  *
@@ -848,7 +849,40 @@ g_paste_gnome_shell_client_init (GPasteGnomeShellClient *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteGnomeShellClient *
-g_paste_gnome_shell_client_new (GError **error)
+g_paste_gnome_shell_client_new_sync (GError **error)
 {
     CUSTOM_PROXY_NEW (GNOME_SHELL_CLIENT, GNOME_SHELL);
+}
+
+/**
+ * g_paste_gnome_shell_client_new:
+ * @callback: Callback function to invoke when the proxy is ready.
+ * @user_data: User data to pass to @callback.
+ *
+ * Create a new instance of #GPasteGnomeShellClient
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_gnome_shell_client_new (GAsyncReadyCallback callback,
+                                gpointer            user_data)
+{
+    CUSTOM_PROXY_NEW_ASYNC (GNOME_SHELL_CLIENT, GNOME_SHELL);
+}
+
+/**
+ * g_paste_gnome_shell_client_new_finsh:
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback function passed to the async ctor.
+ * @error: Return location for error or %NULL.
+ *
+ * Create a new instance of #GPasteGnomeShellClient
+ *
+ * Returns: a newly allocated #GPasteGnomeShellClient
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteGnomeShellClient *
+g_paste_gnome_shell_client_new_finish (GAsyncResult *result,
+                                       GError      **error)
+{
+    CUSTOM_PROXY_NEW_FINISH (GNOME_SHELL_CLIENT);
 }

@@ -34,7 +34,9 @@ global:
     g_paste_gnome_shell_client_get_shell_version;
     g_paste_gnome_shell_client_overview_set_active;
 
+    g_paste_gnome_shell_client_new_sync;
     g_paste_gnome_shell_client_new;
+    g_paste_gnome_shell_client_new_finish;
 local:
     *;
 };
