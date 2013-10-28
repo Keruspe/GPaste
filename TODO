@@ -1,11 +1,3 @@
-3.7:
-    gpaste-settings:
-        enable/disable extension
-    tests:
-        split test, add interactive wrapper
-    all:
-        check if there are missing allow-none
-
 3.8:
     unity support
 
@@ -16,6 +8,12 @@ future:
     cleanup:
         g_signal_handler_disconnect
         gtk_target_table_free
+    gpaste-settings:
+        enable/disable extension
+    tests:
+        split test, add interactive wrapper
+    all:
+        check if there are missing allow-none
     gpaste:
         GSubProcess
     libgpaste-client:
