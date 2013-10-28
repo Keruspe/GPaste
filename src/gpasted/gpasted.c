@@ -71,9 +71,7 @@ reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 gint
 main (gint argc, gchar *argv[])
 {
-    bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
+    G_PASTE_INIT_GETTEXT ();
 
     gtk_init (&argc, &argv);
 

@@ -34,7 +34,6 @@ bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = \
-	-include config.h \
 	$(INCLUDES) \
 	-DG_PASTE_COMPILATION \
 	-I$(srcdir)/libgpaste/client \

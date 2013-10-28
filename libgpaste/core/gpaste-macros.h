@@ -28,6 +28,11 @@
 
 G_BEGIN_DECLS
 
+#define G_PASTE_INIT_GETTEXT()                          \
+    bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);        \
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8"); \
+    textdomain (GETTEXT_PACKAGE)
+
 #define G_PASTE_VISIBLE __attribute__((visibility("default")))
 
 #define G_PASTE_CLEANUP(fun) __attribute__((cleanup(fun)))

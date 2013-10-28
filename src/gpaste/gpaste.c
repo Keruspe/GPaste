@@ -131,9 +131,7 @@ failure_exit (GError *error)
 gint
 main (gint argc, gchar *argv[])
 {
-    bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
+    G_PASTE_INIT_GETTEXT ();
 
     if (is_help (argv[1]))
     {

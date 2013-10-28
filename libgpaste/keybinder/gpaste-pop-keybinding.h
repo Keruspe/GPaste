@@ -24,10 +24,6 @@
 #ifndef __G_PASTE_POP_KEYBINDING_H__
 #define __G_PASTE_POP_KEYBINDING_H__
 
-#ifdef G_PASTE_COMPILATION
-#include "config.h"
-#endif
-
 #include "gpaste-keybinding.h"
 #include "gpaste-history.h"
 
