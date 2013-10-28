@@ -55,7 +55,8 @@ void            g_paste_keybinding_deactivate    (GPasteKeybinding *self);
 gboolean        g_paste_keybinding_is_active     (GPasteKeybinding *self);
 void            g_paste_keybinding_perform       (GPasteKeybinding *self);
 void            g_paste_keybinding_notify        (GPasteKeybinding *self,
-                                                  GdkXEvent        *xevent);
+                                                  GdkModifierType   modifiers,
+                                                  guint             keycode);
 
 GPasteKeybinding *g_paste_keybinding_new (const gchar           *dconf_key,
                                           GPasteKeybindingGetter getter,

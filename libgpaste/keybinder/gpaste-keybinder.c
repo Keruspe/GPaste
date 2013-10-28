@@ -413,6 +413,60 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
                      NULL);
 }
 
+#ifdef GDK_WINDOWING_WAYLAND
+static void
+g_paste_keybinder_parse_event_wayland (void)
+{
+    g_error ("Wayland is currently not supported outside of gnome-shell.");
+}
+#endif
+
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
+static gint
+g_paste_keybinder_get_xinput_opcode (Display *display)
+{
+    static gint xinput_opcode = 0;
+
+    if (!xinput_opcode)
+    {
+        gint major = 2, minor = 3;
+        gint xinput_error_base;
+        gint xinput_event_base;
+
+        if (XQueryExtension (display,
+                             "XInputExtension",
+                             &xinput_opcode,
+                             &xinput_error_base,
+                             &xinput_event_base))
+        {
+            if (XIQueryVersion (display, &major, &minor) != Success)
+                g_warning ("XInput 2 not found, keybinder won't work");
+        }
+    }
+
+    return xinput_opcode;
+}
+
+static void
+g_paste_keybinder_parse_event_x11 (XEvent                  *event,
+                                   GdkModifierType         *modifiers,
+                                   guint                   *keycode)
+{
+    XGenericEventCookie cookie = event->xcookie;
+
+    if (cookie.extension == g_paste_keybinder_get_xinput_opcode (NULL))
+    {
+        XIDeviceEvent *xi_ev = (XIDeviceEvent *) cookie.data;
+
+        if (xi_ev->evtype == XI_KeyPress)
+        {
+            *modifiers = xi_ev->mods.effective;
+            *keycode = xi_ev->detail;
+        }
+    }
+}
+#endif
+
 static GdkFilterReturn
 g_paste_keybinder_filter (GdkXEvent *xevent,
                           GdkEvent  *event G_GNUC_UNUSED,
@@ -431,11 +485,27 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 
     gdk_flush ();
 
+    GdkDisplay *display = gdk_display_get_default ();
+    GdkModifierType modifiers = 0;
+    guint keycode = 0;
+
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY (display))
+        g_paste_keybinder_parse_event_wayland ();
+    else
+#endif
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
+    if (GDK_IS_X11_DISPLAY (display))
+        g_paste_keybinder_parse_event_x11 ((XEvent *) xevent, &modifiers, &keycode);
+    else
+#endif
+        g_warning ("Unsupported GDK backend, keybinder won't work.");
+
     for (GSList *keybinding = priv->keybindings; keybinding; keybinding = g_slist_next (keybinding))
     {
         GPasteKeybinding *real_keybinding = GET_BINDING (keybinding->data);
         if (g_paste_keybinding_is_active (real_keybinding))
-            g_paste_keybinding_notify (real_keybinding, xevent);
+            g_paste_keybinding_notify (real_keybinding, modifiers, keycode);
     }
 
     return GDK_FILTER_CONTINUE;
@@ -518,6 +588,14 @@ g_paste_keybinder_init (GPasteKeybinder *self)
     gdk_window_add_filter (gdk_get_default_root_window (),
                            g_paste_keybinder_filter,
                            priv);
+
+#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
+    /* Initialize */
+    GdkDisplay *display = gdk_display_get_default ();
+
+    if (GDK_IS_X11_DISPLAY (display))
+        g_paste_keybinder_get_xinput_opcode (GDK_DISPLAY_XDISPLAY (display));
+#endif
 }
 
 /**
