@@ -37,7 +37,6 @@ bindings_gi_GPaste_1_0_gir_CFLAGS = \
 	$(INCLUDES) \
 	-DG_PASTE_COMPILATION \
 	-I$(srcdir)/libgpaste/client \
-	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/gnome-shell-client \

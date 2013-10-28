@@ -21,7 +21,7 @@ LIBGPASTE_CORE_CURRENT=3
 LIBGPASTE_CORE_REVISION=0
 LIBGPASTE_CORE_AGE=0
 
-$(libgpaste_core_la_file): $(libgpaste_common_la_file) $(libgpaste_settings_la_file)
+$(libgpaste_core_la_file): $(libgpaste_settings_la_file)
 
 libgpaste_core_public_headers = \
 	libgpaste/core/gpaste.h \
@@ -67,8 +67,9 @@ libgpaste_core_libgpaste_core_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_core_libgpaste_core_la_LIBADD = \
-	$(libgpaste_common_la_file) \
 	$(libgpaste_settings_la_file) \
+	$(GDK_PIXBUF_LIBS) \
+	$(GTK_LIBS) \
 	$(XML_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)

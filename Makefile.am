@@ -43,7 +43,6 @@ AM_VALAFLAGS = \
 
 AM_CFLAGS = \
 	-include config.h \
-	-I$(srcdir)/libgpaste/common \
 	-I$(srcdir)/libgpaste/settings \
 	-I$(srcdir)/libgpaste/settings/ui \
 	-I$(srcdir)/libgpaste/keybinder \
@@ -97,7 +96,6 @@ noinst_PROGRAMS= \
 
 # Real stuff goes in these subfiles
 
-include libgpaste/common.mk
 include libgpaste/settings.mk
 include libgpaste/gnome-shell-client.mk
 include libgpaste/keybinder.mk
