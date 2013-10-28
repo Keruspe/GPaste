@@ -38,6 +38,7 @@ libgpaste_core_public_headers = \
 	$(NULL)
 
 libgpaste_core_private_headers = \
+	libgpaste/core/gpaste-gdbus-macros.h \
 	libgpaste/core/gpaste-clipboard-private.h \
 	libgpaste/core/gpaste-clipboards-manager-private.h \
 	libgpaste/core/gpaste-history-private.h \
