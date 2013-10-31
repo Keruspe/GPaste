@@ -23,7 +23,6 @@
 #define __G_PASTE_NEEDS_BS__
 #include "gpaste-gdbus-macros.h"
 
-#define G_PASTE_GNOME_SHELL_BUS_NAME       "org.gnome.Shell"
 #define G_PASTE_GNOME_SHELL_OBJECT_PATH    "/org/gnome/Shell"
 #define G_PASTE_GNOME_SHELL_INTERFACE_NAME "org.gnome.Shell"
 

@@ -24,6 +24,8 @@
 
 G_BEGIN_DECLS
 
+#define G_PASTE_GNOME_SHELL_BUS_NAME "org.gnome.Shell"
+
 /* ShellKeyBindingMode stolen from gnome-shell */
 /**
  * GPasteGnomeShellKeyBindingMode:
