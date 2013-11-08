@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2013-11-08 10:01+0100\n"
-"PO-Revision-Date: 2013-11-08 11:05+0100\n"
+"PO-Revision-Date: 2013-11-08 11:15+0100\n"
 "Last-Translator: Christian Schendel <doppelhelix@gmail.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -63,7 +63,7 @@ msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 #: ../src/applets/legacy/gpaste-applet.vala:196
 #, c-format
 msgid "Fail to register the gtk application.\n"
-msgstr "Initialisierung  der gtk Anwendung fehlgeschlagen.\n"
+msgstr "Initialisierung der gtk Anwendung fehlgeschlagen.\n"
 
 #: ../src/applets/gnome-shell/extension.js:60
 msgid "Track changes"
@@ -86,7 +86,7 @@ msgstr "Verwendung:\n"
 #. Translators: help for gpaste history
 #: ../src/gpaste/gpaste.c:33
 msgid "print the history with indexes"
-msgstr "Chronik  mit Index anzeigen"
+msgstr "Chronik mit Index anzeigen"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -346,7 +346,7 @@ msgid ""
 "By default, hitting ctrl + alt + v does that (\"&lt;Ctrl&gt;&lt;Alt&gt;V\"). "
 "An empty string here disables this functionnality."
 msgstr ""
-"Die Vorgabe ist Strg + Alt + v  (\"&lt;Strg&gt;&lt;Alt&gt;V\"). Ein leeres "
+"Die Vorgabe ist Strg + Alt + v (\"&lt;Strg&gt;&lt;Alt&gt;V\"). Ein leeres "
 "Feld schaltet diese Funktion ab."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:19
@@ -386,7 +386,7 @@ msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
 msgstr ""
-"Die Vorgabe ist Strg + Alt + o  (\"&lt;Strg&gt;&lt;Alt&gt;O\"). Ein leeres "
+"Die Vorgabe ist Strg + Alt + o (\"&lt;Strg&gt;&lt;Alt&gt;O\"). Ein leeres "
 "Feld schaltet diese Funktion ab."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
@@ -398,7 +398,7 @@ msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
 msgstr ""
-"Die Vorgabe ist Strg + Alt + p  (\"&lt;Strg&gt;&lt;Alt&gt;P\"). Ein leeres "
+"Die Vorgabe ist Strg + Alt + p (\"&lt;Strg&gt;&lt;Alt&gt;P\"). Ein leeres "
 "Feld schaltet diese Funktion ab."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
