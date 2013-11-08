@@ -16,7 +16,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Language: de\n"
-"X-Generator: Poedit 1.5.4\n"
 
 #: ../src/gpaste-settings/gpaste-settings.c:87
 msgid "Failed to register the gtk application"
