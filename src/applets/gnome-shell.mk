@@ -28,8 +28,8 @@ SUFFIXES += .json .json.in
 .json.in.json:
 	@ $(MKDIR_P) src/applets/gnome-shell
 	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
-					   -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' \
-					   < $< > $@
+			   -e 's,[@]gettext-package[@],$(GETTEXT_PACKAGE),g' \
+			   < $< > $@
 
 if ENABLE_EXTENSION
 nodist_gnomeshell_DATA = \

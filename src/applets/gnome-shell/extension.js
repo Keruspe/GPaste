@@ -260,7 +260,8 @@ const GPasteIndicator = new Lang.Class({
 });
 
 function init(extension) {
-    Gettext.bindtextdomain('gpaste', extension.metadata.localedir);
+    let metadata = extension.metadata;
+    Gettext.bindtextdomain(metadata.gettext-package, metadata.localedir);
 }
 
 function enable() {

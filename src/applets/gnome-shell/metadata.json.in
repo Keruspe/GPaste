@@ -6,6 +6,7 @@
     "name": "GPaste",
     "description": "Clipboard management system",
     "url": "http://github.com/Keruspe/GPaste",
+    "gettext-package": "@gettext-package@",
     "localedir": "@localedir@"
 }
 
