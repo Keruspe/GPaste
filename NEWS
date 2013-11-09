@@ -1,8 +1,16 @@
-NEW in 3.7 (Not released yet)
+NEW in 3.7 (9/11/2013)
 =============
 
 - "Paste and Pop" is now only "Pop"
 - Fix SEGV when deleting last item of history
+- New gnome-shell DBus client library
+- DBus client libraries are now async
+- Keybinder now uses gnome-shell if available to grab keys
+- Preparations for wayland port
+- Enhance internal memory management
+- Code cleanup
+- Misc bug fixes
+- German translation
 
 NEW in 3.6 (17/10/2013)
 =============
