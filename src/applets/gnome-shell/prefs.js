@@ -6,7 +6,8 @@ const ExtensionUtils = imports.misc.extensionUtils;
 
 function init() {
     let metadata = ExtensionUtils.getCurrentExtension().metadata;
-    Gettext.bindtextdomain(metadata.gettext-package, metadata.localedir);
+    Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
+    Gettext.textdomain(metadata.gettext_package);
 }
 
 function buildPrefsWidget() {
