@@ -261,7 +261,7 @@ const GPasteIndicator = new Lang.Class({
 
 function init(extension) {
     let metadata = extension.metadata;
-    Gettext.bindtextdomain(metadata.gettext-package, metadata.localedir);
+    Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
 }
 
 function enable() {
