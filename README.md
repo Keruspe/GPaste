@@ -9,9 +9,14 @@ Some libraries are available for development purpose:
 * `libgpaste-keybinder` provides functionnalities to add custom keybindings to GPaste
 * `libgpaste-daemon` allows you to write your own GPaste daemon
 * `libgpaste-client` helps you integrate GPaste in your application
+* `libgpaste-gnome-shell-client` helps you integrate the gnome-shell dbus api in your application
 
-A default daemon named `gpasted` is provided, with two keybindings to show history and paste + pop the item from the
-history.
+A default daemon named `gpasted` is provided, with four keybindings:
+
+* show history
+* pop the item from the history
+* sync primary selection with clipboard
+* sync lcipboard with primary selection
 
 A simple CLI interface is provided: `gpaste`, with two subcommands: `gpaste settings` which makes the preferences
 utility pop, and `gpaste-applet` which starts the legacy applet in your notification area.
@@ -34,9 +39,9 @@ You can see everything I'll post about GPaste [there](http://www.imagination-lan
 
 ### If you use GNOME 3.9.90 or above
 
-Latest release is: [GPaste 3.6](http://www.imagination-land.org/posts/2013-10-17-gpaste-3.6-released.html).
+Latest release is: [GPaste 3.7](http://www.imagination-land.org/posts/2013-11-09-gpaste-3.7-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste-3.6.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste-3.7.tar.xz>
 
 ### If you use GNOME 3.9.5 or below
 
