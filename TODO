@@ -1,10 +1,12 @@
 3.8:
-    unity support
+    applet:
+        unity support
+    all:
+        check if there are missing allow-none
 
-4.0:
-    wayland support
-
-future:
+3.10:
+    general:
+        follow gnome versionning
     cleanup:
         g_signal_handler_disconnect
         gtk_target_table_free
@@ -12,10 +14,18 @@ future:
         enable/disable extension
     tests:
         split test, add interactive wrapper
-    all:
-        check if there are missing allow-none
+
+3.12:
+    general:
+        wayland support
+    gpaste-settings:
+        reset
     gpaste:
         GSubProcess
+    keybinder:
+        switch to clutter event filter (not to have to parse X event)
+
+future:
     libgpaste-client:
         specify errors types when possible in g-i
     ClipperSync support? (https://clippersync.com/)
