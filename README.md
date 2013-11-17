@@ -41,10 +41,10 @@ You can see everything I'll post about GPaste [there](http://www.imagination-lan
 
 Latest release is: [GPaste 3.7](http://www.imagination-land.org/posts/2013-11-09-gpaste-3.7-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste-3.7.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.7.tar.xz>
 
 ### If you use GNOME 3.9.5 or below
 
 Latest release is: [GPaste 3.2.2](http://www.imagination-land.org/posts/2013-10-22-gpaste-3.2.2-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste-3.2.2.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.2.2.tar.xz>
