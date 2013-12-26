@@ -122,7 +122,7 @@ g_paste_uris_item_new (const gchar *uris)
                                                               0, /* Compile options */
                                                               0, /* Match options */
                                                               NULL); /* Error */
-    G_PASTE_CLEANUP_FREE gchar *display_string = g_regex_replace_literal (regex,
+    G_PASTE_CLEANUP_FREE gchar *display_string = g_regex_replace_literal (_regex,
                                                                           display_string_with_newlines,
                                                                           (gssize) -1,
                                                                           0, /* Start position */

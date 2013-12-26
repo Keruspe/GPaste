@@ -121,7 +121,7 @@ is_version (const gchar *option)
             !g_strcmp0 (option, "--version"));
 }
 
-static void
+G_PASTE_NORETURN static void
 failure_exit (GError *error)
 {
     g_error ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);

@@ -878,5 +878,5 @@ g_paste_history_list (GError **error)
         }
     }
 
-    return (GStrv) history_names->data;
+    return (GStrv) (gpointer) history_names->data;
 }

@@ -33,7 +33,8 @@ G_BEGIN_DECLS
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8"); \
     textdomain (GETTEXT_PACKAGE)
 
-#define G_PASTE_VISIBLE __attribute__((visibility("default")))
+#define G_PASTE_VISIBLE  __attribute__((visibility("default")))
+#define G_PASTE_NORETURN __attribute__((noreturn))
 
 #define G_PASTE_CLEANUP(fun) __attribute__((cleanup(fun)))
 

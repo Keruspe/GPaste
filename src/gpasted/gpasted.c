@@ -47,7 +47,7 @@ signal_handler (int signum)
     g_main_loop_quit (loop);
 }
 
-static void
+G_PASTE_NORETURN static void
 on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
               gpointer      user_data)
 {
