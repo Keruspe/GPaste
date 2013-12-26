@@ -51,7 +51,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 G_PASTE_VISIBLE GdkModifierType
 g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 
@@ -69,7 +69,7 @@ g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
 G_PASTE_VISIBLE const guint *
 g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 
@@ -87,7 +87,7 @@ g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 
@@ -106,8 +106,8 @@ G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
                                     const GPasteSettings   *settings)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
-    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 
