@@ -7,6 +7,7 @@
 3.10:
     general:
         follow gnome versionning
+        drop libxml
     cleanup:
         g_signal_handler_disconnect
         gtk_target_table_free
