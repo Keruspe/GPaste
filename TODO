@@ -1,32 +1,43 @@
 3.8:
-    applet:
-        unity support
-    all:
-        check if there are missing allow-none
-
-3.10:
     general:
-        follow gnome versionning
         drop libxml
     cleanup:
         g_signal_handler_disconnect
         gtk_target_table_free
+    all:
+        check if there are missing allow-none
+
+3.10:
+    applet:
+        unity support
+    general:
+        follow gnome versionning
     gpaste-settings:
+        reset
         enable/disable extension
-    tests:
-        split test, add interactive wrapper
 
 3.12:
     general:
         wayland support
-    gpaste-settings:
-        reset
     gpaste:
         GSubProcess
     keybinder:
         switch to clutter event filter (not to have to parse X event)
+    tests:
+        split test, add interactive wrapper
+
+3.14:
+    plugins:
+        make it possible for both client and server
+        gpg
+        password-store
 
 future:
+    gnome-shell:
+        Try https://github.com/awamper/gpaste-integration
     libgpaste-client:
         specify errors types when possible in g-i
-    ClipperSync support? (https://clippersync.com/)
+
+maybe:
+    plugins:
+        ClipperSync (https://clippersync.com/)
