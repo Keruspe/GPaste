@@ -133,15 +133,18 @@ main (gint argc, gchar *argv[])
 {
     G_PASTE_INIT_GETTEXT ();
 
-    if (is_help (argv[1]))
+    if (argc > 1)
     {
-        show_help (argv[0]);
-        return EXIT_SUCCESS;
-    }
-    else if (is_version (argv[1]))
-    {
-        show_version ();
-        return EXIT_SUCCESS;
+        if (is_help (argv[1]))
+        {
+            show_help (argv[0]);
+            return EXIT_SUCCESS;
+        }
+        else if (is_version (argv[1]))
+        {
+            show_version ();
+            return EXIT_SUCCESS;
+        }
     }
 
     int status = EXIT_SUCCESS;
