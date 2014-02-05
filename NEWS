@@ -1,6 +1,8 @@
 NEW in 3.8 (Not released yet)
 =============
 
+- No longer depend on libxml
+
 NEW in 3.7 (9/11/2013)
 =============
 

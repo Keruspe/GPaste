@@ -1,6 +1,4 @@
 3.8:
-    general:
-        drop libxml
     cleanup:
         g_signal_handler_disconnect
         gtk_target_table_free
