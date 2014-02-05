@@ -25,8 +25,6 @@
 
 #include <glib/gi18n-lib.h>
 
-#include <libxml/xmlwriter.h>
-
 #include <assert.h> /* FIXME: remove me */
 
 struct _GPasteHistoryPrivate
@@ -523,40 +521,39 @@ g_paste_history_save (GPasteHistory *self)
     }
     else
     {
-        LIBXML_TEST_VERSION
+        G_PASTE_CLEANUP_UNREF GOutputStream *stream = G_OUTPUT_STREAM (g_file_replace (history_file,
+                                                                                       NULL,
+                                                                                       FALSE,
+                                                                                       G_FILE_CREATE_REPLACE_DESTINATION,
+                                                                                       NULL, /* cancellable */
+                                                                                       NULL)); /* error */
 
-        xmlTextWriterPtr writer = xmlNewTextWriterFilename (history_file_path, 0);
-
-        xmlTextWriterSetIndent (writer, TRUE);
-        xmlTextWriterSetIndentString (writer, BAD_CAST "  ");
-
-        xmlTextWriterStartDocument (writer, "1.0", "UTF-8", NULL);
-        xmlTextWriterStartElement (writer, BAD_CAST "history");
-        xmlTextWriterWriteAttribute (writer, BAD_CAST "version", BAD_CAST "1.0");
+        if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
+        { /* FIXME/ handle error */ }
 
         for (GSList *history = priv->history; history; history = g_slist_next (history))
         {
             GPasteItem *item = history->data;
+            const gchar *kind = g_paste_item_get_kind (item);
+            G_PASTE_CLEANUP_FREE gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
 
-            xmlTextWriterStartElement (writer, BAD_CAST "item");
-            xmlTextWriterWriteAttribute (writer, BAD_CAST "kind", BAD_CAST g_paste_item_get_kind (item));
-            if (G_PASTE_IS_IMAGE_ITEM (item))
-                xmlTextWriterWriteFormatAttribute (writer, BAD_CAST "date", "%ld",
-                                                   g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item))));
-            xmlTextWriterStartCDATA (writer);
-
-            G_PASTE_CLEANUP_FREE gchar *data = g_paste_history_encode (g_paste_item_get_value (item));
-            xmlTextWriterWriteString (writer, BAD_CAST data);
-
-            xmlTextWriterEndCDATA (writer);
-            xmlTextWriterEndElement (writer);
+            if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
+                !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
+                (G_PASTE_IS_IMAGE_ITEM (item) &&
+                    (!g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
+                     !g_output_stream_write_all (stream, g_date_time_format ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item)), "%s"), 10, NULL, NULL /* cancellable */, NULL /* error */))) ||
+                !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
+                !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
+                !g_output_stream_write_all (stream, "]]></item>\n", 11, NULL, NULL /* cancellable */, NULL /* error */))
+            {
+                continue; /* FIXME: handle error */
+            }
         }
 
-        xmlTextWriterEndElement (writer);
-        xmlTextWriterEndDocument (writer);
-
-        xmlTextWriterFlush (writer);
-        xmlFreeTextWriter (writer);
+        if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
+        { /* FIXME/ handle error */ }
     }
 }
 
