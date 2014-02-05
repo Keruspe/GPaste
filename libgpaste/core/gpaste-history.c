@@ -25,8 +25,7 @@
 
 #include <glib/gi18n-lib.h>
 
-#include <libxml/xmlreader.h>
-#include <libxml/xmlwriter.h>
+#include <assert.h> /* FIXME: remove me */
 
 struct _GPasteHistoryPrivate
 {
@@ -522,42 +521,237 @@ g_paste_history_save (GPasteHistory *self)
     }
     else
     {
-        LIBXML_TEST_VERSION
+        G_PASTE_CLEANUP_UNREF GOutputStream *stream = G_OUTPUT_STREAM (g_file_replace (history_file,
+                                                                                       NULL,
+                                                                                       FALSE,
+                                                                                       G_FILE_CREATE_REPLACE_DESTINATION,
+                                                                                       NULL, /* cancellable */
+                                                                                       NULL)); /* error */
 
-        xmlTextWriterPtr writer = xmlNewTextWriterFilename (history_file_path, 0);
-
-        xmlTextWriterSetIndent (writer, TRUE);
-        xmlTextWriterSetIndentString (writer, BAD_CAST "  ");
-
-        xmlTextWriterStartDocument (writer, "1.0", "UTF-8", NULL);
-        xmlTextWriterStartElement (writer, BAD_CAST "history");
-        xmlTextWriterWriteAttribute (writer, BAD_CAST "version", BAD_CAST "1.0");
+        if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
+        { /* FIXME/ handle error */ }
 
         for (GSList *history = priv->history; history; history = g_slist_next (history))
         {
             GPasteItem *item = history->data;
+            const gchar *kind = g_paste_item_get_kind (item);
+            G_PASTE_CLEANUP_FREE gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
 
-            xmlTextWriterStartElement (writer, BAD_CAST "item");
-            xmlTextWriterWriteAttribute (writer, BAD_CAST "kind", BAD_CAST g_paste_item_get_kind (item));
-            if (G_PASTE_IS_IMAGE_ITEM (item))
-                xmlTextWriterWriteFormatAttribute (writer, BAD_CAST "date", "%ld",
-                                                   g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item))));
-            xmlTextWriterStartCDATA (writer);
-
-            G_PASTE_CLEANUP_FREE gchar *data = g_paste_history_encode (g_paste_item_get_value (item));
-            xmlTextWriterWriteString (writer, BAD_CAST data);
-
-            xmlTextWriterEndCDATA (writer);
-            xmlTextWriterEndElement (writer);
+            if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
+                !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
+                (G_PASTE_IS_IMAGE_ITEM (item) &&
+                    (!g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
+                     !g_output_stream_write_all (stream, g_date_time_format ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item)), "%s"), 10, NULL, NULL /* cancellable */, NULL /* error */))) ||
+                !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
+                !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
+                !g_output_stream_write_all (stream, "]]></item>\n", 11, NULL, NULL /* cancellable */, NULL /* error */))
+            {
+                continue; /* FIXME: handle error */
+            }
         }
 
-        xmlTextWriterEndElement (writer);
-        xmlTextWriterEndDocument (writer);
-
-        xmlTextWriterFlush (writer);
-        xmlFreeTextWriter (writer);
+        if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
+        { /* FIXME/ handle error */ }
     }
 }
+
+/********************/
+/* Begin XML Parser */
+/********************/
+
+typedef enum
+{
+    BEGIN,
+    IN_HISTORY,
+    IN_ITEM,
+    HAS_TEXT,
+    END
+} State;
+
+typedef enum
+{
+    TEXT,
+    IMAGE,
+    URIS
+} Type;
+
+typedef struct
+{
+    GPasteHistoryPrivate *priv;
+    State                 state;
+    Type                  type;
+    guint32               current_size;
+    guint32               max_size;
+    gboolean              images_support;
+    gchar                *date;
+    gchar                *text;
+} Data;
+
+#define DATA() ((Data *) user_data)
+#define PRIV() (DATA ()->priv)
+#define STATE() (DATA ()->state)
+#define ASSERT_STATE(x) assert(STATE () == x)
+#define SET_STATE(x) STATE () = x
+#define SWITCH_STATE(x, y) ASSERT_STATE (x); SET_STATE (y)
+#define TYPE() (DATA ()->type)
+#define ASSERT_TYPE(x) assert(TYPE () == x)
+#define SET_TYPE(x) TYPE () = x
+#define CURRENT_SIZE() (DATA ()->current_size)
+#define INC_ITEMS() CURRENT_SIZE ()++
+#define MAX_SIZE() (DATA ()->max_size)
+#define DATE() (DATA ()->date)
+#define SET_DATE(x) DATE () = x
+#define TEXT() (DATA ()->text)
+#define SET_TEXT(x) TEXT () = x
+#define IMAGES_SUPPORT() (DATA ()->images_support)
+
+static void
+start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
+           const gchar         *element_name,
+           const gchar        **attribute_names,
+           const gchar        **attribute_values,
+           gpointer             user_data,
+           GError             **error G_GNUC_UNUSED)
+{
+    if (!g_strcmp0 (element_name, "history"))
+    {
+        SWITCH_STATE (BEGIN, IN_HISTORY);
+    }
+    else if (!g_strcmp0 (element_name, "item"))
+    {
+        SWITCH_STATE (IN_HISTORY, IN_ITEM);
+        g_clear_pointer (&DATE (), g_free);
+        g_clear_pointer (&TEXT (), g_free);
+        for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
+        {
+            if (!g_strcmp0 (*a, "kind"))
+            {
+                if (!g_strcmp0 (*v, "Text"))
+                    SET_TYPE (TEXT);
+                else if (!g_strcmp0 (*v, "Image"))
+                    SET_TYPE (IMAGE);
+                else if (!g_strcmp0 (*v, "Uris"))
+                    SET_TYPE (URIS);
+                else
+                    assert (0);
+            }
+            else if (!g_strcmp0 (*a, "date"))
+            {
+                ASSERT_TYPE (IMAGE); /* FIXME: better handling */
+                SET_DATE (g_strdup (*v));
+            }
+            else
+                assert (0);
+        }
+    }
+    else
+        assert (0);
+}
+
+static void
+end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
+         const gchar         *element_name,
+         gpointer             user_data,
+         GError             **error G_GNUC_UNUSED)
+{
+    if (!g_strcmp0 (element_name, "history"))
+    {
+        SWITCH_STATE (IN_HISTORY, END);
+    }
+    else if (!g_strcmp0 (element_name, "item"))
+    {
+        SWITCH_STATE (HAS_TEXT, IN_HISTORY);
+    }
+    else
+        assert (0);
+}
+
+static void
+on_text (GMarkupParseContext *context G_GNUC_UNUSED,
+         const gchar         *text,
+         gsize                text_len,
+         gpointer             user_data,
+         GError             **error G_GNUC_UNUSED)
+{
+    gchar *txt = calloc (text_len + 1, 1);
+    memcpy(txt, text, text_len);
+    txt[text_len] = '\0';
+    switch (STATE ())
+    {
+    case IN_HISTORY:
+    case HAS_TEXT:
+        assert (!*g_strstrip (txt)); /* FIXME: better handling */
+        break;
+    case IN_ITEM:
+    {
+        G_PASTE_CLEANUP_FREE gchar *value = g_paste_history_decode (txt);
+        if (*g_strstrip (txt)) /* FIXME: some thing must not be stripped */
+        {
+            if (CURRENT_SIZE () < MAX_SIZE ())
+            {
+                GPasteItem *item = NULL;
+
+                switch (TYPE ())
+                {
+                    case TEXT:
+                        item = g_paste_text_item_new (value);
+                    break;
+                case URIS:
+                    item = g_paste_uris_item_new (value);
+                    break;
+                case IMAGE:
+                    if (IMAGES_SUPPORT ())
+                    {
+                        G_PASTE_CLEANUP_DATE_UNREF GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (DATE (),
+                                                                                                           NULL, /* end */
+                                                                                                           0)); /* base */
+                        item = g_paste_image_item_new_from_file (value, date_time);
+                    }
+                    else
+                    {
+                        G_PASTE_CLEANUP_UNREF GFile *img_file = g_file_new_for_path (value);
+
+                        if (g_file_query_exists (img_file,
+                                                 NULL)) /* cancellable */
+                        {
+                            g_file_delete (img_file,
+                                           NULL, /* cancellable */
+                                           NULL); /* error */
+                        }
+                    }
+                    break;
+                }
+
+                if (item)
+                {
+                    PRIV ()->size += g_paste_item_get_size (item);
+                    PRIV ()->history = g_slist_append (PRIV ()->history, item);
+                    INC_ITEMS ();
+                }
+            }
+
+            SWITCH_STATE (IN_ITEM, HAS_TEXT);
+        }
+        break;
+    }
+    default:
+        assert (0);
+    }
+}
+
+static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
+                      GError              *error     G_GNUC_UNUSED,
+                      gpointer             user_data G_GNUC_UNUSED)
+{
+    /* FIXME: handle me better */
+    g_error ("error\n");
+}
+
+/******************/
+/* End XML Parser */
+/******************/
 
 /**
  * g_paste_history_load:
@@ -585,62 +779,36 @@ g_paste_history_load (GPasteHistory *self)
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
     {
-        LIBXML_TEST_VERSION
+        GMarkupParser parser = {
+            start_tag,
+            end_tag,
+            on_text,
+            NULL,
+            on_error
+        };
+        Data data = {
+            priv,
+            BEGIN,
+            TEXT,
+            0,
+            g_paste_settings_get_max_history_size (settings),
+            g_paste_settings_get_images_support (settings),
+            NULL,
+            NULL
+        };
+        GMarkupParseContext *ctx = g_markup_parse_context_new (&parser,
+                                                               G_MARKUP_TREAT_CDATA_AS_TEXT,
+                                                               &data,
+                                                               NULL);
+        gchar *text;
+        gsize text_length;
 
-        xmlTextReaderPtr reader = xmlNewTextReaderFilename (history_file_path);
-        guint32 max_history_size = g_paste_settings_get_max_history_size (settings);
+        g_file_get_contents ("/home/keruspe/.local/share/gpaste/history.xml", &text, &text_length, NULL);
+        g_markup_parse_context_parse (ctx, text, text_length, NULL);
+        g_markup_parse_context_end_parse (ctx, NULL);
 
-        for (guint32 i = 0; i < max_history_size && xmlTextReaderRead (reader) == 1;)
-        {
-            if (xmlTextReaderNodeType (reader) != 1)
-                continue;
-            const gchar *name = (const gchar *) xmlTextReaderConstName (reader);
-            if (!name || g_strcmp0 (name, "item"))
-                continue;
-
-            G_PASTE_CLEANUP_FREE gchar *kind = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "kind");
-            G_PASTE_CLEANUP_FREE gchar *date = (gchar *) xmlTextReaderGetAttribute (reader, BAD_CAST "date");
-            G_PASTE_CLEANUP_FREE gchar *raw_value = (gchar *) xmlTextReaderReadString (reader);
-            G_PASTE_CLEANUP_FREE gchar *value = g_paste_history_decode (raw_value);
-            GPasteItem *item = NULL;
-
-            if (g_strcmp0 (kind, "Text") == 0)
-                item = g_paste_text_item_new (value);
-            else if (g_strcmp0 (kind, "Uris") == 0)
-                item = g_paste_uris_item_new (value);
-            else if (g_strcmp0 (kind, "Image") == 0)
-            {
-                if (g_paste_settings_get_images_support (settings))
-                {
-                    G_PASTE_CLEANUP_DATE_UNREF GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (date,
-                                                                                                       NULL, /* end */
-                                                                                                       0)); /* base */
-                    item = g_paste_image_item_new_from_file (value, date_time);
-                }
-                else
-                {
-                    G_PASTE_CLEANUP_UNREF GFile *img_file = g_file_new_for_path (value);
-
-                    if (g_file_query_exists (img_file,
-                                             NULL)) /* cancellable */
-                    {
-                        g_file_delete (img_file,
-                                       NULL, /* cancellable */
-                                       NULL); /* error */
-                    }
-                }
-            }
-
-            if (item)
-            {
-                priv->size += g_paste_item_get_size (item);
-                priv->history = g_slist_append (priv->history, item);
-            }
-
-            ++i;
-        }
-
-        xmlFreeTextReader (reader);
+        assert (data.state == END); /* FIXME: better handling */
+        g_markup_parse_context_unref (ctx);
     }
     else
     {
