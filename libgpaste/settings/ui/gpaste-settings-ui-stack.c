@@ -112,42 +112,42 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
     priv->track_changes_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                                _("_Track clipboard changes"),
+                                                                                _("Track clipboard changes"),
                                                                                 g_paste_settings_get_track_changes (settings),
                                                                                 track_changes_callback,
                                                                                 settings);
 #ifdef ENABLE_EXTENSION
     priv->track_extension_state_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                                         _("Sync the daemon state with the _extension's one"),
+                                                                                         _("Sync the daemon state with the extension's one"),
                                                                                         g_paste_settings_get_track_extension_state (settings),
                                                                                         track_extension_state_callback,
                                                                                         settings);
 #endif
     g_paste_settings_ui_panel_add_separator (panel);
     priv->primary_to_history_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                                     _("_Primary selection affects history"),
+                                                                                     _("Primary selection affects history"),
                                                                                      g_paste_settings_get_primary_to_history (settings),
                                                                                      primary_to_history_callback,
                                                                                      settings);
     priv->synchronize_clipboards_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                                         _("_Synchronize clipboard with primary selection"),
+                                                                                         _("Synchronize clipboard with primary selection"),
                                                                                          g_paste_settings_get_synchronize_clipboards (settings),
                                                                                          synchronize_clipboards_callback,
                                                                                          settings);
     g_paste_settings_ui_panel_add_separator (panel);
     priv->images_support_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                                 _("_Images support"),
+                                                                                 _("Images support"),
                                                                                  g_paste_settings_get_images_support (settings),
                                                                                  images_support_callback,
                                                                                  settings);
     priv->trim_items_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                              _("_Trim items"),
+                                                                              _("Trim items"),
                                                                              g_paste_settings_get_trim_items (settings),
                                                                              trim_items_callback,
                                                                              settings);
     g_paste_settings_ui_panel_add_separator (panel);
     priv->save_history_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                               _("_Save history"),
+                                                                               _("Save history"),
                                                                                g_paste_settings_get_save_history (settings),
                                                                                save_history_callback,
                                                                                settings);
