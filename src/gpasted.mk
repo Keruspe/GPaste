@@ -33,9 +33,9 @@ bin_gpasted_CFLAGS = \
 	$(NULL)
 
 bin_gpasted_LDADD = \
-	$(libgpaste_core_la_file) \
-	$(libgpaste_daemon_la_file) \
-	$(libgpaste_gnome_shell_client_la_file) \
-	$(libgpaste_keybinder_la_file) \
-	$(libgpaste_settings_la_file) \
+	$(builddir)/$(libgpaste_core_la_file) \
+	$(builddir)/$(libgpaste_daemon_la_file) \
+	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
+	$(builddir)/$(libgpaste_keybinder_la_file) \
+	$(builddir)/$(libgpaste_settings_la_file) \
 	$(NULL)

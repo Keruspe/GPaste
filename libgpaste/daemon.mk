@@ -43,8 +43,8 @@ libgpaste_daemon_libgpaste_daemon_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_daemon_libgpaste_daemon_la_LIBADD = \
-	$(libgpaste_core_la_file) \
-	$(libgpaste_keybinder_la_file) \
+	$(builddir)/$(libgpaste_core_la_file) \
+	$(builddir)/$(libgpaste_keybinder_la_file) \
 	$(NULL)
 
 libgpaste_daemon_symbols_file = $(srcdir)/libgpaste/daemon/libgpaste-daemon.sym

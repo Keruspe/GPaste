@@ -28,5 +28,5 @@ tests_bin_test_gnome_shell_client_CFLAGSS = \
 	$(NULL)
 
 tests_bin_test_gnome_shell_client_LDADD = \
-	$(libgpaste_gnome_shell_client_la_file) \
+	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
 	$(NULL)

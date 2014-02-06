@@ -48,8 +48,8 @@ libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_LIBADD = \
-	$(libgpaste_client_la_file) \
-	$(libgpaste_settings_la_file) \
+	$(builddir)/$(libgpaste_client_la_file) \
+	$(builddir)/$(libgpaste_settings_la_file) \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)

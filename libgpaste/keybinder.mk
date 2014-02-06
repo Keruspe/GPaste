@@ -21,7 +21,7 @@ LIBGPASTE_KEYBINDER_CURRENT=3
 LIBGPASTE_KEYBINDER_REVISION=0
 LIBGPASTE_KEYBINDER_AGE=0
 
-$(libgpaste_keybinder_la_file): $(libgpaste_settings_la_file)
+$(libgpaste_keybinder_la_file): $(libgpaste_gnome_shell_client_la_file) $(libgpaste_settings_la_file)
 
 libgpaste_keybinder_public_headers = \
 	libgpaste/keybinder/gpaste-keybinder.h \
@@ -59,8 +59,8 @@ libgpaste_keybinder_libgpaste_keybinder_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_keybinder_libgpaste_keybinder_la_LIBADD = \
-	$(libgpaste_gnome_shell_client_la_file) \
-	$(libgpaste_settings_la_file) \
+	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
+	$(builddir)/$(libgpaste_settings_la_file) \
 	$(X11_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)

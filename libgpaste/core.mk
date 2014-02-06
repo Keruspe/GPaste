@@ -66,7 +66,7 @@ libgpaste_core_libgpaste_core_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_core_libgpaste_core_la_LIBADD = \
-	$(libgpaste_settings_la_file) \
+	$(builddir)/$(libgpaste_settings_la_file) \
 	$(GDK_PIXBUF_LIBS) \
 	$(GTK_LIBS) \
 	$(AM_LIBS) \

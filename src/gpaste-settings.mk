@@ -28,5 +28,5 @@ bin_gpaste_settings_CFLAGS = \
 	$(NULL)
 
 bin_gpaste_settings_LDADD = \
-	$(libgpaste_settings_ui_la_file) \
+	$(builddir)/$(libgpaste_settings_ui_la_file) \
 	$(NULL)
