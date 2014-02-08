@@ -176,6 +176,24 @@ g_paste_history_private_check_size (GPasteHistoryPrivate *priv)
     }
 }
 
+static gboolean
+g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
+                                         GPasteItem           *old,
+                                         GPasteItem           *new)
+{
+    if (!g_paste_settings_get_growing_lines (priv->settings))
+        return FALSE;
+
+    if (!G_PASTE_IS_TEXT_ITEM (old))
+        return FALSE;
+
+    if (!G_PASTE_IS_TEXT_ITEM (new))
+        return FALSE;
+
+    return g_str_has_prefix (g_paste_item_get_value (new),
+                             g_paste_item_get_value (old));
+}
+
 /**
  * g_paste_history_add:
  * @self: a #GPasteHistory instance
@@ -225,7 +243,7 @@ g_paste_history_add (GPasteHistory *self,
         guint32 index = 1;
         for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history), ++index)
         {
-            if (g_paste_item_equals (history->data, item))
+            if (g_paste_item_equals (history->data, item) || g_paste_history_private_is_growing_line (priv, history->data, item))
             {
                 prev->next = g_paste_history_private_remove (priv, history, FALSE);
                 if (index == priv->biggest_index)
