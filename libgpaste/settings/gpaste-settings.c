@@ -43,6 +43,7 @@ struct _GPasteSettingsPrivate
     gboolean   track_changes;
     gboolean   track_extension_state;
     gboolean   trim_items;
+    gboolean   growing_lines;
 
     gulong     changed_signal;
 };
@@ -452,6 +453,25 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  */
 BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
 
+/**
+ * g_paste_settings_get_growing_lines:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "growing-lines" setting
+ *
+ * Returns: the value of the "growing-lines" setting
+ */
+/**
+ * g_paste_settings_set_growing_lines:
+ * @self: a #GPasteSettings instance
+ * @value: whether to detect or not growing lines
+ *
+ * Change the "growing-lines" setting
+ *
+ * Returns:
+ */
+BOOLEAN_SETTING (growing_lines, GROWING_LINES)
+
 static void
 g_paste_settings_rebind (GPasteSettings *self,
                          const gchar    *key)
@@ -525,6 +545,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
         g_paste_settings_private_set_trim_items_from_dconf (priv);
+    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
+        g_paste_settings_private_set_growing_lines_from_dconf (priv);
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -606,6 +628,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_track_changes_from_dconf (priv);
     g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     g_paste_settings_private_set_trim_items_from_dconf (priv);
+    g_paste_settings_private_set_growing_lines_from_dconf (priv);
 
     priv->changed_signal = g_signal_connect (G_OBJECT (settings),
                                              "changed",

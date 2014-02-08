@@ -45,3 +45,8 @@ global:
     g_paste_settings_get_pop;
     g_paste_settings_set_pop;
 } LIBGPASTE_SETTINGS_1;
+
+LIBGPASTE_SETTINGS_5 {
+    g_paste_settings_get_growing_lines;
+    g_paste_settings_set_growing_lines;
+} LIBGPASTE_SETTINGS_4;

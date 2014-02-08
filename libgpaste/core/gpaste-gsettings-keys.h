@@ -46,6 +46,7 @@ G_BEGIN_DECLS
 #define G_PASTE_TRACK_CHANGES_SETTING              "track-changes"
 #define G_PASTE_TRACK_EXTENSION_STATE_SETTING      "track-extension-state"
 #define G_PASTE_TRIM_ITEMS_SETTING                 "trim-items"
+#define G_PASTE_GROWING_LINES_SETTING              "growing-lines"
 
 G_END_DECLS
 
