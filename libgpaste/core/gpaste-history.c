@@ -225,34 +225,39 @@ g_paste_history_add (GPasteHistory *self,
         if (g_paste_item_equals (old_first, item))
             return;
 
-        /* size may change when state is idle */
-        priv->size -= g_paste_item_get_size (old_first);
-        g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
-
-        gsize size = g_paste_item_get_size (old_first);
-
-        priv->size += size;
-
-        if (size >= priv->biggest_size)
+        if (g_paste_history_private_is_growing_line (priv, old_first, item))
+            priv->history = g_paste_history_private_remove (priv, history, FALSE);
+        else
         {
-            priv->biggest_index = 0; /* Current 0, will become 1 */
-            priv->biggest_size = size;
-        }
+            /* size may change when state is idle */
+            priv->size -= g_paste_item_get_size (old_first);
+            g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
 
-        GSList *prev = history;
-        guint32 index = 1;
-        for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history), ++index)
-        {
-            if (g_paste_item_equals (history->data, item) || g_paste_history_private_is_growing_line (priv, history->data, item))
+            gsize size = g_paste_item_get_size (old_first);
+
+            priv->size += size;
+
+            if (size >= priv->biggest_size)
             {
-                prev->next = g_paste_history_private_remove (priv, history, FALSE);
-                if (index == priv->biggest_index)
-                    election_needed = TRUE;
-                break;
+                priv->biggest_index = 0; /* Current 0, will become 1 */
+                priv->biggest_size = size;
             }
-        }
 
-        ++priv->biggest_index;
+            GSList *prev = history;
+            guint32 index = 1;
+            for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history), ++index)
+            {
+                if (g_paste_item_equals (history->data, item) || g_paste_history_private_is_growing_line (priv, history->data, item))
+                {
+                    prev->next = g_paste_history_private_remove (priv, history, FALSE);
+                    if (index == priv->biggest_index)
+                        election_needed = TRUE;
+                    break;
+                }
+            }
+
+            ++priv->biggest_index;
+        }
     }
 
     priv->history = g_slist_prepend (priv->history, item);
