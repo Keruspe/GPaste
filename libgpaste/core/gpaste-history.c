@@ -832,7 +832,7 @@ g_paste_history_load (GPasteHistory *self)
         gchar *text;
         gsize text_length;
 
-        g_file_get_contents ("/home/keruspe/.local/share/gpaste/history.xml", &text, &text_length, NULL);
+        g_file_get_contents (history_file_path, &text, &text_length, NULL);
         g_markup_parse_context_parse (ctx, text, text_length, NULL);
         g_markup_parse_context_end_parse (ctx, NULL);
 
