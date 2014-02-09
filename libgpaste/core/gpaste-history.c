@@ -25,8 +25,6 @@
 
 #include <glib/gi18n-lib.h>
 
-#include <assert.h> /* FIXME: remove me */
-
 struct _GPasteHistoryPrivate
 {
     GPasteSettings *settings;
@@ -500,9 +498,9 @@ g_paste_history_get_history_file (GPasteSettings *settings)
  *
  * Save the #GPasteHistory to the history file
  *
- * Returns:
+ * Returns: Whether we succesfully wrote the history file or not
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean /* TODO: check return value */
 g_paste_history_save (GPasteHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
@@ -519,7 +517,7 @@ g_paste_history_save (GPasteHistory *self)
                               NULL)) /* cancellable */
     {
         if (!save_history)
-            return;
+            return TRUE;
 
         G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
@@ -529,7 +527,7 @@ g_paste_history_save (GPasteHistory *self)
         if (error)
         {
             g_error ("%s: %s", _("Could not create history dir"), error->message);
-            return;
+            return FALSE;
         }
     }
 
@@ -553,7 +551,7 @@ g_paste_history_save (GPasteHistory *self)
 
         if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
-        { /* FIXME/ handle error */ }
+                return FALSE;
 
         for (GSList *history = priv->history; history; history = g_slist_next (history))
         {
@@ -570,14 +568,16 @@ g_paste_history_save (GPasteHistory *self)
                 !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
                 !g_output_stream_write_all (stream, "]]></item>\n", 11, NULL, NULL /* cancellable */, NULL /* error */))
             {
-                continue; /* FIXME: handle error */
+                g_warning ("Failed to write an item to history");
+                continue;
             }
         }
 
         if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
-        { /* FIXME/ handle error */ }
+                return FALSE;
     }
+    return TRUE;
 }
 
 /********************/
@@ -612,23 +612,15 @@ typedef struct
     gchar                *text;
 } Data;
 
-#define DATA() ((Data *) user_data)
-#define PRIV() (DATA ()->priv)
-#define STATE() (DATA ()->state)
-#define ASSERT_STATE(x) assert(STATE () == x)
-#define SET_STATE(x) STATE () = x
-#define SWITCH_STATE(x, y) ASSERT_STATE (x); SET_STATE (y)
-#define TYPE() (DATA ()->type)
-#define ASSERT_TYPE(x) assert(TYPE () == x)
-#define SET_TYPE(x) TYPE () = x
-#define CURRENT_SIZE() (DATA ()->current_size)
-#define INC_ITEMS() CURRENT_SIZE ()++
-#define MAX_SIZE() (DATA ()->max_size)
-#define DATE() (DATA ()->date)
-#define SET_DATE(x) DATE () = x
-#define TEXT() (DATA ()->text)
-#define SET_TEXT(x) TEXT () = x
-#define IMAGES_SUPPORT() (DATA ()->images_support)
+#define ASSERT_STATE(x)                                              \
+    if (data->state != x)                                            \
+    {                                                                \
+        g_warning ("Expected state %d, but got %d", x, data->state); \
+        return;                                                      \
+    }
+#define SWITCH_STATE(x, y) \
+    ASSERT_STATE (x);      \
+    data->state = y
 
 static void
 start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
@@ -638,6 +630,8 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
            gpointer             user_data,
            GError             **error G_GNUC_UNUSED)
 {
+    Data *data = user_data;
+
     if (!g_strcmp0 (element_name, "history"))
     {
         SWITCH_STATE (BEGIN, IN_HISTORY);
@@ -645,32 +639,36 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     else if (!g_strcmp0 (element_name, "item"))
     {
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
-        g_clear_pointer (&DATE (), g_free);
-        g_clear_pointer (&TEXT (), g_free);
+        g_clear_pointer (&data->date, g_free);
+        g_clear_pointer (&data->text, g_free);
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (!g_strcmp0 (*a, "kind"))
             {
                 if (!g_strcmp0 (*v, "Text"))
-                    SET_TYPE (TEXT);
+                    data->type = TEXT;
                 else if (!g_strcmp0 (*v, "Image"))
-                    SET_TYPE (IMAGE);
+                    data->type = IMAGE;
                 else if (!g_strcmp0 (*v, "Uris"))
-                    SET_TYPE (URIS);
+                    data->type = URIS;
                 else
-                    assert (0);
+                    g_error ("Unknown item kind: %s", *v);
             }
             else if (!g_strcmp0 (*a, "date"))
             {
-                ASSERT_TYPE (IMAGE); /* FIXME: better handling */
-                SET_DATE (g_strdup (*v));
+                if (data->type != IMAGE)
+                {
+                    g_warning ("Expected type %d, but got %d", IMAGE, data->type);
+                    return;
+                }
+                data->date = g_strdup (*v);
             }
             else
-                assert (0);
+                g_warning ("Unknown item attribute: %s", *a);
         }
     }
     else
-        assert (0);
+        g_warning ("Unknown element: %s", element_name);
 }
 
 static void
@@ -679,6 +677,8 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
          gpointer             user_data,
          GError             **error G_GNUC_UNUSED)
 {
+    Data *data = user_data;
+
     if (!g_strcmp0 (element_name, "history"))
     {
         SWITCH_STATE (IN_HISTORY, END);
@@ -688,7 +688,7 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         SWITCH_STATE (HAS_TEXT, IN_HISTORY);
     }
     else
-        assert (0);
+        g_warning ("Unknown element: %s", element_name);
 }
 
 static void
@@ -698,36 +698,42 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
          gpointer             user_data,
          GError             **error G_GNUC_UNUSED)
 {
+    Data *data = user_data;
+
     gchar *txt = calloc (text_len + 1, 1);
     memcpy(txt, text, text_len);
     txt[text_len] = '\0';
-    switch (STATE ())
+    switch (data->state)
     {
     case IN_HISTORY:
     case HAS_TEXT:
-        assert (!*g_strstrip (txt)); /* FIXME: better handling */
+        if (*g_strstrip (txt))
+        {
+            g_warning ("Unexpected text: %s", txt);
+            return;
+        }
         break;
     case IN_ITEM:
     {
         G_PASTE_CLEANUP_FREE gchar *value = g_paste_history_decode (txt);
-        if (*g_strstrip (txt)) /* FIXME: some thing must not be stripped */
+        if (*g_strstrip (txt))
         {
-            if (CURRENT_SIZE () < MAX_SIZE ())
+            if (data->current_size < data->max_size)
             {
                 GPasteItem *item = NULL;
 
-                switch (TYPE ())
+                switch (data->type)
                 {
-                    case TEXT:
-                        item = g_paste_text_item_new (value);
+                case TEXT:
+                    item = g_paste_text_item_new (value);
                     break;
                 case URIS:
                     item = g_paste_uris_item_new (value);
                     break;
                 case IMAGE:
-                    if (IMAGES_SUPPORT ())
+                    if (data->images_support && data->date)
                     {
-                        G_PASTE_CLEANUP_DATE_UNREF GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (DATE (),
+                        G_PASTE_CLEANUP_DATE_UNREF GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
                                                                                                            NULL, /* end */
                                                                                                            0)); /* base */
                         item = g_paste_image_item_new_from_file (value, date_time);
@@ -749,9 +755,10 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
 
                 if (item)
                 {
-                    PRIV ()->size += g_paste_item_get_size (item);
-                    PRIV ()->history = g_slist_append (PRIV ()->history, item);
-                    INC_ITEMS ();
+                    GPasteHistoryPrivate *priv = data->priv;
+                    priv->size += g_paste_item_get_size (item);
+                    priv->history = g_slist_append (priv->history, item);
+                    ++data->current_size;;
                 }
             }
 
@@ -760,16 +767,15 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         break;
     }
     default:
-        assert (0);
+        g_warning ("Unexpected state: %d", data->state);
     }
 }
 
 static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
-                      GError              *error     G_GNUC_UNUSED,
+                      GError              *error,
                       gpointer             user_data G_GNUC_UNUSED)
 {
-    /* FIXME: handle me better */
-    g_error ("error\n");
+    g_error ("error: %s", error->message);
 }
 
 /******************/
@@ -830,7 +836,8 @@ g_paste_history_load (GPasteHistory *self)
         g_markup_parse_context_parse (ctx, text, text_length, NULL);
         g_markup_parse_context_end_parse (ctx, NULL);
 
-        assert (data.state == END); /* FIXME: better handling */
+        if (data.state != END)
+            g_warning ("Unexpected state adter parsing history: %d", data.state);
         g_markup_parse_context_unref (ctx);
     }
     else

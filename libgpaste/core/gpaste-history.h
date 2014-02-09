@@ -55,7 +55,7 @@ const gchar      *g_paste_history_get_value (GPasteHistory *self,
 void              g_paste_history_select    (GPasteHistory *self,
                                              guint32        index);
 void         g_paste_history_empty       (GPasteHistory *self);
-void         g_paste_history_save        (GPasteHistory *self);
+gboolean     g_paste_history_save        (GPasteHistory *self);
 void         g_paste_history_load        (GPasteHistory *self);
 void         g_paste_history_switch      (GPasteHistory *self,
                                           const gchar   *name);

@@ -1,8 +1,6 @@
 3.8:
     all:
         check if there are missing allow-none
-    history:
-        fix xml FIXMEs
 
 3.10:
     applet:
