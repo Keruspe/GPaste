@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2014-02-09 15:31+0900\n"
-"PO-Revision-Date: 2014-02-09 14:36-0300\n"
+"PO-Revision-Date: 2014-02-09 14:45-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -529,7 +529,7 @@ msgstr "Tamanho máximo do histórico:"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:194
 msgid "Max memory usage (MB): "
-msgstr "Uso de memória (MB):"
+msgstr "Uso de memória (MB): "
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:199
 msgid "Max text item length: "
