@@ -7,22 +7,21 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2013-11-08 10:01+0100\n"
+"POT-Creation-Date: 2014-02-09 15:31+0900\n"
 "PO-Revision-Date: 2013-11-08 11:15+0100\n"
 "Last-Translator: Christian Schendel <doppelhelix@gmail.com>\n"
 "Language-Team: \n"
+"Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"Language: de\n"
 
 #: ../src/gpaste-settings/gpaste-settings.c:87
 msgid "Failed to register the gtk application"
 msgstr "Initialisierung der gtk Anwendung fehlgeschlagen"
 
 #: ../src/applets/legacy/gpaste-applet.vala:87
-#, c-format
 msgid "Couldn't update history.\n"
 msgstr "Aktualisierung der Chronik fehlgeschlagen.\n"
 
@@ -36,7 +35,6 @@ msgid "Settings"
 msgstr "Einstellungen"
 
 #: ../src/applets/legacy/gpaste-applet.vala:118
-#, c-format
 msgid "Couldn't spawn gpaste-settings.\n"
 msgstr "gpaste-settings konnte nicht gestartet werden.\n"
 
@@ -46,7 +44,6 @@ msgid "Empty history"
 msgstr "Chronik leeren"
 
 #: ../src/applets/legacy/gpaste-applet.vala:127
-#, c-format
 msgid "Couldn't empty history.\n"
 msgstr "Chronik konnte nicht geleert werden.\n"
 
@@ -56,12 +53,11 @@ msgstr "Beenden"
 
 #: ../src/applets/legacy/gpaste-applet.vala:158
 #: ../src/applets/legacy/gpaste-applet.vala:180 ../src/gpaste/gpaste.c:127
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:246
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:253
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
 #: ../src/applets/legacy/gpaste-applet.vala:196
-#, c-format
 msgid "Fail to register the gtk application.\n"
 msgstr "Initialisierung der gtk Anwendung fehlgeschlagen.\n"
 
@@ -215,11 +211,11 @@ msgstr "Programmversion anzeigen"
 msgid "display this help"
 msgstr "Diesen Hilfetext anzeigen"
 
-#: ../src/gpaste/gpaste.c:201
+#: ../src/gpaste/gpaste.c:204
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "gpaste-applet konnte nicht gestartet werden.\n"
 
-#: ../src/gpaste/gpaste.c:220
+#: ../src/gpaste/gpaste.c:223
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Daemon wurde erfolgreich neu gestartet\n"
@@ -238,22 +234,22 @@ msgid "Could not register DBus service."
 msgstr "DBus Service konnte nicht registriert werden."
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:218
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:225
 msgid "Delete the first item in history: "
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:223
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:230
 msgid "Display the history: "
 msgstr "Chronik anzeigen:"
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:228
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:235
 msgid "Sync the clipboard to the primary selection: "
 msgstr "Zwischenablage mit der Auswahl synchronisieren:"
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:233
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:240
 msgid "Sync the primary selection to the clipboard: "
 msgstr "Auswahl mit der Zwischenablage synchronisieren:"
 
@@ -442,6 +438,17 @@ msgstr ""
 "Trimmen bedeutet das Entfernen von Leerzeichen am Anfang und Ende. "
 "Standardmäßig werden sie so belassen wie sie sind."
 
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:37
+msgid "Do we detect and replace growing lines in history?"
+msgstr ""
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:38
+msgid ""
+"By default, selecting \"Here is\", then \"Here is an example\" will create "
+"two entries in the history. With this feature enabled, the first one will be "
+"replaced by the second one."
+msgstr ""
+
 #. This is the date format "month/day/year time"
 #: ../libgpaste/core/gpaste-image-item.c:234
 msgid "%m/%d/%y %T"
@@ -460,97 +467,101 @@ msgstr "[Bild, %d x %d (%s)]"
 msgid "[Files] "
 msgstr "[Dateien]"
 
-#: ../libgpaste/core/gpaste-history.c:509
+#: ../libgpaste/core/gpaste-history.c:529
 msgid "Could not create history dir"
 msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:115
-msgid "_Track clipboard changes"
-msgstr "_Verfolge Änderungen in der Zwischenablage"
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:117
+msgid "Track clipboard changes"
+msgstr "Verfolge Änderungen in der Zwischenablage"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:121
-msgid "Sync the daemon state with the _extension's one"
-msgstr "Synchronisiere Daemon mit der _Erweiterung"
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:123
+msgid "Sync the daemon state with the extension's one"
+msgstr "Synchronisiere Daemon mit der erweiterung"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:128
-msgid "_Primary selection affects history"
-msgstr "_Auswahl beeinflusst Chronik"
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:130
+msgid "Primary selection affects history"
+msgstr "Auswahl beeinflusst Chronik"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:133
-msgid "_Synchronize clipboard with primary selection"
-msgstr "_Synchronisiere Zwischenablage mit Auswahl"
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:135
+msgid "Synchronize clipboard with primary selection"
+msgstr "Synchronisiere Zwischenablage mit Auswahl"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:139
-msgid "_Images support"
-msgstr "_Bilder unterstützen"
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:141
+msgid "Images support"
+msgstr "Bilder unterstützen"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:144
-msgid "_Trim items"
-msgstr "Objekte _trimmen"
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:146
+msgid "Trim items"
+msgstr "Objekte trimmen"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:150
-msgid "_Save history"
-msgstr "Chronik _speichern"
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:151
+msgid "Detect growing lines"
+msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:172
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:157
+msgid "Save history"
+msgstr "Chronik speichern"
+
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:179
 msgid "Max element size when displaying: "
 msgstr "Maximale Größe des anzuzeigenden Eintrages:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:177
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:184
 msgid "Max displayed history size: "
 msgstr "Anzahl der anzuzeigenden Einträge:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:182
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:189
 msgid "Max history size: "
 msgstr "Maximale Größe der Chronik:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:187
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:194
 msgid "Max memory usage (MB): "
 msgstr "Maximaler Speicherverbrauch (MB):"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:192
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:199
 msgid "Max text item length: "
 msgstr "Maximale Textlänge:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:197
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:204
 msgid "Min text item length: "
 msgstr "Minimale Textlänge:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:321
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:328
 msgid "Backup history as: "
 msgstr "Aktuelle Chronik sichern als:"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:326
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:333
 msgid "Backup"
 msgstr "Backup"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:333
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:340
 msgid "Ok"
 msgstr "OK"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:355
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:362
 msgid "General behaviour"
 msgstr "Allgemeine Optionen"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:356
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:363
 msgid "History settings"
 msgstr "Einstellungen zur Chronik"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:357
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:364
 msgid "Keyboard shortcuts"
 msgstr "Tastaturkürzel"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:358
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:365
 msgid "Histories"
 msgstr "Chroniken"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:470
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:478
 msgid "Switch to"
 msgstr "Wechseln zu"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:475
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:483
 msgid "Delete"
 msgstr "Löschen"
