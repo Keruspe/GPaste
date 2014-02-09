@@ -1,7 +1,3 @@
-3.8:
-    all:
-        check if there are missing allow-none
-
 3.10:
     applet:
         unity support
