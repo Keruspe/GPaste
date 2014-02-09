@@ -378,6 +378,7 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     {
         G_PASTE_CLEANUP_FREE gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
         gtk_entry_set_text (priv->backup_entry, text);
+        g_paste_settings_ui_stack_private_refill_histories (priv);
     }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_button), g_paste_settings_get_images_support (settings));
