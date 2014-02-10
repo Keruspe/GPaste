@@ -1,9 +1,13 @@
-NEW in 3.8 (Not released yet)
+NEW in 3.8 (10/02/2014)
 =============
 
+- Fix german translation
 - No longer depend on libxml
+- Update Portugueuse and French translations
+- New growing-lines feature
+- Misc bufixes
 
-NEW in 3.7 (9/11/2013)
+NEW in 3.7 (09/11/2013)
 =============
 
 - "Paste and Pop" is now only "Pop"

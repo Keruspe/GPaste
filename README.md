@@ -39,9 +39,9 @@ You can see everything I'll post about GPaste [there](http://www.imagination-lan
 
 ### If you use GNOME 3.9.90 or above
 
-Latest release is: [GPaste 3.7](http://www.imagination-land.org/posts/2013-11-09-gpaste-3.7-released.html).
+Latest release is: [GPaste 3.8](http://www.imagination-land.org/posts/2014-02-10-gpaste-3.8-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.7.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.8.tar.xz>
 
 ### If you use GNOME 3.9.5 or below
 
