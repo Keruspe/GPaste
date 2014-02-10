@@ -8,13 +8,14 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2014-02-09 15:31+0900\n"
-"PO-Revision-Date: 2013-01-15 20:24-0300\n"
+"PO-Revision-Date: 2014-02-09 14:45-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.4\n"
 
 #: ../src/gpaste-settings/gpaste-settings.c:87
 msgid "Failed to register the gtk application"
@@ -245,12 +246,12 @@ msgstr "Mostrar histórico: "
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:235
 msgid "Sync the clipboard to the primary selection: "
-msgstr ""
+msgstr "Sincronizar a área de transferência com a seleção primária: "
 
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:240
 msgid "Sync the primary selection to the clipboard: "
-msgstr ""
+msgstr "Sincronizar a seleção primária com a área de transferência: "
 
 #: ../data/desktop/gpaste-applet.desktop.in.in.h:1
 msgid "GPaste Applet"
@@ -310,11 +311,11 @@ msgstr "Número máximo de itens no histórico"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:11
 msgid "Max memory usage (MB)"
-msgstr ""
+msgstr "Uso máximo de memória (MB)"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:12
 msgid "Maximum amount of memory used to store contents"
-msgstr ""
+msgstr "Quantidade máxima de memória utilizada para armazenamento"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:13
 msgid "Max text item size"
@@ -380,22 +381,30 @@ msgstr ""
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:25
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
+"Atalho do teclado para sincronizar a área de transferência com a seleção "
+"primária"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
 msgstr ""
+"Por padrão, teclando ctrl + alt + o faz a sincronização (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;P\"). Uma string vazia aqui desabilita essa funcionalidade."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
+"Atalho do teclado para sincronizar a seleção primária com a área de "
+"transferência"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:28
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
 msgstr ""
+"Por padrão, teclando ctrl + alt + p faz a sincronização (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;P\"). Uma string vazia aqui desabilita essa funcionalidade."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
 msgid "Are the primary selection and the clipboard synchronized?"
@@ -440,7 +449,7 @@ msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:37
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Detectar e substituir linhas crescentes no histórico?"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:38
 msgid ""
@@ -448,6 +457,9 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"Por padrão, selecionando  \"Aqui está\", e então \"Aqui está um exemplo\" "
+"irá criar duas entradas no histórico. Com esse recurso habilitado, o "
+"primeiro será substituído pelo segundo."
 
 #. This is the date format "month/day/year time"
 #: ../libgpaste/core/gpaste-image-item.c:234
@@ -497,7 +509,7 @@ msgstr "Aparar itens"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:151
 msgid "Detect growing lines"
-msgstr ""
+msgstr "Detectar linhas crescentes"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:157
 msgid "Save history"
@@ -517,7 +529,7 @@ msgstr "Tamanho máximo do histórico:"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:194
 msgid "Max memory usage (MB): "
-msgstr ""
+msgstr "Uso de memória (MB): "
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:199
 msgid "Max text item length: "
