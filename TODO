@@ -1,8 +1,6 @@
 3.10:
     applet:
         unity support
-    general:
-        follow gnome versionning
     gpaste-settings:
         reset
         enable/disable extension
