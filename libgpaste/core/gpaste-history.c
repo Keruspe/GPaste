@@ -700,7 +700,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
 {
     Data *data = user_data;
 
-    gchar *txt = calloc (text_len + 1, 1);
+    gchar *txt = alloca (text_len + 1);
     memcpy(txt, text, text_len);
     txt[text_len] = '\0';
     switch (data->state)
