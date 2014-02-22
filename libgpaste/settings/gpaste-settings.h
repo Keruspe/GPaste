@@ -61,6 +61,7 @@ gboolean     g_paste_settings_get_synchronize_clipboards     (GPasteSettings *se
 gboolean     g_paste_settings_get_track_changes              (GPasteSettings *self);
 gboolean     g_paste_settings_get_track_extension_state      (GPasteSettings *self);
 gboolean     g_paste_settings_get_trim_items                 (GPasteSettings *self);
+gboolean     g_paste_settings_get_growing_lines              (GPasteSettings *self);
 
 void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint32         value);
@@ -97,6 +98,8 @@ void g_paste_settings_set_track_changes              (GPasteSettings *self,
 void g_paste_settings_set_track_extension_state      (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_trim_items                 (GPasteSettings *self,
+                                                      gboolean        value);
+void g_paste_settings_set_growing_lines              (GPasteSettings *self,
                                                       gboolean        value);
 
 GPasteSettings *g_paste_settings_new (void);

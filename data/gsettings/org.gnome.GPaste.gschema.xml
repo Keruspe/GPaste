@@ -156,5 +156,14 @@
       </description>
     </key>
 
+    <key name="growing-lines" type="b">
+      <default>false</default>
+      <summary>Do we detect and replace growing lines in history?</summary>
+      <description>
+        By default, selecting "Here is", then "Here is an example" will create two entries in the history.
+        With this feature enabled, the first one will be replaced by the second one.
+      </description>
+    </key>
+
   </schema>
 </schemalist>

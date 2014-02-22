@@ -171,6 +171,24 @@ g_paste_history_check_size (GPasteHistory *self)
     }
 }
 
+static gboolean
+g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
+                                         GPasteItem           *old,
+                                         GPasteItem           *new)
+{
+    if (!g_paste_settings_get_growing_lines (priv->settings))
+        return FALSE;
+
+    if (!G_PASTE_IS_TEXT_ITEM (old))
+        return FALSE;
+
+    if (!G_PASTE_IS_TEXT_ITEM (new))
+        return FALSE;
+
+    return g_str_has_prefix (g_paste_item_get_value (new),
+                             g_paste_item_get_value (old));
+}
+
 /**
  * g_paste_history_add:
  * @self: a #GPasteHistory instance
@@ -201,34 +219,39 @@ g_paste_history_add (GPasteHistory *self,
         if (g_paste_item_equals (old_first, item))
             return;
 
-        /* size may change when state is idle */
-        priv->size -= g_paste_item_get_size (old_first);
-        g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
-
-        gsize size = g_paste_item_get_size (old_first);
-
-        priv->size += size;
-
-        if (size >= priv->biggest_size)
+        if (g_paste_history_private_is_growing_line (priv, old_first, item))
+            priv->history = _g_paste_history_remove (self, history, FALSE);
+        else
         {
-            priv->biggest_index = 0; /* Current 0, will become 1 */
-            priv->biggest_size = size;
-        }
+            /* size may change when state is idle */
+            priv->size -= g_paste_item_get_size (old_first);
+            g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
 
-        GSList *prev = history;
-        guint32 index = 1;
-        for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history), ++index)
-        {
-            if (g_paste_item_equals (history->data, item))
+            gsize size = g_paste_item_get_size (old_first);
+
+            priv->size += size;
+
+            if (size >= priv->biggest_size)
             {
-                prev->next = _g_paste_history_remove (self, history, FALSE);
-                if (index == priv->biggest_index)
-                    election_needed = TRUE;
-                break;
+                priv->biggest_index = 0; /* Current 0, will become 1 */
+                priv->biggest_size = size;
             }
-        }
 
-        ++priv->biggest_index;
+            GSList *prev = history;
+            guint32 index = 1;
+            for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history), ++index)
+            {
+                if (g_paste_item_equals (history->data, item) || g_paste_history_private_is_growing_line (priv, history->data, item))
+                {
+                    prev->next = _g_paste_history_remove (self, history, FALSE);
+                    if (index == priv->biggest_index)
+                        election_needed = TRUE;
+                    break;
+                }
+            }
+
+            ++priv->biggest_index;
+        }
     }
 
     history = priv->history = g_slist_prepend (priv->history, item);

@@ -43,6 +43,7 @@ struct _GPasteSettingsUiNotebookPrivate
     GtkCheckButton  *track_changes_button;
     GtkCheckButton  *track_extension_state_button;
     GtkCheckButton  *trim_items_button;
+    GtkCheckButton  *growing_lines_button;
     GtkSpinButton   *element_size_button;
     GtkSpinButton   *max_displayed_history_size_button;
     GtkSpinButton   *max_history_size_button;
@@ -105,6 +106,7 @@ BOOLEAN_CALLBACK (primary_to_history)
 BOOLEAN_CALLBACK (synchronize_clipboards)
 BOOLEAN_CALLBACK (images_support)
 BOOLEAN_CALLBACK (trim_items)
+BOOLEAN_CALLBACK (growing_lines)
 BOOLEAN_CALLBACK (save_history)
 
 static GPasteSettingsUiPanel *
@@ -147,6 +149,11 @@ g_paste_settings_ui_notebook_make_behaviour_panel (GPasteSettingsUiNotebook *sel
                                                                               _("_Trim items"),
                                                                              g_paste_settings_get_trim_items (settings),
                                                                              trim_items_callback,
+                                                                             settings);
+    priv->trim_items_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+                                                                              _("Detect growing lines"),
+                                                                             g_paste_settings_get_growing_lines (settings),
+                                                                             growing_lines_callback,
                                                                              settings);
     g_paste_settings_ui_panel_add_separator (panel);
     priv->save_history_button = g_paste_settings_ui_panel_add_boolean_setting (panel,

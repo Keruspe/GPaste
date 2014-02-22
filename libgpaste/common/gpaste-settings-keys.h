@@ -21,6 +21,7 @@
 #define __GPASTE_SETTINGS_KEYS_H__
 
 #define ELEMENT_SIZE_KEY               "element-size"
+#define GROWING_LINES_KEY              "growing-lines"
 #define HISTORY_NAME_KEY               "history-name"
 #define IMAGES_SUPPORT_KEY             "images-support"
 #define MAX_DISPLAYED_HISTORY_SIZE_KEY "max-displayed-history-size"
