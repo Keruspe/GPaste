@@ -45,6 +45,6 @@ Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.
 
 ### If you use GNOME 3.9.5 or below
 
-Latest release is: [GPaste 3.2.2](http://www.imagination-land.org/posts/2013-10-22-gpaste-3.2.2-released.html).
+Latest release is: [GPaste 3.3](http://www.imagination-land.org/posts/2014-02-22-gpaste-3.3-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.2.2.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste-3.3.tar.xz>
