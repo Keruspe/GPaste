@@ -49,6 +49,11 @@ NEW in 3.5 (25/09/2013)
 - New keybinding to sync the clipboard to the primary selection
 - New keybinding to sync the primary selection to the clipboard
 
+NEW in 3.3 (not released yet)
+=============
+
+- New growing-lines feature (backported from 3.8)
+
 NEW in 3.2.2 (22/10/2013)
 =============
 
