@@ -221,6 +221,7 @@ main (gint argc, gchar *argv[])
                 if (error && error->code == G_DBUS_ERROR_NO_REPLY)
                 {
                     printf (_("Successfully reexecuted the daemon\n"));
+                    return EXIT_SUCCESS;
                 }
             }
             else if (!g_strcmp0 (arg1, "h") ||
