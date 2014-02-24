@@ -49,6 +49,7 @@ AM_CFLAGS = \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
 	-I$(srcdir)/libgpaste/client \
+	-I$(srcdir)/libgpaste/applet \
 	-I$(srcdir)/libgpaste/gnome-shell-client \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
@@ -102,6 +103,7 @@ include libgpaste/keybinder.mk
 include libgpaste/core.mk
 include libgpaste/client.mk
 include libgpaste/daemon.mk
+include libgpaste/applet.mk
 include libgpaste/settings/ui.mk
 
 include bindings/gi.mk

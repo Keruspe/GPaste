@@ -23,9 +23,9 @@ INTROSPECTION_GIRS = $(NULL)
 
 libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
-$(libgpaste_gir_file): $(libgpaste_client_la_file) $(libgpaste_core_la_file) $(libgpaste_daemon_la_file)
-bindings_gi_GPaste_1_0_gir_FILES = \
+all_la_files = \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
+	$(libgpaste_applet_libgpaste_applet_la_SOURCES) \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
 	$(libgpaste_daemon_libgpaste_daemon_la_SOURCES) \
 	$(libgpaste_gnome_shell_client_libgpaste_gnome_shell_client_la_SOURCES) \
@@ -33,9 +33,15 @@ bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_settings_libgpaste_settings_la_SOURCES) \
 	$(libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES) \
 	$(NULL)
+
+$(libgpaste_gir_file): $(all_la_files)
+bindings_gi_GPaste_1_0_gir_FILES = \
+	$(all_la_files) \
+	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = \
 	$(INCLUDES) \
 	-DG_PASTE_COMPILATION \
+	-I$(srcdir)/libgpaste/applet \
 	-I$(srcdir)/libgpaste/client \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
@@ -45,6 +51,7 @@ bindings_gi_GPaste_1_0_gir_CFLAGS = \
 	-I$(srcdir)/libgpaste/settings/ui \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_LIBS = \
+	$(builddir)/$(libgpaste_applet_la_file) \
 	$(builddir)/$(libgpaste_client_la_file) \
 	$(builddir)/$(libgpaste_core_la_file) \
 	$(builddir)/$(libgpaste_daemon_la_file) \
@@ -54,6 +61,7 @@ bindings_gi_GPaste_1_0_gir_LIBS = \
 	$(builddir)/$(libgpaste_settings_ui_la_file) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
+	libgpaste-applet \
 	libgpaste-client \
 	libgpaste-core \
 	libgpaste-daemon \
