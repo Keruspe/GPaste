@@ -53,9 +53,11 @@ namespace GPaste {
         }
 
         public void fill_history () {
-            this.history = new Gtk.Menu ();
-            bool history_is_empty;
             var app = (Main) this.application;
+            this.history = new Gtk.Menu ();
+            this.history.add (new GPaste.AppletSwitch (app.client));
+            this.history.add (new Gtk.SeparatorMenuItem ());
+            bool history_is_empty;
             try {
                 var hist = app.client.get_history_sync ();
                 history_is_empty = (hist.length == 0);
