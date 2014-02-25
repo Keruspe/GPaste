@@ -191,6 +191,7 @@ namespace GPaste {
             GLib.Intl.bind_textdomain_codeset (Config.GETTEXT_PACKAGE, "UTF-8");
             GLib.Intl.textdomain (Config.GETTEXT_PACKAGE);
             Gtk.init (ref args);
+            Gtk.Settings.get_default().gtk_application_prefer_dark_theme = true;
             var app = new Main ();
             try {
                 app.register ();
