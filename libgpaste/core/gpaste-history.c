@@ -503,7 +503,7 @@ g_paste_history_get_history_file (GPasteSettings *settings)
 G_PASTE_VISIBLE gboolean /* TODO: check return value */
 g_paste_history_save (GPasteHistory *self)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
