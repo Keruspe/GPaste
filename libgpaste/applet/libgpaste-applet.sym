@@ -3,6 +3,11 @@ global:
     g_paste_applet_empty_get_type;
     g_paste_applet_empty_new;
 
+    g_paste_applet_footer_get_type;
+    g_paste_applet_footer_add_to_menu;
+    g_paste_applet_footer_remove_from_menu;
+    g_paste_applet_footer_new;
+
     g_paste_applet_header_get_type;
     g_paste_applet_header_get_active;
     g_paste_applet_header_set_active;
