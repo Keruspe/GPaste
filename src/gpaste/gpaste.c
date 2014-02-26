@@ -124,7 +124,7 @@ is_version (const gchar *option)
 G_PASTE_NORETURN static void
 failure_exit (GError *error)
 {
-    g_error ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknwown error");
+    g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknwown error");
     exit (EXIT_FAILURE);
 }
 
