@@ -100,6 +100,7 @@ namespace GPaste {
                 this.history.add (item);
             }
             this.history.add (new Gtk.SeparatorMenuItem ());
+            this.history.add (new GPaste.AppletEmpty (app.client));
             this.history.add (new GPaste.AppletSettings ());
             this.history.add (new GPaste.AppletQuit (this.application));
             this.needs_repaint = false;

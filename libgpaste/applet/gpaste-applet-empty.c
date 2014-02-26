@@ -76,6 +76,6 @@ g_paste_applet_empty_new (GPasteClient *client)
                                       "label", _("Empty history"),
                                       NULL);
     GPasteAppletEmptyPrivate *priv = g_paste_applet_empty_get_instance_private ((GPasteAppletEmpty *) self);
-    priv->client = client;
+    priv->client = g_object_ref (client);
     return self;
 }
