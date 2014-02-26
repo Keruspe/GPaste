@@ -1,5 +1,9 @@
 LIBGPASTE_APPLET_1 {
 global:
+    g_paste_applet_quit_get_type;
+
+    g_paste_applet_quit_new;
+
     g_paste_applet_settings_get_type;
 
     g_paste_applet_settings_new;
