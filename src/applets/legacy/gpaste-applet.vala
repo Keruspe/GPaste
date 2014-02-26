@@ -22,7 +22,6 @@ namespace GPaste {
     public class Window : Gtk.Window {
         private Gtk.StatusIcon tray_icon;
         private Gtk.Menu history;
-        private Gtk.Menu options;
         private bool needs_repaint;
 
         public Window(Main app) {
@@ -35,19 +34,8 @@ namespace GPaste {
             app.client.changed.connect (() => {
                 this.needs_repaint = true;
             });
-            this.fill_options ();
             this.tray_icon.button_press_event.connect (() => {
-                Gdk.Event e = Gtk.get_current_event ();
-                switch (e.button.button) {
-                case 1:
-                    if (this.needs_repaint)
-                        this.fill_history ();
-                    this.history.popup (null, null, this.tray_icon.position_menu, 1, e.get_time ());
-                    break;
-                case 3:
-                    this.options.popup (null, null, this.tray_icon.position_menu, 3, e.get_time ());
-                    break;
-                }
+                this.show_history ();
                 return false;
             });
         }
@@ -108,36 +96,9 @@ namespace GPaste {
         }
 
         public void show_history () {
-            Gdk.Event e = Gtk.get_current_event ();
             if (this.needs_repaint)
                 this.fill_history ();
-            this.history.popup (null, null, this.tray_icon.position_menu, 1, e.get_time ());
-        }
-
-        private void fill_options () {
-            this.options = new Gtk.Menu ();
-            var settings = new Gtk.MenuItem.with_label (_("Settings"));
-            settings.activate.connect (() => {
-                try {
-                    GLib.Process.spawn_command_line_async (Config.PKGLIBEXECDIR + "/gpaste-settings");
-                } catch(SpawnError e) {
-                    stderr.printf (_("Couldn't spawn gpaste-settings.\n"));
-                }
-            });
-            this.options.add (settings);
-            var empty = new Gtk.MenuItem.with_label (_("Empty history"));
-            empty.activate.connect (() => {
-                try {
-                    ((Main) this.application).client.empty_sync ();
-                } catch (Error e) {
-                    stderr.printf (_("Couldn't empty history.\n"));
-                }
-            });
-            this.options.add (empty);
-            var quit = new Gtk.MenuItem.with_label (_("Quit"));
-            quit.activate.connect (() => ((GLib.Application) this.application).quit_mainloop ());
-            this.options.add (quit);
-            this.options.show_all ();
+            this.history.popup (null, null, this.tray_icon.position_menu, 1, Gtk.get_current_event ().get_time ());
         }
     }
 
