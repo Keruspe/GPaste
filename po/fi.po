@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-02-09 15:31+0900\n"
+"POT-Creation-Date: 2014-02-26 12:32+0900\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -20,47 +20,27 @@ msgstr ""
 msgid "Failed to register the gtk application"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
 
-#: ../src/applets/legacy/gpaste-applet.vala:87
+#: ../src/applets/legacy/gpaste-applet.vala:77
 msgid "Couldn't update history.\n"
 msgstr "Historian päivittäminen epäonnistui.\n"
 
-#: ../src/applets/legacy/gpaste-applet.vala:95
+#: ../src/applets/legacy/gpaste-applet.vala:85
 #: ../src/applets/gnome-shell/extension.js:152
 msgid "(Empty)"
 msgstr "(Tyhjä)"
 
-#: ../src/applets/legacy/gpaste-applet.vala:113
-msgid "Settings"
-msgstr "Asetukset"
-
-#: ../src/applets/legacy/gpaste-applet.vala:118
-msgid "Couldn't spawn gpaste-settings.\n"
-msgstr "GPaste-asetukset ikkunan esiintaikominen epäonnistui.\n"
-
-#: ../src/applets/legacy/gpaste-applet.vala:122
-#: ../src/applets/gnome-shell/extension.js:217
-msgid "Empty history"
-msgstr "Tyhjennä historia"
-
-#: ../src/applets/legacy/gpaste-applet.vala:127
-msgid "Couldn't empty history.\n"
-msgstr "Historian tyhjennys epäonnistui.\n"
-
-#: ../src/applets/legacy/gpaste-applet.vala:131
-msgid "Quit"
-msgstr "Lopeta"
-
-#: ../src/applets/legacy/gpaste-applet.vala:158
-#: ../src/applets/legacy/gpaste-applet.vala:180 ../src/gpaste/gpaste.c:127
+#: ../src/applets/legacy/gpaste-applet.vala:125
+#: ../src/applets/legacy/gpaste-applet.vala:147 ../src/gpaste/gpaste.c:127
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:253
 msgid "Couldn't connect to GPaste daemon"
 msgstr "GPaste-palveluun ei saatu yhteyttä"
 
-#: ../src/applets/legacy/gpaste-applet.vala:196
+#: ../src/applets/legacy/gpaste-applet.vala:164
 msgid "Fail to register the gtk application.\n"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui.\n"
 
 #: ../src/applets/gnome-shell/extension.js:60
+#: ../libgpaste/applet/gpaste-applet-switch.c:127
 msgid "Track changes"
 msgstr "Pidä kirjaa tapahtumista"
 
@@ -68,8 +48,14 @@ msgstr "Pidä kirjaa tapahtumista"
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(GPaste-palveluun ei saatu yhteyttä)"
 
+#: ../src/applets/gnome-shell/extension.js:217
+#: ../libgpaste/applet/gpaste-applet-empty.c:76
+msgid "Empty history"
+msgstr "Tyhjennä historia"
+
 #: ../src/applets/gnome-shell/extension.js:246
 #: ../data/desktop/gpaste-settings.desktop.in.in.h:1
+#: ../libgpaste/applet/gpaste-applet-settings.c:57
 msgid "GPaste daemon settings"
 msgstr "GPaste palvelun asetukset"
 
@@ -559,3 +545,7 @@ msgstr "Vaihda kohteeseen"
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:483
 msgid "Delete"
 msgstr "Poista"
+
+#: ../libgpaste/applet/gpaste-applet-quit.c:67
+msgid "Quit"
+msgstr "Lopeta"
