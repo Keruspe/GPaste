@@ -99,6 +99,8 @@ namespace GPaste {
                 label.set_selectable (false);
                 this.history.add (item);
             }
+            this.history.add (new Gtk.SeparatorMenuItem ());
+            this.history.add (new GPaste.AppletSettings ());
             this.needs_repaint = false;
             this.history.show_all ();
         }
