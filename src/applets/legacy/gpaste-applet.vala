@@ -22,6 +22,7 @@ namespace GPaste {
     public class Window : Gtk.Window {
         private Gtk.StatusIcon tray_icon;
         private GPaste.AppletHeader header;
+        private GPaste.AppletFooter footer;
         private Gtk.Menu history;
         private bool needs_repaint;
 
@@ -32,6 +33,7 @@ namespace GPaste {
             this.tray_icon.set_tooltip_text ("GPaste");
             this.tray_icon.set_visible (true);
             this.header = new GPaste.AppletHeader (app.client);
+            this.footer = new GPaste.AppletFooter (app.client, app);
             this.fill_history ();
             app.client.changed.connect (() => {
                 this.needs_repaint = true;
@@ -88,16 +90,14 @@ namespace GPaste {
                 label.set_selectable (false);
                 this.history.add (item);
             }
-            this.history.add (new Gtk.SeparatorMenuItem ());
-            this.history.add (new GPaste.AppletEmpty (app.client));
-            this.history.add (new GPaste.AppletSettings ());
-            this.history.add (new GPaste.AppletQuit (this.application));
             this.needs_repaint = false;
+            this.footer.add_to_menu (this.history);
             this.history.show_all ();
         }
 
         public void repaint () {
             this.header.remove_from_menu (this.history);
+            this.footer.remove_from_menu (this.history);
             this.fill_history ();
         }
 
