@@ -21,6 +21,7 @@ namespace GPaste {
 
     public class Window : Gtk.Window {
         private Gtk.StatusIcon tray_icon;
+        private GPaste.AppletHeader header;
         private Gtk.Menu history;
         private bool needs_repaint;
 
@@ -30,6 +31,7 @@ namespace GPaste {
             this.tray_icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
             this.tray_icon.set_tooltip_text ("GPaste");
             this.tray_icon.set_visible (true);
+            this.header = new GPaste.AppletHeader (app.client);
             this.fill_history ();
             app.client.changed.connect (() => {
                 this.needs_repaint = true;
@@ -43,8 +45,7 @@ namespace GPaste {
         public void fill_history () {
             var app = (Main) this.application;
             this.history = new Gtk.Menu ();
-            this.history.add (new GPaste.AppletSwitch (app.client));
-            this.history.add (new Gtk.SeparatorMenuItem ());
+            this.header.add_to_menu (this.history);
             bool history_is_empty;
             try {
                 var hist = app.client.get_history_sync ();
@@ -95,9 +96,14 @@ namespace GPaste {
             this.history.show_all ();
         }
 
+        public void repaint () {
+            this.header.remove_from_menu (this.history);
+            this.fill_history ();
+        }
+
         public void show_history () {
             if (this.needs_repaint)
-                this.fill_history ();
+                this.repaint ();
             this.history.popup (null, null, this.tray_icon.position_menu, 1, Gtk.get_current_event ().get_time ());
         }
     }
