@@ -10,6 +10,7 @@ Some libraries are available for development purpose:
 * `libgpaste-daemon` allows you to write your own GPaste daemon
 * `libgpaste-client` helps you integrate GPaste in your application
 * `libgpaste-gnome-shell-client` helps you integrate the gnome-shell dbus api in your application
+* `libgpaste-applet` allows you to write your own GPaste applet
 
 A default daemon named `gpasted` is provided, with four keybindings:
 
