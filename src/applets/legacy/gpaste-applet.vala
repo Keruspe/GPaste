@@ -52,36 +52,8 @@ namespace GPaste {
             try {
                 var hist = app.client.get_history_sync ();
                 history_is_empty = (hist.length == 0);
-                uint element_size = app.element_size;
                 for (uint i = 0 ; i < hist.length ; ++i) {
-                    uint current = i; // local, or weird closure behaviour
-                    string elem = hist[i];
-                    var item = new Gtk.MenuItem.with_label (elem);
-                    var label = (Gtk.Label) item.get_child ();
-                    if (element_size != 0) {
-                        label.set_label (label.get_text ().replace ("\n", " "));
-                        label.max_width_chars = (int) element_size;
-                        label.ellipsize = Pango.EllipsizeMode.END;
-                    }
-                    if (i == 0)
-                        label.set_markup ("<b>" + GLib.Markup.escape_text (label.get_text ()) + "</b>");
-                    item.button_release_event.connect ((event) => {
-                        try {
-                            switch (event.button) {
-                            case Gdk.BUTTON_PRIMARY:
-                                app.client.select_sync (current);
-                                return false;
-                            case Gdk.BUTTON_SECONDARY:
-                                app.client.delete_sync (current);
-                                this.show_history ();
-                                return true;
-                            }
-                        } catch (Error e) {
-                            stderr.printf (_("Couldn't update history.\n"));
-                        }
-                        return false;
-                    });
-                    this.history.add (item);
+                    this.history.add (new GPaste.AppletItem (app.client, i));
                 }
             } catch (GLib.Error e) {}
             if (history_is_empty) {
