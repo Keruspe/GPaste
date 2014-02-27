@@ -26,6 +26,7 @@ libgpaste_applet_libgpaste_applet_la_private_headers = \
 	libgpaste/applet/gpaste-applet-empty-private.h \
 	libgpaste/applet/gpaste-applet-footer-private.h \
 	libgpaste/applet/gpaste-applet-header-private.h \
+	libgpaste/applet/gpaste-applet-item-private.h \
 	libgpaste/applet/gpaste-applet-quit-private.h \
 	libgpaste/applet/gpaste-applet-settings-private.h \
 	libgpaste/applet/gpaste-applet-switch-private.h \
@@ -36,6 +37,7 @@ libgpaste_applet_libgpaste_applet_la_public_headers = \
 	libgpaste/applet/gpaste-applet-empty.h \
 	libgpaste/applet/gpaste-applet-footer.h \
 	libgpaste/applet/gpaste-applet-header.h \
+	libgpaste/applet/gpaste-applet-item.h \
 	libgpaste/applet/gpaste-applet-quit.h \
 	libgpaste/applet/gpaste-applet-settings.h \
 	libgpaste/applet/gpaste-applet-switch.h \
@@ -48,6 +50,7 @@ libgpaste_applet_libgpaste_applet_la_SOURCES = \
 	libgpaste/applet/gpaste-applet-empty.c \
 	libgpaste/applet/gpaste-applet-footer.c \
 	libgpaste/applet/gpaste-applet-header.c \
+	libgpaste/applet/gpaste-applet-item.c \
 	libgpaste/applet/gpaste-applet-quit.c \
 	libgpaste/applet/gpaste-applet-settings.c \
 	libgpaste/applet/gpaste-applet-switch.c \
