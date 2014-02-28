@@ -1,6 +1,7 @@
 3.10:
     applet:
         unity support
+        use async calls
     gpaste-settings:
         reset
         enable/disable extension
