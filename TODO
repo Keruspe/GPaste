@@ -2,6 +2,7 @@
     applet:
         unity support
         use async calls
+        menu: override container_add & memnushell_append & prepend
     gpaste-settings:
         reset
         enable/disable extension
