@@ -21,10 +21,7 @@ namespace GPaste {
 
     public class Window : Gtk.Window {
         private Gtk.StatusIcon tray_icon;
-        private GPaste.AppletHeader header;
-        private GPaste.AppletFooter footer;
-        private Gtk.Menu history;
-        private bool needs_repaint;
+        private GPaste.AppletMenu history;
 
         public Window(Main app) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
@@ -32,12 +29,7 @@ namespace GPaste {
             this.tray_icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
             this.tray_icon.set_tooltip_text ("GPaste");
             this.tray_icon.set_visible (true);
-            this.header = new GPaste.AppletHeader (app.client);
-            this.footer = new GPaste.AppletFooter (app.client, app);
             this.fill_history ();
-            app.client.changed.connect (() => {
-                this.needs_repaint = true;
-            });
             this.tray_icon.button_press_event.connect (() => {
                 this.show_history ();
                 return false;
@@ -46,36 +38,18 @@ namespace GPaste {
 
         public void fill_history () {
             var app = (Main) this.application;
-            this.history = new Gtk.Menu ();
-            this.header.add_to_menu (this.history);
-            bool history_is_empty;
+            this.history = new GPaste.AppletMenu (app.client, app);
             try {
                 var hist = app.client.get_history_sync ();
-                history_is_empty = (hist.length == 0);
                 for (uint i = 0 ; i < hist.length ; ++i) {
-                    this.history.add (new GPaste.AppletItem (app.client, i));
+                    this.history.append (new GPaste.AppletItem (app.client, i));
                 }
             } catch (GLib.Error e) {}
-            if (history_is_empty) {
-                var item = new Gtk.MenuItem.with_label (_("(Empty)"));
-                var label = (Gtk.Label) item.get_child ();
-                label.set_selectable (false);
-                this.history.add (item);
-            }
-            this.needs_repaint = false;
-            this.footer.add_to_menu (this.history);
             this.history.show_all ();
         }
 
-        public void repaint () {
-            this.header.remove_from_menu (this.history);
-            this.footer.remove_from_menu (this.history);
-            this.fill_history ();
-        }
-
         public void show_history () {
-            if (this.needs_repaint)
-                this.repaint ();
+            this.fill_history ();
             this.history.popup (null, null, this.tray_icon.position_menu, 1, Gtk.get_current_event ().get_time ());
         }
     }
