@@ -20,87 +20,54 @@
 namespace GPaste {
 
     public class Window : Gtk.Window {
-        private Gtk.StatusIcon tray_icon;
         private GPaste.AppletMenu history;
+        private GPaste.Client client;
+        private Gtk.MenuPositionFunc? position;
 
-        public Window(Main app) {
+        public Window(Gtk.Application app, Gtk.StatusIcon icon, Gtk.MenuPositionFunc? position) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
             this.application = app;
-            this.tray_icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
-            this.tray_icon.set_tooltip_text ("GPaste");
-            this.tray_icon.set_visible (true);
-            this.fill_history ();
-            this.tray_icon.button_press_event.connect (() => {
+            this.position = position;
+            icon.button_press_event.connect (() => {
                 this.show_history ();
                 return false;
             });
-        }
-
-        public void fill_history () {
-            var app = (Main) this.application;
-            this.history = new GPaste.AppletMenu (app.client, app);
-            try {
-                var hist = app.client.get_history_sync ();
-                for (uint i = 0 ; i < hist.length ; ++i) {
-                    this.history.append (new GPaste.AppletItem (app.client, i));
-                }
-            } catch (GLib.Error e) {}
-            this.history.show_all ();
-        }
-
-        public void show_history () {
-            this.fill_history ();
-            this.history.popup (null, null, this.tray_icon.position_menu, 1, Gtk.get_current_event ().get_time ());
-        }
-    }
-
-    public class Main : Gtk.Application {
-        private Window window;
-        private GPaste.Settings settings;
-
-        public uint element_size {
-            get;
-            private set;
-        }
-
-        public Client client {
-            get;
-            private set;
-        }
-
-        public Main() {
-            GLib.Object (application_id: "org.gnome.GPaste.Applet");
-            this.settings = new GPaste.Settings ();
             try {
                 this.client = new GPaste.Client.sync ();
-            } catch (Error e) {
-                stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
-                Posix.exit(1);
-            }
-            this.element_size = this.settings.get_element_size ();
-            this.activate.connect (init);
-            this.settings.changed.connect ((key) => {
-                switch (key) {
-                case "element-size":
-                    this.element_size = this.settings.get_element_size ();
-                    this.window.fill_history (); /* Keep displayed history up to date */
-                    break;
-                }
-            });
-        }
-
-        private void init () {
-            try {
                 this.client.track_sync (true); /* In case we exited the applet and we're launching it back */
                 this.client.show_history.connect (() => {
-                    this.window.show_history ();
+                    this.show_history ();
                 });
             } catch (Error e) {
                 stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
                 Posix.exit(1);
             }
-            this.window = new Window (this);
-            this.window.hide ();
+        }
+
+        private void show_history () {
+            this.history = new GPaste.AppletMenu (this.client, this.application);
+            try {
+                var hist = this.client.get_history_sync ();
+                for (uint i = 0 ; i < hist.length ; ++i) {
+                    this.history.append (new GPaste.AppletItem (this.client, i));
+                }
+            } catch (GLib.Error e) {}
+            this.history.show_all ();
+            this.history.popup (null, null, this.position, 1, Gtk.get_current_event ().get_time ());
+        }
+    }
+
+    public class Main : Gtk.Application {
+        public Main() {
+            GLib.Object (application_id: "org.gnome.GPaste.Applet");
+            this.activate.connect (init);
+        }
+
+        private void init () {
+            var tray_icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
+            tray_icon.set_tooltip_text ("GPaste");
+            tray_icon.set_visible (true);
+            new Window (this, tray_icon, tray_icon.position_menu).hide ();
         }
 
         public static int main (string[] args) {
