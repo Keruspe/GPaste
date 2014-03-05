@@ -3,6 +3,7 @@
         unity support
         use async calls
         menu: override container_add & memnushell_append & prepend
+        honour user settings
     gpaste-settings:
         reset
         enable/disable extension
