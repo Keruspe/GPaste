@@ -201,7 +201,7 @@ main (gint argc, gchar *argv[])
                 g_spawn_command_line_async (PKGLIBEXECDIR "/gpaste-applet", &error);
                 if (error)
                 {
-                    g_error ("%s: %s", _("Couldn't spawn gpaste-applet.\n"), error->message);
+                    g_critical ("%s: %s", _("Couldn't spawn gpaste-applet.\n"), error->message);
                     g_clear_error (&error);
                     status = EXIT_FAILURE;
                 }

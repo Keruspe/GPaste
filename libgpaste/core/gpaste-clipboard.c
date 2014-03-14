@@ -474,7 +474,7 @@ g_paste_clipboard_new (GdkAtom         target,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     if (!gdk_display_request_selection_notification (gdk_display_get_default (), target))
-        g_error ("Clipboard notifications not supported, GPaste won't work (XFixes not found).");
+        g_critical ("Clipboard notifications not supported, GPaste won't work (XFixes not found).");
 
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);

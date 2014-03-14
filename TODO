@@ -8,8 +8,6 @@
     gpaste-settings:
         reset
         enable/disable extension
-    all:
-        remove g_error calls
 
 3.12:
     general:
