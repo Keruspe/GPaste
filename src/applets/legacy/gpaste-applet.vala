@@ -20,7 +20,8 @@
 namespace GPaste {
 
     public class Window : Gtk.Window {
-        private GPaste.AppletMenu history;
+        private GPaste.AppletMenu menu;
+        private GPaste.AppletHistory history;
         private GPaste.Client client;
         private Gtk.MenuPositionFunc? position;
 
@@ -35,25 +36,20 @@ namespace GPaste {
             try {
                 this.client = new GPaste.Client.sync ();
                 this.client.track_sync (true); /* In case we exited the applet and we're launching it back */
-                this.client.show_history.connect (() => {
-                    this.show_history ();
-                });
             } catch (Error e) {
                 stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
                 Posix.exit(1);
             }
+            this.client.show_history.connect (() => {
+                this.show_history ();
+            });
+            this.menu = new GPaste.AppletMenu (this.client, this.application);
+            this.history = new GPaste.AppletHistory.sync (this.client, this.menu);
         }
 
-        private void show_history () {
-            this.history = new GPaste.AppletMenu (this.client, this.application);
-            try {
-                var hist = this.client.get_history_sync ();
-                for (uint i = 0 ; i < hist.length ; ++i) {
-                    this.history.append (new GPaste.AppletItem (this.client, i));
-                }
-            } catch (GLib.Error e) {}
-            this.history.show_all ();
-            this.history.popup (null, null, this.position, 1, Gtk.get_current_event ().get_time ());
+        public void show_history () {
+            this.menu.show_all ();
+            this.menu.popup (null, null, this.position, 1, Gtk.get_current_event ().get_time ());
         }
     }
 
@@ -66,8 +62,8 @@ namespace GPaste {
         private void init () {
             var tray_icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
             tray_icon.set_tooltip_text ("GPaste");
-            tray_icon.set_visible (true);
             new Window (this, tray_icon, tray_icon.position_menu).hide ();
+            tray_icon.set_visible (true);
         }
 
         public static int main (string[] args) {
