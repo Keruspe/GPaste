@@ -54,16 +54,18 @@ namespace GPaste {
     }
 
     public class Main : Gtk.Application {
+        private Gtk.StatusIcon icon;
+
         public Main() {
             GLib.Object (application_id: "org.gnome.GPaste.Applet");
+            this.icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
+            this.icon.set_tooltip_text ("GPaste");
+            this.icon.set_visible (true);
             this.activate.connect (init);
         }
 
         private void init () {
-            var tray_icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
-            tray_icon.set_tooltip_text ("GPaste");
-            new Window (this, tray_icon, tray_icon.position_menu).hide ();
-            tray_icon.set_visible (true);
+            new Window (this, this.icon, this.icon.position_menu).hide ();
         }
 
         public static int main (string[] args) {
