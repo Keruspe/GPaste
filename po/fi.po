@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-02-26 12:32+0900\n"
+"POT-Creation-Date: 2014-03-14 21:38+0900\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -17,27 +17,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: ../src/gpaste-settings/gpaste-settings.c:87
+#: ../src/applets/legacy/gpaste-applet.c:90
 msgid "Failed to register the gtk application"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
-
-#: ../src/applets/legacy/gpaste-applet.vala:77
-msgid "Couldn't update history.\n"
-msgstr "Historian päivittäminen epäonnistui.\n"
-
-#: ../src/applets/legacy/gpaste-applet.vala:85
-#: ../src/applets/gnome-shell/extension.js:152
-msgid "(Empty)"
-msgstr "(Tyhjä)"
-
-#: ../src/applets/legacy/gpaste-applet.vala:125
-#: ../src/applets/legacy/gpaste-applet.vala:147 ../src/gpaste/gpaste.c:127
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:253
-msgid "Couldn't connect to GPaste daemon"
-msgstr "GPaste-palveluun ei saatu yhteyttä"
-
-#: ../src/applets/legacy/gpaste-applet.vala:164
-msgid "Fail to register the gtk application.\n"
-msgstr "Gtk-ohjelman rekisteröiminen epäonnistui.\n"
 
 #: ../src/applets/gnome-shell/extension.js:60
 #: ../libgpaste/applet/gpaste-applet-switch.c:127
@@ -48,8 +30,12 @@ msgstr "Pidä kirjaa tapahtumista"
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(GPaste-palveluun ei saatu yhteyttä)"
 
+#: ../src/applets/gnome-shell/extension.js:152
+msgid "(Empty)"
+msgstr "(Tyhjä)"
+
 #: ../src/applets/gnome-shell/extension.js:217
-#: ../libgpaste/applet/gpaste-applet-empty.c:76
+#: ../libgpaste/applet/gpaste-applet-empty.c:78
 msgid "Empty history"
 msgstr "Tyhjennä historia"
 
@@ -195,6 +181,11 @@ msgstr "tulostaa ohjelman version"
 #: ../src/gpaste/gpaste.c:77
 msgid "display this help"
 msgstr "tulostaa tämän ohjeen"
+
+#: ../src/gpaste/gpaste.c:127
+#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:253
+msgid "Couldn't connect to GPaste daemon"
+msgstr "GPaste-palveluun ei saatu yhteyttä"
 
 #: ../src/gpaste/gpaste.c:204
 msgid "Couldn't spawn gpaste-applet.\n"
