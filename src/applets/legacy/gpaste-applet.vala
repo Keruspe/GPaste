@@ -22,17 +22,12 @@ namespace GPaste {
     public class Window : Gtk.Window {
         private GPaste.AppletMenu menu;
         private GPaste.AppletHistory history;
+        private GPaste.AppletStatusIcon status_icon;
         private GPaste.Client client;
-        private Gtk.MenuPositionFunc? position;
 
-        public Window(Gtk.Application app, Gtk.StatusIcon icon, Gtk.MenuPositionFunc? position) {
+        public Window(Gtk.Application app) {
             GLib.Object (type: Gtk.WindowType.TOPLEVEL);
             this.application = app;
-            this.position = position;
-            icon.button_press_event.connect (() => {
-                this.show_history ();
-                return false;
-            });
             try {
                 this.client = new GPaste.Client.sync ();
                 this.client.track_sync (true); /* In case we exited the applet and we're launching it back */
@@ -40,32 +35,20 @@ namespace GPaste {
                 stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
                 Posix.exit(1);
             }
-            this.client.show_history.connect (() => {
-                this.show_history ();
-            });
             this.menu = new GPaste.AppletMenu (this.client, this.application);
             this.history = new GPaste.AppletHistory.sync (this.client, this.menu);
-        }
-
-        public void show_history () {
-            this.menu.show_all ();
-            this.menu.popup (null, null, this.position, 1, Gtk.get_current_event ().get_time ());
+            this.status_icon = new GPaste.AppletStatusIcon (this.client, this.menu);
         }
     }
 
     public class Main : Gtk.Application {
-        private Gtk.StatusIcon icon;
-
         public Main() {
             GLib.Object (application_id: "org.gnome.GPaste.Applet");
-            this.icon = new Gtk.StatusIcon.from_icon_name ("edit-paste");
-            this.icon.set_tooltip_text ("GPaste");
-            this.icon.set_visible (true);
             this.activate.connect (init);
         }
 
         private void init () {
-            new Window (this, this.icon, this.icon.position_menu).hide ();
+            new Window (this).hide ();
         }
 
         public static int main (string[] args) {
