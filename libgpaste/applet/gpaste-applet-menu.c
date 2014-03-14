@@ -29,38 +29,14 @@ struct _GPasteAppletMenuPrivate
 
     gboolean            header_added;
     gboolean            footer_added;
+    gboolean            empty_added;
+
     gsize               size;
 
     gboolean            wip;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletMenu, g_paste_applet_menu, GTK_TYPE_MENU)
-
-static void
-g_paste_applet_menu_ensure_contents (GPasteAppletMenu *self)
-{
-    GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
-
-    if (priv->wip)
-        return;
-
-    GtkMenu *menu = GTK_MENU (self);
-
-    if (!priv->header_added)
-    {
-        g_paste_applet_header_add_to_menu (priv->header, menu);
-        priv->header_added = TRUE;
-    }
-
-    if (!priv->size)
-        gtk_menu_shell_append (GTK_MENU_SHELL (menu), g_object_ref (priv->empty));
-
-    if (!priv->footer_added)
-    {
-        g_paste_applet_footer_add_to_menu (priv->footer, menu);
-        priv->footer_added = TRUE;
-    }
-}
 
 static void
 g_paste_applet_menu_pop_header (GPasteAppletMenu *self)
@@ -87,12 +63,46 @@ g_paste_applet_menu_pop_footer (GPasteAppletMenu *self)
 }
 
 static void
-g_paste_applet_menu_pop_empty (GPasteAppletMenu *self)
+g_paste_applet_menu_ensure_contents (GPasteAppletMenu *self)
 {
     GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
 
-    if (++priv->size == 1)
+    if (priv->wip)
+        return;
+
+    GtkMenu *menu = GTK_MENU (self);
+
+    if (!priv->header_added)
+    {
+        g_paste_applet_header_add_to_menu (priv->header, menu);
+        priv->header_added = TRUE;
+    }
+
+    if (!priv->size && !priv->empty_added)
+    {
+        if (priv->footer_added)
+            g_paste_applet_menu_pop_footer (self);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), g_object_ref (priv->empty));
+        priv->empty_added = TRUE;
+    }
+
+    if (!priv->footer_added)
+    {
+        g_paste_applet_footer_add_to_menu (priv->footer, menu);
+        priv->footer_added = TRUE;
+    }
+}
+
+static void
+g_paste_applet_menu_inc_size (GPasteAppletMenu *self)
+{
+    GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
+
+    if (++priv->size == 1 && priv->empty_added)
+    {
         gtk_container_remove (GTK_CONTAINER (self), priv->empty);
+        priv->empty_added = FALSE;
+    }
 }
 
 /**
@@ -112,7 +122,7 @@ g_paste_applet_menu_append (GPasteAppletMenu *self,
     g_return_if_fail (G_PASTE_IS_APPLET_ITEM (item));
 
     g_paste_applet_menu_pop_footer (self);
-    g_paste_applet_menu_pop_empty (self);
+    g_paste_applet_menu_inc_size (self);
     gtk_menu_shell_append (GTK_MENU_SHELL (self), GTK_WIDGET (item));
     g_paste_applet_menu_ensure_contents (self);
 }
@@ -134,7 +144,7 @@ g_paste_applet_menu_prepend (GPasteAppletMenu *self,
     g_return_if_fail (G_PASTE_IS_APPLET_ITEM (item));
 
     g_paste_applet_menu_pop_header (self);
-    g_paste_applet_menu_pop_empty (self);
+    g_paste_applet_menu_inc_size (self);
     gtk_menu_shell_prepend (GTK_MENU_SHELL (self), GTK_WIDGET (item));
     g_paste_applet_menu_ensure_contents (self);
 }
@@ -229,6 +239,22 @@ g_paste_applet_menu_set_active (GPasteAppletMenu *self,
 }
 
 static void
+g_paste_applet_menu_remove (GtkContainer     *container,
+                            GtkWidget        *widget)
+{
+    GPasteAppletMenu *self = (GPasteAppletMenu *) container;
+    GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
+
+    GTK_CONTAINER_CLASS (g_paste_applet_menu_parent_class)->remove (container, widget);
+
+    if (G_PASTE_IS_APPLET_ITEM (widget))
+    {
+        --priv->size;
+        g_paste_applet_menu_ensure_contents (self);
+    }
+}
+
+static void
 g_paste_applet_menu_dispose (GObject *object)
 {
     GPasteAppletMenu *self = (GPasteAppletMenu *) object;
@@ -247,6 +273,7 @@ static void
 g_paste_applet_menu_class_init (GPasteAppletMenuClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_menu_dispose;
+    GTK_CONTAINER_CLASS (klass)->remove = g_paste_applet_menu_remove;
 }
 
 static void
@@ -259,6 +286,8 @@ g_paste_applet_menu_init (GPasteAppletMenu *self)
 
     priv->header_added = FALSE;
     priv->footer_added = FALSE;
+    priv->empty_added = FALSE;
+
     priv->size = 0;
 
     priv->wip = FALSE;

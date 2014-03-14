@@ -75,7 +75,7 @@ static gboolean
 g_paste_applet_delete_show_window (gpointer win)
 {
     gdk_window_show ((GdkWindow *) win);
-    return TRUE;
+    return FALSE;
 }
 
 static void
