@@ -19,36 +19,17 @@
 
 namespace GPaste {
 
-    public class Window : Gtk.Window {
-        private GPaste.AppletMenu menu;
-        private GPaste.AppletHistory history;
-        private GPaste.AppletStatusIcon status_icon;
-        private GPaste.Client client;
-
-        public Window(Gtk.Application app) {
-            GLib.Object (type: Gtk.WindowType.TOPLEVEL);
-            this.application = app;
-            try {
-                this.client = new GPaste.Client.sync ();
-                this.client.track_sync (true); /* In case we exited the applet and we're launching it back */
-            } catch (Error e) {
-                stderr.printf ("%s: %s\n", _("Couldn't connect to GPaste daemon"), e.message);
-                Posix.exit(1);
-            }
-            this.menu = new GPaste.AppletMenu (this.client, this.application);
-            this.history = new GPaste.AppletHistory.sync (this.client, this.menu);
-            this.status_icon = new GPaste.AppletStatusIcon (this.client, this.menu);
-        }
-    }
-
     public class Main : Gtk.Application {
+        private GPaste.Applet applet;
+
         public Main() {
             GLib.Object (application_id: "org.gnome.GPaste.Applet");
+            this.applet = new GPaste.Applet.status_icon (this);
             this.activate.connect (init);
         }
 
         private void init () {
-            new Window (this).hide ();
+            new Gtk.ApplicationWindow (this).hide ();
         }
 
         public static int main (string[] args) {
