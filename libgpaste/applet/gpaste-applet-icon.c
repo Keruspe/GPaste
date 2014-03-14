@@ -49,6 +49,8 @@ g_paste_applet_icon_dispose (GObject *object)
         g_signal_handler_disconnect (priv->client, priv->show_id);
         g_clear_object (&priv->client);
     }
+
+    G_OBJECT_CLASS (g_paste_applet_icon_parent_class)->dispose (object);
 }
 
 static void

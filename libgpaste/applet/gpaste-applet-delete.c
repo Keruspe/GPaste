@@ -127,6 +127,8 @@ g_paste_applet_delete_dispose (GObject *object)
     GPasteAppletDeletePrivate *priv = g_paste_applet_delete_get_instance_private ((GPasteAppletDelete *) object);
 
     g_clear_object (&priv->client);
+
+    G_OBJECT_CLASS (g_paste_applet_delete_parent_class)->dispose (object);
 }
 
 static void

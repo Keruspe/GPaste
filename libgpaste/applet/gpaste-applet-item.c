@@ -86,6 +86,8 @@ g_paste_applet_item_dispose (GObject *object)
         priv->changed_id = 0;
     }
     g_clear_object (&priv->client);
+
+    G_OBJECT_CLASS (g_paste_applet_item_parent_class)->dispose (object);
 }
 
 static void

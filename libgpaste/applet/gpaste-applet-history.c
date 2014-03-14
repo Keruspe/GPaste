@@ -139,6 +139,8 @@ g_paste_applet_history_dispose (GObject *object)
     }
 
     g_clear_object (&priv->menu);
+
+    G_OBJECT_CLASS (g_paste_applet_history_parent_class)->dispose (object);
 }
 
 static void

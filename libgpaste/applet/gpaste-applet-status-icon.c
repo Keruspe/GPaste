@@ -58,6 +58,8 @@ g_paste_applet_status_icon_dispose (GObject *object)
         g_clear_object (&priv->icon);
     }
     g_clear_object (&priv->menu);
+
+    G_OBJECT_CLASS (g_paste_applet_status_icon_parent_class)->dispose (object);
 }
 
 static void

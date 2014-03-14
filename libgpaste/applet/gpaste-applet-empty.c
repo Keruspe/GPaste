@@ -44,6 +44,8 @@ g_paste_applet_empty_dispose (GObject *object)
     GPasteAppletEmptyPrivate *priv = g_paste_applet_empty_get_instance_private ((GPasteAppletEmpty *) object);
 
     g_clear_object (&priv->client);
+
+    G_OBJECT_CLASS (g_paste_applet_empty_parent_class)->dispose (object);
 }
 
 static void
