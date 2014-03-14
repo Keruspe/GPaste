@@ -44,7 +44,7 @@ void     g_paste_applet_set_active (GPasteApplet *self,
                                     gboolean      active,
                                     GError      **error);
 
-GPasteApplet *g_paste_applet_new_status_icon (GApplication *application);
+GPasteApplet *g_paste_applet_new_status_icon (GtkApplication *application);
 
 G_END_DECLS
 

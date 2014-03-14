@@ -58,15 +58,6 @@ AM_CFLAGS = \
 	$(GTK_CFLAGS) \
 	$(NULL)
 
-VALA_CFLAGS = \
-	--include config.h \
-	-Wno-unused-parameter \
-	-Wno-unused-variable \
-	-Wno-missing-field-initializers \
-	-Wno-unused-but-set-variable \
-	$(AM_CFLAGS) \
-	$(NULL)
-
 AM_LIBS = \
 	$(GLIB_LIBS) \
 	$(NULL)

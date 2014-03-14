@@ -96,20 +96,22 @@ g_paste_applet_init (GPasteApplet *self)
 }
 
 static GPasteApplet *
-g_paste_applet_new (GApplication *application)
+g_paste_applet_new (GtkApplication *application)
 {
     GPasteApplet *self = g_object_new (G_PASTE_TYPE_APPLET, NULL);
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
-    priv->menu = g_paste_applet_menu_new (priv->client, application);
+    priv->menu = g_paste_applet_menu_new (priv->client, G_APPLICATION (application));
     priv->history = g_paste_applet_history_new_sync (priv->client, priv->menu);
+
+    gtk_widget_hide (gtk_application_window_new (application));
 
     return self;
 }
 
 /**
  * g_paste_applet_new_status_icon:
- * @application: the #GApplication running
+ * @application: the #GtkApplication running
  *
  * Create a new instance of #GPasteApplet
  *
@@ -117,7 +119,7 @@ g_paste_applet_new (GApplication *application)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteApplet *
-g_paste_applet_new_status_icon (GApplication *application)
+g_paste_applet_new_status_icon (GtkApplication *application)
 {
     g_return_val_if_fail (G_IS_APPLICATION (application), NULL);
 

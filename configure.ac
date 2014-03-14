@@ -195,9 +195,6 @@ AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
 if test x$enable_applet = xyes; then
-    if test x$enable_vala != xyes; then
-        AC_MSG_ERROR([*** Vala support is required to build the applet])
-    fi
     AC_DEFINE([ENABLE_APPLET], [1], [Whether the applet is built])
 fi
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
