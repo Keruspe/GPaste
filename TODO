@@ -4,6 +4,7 @@
         use async calls
         menu: override container_add & memnushell_append & prepend
         honour user settings
+        don't close on delete
     gpaste-settings:
         reset
         enable/disable extension
