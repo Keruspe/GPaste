@@ -21,21 +21,28 @@
 #define __G_PASTE_APPLET_ICON_PRIVATE_H__
 
 #include <gpaste-applet-icon.h>
+#include <gpaste-client.h>
 
 G_BEGIN_DECLS
+
+typedef struct _GPasteAppletIconPrivate GPasteAppletIconPrivate;
 
 /*< abstract >*/
 struct _GPasteAppletIcon
 {
-    GObject  parent_instance;
+    GObject parent_instance;
 };
 
 struct _GPasteAppletIconClass
 {
     GObjectClass parent_class;
+
+    /*< pure virtual >*/
+    void        (*show_history) (GPasteAppletIcon *self);
 };
 
-GPasteAppletIcon *g_paste_applet_icon_new (GType    type);
+GPasteAppletIcon *g_paste_applet_icon_new (GType         type,
+                                           GPasteClient *client);
 
 G_END_DECLS
 

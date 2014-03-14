@@ -21,12 +21,9 @@
 
 struct _GPasteAppletStatusIconPrivate
 {
-    GPasteClient  *client;
-
     GtkStatusIcon *icon;
     GtkMenu       *menu;
 
-    gulong         show_id;
     gulong         press_id;
 };
 
@@ -44,10 +41,9 @@ g_paste_applet_status_icon_popup (GtkStatusIcon *status_icon,
 }
 
 static void
-g_paste_applet_status_icon_show_history (GPasteClient *client G_GNUC_UNUSED,
-                                         gpointer      user_data)
+g_paste_applet_status_icon_show_history (GPasteAppletIcon *self)
 {
-    GPasteAppletStatusIconPrivate *priv = user_data;
+    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private (G_PASTE_APPLET_STATUS_ICON (self));;
     g_paste_applet_status_icon_popup (priv->icon, gtk_get_current_event (), priv);
 }
 
@@ -56,11 +52,6 @@ g_paste_applet_status_icon_dispose (GObject *object)
 {
     GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private ((GPasteAppletStatusIcon *) object);
 
-    if (priv->client)
-    {
-        g_signal_handler_disconnect (priv->client, priv->show_id);
-        g_clear_object (&priv->client);
-    }
     if (priv->icon)
     {
         g_signal_handler_disconnect (priv->icon, priv->press_id);
@@ -73,6 +64,7 @@ static void
 g_paste_applet_status_icon_class_init (GPasteAppletStatusIconClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_status_icon_dispose;
+    G_PASTE_APPLET_ICON_CLASS (klass)->show_history = g_paste_applet_status_icon_show_history;
 }
 
 static void
@@ -107,16 +99,10 @@ g_paste_applet_status_icon_new (GPasteClient *client,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_MENU (menu), NULL);
 
-    GPasteAppletStatusIcon *self = g_object_new (G_PASTE_TYPE_APPLET_STATUS_ICON, NULL);
-    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private (self);
+    GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_STATUS_ICON, client);
+    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private ((GPasteAppletStatusIcon *) self);
 
-    priv->client = g_object_ref (client);
     priv->menu = g_object_ref (menu);
 
-    priv->show_id = g_signal_connect (G_OBJECT (client),
-                                      "show-history",
-                                      G_CALLBACK (g_paste_applet_status_icon_show_history),
-                                      priv);
-
-    return G_PASTE_APPLET_ICON (self);
+    return self;
 }
