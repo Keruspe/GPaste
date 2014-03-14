@@ -39,35 +39,6 @@ struct _GPasteAppletMenuPrivate
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletMenu, g_paste_applet_menu, GTK_TYPE_MENU)
 
 static void
-g_paste_applet_menu_ensure_contents (GPasteAppletMenu *self)
-{
-    GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
-
-    if (priv->wip)
-        return;
-
-    GtkMenu *menu = GTK_MENU (self);
-
-    if (!priv->header_added)
-    {
-        g_paste_applet_header_add_to_menu (priv->header, menu);
-        priv->header_added = TRUE;
-    }
-
-    if (!priv->size && !priv->empty_added)
-    {
-        gtk_menu_shell_append (GTK_MENU_SHELL (menu), g_object_ref (priv->empty));
-        priv->empty_added = TRUE;
-    }
-
-    if (!priv->footer_added)
-    {
-        g_paste_applet_footer_add_to_menu (priv->footer, menu);
-        priv->footer_added = TRUE;
-    }
-}
-
-static void
 g_paste_applet_menu_pop_header (GPasteAppletMenu *self)
 {
     GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
@@ -88,6 +59,37 @@ g_paste_applet_menu_pop_footer (GPasteAppletMenu *self)
     {
         g_paste_applet_footer_remove_from_menu (priv->footer, GTK_MENU (self));
         priv->footer_added = FALSE;
+    }
+}
+
+static void
+g_paste_applet_menu_ensure_contents (GPasteAppletMenu *self)
+{
+    GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
+
+    if (priv->wip)
+        return;
+
+    GtkMenu *menu = GTK_MENU (self);
+
+    if (!priv->header_added)
+    {
+        g_paste_applet_header_add_to_menu (priv->header, menu);
+        priv->header_added = TRUE;
+    }
+
+    if (!priv->size && !priv->empty_added)
+    {
+        if (priv->footer_added)
+            g_paste_applet_menu_pop_footer (self);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), g_object_ref (priv->empty));
+        priv->empty_added = TRUE;
+    }
+
+    if (!priv->footer_added)
+    {
+        g_paste_applet_footer_add_to_menu (priv->footer, menu);
+        priv->footer_added = TRUE;
     }
 }
 
