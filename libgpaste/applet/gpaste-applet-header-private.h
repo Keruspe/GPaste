@@ -22,8 +22,6 @@
 
 #include <gpaste-applet-header.h>
 
-#include <gtk/gtk.h>
-
 G_BEGIN_DECLS
 
 typedef struct _GPasteAppletHeaderPrivate GPasteAppletHeaderPrivate;
