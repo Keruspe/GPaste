@@ -17,25 +17,27 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_APPLET_HEADER_PRIVATE_H__
-#define __G_PASTE_APPLET_HEADER_PRIVATE_H__
+#ifndef __G_PASTE_APPLET_DELETE_PRIVATE_H__
+#define __G_PASTE_APPLET_DELETE_PRIVATE_H__
 
-#include <gpaste-applet-header.h>
+#include <gpaste-applet-delete.h>
+
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteAppletHeaderPrivate GPasteAppletHeaderPrivate;
+typedef struct _GPasteAppletDeletePrivate GPasteAppletDeletePrivate;
 
-struct _GPasteAppletHeader
+struct _GPasteAppletDelete
 {
-    GObject parent_instance;
+    GtkButton parent_instance;
 };
 
-struct _GPasteAppletHeaderClass
+struct _GPasteAppletDeleteClass
 {
-    GObjectClass parent_class;
+    GtkButtonClass parent_class;
 };
 
 G_END_DECLS
 
-#endif /*__G_PASTE_APPLET_HEADER_PRIVATE_H__*/
+#endif /*__G_PASTE_APPLET_DELETE_PRIVATE_H__*/

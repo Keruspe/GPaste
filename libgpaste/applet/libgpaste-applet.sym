@@ -1,5 +1,13 @@
 LIBGPASTE_APPLET_1 {
 global:
+    g_paste_applet_get_type;
+    g_paste_applet_get_active;
+    g_paste_applet_set_active;
+    g_paste_applet_new_status_icon;
+
+    g_paste_applet_delete_get_type;
+    g_paste_applet_delete_new;
+
     g_paste_applet_empty_get_type;
     g_paste_applet_empty_new;
 
@@ -15,11 +23,30 @@ global:
     g_paste_applet_header_remove_from_menu;
     g_paste_applet_header_new;
 
+    g_paste_applet_history_get_type;
+    g_paste_applet_history_new;
+    g_paste_applet_history_new_sync;
+
+    g_paste_applet_icon_get_type;
+
+    g_paste_applet_item_get_type;
+    g_paste_applet_item_new;
+
+    g_paste_applet_menu_get_type;
+    g_paste_applet_menu_append;
+    g_paste_applet_menu_prepend;
+    g_paste_applet_menu_append_list;
+    g_paste_applet_menu_prepend_list;
+    g_paste_applet_menu_new;
+
     g_paste_applet_quit_get_type;
     g_paste_applet_quit_new;
 
     g_paste_applet_settings_get_type;
     g_paste_applet_settings_new;
+
+    g_paste_applet_status_icon_get_type;
+    g_paste_applet_status_icon_new;
 
     g_paste_applet_switch_get_type;
     g_paste_applet_switch_get_active;

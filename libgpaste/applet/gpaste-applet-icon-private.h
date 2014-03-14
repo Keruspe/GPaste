@@ -17,25 +17,33 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_APPLET_HEADER_PRIVATE_H__
-#define __G_PASTE_APPLET_HEADER_PRIVATE_H__
+#ifndef __G_PASTE_APPLET_ICON_PRIVATE_H__
+#define __G_PASTE_APPLET_ICON_PRIVATE_H__
 
-#include <gpaste-applet-header.h>
+#include <gpaste-applet-icon.h>
+#include <gpaste-client.h>
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteAppletHeaderPrivate GPasteAppletHeaderPrivate;
+typedef struct _GPasteAppletIconPrivate GPasteAppletIconPrivate;
 
-struct _GPasteAppletHeader
+/*< abstract >*/
+struct _GPasteAppletIcon
 {
     GObject parent_instance;
 };
 
-struct _GPasteAppletHeaderClass
+struct _GPasteAppletIconClass
 {
     GObjectClass parent_class;
+
+    /*< pure virtual >*/
+    void        (*show_history) (GPasteAppletIcon *self);
 };
+
+GPasteAppletIcon *g_paste_applet_icon_new (GType         type,
+                                           GPasteClient *client);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_APPLET_HEADER_PRIVATE_H__*/
+#endif /*__G_PASTE_APPLET_ICON_PRIVATE_H__*/

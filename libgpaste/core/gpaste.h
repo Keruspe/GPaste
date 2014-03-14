@@ -23,8 +23,7 @@
 #define __G_PASTE_H_INSIDE__
 
 #include <gpaste-macros.h>
-#include <gpaste-applet-footer.h>
-#include <gpaste-applet-header.h>
+#include <gpaste-applet.h>
 #include <gpaste-clipboard.h>
 #include <gpaste-clipboards-manager.h>
 #include <gpaste-history.h>

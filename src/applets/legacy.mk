@@ -20,33 +20,18 @@ pkglibexec_PROGRAMS += \
 	bin/gpaste-applet \
 	$(NULL)
 
-nodist_bin_gpaste_applet_SOURCES = \
-	$(libgpaste_vapi_file) \
-	$(NULL)
-
 bin_gpaste_applet_SOURCES = \
-	src/applets/legacy/gpaste-applet.vala \
-	$(NULL)
-
-bin_gpaste_applet_vala.stamp: $(libgpaste_vapi_file)
-
-bin_gpaste_applet_VALAFLAGS = \
-	$(libgpaste_vapi_file) \
-	$(AM_VALAFLAGS) \
+	src/applets/legacy/gpaste-applet.c \
 	$(NULL)
 
 bin_gpaste_applet_CFLAGS = \
-	$(VALA_CFLAGS) \
+	$(AM_CFLAGS) \
 	$(NULL)
 
 bin_gpaste_applet_LDADD = \
-	$(builddir)/$(libgpaste_settings_la_file) \
 	$(builddir)/$(libgpaste_client_la_file) \
 	$(builddir)/$(libgpaste_applet_la_file) \
 	$(GTK_LIBS) \
-	$(NULL)
-
-CLEANFILES += \
-	$(gpaste_applet_SOURCES:.vala=.c) \
+	$(AM_LIBS) \
 	$(NULL)
 endif

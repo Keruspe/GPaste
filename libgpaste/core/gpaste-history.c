@@ -526,7 +526,7 @@ g_paste_history_save (GPasteHistory *self)
                                             &error);
         if (error)
         {
-            g_error ("%s: %s", _("Could not create history dir"), error->message);
+            g_critical ("%s: %s", _("Could not create history dir"), error->message);
             return FALSE;
         }
     }
@@ -652,7 +652,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 else if (!g_strcmp0 (*v, "Uris"))
                     data->type = URIS;
                 else
-                    g_error ("Unknown item kind: %s", *v);
+                    g_critical ("Unknown item kind: %s", *v);
             }
             else if (!g_strcmp0 (*a, "date"))
             {
@@ -775,7 +775,7 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
                       GError              *error,
                       gpointer             user_data G_GNUC_UNUSED)
 {
-    g_error ("error: %s", error->message);
+    g_critical ("error: %s", error->message);
 }
 
 /******************/

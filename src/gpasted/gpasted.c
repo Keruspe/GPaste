@@ -122,7 +122,7 @@ main (gint argc, gchar *argv[])
         g_main_loop_run (main_loop);
     else
     {
-        g_error ("%s: %s\n", _("Could not register DBus service."), error->message);
+        g_critical ("%s: %s\n", _("Could not register DBus service."), error->message);
         exit_status = EXIT_FAILURE;
     }
 

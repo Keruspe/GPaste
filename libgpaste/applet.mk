@@ -22,31 +22,52 @@ LIBGPASTE_APPLET_REVISION=0
 LIBGPASTE_APPLET_AGE=0
 
 libgpaste_applet_libgpaste_applet_la_private_headers = \
+	libgpaste/applet/gpaste-applet-private.h \
+	libgpaste/applet/gpaste-applet-delete-private.h \
 	libgpaste/applet/gpaste-applet-empty-private.h \
 	libgpaste/applet/gpaste-applet-footer-private.h \
 	libgpaste/applet/gpaste-applet-header-private.h \
+	libgpaste/applet/gpaste-applet-history-private.h \
+	libgpaste/applet/gpaste-applet-icon-private.h \
+	libgpaste/applet/gpaste-applet-item-private.h \
+	libgpaste/applet/gpaste-applet-menu-private.h \
 	libgpaste/applet/gpaste-applet-quit-private.h \
 	libgpaste/applet/gpaste-applet-settings-private.h \
+	libgpaste/applet/gpaste-applet-status-icon-private.h \
 	libgpaste/applet/gpaste-applet-switch-private.h \
 	$(NULL)
 
 libgpaste_applet_libgpaste_applet_la_public_headers = \
+	libgpaste/applet/gpaste-applet.h \
+	libgpaste/applet/gpaste-applet-delete.h \
 	libgpaste/applet/gpaste-applet-empty.h \
 	libgpaste/applet/gpaste-applet-footer.h \
 	libgpaste/applet/gpaste-applet-header.h \
+	libgpaste/applet/gpaste-applet-history.h \
+	libgpaste/applet/gpaste-applet-icon.h \
+	libgpaste/applet/gpaste-applet-item.h \
+	libgpaste/applet/gpaste-applet-menu.h \
 	libgpaste/applet/gpaste-applet-quit.h \
 	libgpaste/applet/gpaste-applet-settings.h \
+	libgpaste/applet/gpaste-applet-status-icon.h \
 	libgpaste/applet/gpaste-applet-switch.h \
 	$(NULL)
 
 libgpaste_applet_libgpaste_applet_la_SOURCES = \
 	$(libgpaste_applet_libgpaste_applet_la_public_headers) \
 	$(libgpaste_applet_libgpaste_applet_la_private_headers) \
+	libgpaste/applet/gpaste-applet.c \
+	libgpaste/applet/gpaste-applet-delete.c \
 	libgpaste/applet/gpaste-applet-empty.c \
 	libgpaste/applet/gpaste-applet-footer.c \
 	libgpaste/applet/gpaste-applet-header.c \
+	libgpaste/applet/gpaste-applet-history.c \
+	libgpaste/applet/gpaste-applet-icon.c \
+	libgpaste/applet/gpaste-applet-item.c \
+	libgpaste/applet/gpaste-applet-menu.c \
 	libgpaste/applet/gpaste-applet-quit.c \
 	libgpaste/applet/gpaste-applet-settings.c \
+	libgpaste/applet/gpaste-applet-status-icon.c \
 	libgpaste/applet/gpaste-applet-switch.c \
 	$(NULL)
 
@@ -55,6 +76,7 @@ libgpaste_applet_libgpaste_applet_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_applet_libgpaste_applet_la_LIBADD = \
+	$(builddir)/$(libgpaste_client_la_file) \
 	$(AM_LIBS) \
 	$(NULL)
 

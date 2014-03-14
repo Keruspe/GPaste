@@ -1,17 +1,17 @@
 3.10:
     applet:
         unity support
+        use async calls
+        menu: override container_add & memnushell_append & prepend
+        honour user settings
+        don't close on delete
     gpaste-settings:
         reset
         enable/disable extension
-    all:
-        remove g_error calls
 
 3.12:
     general:
         wayland support
-    gpaste:
-        GSubProcess
     keybinder:
         switch to clutter event filter (not to have to parse X event)
     gnome-shell-client:
