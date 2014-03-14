@@ -12,8 +12,6 @@
 3.12:
     general:
         wayland support
-    gpaste:
-        GSubProcess
     keybinder:
         switch to clutter event filter (not to have to parse X event)
     gnome-shell-client:
