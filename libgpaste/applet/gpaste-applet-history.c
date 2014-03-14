@@ -138,8 +138,6 @@ g_paste_applet_history_dispose (GObject *object)
         priv->items = NULL;
     }
 
-    g_clear_object (&priv->menu);
-
     G_OBJECT_CLASS (g_paste_applet_history_parent_class)->dispose (object);
 }
 
@@ -164,7 +162,7 @@ _g_paste_applet_history_new (GPasteClient     *client,
     GPasteAppletHistory *self = G_PASTE_APPLET_HISTORY (g_object_new (G_PASTE_TYPE_APPLET_HISTORY, NULL));
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
     priv->client = g_object_ref (client);
-    priv->menu = g_object_ref (menu);
+    priv->menu = menu;
     priv->changed_id = g_signal_connect (G_OBJECT (client),
                                          "changed",
                                          G_CALLBACK (g_paste_applet_history_on_changed),

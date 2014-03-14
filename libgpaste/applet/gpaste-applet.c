@@ -75,7 +75,6 @@ g_paste_applet_dispose (GObject *object)
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private ((GPasteApplet *) object);
 
     g_clear_object (&priv->client);
-    g_clear_object (&priv->menu);
     g_clear_object (&priv->history);
     g_clear_object (&priv->icon);
 
