@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -17,20 +17,25 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_H__
-#define __G_PASTE_H__
+#ifndef __G_PASTE_APPLET_PRIVATE_H__
+#define __G_PASTE_APPLET_PRIVATE_H__
 
-#define __G_PASTE_H_INSIDE__
-
-#include <gpaste-macros.h>
 #include <gpaste-applet.h>
-#include <gpaste-clipboard.h>
-#include <gpaste-clipboards-manager.h>
-#include <gpaste-history.h>
-#include <gpaste-keybinder.h>
-#include <gpaste-settings.h>
-#include <gpaste-settings-ui-widget.h>
 
-#undef __G_PASTE_H_INSIDE__
+G_BEGIN_DECLS
 
-#endif /*__G_PASTE_H__*/
+typedef struct _GPasteAppletPrivate GPasteAppletPrivate;
+
+struct _GPasteApplet
+{
+    GObject parent_instance;
+};
+
+struct _GPasteAppletClass
+{
+    GObjectClass parent_class;
+};
+
+G_END_DECLS
+
+#endif /*__G_PASTE_APPLET_PRIVATE_H__*/

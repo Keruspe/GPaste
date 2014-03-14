@@ -22,6 +22,7 @@ LIBGPASTE_APPLET_REVISION=0
 LIBGPASTE_APPLET_AGE=0
 
 libgpaste_applet_libgpaste_applet_la_private_headers = \
+	libgpaste/applet/gpaste-applet-private.h \
 	libgpaste/applet/gpaste-applet-delete-private.h \
 	libgpaste/applet/gpaste-applet-empty-private.h \
 	libgpaste/applet/gpaste-applet-footer-private.h \
@@ -37,6 +38,7 @@ libgpaste_applet_libgpaste_applet_la_private_headers = \
 	$(NULL)
 
 libgpaste_applet_libgpaste_applet_la_public_headers = \
+	libgpaste/applet/gpaste-applet.h \
 	libgpaste/applet/gpaste-applet-delete.h \
 	libgpaste/applet/gpaste-applet-empty.h \
 	libgpaste/applet/gpaste-applet-footer.h \
@@ -54,6 +56,7 @@ libgpaste_applet_libgpaste_applet_la_public_headers = \
 libgpaste_applet_libgpaste_applet_la_SOURCES = \
 	$(libgpaste_applet_libgpaste_applet_la_public_headers) \
 	$(libgpaste_applet_libgpaste_applet_la_private_headers) \
+	libgpaste/applet/gpaste-applet.c \
 	libgpaste/applet/gpaste-applet-delete.c \
 	libgpaste/applet/gpaste-applet-empty.c \
 	libgpaste/applet/gpaste-applet-footer.c \
@@ -73,6 +76,7 @@ libgpaste_applet_libgpaste_applet_la_CFLAGS = \
 	$(NULL)
 
 libgpaste_applet_libgpaste_applet_la_LIBADD = \
+	$(builddir)/$(libgpaste_client_la_file) \
 	$(AM_LIBS) \
 	$(NULL)
 
