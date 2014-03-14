@@ -32,6 +32,7 @@ libgpaste_applet_libgpaste_applet_la_private_headers = \
 	libgpaste/applet/gpaste-applet-menu-private.h \
 	libgpaste/applet/gpaste-applet-quit-private.h \
 	libgpaste/applet/gpaste-applet-settings-private.h \
+	libgpaste/applet/gpaste-applet-status-icon-private.h \
 	libgpaste/applet/gpaste-applet-switch-private.h \
 	$(NULL)
 
@@ -46,6 +47,7 @@ libgpaste_applet_libgpaste_applet_la_public_headers = \
 	libgpaste/applet/gpaste-applet-menu.h \
 	libgpaste/applet/gpaste-applet-quit.h \
 	libgpaste/applet/gpaste-applet-settings.h \
+	libgpaste/applet/gpaste-applet-status-icon.h \
 	libgpaste/applet/gpaste-applet-switch.h \
 	$(NULL)
 
@@ -62,6 +64,7 @@ libgpaste_applet_libgpaste_applet_la_SOURCES = \
 	libgpaste/applet/gpaste-applet-menu.c \
 	libgpaste/applet/gpaste-applet-quit.c \
 	libgpaste/applet/gpaste-applet-settings.c \
+	libgpaste/applet/gpaste-applet-status-icon.c \
 	libgpaste/applet/gpaste-applet-switch.c \
 	$(NULL)
 

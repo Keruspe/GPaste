@@ -40,6 +40,9 @@ global:
     g_paste_applet_settings_get_type;
     g_paste_applet_settings_new;
 
+    g_paste_applet_status_icon_get_type;
+    g_paste_applet_status_icon_new;
+
     g_paste_applet_switch_get_type;
     g_paste_applet_switch_get_active;
     g_paste_applet_switch_set_active;

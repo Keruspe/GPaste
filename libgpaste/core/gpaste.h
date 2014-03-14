@@ -25,6 +25,7 @@
 #include <gpaste-macros.h>
 #include <gpaste-applet-history.h>
 #include <gpaste-applet-menu.h>
+#include <gpaste-applet-status-icon.h>
 #include <gpaste-clipboard.h>
 #include <gpaste-clipboards-manager.h>
 #include <gpaste-history.h>
