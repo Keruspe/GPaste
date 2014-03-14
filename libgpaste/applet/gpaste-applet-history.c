@@ -78,6 +78,7 @@ g_paste_applet_history_remove_from_menu (gpointer data,
     GtkWidget *item = data;
     GtkContainer *menu = user_data;
 
+    g_object_unref (item);
     gtk_container_remove (menu, item);
 }
 
@@ -86,7 +87,7 @@ g_paste_applet_history_drop_list (GSList           *list,
                                   GPasteAppletMenu *menu)
 {
     g_slist_foreach (list, g_paste_applet_history_remove_from_menu, menu);
-    g_slist_free_full (list, g_object_unref);
+    g_slist_free (list);
 }
 
 static void
@@ -108,9 +109,17 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     }
     else if (old_size > priv->size)
     {
-        GSList *last = g_slist_nth (priv->items, priv->size - 1);
-        g_paste_applet_history_drop_list (g_slist_next (last), priv->menu);
-        last->next = NULL;
+        if (priv->size)
+        {
+            GSList *last = g_slist_nth (priv->items, priv->size - 1);
+            g_paste_applet_history_drop_list (g_slist_next (last), priv->menu);
+            last->next = NULL;
+        }
+        else
+        {
+            g_paste_applet_history_drop_list (priv->items, priv->menu);
+            priv->items = NULL;
+        }
     }
 }
 
