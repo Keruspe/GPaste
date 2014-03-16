@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2012-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,17 @@ INTROSPECTION_GIRS = $(NULL)
 libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
 all_la_files = \
+	$(builddir)/$(libgpaste_applet_la_file) \
+	$(builddir)/$(libgpaste_client_la_file) \
+	$(builddir)/$(libgpaste_core_la_file) \
+	$(builddir)/$(libgpaste_daemon_la_file) \
+	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
+	$(builddir)/$(libgpaste_keybinder_la_file) \
+	$(builddir)/$(libgpaste_settings_la_file) \
+	$(builddir)/$(libgpaste_settings_ui_la_file) \
+	$(NULL)
+
+all_la_sources = \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(libgpaste_applet_libgpaste_applet_la_SOURCES) \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
@@ -36,7 +47,7 @@ all_la_files = \
 
 $(libgpaste_gir_file): $(all_la_files)
 bindings_gi_GPaste_1_0_gir_FILES = \
-	$(all_la_files) \
+	$(all_la_sources) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = \
 	$(INCLUDES) \
@@ -50,16 +61,7 @@ bindings_gi_GPaste_1_0_gir_CFLAGS = \
 	-I$(srcdir)/libgpaste/settings \
 	-I$(srcdir)/libgpaste/settings/ui \
 	$(NULL)
-bindings_gi_GPaste_1_0_gir_LIBS = \
-	$(builddir)/$(libgpaste_applet_la_file) \
-	$(builddir)/$(libgpaste_client_la_file) \
-	$(builddir)/$(libgpaste_core_la_file) \
-	$(builddir)/$(libgpaste_daemon_la_file) \
-	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
-	$(builddir)/$(libgpaste_keybinder_la_file) \
-	$(builddir)/$(libgpaste_settings_la_file) \
-	$(builddir)/$(libgpaste_settings_ui_la_file) \
-	$(NULL)
+bindings_gi_GPaste_1_0_gir_LIBS = $(all_la_files)
 bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
 	libgpaste-applet \
 	libgpaste-client \
