@@ -5,6 +5,7 @@
         menu: override container_add & memnushell_append & prepend
         honour user settings
         don't close on delete
+        the menu isn't always well positionned
     gpaste-settings:
         reset
         enable/disable extension
