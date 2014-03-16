@@ -35,8 +35,13 @@ g_paste_applet_status_icon_popup (GtkStatusIcon *status_icon,
                                   gpointer       user_data)
 {
     GPasteAppletStatusIconPrivate *priv = user_data;
-    gtk_widget_show_all (GTK_WIDGET (priv->menu));
+    GtkWidget *widget = GTK_WIDGET (priv->menu);
+
+    gtk_widget_set_visible (widget, TRUE);
+    gtk_widget_show_all (widget);
+    gtk_widget_show (gtk_widget_get_toplevel (widget));
     gtk_menu_popup (priv->menu, NULL, NULL, gtk_status_icon_position_menu, status_icon, 1, gdk_event_get_time (event));
+
     return FALSE;
 }
 
