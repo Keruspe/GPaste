@@ -19,14 +19,6 @@
 
 #include "gpaste-keybinding-private.h"
 
-#ifdef GDK_WINDOWING_WAYLAND
-#  include <gdk/gdkwayland.h>
-#endif
-#if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
-#  include <gdk/gdkx.h>
-#  include <X11/extensions/XInput2.h>
-#endif
-
 struct _GPasteKeybindingPrivate
 {
     GPasteKeybindingGetter getter;
