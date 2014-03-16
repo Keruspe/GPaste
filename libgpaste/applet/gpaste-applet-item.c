@@ -106,7 +106,7 @@ g_paste_applet_item_init (GPasteAppletItem *self)
     priv->label = GTK_LABEL (label);
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self),hbox);
 
