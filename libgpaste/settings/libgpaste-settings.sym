@@ -71,4 +71,6 @@ LIBGPASTE_SETTINGS_6 {
     g_paste_settings_reset_track_changes;
     g_paste_settings_reset_track_extension_state;
     g_paste_settings_reset_trim_items;
+    g_paste_settings_get_extension_enabled;
+    g_paste_settings_set_extension_enabled;
 } LIBGPASTE_SETTINGS_5;

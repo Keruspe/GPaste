@@ -24,8 +24,10 @@
 struct _GPasteSettingsPrivate
 {
     GSettings *settings;
+    GSettings *shell_settings;
 
     guint32    element_size;
+    gboolean   growing_lines;
     gchar     *history_name;
     gboolean   images_support;
     guint32    max_displayed_history_size;
@@ -43,9 +45,11 @@ struct _GPasteSettingsPrivate
     gboolean   track_changes;
     gboolean   track_extension_state;
     gboolean   trim_items;
-    gboolean   growing_lines;
+
+    gboolean   extension_enabled;
 
     gulong     changed_signal;
+    gulong     shell_changed_signal;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
@@ -632,6 +636,109 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  */
 BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
 
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+#define EXTENSION_NAME "GPaste@gnome-shell-extensions.gnome.org"
+/**
+ * g_paste_settings_get_extension_enabled:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "extension-enabled" special setting
+ *
+ * Returns: Whether the gnome-shell extension is enabled or not
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_settings_get_extension_enabled (const GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
+    return priv->extension_enabled;
+}
+
+static inline gchar **
+g_paste_settings_private_get_enabled_extensions (GPasteSettingsPrivate *priv)
+{
+    return g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING);
+}
+
+static void
+g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate *priv)
+{
+    G_PASTE_CLEANUP_STRFREEV gchar **extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    for (gchar **e = extensions; *e; ++e)
+    {
+        if (!g_strcmp0 (*e, EXTENSION_NAME))
+        {
+            priv->extension_enabled = TRUE;
+            return;
+        }
+    }
+    priv->extension_enabled = FALSE;
+}
+
+/**
+ * g_paste_settings_set_extension_enabled:
+ * @self: a #GPasteSettings instance
+ * @value: whether to enable or not the gnome-shell extension
+ *
+ * Change the "extension-enabled" special setting
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_set_extension_enabled (GPasteSettings *self,
+                                        gboolean        value)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
+    G_PASTE_CLEANUP_STRFREEV gchar **extensions = NULL;
+    if (value == priv->extension_enabled) return;
+
+    extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    gsize nb = g_strv_length (extensions);
+    if (value)
+    {
+        extensions = g_realloc (extensions, (nb + 2) * sizeof (gchar *));
+        extensions[nb] = g_strdup (EXTENSION_NAME);
+        extensions[nb+1] = NULL;
+    }
+    else
+    {
+        gboolean found = FALSE;
+        for (gsize i = 0; i < nb; ++i)
+        {
+            if (!found && !g_strcmp0 (extensions[i], EXTENSION_NAME))
+            {
+                found = TRUE;
+                g_free (extensions[i]);
+            }
+            if (found)
+                extensions[i] = extensions[i+1];
+        } 
+    }
+
+    priv->extension_enabled = value;
+    g_settings_set_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) extensions);
+}
+
+static void
+g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
+                                         const gchar *key      G_GNUC_UNUSED,
+                                         gpointer     user_data)
+{
+    GPasteSettings *self = G_PASTE_SETTINGS (user_data);
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
+
+    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+
+    /* Forward the signal */
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   g_quark_from_string (G_PASTE_EXTENSION_ENABLED_SETTING),
+                   G_PASTE_EXTENSION_ENABLED_SETTING,
+                   NULL);
+}
+#endif
+
 static void
 g_paste_settings_rebind (GPasteSettings *self,
                          const gchar    *key)
@@ -728,6 +835,16 @@ g_paste_settings_dispose (GObject *object)
         g_clear_object (&priv->settings);
     }
 
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+    GSettings *shell_settings = priv->shell_settings;
+
+    if (shell_settings)
+    {
+        g_signal_handler_disconnect (shell_settings, priv->shell_changed_signal);
+        g_clear_object (&priv->shell_settings);
+    }
+#endif
+
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
 }
 
@@ -762,7 +879,7 @@ static void
 g_paste_settings_init (GPasteSettings *self)
 {
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
-    GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
+    GSettings *settings = priv->settings = g_settings_new (G_PASTE_SETTINGS_NAME);
 
     priv->history_name = NULL;
     priv->pop = NULL;
@@ -794,6 +911,17 @@ g_paste_settings_init (GPasteSettings *self)
                                              "changed",
                                              G_CALLBACK (g_paste_settings_settings_changed),
                                              self);
+
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+    priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
+
+    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+
+    priv->shell_changed_signal = g_signal_connect (G_OBJECT (priv->shell_settings),
+                                                  "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
+                                                  G_CALLBACK (g_paste_settings_shell_settings_changed),
+                                                  self);
+#endif
 }
 
 /**
