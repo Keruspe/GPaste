@@ -60,6 +60,10 @@ libgpaste_core_libgpaste_core_la_SOURCES = \
 	libgpaste/core/gpaste-uris-item.c \
 	$(NULL)
 
+nodist_libgpaste_core_libgpaste_core_la_SOURCES = \
+	libgpaste/core/gpaste-config.h \
+	$(NULL)
+
 libgpaste_core_libgpaste_core_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
 	$(AM_CFLAGS) \

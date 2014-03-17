@@ -10,6 +10,7 @@
 /data/pkg-config/*.pc
 /man/*.1
 /po/Makefile
+/libgpaste/core/gpaste-config.h
 /src/applets/gnome-shell/metadata.json
 /src/applets/legacy/*.c
 /src/gpaste-settings/*.c
