@@ -70,7 +70,7 @@ g_paste_applet_item_activate (GtkMenuItem *menu_item)
 {
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) menu_item);
 
-    g_paste_client_select_sync (priv->client, priv->index, NULL);
+    g_paste_client_select (priv->client, priv->index, NULL, NULL);
 
     GTK_MENU_ITEM_CLASS (g_paste_applet_item_parent_class)->activate (menu_item);
 }

@@ -51,7 +51,6 @@ g_paste_applet_get_active (const GPasteApplet *self)
  * g_paste_applet_set_active:
  * @self: a #GPasteApplet instance
  * @active: TRUE if the switch should be active, and FALSE otherwise
- * @error: a pointer to a #GError
  *
  * Changes the state of the switch to the desired one.
  *
@@ -59,14 +58,12 @@ g_paste_applet_get_active (const GPasteApplet *self)
  */
 G_PASTE_VISIBLE void
 g_paste_applet_set_active (GPasteApplet *self,
-                           gboolean      active,
-                           GError      **error)
+                           gboolean      active)
 {
     g_return_if_fail (G_PASTE_IS_APPLET (self));
-    g_return_if_fail (!error || !*error);
 
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
-    g_paste_applet_menu_set_active (priv->menu, active, error);
+    g_paste_applet_menu_set_active (priv->menu, active);
 }
 
 static void

@@ -33,7 +33,7 @@ g_paste_applet_empty_activate (GtkMenuItem *menu_item)
 {
     GPasteAppletEmptyPrivate *priv = g_paste_applet_empty_get_instance_private ((GPasteAppletEmpty *) menu_item);
 
-    g_paste_client_empty_sync (priv->client, NULL);
+    g_paste_client_empty (priv->client, NULL, NULL);
 
     GTK_MENU_ITEM_CLASS (g_paste_applet_empty_parent_class)->activate (menu_item);
 }

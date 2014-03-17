@@ -108,50 +108,6 @@ g_paste_applet_menu_inc_size (GPasteAppletMenu *self)
 /**
  * g_paste_applet_menu_append:
  * @self: a #GPasteAppletMenu instance
- * @item: the #GPasteAppletItem to append
- *
- * Append the item to the menu
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_applet_menu_append (GPasteAppletMenu *self,
-                            GPasteAppletItem *item)
-{
-    g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
-    g_return_if_fail (G_PASTE_IS_APPLET_ITEM (item));
-
-    g_paste_applet_menu_pop_footer (self);
-    g_paste_applet_menu_inc_size (self);
-    gtk_menu_shell_append (GTK_MENU_SHELL (self), GTK_WIDGET (item));
-    g_paste_applet_menu_ensure_contents (self);
-}
-
-/**
- * g_paste_applet_menu_prepend:
- * @self: a #GPasteAppletMenu instance
- * @item: the #GPasteAppletItem to prepend
- *
- * Prepend the item to the menu
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_applet_menu_prepend (GPasteAppletMenu *self,
-                             GPasteAppletItem *item)
-{
-    g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
-    g_return_if_fail (G_PASTE_IS_APPLET_ITEM (item));
-
-    g_paste_applet_menu_pop_header (self);
-    g_paste_applet_menu_inc_size (self);
-    gtk_menu_shell_prepend (GTK_MENU_SHELL (self), GTK_WIDGET (item));
-    g_paste_applet_menu_ensure_contents (self);
-}
-
-/**
- * g_paste_applet_menu_append_list:
- * @self: a #GPasteAppletMenu instance
  * @items: (element-type GPasteAppletItem): the items to append
  *
  * Append the items to the menu
@@ -159,7 +115,7 @@ g_paste_applet_menu_prepend (GPasteAppletMenu *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_applet_menu_append_list (GPasteAppletMenu *self,
+g_paste_applet_menu_append (GPasteAppletMenu *self,
                                  GSList           *items)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
@@ -168,14 +124,14 @@ g_paste_applet_menu_append_list (GPasteAppletMenu *self,
 
     priv->wip = TRUE;
     for (GSList *i = items; i; i = g_slist_next (i))
-        g_paste_applet_menu_append (self, i->data);
+        gtk_menu_shell_append (GTK_MENU_SHELL (self), GTK_WIDGET (i->data));
     priv->wip = FALSE;
     
     g_paste_applet_menu_ensure_contents (self);
 }
 
 /**
- * g_paste_applet_menu_prepend_list:
+ * g_paste_applet_menu_prepend:
  * @self: a #GPasteAppletMenu instance
  * @items: (element-type GPasteAppletItem): the items to prepend
  *
@@ -184,7 +140,7 @@ g_paste_applet_menu_append_list (GPasteAppletMenu *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_applet_menu_prepend_list (GPasteAppletMenu *self,
+g_paste_applet_menu_prepend (GPasteAppletMenu *self,
                                   GSList           *items)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
@@ -193,7 +149,7 @@ g_paste_applet_menu_prepend_list (GPasteAppletMenu *self,
 
     priv->wip = TRUE;
     for (GSList *i = items; i; i = g_slist_next (i))
-        g_paste_applet_menu_prepend (self, i->data);
+        gtk_menu_shell_prepend (GTK_MENU_SHELL (self), GTK_WIDGET (i->data));
     priv->wip = FALSE;
     
     g_paste_applet_menu_ensure_contents (self);
@@ -220,7 +176,6 @@ g_paste_applet_menu_get_active (const GPasteAppletMenu *self)
  * g_paste_applet_menu_set_active:
  * @self: a #GPasteAppletMenu instance
  * @active: TRUE if the switch should be active, and FALSE otherwise
- * @error: a pointer to a #GError
  *
  * Changes the state of the switch to the desired one.
  *
@@ -228,14 +183,34 @@ g_paste_applet_menu_get_active (const GPasteAppletMenu *self)
  */
 G_PASTE_VISIBLE void
 g_paste_applet_menu_set_active (GPasteAppletMenu *self,
-                                gboolean          active,
-                                GError          **error)
+                                gboolean          active)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
-    g_return_if_fail (!error || !*error);
 
     GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
-    g_paste_applet_header_set_active (priv->header, active, error);
+    g_paste_applet_header_set_active (priv->header, active);
+}
+
+static void
+g_paste_applet_menu_insert (GtkMenuShell *menu_shell,
+                            GtkWidget    *child,
+                            gint          position)
+{
+    GPasteAppletMenu *self = G_PASTE_APPLET_MENU (menu_shell);
+    gboolean is_item = G_PASTE_IS_APPLET_ITEM (child);
+    g_return_if_fail (!is_item || position == 0 || position == -1);
+
+    if (is_item)
+    {
+        if (position == -1)
+            g_paste_applet_menu_pop_footer (self);
+        else
+            g_paste_applet_menu_pop_header (self);
+        g_paste_applet_menu_inc_size (self);
+    }
+    GTK_MENU_SHELL_CLASS (g_paste_applet_menu_parent_class)->insert (menu_shell, child, position);
+    if (is_item)
+        g_paste_applet_menu_ensure_contents (self);
 }
 
 static void
@@ -274,6 +249,7 @@ g_paste_applet_menu_class_init (GPasteAppletMenuClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_menu_dispose;
     GTK_CONTAINER_CLASS (klass)->remove = g_paste_applet_menu_remove;
+    GTK_MENU_SHELL_CLASS (klass)->insert = g_paste_applet_menu_insert;
 }
 
 static void

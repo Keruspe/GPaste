@@ -39,8 +39,7 @@ GType g_paste_applet_switch_get_type (void);
 
 gboolean g_paste_applet_switch_get_active (const GPasteAppletSwitch *self);
 void     g_paste_applet_switch_set_active (GPasteAppletSwitch *self,
-                                           gboolean            active,
-                                           GError            **error);
+                                           gboolean            active);
 
 GtkWidget *g_paste_applet_switch_new (GPasteClient *client);
 
