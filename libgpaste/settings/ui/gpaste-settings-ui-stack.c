@@ -32,13 +32,12 @@ struct _GPasteSettingsUiStackPrivate
     GPasteClient    *client;
     GPasteSettings  *settings;
     GtkSwitch       *images_support_button;
+    GtkSwitch       *growing_lines_button;
     GtkSwitch       *primary_to_history_button;
     GtkSwitch       *save_history_button;
     GtkSwitch       *synchronize_clipboards_button;
     GtkSwitch       *track_changes_button;
-    GtkSwitch       *track_extension_state_button;
     GtkSwitch       *trim_items_button;
-    GtkSwitch       *growing_lines_button;
     GtkSpinButton   *element_size_button;
     GtkSpinButton   *max_displayed_history_size_button;
     GtkSpinButton   *max_history_size_button;
@@ -52,6 +51,9 @@ struct _GPasteSettingsUiStackPrivate
     GtkEntry        *sync_primary_to_clipboard_entry;
     GtkComboBoxText *targets;
     gchar         ***actions;
+
+    GtkSwitch       *extension_enabled_switch;
+    GtkSwitch       *track_extension_state_switch;
 
     gulong           settings_signal;
 };
@@ -97,16 +99,18 @@ g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
                           name, label);
 }
 
+BOOLEAN_CALLBACK (growing_lines)
+BOOLEAN_CALLBACK (images_support)
+BOOLEAN_CALLBACK (primary_to_history)
+BOOLEAN_CALLBACK (save_history)
+BOOLEAN_CALLBACK (synchronize_clipboards)
 BOOLEAN_CALLBACK (track_changes)
+BOOLEAN_CALLBACK (trim_items)
+
 #if G_PASTE_CONFIG_ENABLE_EXTENSION
+BOOLEAN_CALLBACK (extension_enabled)
 BOOLEAN_CALLBACK (track_extension_state)
 #endif
-BOOLEAN_CALLBACK (primary_to_history)
-BOOLEAN_CALLBACK (synchronize_clipboards)
-BOOLEAN_CALLBACK (images_support)
-BOOLEAN_CALLBACK (trim_items)
-BOOLEAN_CALLBACK (growing_lines)
-BOOLEAN_CALLBACK (save_history)
 
 static GPasteSettingsUiPanel *
 g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPrivate *priv)
@@ -121,8 +125,14 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
                                                                                 (GPasteResetCallback) g_paste_settings_reset_track_changes,
                                                                                 settings);
 #if G_PASTE_CONFIG_ENABLE_EXTENSION
-    priv->track_extension_state_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                                         _("Sync the daemon state with the extension's one"),
+    priv->extension_enabled_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+                                                                                    _("Enable the gnome-shell extension"),
+                                                                                    g_paste_settings_get_extension_enabled (settings),
+                                                                                    extension_enabled_callback,
+                                                                                    NULL,
+                                                                                    settings);
+    priv->track_extension_state_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+                                                                                        _("Sync the daemon state with the extension's one"),
                                                                                         g_paste_settings_get_track_extension_state (settings),
                                                                                         track_extension_state_callback,
                                                                                         (GPasteResetCallback) g_paste_settings_reset_track_extension_state,
@@ -439,12 +449,14 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
     else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->track_changes_button), g_paste_settings_get_track_changes (settings));
-#if G_PASTE_CONFIG_ENABLE_EXTENSION
-    else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
-        gtk_switch_set_active (GTK_SWITCH (priv->track_extension_state_button), g_paste_settings_get_track_extension_state (settings));
-#endif
     else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->trim_items_button), g_paste_settings_get_trim_items (settings));
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+    else if (!g_strcmp0 (key, G_PASTE_EXTENSION_ENABLED_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->extension_enabled_switch), g_paste_settings_get_extension_enabled (settings));
+    else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->track_extension_state_switch), g_paste_settings_get_track_extension_state (settings));
+#endif
 }
 
 static void

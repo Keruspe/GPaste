@@ -148,7 +148,8 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
     gtk_switch_set_active (sw, value);
     _data->signal = g_signal_connect (widget, "notify::active", G_CALLBACK (boolean_wrapper), data);
     gtk_grid_attach_next_to (grid, widget, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
-    gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), widget, GTK_POS_RIGHT, 1, 1);
+    if (on_reset)
+        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), widget, GTK_POS_RIGHT, 1, 1);
 
     return sw;
 }
