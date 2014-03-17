@@ -19,6 +19,7 @@
 
 #include "gpaste-settings-ui-stack-private.h"
 
+#include <gpaste-config.h>
 #include <gpaste-client.h>
 #include <gpaste-settings.h>
 
@@ -97,7 +98,7 @@ g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
 }
 
 BOOLEAN_CALLBACK (track_changes)
-#ifdef ENABLE_EXTENSION
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
 BOOLEAN_CALLBACK (track_extension_state)
 #endif
 BOOLEAN_CALLBACK (primary_to_history)
@@ -118,7 +119,7 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
                                                                                 g_paste_settings_get_track_changes (settings),
                                                                                 track_changes_callback,
                                                                                 settings);
-#ifdef ENABLE_EXTENSION
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
     priv->track_extension_state_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                          _("Sync the daemon state with the extension's one"),
                                                                                         g_paste_settings_get_track_extension_state (settings),
@@ -408,7 +409,7 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
     else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->track_changes_button), g_paste_settings_get_track_changes (settings));
-#ifdef ENABLE_EXTENSION
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
     else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->track_extension_state_button), g_paste_settings_get_track_extension_state (settings));
 #endif

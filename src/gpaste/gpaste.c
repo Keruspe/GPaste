@@ -17,6 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gpaste-config.h>
 #include <gpaste-client.h>
 
 #include <gio/gio.h>
@@ -67,7 +68,7 @@ show_help (const gchar *caller)
     printf ("  %s daemon-reexec: %s\n", caller, _("reexecute the daemon (after upgrading...)"));
     /* Translators: help for gpaste settings */
     printf ("  %s settings: %s\n", caller, _("launch the configuration tool"));
-#ifdef ENABLE_APPLET
+#if G_PASTE_CONFIG_ENABLE_APPLET
     /* Translators: help for gpaste applet */
     printf ("  %s applet: %s\n", caller, _("launch the applet"));
 #endif
@@ -195,7 +196,7 @@ main (gint argc, gchar *argv[])
             {
                 g_paste_client_empty_sync (client, &error);
             }
-#ifdef ENABLE_APPLET
+#if G_PASTE_CONFIG_ENABLE_APPLET
             else if (!g_strcmp0 (arg1, "applet"))
             {
                 g_spawn_command_line_async (PKGLIBEXECDIR "/gpaste-applet", &error);
