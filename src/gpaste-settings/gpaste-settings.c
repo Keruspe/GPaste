@@ -105,9 +105,9 @@ main (gint argc, gchar *argv[])
 
     GtkWidget *bar = gtk_header_bar_new ();
     GtkHeaderBar *header_bar = GTK_HEADER_BAR (bar);
-    gtk_header_bar_pack_start (header_bar, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
-                                                           "stack",  GTK_STACK (stack),
-                                                           NULL));
+    gtk_header_bar_set_custom_title (header_bar, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
+                                                                 "stack",  GTK_STACK (stack),
+                                                                 NULL));
     gtk_header_bar_set_show_close_button (header_bar, TRUE);
 
     GtkWidget *win = gtk_widget_new (GTK_TYPE_APPLICATION_WINDOW,
