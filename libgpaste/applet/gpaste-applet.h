@@ -41,8 +41,7 @@ GType g_paste_applet_get_type (void);
 
 gboolean g_paste_applet_get_active (const GPasteApplet *self);
 void     g_paste_applet_set_active (GPasteApplet *self,
-                                    gboolean      active,
-                                    GError      **error);
+                                    gboolean      active);
 
 GPasteApplet *g_paste_applet_new_status_icon (GtkApplication *application);
 

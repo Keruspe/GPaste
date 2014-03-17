@@ -117,7 +117,7 @@ g_paste_applet_delete_button_press_event (GtkWidget      *widget,
                                           GdkEventButton *event G_GNUC_UNUSED)
 {
     GPasteAppletDeletePrivate *priv = g_paste_applet_delete_get_instance_private ((GPasteAppletDelete *) widget);
-    g_paste_client_delete_sync (priv->client, priv->index, NULL);
+    g_paste_client_delete (priv->client, priv->index, NULL, NULL);
     return TRUE;
 }
 

@@ -46,8 +46,7 @@ void g_paste_applet_menu_prepend (GPasteAppletMenu *self,
 
 gboolean g_paste_applet_menu_get_active (const GPasteAppletMenu *self);
 void     g_paste_applet_menu_set_active (GPasteAppletMenu *self,
-                                         gboolean          active,
-                                         GError          **error);
+                                         gboolean          active);
 
 GPasteAppletMenu *g_paste_applet_menu_new (GPasteClient *client,
                                            GApplication *app);

@@ -52,7 +52,6 @@ g_paste_applet_switch_get_active (const GPasteAppletSwitch *self)
  * g_paste_applet_switch_set_active:
  * @self: a #GPasteAppletSwitch instance
  * @active: TRUE if the switch should be active, and FALSE otherwise
- * @error: a pointer to a #GError
  *
  * Changes the state of the switch to the desired one.
  *
@@ -60,20 +59,18 @@ g_paste_applet_switch_get_active (const GPasteAppletSwitch *self)
  */
 G_PASTE_VISIBLE void
 g_paste_applet_switch_set_active (GPasteAppletSwitch *self,
-                                  gboolean            active,
-                                  GError            **error)
+                                  gboolean            active)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_SWITCH (self));
-    g_return_if_fail (!error || !*error);
 
     GPasteAppletSwitchPrivate *priv = g_paste_applet_switch_get_instance_private (self);
 
     if (active == gtk_switch_get_active (priv->sw))
         return;
 
-    g_paste_client_track_sync (priv->client, active, error);
-    if (!error || !*error)
-        gtk_switch_set_active (priv->sw, active);
+    g_paste_client_track (priv->client, active, NULL, NULL);
+    /* FIXME: move me to callback */
+    gtk_switch_set_active (priv->sw, active);
 }
 
 static void
@@ -82,7 +79,7 @@ g_paste_applet_switch_private_on_tracking (GPasteClient *client G_GNUC_UNUSED,
                                            gpointer      user_data)
 {
     GPasteAppletSwitch *self = user_data;
-    g_paste_applet_switch_set_active (self, state, NULL);
+    g_paste_applet_switch_set_active (self, state);
 }
 
 static void
@@ -90,7 +87,7 @@ g_paste_applet_switch_activate (GtkMenuItem *menu_item)
 {
     GPasteAppletSwitch *self = (GPasteAppletSwitch *) menu_item;
 
-    g_paste_applet_switch_set_active (self, !g_paste_applet_switch_get_active (self), NULL);
+    g_paste_applet_switch_set_active (self, !g_paste_applet_switch_get_active (self));
 
     GTK_MENU_ITEM_CLASS (g_paste_applet_switch_parent_class)->activate (menu_item);
 }
@@ -153,7 +150,7 @@ g_paste_applet_switch_new (GPasteClient *client)
     GPasteAppletSwitchPrivate *priv = g_paste_applet_switch_get_instance_private ((GPasteAppletSwitch *) self);
 
     priv->client = g_object_ref (client);
-    g_paste_applet_switch_set_active (G_PASTE_APPLET_SWITCH (self), g_paste_client_is_active (client), NULL);
+    g_paste_applet_switch_set_active (G_PASTE_APPLET_SWITCH (self), g_paste_client_is_active (client));
 
     priv->tracking_id = g_signal_connect (G_OBJECT (client),
                                           "tracking",

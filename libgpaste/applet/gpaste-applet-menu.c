@@ -176,7 +176,6 @@ g_paste_applet_menu_get_active (const GPasteAppletMenu *self)
  * g_paste_applet_menu_set_active:
  * @self: a #GPasteAppletMenu instance
  * @active: TRUE if the switch should be active, and FALSE otherwise
- * @error: a pointer to a #GError
  *
  * Changes the state of the switch to the desired one.
  *
@@ -184,14 +183,12 @@ g_paste_applet_menu_get_active (const GPasteAppletMenu *self)
  */
 G_PASTE_VISIBLE void
 g_paste_applet_menu_set_active (GPasteAppletMenu *self,
-                                gboolean          active,
-                                GError          **error)
+                                gboolean          active)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
-    g_return_if_fail (!error || !*error);
 
     GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
-    g_paste_applet_header_set_active (priv->header, active, error);
+    g_paste_applet_header_set_active (priv->header, active);
 }
 
 static void
