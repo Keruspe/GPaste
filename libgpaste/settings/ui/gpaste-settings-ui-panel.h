@@ -50,11 +50,13 @@ typedef void (*GPasteTextCallback)        (const gchar *data,
 typedef void (*GPasteMultiActionCallback) (const gchar *action,
                                            const gchar *target,
                                            gpointer     user_data);
+typedef void (*GPasteResetCallback)       (gpointer user_data);
 
 GtkSwitch *g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
                                                           const gchar           *label,
                                                           gboolean               value,
                                                           GPasteBooleanCallback  on_value_changed,
+                                                          GPasteResetCallback    on_reset,
                                                           gpointer               user_data);
 void g_paste_settings_ui_panel_add_separator (GPasteSettingsUiPanel *self);
 GtkSpinButton *g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
@@ -64,11 +66,13 @@ GtkSpinButton *g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPane
                                                             gdouble                max,
                                                             gdouble                step,
                                                             GPasteRangeCallback    on_value_changed,
+                                                            GPasteResetCallback    on_reset,
                                                             gpointer               user_data);
 GtkEntry *g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
                                                       const gchar           *label,
                                                       const gchar           *value,
                                                       GPasteTextCallback     on_value_changed,
+                                                      GPasteResetCallback    on_reset,
                                                       gpointer               user_data);
 GtkEntry *g_paste_settings_ui_panel_add_text_confirm_setting (GPasteSettingsUiPanel *self,
                                                               const gchar           *label,
