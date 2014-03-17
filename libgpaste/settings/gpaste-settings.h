@@ -58,6 +58,26 @@ gboolean     g_paste_settings_get_track_extension_state      (const GPasteSettin
 gboolean     g_paste_settings_get_trim_items                 (const GPasteSettings *self);
 gboolean     g_paste_settings_get_growing_lines              (const GPasteSettings *self);
 
+void g_paste_settings_reset_element_size               (GPasteSettings *self);
+void g_paste_settings_reset_history_name               (GPasteSettings *self);
+void g_paste_settings_reset_images_support             (GPasteSettings *self);
+void g_paste_settings_reset_max_displayed_history_size (GPasteSettings *self);
+void g_paste_settings_reset_max_history_size           (GPasteSettings *self);
+void g_paste_settings_reset_max_memory_usage           (GPasteSettings *self);
+void g_paste_settings_reset_max_text_item_size         (GPasteSettings *self);
+void g_paste_settings_reset_min_text_item_size         (GPasteSettings *self);
+void g_paste_settings_reset_pop                        (GPasteSettings *self);
+void g_paste_settings_reset_primary_to_history         (GPasteSettings *self);
+void g_paste_settings_reset_save_history               (GPasteSettings *self);
+void g_paste_settings_reset_show_history               (GPasteSettings *self);
+void g_paste_settings_reset_sync_clipboard_to_primary  (GPasteSettings *self);
+void g_paste_settings_reset_sync_primary_to_clipboard  (GPasteSettings *self);
+void g_paste_settings_reset_synchronize_clipboards     (GPasteSettings *self);
+void g_paste_settings_reset_track_changes              (GPasteSettings *self);
+void g_paste_settings_reset_track_extension_state      (GPasteSettings *self);
+void g_paste_settings_reset_trim_items                 (GPasteSettings *self);
+void g_paste_settings_reset_growing_lines              (GPasteSettings *self);
+
 void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint32         value);
 void g_paste_settings_set_history_name               (GPasteSettings *self,
