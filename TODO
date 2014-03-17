@@ -1,6 +1,5 @@
 3.10:
     applet:
-        menu: override container_add & memnushell_append & prepend
         use async calls
         honour user settings
 

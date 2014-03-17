@@ -39,11 +39,6 @@ typedef struct _GPasteAppletMenuClass GPasteAppletMenuClass;
 G_PASTE_VISIBLE
 GType g_paste_applet_menu_get_type (void);
 
-void g_paste_applet_menu_append  (GPasteAppletMenu *self,
-                                  GPasteAppletItem *item);
-void g_paste_applet_menu_prepend (GPasteAppletMenu *self,
-                                  GPasteAppletItem *item);
-
 void g_paste_applet_menu_append_list  (GPasteAppletMenu *self,
                                        GSList           *items);
 void g_paste_applet_menu_prepend_list (GPasteAppletMenu *self,
