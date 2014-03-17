@@ -652,6 +652,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 
     if (!g_strcmp0 (key, G_PASTE_ELEMENT_SIZE_SETTING))
         g_paste_settings_private_set_element_size_from_dconf (priv);
+    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
+        g_paste_settings_private_set_growing_lines_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
         g_paste_settings_private_set_history_name_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
@@ -705,8 +707,6 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
         g_paste_settings_private_set_trim_items_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
-        g_paste_settings_private_set_growing_lines_from_dconf (priv);
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -771,6 +771,7 @@ g_paste_settings_init (GPasteSettings *self)
     priv->sync_primary_to_clipboard = NULL;
 
     g_paste_settings_private_set_element_size_from_dconf (priv);
+    g_paste_settings_private_set_growing_lines_from_dconf (priv);
     g_paste_settings_private_set_history_name_from_dconf (priv);
     g_paste_settings_private_set_images_support_from_dconf (priv);
     g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
@@ -788,7 +789,6 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_track_changes_from_dconf (priv);
     g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     g_paste_settings_private_set_trim_items_from_dconf (priv);
-    g_paste_settings_private_set_growing_lines_from_dconf (priv);
 
     priv->changed_signal = g_signal_connect (G_OBJECT (settings),
                                              "changed",
