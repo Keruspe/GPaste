@@ -50,3 +50,27 @@ LIBGPASTE_SETTINGS_5 {
     g_paste_settings_get_growing_lines;
     g_paste_settings_set_growing_lines;
 } LIBGPASTE_SETTINGS_4;
+
+LIBGPASTE_SETTINGS_6 {
+    g_paste_settings_reset_element_size;
+    g_paste_settings_reset_growing_lines;
+    g_paste_settings_reset_history_name;
+    g_paste_settings_reset_images_support;
+    g_paste_settings_reset_max_displayed_history_size;
+    g_paste_settings_reset_max_history_size;
+    g_paste_settings_reset_max_memory_usage;
+    g_paste_settings_reset_max_text_item_size;
+    g_paste_settings_reset_min_text_item_size;
+    g_paste_settings_reset_pop;
+    g_paste_settings_reset_primary_to_history;
+    g_paste_settings_reset_save_history;
+    g_paste_settings_reset_show_history;
+    g_paste_settings_reset_sync_clipboard_to_primary;
+    g_paste_settings_reset_sync_primary_to_clipboard;
+    g_paste_settings_reset_synchronize_clipboards;
+    g_paste_settings_reset_track_changes;
+    g_paste_settings_reset_track_extension_state;
+    g_paste_settings_reset_trim_items;
+    g_paste_settings_get_extension_enabled;
+    g_paste_settings_set_extension_enabled;
+} LIBGPASTE_SETTINGS_5;

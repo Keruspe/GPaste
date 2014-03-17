@@ -28,7 +28,11 @@
 
 G_BEGIN_DECLS
 
+#define G_PASTE_SETTINGS_NAME       "org.gnome.GPaste"
+#define G_PASTE_SHELL_SETTINGS_NAME "org.gnome.shell"
+
 #define G_PASTE_ELEMENT_SIZE_SETTING               "element-size"
+#define G_PASTE_GROWING_LINES_SETTING              "growing-lines"
 #define G_PASTE_HISTORY_NAME_SETTING               "history-name"
 #define G_PASTE_IMAGES_SUPPORT_SETTING             "images-support"
 #define G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING "max-displayed-history-size"
@@ -46,7 +50,9 @@ G_BEGIN_DECLS
 #define G_PASTE_TRACK_CHANGES_SETTING              "track-changes"
 #define G_PASTE_TRACK_EXTENSION_STATE_SETTING      "track-extension-state"
 #define G_PASTE_TRIM_ITEMS_SETTING                 "trim-items"
-#define G_PASTE_GROWING_LINES_SETTING              "growing-lines"
+
+#define G_PASTE_EXTENSION_ENABLED_SETTING          "extension-enabled"
+#define G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING   "enabled-extensions"
 
 G_END_DECLS
 

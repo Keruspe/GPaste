@@ -24,8 +24,10 @@
 struct _GPasteSettingsPrivate
 {
     GSettings *settings;
+    GSettings *shell_settings;
 
     guint32    element_size;
+    gboolean   growing_lines;
     gchar     *history_name;
     gboolean   images_support;
     guint32    max_displayed_history_size;
@@ -43,9 +45,11 @@ struct _GPasteSettingsPrivate
     gboolean   track_changes;
     gboolean   track_extension_state;
     gboolean   trim_items;
-    gboolean   growing_lines;
+
+    gboolean   extension_enabled;
 
     gulong     changed_signal;
+    gulong     shell_changed_signal;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
@@ -68,6 +72,13 @@ static guint signals[LAST_SIGNAL] = { 0 };
         g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                                       \
         GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self); \
         return priv->name;                                                                             \
+    }                                                                                                  \
+    G_PASTE_VISIBLE void                                                                               \
+    g_paste_settings_reset_##name (GPasteSettings *self)                                               \
+    {                                                                                                  \
+        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                 \
+        GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self); \
+        g_settings_reset (priv->settings, G_PASTE_##key##_SETTING);                                    \
     }                                                                                                  \
     static void                                                                                        \
     g_paste_settings_private_set_##name##_from_dconf (GPasteSettingsPrivate *priv)                     \
@@ -111,6 +122,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define NEW_SIGNAL(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg_type, arg_type)
 #define NEW_SIGNAL_DETAILED(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type)
 #define NEW_SIGNAL_DETAILED_STATIC(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type | G_SIGNAL_TYPE_STATIC_SCOPE)
+
 /**
  * g_paste_settings_get_element_size:
  * @self: a #GPasteSettings instance
@@ -118,6 +130,14 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * Get the "element-size" setting
  *
  * Returns: the value of the "element-size" setting
+ */
+/**
+ * g_paste_settings_reset_element_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "element-size" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_element_size:
@@ -131,12 +151,47 @@ static guint signals[LAST_SIGNAL] = { 0 };
 UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
 
 /**
+ * g_paste_settings_get_growing_lines:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "growing-lines" setting
+ *
+ * Returns: the value of the "growing-lines" setting
+ */
+/**
+ * g_paste_settings_reset_growing_lines:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "growing-lines" setting
+ *
+ * Returns:
+ */
+/**
+ * g_paste_settings_set_growing_lines:
+ * @self: a #GPasteSettings instance
+ * @value: whether to detect or not growing lines
+ *
+ * Change the "growing-lines" setting
+ *
+ * Returns:
+ */
+BOOLEAN_SETTING (growing_lines, GROWING_LINES)
+
+/**
  * g_paste_settings_get_history_name:
  * @self: a #GPasteSettings instance
  *
  * Get the "history-name" setting
  *
  * Returns: the value of the "history-name" setting
+ */
+/**
+ * g_paste_settings_reset_history_name:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "history-name" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_history_name:
@@ -158,6 +213,14 @@ STRING_SETTING (history_name, HISTORY_NAME)
  * Returns: the value of the "images-support" setting
  */
 /**
+ * g_paste_settings_reset_images_support:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "images-support" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_images_support:
  * @self: a #GPasteSettings instance
  * @value: the new history name
@@ -175,6 +238,14 @@ BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
  * Get the "max-displayed-history-size" setting
  *
  * Returns: the value of the "max-displayed-history-size" setting
+ */
+/**
+ * g_paste_settings_reset_max_displayed_history_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "max-displayed-history-size" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_max_displayed_history_size:
@@ -196,6 +267,14 @@ UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)
  * Returns: the value of the "max-history-size" setting
  */
 /**
+ * g_paste_settings_reset_max_history_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "max-history-size" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_max_history_size:
  * @self: a #GPasteSettings instance
  * @value: the maximum number of items the history can contain
@@ -213,6 +292,14 @@ UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE)
  * Get the "max-memory-usage" setting
  *
  * Returns: the value of the "max-memory-usage" setting
+ */
+/**
+ * g_paste_settings_reset_max_memory_usage:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "max-memory-usage" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_max_memory_usage:
@@ -234,6 +321,14 @@ UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE)
  * Returns: the value of the "max-text-item-size" setting
  */
 /**
+ * g_paste_settings_reset_max_text_item_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "max-text-item-size" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_max_text_item_size:
  * @self: a #GPasteSettings instance
  * @value: the maximum size for a textual item to be handled
@@ -251,6 +346,14 @@ UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE)
  * Get the "min-text-item-size" setting
  *
  * Returns: the value of the "min-text-item-size" setting
+ */
+/**
+ * g_paste_settings_reset_min_text_item_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "min-text-item-size" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_min_text_item_size:
@@ -272,6 +375,14 @@ UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE)
  * Returns: the value of the "pop" setting
  */
 /**
+ * g_paste_settings_reset_pop:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "pop" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_pop:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
@@ -289,6 +400,14 @@ STRING_SETTING (pop, POP)
  * Get the "primary-to-history" setting
  *
  * Returns: the value of the "primary-to-history" setting
+ */
+/**
+ * g_paste_settings_reset_primary_to_history:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "primary-to-history" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_primary_to_history:
@@ -310,6 +429,14 @@ BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
  * Returns: the value of the "save-history" setting
  */
 /**
+ * g_paste_settings_reset_save_history:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "save-history" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_save_history:
  * @self: a #GPasteSettings instance
  * @value: whether to save or not the history
@@ -327,6 +454,14 @@ BOOLEAN_SETTING (save_history, SAVE_HISTORY)
  * Get the "show-history" setting
  *
  * Returns: the value of the "show-history" setting
+ */
+/**
+ * g_paste_settings_reset_show_history:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "show-history" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_show_history:
@@ -348,6 +483,14 @@ STRING_SETTING (show_history, SHOW_HISTORY)
  * Returns: the value of the "sync-clipboard-to-primary" setting
  */
 /**
+ * g_paste_settings_reset_sync_clipboard_to_primary:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "sync-clipboard-to-primary" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_sync_clipboard_to_primary:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
@@ -365,6 +508,14 @@ STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY)
  * Get the "sync-primary-to-clipboard" setting
  *
  * Returns: the value of the "sync-primary-to-clipboard" setting
+ */
+/**
+ * g_paste_settings_reset_sync_primary_to_clipboard:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "sync-primary-to-clipboard" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_sync_primary_to_clipboard:
@@ -386,6 +537,14 @@ STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD)
  * Returns: the value of the "synchronize-clipboards" setting
  */
 /**
+ * g_paste_settings_reset_synchronize_clipboards:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "synchronize-clipboards" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_synchronize_clipboards:
  * @self: a #GPasteSettings instance
  * @value: whether to synchronize the clipboard and the primary selection or not
@@ -403,6 +562,14 @@ BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS)
  * Get the "track-changes" setting
  *
  * Returns: the value of the "track-changes" setting
+ */
+/**
+ * g_paste_settings_reset_track_changes:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "track-changes" setting
+ *
+ * Returns:
  */
 /**
  * g_paste_settings_set_track_changes:
@@ -424,6 +591,14 @@ BOOLEAN_SETTING (track_changes, TRACK_CHANGES)
  * Returns: the value of the "track-extension-state" setting
  */
 /**
+ * g_paste_settings_reset_track_extension_state:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "track-extension-state" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_track_extension_state:
  * @self: a #GPasteSettings instance
  * @value: whether to stop tracking or not the clipboard changes when an applet exits
@@ -443,6 +618,14 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  * Returns: the value of the "trim-items" setting
  */
 /**
+ * g_paste_settings_reset_trim_items:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "trim-items" setting
+ *
+ * Returns:
+ */
+/**
  * g_paste_settings_set_trim_items:
  * @self: a #GPasteSettings instance
  * @value: whether to trim or not textual items
@@ -453,24 +636,108 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  */
 BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
 
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+#define EXTENSION_NAME "GPaste@gnome-shell-extensions.gnome.org"
 /**
- * g_paste_settings_get_growing_lines:
+ * g_paste_settings_get_extension_enabled:
  * @self: a #GPasteSettings instance
  *
- * Get the "growing-lines" setting
+ * Get the "extension-enabled" special setting
  *
- * Returns: the value of the "growing-lines" setting
+ * Returns: Whether the gnome-shell extension is enabled or not
  */
+G_PASTE_VISIBLE gboolean
+g_paste_settings_get_extension_enabled (const GPasteSettings *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
+    return priv->extension_enabled;
+}
+
+static inline gchar **
+g_paste_settings_private_get_enabled_extensions (GPasteSettingsPrivate *priv)
+{
+    return g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING);
+}
+
+static void
+g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate *priv)
+{
+    G_PASTE_CLEANUP_STRFREEV gchar **extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    for (gchar **e = extensions; *e; ++e)
+    {
+        if (!g_strcmp0 (*e, EXTENSION_NAME))
+        {
+            priv->extension_enabled = TRUE;
+            return;
+        }
+    }
+    priv->extension_enabled = FALSE;
+}
+
 /**
- * g_paste_settings_set_growing_lines:
+ * g_paste_settings_set_extension_enabled:
  * @self: a #GPasteSettings instance
- * @value: whether to detect or not growing lines
+ * @value: whether to enable or not the gnome-shell extension
  *
- * Change the "growing-lines" setting
+ * Change the "extension-enabled" special setting
  *
  * Returns:
  */
-BOOLEAN_SETTING (growing_lines, GROWING_LINES)
+G_PASTE_VISIBLE void
+g_paste_settings_set_extension_enabled (GPasteSettings *self,
+                                        gboolean        value)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
+    G_PASTE_CLEANUP_STRFREEV gchar **extensions = NULL;
+    if (value == priv->extension_enabled) return;
+
+    extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    gsize nb = g_strv_length (extensions);
+    if (value)
+    {
+        extensions = g_realloc (extensions, (nb + 2) * sizeof (gchar *));
+        extensions[nb] = g_strdup (EXTENSION_NAME);
+        extensions[nb+1] = NULL;
+    }
+    else
+    {
+        gboolean found = FALSE;
+        for (gsize i = 0; i < nb; ++i)
+        {
+            if (!found && !g_strcmp0 (extensions[i], EXTENSION_NAME))
+            {
+                found = TRUE;
+                g_free (extensions[i]);
+            }
+            if (found)
+                extensions[i] = extensions[i+1];
+        } 
+    }
+
+    priv->extension_enabled = value;
+    g_settings_set_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING, (const gchar * const *) extensions);
+}
+
+static void
+g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
+                                         const gchar *key      G_GNUC_UNUSED,
+                                         gpointer     user_data)
+{
+    GPasteSettings *self = G_PASTE_SETTINGS (user_data);
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
+
+    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+
+    /* Forward the signal */
+    g_signal_emit (self,
+                   signals[CHANGED],
+                   g_quark_from_string (G_PASTE_EXTENSION_ENABLED_SETTING),
+                   G_PASTE_EXTENSION_ENABLED_SETTING,
+                   NULL);
+}
+#endif
 
 static void
 g_paste_settings_rebind (GPasteSettings *self,
@@ -492,6 +759,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 
     if (!g_strcmp0 (key, G_PASTE_ELEMENT_SIZE_SETTING))
         g_paste_settings_private_set_element_size_from_dconf (priv);
+    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
+        g_paste_settings_private_set_growing_lines_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
         g_paste_settings_private_set_history_name_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
@@ -545,8 +814,6 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
         g_paste_settings_private_set_trim_items_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
-        g_paste_settings_private_set_growing_lines_from_dconf (priv);
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -567,6 +834,16 @@ g_paste_settings_dispose (GObject *object)
         g_signal_handler_disconnect (settings, priv->changed_signal);
         g_clear_object (&priv->settings);
     }
+
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+    GSettings *shell_settings = priv->shell_settings;
+
+    if (shell_settings)
+    {
+        g_signal_handler_disconnect (shell_settings, priv->shell_changed_signal);
+        g_clear_object (&priv->shell_settings);
+    }
+#endif
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
 }
@@ -602,7 +879,7 @@ static void
 g_paste_settings_init (GPasteSettings *self)
 {
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
-    GSettings *settings = priv->settings = g_settings_new ("org.gnome.GPaste");
+    GSettings *settings = priv->settings = g_settings_new (G_PASTE_SETTINGS_NAME);
 
     priv->history_name = NULL;
     priv->pop = NULL;
@@ -611,6 +888,7 @@ g_paste_settings_init (GPasteSettings *self)
     priv->sync_primary_to_clipboard = NULL;
 
     g_paste_settings_private_set_element_size_from_dconf (priv);
+    g_paste_settings_private_set_growing_lines_from_dconf (priv);
     g_paste_settings_private_set_history_name_from_dconf (priv);
     g_paste_settings_private_set_images_support_from_dconf (priv);
     g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
@@ -628,12 +906,22 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_track_changes_from_dconf (priv);
     g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     g_paste_settings_private_set_trim_items_from_dconf (priv);
-    g_paste_settings_private_set_growing_lines_from_dconf (priv);
 
     priv->changed_signal = g_signal_connect (G_OBJECT (settings),
                                              "changed",
                                              G_CALLBACK (g_paste_settings_settings_changed),
                                              self);
+
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+    priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
+
+    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+
+    priv->shell_changed_signal = g_signal_connect (G_OBJECT (priv->shell_settings),
+                                                  "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
+                                                  G_CALLBACK (g_paste_settings_shell_settings_changed),
+                                                  self);
+#endif
 }
 
 /**

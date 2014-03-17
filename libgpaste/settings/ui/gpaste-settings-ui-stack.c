@@ -19,6 +19,7 @@
 
 #include "gpaste-settings-ui-stack-private.h"
 
+#include <gpaste-config.h>
 #include <gpaste-client.h>
 #include <gpaste-settings.h>
 
@@ -30,14 +31,13 @@ struct _GPasteSettingsUiStackPrivate
 {
     GPasteClient    *client;
     GPasteSettings  *settings;
-    GtkSwitch       *images_support_button;
-    GtkSwitch       *primary_to_history_button;
-    GtkSwitch       *save_history_button;
-    GtkSwitch       *synchronize_clipboards_button;
-    GtkSwitch       *track_changes_button;
-    GtkSwitch       *track_extension_state_button;
-    GtkSwitch       *trim_items_button;
-    GtkSwitch       *growing_lines_button;
+    GtkSwitch       *images_support_switch;
+    GtkSwitch       *growing_lines_switch;
+    GtkSwitch       *primary_to_history_switch;
+    GtkSwitch       *save_history_switch;
+    GtkSwitch       *synchronize_clipboards_switch;
+    GtkSwitch       *track_changes_switch;
+    GtkSwitch       *trim_items_switch;
     GtkSpinButton   *element_size_button;
     GtkSpinButton   *max_displayed_history_size_button;
     GtkSpinButton   *max_history_size_button;
@@ -51,6 +51,9 @@ struct _GPasteSettingsUiStackPrivate
     GtkEntry        *sync_primary_to_clipboard_entry;
     GtkComboBoxText *targets;
     gchar         ***actions;
+
+    GtkSwitch       *extension_enabled_switch;
+    GtkSwitch       *track_extension_state_switch;
 
     gulong           settings_signal;
 };
@@ -96,16 +99,18 @@ g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
                           name, label);
 }
 
+BOOLEAN_CALLBACK (growing_lines)
+BOOLEAN_CALLBACK (images_support)
+BOOLEAN_CALLBACK (primary_to_history)
+BOOLEAN_CALLBACK (save_history)
+BOOLEAN_CALLBACK (synchronize_clipboards)
 BOOLEAN_CALLBACK (track_changes)
-#ifdef ENABLE_EXTENSION
+BOOLEAN_CALLBACK (trim_items)
+
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+BOOLEAN_CALLBACK (extension_enabled)
 BOOLEAN_CALLBACK (track_extension_state)
 #endif
-BOOLEAN_CALLBACK (primary_to_history)
-BOOLEAN_CALLBACK (synchronize_clipboards)
-BOOLEAN_CALLBACK (images_support)
-BOOLEAN_CALLBACK (trim_items)
-BOOLEAN_CALLBACK (growing_lines)
-BOOLEAN_CALLBACK (save_history)
 
 static GPasteSettingsUiPanel *
 g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPrivate *priv)
@@ -113,50 +118,64 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
-    priv->track_changes_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->track_changes_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                 _("Track clipboard changes"),
                                                                                 g_paste_settings_get_track_changes (settings),
                                                                                 track_changes_callback,
+                                                                                (GPasteResetCallback) g_paste_settings_reset_track_changes,
                                                                                 settings);
-#ifdef ENABLE_EXTENSION
-    priv->track_extension_state_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
-                                                                                         _("Sync the daemon state with the extension's one"),
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+    priv->extension_enabled_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+                                                                                    _("Enable the gnome-shell extension"),
+                                                                                    g_paste_settings_get_extension_enabled (settings),
+                                                                                    extension_enabled_callback,
+                                                                                    NULL,
+                                                                                    settings);
+    priv->track_extension_state_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+                                                                                        _("Sync the daemon state with the extension's one"),
                                                                                         g_paste_settings_get_track_extension_state (settings),
                                                                                         track_extension_state_callback,
+                                                                                        (GPasteResetCallback) g_paste_settings_reset_track_extension_state,
                                                                                         settings);
 #endif
     g_paste_settings_ui_panel_add_separator (panel);
-    priv->primary_to_history_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->primary_to_history_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                      _("Primary selection affects history"),
                                                                                      g_paste_settings_get_primary_to_history (settings),
                                                                                      primary_to_history_callback,
+                                                                                     (GPasteResetCallback) g_paste_settings_reset_primary_to_history,
                                                                                      settings);
-    priv->synchronize_clipboards_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->synchronize_clipboards_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                          _("Synchronize clipboard with primary selection"),
                                                                                          g_paste_settings_get_synchronize_clipboards (settings),
                                                                                          synchronize_clipboards_callback,
+                                                                                         (GPasteResetCallback) g_paste_settings_reset_synchronize_clipboards,
                                                                                          settings);
     g_paste_settings_ui_panel_add_separator (panel);
-    priv->images_support_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->images_support_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                  _("Images support"),
                                                                                  g_paste_settings_get_images_support (settings),
                                                                                  images_support_callback,
+                                                                                 (GPasteResetCallback) g_paste_settings_reset_images_support,
                                                                                  settings);
-    priv->trim_items_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->trim_items_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                               _("Trim items"),
                                                                              g_paste_settings_get_trim_items (settings),
                                                                              trim_items_callback,
+                                                                             (GPasteResetCallback) g_paste_settings_reset_trim_items,
                                                                              settings);
-    priv->growing_lines_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->growing_lines_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                  _("Detect growing lines"),
                                                                                 g_paste_settings_get_growing_lines (settings),
                                                                                 growing_lines_callback,
+                                                                                (GPasteResetCallback) g_paste_settings_reset_growing_lines,
                                                                                 settings);
     g_paste_settings_ui_panel_add_separator (panel);
-    priv->save_history_button = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->save_history_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
                                                                                _("Save history"),
                                                                                g_paste_settings_get_save_history (settings),
                                                                                save_history_callback,
+                                                                               (GPasteResetCallback) g_paste_settings_reset_save_history,
                                                                                settings);
 
     return panel;
@@ -179,32 +198,44 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
                                                                              _("Max element size when displaying: "),
                                                                              (gdouble) g_paste_settings_get_element_size (settings),
                                                                              0, 255, 5,
-                                                                             element_size_callback, settings);
+                                                                             element_size_callback,
+                                                                             (GPasteResetCallback) g_paste_settings_reset_element_size,
+                                                                             settings);
     priv->max_displayed_history_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                            _("Max displayed history size: "),
                                                                                            (gdouble) g_paste_settings_get_max_displayed_history_size (settings),
                                                                                            5, 255, 5,
-                                                                                           max_displayed_history_size_callback, settings);
+                                                                                           max_displayed_history_size_callback,
+                                                                                           (GPasteResetCallback) g_paste_settings_reset_max_displayed_history_size,
+                                                                                           settings);
     priv->max_history_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                  _("Max history size: "),
                                                                                  (gdouble) g_paste_settings_get_max_history_size (settings),
                                                                                  5, 255, 5,
-                                                                                 max_history_size_callback, settings);
+                                                                                 max_history_size_callback,
+                                                                                 (GPasteResetCallback) g_paste_settings_reset_max_history_size,
+                                                                                 settings);
     priv->max_memory_usage_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                  _("Max memory usage (MB): "),
                                                                                  (gdouble) g_paste_settings_get_max_memory_usage (settings),
                                                                                  5, 2000, 5,
-                                                                                 max_memory_usage_callback, settings);
+                                                                                 max_memory_usage_callback,
+                                                                                 (GPasteResetCallback) g_paste_settings_reset_max_memory_usage,
+                                                                                 settings);
     priv->max_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Max text item length: "),
                                                                                    (gdouble) g_paste_settings_get_max_text_item_size (settings),
                                                                                    1, G_MAXUINT, 1,
-                                                                                   max_text_item_size_callback, settings);
+                                                                                   max_text_item_size_callback,
+                                                                                   (GPasteResetCallback) g_paste_settings_reset_max_text_item_size,
+                                                                                   settings);
     priv->min_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Min text item length: "),
                                                                                    (gdouble) g_paste_settings_get_min_text_item_size (settings),
                                                                                    1, G_MAXUINT, 1,
-                                                                                   min_text_item_size_callback, settings);
+                                                                                   min_text_item_size_callback,
+                                                                                   (GPasteResetCallback) g_paste_settings_reset_min_text_item_size,
+                                                                                   settings);
 
     return panel;
 }
@@ -224,22 +255,30 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
     priv->pop_entry = g_paste_settings_ui_panel_add_text_setting (panel,
                                                                   _("Delete the first item in history: "),
                                                                   g_paste_settings_get_pop (settings),
-                                                                  pop_callback, settings);
+                                                                  pop_callback,
+                                                                  (GPasteResetCallback) g_paste_settings_reset_pop,
+                                                                  settings);
     /* translators: Keyboard shortcut to display the history */
     priv->show_history_entry = g_paste_settings_ui_panel_add_text_setting (panel,
                                                                            _("Display the history: "),
                                                                            g_paste_settings_get_show_history (settings),
-                                                                           show_history_callback, settings);
+                                                                           show_history_callback,
+                                                                           (GPasteResetCallback) g_paste_settings_reset_show_history,
+                                                                           settings);
     /* translators: Keyboard shortcut to sync the clipboard to the primary selection */
     priv->sync_clipboard_to_primary_entry = g_paste_settings_ui_panel_add_text_setting (panel,
                                                                                         _("Sync the clipboard to the primary selection: "),
                                                                                         g_paste_settings_get_sync_clipboard_to_primary (settings),
-                                                                                        sync_clipboard_to_primary_callback, settings);
+                                                                                        sync_clipboard_to_primary_callback,
+                                                                                        (GPasteResetCallback) g_paste_settings_reset_sync_clipboard_to_primary,
+                                                                                        settings);
     /* translators: Keyboard shortcut to sync the primary selection to the clipboard */
     priv->sync_primary_to_clipboard_entry = g_paste_settings_ui_panel_add_text_setting (panel,
                                                                                         _("Sync the primary selection to the clipboard: "),
                                                                                         g_paste_settings_get_sync_primary_to_clipboard (settings),
-                                                                                        sync_primary_to_clipboard_callback, settings);
+                                                                                        sync_primary_to_clipboard_callback,
+                                                                                        (GPasteResetCallback) g_paste_settings_reset_sync_primary_to_clipboard,
+                                                                                        settings);
 
     return panel;
 }
@@ -374,6 +413,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
 
     if (!g_strcmp0 (key, G_PASTE_ELEMENT_SIZE_SETTING))
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
+    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->growing_lines_switch), g_paste_settings_get_growing_lines (settings));
     else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
     {
         G_PASTE_CLEANUP_FREE gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
@@ -381,7 +422,7 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         g_paste_settings_ui_stack_private_refill_histories (priv);
     }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
-        gtk_switch_set_active (GTK_SWITCH (priv->images_support_button), g_paste_settings_get_images_support (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->images_support_switch), g_paste_settings_get_images_support (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
@@ -395,9 +436,9 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     else if (!g_strcmp0 (key, G_PASTE_POP_SETTING))
         gtk_entry_set_text (priv->pop_entry, g_paste_settings_get_pop (settings));
     else if (!g_strcmp0 (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
-        gtk_switch_set_active (GTK_SWITCH (priv->primary_to_history_button), g_paste_settings_get_primary_to_history (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->primary_to_history_switch), g_paste_settings_get_primary_to_history (settings));
     else if (!g_strcmp0 (key, G_PASTE_SAVE_HISTORY_SETTING))
-        gtk_switch_set_active (GTK_SWITCH (priv->save_history_button), g_paste_settings_get_save_history (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->save_history_switch), g_paste_settings_get_save_history (settings));
     else if (!g_strcmp0 (key, G_PASTE_SHOW_HISTORY_SETTING))
         gtk_entry_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings));
     else if (!g_strcmp0 (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
@@ -405,15 +446,17 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     else if (!g_strcmp0 (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
         gtk_entry_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings));
     else if (!g_strcmp0 (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
-        gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_button), g_paste_settings_get_synchronize_clipboards (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_switch), g_paste_settings_get_synchronize_clipboards (settings));
     else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))
-        gtk_switch_set_active (GTK_SWITCH (priv->track_changes_button), g_paste_settings_get_track_changes (settings));
-#ifdef ENABLE_EXTENSION
-    else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
-        gtk_switch_set_active (GTK_SWITCH (priv->track_extension_state_button), g_paste_settings_get_track_extension_state (settings));
-#endif
+        gtk_switch_set_active (GTK_SWITCH (priv->track_changes_switch), g_paste_settings_get_track_changes (settings));
     else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
-        gtk_switch_set_active (GTK_SWITCH (priv->trim_items_button), g_paste_settings_get_trim_items (settings));
+        gtk_switch_set_active (GTK_SWITCH (priv->trim_items_switch), g_paste_settings_get_trim_items (settings));
+#if G_PASTE_CONFIG_ENABLE_EXTENSION
+    else if (!g_strcmp0 (key, G_PASTE_EXTENSION_ENABLED_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->extension_enabled_switch), g_paste_settings_get_extension_enabled (settings));
+    else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->track_extension_state_switch), g_paste_settings_get_track_extension_state (settings));
+#endif
 }
 
 static void

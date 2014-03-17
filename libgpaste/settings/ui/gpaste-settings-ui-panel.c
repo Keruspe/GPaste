@@ -29,36 +29,42 @@ struct _GPasteSettingsUiPanelPrivate
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)
 
-#define CALLBACK_DATA_FULL(cb, w, d, d2)                                                             \
+#define CALLBACK_DATA_FULL(cb, rcb, w, d, d2)                                                        \
     GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);      \
     _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc (sizeof (_CallbackDataWrapper)); \
     CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                       \
     priv->callback_data = g_slist_prepend (priv->callback_data, _data);                              \
     _data->widget = GTK_WIDGET (w);                                                                  \
     data->callback = G_CALLBACK (cb);                                                                \
+    data->reset_cb = rcb;                                                                            \
     data->custom_data = user_data;                                                                   \
     data->user_data = (d) ? GTK_WIDGET (d) : NULL;                                                   \
     data->user_data2 = (d2) ? GTK_WIDGET (d2) : NULL
 
 #define CALLBACK_DATA_DEFAULT(w) \
-    CALLBACK_DATA_FULL (on_value_changed, w, NULL, NULL)
+    CALLBACK_DATA_FULL (on_value_changed, on_reset, w, NULL, NULL)
+
+#define CALLBACK_DATA_CONFIRM2(w, d, d2) \
+    CALLBACK_DATA_FULL (confirm_action, NULL, w, d, d2)
 
 #define CALLBACK_DATA_CONFIRM(w, d) \
     CALLBACK_DATA_CONFIRM2 (w, d, NULL)
-
-#define CALLBACK_DATA_CONFIRM2(w, d, d2) \
-    CALLBACK_DATA_FULL (confirm_action, w, d, d2)
 
 #define G_PASTE_CALLBACK(cb_type)                                  \
     CallbackDataWrapper *data = (CallbackDataWrapper *) user_data; \
     ((cb_type) data->callback)
 
+#define G_PASTE_RESET_CALLBACK()                                   \
+    CallbackDataWrapper *data = (CallbackDataWrapper *) user_data; \
+    (data->reset_cb)
+
 typedef struct
 {
-    GCallback  callback;
-    gpointer   custom_data;
-    GtkWidget *user_data;
-    GtkWidget *user_data2;
+    GCallback           callback;
+    GPasteResetCallback reset_cb;
+    gpointer            custom_data;
+    GtkWidget          *user_data;
+    GtkWidget          *user_data2;
 } CallbackDataWrapper;
 
 typedef struct
@@ -93,12 +99,33 @@ g_paste_settings_ui_panel_add_label (GPasteSettingsUiPanel *self,
     return GTK_LABEL (button_label);
 }
 
+static gboolean
+g_paste_settings_ui_panel_on_reset_pressed (GtkWidget *widget G_GNUC_UNUSED,
+                                            GdkEvent  *event  G_GNUC_UNUSED,
+                                            gpointer   user_data)
+{
+    G_PASTE_RESET_CALLBACK () (data->custom_data);
+    return FALSE;
+}
+
+static GtkWidget *
+g_paste_settings_ui_panel_make_reset_button (CallbackDataWrapper *data)
+{
+    GtkWidget *widget = gtk_button_new_from_icon_name ("edit-delete-symbolic", GTK_ICON_SIZE_BUTTON);
+    g_signal_connect (G_OBJECT (widget),
+                      "button-press-event",
+                      G_CALLBACK (g_paste_settings_ui_panel_on_reset_pressed),
+                      data);
+    return widget;
+}
+
 /**
  * g_paste_settings_ui_panel_add_boolean_setting:
  * @self: a #GPasteSettingsUiPanel instance
  * @label: the label to display
  * @value: the deafault value
  * @on_value_changed: (closure user_data) (scope notified): the callback to call when the value changes
+ * @on_reset: (closure user_data) (scope notified): the callback to call when the value is reset
  *
  * Add a new boolean settings to the current pane
  *
@@ -109,8 +136,10 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
                                                const gchar           *label,
                                                gboolean               value,
                                                GPasteBooleanCallback  on_value_changed,
+                                               GPasteResetCallback    on_reset,
                                                gpointer               user_data)
 {
+    GtkGrid *grid = GTK_GRID (self);
     GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *widget = gtk_switch_new ();
     GtkSwitch *sw = GTK_SWITCH (widget);
@@ -118,7 +147,9 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
 
     gtk_switch_set_active (sw, value);
     _data->signal = g_signal_connect (widget, "notify::active", G_CALLBACK (boolean_wrapper), data);
-    gtk_grid_attach_next_to (GTK_GRID (self), widget, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
+    gtk_grid_attach_next_to (grid, widget, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
+    if (on_reset)
+        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), widget, GTK_POS_RIGHT, 1, 1);
 
     return sw;
 }
@@ -136,7 +167,7 @@ g_paste_settings_ui_panel_add_separator (GPasteSettingsUiPanel *self)
 {
     GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
 
-    gtk_grid_attach (GTK_GRID (self), gtk_separator_new (GTK_ORIENTATION_HORIZONTAL), 0, priv->current_line++, 2, 1);
+    gtk_grid_attach (GTK_GRID (self), gtk_separator_new (GTK_ORIENTATION_HORIZONTAL), 0, priv->current_line++, 3, 1);
 }
 
 static void
@@ -155,6 +186,7 @@ range_wrapper (GtkSpinButton *spinbutton,
  * @max: the maximal authorized value
  * @step: the step between proposed values
  * @on_value_changed: (closure user_data) (scope notified): the callback to call when the value changes
+ * @on_reset: (closure user_data) (scope notified): the callback to call when the value is reset
  *
  * Add a new boolean settings to the current pane
  *
@@ -168,8 +200,10 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
                                              gdouble                max,
                                              gdouble                step,
                                              GPasteRangeCallback    on_value_changed,
+                                             GPasteResetCallback    on_reset,
                                              gpointer               user_data)
 {
+    GtkGrid *grid = GTK_GRID (self);
     GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *button = gtk_spin_button_new_with_range (min, max, step);
     GtkSpinButton *b = GTK_SPIN_BUTTON (button);
@@ -178,7 +212,8 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
     gtk_widget_set_hexpand (button, TRUE);
     gtk_spin_button_set_value (b, value);
     _data->signal = g_signal_connect (button, "value-changed", G_CALLBACK (range_wrapper), data);
-    gtk_grid_attach_next_to (GTK_GRID (self), button, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
+    gtk_grid_attach_next_to (grid, button, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
+    gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), button, GTK_POS_RIGHT, 1, 1);
 
     return b;
 }
@@ -196,6 +231,7 @@ text_wrapper (GtkEditable *editable,
  * @label: the label to display
  * @value: the deafault value
  * @on_value_changed: (closure user_data) (scope notified): the callback to call when the value changes
+ * @on_reset: (closure user_data) (scope notified): the callback to call when the value is reset
  *
  * Add a new text settings to the current pane
  *
@@ -206,8 +242,10 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
                                             const gchar           *label,
                                             const gchar           *value,
                                             GPasteTextCallback     on_value_changed,
+                                            GPasteResetCallback    on_reset,
                                             gpointer               user_data)
 {
+    GtkGrid *grid = GTK_GRID (self);
     GtkLabel *entry_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *entry = gtk_entry_new ();
     GtkEntry *e = GTK_ENTRY (entry);
@@ -217,6 +255,8 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
     gtk_entry_set_text (e, value);
     _data->signal = g_signal_connect (entry, "changed", G_CALLBACK (text_wrapper), data);
     gtk_grid_attach_next_to (GTK_GRID (self), entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);
+    if (on_reset)
+        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), entry, GTK_POS_RIGHT, 1, 1);
 
     return e;
 }
@@ -263,7 +303,7 @@ g_paste_settings_ui_panel_add_text_confirm_setting (GPasteSettingsUiPanel *self,
                                                     GPasteTextCallback     confirm_action,
                                                     gpointer               user_data)
 {
-    GtkEntry *entry = g_paste_settings_ui_panel_add_text_setting (self, label, value, on_value_changed, user_data1);
+    GtkEntry *entry = g_paste_settings_ui_panel_add_text_setting (self, label, value, on_value_changed, NULL, user_data1);
     GtkButton *button = g_paste_settings_ui_panel_add_confirm_button (self, gtk_button_new_with_label (confirm_label), GTK_WIDGET (entry));
     CALLBACK_DATA_CONFIRM (button, entry);
 
