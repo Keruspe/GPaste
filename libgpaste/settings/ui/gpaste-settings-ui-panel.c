@@ -71,7 +71,9 @@ typedef struct
 {
     CallbackDataWrapper wrap;
     GtkWidget          *widget;
+    GtkWidget          *reset_widget;
     gulong              signal;
+    gulong              reset_signal;
 } _CallbackDataWrapper;
 
 static void
@@ -109,14 +111,14 @@ g_paste_settings_ui_panel_on_reset_pressed (GtkWidget *widget G_GNUC_UNUSED,
 }
 
 static GtkWidget *
-g_paste_settings_ui_panel_make_reset_button (CallbackDataWrapper *data)
+g_paste_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
 {
-    GtkWidget *widget = gtk_button_new_from_icon_name ("edit-delete-symbolic", GTK_ICON_SIZE_BUTTON);
-    g_signal_connect (G_OBJECT (widget),
-                      "button-press-event",
-                      G_CALLBACK (g_paste_settings_ui_panel_on_reset_pressed),
-                      data);
-    return widget;
+    data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic", GTK_ICON_SIZE_BUTTON);
+    data->reset_signal = g_signal_connect (G_OBJECT (data->reset_widget),
+                                           "button-press-event",
+                                           G_CALLBACK (g_paste_settings_ui_panel_on_reset_pressed),
+                                           data);
+    return data->reset_widget;
 }
 
 /**
@@ -149,7 +151,7 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
     _data->signal = g_signal_connect (widget, "notify::active", G_CALLBACK (boolean_wrapper), data);
     gtk_grid_attach_next_to (grid, widget, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
     if (on_reset)
-        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), widget, GTK_POS_RIGHT, 1, 1);
+        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), widget, GTK_POS_RIGHT, 1, 1);
 
     return sw;
 }
@@ -213,7 +215,7 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
     gtk_spin_button_set_value (b, value);
     _data->signal = g_signal_connect (button, "value-changed", G_CALLBACK (range_wrapper), data);
     gtk_grid_attach_next_to (grid, button, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
-    gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), button, GTK_POS_RIGHT, 1, 1);
+    gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), button, GTK_POS_RIGHT, 1, 1);
 
     return b;
 }
@@ -256,7 +258,7 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
     _data->signal = g_signal_connect (entry, "changed", G_CALLBACK (text_wrapper), data);
     gtk_grid_attach_next_to (GTK_GRID (self), entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);
     if (on_reset)
-        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (data), entry, GTK_POS_RIGHT, 1, 1);
+        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), entry, GTK_POS_RIGHT, 1, 1);
 
     return e;
 }
@@ -371,9 +373,11 @@ static void
 clean_callback_data (gpointer data,
                      gpointer user_data G_GNUC_UNUSED)
 {
-    G_PASTE_CLEANUP_FREE _CallbackDataWrapper *wrap = data; /* TODO: gpointer* */
+    G_PASTE_CLEANUP_FREE _CallbackDataWrapper *wrap = data;
 
     g_signal_handler_disconnect (wrap->widget, wrap->signal);
+    if (wrap->reset_widget)
+        g_signal_handler_disconnect (wrap->reset_widget, wrap->reset_signal);
 }
 
 static void

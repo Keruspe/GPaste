@@ -1,22 +1,33 @@
 3.10:
     applet:
-        unity support
-        use async calls
         menu: override container_add & memnushell_append & prepend
+        use async calls
         honour user settings
+
+3.10.1:
+    applet:
+        unity support
         don't close on delete
 
 3.12:
     general:
-        wayland support
-    keybinder:
-        switch to clutter event filter (not to have to parse X event)
+        merge 3.10
     gnome-shell-client:
         GVariantDict
+
+3.12.1:
+    general:
+        merge 3.10.1
+
+3.12.2:
+    keybinder:
+        switch to clutter event filter (not to have to parse X event)
     tests:
         split test, add interactive wrapper
 
 3.14:
+    general:
+        wayland support
     plugins:
         make it possible for both client and server
         gpg
