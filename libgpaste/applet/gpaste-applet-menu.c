@@ -106,7 +106,7 @@ g_paste_applet_menu_inc_size (GPasteAppletMenu *self)
 }
 
 /**
- * g_paste_applet_menu_append_list:
+ * g_paste_applet_menu_append:
  * @self: a #GPasteAppletMenu instance
  * @items: (element-type GPasteAppletItem): the items to append
  *
@@ -115,7 +115,7 @@ g_paste_applet_menu_inc_size (GPasteAppletMenu *self)
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_applet_menu_append_list (GPasteAppletMenu *self,
+g_paste_applet_menu_append (GPasteAppletMenu *self,
                                  GSList           *items)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
@@ -131,7 +131,7 @@ g_paste_applet_menu_append_list (GPasteAppletMenu *self,
 }
 
 /**
- * g_paste_applet_menu_prepend_list:
+ * g_paste_applet_menu_prepend:
  * @self: a #GPasteAppletMenu instance
  * @items: (element-type GPasteAppletItem): the items to prepend
  *
@@ -140,7 +140,7 @@ g_paste_applet_menu_append_list (GPasteAppletMenu *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_applet_menu_prepend_list (GPasteAppletMenu *self,
+g_paste_applet_menu_prepend (GPasteAppletMenu *self,
                                   GSList           *items)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));

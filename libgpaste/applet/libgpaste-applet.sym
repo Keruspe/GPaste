@@ -33,8 +33,8 @@ global:
     g_paste_applet_item_new;
 
     g_paste_applet_menu_get_type;
-    g_paste_applet_menu_append_list;
-    g_paste_applet_menu_prepend_list;
+    g_paste_applet_menu_append;
+    g_paste_applet_menu_prepend;
     g_paste_applet_menu_new;
 
     g_paste_applet_quit_get_type;

@@ -47,7 +47,7 @@ g_paste_applet_history_add_list_to_menu (GSList           *list,
                                          GPasteAppletMenu *menu)
 {
     g_slist_foreach (list, g_paste_applet_history_ref_item, NULL);
-    g_paste_applet_menu_append_list (menu, list);
+    g_paste_applet_menu_append (menu, list);
 }
 
 static void
