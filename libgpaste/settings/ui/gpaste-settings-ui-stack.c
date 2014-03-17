@@ -381,6 +381,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_entry_set_text (priv->backup_entry, text);
         g_paste_settings_ui_stack_private_refill_histories (priv);
     }
+    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->growing_lines_button), g_paste_settings_get_growing_lines (settings));
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_button), g_paste_settings_get_images_support (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
