@@ -34,7 +34,7 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
     sudo make install
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 
-If you also want to build the legacy applet, you'll have to pass `--enable-vala --enable-applet` to configure.
+If you also want to build the status icon, you'll have to pass `--enable-applet` to configure.
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
