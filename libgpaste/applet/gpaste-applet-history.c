@@ -81,7 +81,7 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history_finish (priv->client, res, NULL);
 
     gsize old_size = priv->size;
-    priv->size = g_strv_length (history);
+    priv->size = MIN (g_strv_length (history), g_paste_settings_get_max_displayed_history_size (priv->settings));
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
