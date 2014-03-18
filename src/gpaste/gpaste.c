@@ -32,6 +32,8 @@ show_help (const gchar *caller)
     printf (_("Usage:\n"));
     /* Translators: help for gpaste history */
     printf ("  %s [history]: %s\n", caller, _("print the history with indexes"));
+    /* Translators: help for gpaste history-size */
+    printf ("  %s history-size: %s\n", caller, _("print the size of the history"));
     /* Translators: help for gpaste backup-history <name> */
     printf ("  %s backup-history <%s>: %s\n", caller, _("name"), _("backup current history"));
     /* Translators: help for gpaste switch-history <name> */
@@ -229,6 +231,13 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "history"))
             {
                 show_history (client, FALSE, FALSE, &error);
+            }
+            else if (!g_strcmp0 (arg1, "hs") ||
+                     !g_strcmp0 (arg1, "history-size"))
+            {
+                guint32 size = g_paste_client_get_history_size_sync (client, &error);
+                if (!error)
+                    printf ("%u\n", size);
             }
             else if (!g_strcmp0 (arg1, "rh") ||
                      !g_strcmp0 (arg1, "raw-history"))
