@@ -29,16 +29,16 @@ struct _GPasteSettingsUiPanelPrivate
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)
 
-#define CALLBACK_DATA_FULL(cb, rcb, w, d, d2)                                                        \
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);      \
-    _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc (sizeof (_CallbackDataWrapper)); \
-    CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                       \
-    priv->callback_data = g_slist_prepend (priv->callback_data, _data);                              \
-    _data->widget = GTK_WIDGET (w);                                                                  \
-    data->callback = G_CALLBACK (cb);                                                                \
-    data->reset_cb = rcb;                                                                            \
-    data->custom_data = user_data;                                                                   \
-    data->user_data = (d) ? GTK_WIDGET (d) : NULL;                                                   \
+#define CALLBACK_DATA_FULL(cb, rcb, w, d, d2)                                                         \
+    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);       \
+    _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc0 (sizeof (_CallbackDataWrapper)); \
+    CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                        \
+    priv->callback_data = g_slist_prepend (priv->callback_data, _data);                               \
+    _data->widget = GTK_WIDGET (w);                                                                   \
+    data->callback = G_CALLBACK (cb);                                                                 \
+    data->reset_cb = rcb;                                                                             \
+    data->custom_data = user_data;                                                                    \
+    data->user_data = (d) ? GTK_WIDGET (d) : NULL;                                                    \
     data->user_data2 = (d2) ? GTK_WIDGET (d2) : NULL
 
 #define CALLBACK_DATA_DEFAULT(w) \
@@ -386,6 +386,7 @@ g_paste_settings_ui_panel_dispose (GObject *object)
     GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (G_PASTE_SETTINGS_UI_PANEL (object));
 
     g_slist_foreach (priv->callback_data, clean_callback_data, NULL);
+    g_slist_free (priv->callback_data);
     priv->callback_data = NULL;
 
     G_OBJECT_CLASS (g_paste_settings_ui_panel_parent_class)->dispose (object);
