@@ -4,8 +4,6 @@
         don't close on delete
 
 3.12:
-    general:
-        merge 3.10
     gnome-shell-client:
         GVariantDict
 
