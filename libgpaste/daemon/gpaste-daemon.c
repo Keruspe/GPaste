@@ -92,7 +92,7 @@ static GVariant *
 g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
     GSList *history = g_paste_history_get_history (priv->history);
-    guint length = MIN (g_slist_length (history), g_paste_settings_get_max_displayed_history_size (priv->settings));
+    guint length = g_slist_length (history);
     G_PASTE_CLEANUP_FREE const gchar **displayed_history = g_new (const gchar *, length + 1);
 
     for (guint i = 0; i < length; ++i, history = g_slist_next (history))
