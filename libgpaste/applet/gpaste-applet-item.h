@@ -21,6 +21,7 @@
 #define __G_PASTE_APPLET_ITEM_H__
 
 #include <gpaste-applet-delete.h>
+#include <gpaste-settings.h>
 
 G_BEGIN_DECLS
 
@@ -37,8 +38,9 @@ typedef struct _GPasteAppletItemClass GPasteAppletItemClass;
 G_PASTE_VISIBLE
 GType g_paste_applet_item_get_type (void);
 
-GtkWidget *g_paste_applet_item_new (GPasteClient *client,
-                                    guint32       index);
+GtkWidget *g_paste_applet_item_new (GPasteClient   *client,
+                                    GPasteSettings *settings,
+                                    guint32         index);
 
 G_END_DECLS
 

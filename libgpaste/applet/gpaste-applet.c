@@ -24,6 +24,7 @@
 struct _GPasteAppletPrivate
 {
     GPasteClient        *client;
+    GPasteSettings      *settings;
 
     GPasteAppletMenu    *menu;
     GPasteAppletHistory *history;
@@ -90,6 +91,7 @@ g_paste_applet_dispose (GObject *object)
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private ((GPasteApplet *) object);
 
     g_clear_object (&priv->client);
+    g_clear_object (&priv->settings);
     g_clear_object (&priv->history);
     g_clear_object (&priv->icon);
 
@@ -106,6 +108,8 @@ static void
 g_paste_applet_init (GPasteApplet *self)
 {
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
+
+    priv->settings = g_paste_settings_new ();
 
     priv->menu = NULL;
     priv->init_state = 0;
@@ -125,7 +129,7 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
     }
 
     priv->menu = g_paste_applet_menu_new (priv->client, priv->application);
-    priv->history = g_paste_applet_history_new (priv->client, priv->menu);
+    priv->history = g_paste_applet_history_new (priv->client, priv->settings, priv->menu);
 
     if (priv->init_state >> 1)
         g_paste_applet_menu_set_active (priv->menu, priv->init_state & 0x1);

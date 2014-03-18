@@ -23,11 +23,13 @@
 
 struct _GPasteAppletItemPrivate
 {
-    GPasteClient *client;
-    GtkLabel     *label;
-    guint32       index;
+    GPasteClient   *client;
+    GPasteSettings *settings;
 
-    gulong        changed_id;
+    GtkLabel       *label;
+    guint32         index;
+
+    gulong          changed_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletItem, g_paste_applet_item, GTK_TYPE_MENU_ITEM)
@@ -87,12 +89,12 @@ g_paste_applet_item_dispose (GObject *object)
 {
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) object);
 
-    if (priv->changed_id)
+    if (priv->client)
     {
         g_signal_handler_disconnect (priv->client, priv->changed_id);
-        priv->changed_id = 0;
+        g_clear_object (&priv->client);
     }
-    g_clear_object (&priv->client);
+    g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_applet_item_parent_class)->dispose (object);
 }
@@ -122,7 +124,8 @@ g_paste_applet_item_init (GPasteAppletItem *self)
 
 /**
  * g_paste_applet_item_new:
- * @client: a #GPasteClient
+ * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
  * @index: the index of the corresponding item
  *
  * Create a new instance of #GPasteAppletItem
@@ -131,15 +134,18 @@ g_paste_applet_item_init (GPasteAppletItem *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_applet_item_new (GPasteClient *client,
-                         guint32       index)
+g_paste_applet_item_new (GPasteClient   *client,
+                         GPasteSettings *settings,
+                         guint32         index)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_APPLET_ITEM, NULL);
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) self);
 
     priv->client = g_object_ref (client);
+    priv->settings = g_object_ref (settings);
     priv->index = index;
 
     gtk_label_set_max_width_chars (priv->label, 80 /* FIXME */);

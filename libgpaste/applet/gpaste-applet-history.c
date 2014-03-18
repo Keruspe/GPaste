@@ -23,13 +23,15 @@
 
 struct _GPasteAppletHistoryPrivate
 {
-    GPasteClient       *client;
-    GPasteAppletMenu   *menu;
+    GPasteClient     *client;
+    GPasteSettings   *settings;
 
-    GSList             *items;
-    gsize               size;
+    GPasteAppletMenu *menu;
 
-    gulong              changed_id;
+    GSList           *items;
+    gsize             size;
+
+    gulong            changed_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletHistory, g_paste_applet_history, G_TYPE_OBJECT)
@@ -52,12 +54,12 @@ g_paste_applet_history_add_list_to_menu (GSList           *list,
 
 static void
 g_paste_applet_history_private_add_history (GPasteAppletHistoryPrivate *priv,
-                                            gchar                     **history) /* FIXME: const */
+                                            const gchar * const        *history)
 {
-    priv->size = g_strv_length (history);
+    priv->size = g_strv_length ((GStrv) history);
 
     for (gsize i = 0; i < priv->size; ++i)
-        priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, i));
+        priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, priv->settings, i));
 
     g_paste_applet_history_add_list_to_menu (priv->items, priv->menu);
 }
@@ -95,7 +97,7 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
-            priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, i));
+            priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, priv->settings, i));
         g_paste_applet_history_add_list_to_menu (g_slist_nth (priv->items, old_size), priv->menu);
     }
     else if (old_size > priv->size)
@@ -128,7 +130,7 @@ g_paste_applet_history_on_history_ready (GObject      *source_object G_GNUC_UNUS
                                          gpointer      user_data)
 {
     GPasteAppletHistoryPrivate *priv = user_data;
-    g_paste_applet_history_private_add_history (priv, g_paste_client_get_history_finish (priv->client, res, NULL));
+    g_paste_applet_history_private_add_history (priv, /*FIXME*/ (const gchar * const *) g_paste_client_get_history_finish (priv->client, res, NULL));
 }
 
 static void
@@ -141,6 +143,8 @@ g_paste_applet_history_dispose (GObject *object)
         g_signal_handler_disconnect (priv->client, priv->changed_id);
         g_clear_object (&priv->client);
     }
+
+    g_clear_object (&priv->settings);
 
     if (priv->items) {
         g_paste_applet_history_drop_list (priv->items, priv->menu);
@@ -167,7 +171,8 @@ g_paste_applet_history_init (GPasteAppletHistory *self)
 
 /**
  * g_paste_applet_history_new:
- * @client: a #GPasteClient
+ * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
  * @menu: the #GPasteAppletMenu we'll be attached to
  *
  * Create a new instance of #GPasteAppletHistory
@@ -177,15 +182,18 @@ g_paste_applet_history_init (GPasteAppletHistory *self)
  */
 G_PASTE_VISIBLE GPasteAppletHistory *
 g_paste_applet_history_new (GPasteClient       *client,
+                            GPasteSettings     *settings,
                             GPasteAppletMenu   *menu)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (G_PASTE_IS_APPLET_MENU (menu), NULL);
 
     GPasteAppletHistory *self = G_PASTE_APPLET_HISTORY (g_object_new (G_PASTE_TYPE_APPLET_HISTORY, NULL));
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
 
     priv->client = g_object_ref (client);
+    priv->settings = g_object_ref (settings);
     priv->menu = menu;
 
     g_paste_client_get_history (priv->client, g_paste_applet_history_on_history_ready, priv);
