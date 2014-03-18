@@ -325,6 +325,22 @@ g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_about_sync:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * Display the about dialog
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_about_sync (GPasteClient *self,
+                               GError      **error)
+{
+    DBUS_CALL_NO_PARAM_NO_RETURN (ABOUT);
+}
+
+/**
  * g_paste_client_reexecute_sync:
  * @self: a #GPasteClient instance
  * @error: a #GError
@@ -627,6 +643,25 @@ g_paste_client_on_extension_state_changed (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_about:
+ * @self: a #GPasteClient instance
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Display the about dialog
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_about (GPasteClient       *self,
+                      GAsyncReadyCallback callback,
+                      gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (ABOUT);
+}
+
+/**
  * g_paste_client_reexecute:
  * @self: a #GPasteClient instance
  * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
@@ -907,6 +942,24 @@ G_PASTE_VISIBLE void
 g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
                                                   GAsyncResult *result,
                                                   GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_about_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Display the about dialog
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_about_finish (GPasteClient *self,
+                             GAsyncResult *result,
+                             GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

@@ -50,6 +50,18 @@
                   G_TYPE_NONE,                   \
                   0)
 
+#define LICENSE                                                            \
+    "GPaste is free software: you can redistribute it and/or modify"       \
+    "it under the terms of the GNU General Public License as published by" \
+    "the Free Software Foundation, either version 3 of the License, or"    \
+    "(at your option) any later version.\n\n"                              \
+    "GPaste is distributed in the hope that it will be useful,"            \
+    "but WITHOUT ANY WARRANTY; without even the implied warranty of"       \
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"        \
+    "GNU General Public License for more details.\n\n"                     \
+    "You should have received a copy of the GNU General Public License"    \
+    "along with GPaste.  If not, see <http://www.gnu.org/licenses/>."
+
 enum
 {
     C_CHANGED,
@@ -87,6 +99,28 @@ enum
 };
 
 static guint signals[LAST_SIGNAL] = { 0 };
+
+static void
+g_paste_daemon_show_about_dialog (void)
+{
+    const gchar *_authors[] = {
+        "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
+        NULL
+    };
+    G_PASTE_CLEANUP_B_STRV_FREE GStrv authors = g_boxed_copy (G_TYPE_STRV, _authors);
+    gtk_show_about_dialog (NULL,
+                           "program-name",   PACKAGE_NAME,
+                           "version",        PACKAGE_VERSION,
+                           "logo-icon-name", "gtk-paste",
+                           "license",        LICENSE,
+                           "authors",        authors,
+                           "copyright",      "Copyright © 2010-2013 Marc-Antoine Perennou",
+                           "comments",       "Clipboard management system",
+                           "website",        "http://www.imagination-land.org/tags/GPaste.html",
+                           "website-label",  "Follow GPaste news",
+                           "wrap-license",   TRUE,
+                           NULL);
+}
 
 static GVariant *
 g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
@@ -407,6 +441,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_track (self, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))
         g_paste_daemon_on_extension_state_changed (self, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ABOUT))
+        g_paste_daemon_show_about_dialog ();
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_REEXECUTE))
         g_paste_daemon_reexecute (self);
 

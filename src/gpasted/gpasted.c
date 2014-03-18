@@ -74,6 +74,7 @@ main (gint argc, gchar *argv[])
     G_PASTE_INIT_GETTEXT ();
 
     gtk_init (&argc, &argv);
+    g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL);
 
     G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
     G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);

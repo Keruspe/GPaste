@@ -30,6 +30,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_OBJECT_PATH    "/org/gnome/GPaste"
 #define G_PASTE_DAEMON_INTERFACE_NAME "org.gnome.GPaste"
 
+#define G_PASTE_DAEMON_ABOUT                      "About"
 #define G_PASTE_DAEMON_ADD                        "Add"
 #define G_PASTE_DAEMON_ADD_FILE                   "AddFile"
 #define G_PASTE_DAEMON_BACKUP_HISTORY             "BackupHistory"
@@ -99,6 +100,7 @@ G_BEGIN_DECLS
         "           <arg type='b' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_REEXECUTE "' />"                \
+        "       <method name='" G_PASTE_DAEMON_ABOUT "' />"                    \
         "       <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \
         "       <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
         "           <arg type='b' direction='out' />"                          \
