@@ -67,6 +67,15 @@ g_paste_applet_set_active (GPasteApplet *self,
 }
 
 static void
+g_paste_applet_on_history_ready (GObject      *source_object,
+                                 GAsyncResult *res,
+                                 gpointer      user_data)
+{
+    GPasteAppletPrivate *priv = user_data;
+    priv->history = g_paste_applet_history_new_finish (G_PASTE_APPLET_HISTORY (source_object), res, NULL);
+}
+
+static void
 g_paste_applet_dispose (GObject *object)
 {
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private ((GPasteApplet *) object);
@@ -98,7 +107,7 @@ g_paste_applet_new (GtkApplication *application)
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
     priv->menu = g_paste_applet_menu_new (priv->client, G_APPLICATION (application));
-    priv->history = g_paste_applet_history_new_sync (priv->client, priv->menu);
+    g_paste_applet_history_new (priv->client, priv->menu, g_paste_applet_on_history_ready, priv);
 
     gtk_widget_hide (gtk_application_window_new (application));
 
