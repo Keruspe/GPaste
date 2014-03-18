@@ -1,3 +1,15 @@
+3.10;
+    daemon:
+        history-size
+        about
+    client:
+        history-size
+        about
+    settings:
+        use client for about
+    applet:
+        use history-size
+
 3.10.1:
     applet:
         unity support
