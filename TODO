@@ -1,6 +1,5 @@
 3.10:
     applet:
-        port history to asyncinitable
         use async calls
         honour user settings
 

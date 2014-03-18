@@ -30,9 +30,6 @@ struct _GPasteAppletHistoryPrivate
     gsize               size;
 
     gulong              changed_id;
-
-    GAsyncReadyCallback callback;
-    gpointer            user_data;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletHistory, g_paste_applet_history, G_TYPE_OBJECT)
@@ -130,9 +127,8 @@ g_paste_applet_history_on_history_ready (GObject      *source_object G_GNUC_UNUS
                                          GAsyncResult *res,
                                          gpointer      user_data)
 {
-    GPasteAppletHistory *self = user_data;
-    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
-    priv->callback (G_OBJECT (self), res, priv->user_data);
+    GPasteAppletHistoryPrivate *priv = user_data;
+    g_paste_applet_history_private_add_history (priv, g_paste_client_get_history_finish (priv->client, res, NULL));
 }
 
 static void
@@ -166,101 +162,38 @@ g_paste_applet_history_init (GPasteAppletHistory *self)
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
 
     priv->items = NULL;
-}
-
-static GPasteAppletHistory *
-_g_paste_applet_history_new (GPasteClient     *client,
-                             GPasteAppletMenu *menu)
-{
-    GPasteAppletHistory *self = G_PASTE_APPLET_HISTORY (g_object_new (G_PASTE_TYPE_APPLET_HISTORY, NULL));
-    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
-    priv->client = g_object_ref (client);
-    priv->menu = menu;
-    priv->changed_id = g_signal_connect (G_OBJECT (client),
-                                         "changed",
-                                         G_CALLBACK (g_paste_applet_history_on_changed),
-                                         self);
-    return self;
+    priv->changed_id = 0;
 }
 
 /**
  * g_paste_applet_history_new:
  * @client: a #GPasteClient
  * @menu: the #GPasteAppletMenu we'll be attached to
- * @callback: Callback function to invoke when the history is ready.
- * @user_data: User data to pass to @callback.
  *
  * Create a new instance of #GPasteAppletHistory
  *
- * Returns:
+ * Returns: a newly allocated #GPasteAppletHistory
+ *          free it with g_object_unref
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE GPasteAppletHistory *
 g_paste_applet_history_new (GPasteClient       *client,
-                            GPasteAppletMenu   *menu,
-                            GAsyncReadyCallback callback,
-                            gpointer            user_data)
+                            GPasteAppletMenu   *menu)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_APPLET_MENU (menu), NULL);
 
-    GPasteAppletHistory *self = _g_paste_applet_history_new (client, menu);
+    GPasteAppletHistory *self = G_PASTE_APPLET_HISTORY (g_object_new (G_PASTE_TYPE_APPLET_HISTORY, NULL));
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
 
-    priv->callback = callback;
-    priv->user_data = user_data;
+    priv->client = g_object_ref (client);
+    priv->menu = menu;
 
-    g_paste_client_get_history (priv->client, g_paste_applet_history_on_history_ready, self);
-}
+    g_paste_client_get_history (priv->client, g_paste_applet_history_on_history_ready, priv);
 
-/**
- * g_paste_applet_history_new_finish:
- * @self: the #GPasteApplethistory we're finishing
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback function passed to the async ctor.
- * @error: Return location for error or %NULL.
- *
- * Create a new instance of #GPasteAppletHistory
- *
- * Returns: a newly allocated #GPasteAppletHistory
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteAppletHistory *
-g_paste_applet_history_new_finish (GPasteAppletHistory *self,
-                                   GAsyncResult        *result,
-                                   GError             **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_APPLET_HISTORY (self), NULL);
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);
-    g_return_val_if_fail (!error || !(*error), NULL);
-
-    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
-    g_paste_applet_history_private_add_history (priv, g_paste_client_get_history_finish (priv->client, result, error));
-
-    return self;
-}
-
-/**
- * g_paste_applet_history_new_sync:
- * @client: a #GPasteClient
- * @menu: the #GPasteAppletMenu we'll be attached to
- * @error: Return location for error or %NULL.
- *
- * Create a new instance of #GPasteAppletHistory
- *
- * Returns: a newly allocated #GPasteAppletHistory
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteAppletHistory *
-g_paste_applet_history_new_sync (GPasteClient     *client,
-                                 GPasteAppletMenu *menu,
-                                 GError          **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_PASTE_IS_APPLET_MENU (menu), NULL);
-
-    GPasteAppletHistory *self = _g_paste_applet_history_new (client, menu);
-    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
-
-    g_paste_applet_history_private_add_history (priv, g_paste_client_get_history_sync (client, error));
+    priv->changed_id = g_signal_connect (G_OBJECT (client),
+                                         "changed",
+                                         G_CALLBACK (g_paste_applet_history_on_changed),
+                                         self);
 
     return self;
 }
