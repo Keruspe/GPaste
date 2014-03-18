@@ -78,6 +78,8 @@ show_help (const gchar *caller)
     printf ("  %s version: %s\n", caller, _("display the version"));
     /* Translators: help for gpaste help */
     printf ("  %s help: %s\n", caller, _("display this help"));
+    /* Translators: help for gpaste about */
+    printf ("  %s about: %s\n", caller, _("display the about dialog"));
 }
 
 static void
@@ -258,6 +260,10 @@ main (gint argc, gchar *argv[])
                     for (GStrv h = histories; *h; ++h)
                         printf ("%s\n", *h);
                 }
+            }
+            else if (!g_strcmp0 (argv[1], "about"))
+            {
+                g_paste_client_about_sync (client, &error);
             }
             else
             {
