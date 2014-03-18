@@ -76,8 +76,8 @@ g_paste_applet_switch_private_on_tracking (GPasteClient *client G_GNUC_UNUSED,
                                            gboolean      state,
                                            gpointer      user_data)
 {
-    GPasteAppletSwitch *self = user_data;
-    g_paste_applet_switch_set_active (self, state);
+    GtkSwitch *sw = user_data;
+    gtk_switch_set_active (sw, state);
 }
 
 static void
@@ -153,7 +153,7 @@ g_paste_applet_switch_new (GPasteClient *client)
     priv->tracking_id = g_signal_connect (G_OBJECT (client),
                                           "tracking",
                                           G_CALLBACK (g_paste_applet_switch_private_on_tracking),
-                                          self);
+                                          priv->sw);
 
     return self;
 }
