@@ -9,7 +9,7 @@ libgpaste/core/gpaste-macros.h
 libgpaste/core/gpaste-uris-item.c
 libgpaste/settings/ui/gpaste-settings-ui-stack.c
 src/applets/gnome-shell/extension.js
-src/applets/legacy/gpaste-applet.c
+src/applets/status-icon/gpaste-applet.c
 src/gpaste-settings/gpaste-settings.c
 src/gpaste/gpaste.c
 src/gpasted/gpasted.c

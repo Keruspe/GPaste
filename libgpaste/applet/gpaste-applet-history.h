@@ -37,10 +37,9 @@ typedef struct _GPasteAppletHistoryClass GPasteAppletHistoryClass;
 G_PASTE_VISIBLE
 GType g_paste_applet_history_get_type (void);
 
-GPasteAppletHistory *g_paste_applet_history_new      (GPasteClient     *client,
-                                                      GPasteAppletMenu *menu);
-GPasteAppletHistory *g_paste_applet_history_new_sync (GPasteClient     *client,
-                                                      GPasteAppletMenu *menu);
+GPasteAppletHistory *g_paste_applet_history_new (GPasteClient       *client,
+                                                 GPasteSettings     *settings,
+                                                 GPasteAppletMenu   *menu);
 
 G_END_DECLS
 

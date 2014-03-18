@@ -50,16 +50,7 @@ bindings_gi_GPaste_1_0_gir_FILES = \
 	$(all_la_sources) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = \
-	$(INCLUDES) \
-	-DG_PASTE_COMPILATION \
-	-I$(srcdir)/libgpaste/applet \
-	-I$(srcdir)/libgpaste/client \
-	-I$(srcdir)/libgpaste/core \
-	-I$(srcdir)/libgpaste/daemon \
-	-I$(srcdir)/libgpaste/gnome-shell-client \
-	-I$(srcdir)/libgpaste/keybinder \
-	-I$(srcdir)/libgpaste/settings \
-	-I$(srcdir)/libgpaste/settings/ui \
+	$(AM_CFLAGS) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_LIBS = $(all_la_files)
 bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \

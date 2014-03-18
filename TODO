@@ -1,6 +1,5 @@
 3.10:
     applet:
-        use async calls
         honour user settings
 
 3.10.1:
