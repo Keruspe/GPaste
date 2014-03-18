@@ -68,6 +68,8 @@ void    g_paste_client_track_sync                      (GPasteClient *self,
 void    g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
                                                         gboolean      state,
                                                         GError      **error);
+void    g_paste_client_about_sync                      (GPasteClient *self,
+                                                        GError      **error);
 void    g_paste_client_reexecute_sync                  (GPasteClient *self,
                                                         GError      **error);
 void    g_paste_client_backup_history_sync             (GPasteClient *self,
@@ -123,6 +125,9 @@ void g_paste_client_on_extension_state_changed (GPasteClient       *self,
                                                 gboolean            state,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_about                      (GPasteClient       *self,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_reexecute                  (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -174,6 +179,9 @@ void    g_paste_client_track_finish                      (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
+                                                          GAsyncResult *result,
+                                                          GError      **error);
+void    g_paste_client_about_finish                      (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_reexecute_finish                  (GPasteClient *self,
