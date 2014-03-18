@@ -1,6 +1,5 @@
 3.10;
     daemon:
-        history-size
         about
     client:
         history-size

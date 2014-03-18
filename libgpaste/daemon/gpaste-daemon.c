@@ -104,6 +104,13 @@ g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
     return g_variant_new_tuple (&variant, 1);
 }
 
+static GVariant *
+g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv)
+{
+    GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (priv->history));
+    return g_variant_new_tuple (&variant, 1);
+}
+
 static gchar *
 g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
                                           gsize    *length)
@@ -374,6 +381,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
 
     if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY))
         answer = g_paste_daemon_private_get_history (priv);
+    if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
+        answer = g_paste_daemon_private_get_history_size (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
         g_paste_daemon_private_backup_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))

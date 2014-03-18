@@ -38,6 +38,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_EMPTY                      "Empty"
 #define G_PASTE_DAEMON_GET_ELEMENT                "GetElement"
 #define G_PASTE_DAEMON_GET_HISTORY                "GetHistory"
+#define G_PASTE_DAEMON_GET_HISTORY_SIZE           "GetHistorySize"
 #define G_PASTE_DAEMON_LIST_HISTORIES             "ListHistories"
 #define G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "OnExtensionStateChanged"
 #define G_PASTE_DAEMON_REEXECUTE                  "Reexecute"
@@ -58,6 +59,9 @@ G_BEGIN_DECLS
         "   <interface name='" G_PASTE_DAEMON_INTERFACE_NAME "'>"              \
         "       <method name='" G_PASTE_DAEMON_GET_HISTORY "'>"                \
         "           <arg type='as' direction='out' />"                         \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_GET_HISTORY_SIZE "'>"           \
+        "           <arg type='u' direction='out' />"                          \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_BACKUP_HISTORY "'>"             \
         "           <arg type='s' direction='in' />"                           \
