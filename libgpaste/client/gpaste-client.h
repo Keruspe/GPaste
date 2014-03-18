@@ -44,7 +44,9 @@ GType g_paste_client_get_type (void);
 gchar  *g_paste_client_get_element_sync                (GPasteClient *self,
                                                         guint32       index,
                                                         GError      **error);
-gchar **g_paste_client_get_history_sync                (GPasteClient *self,
+GStrv   g_paste_client_get_history_sync                (GPasteClient *self,
+                                                        GError      **error);
+guint32 g_paste_client_get_history_size_sync           (GPasteClient *self,
                                                         GError      **error);
 void    g_paste_client_add_sync                        (GPasteClient *self,
                                                         const gchar  *text,
@@ -77,7 +79,7 @@ void    g_paste_client_switch_history_sync             (GPasteClient *self,
 void    g_paste_client_delete_history_sync             (GPasteClient *self,
                                                         const gchar  *name,
                                                         GError      **error);
-gchar **g_paste_client_list_histories_sync             (GPasteClient *self,
+GStrv   g_paste_client_list_histories_sync             (GPasteClient *self,
                                                         GError      **error);
 
 /*******************/
@@ -89,6 +91,9 @@ void g_paste_client_get_element                (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_history                (GPasteClient       *self,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+void g_paste_client_get_history_size           (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_add                        (GPasteClient       *self,
@@ -144,7 +149,10 @@ void g_paste_client_list_histories             (GPasteClient       *self,
 gchar  *g_paste_client_get_element_finish                (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
-gchar **g_paste_client_get_history_finish                (GPasteClient *self,
+GStrv   g_paste_client_get_history_finish                (GPasteClient *self,
+                                                          GAsyncResult *result,
+                                                          GError      **error);
+guint32 g_paste_client_get_history_size_finish           (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_add_finish                        (GPasteClient *self,
@@ -180,7 +188,7 @@ void    g_paste_client_switch_history_finish             (GPasteClient *self,
 void    g_paste_client_delete_history_finish             (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
-gchar **g_paste_client_list_histories_finish             (GPasteClient *self,
+GStrv   g_paste_client_list_histories_finish             (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 

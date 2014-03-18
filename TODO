@@ -2,7 +2,6 @@
     daemon:
         about
     client:
-        history-size
         about
     settings:
         use client for about
