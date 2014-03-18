@@ -91,8 +91,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
 static GVariant *
 g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
-    GSList *history = g_paste_history_get_history (priv->history);
-    guint length = MIN (g_slist_length (history), g_paste_settings_get_max_displayed_history_size (priv->settings));
+    const GSList *history = g_paste_history_get_history (priv->history);
+    guint length = g_slist_length ((GSList *) history);
     G_PASTE_CLEANUP_FREE const gchar **displayed_history = g_new (const gchar *, length + 1);
 
     for (guint i = 0; i < length; ++i, history = g_slist_next (history))
@@ -101,6 +101,13 @@ g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 
     GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
 
+    return g_variant_new_tuple (&variant, 1);
+}
+
+static GVariant *
+g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv)
+{
+    GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (priv->history));
     return g_variant_new_tuple (&variant, 1);
 }
 
@@ -374,6 +381,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
 
     if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY))
         answer = g_paste_daemon_private_get_history (priv);
+    if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
+        answer = g_paste_daemon_private_get_history_size (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
         g_paste_daemon_private_backup_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))

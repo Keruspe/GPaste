@@ -54,14 +54,15 @@ const gchar      *g_paste_history_get_value (GPasteHistory *self,
                                              guint32        index);
 void              g_paste_history_select    (GPasteHistory *self,
                                              guint32        index);
-void         g_paste_history_empty       (GPasteHistory *self);
-gboolean     g_paste_history_save        (GPasteHistory *self);
-void         g_paste_history_load        (GPasteHistory *self);
-void         g_paste_history_switch      (GPasteHistory *self,
-                                          const gchar   *name);
-void         g_paste_history_delete      (GPasteHistory *self,
-                                          GError       **error);
-GSList      *g_paste_history_get_history (GPasteHistory *self);
+void          g_paste_history_empty       (GPasteHistory *self);
+gboolean      g_paste_history_save        (GPasteHistory *self);
+void          g_paste_history_load        (GPasteHistory *self);
+void          g_paste_history_switch      (GPasteHistory *self,
+                                           const gchar   *name);
+void          g_paste_history_delete      (GPasteHistory *self,
+                                           GError       **error);
+const GSList *g_paste_history_get_history (const GPasteHistory *self);
+guint32       g_paste_history_get_length  (const GPasteHistory *self);
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 

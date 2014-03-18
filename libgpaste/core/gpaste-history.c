@@ -994,14 +994,32 @@ g_paste_history_init (GPasteHistory *self)
  *
  * Returns: (element-type GPasteItem) (transfer none): The inner history
  */
-G_PASTE_VISIBLE GSList *
-g_paste_history_get_history (GPasteHistory *self)
+G_PASTE_VISIBLE const GSList *
+g_paste_history_get_history (const GPasteHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
 
     return priv->history;
+}
+
+/**
+ * g_paste_history_get_length:
+ * @self: a #GPasteHistory instance
+ *
+ * Get the length of a #GPasteHistory
+ *
+ * Returns: The length of the inner history
+ */
+G_PASTE_VISIBLE guint32
+g_paste_history_get_length (const GPasteHistory *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
+
+    return g_slist_length (priv->history);
 }
 
 /**

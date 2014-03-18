@@ -54,3 +54,8 @@ global:
 local:
     *;
 };
+
+LIBGPASTE_CORE_4 {
+global:
+    g_paste_history_get_length;
+} LIBGPASTE_CORE_1;
