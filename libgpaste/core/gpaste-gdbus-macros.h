@@ -171,6 +171,8 @@ g_paste_dbus_get_au_result (GVariant *variant)
 
 #define DBUS_ASYNC_FINISH_FULL(guard, if_fail, extract_and_return_answer)                            \
     guard;                                                                                           \
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);                                         \
+    g_return_val_if_fail (!error || !(*error), NULL);                                                \
     G_PASTE_CLEANUP_VARIANT_UNREF GVariant *_result = g_dbus_proxy_call_finish (G_DBUS_PROXY (self), \
                                                                                 result,              \
                                                                                 error);              \
