@@ -53,16 +53,23 @@ g_paste_applet_item_replace (const gchar *text,
 }
 
 static void
+g_paste_applet_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
+                                   GAsyncResult *res,
+                                   gpointer      user_data)
+{
+    GPasteAppletItemPrivate *priv = user_data;
+    G_PASTE_CLEANUP_FREE gchar *nospace = g_paste_applet_item_replace (g_paste_client_get_element_finish (priv->client, res, NULL), "\n", "");
+    G_PASTE_CLEANUP_FREE gchar *escaped = g_markup_escape_text (nospace, -1);
+    G_PASTE_CLEANUP_FREE gchar *markup = (priv->index) ? NULL : g_strdup_printf ("<b>%s</b>", escaped);
+
+    gtk_label_set_markup (priv->label, (markup) ? markup : escaped);
+}
+
+static void
 g_paste_applet_item_reset_text (GPasteClient            *client,
                                 GPasteAppletItemPrivate *priv)
 {
-    G_PASTE_CLEANUP_FREE gchar *nospace = g_paste_applet_item_replace (g_paste_client_get_element_sync (client, priv->index, NULL), "\n", "");
-    G_PASTE_CLEANUP_FREE gchar *escaped = g_markup_escape_text (nospace, -1);
-    G_PASTE_CLEANUP_FREE gchar *markup = g_strdup_printf ("<b>%s</b>", escaped);
-    GtkLabel *label = priv->label;
-
-    gtk_label_set_markup (label, markup);
-    gtk_label_set_ellipsize (label, PANGO_ELLIPSIZE_END);
+    g_paste_client_get_element (client, priv->index, g_paste_applet_item_on_text_ready, priv);
 }
 
 static void
@@ -136,6 +143,7 @@ g_paste_applet_item_new (GPasteClient *client,
     priv->index = index;
 
     gtk_label_set_max_width_chars (priv->label, 80 /* FIXME */);
+    gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), g_paste_applet_delete_new (client, index), FALSE, TRUE, 0);
 
     /* FIXME: watch for settings changes for element_size */
