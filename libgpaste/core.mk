@@ -97,4 +97,5 @@ lib_LTLIBRARIES += \
 
 EXTRA_DIST += \
 	$(libgpaste_core_symbols_file) \
+	libgpaste/core/gpaste-config.h.in \
 	$(NULL)

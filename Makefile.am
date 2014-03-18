@@ -51,6 +51,7 @@ AM_CFLAGS = \
 	-I$(srcdir)/libgpaste/client \
 	-I$(srcdir)/libgpaste/applet \
 	-I$(srcdir)/libgpaste/gnome-shell-client \
+	-I$(builddir)/libgpaste/core \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
