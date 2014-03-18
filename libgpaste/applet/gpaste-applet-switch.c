@@ -69,8 +69,6 @@ g_paste_applet_switch_set_active (GPasteAppletSwitch *self,
         return;
 
     g_paste_client_track (priv->client, active, NULL, NULL);
-    /* FIXME: move me to callback */
-    gtk_switch_set_active (priv->sw, active);
 }
 
 static void
