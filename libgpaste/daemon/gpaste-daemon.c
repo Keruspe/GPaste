@@ -91,8 +91,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
 static GVariant *
 g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
-    GSList *history = g_paste_history_get_history (priv->history);
-    guint length = g_slist_length (history);
+    const GSList *history = g_paste_history_get_history (priv->history);
+    guint length = g_slist_length ((GSList *) history);
     G_PASTE_CLEANUP_FREE const gchar **displayed_history = g_new (const gchar *, length + 1);
 
     for (guint i = 0; i < length; ++i, history = g_slist_next (history))

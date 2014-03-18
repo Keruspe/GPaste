@@ -17,7 +17,7 @@
 
 libgpaste_core_la_file = libgpaste/core/libgpaste-core.la
 
-LIBGPASTE_CORE_CURRENT=3
+LIBGPASTE_CORE_CURRENT=4
 LIBGPASTE_CORE_REVISION=0
 LIBGPASTE_CORE_AGE=0
 
