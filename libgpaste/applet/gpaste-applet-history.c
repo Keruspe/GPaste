@@ -78,10 +78,10 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
 {
     GPasteAppletHistory *self = user_data;
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
-    G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history_finish (priv->client, res, NULL);
 
     gsize old_size = priv->size;
-    priv->size = MIN (g_strv_length (history), g_paste_settings_get_max_displayed_history_size (priv->settings));
+    priv->size = MIN (g_paste_client_get_history_size_finish (priv->client, res, NULL),
+                      g_paste_settings_get_max_displayed_history_size (priv->settings));
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
@@ -109,7 +109,7 @@ g_paste_applet_history_on_changed (GPasteClient *client,
                                    gpointer      user_data)
 {
     GPasteAppletHistory *self = user_data;
-    g_paste_client_get_history (client, g_paste_applet_history_refresh_history, self);
+    g_paste_client_get_history_size (client, g_paste_applet_history_refresh_history, self);
 }
 
 static void

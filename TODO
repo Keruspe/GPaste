@@ -5,8 +5,6 @@
         about
     settings:
         use client for about
-    applet:
-        use history-size
 
 3.10.1:
     applet:
