@@ -53,18 +53,6 @@ g_paste_applet_history_add_list_to_menu (GSList           *list,
 }
 
 static void
-g_paste_applet_history_private_add_history (GPasteAppletHistoryPrivate *priv,
-                                            GStrv                       history)
-{
-    priv->size = g_strv_length ((GStrv) history);
-
-    for (gsize i = 0; i < priv->size; ++i)
-        priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, priv->settings, i));
-
-    g_paste_applet_history_add_list_to_menu (priv->items, priv->menu);
-}
-
-static void
 g_paste_applet_history_remove_from_menu (gpointer data,
                                          gpointer user_data)
 {
@@ -125,16 +113,6 @@ g_paste_applet_history_on_changed (GPasteClient *client,
 }
 
 static void
-g_paste_applet_history_on_history_ready (GObject      *source_object G_GNUC_UNUSED,
-                                         GAsyncResult *res,
-                                         gpointer      user_data)
-{
-    GPasteAppletHistoryPrivate *priv = user_data;
-    G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history_finish (priv->client, res, NULL);
-    g_paste_applet_history_private_add_history (priv, history);
-}
-
-static void
 g_paste_applet_history_dispose (GObject *object)
 {
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private ((GPasteAppletHistory *) object);
@@ -167,6 +145,7 @@ g_paste_applet_history_init (GPasteAppletHistory *self)
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
 
     priv->items = NULL;
+    priv->size = 0;
     priv->changed_id = 0;
 }
 
@@ -197,12 +176,11 @@ g_paste_applet_history_new (GPasteClient       *client,
     priv->settings = g_object_ref (settings);
     priv->menu = menu;
 
-    g_paste_client_get_history (priv->client, g_paste_applet_history_on_history_ready, priv);
-
     priv->changed_id = g_signal_connect (G_OBJECT (client),
                                          "changed",
                                          G_CALLBACK (g_paste_applet_history_on_changed),
                                          self);
+    g_paste_applet_history_on_changed (client, self);
 
     return self;
 }
