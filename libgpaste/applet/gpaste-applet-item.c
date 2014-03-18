@@ -30,6 +30,7 @@ struct _GPasteAppletItemPrivate
     guint32         index;
 
     gulong          changed_id;
+    gulong          size_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletItem, g_paste_applet_item, GTK_TYPE_MENU_ITEM)
@@ -75,6 +76,15 @@ g_paste_applet_item_reset_text (GPasteClient            *client,
 }
 
 static void
+g_paste_applet_item_set_text_size (GPasteSettings *settings,
+                                   const gchar    *key G_GNUC_UNUSED,
+                                   gpointer        user_data)
+{
+    GtkLabel *label = user_data;
+    gtk_label_set_max_width_chars (label, g_paste_settings_get_element_size (settings));
+}
+
+static void
 g_paste_applet_item_activate (GtkMenuItem *menu_item)
 {
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) menu_item);
@@ -94,7 +104,11 @@ g_paste_applet_item_dispose (GObject *object)
         g_signal_handler_disconnect (priv->client, priv->changed_id);
         g_clear_object (&priv->client);
     }
-    g_clear_object (&priv->settings);
+    if (priv->settings)
+    {
+        g_signal_handler_disconnect (priv->settings, priv->size_id);
+        g_clear_object (&priv->settings);
+    }
 
     G_OBJECT_CLASS (g_paste_applet_item_parent_class)->dispose (object);
 }
@@ -148,7 +162,6 @@ g_paste_applet_item_new (GPasteClient   *client,
     priv->settings = g_object_ref (settings);
     priv->index = index;
 
-    gtk_label_set_max_width_chars (priv->label, 80 /* FIXME */);
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), g_paste_applet_delete_new (client, index), FALSE, TRUE, 0);
 
@@ -158,6 +171,12 @@ g_paste_applet_item_new (GPasteClient   *client,
                                          G_CALLBACK (g_paste_applet_item_reset_text),
                                          priv);
     g_paste_applet_item_reset_text (client, priv);
+
+    priv->size_id = g_signal_connect (G_OBJECT (settings),
+                                      "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
+                                      G_CALLBACK (g_paste_applet_item_set_text_size),
+                                      priv->label);
+    g_paste_applet_item_set_text_size (settings, NULL, priv->label);
 
     return self;
 }
