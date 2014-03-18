@@ -317,7 +317,8 @@ g_paste_history_private_get (GPasteHistoryPrivate *priv,
 {
     GSList *history = priv->history;
 
-    g_return_val_if_fail (pos < g_slist_length (history), NULL);
+    if (pos < g_slist_length (history))
+        return NULL;
 
     return G_PASTE_ITEM (g_slist_nth_data (history, pos));
 }
