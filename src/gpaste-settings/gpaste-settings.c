@@ -18,45 +18,29 @@
  */
 
 #include <gpaste-settings-ui-widget.h>
+#include <gpaste-client.h>
 
 #include <glib/gi18n.h>
 
 #include <stdlib.h>
 
-#define LICENSE                                                            \
-    "GPaste is free software: you can redistribute it and/or modify"       \
-    "it under the terms of the GNU General Public License as published by" \
-    "the Free Software Foundation, either version 3 of the License, or"    \
-    "(at your option) any later version.\n\n"                              \
-    "GPaste is distributed in the hope that it will be useful,"            \
-    "but WITHOUT ANY WARRANTY; without even the implied warranty of"       \
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"        \
-    "GNU General Public License for more details.\n\n"                     \
-    "You should have received a copy of the GNU General Public License"    \
-    "along with GPaste.  If not, see <http://www.gnu.org/licenses/>."
+static void
+client_ready (GObject      *source_object G_GNUC_UNUSED,
+              GAsyncResult *res,
+              gpointer      user_data     G_GNUC_UNUSED)
+{
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new_finish (res, &error);
+    if (!error)
+        g_paste_client_about (client, NULL, NULL);
+}
 
 static void
 about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data G_GNUC_UNUSED)
 {
-    const gchar *_authors[] = {
-        "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
-        NULL
-    };
-    G_PASTE_CLEANUP_B_STRV_FREE GStrv authors = g_boxed_copy (G_TYPE_STRV, _authors);
-    gtk_show_about_dialog (NULL,
-                           "program-name",   PACKAGE_NAME,
-                           "version",        PACKAGE_VERSION,
-                           "logo-icon-name", "gtk-paste",
-                           "license",        LICENSE,
-                           "authors",        authors,
-                           "copyright",      "Copyright © 2010-2013 Marc-Antoine Perennou",
-                           "comments",       "Clipboard management system",
-                           "website",        "http://www.imagination-land.org/tags/GPaste.html",
-                           "website-label",  "Follow GPaste actuality",
-                           "wrap-license",   TRUE,
-                           NULL);
+    g_paste_client_new (client_ready, NULL);
 }
 
 static void

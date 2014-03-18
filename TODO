@@ -1,11 +1,3 @@
-3.10;
-    daemon:
-        about
-    client:
-        about
-    settings:
-        use client for about
-
 3.10.1:
     applet:
         unity support
