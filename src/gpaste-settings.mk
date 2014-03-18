@@ -30,4 +30,5 @@ bin_gpaste_settings_CFLAGS = \
 
 bin_gpaste_settings_LDADD = \
 	$(libgpaste_settings_ui_la_file) \
+	$(GTK_LIBS) \
 	$(NULL)
