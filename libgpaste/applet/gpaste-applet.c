@@ -19,6 +19,8 @@
 
 #include "gpaste-applet-private.h"
 
+#define SET_ACTIVE(v, s) v = (1 << 1 | (s & 0x1))
+
 struct _GPasteAppletPrivate
 {
     GPasteClient        *client;
@@ -26,6 +28,11 @@ struct _GPasteAppletPrivate
     GPasteAppletMenu    *menu;
     GPasteAppletHistory *history;
     GPasteAppletIcon    *icon; 
+
+    GApplication        *application;
+    GtkWidget           *win;
+
+    guint                init_state;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteApplet, g_paste_applet, G_TYPE_OBJECT)
@@ -44,6 +51,10 @@ g_paste_applet_get_active (const GPasteApplet *self)
     g_return_val_if_fail (G_PASTE_IS_APPLET (self), FALSE);
 
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private ((GPasteApplet *) self);
+
+    if (G_UNLIKELY (!priv->menu)) /* Not yet initialized */
+        return (priv->init_state & 0x1);
+
     return g_paste_applet_menu_get_active (priv->menu);
 }
 
@@ -63,6 +74,13 @@ g_paste_applet_set_active (GPasteApplet *self,
     g_return_if_fail (G_PASTE_IS_APPLET (self));
 
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
+
+    if (G_UNLIKELY (!priv->menu)) /* Not yet initialized */
+    {
+        SET_ACTIVE (priv->init_state, active);
+        return;
+    }
+
     g_paste_applet_menu_set_active (priv->menu, active);
 }
 
@@ -88,7 +106,44 @@ static void
 g_paste_applet_init (GPasteApplet *self)
 {
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
-    priv->client = g_paste_client_new_sync (NULL);
+
+    priv->menu = NULL;
+    priv->init_state = 0;
+}
+
+static gboolean
+g_paste_applet_new_finish (GPasteAppletPrivate *priv,
+                           GAsyncResult        *res)
+{
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    
+    priv->client = g_paste_client_new_finish (res, &error);
+    if (error)
+    {
+        gtk_window_close (GTK_WINDOW (priv->win)); /* will exit the application */
+        return FALSE;
+    }
+
+    priv->menu = g_paste_applet_menu_new (priv->client, priv->application);
+    priv->history = g_paste_applet_history_new (priv->client, priv->menu);
+
+    if (priv->init_state >> 1)
+        g_paste_applet_menu_set_active (priv->menu, priv->init_state & 0x1);
+
+    return TRUE;
+}
+
+static void
+g_paste_applet_status_icon_client_ready (GObject      *source_object G_GNUC_UNUSED,
+                                         GAsyncResult *res,
+                                         gpointer      user_data)
+{
+    GPasteAppletPrivate *priv = user_data;
+
+    if (!g_paste_applet_new_finish (priv, res))
+        return;
+
+    priv->icon = g_paste_applet_status_icon_new (priv->client, GTK_MENU (priv->menu));
 }
 
 static GPasteApplet *
@@ -97,10 +152,9 @@ g_paste_applet_new (GtkApplication *application)
     GPasteApplet *self = g_object_new (G_PASTE_TYPE_APPLET, NULL);
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
-    priv->menu = g_paste_applet_menu_new (priv->client, G_APPLICATION (application));
-    priv->history = g_paste_applet_history_new (priv->client, priv->menu);
-
-    gtk_widget_hide (gtk_application_window_new (application));
+    priv->application = G_APPLICATION (application);
+    priv->win = gtk_application_window_new (application);
+    gtk_widget_hide (priv->win);
 
     return self;
 }
@@ -122,7 +176,7 @@ g_paste_applet_new_status_icon (GtkApplication *application)
     GPasteApplet *self = g_paste_applet_new (application);
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
-    priv->icon = g_paste_applet_status_icon_new (priv->client, GTK_MENU (priv->menu));
+    g_paste_client_new (g_paste_applet_status_icon_client_ready, priv);
 
     return self;
 }
