@@ -61,7 +61,13 @@ g_paste_applet_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
                                    gpointer      user_data)
 {
     GPasteAppletItemPrivate *priv = user_data;
-    G_PASTE_CLEANUP_FREE gchar *nospace = g_paste_applet_item_replace (g_paste_client_get_element_finish (priv->client, res, NULL), "\n", "");
+    if (!G_PASTE_IS_CLIENT (priv->client))
+        return;
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    G_PASTE_CLEANUP_FREE gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
+    if (!txt || error)
+        return;
+    G_PASTE_CLEANUP_FREE gchar *nospace = g_paste_applet_item_replace (txt, "\n", "");
     G_PASTE_CLEANUP_FREE gchar *escaped = g_markup_escape_text (nospace, -1);
     G_PASTE_CLEANUP_FREE gchar *markup = (priv->index) ? NULL : g_strdup_printf ("<b>%s</b>", escaped);
 
