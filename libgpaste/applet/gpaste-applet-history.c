@@ -54,7 +54,7 @@ g_paste_applet_history_add_list_to_menu (GSList           *list,
 
 static void
 g_paste_applet_history_private_add_history (GPasteAppletHistoryPrivate *priv,
-                                            const gchar * const        *history)
+                                            GStrv                       history)
 {
     priv->size = g_strv_length ((GStrv) history);
 
@@ -90,7 +90,7 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
 {
     GPasteAppletHistory *self = user_data;
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
-    gchar **history = g_paste_client_get_history_finish (priv->client, res, NULL);
+    G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history_finish (priv->client, res, NULL);
 
     gsize old_size = priv->size;
     priv->size = g_strv_length (history);
@@ -130,7 +130,8 @@ g_paste_applet_history_on_history_ready (GObject      *source_object G_GNUC_UNUS
                                          gpointer      user_data)
 {
     GPasteAppletHistoryPrivate *priv = user_data;
-    g_paste_applet_history_private_add_history (priv, /*FIXME*/ (const gchar * const *) g_paste_client_get_history_finish (priv->client, res, NULL));
+    G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history_finish (priv->client, res, NULL);
+    g_paste_applet_history_private_add_history (priv, history);
 }
 
 static void
