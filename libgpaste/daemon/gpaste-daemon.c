@@ -117,7 +117,7 @@ g_paste_daemon_show_about_dialog (void)
                            "copyright",      "Copyright © 2010-2013 Marc-Antoine Perennou",
                            "comments",       "Clipboard management system",
                            "website",        "http://www.imagination-land.org/tags/GPaste.html",
-                           "website-label",  "Follow GPaste actuality",
+                           "website-label",  "Follow GPaste news",
                            "wrap-license",   TRUE,
                            NULL);
 }
