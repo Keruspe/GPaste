@@ -1,5 +1,6 @@
 3.10.1:
     applet:
+        update gnome-shell (settings)
         unity support
         don't close on delete
 
@@ -10,6 +11,7 @@
 3.12.1:
     general:
         merge 3.10.1
+        properties all the way
 
 3.12.2:
     keybinder:
