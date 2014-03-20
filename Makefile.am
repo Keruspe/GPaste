@@ -23,6 +23,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)" \
 	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
 	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
+	--enable-appdata-validate \
 	--enable-applet \
 	--enable-introspection \
 	--enable-systemd \
@@ -109,6 +110,7 @@ include src/applets/gnome-shell.mk
 include src/applets/app-indicator.mk
 include src/applets/status-icon.mk
 
+include data/appdata.mk
 include data/completions.mk
 include data/control-center.mk
 include data/dbus.mk
