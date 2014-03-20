@@ -91,6 +91,10 @@ pkginclude_HEADERS += \
 	$(libgpaste_core_public_headers) \
 	$(NULL)
 
+nodist_pkginclude_HEADERS = \
+	libgpaste/core/gpaste-config.h \
+	$(NULL)
+
 lib_LTLIBRARIES += \
 	$(libgpaste_core_la_file) \
 	$(NULL)
