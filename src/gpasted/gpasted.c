@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static GMainLoop *loop;
+static GApplication *_app;
 
 enum
 {
@@ -44,17 +44,17 @@ static void
 signal_handler (int signum)
 {
     g_print (_("Signal %d received, exiting\n"), signum);
-    g_main_loop_quit (loop);
+    g_application_quit (_app);
 }
 
 G_PASTE_NORETURN static void
 on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
               gpointer      user_data)
 {
-    GMainLoop *main_loop = user_data;
+    GApplication *app = user_data;
 
     fprintf (stderr, "%s\n", _("Could not acquire DBus name."));
-    g_main_loop_quit (main_loop);
+    g_application_quit (app);
     exit (EXIT_FAILURE);
 }
 
@@ -62,19 +62,19 @@ static void
 reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
         gpointer      user_data)
 {
-    GMainLoop *main_loop = user_data;
+    GApplication *app = user_data;
 
-    g_main_loop_quit (main_loop);
+    g_application_quit (app);
     execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
 }
 
 gint
 main (gint argc, gchar *argv[])
 {
-    G_PASTE_INIT_GETTEXT ();
-
-    gtk_init (&argc, &argv);
-    g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL);
+    G_PASTE_INIT_APPLICATION ("Daemon");
+    /* Keep the gapplication around */
+    gtk_widget_hide (gtk_application_window_new (app));
+    _app = gapp;
 
     G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
     G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
@@ -92,17 +92,15 @@ main (gint argc, gchar *argv[])
         g_paste_sync_primary_to_clipboard_keybinding_new (clipboards_manager)
     };
 
-    G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *main_loop = loop = g_main_loop_new (NULL, FALSE);
-
     gulong c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
                                           "name-lost",
                                           G_CALLBACK (on_name_lost),
-                                          main_loop),
+                                          gapp),
         [C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
                                                "reexecute-self",
                                                G_CALLBACK (reexec),
-                                               main_loop)
+                                               gapp)
     };
 
     for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
@@ -117,10 +115,9 @@ main (gint argc, gchar *argv[])
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
 
-    gint exit_status = EXIT_SUCCESS;
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    gint exit_status;
     if (g_paste_daemon_own_bus_name (g_paste_daemon, &error))
-        g_main_loop_run (main_loop);
+        exit_status = g_application_run (gapp, argc, argv);
     else
     {
         g_critical ("%s: %s\n", _("Could not register DBus service."), error->message);
