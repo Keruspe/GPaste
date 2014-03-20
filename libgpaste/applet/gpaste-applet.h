@@ -20,9 +20,14 @@
 #ifndef __G_PASTE_APPLET_H__
 #define __G_PASTE_APPLET_H__
 
+#include <gpaste-config.h>
 #include <gpaste-applet-menu.h>
 #include <gpaste-applet-history.h>
 #include <gpaste-applet-status-icon.h>
+
+#if G_PASTE_CONFIG_ENABLE_UNITY
+#include <gpaste-applet-app-indicator.h>
+#endif
 
 G_BEGIN_DECLS
 
@@ -43,7 +48,10 @@ gboolean g_paste_applet_get_active (const GPasteApplet *self);
 void     g_paste_applet_set_active (GPasteApplet *self,
                                     gboolean      active);
 
-GPasteApplet *g_paste_applet_new_status_icon (GtkApplication *application);
+#if G_PASTE_CONFIG_ENABLE_UNITY
+GPasteApplet *g_paste_applet_new_app_indicator (GtkApplication *application);
+#endif
+GPasteApplet *g_paste_applet_new_status_icon   (GtkApplication *application);
 
 G_END_DECLS
 
