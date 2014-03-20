@@ -43,7 +43,6 @@ g_paste_applet_icon_popup (GPasteAppletIcon   *self,
     GtkWidget *widget = GTK_WIDGET (priv->menu);
 
     gtk_widget_set_visible (widget, TRUE);
-    gtk_widget_show_all (widget);
     gtk_widget_show (gtk_widget_get_toplevel (widget));
     gtk_menu_popup (priv->menu, NULL, NULL, func, data, 1, gdk_event_get_time (event));
 
