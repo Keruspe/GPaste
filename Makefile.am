@@ -25,8 +25,9 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
 	--enable-applet \
 	--enable-introspection \
-	--enable-vala \
 	--enable-systemd \
+	--enable-unity \
+	--enable-vala \
 	$(NULL)
 
 AM_VALAFLAGS = \
