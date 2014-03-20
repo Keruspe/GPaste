@@ -254,7 +254,11 @@ AC_MSG_RESULT([
     vala compiler:          ${VALAC}
     vapi generator:         ${VAPIGEN}
 
-    Legacy applet:          ${enable_applet}
+    GObject Introspection:  ${enable_introspection}
+    Vapi:                   ${enable_vala}
+
+    Status icon:            ${enable_applet}
+    App indicator:          ${enable_unity}
     Gnome-Shell extension:  ${enable_extension}
     systemd support:        ${enable_systemd} (${systemduserunitdir})
 ])
