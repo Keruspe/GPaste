@@ -243,7 +243,7 @@ const GPasteIndicator = new Lang.Class({
 
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(emptyHistoryItem);
-            this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
+            this.menu.addSettingsAction(_("GPaste daemon settings"), 'org.gnome.GPaste.Settings.desktop');
 
             this._onStateChanged (true);
         }));

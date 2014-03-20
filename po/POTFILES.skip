@@ -1,3 +1,3 @@
 data/control-center/42-gpaste.xml.in
-data/desktop/gpaste-applet.desktop.in
-data/desktop/gpaste-settings.desktop.in
+data/desktop/org.gnome.GPaste.Applet.desktop.in
+data/desktop/org.gnome.GPaste.Settings.desktop.in

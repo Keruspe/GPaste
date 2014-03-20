@@ -18,8 +18,8 @@
 autostartdir = $(sysconfdir)/xdg/autostart
 applicationsdir = $(datadir)/applications
 
-gpaste_applet_desktop_file = data/desktop/gpaste-applet.desktop
-gpaste_settings_desktop_file = data/desktop/gpaste-settings.desktop
+gpaste_applet_desktop_file = data/desktop/org.gnome.GPaste.Applet.desktop
+gpaste_settings_desktop_file = data/desktop/org.gnome.GPaste.Settings.desktop
 
 nodist_autostart_DATA = \
 	$(NULL)
