@@ -280,6 +280,7 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
 {
     const gchar *value = g_paste_history_get_value (priv->history,
                                                     g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    // FIXME: error on NULL
     GVariant *variant = g_variant_new_string ((value) ? value : "");
 
     return g_variant_new_tuple (&variant, 1);

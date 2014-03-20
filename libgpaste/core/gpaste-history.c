@@ -317,7 +317,7 @@ g_paste_history_private_get (GPasteHistoryPrivate *priv,
 {
     GSList *history = priv->history;
 
-    if (pos < g_slist_length (history))
+    if (pos >= g_slist_length (history))
         return NULL;
 
     return G_PASTE_ITEM (g_slist_nth_data (history, pos));
@@ -376,8 +376,8 @@ g_paste_history_get_value (GPasteHistory *self,
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
     GPasteItem *item = g_paste_history_private_get (g_paste_history_get_instance_private (self), pos);
-
-    g_return_val_if_fail (item, NULL);
+    if (!item)
+        return NULL;
 
     return g_paste_item_get_value (item);
 }
