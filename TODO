@@ -3,7 +3,6 @@
 
 3.10.1:
     applet:
-        unity support
         don't close on delete
 
 3.12:
