@@ -105,6 +105,7 @@ include src/gpaste.mk
 include src/gpasted.mk
 include src/gpaste-settings.mk
 include src/applets/gnome-shell.mk
+include src/applets/app-indicator.mk
 include src/applets/status-icon.mk
 
 include data/completions.mk
