@@ -211,6 +211,7 @@ g_paste_applet_menu_insert (GtkMenuShell *menu_shell,
     GTK_MENU_SHELL_CLASS (g_paste_applet_menu_parent_class)->insert (menu_shell, child, position);
     if (is_item)
         g_paste_applet_menu_ensure_contents (self);
+    gtk_widget_show_all (GTK_WIDGET (self));
 }
 
 static void
