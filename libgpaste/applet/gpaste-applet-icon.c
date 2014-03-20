@@ -23,10 +23,32 @@ struct _GPasteAppletIconPrivate
 {
     GPasteClient *client;
 
+    GtkMenu      *menu;
+
     gulong         show_id;
 };
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TYPE_OBJECT)
+
+/**
+ * g_paste_applet_icon_popup: (skip)
+ */
+gboolean
+g_paste_applet_icon_popup (GPasteAppletIcon   *self,
+                           GdkEvent           *event,
+                           GtkMenuPositionFunc func,
+                           gpointer            data)
+{
+    GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private (self);
+    GtkWidget *widget = GTK_WIDGET (priv->menu);
+
+    gtk_widget_set_visible (widget, TRUE);
+    gtk_widget_show_all (widget);
+    gtk_widget_show (gtk_widget_get_toplevel (widget));
+    gtk_menu_popup (priv->menu, NULL, NULL, func, data, 1, gdk_event_get_time (event));
+
+    return FALSE;
+}
 
 static void
 g_paste_applet_icon_show_history (GPasteClient *client G_GNUC_UNUSED,
@@ -35,8 +57,8 @@ g_paste_applet_icon_show_history (GPasteClient *client G_GNUC_UNUSED,
     GPasteAppletIcon *self = user_data;
     GPasteAppletIconClass *klass = G_PASTE_APPLET_ICON_GET_CLASS (self);
 
-    if (klass->show_history)
-        klass->show_history (self);
+    if (klass->popup)
+        klass->popup (self, gtk_get_current_event ());
 }
 
 static void
@@ -57,7 +79,7 @@ static void
 g_paste_applet_icon_class_init (GPasteAppletIconClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_icon_dispose;
-    klass->show_history = NULL;
+    klass->popup = NULL;
 }
 
 static void
@@ -70,15 +92,18 @@ g_paste_applet_icon_init (GPasteAppletIcon *self G_GNUC_UNUSED)
  */
 GPasteAppletIcon *
 g_paste_applet_icon_new (GType         type,
-                         GPasteClient *client)
+                         GPasteClient *client,
+                         GtkMenu      *menu)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_APPLET_ICON), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (GTK_IS_MENU (menu), NULL);
 
     GPasteAppletIcon *self = g_object_new (type, NULL);
     GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private (self);
 
     priv->client = g_object_ref (client);
+    priv->menu = menu;
 
     priv->show_id = g_signal_connect (G_OBJECT (client),
                                       "show-history",

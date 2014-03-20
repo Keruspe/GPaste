@@ -17,39 +17,32 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "gpaste-applet-icon-private.h"
 #include "gpaste-applet-status-icon-private.h"
 
 struct _GPasteAppletStatusIconPrivate
 {
     GtkStatusIcon *icon;
-    GtkMenu       *menu;
-
     gulong         press_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletStatusIcon, g_paste_applet_status_icon, G_PASTE_TYPE_APPLET_ICON)
 
-static gboolean
-g_paste_applet_status_icon_popup (GtkStatusIcon *status_icon,
-                                  GdkEvent      *event,
-                                  gpointer       user_data)
+static void
+g_paste_applet_status_icon_real_popup (GPasteAppletIcon *self,
+                                       GdkEvent         *event)
 {
-    GPasteAppletStatusIconPrivate *priv = user_data;
-    GtkWidget *widget = GTK_WIDGET (priv->menu);
-
-    gtk_widget_set_visible (widget, TRUE);
-    gtk_widget_show_all (widget);
-    gtk_widget_show (gtk_widget_get_toplevel (widget));
-    gtk_menu_popup (priv->menu, NULL, NULL, gtk_status_icon_position_menu, status_icon, 1, gdk_event_get_time (event));
-
-    return FALSE;
+    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private (G_PASTE_APPLET_STATUS_ICON (self));
+    g_paste_applet_icon_popup (G_PASTE_APPLET_ICON (self), event, gtk_status_icon_position_menu, priv->icon);
 }
 
 static void
-g_paste_applet_status_icon_show_history (GPasteAppletIcon *self)
+g_paste_applet_status_icon_popup (GtkStatusIcon *icon G_GNUC_UNUSED,
+                                  GdkEvent      *event,
+                                  gpointer       user_data)
 {
-    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private (G_PASTE_APPLET_STATUS_ICON (self));;
-    g_paste_applet_status_icon_popup (priv->icon, gtk_get_current_event (), priv);
+    GPasteAppletIcon *self = user_data;
+    g_paste_applet_status_icon_real_popup (self, event);
 }
 
 static void
@@ -62,7 +55,6 @@ g_paste_applet_status_icon_dispose (GObject *object)
         g_signal_handler_disconnect (priv->icon, priv->press_id);
         g_clear_object (&priv->icon);
     }
-    g_clear_object (&priv->menu);
 
     G_OBJECT_CLASS (g_paste_applet_status_icon_parent_class)->dispose (object);
 }
@@ -71,7 +63,7 @@ static void
 g_paste_applet_status_icon_class_init (GPasteAppletStatusIconClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_status_icon_dispose;
-    G_PASTE_APPLET_ICON_CLASS (klass)->show_history = g_paste_applet_status_icon_show_history;
+    G_PASTE_APPLET_ICON_CLASS (klass)->popup = g_paste_applet_status_icon_real_popup;
 }
 
 static void
@@ -86,7 +78,7 @@ g_paste_applet_status_icon_init (GPasteAppletStatusIcon *self)
     priv->press_id = g_signal_connect (G_OBJECT (priv->icon),
                                        "button-press-event",
                                        G_CALLBACK (g_paste_applet_status_icon_popup),
-                                       priv);
+                                       self);
 }
 
 /**
@@ -106,10 +98,5 @@ g_paste_applet_status_icon_new (GPasteClient *client,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_MENU (menu), NULL);
 
-    GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_STATUS_ICON, client);
-    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private ((GPasteAppletStatusIcon *) self);
-
-    priv->menu = g_object_ref (menu);
-
-    return self;
+    return g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_STATUS_ICON, client, menu);
 }
