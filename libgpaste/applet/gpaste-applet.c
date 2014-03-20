@@ -137,6 +137,21 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
     return TRUE;
 }
 
+#if G_PASTE_CONFIG_ENABLE_UNITY
+static void
+g_paste_applet_app_indicator_client_ready (GObject      *source_object G_GNUC_UNUSED,
+                                           GAsyncResult *res,
+                                           gpointer      user_data)
+{
+    GPasteAppletPrivate *priv = user_data;
+
+    if (!g_paste_applet_new_finish (priv, res))
+        return;
+
+    priv->icon = g_paste_applet_app_indicator_new (priv->client, GTK_MENU (priv->menu));
+}
+#endif
+
 static void
 g_paste_applet_status_icon_client_ready (GObject      *source_object G_GNUC_UNUSED,
                                          GAsyncResult *res,
@@ -162,6 +177,30 @@ g_paste_applet_new (GtkApplication *application)
 
     return self;
 }
+
+#if G_PASTE_CONFIG_ENABLE_UNITY
+/**
+ * g_paste_applet_new_app_indicator:
+ * @application: the #GtkApplication running
+ *
+ * Create a new instance of #GPasteApplet
+ *
+ * Returns: a newly allocated #GPasteApplet
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteApplet *
+g_paste_applet_new_app_indicator (GtkApplication *application)
+{
+    g_return_val_if_fail (G_IS_APPLICATION (application), NULL);
+
+    GPasteApplet *self = g_paste_applet_new (application);
+    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
+
+    g_paste_client_new (g_paste_applet_app_indicator_client_ready, priv);
+
+    return self;
+}
+#endif
 
 /**
  * g_paste_applet_new_status_icon:

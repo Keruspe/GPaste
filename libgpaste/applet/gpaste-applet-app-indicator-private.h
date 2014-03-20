@@ -17,11 +17,27 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_CONFIG_H__
-#define __G_PASTE_CONFIG_H__
+#ifndef __G_PASTE_APPLET_APP_INDICATOR_PRIVATE_H__
+#define __G_PASTE_APPLET_APP_INDICATOR_PRIVATE_H__
 
-#define G_PASTE_CONFIG_ENABLE_APPLET    @ENABLE_APPLET@
-#define G_PASTE_CONFIG_ENABLE_EXTENSION @ENABLE_EXTENSION@
-#define G_PASTE_CONFIG_ENABLE_UNITY     @ENABLE_UNITY@
+#include "gpaste-applet-icon-private.h"
 
-#endif /*__G_PASTE_CONFIG_H__*/
+#include <gpaste-applet-app-indicator.h>
+
+G_BEGIN_DECLS
+
+typedef struct _GPasteAppletAppIndicatorPrivate GPasteAppletAppIndicatorPrivate;
+
+struct _GPasteAppletAppIndicator
+{
+    GPasteAppletIcon parent_instance;
+};
+
+struct _GPasteAppletAppIndicatorClass
+{
+    GPasteAppletIconClass parent_class;
+};
+
+G_END_DECLS
+
+#endif /*__G_PASTE_APPLET_APP_INDICATOR_PRIVATE_H__*/

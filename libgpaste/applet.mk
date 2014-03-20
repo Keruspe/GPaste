@@ -73,13 +73,27 @@ libgpaste_applet_libgpaste_applet_la_SOURCES = \
 	libgpaste/applet/gpaste-applet-switch.c \
 	$(NULL)
 
+if ENABLE_UNITY
+libgpaste_applet_libgpaste_applet_la_private_headers += \
+	libgpaste/applet/gpaste-applet-app-indicator-private.h \
+	$(NULL)
+libgpaste_applet_libgpaste_applet_la_public_headers += \
+	libgpaste/applet/gpaste-applet-app-indicator.h \
+	$(NULL)
+libgpaste_applet_libgpaste_applet_la_SOURCES += \
+	libgpaste/applet/gpaste-applet-app-indicator.c \
+	$(NULL)
+endif
+
 libgpaste_applet_libgpaste_applet_la_CFLAGS = \
+	$(UNITY_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(NULL)
 
 libgpaste_applet_libgpaste_applet_la_LIBADD = \
 	$(builddir)/$(libgpaste_client_la_file) \
 	$(builddir)/$(libgpaste_settings_la_file) \
+	$(UNITY_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)
 

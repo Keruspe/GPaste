@@ -17,11 +17,18 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_CONFIG_H__
-#define __G_PASTE_CONFIG_H__
+#include <gpaste-applet.h>
 
-#define G_PASTE_CONFIG_ENABLE_APPLET    @ENABLE_APPLET@
-#define G_PASTE_CONFIG_ENABLE_EXTENSION @ENABLE_EXTENSION@
-#define G_PASTE_CONFIG_ENABLE_UNITY     @ENABLE_UNITY@
+#include <glib/gi18n.h>
 
-#endif /*__G_PASTE_CONFIG_H__*/
+#include <stdlib.h>
+
+gint
+main (gint argc, gchar *argv[])
+{
+    G_PASTE_INIT_APPLICATION ("AppIndicator");
+
+    G_PASTE_CLEANUP_UNREF GPasteApplet *applet = g_paste_applet_new_app_indicator (app);
+
+    return g_application_run (gapp, argc, argv);
+}
