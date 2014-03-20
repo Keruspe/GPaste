@@ -1,7 +1,9 @@
+3.10:
+    appdata
+
 3.10.1:
     applet:
         update gnome-shell (settings)
-        unity support
         don't close on delete
 
 3.12:

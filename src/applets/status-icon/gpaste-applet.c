@@ -26,27 +26,7 @@
 gint
 main (gint argc, gchar *argv[])
 {
-    G_PASTE_INIT_GETTEXT ();
-
-    gtk_init (&argc, &argv);
-    g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL);
-
-    GtkApplication *app = gtk_application_new ("org.gnome.GPaste.Applet", G_APPLICATION_FLAGS_NONE);
-    GApplication *gapp = G_APPLICATION (app);
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-
-    G_APPLICATION_GET_CLASS (gapp)->activate = NULL;
-    g_application_register (gapp, NULL, &error);
-
-    if (g_application_get_is_remote (gapp))
-        return EXIT_SUCCESS;
-
-    if (error)
-    {
-        fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);
-
-        return EXIT_FAILURE;
-    }
+    G_PASTE_INIT_APPLICATION ("Applet");
 
     G_PASTE_CLEANUP_UNREF GPasteApplet *applet = g_paste_applet_new_status_icon (app);
 

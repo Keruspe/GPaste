@@ -25,8 +25,9 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
 	--enable-applet \
 	--enable-introspection \
-	--enable-vala \
 	--enable-systemd \
+	--enable-unity \
+	--enable-vala \
 	$(NULL)
 
 AM_VALAFLAGS = \
@@ -105,6 +106,7 @@ include src/gpaste.mk
 include src/gpasted.mk
 include src/gpaste-settings.mk
 include src/applets/gnome-shell.mk
+include src/applets/app-indicator.mk
 include src/applets/status-icon.mk
 
 include data/completions.mk

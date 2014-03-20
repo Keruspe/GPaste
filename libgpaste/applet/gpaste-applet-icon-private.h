@@ -38,11 +38,18 @@ struct _GPasteAppletIconClass
     GObjectClass parent_class;
 
     /*< pure virtual >*/
-    void        (*show_history) (GPasteAppletIcon *self);
+    void        (*popup) (GPasteAppletIcon *self,
+                          GdkEvent         *event);
 };
 
+gboolean g_paste_applet_icon_popup (GPasteAppletIcon   *self,
+                                    GdkEvent           *event,
+                                    GtkMenuPositionFunc func,
+                                    gpointer            data);
+
 GPasteAppletIcon *g_paste_applet_icon_new (GType         type,
-                                           GPasteClient *client);
+                                           GPasteClient *client,
+                                           GtkMenu      *menu);
 
 G_END_DECLS
 

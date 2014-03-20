@@ -202,6 +202,16 @@ fi
 AC_SUBST(ENABLE_APPLET)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
+ENABLE_UNITY=0
+AC_ARG_ENABLE(unity, AS_HELP_STRING([--enable-unity], [Enable gpaste-app-indicator]), enable_unity=$enableval, enable_unity=no)
+if test x$enable_unity = xyes; then
+    PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
+    AC_DEFINE([ENABLE_UNITY], [1], [Whether the app-indicator is built])
+    ENABLE_UNITY=1
+fi
+AC_SUBST(ENABLE_UNITY)
+AM_CONDITIONAL(ENABLE_UNITY, test x$enable_unity = xyes)
+
 ENABLE_EXTENSION=0
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
 if test x$enable_extension = xyes; then
@@ -244,7 +254,11 @@ AC_MSG_RESULT([
     vala compiler:          ${VALAC}
     vapi generator:         ${VAPIGEN}
 
-    Legacy applet:          ${enable_applet}
+    GObject Introspection:  ${enable_introspection}
+    Vapi:                   ${enable_vala}
+
+    Status icon:            ${enable_applet}
+    App indicator:          ${enable_unity}
     Gnome-Shell extension:  ${enable_extension}
     systemd support:        ${enable_systemd} (${systemduserunitdir})
 ])

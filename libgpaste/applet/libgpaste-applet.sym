@@ -3,7 +3,11 @@ global:
     g_paste_applet_get_type;
     g_paste_applet_get_active;
     g_paste_applet_set_active;
+    g_paste_applet_new_app_indicator;
     g_paste_applet_new_status_icon;
+
+    g_paste_applet_app_indicator_get_type;
+    g_paste_applet_app_indicator_new;
 
     g_paste_applet_delete_get_type;
     g_paste_applet_delete_new;
