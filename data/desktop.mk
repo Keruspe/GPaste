@@ -22,6 +22,12 @@ gpaste_applet_desktop_file = data/desktop/org.gnome.GPaste.Applet.desktop
 gpaste_app_indicator_desktop_file = data/desktop/org.gnome.GPaste.AppIndicator.desktop
 gpaste_settings_desktop_file = data/desktop/org.gnome.GPaste.Settings.desktop
 
+all_desktop_files = \
+	$(gpaste_applet_desktop_file) \
+	$(gpaste_app_indicator_desktop_file) \
+	$(gpaste_settings_desktop_file) \
+	$(NULL)
+
 nodist_autostart_DATA = \
 	$(NULL)
 
@@ -50,10 +56,10 @@ SUFFIXES += .desktop.in.in .desktop.in
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
 
 EXTRA_DIST += \
-	$(nodist_application_DATA:.desktop=.desktop.in.in) \
+	$(all_desktop_files:.desktop=.desktop.in.in) \
 	$(NULL)
 
 CLEANFILES += \
-	$(nodist_application_DATA) \
-	$(nodist_application_DATA:.desktop=.desktop.in) \
+	$(all_desktop_files) \
+	$(all_desktop_files:.desktop=.desktop.in) \
 	$(NULL)
