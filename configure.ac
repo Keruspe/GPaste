@@ -220,6 +220,7 @@ if test x$enable_extension = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
     fi
+    PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0 pango])
     AC_DEFINE([ENABLE_EXTENSION], [1], [Whether the extension is enabled])
     ENABLE_EXTENSION=1
 fi
