@@ -77,6 +77,7 @@ CC_CHECK_CFLAGS_APPEND([ \
                          -Wundef \
                          -Wformat=2 \
                          -Wlogical-op \
+                         -Wlogical-op-parentheses \
                          -Wsign-compare \
                          -Wformat-security \
                          -Wmissing-include-dirs \
