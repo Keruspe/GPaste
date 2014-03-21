@@ -322,7 +322,10 @@ main (gint argc, gchar *argv[])
                 g_paste_client_select_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
             }
             else if (!g_strcmp0 (arg1, "d") ||
-                     !g_strcmp0 (arg1, "delete"))
+                     !g_strcmp0 (arg1, "del") ||
+                     !g_strcmp0 (arg1, "delete") ||
+                     !g_strcmp0 (arg1, "rm") ||
+                     !g_strcmp0 (arg1, "remove"))
             {
                 g_paste_client_delete_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
             }
