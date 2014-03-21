@@ -6,7 +6,7 @@ Some libraries are available for development purpose:
 
 * `libgpaste-core` which contains all basic objects used by GPaste
 * `libgpaste-settings` which allows you to handle GPaste preferences over dconf
-* `libgpaste-keybinder` provides functionnalities to add custom keybindings to GPaste
+* `libgpaste-keybinder` provides functionalities to add custom keybindings to GPaste
 * `libgpaste-daemon` allows you to write your own GPaste daemon
 * `libgpaste-client` helps you integrate GPaste in your application
 * `libgpaste-gnome-shell-client` helps you integrate the gnome-shell dbus api in your application
@@ -17,7 +17,7 @@ A default daemon named `gpasted` is provided, with four keybindings:
 * show history
 * pop the item from the history
 * sync primary selection with clipboard
-* sync lcipboard with primary selection
+* sync clipboard with primary selection
 
 A simple CLI interface is provided: `gpaste`, with two subcommands: `gpaste settings` which makes the preferences
 utility pop, and `gpaste-applet` which starts the legacy applet in your notification area.
