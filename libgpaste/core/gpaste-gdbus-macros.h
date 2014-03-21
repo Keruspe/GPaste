@@ -171,15 +171,16 @@ g_paste_dbus_get_au_result (GVariant *variant)
 
 #define DBUS_ASYNC_FINISH_FULL(guard, if_fail, extract_and_return_answer)                            \
     guard;                                                                                           \
-    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);                                         \
-    g_return_val_if_fail (!error || !(*error), NULL);                                                \
     G_PASTE_CLEANUP_VARIANT_UNREF GVariant *_result = g_dbus_proxy_call_finish (G_DBUS_PROXY (self), \
                                                                                 result,              \
                                                                                 error);              \
     DBUS_RETURN (if_fail, extract_and_return_answer)
 
 #define DBUS_ASYNC_FINISH_WITH_RETURN(TYPE_CHECKER, if_fail, extract_and_return_answer)                \
-    DBUS_ASYNC_FINISH_FULL (g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), if_fail), if_fail, \
+    DBUS_ASYNC_FINISH_FULL (g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), if_fail);          \
+                            g_return_val_if_fail (G_IS_ASYNC_RESULT (result), if_fail);                \
+                            g_return_val_if_fail (!error || !(*error), if_fail),                       \
+                            if_fail,                                                                   \
                             DBUS_PREPARE_EXTRACTION;                                                   \
                             extract_and_return_answer)
 
@@ -187,8 +188,10 @@ g_paste_dbus_get_au_result (GVariant *variant)
 /* Methods / Async / Impl - Finish */
 /***********************************/
 
-#define DBUS_ASYNC_FINISH_NO_RETURN_BASE(TYPE_CHECKER) \
-    DBUS_ASYNC_FINISH_FULL (g_return_if_fail (G_PASTE_IS_##TYPE_CHECKER (self)), ;, {})
+#define DBUS_ASYNC_FINISH_NO_RETURN_BASE(TYPE_CHECKER)                           \
+    DBUS_ASYNC_FINISH_FULL (g_return_if_fail (G_PASTE_IS_##TYPE_CHECKER (self)); \
+                            g_return_if_fail (G_IS_ASYNC_RESULT (result));       \
+                            g_return_if_fail (!error || !(*error)), ;, {})
 
 #define DBUS_ASYNC_FINISH_RET_BOOL_BASE(TYPE_CHECKER) \
     DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, FALSE, return g_variant_get_boolean (variant))
