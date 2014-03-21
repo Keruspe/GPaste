@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-03-21 11:29+0900\n"
+"POT-Creation-Date: 2014-03-21 12:47+0900\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -375,8 +375,18 @@ msgid "Could not register DBus service."
 msgstr "Impossible d'inscrire le service DBus au registre."
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
-#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
-#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:1
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
+msgid "GPaste Applet"
+msgstr "Applet GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:2
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:2
+msgid "Tray icon to manage GPaste"
+msgstr "Icone de notification pour gérer GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:3
+#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
+#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:3
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -384,7 +394,7 @@ msgstr ""
 "GPaste est un outil de gestion du presse-papier qui vous permet de suivre et "
 "de manipuler votre historique de presse-papier de façon très configurable."
 
-#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:2
+#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with an applet, in the form of a status icon which will "
 "give you access to your history in your tray area."
@@ -392,7 +402,17 @@ msgstr ""
 "GPaste vous fournit un applet, sous la force d'une icon de status qui vous "
 "donnera accès à votre historique dans votre zone de notifications."
 
+#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
+msgid "GPaste AppIndicator"
+msgstr "Indicateur d'application GPaste"
+
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
+msgid "Unity application indicator to manage GPaste"
+msgstr "Indicateur d'application pour unity pour gérer GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with an application indicator for unity which will give "
 "you access to your history in your indicator area."
@@ -400,29 +420,21 @@ msgstr ""
 "GPaste vous fournit un indicateur d'appliation pour unity qui voud donnera "
 "accès à votre historique dans votre zone d'indicateurs."
 
+#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:1
+msgid "GPaste Settings"
+msgstr "Préférences du démon GPaste"
+
 #: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:2
+msgid "Manage GPaste settings"
+msgstr "Gérer les préférences du démon GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with a settings utility allowing you to customize its "
 "behaviour as expected."
 msgstr ""
 "GPaste vous fournit un outil de préférences vous permettant de configurer "
 "son fonctionnement."
-
-#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
-msgid "GPaste Applet"
-msgstr "Applet GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:2
-msgid "Tray icon to manage GPaste"
-msgstr "Icone de notification pour gérer GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
-msgid "GPaste AppIndicator"
-msgstr "Indicateur d'application GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
-msgid "Unity application indicator to manage GPaste"
-msgstr "Indicateur d'application pour unity pour gérer GPaste"
 
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"

@@ -2,6 +2,8 @@
 <application>
   <id type="desktop">org.gnome.GPaste.AppIndicator.desktop</id>
   <licence>CC-BY-SA</licence>
+  <_name>GPaste AppIndicator</_name>
+  <_summary>Unity application indicator to manage GPaste</_summary>
   <description>
     <_p>
       GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.

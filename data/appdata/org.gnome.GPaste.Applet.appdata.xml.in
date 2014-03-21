@@ -2,6 +2,8 @@
 <application>
   <id type="desktop">org.gnome.GPaste.Applet.desktop</id>
   <licence>CC-BY-SA</licence>
+  <_name>GPaste Applet</_name>
+  <_summary>Tray icon to manage GPaste</_summary>
   <description>
     <_p>
       GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
