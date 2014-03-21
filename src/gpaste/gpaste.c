@@ -74,6 +74,10 @@ show_help (const gchar *caller)
     /* Translators: help for gpaste applet */
     printf ("  %s applet: %s\n", caller, _("launch the applet"));
 #endif
+#if G_PASTE_CONFIG_ENABLE_UNITY
+    /* Translators: help for gpaste app-indicator */
+    printf ("  %s app-indicator: %s\n", caller, _("launch the unity application indicator"));
+#endif
     /* Translators: help for gpaste version */
     printf ("  %s version: %s\n", caller, _("display the version"));
     /* Translators: help for gpaste help */
@@ -207,6 +211,18 @@ main (gint argc, gchar *argv[])
                 if (error)
                 {
                     g_critical ("%s: %s", _("Couldn't spawn gpaste-applet.\n"), error->message);
+                    g_clear_error (&error);
+                    status = EXIT_FAILURE;
+                }
+            }
+#endif
+#if G_PASTE_CONFIG_ENABLE_UNITY
+            else if (!g_strcmp0 (arg1, "app-indicator"))
+            {
+                g_spawn_command_line_async (PKGLIBEXECDIR "/gpaste-app-indicator", &error);
+                if (error)
+                {
+                    g_critical ("%s: %s", _("Couldn't spawn gpaste-app-indicator.\n"), error->message);
                     g_clear_error (&error);
                     status = EXIT_FAILURE;
                 }
