@@ -20,6 +20,7 @@
 
 appdata_in_files = \
 	data/appdata/org.gnome.GPaste.Applet.appdata.xml.in \
+	data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in \
 	data/appdata/org.gnome.GPaste.Settings.appdata.xml.in \
 	$(NULL)
 
