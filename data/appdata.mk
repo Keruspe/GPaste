@@ -18,7 +18,11 @@
 @APPDATA_XML_RULES@
 @INTLTOOL_XML_RULE@
 
-appdata_in_files = data/appdata/org.gnome.GPaste.Applet.appdata.xml.in
+appdata_in_files = \
+	data/appdata/org.gnome.GPaste.Applet.appdata.xml.in \
+	data/appdata/org.gnome.GPaste.Settings.appdata.xml.in \
+	$(NULL)
+
 appdata_XML = $(appdata_in_files:.xml.in=.xml)
 
 EXTRA_DIST += \
