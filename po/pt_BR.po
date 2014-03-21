@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-03-20 17:46+0900\n"
+"POT-Creation-Date: 2014-03-21 12:47+0900\n"
 "PO-Revision-Date: 2014-02-09 14:45-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -22,7 +22,7 @@ msgstr ""
 msgid "Empty history"
 msgstr "Esvaziar histórico"
 
-#: ../libgpaste/applet/gpaste-applet-menu.c:260
+#: ../libgpaste/applet/gpaste-applet-menu.c:261
 #: ../src/applets/gnome-shell/extension.js:152
 msgid "(Empty)"
 msgstr "(Vazio)"
@@ -33,7 +33,7 @@ msgstr "Sair"
 
 #: ../libgpaste/applet/gpaste-applet-settings.c:57
 #: ../src/applets/gnome-shell/extension.js:246
-#: ../data/desktop/gpaste-settings.desktop.in.in.h:1
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Configurações do daemon GPaste"
 
@@ -149,7 +149,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr "Sincronizar a seleção primária com a área de transferência: "
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:292
-#: ../src/gpaste/gpaste.c:132
+#: ../src/gpaste/gpaste.c:136
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Não foi possível se conectar ao daemon do GPaste"
 
@@ -329,27 +329,38 @@ msgstr "inicia a ferramenta de configuração"
 msgid "launch the applet"
 msgstr "inicia o applet do GPaste"
 
+#. Translators: help for gpaste app-indicator
+#: ../src/gpaste/gpaste.c:79
+#, fuzzy
+msgid "launch the unity application indicator"
+msgstr "inicia a ferramenta de configuração"
+
 #. Translators: help for gpaste version
-#: ../src/gpaste/gpaste.c:78
+#: ../src/gpaste/gpaste.c:82
 msgid "display the version"
 msgstr "mostra a versão"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:80
+#: ../src/gpaste/gpaste.c:84
 msgid "display this help"
 msgstr "mostra esta ajuda"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:82
+#: ../src/gpaste/gpaste.c:86
 #, fuzzy
 msgid "display the about dialog"
 msgstr "mostra a versão"
 
-#: ../src/gpaste/gpaste.c:209
+#: ../src/gpaste/gpaste.c:213
 msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Não foi possível abrir o gpaste-applet.\n"
 
-#: ../src/gpaste/gpaste.c:228
+#: ../src/gpaste/gpaste.c:225
+#, fuzzy
+msgid "Couldn't spawn gpaste-app-indicator.\n"
+msgstr "Não foi possível abrir o gpaste-applet.\n"
+
+#: ../src/gpaste/gpaste.c:244
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "O daemon foi reiniciado com sucesso\n"
@@ -367,15 +378,65 @@ msgstr "Não foi possível obter um nome DBus."
 msgid "Could not register DBus service."
 msgstr "Não foi possível registrar o serviço DBus."
 
-#: ../data/desktop/gpaste-applet.desktop.in.in.h:1
+#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "GPaste Applet"
 msgstr "Applet do GPaste"
 
-#: ../data/desktop/gpaste-applet.desktop.in.in.h:2
+#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:2
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
 msgstr "Ícone da bandeja para gerenciar o GPaste"
 
-#: ../data/desktop/gpaste-settings.desktop.in.in.h:2
+#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:3
+#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
+#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:3
+msgid ""
+"GPaste is a clipboard managing system allowing you to track and manage your "
+"clipboard history in a highly customizable way."
+msgstr ""
+
+#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:4
+msgid ""
+"GPaste provides you with an applet, in the form of a status icon which will "
+"give you access to your history in your tray area."
+msgstr ""
+
+#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
+#, fuzzy
+msgid "GPaste AppIndicator"
+msgstr "Applet do GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
+#, fuzzy
+msgid "Unity application indicator to manage GPaste"
+msgstr "Ícone da bandeja para gerenciar o GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:4
+msgid ""
+"GPaste provides you with an application indicator for unity which will give "
+"you access to your history in your indicator area."
+msgstr ""
+
+#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:1
+#, fuzzy
+msgid "GPaste Settings"
+msgstr "Configurações do daemon GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:2
+#, fuzzy
+msgid "Manage GPaste settings"
+msgstr "Gerenciar as configurações do daemon GPaste"
+
+#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:4
+msgid ""
+"GPaste provides you with a settings utility allowing you to customize its "
+"behaviour as expected."
+msgstr ""
+
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "Gerenciar as configurações do daemon GPaste"
 

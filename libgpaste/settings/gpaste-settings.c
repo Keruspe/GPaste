@@ -688,7 +688,7 @@ G_PASTE_VISIBLE void
 g_paste_settings_set_extension_enabled (GPasteSettings *self,
                                         gboolean        value)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
     G_PASTE_CLEANUP_STRFREEV gchar **extensions = NULL;
     if (value == priv->extension_enabled) return;

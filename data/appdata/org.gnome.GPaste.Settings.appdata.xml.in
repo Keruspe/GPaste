@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application>
+  <id type="desktop">org.gnome.GPaste.Settings.desktop</id>
+  <licence>CC-BY-SA</licence>
+  <_name>GPaste Settings</_name>
+  <_summary>Manage GPaste settings</_summary>
+  <description>
+    <_p>
+      GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
+    </_p>
+    <_p>
+      GPaste provides you with a settings utility allowing you to customize its behaviour as expected.
+    </_p>
+  </description>
+  <url type="homepage">http://www.imagination-land.org/tags/GPaste.html</url>
+  <screenshots>
+    <screenshot width="1024" height="576" type="default">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-1.png</screenshot>
+    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-2.png</screenshot>
+    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-3.png</screenshot>
+    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-4.png</screenshot>
+  </screenshots>
+  <updatecontact>Marc-Antoine@Perennou.com</updatecontact>
+</application>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application>
+  <id type="desktop">org.gnome.GPaste.AppIndicator.desktop</id>
+  <licence>CC-BY-SA</licence>
+  <_name>GPaste AppIndicator</_name>
+  <_summary>Unity application indicator to manage GPaste</_summary>
+  <description>
+    <_p>
+      GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
+    </_p>
+    <_p>
+      GPaste provides you with an application indicator for unity which will give you access to your history in your indicator area.
+    </_p>
+  </description>
+  <url type="homepage">http://www.imagination-land.org/tags/GPaste.html</url>
+  <screenshots>
+    <screenshot width="1024" height="576" type="default">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-app-indicator-1.png</screenshot>
+    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-1.png</screenshot>
+    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-2.png</screenshot>
+    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-3.png</screenshot>
+    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-4.png</screenshot>
+  </screenshots>
+  <updatecontact>Marc-Antoine@Perennou.com</updatecontact>
+</application>

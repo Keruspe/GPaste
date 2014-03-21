@@ -1016,7 +1016,7 @@ g_paste_history_get_history (const GPasteHistory *self)
 G_PASTE_VISIBLE guint32
 g_paste_history_get_length (const GPasteHistory *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
 

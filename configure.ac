@@ -77,6 +77,7 @@ CC_CHECK_CFLAGS_APPEND([ \
                          -Wundef \
                          -Wformat=2 \
                          -Wlogical-op \
+                         -Wlogical-op-parentheses \
                          -Wsign-compare \
                          -Wformat-security \
                          -Wmissing-include-dirs \
@@ -128,6 +129,8 @@ GIO_VALAFLAGS="--pkg=gio-2.0"
 AC_SUBST(GIO_VALAFLAGS)
 
 GLIB_GSETTINGS
+
+APPDATA_XML
 
 m4_ifdef([GOBJECT_INTROSPECTION_CHECK],
          [GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])],
@@ -218,6 +221,7 @@ if test x$enable_extension = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
     fi
+    PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0 pango])
     AC_DEFINE([ENABLE_EXTENSION], [1], [Whether the extension is enabled])
     ENABLE_EXTENSION=1
 fi
@@ -260,5 +264,8 @@ AC_MSG_RESULT([
     Status icon:            ${enable_applet}
     App indicator:          ${enable_unity}
     Gnome-Shell extension:  ${enable_extension}
+
+    X keybinder support:    ${enable_x_keybinder}
+
     systemd support:        ${enable_systemd} (${systemduserunitdir})
 ])

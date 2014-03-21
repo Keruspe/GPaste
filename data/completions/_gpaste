@@ -6,15 +6,17 @@ if (( CURRENT == 2 )); then
 
     commands=(
         {add,a}:"Set text to clipboard"
+        {about}:"Display the about dialog"
         {backup-history,bh}:"Backup current history"
         {daemon-reexec,dr}:"Reexecute the daemon"
-        {delete,d}:"Delete an element of the history"
+        {delete,del,d,remove,rm}:"Delete an element of the history"
         {delete-history,dh}:"Delete a history"
         {empty,e}:"Empty the history"
         {file,f}:"Put content of file into clipboard"
         {get,g}:"Display an element of the history"
         {help,--help,-h}:"Display the help"
         {history,h}:"Display the history with indexes"
+        {history-size,hs}:"Display the size of the history"
         {list-histories,lh}:"List available histories"
         {raw-history,rh}:"Display the history without indexes"
         {select,set,s}:"Select an element of the history"

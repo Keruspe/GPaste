@@ -6,10 +6,13 @@
 /data/desktop/*.desktop.in
 /data/dbus/*.service
 /data/systemd/*.service
+/data/appdata/*.appdata.xml
+/data/appdata/*.appdata.valid
 /bindings/gi
 /data/pkg-config/*.pc
 /man/*.1
 /po/Makefile
+/po/missing
 /libgpaste/core/gpaste-config.h
 /src/applets/gnome-shell/metadata.json
 /src/gpaste-settings/*.c

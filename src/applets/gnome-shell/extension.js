@@ -18,14 +18,17 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Clutter = imports.gi.Clutter;
 const Gettext = imports.gettext;
-const GPaste = imports.gi.GPaste;
 const Lang = imports.lang;
+
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
-const Pango = imports.gi.Pango;
 const PopupMenu = imports.ui.popupMenu;
+
+const GPaste = imports.gi.GPaste;
+
+const Clutter = imports.gi.Clutter;
+const Pango = imports.gi.Pango;
 const St = imports.gi.St;
 
 const _ = Gettext.domain('GPaste').gettext;
@@ -243,7 +246,7 @@ const GPasteIndicator = new Lang.Class({
 
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addMenuItem(emptyHistoryItem);
-            this.menu.addSettingsAction(_("GPaste daemon settings"), 'gpaste-settings.desktop');
+            this.menu.addSettingsAction(_("GPaste daemon settings"), 'org.gnome.GPaste.Settings.desktop');
 
             this._onStateChanged (true);
         }));
