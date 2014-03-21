@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <application>
-  <id type="desktop">org.gnome.GPaste.Applet.desktop</id>
+  <id type="desktop">org.gnome.GPaste.AppIndicator.desktop</id>
   <licence>CC-BY-SA</licence>
   <description>
     <_p>
-      GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customisable way.
+      GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
     </_p>
     <_p>
       GPaste provides you with an application indicator for unity which will give you access to your history in your indicator area.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <application>
-  <id type="desktop">org.gnome.GPaste.Applet.desktop</id>
+  <id type="desktop">org.gnome.GPaste.Settings.desktop</id>
   <licence>CC-BY-SA</licence>
   <description>
     <_p>
