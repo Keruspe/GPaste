@@ -262,5 +262,8 @@ AC_MSG_RESULT([
     Status icon:            ${enable_applet}
     App indicator:          ${enable_unity}
     Gnome-Shell extension:  ${enable_extension}
+
+    X keybinder support:    ${enable_x_keybinder}
+
     systemd support:        ${enable_systemd} (${systemduserunitdir})
 ])
