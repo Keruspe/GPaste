@@ -69,7 +69,6 @@ bindings_gi_GPaste_1_0_gir_INCLUDES = \
 	Gio-2.0 \
 	GObject-2.0 \
 	Gtk-3.0 \
-	libxml2-2.0 \
 	$(NULL)
 
 if HAVE_INTROSPECTION

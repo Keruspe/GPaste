@@ -30,4 +30,6 @@ bin_gpaste_settings_CFLAGS = \
 bin_gpaste_settings_LDADD = \
 	$(builddir)/$(libgpaste_settings_ui_la_file) \
 	$(builddir)/$(libgpaste_client_la_file) \
+	$(GTK_LIBS) \
+	$(AM_LIBS) \
 	$(NULL)
