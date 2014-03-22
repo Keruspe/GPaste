@@ -23,7 +23,7 @@ INTROSPECTION_GIRS = $(NULL)
 
 libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
-$(libgpaste_gir_file): $(libgpaste_client_la_file) $(libgpaste_core_la_file) $(libgpaste_daemon_la_file)
+$(libgpaste_gir_file): $(libgpaste_client_la_file) $(libgpaste_core_la_file) $(libgpaste_daemon_la_file) $(libgpaste_settings_ui_la_file)
 bindings_gi_GPaste_1_0_gir_FILES = \
 	$(libgpaste_client_libgpaste_client_la_SOURCES) \
 	$(libgpaste_core_libgpaste_core_la_SOURCES) \
