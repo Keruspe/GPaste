@@ -152,7 +152,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
         if (priv->image)
         {
             g_clear_object (&priv->image);
-            g_clear_pointer (&priv->checksum, g_free);
+            g_free (priv->checksum);
+            priv->checksum = NULL;
         }
         break;
     case G_PASTE_ITEM_STATE_ACTIVE:

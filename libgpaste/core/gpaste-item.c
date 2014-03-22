@@ -117,7 +117,7 @@ g_paste_item_get_kind (const GPasteItem *self)
 G_PASTE_VISIBLE gsize
 g_paste_item_get_size (const GPasteItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), 0);
 
     return self->size;
 }
