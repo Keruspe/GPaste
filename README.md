@@ -48,4 +48,4 @@ Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.
 
 Latest release is: [GPaste 3.3.1](http://www.imagination-land.org/posts/2014-03-22-gpaste-3.3.1-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste-3.3.1.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.3.1.tar.xz>
