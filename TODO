@@ -1,6 +1,3 @@
-3.10:
-    man
-
 3.10.1:
     applet:
         don't close on delete
