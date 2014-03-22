@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-03-21 12:47+0900\n"
+"POT-Creation-Date: 2014-03-22 23:09+0900\n"
 "PO-Revision-Date: 2014-02-09 14:45-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -17,13 +17,18 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.5.4\n"
 
+#: ../libgpaste/applet/gpaste-applet-about.c:78
+#: ../src/applets/gnome-shell/extension.js:233
+msgid "About"
+msgstr ""
+
 #: ../libgpaste/applet/gpaste-applet-empty.c:78
-#: ../src/applets/gnome-shell/extension.js:217
+#: ../src/applets/gnome-shell/extension.js:220
 msgid "Empty history"
 msgstr "Esvaziar histórico"
 
 #: ../libgpaste/applet/gpaste-applet-menu.c:261
-#: ../src/applets/gnome-shell/extension.js:152
+#: ../src/applets/gnome-shell/extension.js:155
 msgid "(Empty)"
 msgstr "(Vazio)"
 
@@ -32,13 +37,13 @@ msgid "Quit"
 msgstr "Sair"
 
 #: ../libgpaste/applet/gpaste-applet-settings.c:57
-#: ../src/applets/gnome-shell/extension.js:246
+#: ../src/applets/gnome-shell/extension.js:262
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Configurações do daemon GPaste"
 
 #: ../libgpaste/applet/gpaste-applet-switch.c:122
-#: ../src/applets/gnome-shell/extension.js:60
+#: ../src/applets/gnome-shell/extension.js:63
 msgid "Track changes"
 msgstr "Monitorar a área de transferência"
 
@@ -192,7 +197,7 @@ msgstr "Alternar para"
 msgid "Delete"
 msgstr "Apagar"
 
-#: ../src/applets/gnome-shell/extension.js:152
+#: ../src/applets/gnome-shell/extension.js:155
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "(Não foi possível se conectar ao daemon do GPaste)"
 
