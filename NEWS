@@ -49,6 +49,11 @@ NEW in 3.5 (25/09/2013)
 - New keybinding to sync the clipboard to the primary selection
 - New keybinding to sync the primary selection to the clipboard
 
+NEW in 3.3.1 (22/03/2014)
+=============
+
+- Build fixes for debian wheezy
+
 NEW in 3.3 (22/02/2014)
 =============
 
