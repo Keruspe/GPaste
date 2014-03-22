@@ -38,4 +38,6 @@ bin_gpasted_LDADD = \
 	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
 	$(builddir)/$(libgpaste_keybinder_la_file) \
 	$(builddir)/$(libgpaste_settings_la_file) \
+	$(GTK_LIBS) \
+	$(AM_LIBS) \
 	$(NULL)
