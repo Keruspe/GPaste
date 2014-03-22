@@ -25,6 +25,7 @@ struct _GPasteAppletFooterPrivate
 {
     GtkWidget *empty;
     GtkWidget *settings;
+    GtkWidget *about;
     GtkWidget *quit;
     GtkWidget *separator;
 };
@@ -53,6 +54,7 @@ g_paste_applet_footer_add_to_menu (GPasteAppletFooter *self,
     gtk_menu_shell_append (shell, g_object_ref (priv->separator));
     gtk_menu_shell_append (shell, g_object_ref (priv->empty));
     gtk_menu_shell_append (shell, g_object_ref (priv->settings));
+    gtk_menu_shell_append (shell, g_object_ref (priv->about));
     gtk_menu_shell_append (shell, g_object_ref (priv->quit));
 }
 
@@ -78,6 +80,7 @@ g_paste_applet_footer_remove_from_menu (GPasteAppletFooter *self,
     gtk_container_remove (c, priv->separator);
     gtk_container_remove (c, priv->empty);
     gtk_container_remove (c, priv->settings);
+    gtk_container_remove (c, priv->about);
     gtk_container_remove (c, priv->quit);
 }
 
@@ -89,6 +92,7 @@ g_paste_applet_footer_dispose (GObject *object)
     g_clear_object (&priv->separator);
     g_clear_object (&priv->empty);
     g_clear_object (&priv->settings);
+    g_clear_object (&priv->about);
     g_clear_object (&priv->quit);
 
     G_OBJECT_CLASS (g_paste_applet_footer_parent_class)->dispose (object);
@@ -130,6 +134,7 @@ g_paste_applet_footer_new (GPasteClient *client,
     GPasteAppletFooterPrivate *priv = g_paste_applet_footer_get_instance_private (self);
 
     priv->empty = g_paste_applet_empty_new (client);
+    priv->about = g_paste_applet_about_new (client);
     priv->quit = g_paste_applet_quit_new (app);
 
     return self;

@@ -22,6 +22,7 @@
 
 #include <gpaste-applet-empty.h>
 #include <gpaste-applet-settings.h>
+#include <gpaste-applet-about.h>
 #include <gpaste-applet-quit.h>
 
 G_BEGIN_DECLS
