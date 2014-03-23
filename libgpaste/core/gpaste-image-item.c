@@ -92,10 +92,13 @@ static gboolean
 g_paste_image_item_equals (const GPasteItem *self,
                            const GPasteItem *other)
 {
+    if (!G_PASTE_IS_IMAGE_ITEM (other))
+        return FALSE;
+
     GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
     GPasteImageItemPrivate *_priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (other));
 
-    return (G_PASTE_IS_IMAGE_ITEM (other) && !g_strcmp0 (priv->checksum, _priv->checksum));
+    return !g_strcmp0 (priv->checksum, _priv->checksum);
 }
 
 static void
