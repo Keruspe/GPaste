@@ -55,7 +55,8 @@ g_paste_applet_footer_add_to_menu (GPasteAppletFooter *self,
     gtk_menu_shell_append (shell, g_object_ref (priv->empty));
     gtk_menu_shell_append (shell, g_object_ref (priv->settings));
     gtk_menu_shell_append (shell, g_object_ref (priv->about));
-    gtk_menu_shell_append (shell, g_object_ref (priv->quit));
+    if (priv->quit)
+        gtk_menu_shell_append (shell, g_object_ref (priv->quit));
 }
 
 /**
@@ -81,7 +82,8 @@ g_paste_applet_footer_remove_from_menu (GPasteAppletFooter *self,
     gtk_container_remove (c, priv->empty);
     gtk_container_remove (c, priv->settings);
     gtk_container_remove (c, priv->about);
-    gtk_container_remove (c, priv->quit);
+    if (priv->quit)
+        gtk_container_remove (c, priv->quit);
 }
 
 static void
@@ -111,12 +113,13 @@ g_paste_applet_footer_init (GPasteAppletFooter *self)
 
     priv->settings = g_paste_applet_settings_new ();
     priv->separator = gtk_separator_menu_item_new ();
+    priv->quit = NULL;
 }
 
 /**
  * g_paste_applet_footer_new:
  * @client: a #GPasteClient instance
- * @app: the #GApplication to quit
+ * @app: (allow-none): the #GApplication to quit
  *
  * Create a new instance of #GPasteAppletFooter
  *
@@ -128,14 +131,15 @@ g_paste_applet_footer_new (GPasteClient *client,
                            GApplication *app)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_IS_APPLICATION (app), NULL);
+    g_return_val_if_fail ((!app || G_IS_APPLICATION (app)), NULL);
 
     GPasteAppletFooter *self = g_object_new (G_PASTE_TYPE_APPLET_FOOTER, NULL);
     GPasteAppletFooterPrivate *priv = g_paste_applet_footer_get_instance_private (self);
 
     priv->empty = g_paste_applet_empty_new (client);
     priv->about = g_paste_applet_about_new (client);
-    priv->quit = g_paste_applet_quit_new (app);
+    if (app)
+        priv->quit = g_paste_applet_quit_new (app);
 
     return self;
 }
