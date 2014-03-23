@@ -1,7 +1,6 @@
 3.10.1:
     applet:
         update gnome-shell (settings)
-        don't close on delete
 
 3.12:
     gnome-shell-client:

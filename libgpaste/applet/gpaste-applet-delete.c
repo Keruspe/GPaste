@@ -52,7 +52,7 @@ g_paste_applet_delete_realize (GtkWidget *widget)
     attributes.height = allocation.height;
     attributes.window_type = GDK_WINDOW_CHILD;
     attributes.wclass = GDK_INPUT_ONLY;
-    attributes.event_mask = gtk_widget_get_events (widget) | GDK_BUTTON_PRESS_MASK;
+    attributes.event_mask = gtk_widget_get_events (widget) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK;
 
     priv->event_window = gdk_window_new (gtk_widget_get_parent_window (widget),
                                          &attributes, GDK_WA_X | GDK_WA_Y);

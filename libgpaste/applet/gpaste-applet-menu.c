@@ -273,7 +273,7 @@ g_paste_applet_menu_init (GPasteAppletMenu *self)
 /**
  * g_paste_applet_menu_new:
  * @client: a #GPasteClient instance
- * @app: the #GApplication to quit
+ * @app: (allow-none): the #GApplication to quit
  *
  * Create a new instance of #GPasteAppletMenu
  *
@@ -285,7 +285,7 @@ g_paste_applet_menu_new (GPasteClient *client,
                          GApplication *app)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_IS_APPLICATION (app), NULL);
+    g_return_val_if_fail ((!app || G_IS_APPLICATION (app)), NULL);
 
     GPasteAppletMenu *self = G_PASTE_APPLET_MENU (gtk_widget_new (G_PASTE_TYPE_APPLET_MENU, NULL));
     GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);

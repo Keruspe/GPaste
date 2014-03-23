@@ -124,7 +124,8 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
     priv->client = g_paste_client_new_finish (res, &error);
     if (error)
     {
-        gtk_window_close (GTK_WINDOW (priv->win)); /* will exit the application */
+        if (priv->win)
+            gtk_window_close (GTK_WINDOW (priv->win)); /* will exit the application */
         return FALSE;
     }
 
@@ -171,9 +172,17 @@ g_paste_applet_new (GtkApplication *application)
     GPasteApplet *self = g_object_new (G_PASTE_TYPE_APPLET, NULL);
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
-    priv->application = G_APPLICATION (application);
-    priv->win = gtk_application_window_new (application);
-    gtk_widget_hide (priv->win);
+    if (application)
+    {
+        priv->application = G_APPLICATION (application);
+        priv->win = gtk_application_window_new (application);
+        gtk_widget_hide (priv->win);
+    }
+    else
+    {
+        priv->application = NULL;
+        priv->win = NULL;
+    }
 
     return self;
 }
@@ -204,7 +213,7 @@ g_paste_applet_new_app_indicator (GtkApplication *application)
 
 /**
  * g_paste_applet_new_status_icon:
- * @application: the #GtkApplication running
+ * @application: (allow-none): the #GtkApplication running
  *
  * Create a new instance of #GPasteApplet
  *
