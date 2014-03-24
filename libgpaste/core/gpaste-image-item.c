@@ -230,20 +230,23 @@ _g_paste_image_item_new (const gchar *path,
     priv->image = image;
 
     if (image)
-    {
         priv->checksum = (checksum) ? checksum : g_paste_image_item_compute_checksum (image);
+    else
+        g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
 
-        /* This is the date format "month/day/year time" */
-        G_PASTE_CLEANUP_FREE gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
-        /* This gets displayed in history when selecting an image */
-        G_PASTE_CLEANUP_FREE gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
-                                                                      gdk_pixbuf_get_width (image),
-                                                                      gdk_pixbuf_get_height (image),
-                                                                      formatted_date);
-        g_paste_item_set_display_string (self, display_string);
-    }
+    /* This is the date format "month/day/year time" */
+    G_PASTE_CLEANUP_FREE gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
+    /* This gets displayed in history when selecting an image */
+    G_PASTE_CLEANUP_FREE gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
+                                                                  gdk_pixbuf_get_width (priv->image),
+                                                                  gdk_pixbuf_get_height (priv->image),
+                                                                  formatted_date);
+    g_paste_item_set_display_string (self, display_string);
 
-    g_paste_image_item_set_size (self);
+    if (image)
+        g_paste_image_item_set_size (self);
+    else
+        g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_IDLE);
 
     return self;
 }
