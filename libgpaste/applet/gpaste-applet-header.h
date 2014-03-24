@@ -41,6 +41,8 @@ gboolean g_paste_applet_header_get_active (const GPasteAppletHeader *self);
 void     g_paste_applet_header_set_active (GPasteAppletHeader *self,
                                            gboolean            active);
 
+void g_paste_applet_header_set_update_text (GPasteAppletHeader *self);
+
 void g_paste_applet_header_add_to_menu      (GPasteAppletHeader *self,
                                              GtkMenu            *menu);
 void g_paste_applet_header_remove_from_menu (GPasteAppletHeader *self,

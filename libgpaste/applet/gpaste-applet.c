@@ -150,6 +150,7 @@ g_paste_applet_app_indicator_client_ready (GObject      *source_object G_GNUC_UN
         return;
 
     priv->icon = g_paste_applet_app_indicator_new (priv->client, GTK_MENU (priv->menu));
+    g_paste_applet_menu_set_update_header_text (priv->menu);
 }
 #endif
 
