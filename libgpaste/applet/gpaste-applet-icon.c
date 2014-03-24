@@ -41,10 +41,14 @@ g_paste_applet_icon_popup (GPasteAppletIcon   *self,
 {
     GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private (self);
     GtkWidget *widget = GTK_WIDGET (priv->menu);
+    guint button;
+
+    if (!gdk_event_get_button (event, &button))
+        button = 0;
 
     gtk_widget_set_visible (widget, TRUE);
     gtk_widget_show (gtk_widget_get_toplevel (widget));
-    gtk_menu_popup (priv->menu, NULL, NULL, func, data, 1, gdk_event_get_time (event));
+    gtk_menu_popup (priv->menu, NULL, NULL, func, data, button, gdk_event_get_time (event));
 
     return FALSE;
 }
