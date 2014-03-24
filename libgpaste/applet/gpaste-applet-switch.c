@@ -28,7 +28,7 @@ struct _GPasteAppletSwitchPrivate
     GtkLabel     *label;
     GtkSwitch    *sw;
 
-    gboolean      update_text;
+    gboolean      text_mode;
 
     gulong        tracking_id;
 };
@@ -82,25 +82,28 @@ g_paste_applet_switch_private_on_tracking (GPasteClient *client G_GNUC_UNUSED,
 {
     GPasteAppletSwitchPrivate *priv = user_data;
     gtk_switch_set_active (priv->sw, state);
-    if (priv->update_text)
+    if (priv->text_mode)
         gtk_label_set_text (priv->label, (state) ? _("Stop tracking changes") : _("Track changes"));
 }
 
 /**
- * g_paste_applet_switch_set_update_text:
+ * g_paste_applet_switch_set_text_mode:
  * @self: a #GPasteAppletSwitch instance
+ * @value: Whether to enable text mode or not
  *
- * Changes the text next to the switch, usefull when the switch isn't displayed.
+ * Enable extra codepaths for when the switch and the delete
+ * buttons are not visible.
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_applet_switch_set_update_text (GPasteAppletSwitch *self)
+g_paste_applet_switch_set_text_mode (GPasteAppletSwitch *self,
+                                     gboolean            value)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_SWITCH (self));
 
     GPasteAppletSwitchPrivate *priv = g_paste_applet_switch_get_instance_private (self);
-    priv->update_text = TRUE;
+    priv->text_mode = value;
     g_paste_applet_switch_private_on_tracking (NULL, g_paste_applet_switch_get_active (self), priv);
 }
 
@@ -152,7 +155,7 @@ g_paste_applet_switch_init (GPasteAppletSwitch *self)
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
 
-    priv->update_text = FALSE;
+    priv->text_mode = FALSE;
 
     priv->tracking_id = 0;
 }

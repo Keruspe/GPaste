@@ -48,6 +48,9 @@ gboolean g_paste_applet_get_active (const GPasteApplet *self);
 void     g_paste_applet_set_active (GPasteApplet *self,
                                     gboolean      active);
 
+void g_paste_applet_set_text_mode (GPasteApplet *self,
+                                   gboolean      value);
+
 #if G_PASTE_CONFIG_ENABLE_UNITY
 GPasteApplet *g_paste_applet_new_app_indicator (GtkApplication *application);
 #endif

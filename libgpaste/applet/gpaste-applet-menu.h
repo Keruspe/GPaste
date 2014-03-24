@@ -48,7 +48,8 @@ gboolean g_paste_applet_menu_get_active (const GPasteAppletMenu *self);
 void     g_paste_applet_menu_set_active (GPasteAppletMenu *self,
                                          gboolean          active);
 
-void g_paste_applet_menu_set_update_header_text (GPasteAppletMenu *self);
+void g_paste_applet_menu_set_text_mode (GPasteAppletMenu *self,
+                                        gboolean          value);
 
 GPasteAppletMenu *g_paste_applet_menu_new (GPasteClient *client,
                                            GApplication *app);
