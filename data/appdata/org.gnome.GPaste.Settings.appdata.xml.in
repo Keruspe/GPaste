@@ -14,10 +14,10 @@
   </description>
   <url type="homepage">http://www.imagination-land.org/tags/GPaste.html</url>
   <screenshots>
-    <screenshot width="1024" height="576" type="default">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-1.png</screenshot>
-    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-2.png</screenshot>
-    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-3.png</screenshot>
-    <screenshot width="1024" height="576">https://www.imagination-land.org/files/gpaste/screenshots/gpaste-settings-4.png</screenshot>
+    <screenshot width="629" height="473" type="default">http://www.imagination-land.org/images/GPaste/Settings-1.png</screenshot>
+    <screenshot width="629" height="473">http://www.imagination-land.org/images/GPaste/Settings-2.png</screenshot>
+    <screenshot width="629" height="473">http://www.imagination-land.org/images/GPaste/Settings-3.png</screenshot>
+    <screenshot width="629" height="473">http://www.imagination-land.org/images/GPaste/Settings-4.png</screenshot>
   </screenshots>
   <updatecontact>Marc-Antoine@Perennou.com</updatecontact>
 </application>

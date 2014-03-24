@@ -24,7 +24,11 @@
 struct _GPasteAppletSwitchPrivate
 {
     GPasteClient *client;
+
+    GtkLabel     *label;
     GtkSwitch    *sw;
+
+    gboolean      update_text;
 
     gulong        tracking_id;
 };
@@ -76,18 +80,37 @@ g_paste_applet_switch_private_on_tracking (GPasteClient *client G_GNUC_UNUSED,
                                            gboolean      state,
                                            gpointer      user_data)
 {
-    GtkSwitch *sw = user_data;
-    gtk_switch_set_active (sw, state);
+    GPasteAppletSwitchPrivate *priv = user_data;
+    gtk_switch_set_active (priv->sw, state);
+    if (priv->update_text)
+        gtk_label_set_text (priv->label, (state) ? _("Stop tracking changes") : _("Track changes"));
 }
 
-static void
-g_paste_applet_switch_activate (GtkMenuItem *menu_item)
+/**
+ * g_paste_applet_switch_set_update_text:
+ * @self: a #GPasteAppletSwitch instance
+ *
+ * Changes the text next to the switch, usefull when the switch isn't displayed.
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_switch_set_update_text (GPasteAppletSwitch *self)
 {
-    GPasteAppletSwitch *self = (GPasteAppletSwitch *) menu_item;
+    g_return_if_fail (G_PASTE_IS_APPLET_SWITCH (self));
 
+    GPasteAppletSwitchPrivate *priv = g_paste_applet_switch_get_instance_private (self);
+    priv->update_text = TRUE;
+    g_paste_applet_switch_private_on_tracking (NULL, g_paste_applet_switch_get_active (self), priv);
+}
+
+static gboolean
+g_paste_applet_switch_button_release_event (GtkWidget      *widget,
+                                            GdkEventButton *event G_GNUC_UNUSED)
+{
+    GPasteAppletSwitch *self = (GPasteAppletSwitch *) widget;
     g_paste_applet_switch_set_active (self, !g_paste_applet_switch_get_active (self));
-
-    GTK_MENU_ITEM_CLASS (g_paste_applet_switch_parent_class)->activate (menu_item);
+    return TRUE;
 }
 
 static void
@@ -109,7 +132,7 @@ static void
 g_paste_applet_switch_class_init (GPasteAppletSwitchClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_switch_dispose;
-    GTK_MENU_ITEM_CLASS (klass)->activate = g_paste_applet_switch_activate;
+    GTK_WIDGET_CLASS (klass)->button_release_event = g_paste_applet_switch_button_release_event;
 }
 
 static void
@@ -119,13 +142,17 @@ g_paste_applet_switch_init (GPasteAppletSwitch *self)
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
     GtkBox *box = GTK_BOX (hbox);
-    gtk_box_pack_start (box, gtk_label_new (_("Track changes")), FALSE, FALSE, 0);
+    GtkWidget *label = gtk_label_new (_("Track changes"));
+    priv->label = GTK_LABEL (label);
+    gtk_box_pack_start (box, label, FALSE, FALSE, 0);
 
     GtkWidget *sw = gtk_switch_new ();
     priv->sw = GTK_SWITCH (sw);
     gtk_box_pack_end (box, sw, FALSE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
+
+    priv->update_text = FALSE;
 
     priv->tracking_id = 0;
 }
@@ -153,7 +180,7 @@ g_paste_applet_switch_new (GPasteClient *client)
     priv->tracking_id = g_signal_connect (G_OBJECT (client),
                                           "tracking",
                                           G_CALLBACK (g_paste_applet_switch_private_on_tracking),
-                                          priv->sw);
+                                          priv);
 
     return self;
 }

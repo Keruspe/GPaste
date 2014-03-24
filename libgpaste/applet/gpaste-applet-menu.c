@@ -191,6 +191,23 @@ g_paste_applet_menu_set_active (GPasteAppletMenu *self,
     g_paste_applet_header_set_active (priv->header, active);
 }
 
+/**
+ * g_paste_applet_set_update_header_text:
+ * @self: a #GPasteApplet instance
+ *
+ * Changes the text next to the switch, usefull when the switch isn't displayed.
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_menu_set_update_header_text (GPasteAppletMenu *self)
+{
+    g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
+
+    GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
+    g_paste_applet_header_set_update_text (priv->header);
+}
+
 static void
 g_paste_applet_menu_insert (GtkMenuShell *menu_shell,
                             GtkWidget    *child,

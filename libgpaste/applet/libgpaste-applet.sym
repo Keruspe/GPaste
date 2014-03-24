@@ -26,6 +26,7 @@ global:
     g_paste_applet_header_get_type;
     g_paste_applet_header_get_active;
     g_paste_applet_header_set_active;
+    g_paste_applet_header_set_update_text;
     g_paste_applet_header_add_to_menu;
     g_paste_applet_header_remove_from_menu;
     g_paste_applet_header_new;
@@ -41,6 +42,7 @@ global:
     g_paste_applet_menu_get_type;
     g_paste_applet_menu_append;
     g_paste_applet_menu_prepend;
+    g_paste_applet_menu_set_update_header_text;
     g_paste_applet_menu_new;
 
     g_paste_applet_quit_get_type;
@@ -55,6 +57,7 @@ global:
     g_paste_applet_switch_get_type;
     g_paste_applet_switch_get_active;
     g_paste_applet_switch_set_active;
+    g_paste_applet_switch_set_update_text;
     g_paste_applet_switch_new;
 local:
     *;
