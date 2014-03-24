@@ -80,14 +80,13 @@ g_paste_applet_switch_private_on_tracking (GPasteClient *client G_GNUC_UNUSED,
     gtk_switch_set_active (sw, state);
 }
 
-static void
-g_paste_applet_switch_activate (GtkMenuItem *menu_item)
+static gboolean
+g_paste_applet_switch_button_release_event (GtkWidget      *widget,
+                                            GdkEventButton *event G_GNUC_UNUSED)
 {
-    GPasteAppletSwitch *self = (GPasteAppletSwitch *) menu_item;
-
+    GPasteAppletSwitch *self = (GPasteAppletSwitch *) widget;
     g_paste_applet_switch_set_active (self, !g_paste_applet_switch_get_active (self));
-
-    GTK_MENU_ITEM_CLASS (g_paste_applet_switch_parent_class)->activate (menu_item);
+    return TRUE;
 }
 
 static void
@@ -109,7 +108,7 @@ static void
 g_paste_applet_switch_class_init (GPasteAppletSwitchClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_switch_dispose;
-    GTK_MENU_ITEM_CLASS (klass)->activate = g_paste_applet_switch_activate;
+    GTK_WIDGET_CLASS (klass)->button_release_event = g_paste_applet_switch_button_release_event;
 }
 
 static void
