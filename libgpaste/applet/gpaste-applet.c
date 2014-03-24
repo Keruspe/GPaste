@@ -26,8 +26,8 @@
     0x1 << 1 : Is Active set?
     0x1 << 0 : What is the value of Active?
 */
-#define SET_ACTIVE(v, s) v = (v & ~0x1) | (s & 0x1)
-#define SET_TEXT_MODE(v, s) v = (v & ~(0x1 << 2)) | ((s & 0x1) << 2)
+#define SET_ACTIVE(v, s) v = (v & ~0x1) | (0x1 << 1) | (s & 0x1)
+#define SET_TEXT_MODE(v, s) v = (v & ~(0x1 << 2)) | (0x1 << 3) | ((s & 0x1) << 2)
 
 struct _GPasteAppletPrivate
 {
@@ -117,7 +117,7 @@ g_paste_applet_set_text_mode (GPasteApplet *self,
         return;
     }
 
-    g_paste_applet_menu_set_text_mode (priv->menu, value);
+    g_paste_applet_history_set_text_mode (priv->history, value);
 }
 
 static void
@@ -167,8 +167,10 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
     priv->menu = g_paste_applet_menu_new (priv->client, priv->application);
     priv->history = g_paste_applet_history_new (priv->client, priv->settings, priv->menu);
 
-    if (priv->init_state >> 1)
+    if ((priv->init_state >> 1) & 0x1)
         g_paste_applet_menu_set_active (priv->menu, priv->init_state & 0x1);
+    if ((priv->init_state >> 3) & 0x1)
+        g_paste_applet_history_set_text_mode (priv->history, (priv->init_state >> 2) & 0x1);
 
     return TRUE;
 }

@@ -33,6 +33,7 @@ global:
     g_paste_applet_header_new;
 
     g_paste_applet_history_get_type;
+    g_paste_applet_history_set_text_mode;
     g_paste_applet_history_new;
 
     g_paste_applet_icon_get_type;

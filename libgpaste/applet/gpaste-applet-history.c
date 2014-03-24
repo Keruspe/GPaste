@@ -31,10 +31,37 @@ struct _GPasteAppletHistoryPrivate
     GSList           *items;
     gsize             size;
 
+    gboolean          text_mode;
+
     gulong            changed_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletHistory, g_paste_applet_history, G_TYPE_OBJECT)
+
+/**
+ * g_paste_applet_history_set_text_mode:
+ * @self: a #GPasteAppletHistory instance
+ * @value: Whether to enable text mode or not
+ *
+ * Enable extra codepaths for when the switch and the delete
+ * buttons are not visible.
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_history_set_text_mode (GPasteAppletHistory *self,
+                                      gboolean             value)
+{
+    g_return_if_fail (G_PASTE_IS_APPLET_HISTORY (self));
+
+    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
+    priv->text_mode = value;
+
+    g_paste_applet_menu_set_text_mode (priv->menu, value);
+
+    for (GSList *item = priv->items; item; item = g_slist_next (item))
+        g_paste_applet_item_set_text_mode (item->data, value);
+}
 
 static void
 g_paste_applet_history_ref_item (gpointer data,
@@ -85,7 +112,11 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
-            priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, priv->settings, i));
+        {
+            GtkWidget *item = g_paste_applet_item_new (priv->client, priv->settings, i);
+            g_paste_applet_item_set_text_mode (G_PASTE_APPLET_ITEM (item), priv->text_mode);
+            priv->items = g_slist_append (priv->items, item);
+        }
         g_paste_applet_history_add_list_to_menu (g_slist_nth (priv->items, old_size), priv->menu);
     }
     else if (old_size > priv->size)
@@ -146,7 +177,8 @@ g_paste_applet_history_init (GPasteAppletHistory *self)
 
     priv->items = NULL;
     priv->size = 0;
-    priv->changed_id = 0;
+
+    priv->text_mode = FALSE;
 }
 
 /**
