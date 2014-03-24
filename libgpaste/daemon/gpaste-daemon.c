@@ -100,6 +100,93 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+static gchar *
+g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
+                                          gsize    *length)
+{
+    GVariantIter parameters_iter;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    return g_variant_dup_string (variant, length);
+}
+
+static guint32
+g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
+{
+    GVariantIter parameters_iter;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    return g_variant_get_uint32 (variant);
+}
+
+/****************/
+/* DBus Signals */
+/****************/
+    
+static void
+g_paste_daemon_private_changed (GPasteDaemonPrivate *priv,
+                                gpointer             user_data G_GNUC_UNUSED)
+{
+    G_PASTE_SEND_DBUS_SIGNAL (CHANGED);
+}
+
+static void
+g_paste_daemon_name_lost (GPasteDaemon *self,
+                          gpointer      user_data G_GNUC_UNUSED)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    G_PASTE_SEND_DBUS_SIGNAL (NAME_LOST);
+}
+
+static void
+g_paste_daemon_reexecute_self (GPasteDaemon *self,
+                               gpointer      user_data G_GNUC_UNUSED)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    G_PASTE_SEND_DBUS_SIGNAL (REEXECUTE_SELF);
+}
+
+/**
+ * g_paste_daemon_show_history:
+ * @self: (transfer none): the #GPasteDaemon
+ * @error: a #GError
+ *
+ * Emit the signal to show history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_show_history (GPasteDaemon *self,
+                             GError      **error)
+{
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SHOW_HISTORY);
+}
+
+static void
+g_paste_daemon_tracking (GPasteDaemon *self,
+                         gboolean      tracking_state,
+                         gpointer      user_data G_GNUC_UNUSED)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    GVariant *variant = g_variant_new_boolean (tracking_state);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (TRACKING, variant);
+}
+
+/****************/
+/* DBus Mathods */
+/****************/
+    
 static void
 g_paste_daemon_show_about_dialog (void)
 {
@@ -120,97 +207,6 @@ g_paste_daemon_show_about_dialog (void)
                            "website-label",  "Follow GPaste news",
                            "wrap-license",   TRUE,
                            NULL);
-}
-
-static GVariant *
-g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
-{
-    const GSList *history = g_paste_history_get_history (priv->history);
-    guint length = g_slist_length ((GSList *) history);
-    G_PASTE_CLEANUP_FREE const gchar **displayed_history = g_new (const gchar *, length + 1);
-
-    for (guint i = 0; i < length; ++i, history = g_slist_next (history))
-        displayed_history[i] = g_paste_item_get_display_string (history->data);
-    displayed_history[length] = NULL;
-
-    GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
-
-    return g_variant_new_tuple (&variant, 1);
-}
-
-static GVariant *
-g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv)
-{
-    GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (priv->history));
-    return g_variant_new_tuple (&variant, 1);
-}
-
-static gchar *
-g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
-                                          gsize    *length)
-{
-    GVariantIter parameters_iter;
-
-    g_variant_iter_init (&parameters_iter, parameters);
-
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
-    return g_variant_dup_string (variant, length);
-}
-
-static void
-g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters)
-{
-    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-
-    g_return_if_fail (name);
-
-    GPasteSettings *settings = priv->settings;
-
-    G_PASTE_CLEANUP_FREE gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
-
-    g_paste_settings_set_history_name (settings, name);
-    g_paste_history_save (priv->history);
-    g_paste_settings_set_history_name (settings, old_name);
-}
-
-static void
-g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters)
-{
-    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-
-    g_return_if_fail (name);
-
-    g_paste_history_switch (priv->history, name);
-}
-
-static void
-g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters)
-{
-    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-
-    g_return_if_fail (name);
-
-    GPasteHistory *history = priv->history;
-
-    G_PASTE_CLEANUP_FREE gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
-    gboolean delete_current = !g_strcmp0 (name, old_history);
-
-    if (!delete_current)
-        g_paste_history_switch (history, name);
-    g_paste_history_delete (history, NULL);
-    g_paste_history_switch (history, (delete_current) ? DEFAULT_HISTORY : old_history);
-}
-
-static GVariant *
-g_paste_daemon_list_histories (void)
-{
-    G_PASTE_CLEANUP_STRFREEV GStrv history_names = g_paste_history_list (NULL);
-    GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
-
-    return g_variant_new_tuple (&variant, 1);
 }
 
 static void
@@ -263,15 +259,54 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
     }
 }
 
-static guint32
-g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
+static void
+g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
+                                       GVariant            *parameters)
 {
-    GVariantIter parameters_iter;
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_variant_iter_init (&parameters_iter, parameters);
+    g_return_if_fail (name);
 
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
-    return g_variant_get_uint32 (variant);
+    GPasteSettings *settings = priv->settings;
+
+    G_PASTE_CLEANUP_FREE gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
+
+    g_paste_settings_set_history_name (settings, name);
+    g_paste_history_save (priv->history);
+    g_paste_settings_set_history_name (settings, old_name);
+}
+
+static void
+g_paste_daemon_private_delete (GPasteDaemonPrivate *priv,
+                               GVariant            *parameters)
+{
+    g_paste_history_remove (priv->history,
+                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
+}
+
+static void
+g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
+                                       GVariant            *parameters)
+{
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name);
+
+    GPasteHistory *history = priv->history;
+
+    G_PASTE_CLEANUP_FREE gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
+    gboolean delete_current = !g_strcmp0 (name, old_history);
+
+    if (!delete_current)
+        g_paste_history_switch (history, name);
+    g_paste_history_delete (history, NULL);
+    g_paste_history_switch (history, (delete_current) ? DEFAULT_HISTORY : old_history);
+}
+
+static void
+g_paste_daemon_private_empty (GPasteDaemonPrivate *priv)
+{
+    g_paste_history_empty (priv->history);
 }
 
 static GVariant *
@@ -286,82 +321,64 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
     return g_variant_new_tuple (&variant, 1);
 }
 
-static void
-g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
-                               GVariant            *parameters)
+static GVariant *
+g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
-    g_paste_history_select (priv->history,
-                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    const GSList *history = g_paste_history_get_history (priv->history);
+    guint length = g_slist_length ((GSList *) history);
+    G_PASTE_CLEANUP_FREE const gchar **displayed_history = g_new (const gchar *, length + 1);
+
+    for (guint i = 0; i < length; ++i, history = g_slist_next (history))
+        displayed_history[i] = g_paste_item_get_display_string (history->data);
+    displayed_history[length] = NULL;
+
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
+
+    return g_variant_new_tuple (&variant, 1);
 }
 
-static void
-g_paste_daemon_private_delete (GPasteDaemonPrivate *priv,
-                               GVariant            *parameters)
+static GVariant *
+g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv)
 {
-    g_paste_history_remove (priv->history,
-                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (priv->history));
+    return g_variant_new_tuple (&variant, 1);
 }
 
-static void
-g_paste_daemon_private_empty (GPasteDaemonPrivate *priv)
+static GVariant *
+g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
+                                        GVariant            *parameters)
 {
-    g_paste_history_empty (priv->history);
+    const gchar *value = g_paste_history_get_value (priv->history,
+                                                    g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    // FIXME: error on NULL
+    GVariant *variant = g_variant_new_string ((value) ? value : "");
+
+    return g_variant_new_tuple (&variant, 1);
 }
 
-static void
-g_paste_daemon_tracking (GPasteDaemon *self,
-                         gboolean      tracking_state,
-                         gpointer      user_data G_GNUC_UNUSED)
+static GVariant *
+g_paste_daemon_private_get_raw_history (GPasteDaemonPrivate *priv)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    GVariant *variant = g_variant_new_boolean (tracking_state);
+    const GSList *history = g_paste_history_get_history (priv->history);
+    guint length = g_slist_length ((GSList *) history);
+    G_PASTE_CLEANUP_FREE const gchar **displayed_history = g_new (const gchar *, length + 1);
 
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (TRACKING, variant);
+    for (guint i = 0; i < length; ++i, history = g_slist_next (history))
+        displayed_history[i] = g_paste_item_get_value (history->data);
+    displayed_history[length] = NULL;
+
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
+
+    return g_variant_new_tuple (&variant, 1);
 }
 
-static void
-g_paste_daemon_private_changed (GPasteDaemonPrivate *priv,
-                                gpointer             user_data G_GNUC_UNUSED)
+static GVariant *
+g_paste_daemon_list_histories (void)
 {
-    G_PASTE_SEND_DBUS_SIGNAL (CHANGED);
-}
+    G_PASTE_CLEANUP_STRFREEV GStrv history_names = g_paste_history_list (NULL);
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
 
-static void
-g_paste_daemon_name_lost (GPasteDaemon *self,
-                          gpointer      user_data G_GNUC_UNUSED)
-{
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-
-    G_PASTE_SEND_DBUS_SIGNAL (NAME_LOST);
-}
-
-/**
- * g_paste_daemon_show_history:
- * @self: (transfer none): the #GPasteDaemon
- * @error: a #GError
- *
- * Emit the signal to show history
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_daemon_show_history (GPasteDaemon *self,
-                             GError      **error)
-{
-    g_return_if_fail (G_PASTE_IS_DAEMON (self));
-
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SHOW_HISTORY);
-}
-
-static void
-g_paste_daemon_reexecute_self (GPasteDaemon *self,
-                               gpointer      user_data G_GNUC_UNUSED)
-{
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-
-    G_PASTE_SEND_DBUS_SIGNAL (REEXECUTE_SELF);
+    return g_variant_new_tuple (&variant, 1);
 }
 
 static void
@@ -401,6 +418,25 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
 }
 
 static void
+g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
+                               GVariant            *parameters)
+{
+    g_paste_history_select (priv->history,
+                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
+}
+
+static void
+g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
+                                       GVariant            *parameters)
+{
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name);
+
+    g_paste_history_switch (priv->history, name);
+}
+
+static void
 g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UNUSED,
                                  const gchar           *sender         G_GNUC_UNUSED,
                                  const gchar           *object_path    G_GNUC_UNUSED,
@@ -414,38 +450,42 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GVariant *answer = NULL;
 
-    if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY))
-        answer = g_paste_daemon_private_get_history (priv);
-    if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
-        answer = g_paste_daemon_private_get_history_size (priv);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
-        g_paste_daemon_private_backup_history (priv, parameters);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
-        g_paste_daemon_private_switch_history (priv, parameters);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
-        g_paste_daemon_private_delete_history (priv, parameters);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
-        answer = g_paste_daemon_list_histories ();
+    if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ABOUT))
+        g_paste_daemon_show_about_dialog ();
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD))
         g_paste_daemon_private_add (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_FILE))
         g_paste_daemon_private_add_file (priv, parameters);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT))
-        answer = g_paste_daemon_private_get_element (priv, parameters);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SELECT))
-        g_paste_daemon_private_select (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
+        g_paste_daemon_private_backup_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE))
         g_paste_daemon_private_delete (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
+        g_paste_daemon_private_delete_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_EMPTY))
         g_paste_daemon_private_empty (priv);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))
-        g_paste_daemon_track (self, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT))
+        answer = g_paste_daemon_private_get_element (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY))
+        answer = g_paste_daemon_private_get_history (priv);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
+        answer = g_paste_daemon_private_get_history_size (priv);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
+        answer = g_paste_daemon_private_get_raw_element (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
+        answer = g_paste_daemon_private_get_raw_history (priv);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
+        answer = g_paste_daemon_list_histories ();
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))
         g_paste_daemon_on_extension_state_changed (self, parameters);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ABOUT))
-        g_paste_daemon_show_about_dialog ();
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_REEXECUTE))
         g_paste_daemon_reexecute (self);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SELECT))
+        g_paste_daemon_private_select (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
+        g_paste_daemon_private_switch_history (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))
+        g_paste_daemon_track (self, parameters);
 
     g_dbus_method_invocation_return_value (invocation, answer);
 }
