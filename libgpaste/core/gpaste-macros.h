@@ -33,24 +33,24 @@ G_BEGIN_DECLS
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8"); \
     textdomain (GETTEXT_PACKAGE)
 
-#define G_PASTE_INIT_APPLICATION_FULL(name, activate_cb)                                           \
-    G_PASTE_INIT_GETTEXT ();                                                                       \
-    gtk_init (&argc, &argv);                                                                       \
-    g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL);   \
-    GtkApplication *app = gtk_application_new ("org.gnome.GPaste" name, G_APPLICATION_FLAGS_NONE); \
-    GApplication *gapp = G_APPLICATION (app);                                                      \
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;                                               \
-    G_APPLICATION_GET_CLASS (gapp)->activate = activate_cb;                                        \
-    g_application_register (gapp, NULL, &error);                                                   \
-    if (g_application_get_is_remote (gapp))                                                        \
-    {                                                                                              \
-        g_application_activate (gapp);                                                             \
-        return EXIT_SUCCESS;                                                                       \
-    }                                                                                              \
-    if (error)                                                                                     \
-    {                                                                                              \
-        fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message); \
-        return EXIT_FAILURE;                                                                       \
+#define G_PASTE_INIT_APPLICATION_FULL(name, activate_cb)                                            \
+    G_PASTE_INIT_GETTEXT ();                                                                        \
+    gtk_init (&argc, &argv);                                                                        \
+    g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL);    \
+    GtkApplication *app = gtk_application_new ("org.gnome.GPaste." name, G_APPLICATION_FLAGS_NONE); \
+    GApplication *gapp = G_APPLICATION (app);                                                       \
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;                                                \
+    G_APPLICATION_GET_CLASS (gapp)->activate = activate_cb;                                         \
+    g_application_register (gapp, NULL, &error);                                                    \
+    if (g_application_get_is_remote (gapp))                                                         \
+    {                                                                                               \
+        g_application_activate (gapp);                                                              \
+        return EXIT_SUCCESS;                                                                        \
+    }                                                                                               \
+    if (error)                                                                                      \
+    {                                                                                               \
+        fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);  \
+        return EXIT_FAILURE;                                                                        \
     }
 
 #define G_PASTE_INIT_APPLICATION(name) \

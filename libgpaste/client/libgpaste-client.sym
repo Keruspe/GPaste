@@ -63,8 +63,14 @@ LIBGPASTE_CLIENT_3 {
 global:
     g_paste_client_about_sync;
     g_paste_client_get_history_size_sync;
+    g_paste_client_get_raw_element_sync;
+    g_paste_client_get_raw_history_sync;
     g_paste_client_about;
     g_paste_client_get_history_size;
+    g_paste_client_get_raw_element;
+    g_paste_client_get_raw_history;
     g_paste_client_about_finish;
     g_paste_client_get_history_size_finish;
+    g_paste_client_get_raw_element_finish;
+    g_paste_client_get_raw_history_finish;
 } LIBGPASTE_CLIENT_2;
