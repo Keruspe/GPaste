@@ -193,7 +193,7 @@ g_paste_applet_menu_set_active (GPasteAppletMenu *self,
 
 /**
  * g_paste_applet_menu_set_text_mode:
- * @self: a #GPasteApplet instance
+ * @self: a #GPasteAppletMenu instance
  * @value: Whether to enable text mode or not
  *
  * Enable extra codepaths for when the switch and the delete
