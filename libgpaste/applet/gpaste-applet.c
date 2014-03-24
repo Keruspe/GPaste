@@ -19,7 +19,15 @@
 
 #include "gpaste-applet-private.h"
 
-#define SET_ACTIVE(v, s) v = (1 << 1 | (s & 0x1))
+/*
+    Temporary values for menu settings are stored in an int as such
+    0x1 << 3 : Is text mode set?
+    0x1 << 2 : What is the value of text mode?
+    0x1 << 1 : Is Active set?
+    0x1 << 0 : What is the value of Active?
+*/
+#define SET_ACTIVE(v, s) v = (v & ~0x1) | (s & 0x1)
+#define SET_TEXT_MODE(v, s) v = (v & ~(0x1 << 2)) | ((s & 0x1) << 2)
 
 struct _GPasteAppletPrivate
 {
@@ -83,6 +91,33 @@ g_paste_applet_set_active (GPasteApplet *self,
     }
 
     g_paste_applet_menu_set_active (priv->menu, active);
+}
+
+/**
+ * g_paste_applet_set_text_mode:
+ * @self: a #GPasteApplet instance
+ * @value: Whether to enable text mode or not
+ *
+ * Enable extra codepaths for when the switch and the delete
+ * buttons are not visible.
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_set_text_mode (GPasteApplet *self,
+                              gboolean      value)
+{
+    g_return_if_fail (G_PASTE_IS_APPLET (self));
+
+    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
+
+    if (G_UNLIKELY (!priv->menu)) /* Not yet initialized */
+    {
+        SET_TEXT_MODE (priv->init_state, value);
+        return;
+    }
+
+    g_paste_applet_menu_set_text_mode (priv->menu, value);
 }
 
 static void
@@ -150,7 +185,6 @@ g_paste_applet_app_indicator_client_ready (GObject      *source_object G_GNUC_UN
         return;
 
     priv->icon = g_paste_applet_app_indicator_new (priv->client, GTK_MENU (priv->menu));
-    g_paste_applet_menu_set_update_header_text (priv->menu);
 }
 #endif
 
@@ -207,6 +241,7 @@ g_paste_applet_new_app_indicator (GtkApplication *application)
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
     g_paste_client_new (g_paste_applet_app_indicator_client_ready, priv);
+    g_paste_applet_set_text_mode (self, TRUE);
 
     return self;
 }

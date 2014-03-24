@@ -192,20 +192,23 @@ g_paste_applet_menu_set_active (GPasteAppletMenu *self,
 }
 
 /**
- * g_paste_applet_set_update_header_text:
+ * g_paste_applet_menu_set_text_mode:
  * @self: a #GPasteApplet instance
+ * @value: Whether to enable text mode or not
  *
- * Changes the text next to the switch, usefull when the switch isn't displayed.
+ * Enable extra codepaths for when the switch and the delete
+ * buttons are not visible.
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_applet_menu_set_update_header_text (GPasteAppletMenu *self)
+g_paste_applet_menu_set_text_mode (GPasteAppletMenu *self,
+                                   gboolean          value)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_MENU (self));
 
     GPasteAppletMenuPrivate *priv = g_paste_applet_menu_get_instance_private (self);
-    g_paste_applet_header_set_update_text (priv->header);
+    g_paste_applet_header_set_text_mode (priv->header, value);
 }
 
 static void
