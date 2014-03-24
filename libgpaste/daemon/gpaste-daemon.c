@@ -278,8 +278,8 @@ static GVariant *
 g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
                                     GVariant            *parameters)
 {
-    const gchar *value = g_paste_history_get_value (priv->history,
-                                                    g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    const gchar *value = g_paste_history_get_display_string (priv->history,
+                                                             g_paste_daemon_get_dbus_uint32_parameter (parameters));
     // FIXME: error on NULL
     GVariant *variant = g_variant_new_string ((value) ? value : "");
 
