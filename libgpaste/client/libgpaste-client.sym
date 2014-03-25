@@ -73,4 +73,5 @@ global:
     g_paste_client_get_history_size_finish;
     g_paste_client_get_raw_element_finish;
     g_paste_client_get_raw_history_finish;
+    g_paste_client_get_version;
 } LIBGPASTE_CLIENT_2;

@@ -9,6 +9,7 @@ if (( CURRENT == 2 )); then
         {about}:"Display the about dialog"
         {backup-history,bh}:"Backup current history"
         {daemon-reexec,dr}:"Reexecute the daemon"
+        {daemon-version,dv}:"Display the daemon version"
         {delete,del,d,remove,rm}:"Delete an element of the history"
         {delete-history,dh}:"Delete a history"
         {empty,e}:"Empty the history"

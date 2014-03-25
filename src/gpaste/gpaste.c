@@ -82,6 +82,8 @@ show_help (const gchar *caller)
 #endif
     /* Translators: help for gpaste version */
     printf ("  %s version: %s\n", caller, _("display the version"));
+    /* Translators: help for gpaste daemon-version */
+    printf ("  %s daemon-version: %s\n", caller, _("display the daemon version"));
     /* Translators: help for gpaste help */
     printf ("  %s help: %s\n", caller, _("display this help"));
     /* Translators: help for gpaste about */
@@ -202,6 +204,12 @@ main (gint argc, gchar *argv[])
                     printf (_("Successfully reexecuted the daemon\n"));
                     return EXIT_SUCCESS;
                 }
+            }
+            else if (!g_strcmp0 (arg1, "dv") ||
+                     !g_strcmp0 (arg1, "daemon-version"))
+            {
+                G_PASTE_CLEANUP_FREE gchar *v = g_paste_client_get_version (client);
+                printf ("%s\n", v);
             }
             else if (!g_strcmp0 (arg1, "e") ||
                      !g_strcmp0 (arg1, "empty"))
