@@ -90,6 +90,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_GET_BOOLEAN_PROPERTY(property) \
     DBUS_GET_BOOLEAN_PROPERTY_BASE (CLIENT, G_PASTE_DAEMON_PROP_##property)
 
+#define DBUS_GET_STRING_PROPERTY(property) \
+    DBUS_GET_STRING_PROPERTY_BASE (CLIENT, G_PASTE_DAEMON_PROP_##property)
+
 /***********/
 /* Signals */
 /***********/
@@ -1181,6 +1184,20 @@ G_PASTE_VISIBLE gboolean
 g_paste_client_is_active (GPasteClient *self)
 {
     DBUS_GET_BOOLEAN_PROPERTY (ACTIVE);
+}
+
+/**
+ * g_paste_client_get_version:
+ * @self: a #GPasteClient instance
+ *
+ * Get the version of the running gpaste daemon
+ *
+ * Returns: the version of the daemon
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_version (GPasteClient *self)
+{
+    DBUS_GET_STRING_PROPERTY (ACTIVE);
 }
 
 static void

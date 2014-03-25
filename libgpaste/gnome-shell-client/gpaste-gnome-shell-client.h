@@ -187,9 +187,9 @@ gboolean g_paste_gnome_shell_client_ungrab_accelerator_finish (GPasteGnomeShellC
 /* Properties */
 /**************/
 
-const gchar *g_paste_gnome_shell_client_get_mode           (GPasteGnomeShellClient *self);
-gboolean     g_paste_gnome_shell_client_overview_is_active (GPasteGnomeShellClient *self);
-const gchar *g_paste_gnome_shell_client_get_shell_version  (GPasteGnomeShellClient *self);
+gchar   *g_paste_gnome_shell_client_get_mode           (GPasteGnomeShellClient *self);
+gboolean g_paste_gnome_shell_client_overview_is_active (GPasteGnomeShellClient *self);
+gchar   *g_paste_gnome_shell_client_get_shell_version  (GPasteGnomeShellClient *self);
 
 gboolean g_paste_gnome_shell_client_overview_set_active (GPasteGnomeShellClient *self,
                                                          gboolean                value,

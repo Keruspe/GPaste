@@ -222,7 +222,8 @@ void    g_paste_client_track_finish                      (GPasteClient *self,
 /* Properties */
 /**************/
 
-gboolean g_paste_client_is_active (GPasteClient *self);
+gboolean g_paste_client_is_active   (GPasteClient *self);
+gchar   *g_paste_client_get_version (GPasteClient *self);
 
 /****************/
 /* Constructors */

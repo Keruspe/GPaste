@@ -732,7 +732,7 @@ g_paste_gnome_shell_client_ungrab_accelerator_finish (GPasteGnomeShellClient *se
  *
  * Returns: the "Mode" property
  */
-G_PASTE_VISIBLE const gchar *
+G_PASTE_VISIBLE gchar *
 g_paste_gnome_shell_client_get_mode (GPasteGnomeShellClient *self)
 {
     DBUS_GET_STRING_PROPERTY (MODE);
@@ -760,7 +760,7 @@ g_paste_gnome_shell_client_overview_is_active (GPasteGnomeShellClient *self)
  *
  * Returns: the "ShellVersion" property
  */
-G_PASTE_VISIBLE const gchar *
+G_PASTE_VISIBLE gchar *
 g_paste_gnome_shell_client_get_shell_version (GPasteGnomeShellClient *self)
 {
     DBUS_GET_STRING_PROPERTY (SHELL_VERSION);
