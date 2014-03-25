@@ -5,16 +5,10 @@
 3.12.1:
     general:
         merge 3.10.1
-        properties all the way
-
-3.12.2:
-    keybinder:
-        switch to clutter event filter (not to have to parse X event)
-    tests:
-        split test, add interactive wrapper
 
 3.14:
     general:
+        properties all the way
         wayland support
     plugins:
         make it possible for both client and server
@@ -26,6 +20,8 @@ future:
         Try https://github.com/awamper/gpaste-integration
     libgpaste-client:
         specify errors types when possible in g-i
+    tests:
+        split test, add interactive wrapper
 
 maybe:
     plugins:
