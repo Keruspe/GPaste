@@ -43,13 +43,15 @@ show_help (const gchar *caller)
     /* Translators: help for gpaste list-histories */
     printf ("  %s list-histories: %s\n", caller, _("list available histories"));
     /* Translators: help for gpaste raw-history */
-    printf ("  %s raw-history: %s\n", caller, _("print the history without indexes"));
+    printf ("  %s raw-history: %s\n", caller, _("print the history (raw) without indexes"));
     /* Translators: help for gpaste zero-history */
     printf ("  %s zero-history: %s\n", caller, _("print the history with NUL as separator"));
     /* Translators: help for gpaste add <text> */
     printf ("  %s add <%s>: %s\n", caller, _("text"), _("set text to clipboard"));
     /* Translators: help for gpaste get <number> */
     printf ("  %s get <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history"));
+    /* Translators: help for gpaste get-raw <number> */
+    printf ("  %s get-raw <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history (raw)"));
     /* Translators: help for gpaste select <number> */
     printf ("  %s select <%s>: %s\n", caller, _("number"), _("set the <number>th item from the history to the clipboard"));
     /* Translators: help for gpaste delete <number> */
@@ -98,7 +100,9 @@ show_history (GPasteClient *client,
               gboolean      zero,
               GError      **error)
 {
-    G_PASTE_CLEANUP_STRFREEV GStrv history = g_paste_client_get_history_sync (client, error);
+    G_PASTE_CLEANUP_STRFREEV GStrv history = (raw) ?
+        g_paste_client_get_raw_history_sync (client, error) :
+        g_paste_client_get_history_sync (client, error);
 
     if (!*error)
     {
@@ -187,13 +191,8 @@ main (gint argc, gchar *argv[])
             break;
         case 2:
             arg1 = argv[1];
-            if (!g_strcmp0 (argv[1], "about"))
+            if (!g_strcmp0 (arg1, "about"))
                 g_paste_client_about_sync (client, &error);
-            else if (!g_strcmp0 (arg1, "a") ||
-                     !g_strcmp0 (arg1, "add"))
-            {
-                g_paste_client_add_sync (client, arg2, &error);
-            }
             else if (!g_strcmp0 (arg1, "dr") ||
                      !g_strcmp0 (arg1, "daemon-reexec"))
             {
@@ -293,8 +292,13 @@ main (gint argc, gchar *argv[])
         case 3:
             arg1 = argv[1];
             arg2 = argv[2];
-            if (!g_strcmp0 (arg1, "bh") ||
-                !g_strcmp0 (arg1, "backup-history"))
+            if (!g_strcmp0 (arg1, "a") ||
+                !g_strcmp0 (arg1, "add"))
+            {
+                g_paste_client_add_sync (client, arg2, &error);
+            }
+            else if (!g_strcmp0 (arg1, "bh") ||
+                     !g_strcmp0 (arg1, "backup-history"))
             {
                 g_paste_client_backup_history_sync (client, arg2, &error);
             }
@@ -320,6 +324,11 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "get"))
             {
                 printf ("%s", g_paste_client_get_element_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error));
+            }
+            else if (!g_strcmp0 (arg1, "gr") ||
+                     !g_strcmp0 (arg1, "get-raw"))
+            {
+                printf ("%s", g_paste_client_get_raw_element_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error));
             }
             else if (!g_strcmp0 (arg1, "s")   ||
                      !g_strcmp0 (arg1, "set") ||
