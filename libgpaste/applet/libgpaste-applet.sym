@@ -33,19 +33,17 @@ global:
     g_paste_applet_header_new;
 
     g_paste_applet_history_get_type;
-    g_paste_applet_history_set_text_mode;
     g_paste_applet_history_new;
 
     g_paste_applet_icon_get_type;
 
     g_paste_applet_item_get_type;
-    g_paste_applet_menu_set_text_mode;
     g_paste_applet_item_new;
 
     g_paste_applet_menu_get_type;
     g_paste_applet_menu_append;
     g_paste_applet_menu_prepend;
-    g_paste_applet_menu_set_update_header_text;
+    g_paste_applet_menu_set_text_mode;
     g_paste_applet_menu_new;
 
     g_paste_applet_quit_get_type;

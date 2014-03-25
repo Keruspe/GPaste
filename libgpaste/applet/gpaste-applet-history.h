@@ -37,9 +37,6 @@ typedef struct _GPasteAppletHistoryClass GPasteAppletHistoryClass;
 G_PASTE_VISIBLE
 GType g_paste_applet_history_get_type (void);
 
-void g_paste_applet_history_set_text_mode (GPasteAppletHistory *self,
-                                           gboolean          value);
-
 GPasteAppletHistory *g_paste_applet_history_new (GPasteClient       *client,
                                                  GPasteSettings     *settings,
                                                  GPasteAppletMenu   *menu);
