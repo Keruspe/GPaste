@@ -187,22 +187,78 @@ main (gint argc, gchar *argv[])
             break;
         case 2:
             arg1 = argv[1];
-            if (!g_strcmp0 (arg1, "start") ||
-                !g_strcmp0 (arg1, "d") ||
-                !g_strcmp0 (arg1, "daemon"))
+            if (!g_strcmp0 (argv[1], "about"))
+                g_paste_client_about_sync (client, &error);
+            else if (!g_strcmp0 (arg1, "a") ||
+                     !g_strcmp0 (arg1, "add"))
             {
-                g_paste_client_track_sync (client, TRUE, &error);
+                g_paste_client_add_sync (client, arg2, &error);
             }
-            else if (!g_strcmp0 (arg1, "stop") ||
-                     !g_strcmp0 (arg1, "q") ||
-                     !g_strcmp0 (arg1, "quit"))
+            else if (!g_strcmp0 (arg1, "dr") ||
+                     !g_strcmp0 (arg1, "daemon-reexec"))
             {
-                g_paste_client_track_sync (client, FALSE, &error);
+                g_paste_client_reexecute_sync (client, &error);
+                if (error && error->code == G_DBUS_ERROR_NO_REPLY)
+                {
+                    printf (_("Successfully reexecuted the daemon\n"));
+                    return EXIT_SUCCESS;
+                }
             }
             else if (!g_strcmp0 (arg1, "e") ||
                      !g_strcmp0 (arg1, "empty"))
             {
                 g_paste_client_empty_sync (client, &error);
+            }
+            else if (!g_strcmp0 (arg1, "h") ||
+                     !g_strcmp0 (arg1, "history"))
+            {
+                show_history (client, FALSE, FALSE, &error);
+            }
+            else if (!g_strcmp0 (arg1, "hs") ||
+                     !g_strcmp0 (arg1, "history-size"))
+            {
+                guint32 size = g_paste_client_get_history_size_sync (client, &error);
+                if (!error)
+                    printf ("%u\n", size);
+            }
+            else if (!g_strcmp0 (arg1, "lh") ||
+                     !g_strcmp0 (arg1, "list-histories"))
+            {
+                G_PASTE_CLEANUP_STRFREEV GStrv histories = g_paste_client_list_histories_sync (client, &error);
+                if (!error)
+                {
+                    for (GStrv h = histories; *h; ++h)
+                        printf ("%s\n", *h);
+                }
+            }
+            else if (!g_strcmp0 (arg1, "rh") ||
+                     !g_strcmp0 (arg1, "raw-history"))
+            {
+                show_history (client, TRUE, FALSE, &error);
+            }
+            else if (!g_strcmp0 (arg1, "s")        ||
+                     !g_strcmp0 (arg1, "settings") ||
+                     !g_strcmp0 (arg1, "p")        ||
+                     !g_strcmp0 (arg1, "preferences"))
+            {
+                execl (PKGLIBEXECDIR "/gpaste-settings", "GPaste-Settings", NULL);
+            }
+            else if (!g_strcmp0 (arg1, "start") ||
+                     !g_strcmp0 (arg1, "d")     ||
+                     !g_strcmp0 (arg1, "daemon"))
+            {
+                g_paste_client_track_sync (client, TRUE, &error);
+            }
+            else if (!g_strcmp0 (arg1, "stop") ||
+                     !g_strcmp0 (arg1, "q")    ||
+                     !g_strcmp0 (arg1, "quit"))
+            {
+                g_paste_client_track_sync (client, FALSE, &error);
+            }
+            else if (!g_strcmp0 (arg1, "zh") ||
+                     !g_strcmp0 (arg1, "zero-history"))
+            {
+                show_history (client, FALSE, TRUE, &error);
             }
 #if G_PASTE_CONFIG_ENABLE_APPLET
             else if (!g_strcmp0 (arg1, "applet"))
@@ -228,59 +284,6 @@ main (gint argc, gchar *argv[])
                 }
             }
 #endif
-            else if (!g_strcmp0 (arg1, "s") ||
-                     !g_strcmp0 (arg1, "settings") ||
-                     !g_strcmp0 (arg1, "p") ||
-                     !g_strcmp0 (arg1, "preferences"))
-            {
-                execl (PKGLIBEXECDIR "/gpaste-settings", "GPaste-Settings", NULL);
-            }
-            else if (!g_strcmp0 (arg1, "dr") ||
-                     !g_strcmp0 (arg1, "daemon-reexec"))
-            {
-                g_paste_client_reexecute_sync (client, &error);
-                if (error && error->code == G_DBUS_ERROR_NO_REPLY)
-                {
-                    printf (_("Successfully reexecuted the daemon\n"));
-                    return EXIT_SUCCESS;
-                }
-            }
-            else if (!g_strcmp0 (arg1, "h") ||
-                     !g_strcmp0 (arg1, "history"))
-            {
-                show_history (client, FALSE, FALSE, &error);
-            }
-            else if (!g_strcmp0 (arg1, "hs") ||
-                     !g_strcmp0 (arg1, "history-size"))
-            {
-                guint32 size = g_paste_client_get_history_size_sync (client, &error);
-                if (!error)
-                    printf ("%u\n", size);
-            }
-            else if (!g_strcmp0 (arg1, "rh") ||
-                     !g_strcmp0 (arg1, "raw-history"))
-            {
-                show_history (client, TRUE, FALSE, &error);
-            }
-            else if (!g_strcmp0 (arg1, "zh") ||
-                     !g_strcmp0 (arg1, "zero-history"))
-            {
-                show_history (client, FALSE, TRUE, &error);
-            }
-            else if (!g_strcmp0 (arg1, "lh") ||
-                     !g_strcmp0 (arg1, "list-histories"))
-            {
-                G_PASTE_CLEANUP_STRFREEV GStrv histories = g_paste_client_list_histories_sync (client, &error);
-                if (!error)
-                {
-                    for (GStrv h = histories; *h; ++h)
-                        printf ("%s\n", *h);
-                }
-            }
-            else if (!g_strcmp0 (argv[1], "about"))
-            {
-                g_paste_client_about_sync (client, &error);
-            }
             else
             {
                 show_help (argv[0]);
@@ -290,49 +293,44 @@ main (gint argc, gchar *argv[])
         case 3:
             arg1 = argv[1];
             arg2 = argv[2];
-            if (!g_strcmp0 (arg1, "bh")||
+            if (!g_strcmp0 (arg1, "bh") ||
                 !g_strcmp0 (arg1, "backup-history"))
             {
                 g_paste_client_backup_history_sync (client, arg2, &error);
             }
-            else if (!g_strcmp0 (arg1, "sh") ||
-                     !g_strcmp0 (arg1, "switch-history"))
+            else if (!g_strcmp0 (arg1, "d")      ||
+                     !g_strcmp0 (arg1, "del")    ||
+                     !g_strcmp0 (arg1, "delete") ||
+                     !g_strcmp0 (arg1, "rm")     ||
+                     !g_strcmp0 (arg1, "remove"))
             {
-                g_paste_client_switch_history_sync (client, arg2, &error);
+                g_paste_client_delete_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
             }
             else if (!g_strcmp0 (arg1, "dh") ||
                      !g_strcmp0 (arg1, "delete-history"))
             {
                 g_paste_client_delete_history_sync (client, arg2, &error);
             }
-            else if (!g_strcmp0 (arg1, "a") ||
-                     !g_strcmp0 (arg1, "add"))
+            else if (!g_strcmp0 (arg1, "f") ||
+                     !g_strcmp0 (arg1, "file"))
             {
-                g_paste_client_add_sync (client, arg2, &error);
+                g_paste_client_add_file_sync (client, arg2, &error);
             }
-            else if (!g_strcmp0 (arg1, "g")||
+            else if (!g_strcmp0 (arg1, "g") ||
                      !g_strcmp0 (arg1, "get"))
             {
                 printf ("%s", g_paste_client_get_element_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error));
             }
-            else if (!g_strcmp0 (arg1, "s") ||
+            else if (!g_strcmp0 (arg1, "s")   ||
                      !g_strcmp0 (arg1, "set") ||
                      !g_strcmp0 (arg1, "select"))
             {
                 g_paste_client_select_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
             }
-            else if (!g_strcmp0 (arg1, "d") ||
-                     !g_strcmp0 (arg1, "del") ||
-                     !g_strcmp0 (arg1, "delete") ||
-                     !g_strcmp0 (arg1, "rm") ||
-                     !g_strcmp0 (arg1, "remove"))
+            else if (!g_strcmp0 (arg1, "sh") ||
+                     !g_strcmp0 (arg1, "switch-history"))
             {
-                g_paste_client_delete_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
-            }
-            else if (!g_strcmp0 (arg1, "f") ||
-                     !g_strcmp0 (arg1, "file"))
-            {
-                g_paste_client_add_file_sync (client, arg2, &error);
+                g_paste_client_switch_history_sync (client, arg2, &error);
             }
             else
             {
