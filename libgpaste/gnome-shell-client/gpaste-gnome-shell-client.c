@@ -169,15 +169,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_SET_BOOLEAN_PROPERTY(property, value) \
     DBUS_SET_BOOLEAN_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
 
-static void
-_g_variant_builder_add_vardict_entry (GVariantBuilder *builder,
-                                      const gchar     *key,
-                                      GVariant        *value)
-{
-    g_variant_builder_add_value (builder, g_variant_new_dict_entry (g_variant_new_string (key),
-                                                                    g_variant_new_variant (value)));
-}
-
 /******************/
 /* Methods / Sync */
 /******************/
@@ -240,18 +231,18 @@ g_paste_gnome_shell_client_show_osd_sync (GPasteGnomeShellClient *self,
                                           gint32                  level,
                                           GError                **error)
 {
-    GVariantBuilder builder;
+    GVariantDict dict;
 
-    g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
+    g_variant_dict_init (&dict, NULL);
 
     if (icon)
-        _g_variant_builder_add_vardict_entry (&builder, "icon", g_variant_new_string (icon));
+        g_variant_dict_insert_value (&dict, "icon", g_variant_new_string (icon));
     if (label)
-        _g_variant_builder_add_vardict_entry (&builder, "label", g_variant_new_string (label));
+        g_variant_dict_insert_value (&dict, "label", g_variant_new_string (label));
     if (level >= 0)
-        _g_variant_builder_add_vardict_entry (&builder, "level", g_variant_new_int32 (level));
+        g_variant_dict_insert_value (&dict, "level", g_variant_new_int32 (level));
 
-    GVariant *vardict = g_variant_builder_end (&builder);
+    GVariant *vardict = g_variant_dict_end (&dict);
 
     DBUS_CALL_ONE_PARAMV_NO_RETURN (SHOW_OSD, vardict);
 }
@@ -429,18 +420,18 @@ g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
                                      GAsyncReadyCallback     callback,
                                      gpointer                user_data)
 {
-    GVariantBuilder builder;
+    GVariantDict dict;
 
-    g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
+    g_variant_dict_init (&dict, NULL);
 
     if (icon)
-        _g_variant_builder_add_vardict_entry (&builder, "icon", g_variant_new_string (icon));
+        g_variant_dict_insert_value (&dict, "icon", g_variant_new_string (icon));
     if (label)
-        _g_variant_builder_add_vardict_entry (&builder, "label", g_variant_new_string (label));
+        g_variant_dict_insert_value (&dict, "label", g_variant_new_string (label));
     if (level >= 0)
-        _g_variant_builder_add_vardict_entry (&builder, "level", g_variant_new_int32 (level));
+        g_variant_dict_insert_value (&dict, "level", g_variant_new_int32 (level));
 
-    GVariant *vardict = g_variant_builder_end (&builder);
+    GVariant *vardict = g_variant_dict_end (&dict);
 
     DBUS_CALL_ONE_PARAMV_ASYNC (SHOW_OSD, vardict);
 }

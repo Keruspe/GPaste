@@ -2,10 +2,6 @@
     applet:
         update gnome-shell (settings)
 
-3.12:
-    gnome-shell-client:
-        GVariantDict
-
 3.12.1:
     general:
         merge 3.10.1
