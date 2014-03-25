@@ -29,33 +29,11 @@ struct _GPasteAppletItemPrivate
     GtkLabel       *label;
     guint32         index;
 
-    gboolean        text_mode;
-
     gulong          changed_id;
     gulong          size_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletItem, g_paste_applet_item, GTK_TYPE_MENU_ITEM)
-
-/**
- * g_paste_applet_item_set_text_mode:
- * @self: a #GPasteAppletItem instance
- * @value: Whether to enable text mode or not
- *
- * Enable extra codepaths for when the switch and the delete
- * buttons are not visible.
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_applet_item_set_text_mode (GPasteAppletItem *self,
-                                   gboolean          value)
-{
-    g_return_if_fail (G_PASTE_IS_APPLET_ITEM (self));
-
-    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private (self);
-    priv->text_mode = value;
-}
 
 /* TODO: move me somewhere ( dupe from history ) */
 static gchar *
@@ -112,20 +90,11 @@ g_paste_applet_item_set_text_size (GPasteSettings *settings,
     gtk_label_set_max_width_chars (label, g_paste_settings_get_element_size (settings));
 }
 
-static gboolean
-g_paste_applet_item_button_release_event (GtkWidget      *widget,
-                                          GdkEventButton *event)
+static void
+g_paste_applet_item_activate (GtkMenuItem *menu_item)
 {
-    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) widget);
-
-    if (priv->text_mode && (event->button == GDK_BUTTON_SECONDARY))
-    {
-        g_paste_client_delete (priv->client, priv->index, NULL, NULL);
-        return TRUE;
-    }
-
+    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) menu_item);
     g_paste_client_select (priv->client, priv->index, NULL, NULL);
-    return FALSE;
 }
 
 static void
@@ -151,7 +120,7 @@ static void
 g_paste_applet_item_class_init (GPasteAppletItemClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_item_dispose;
-    GTK_WIDGET_CLASS (klass)->button_release_event = g_paste_applet_item_button_release_event;
+    GTK_MENU_ITEM_CLASS (klass)->activate = g_paste_applet_item_activate;
 }
 
 static void
@@ -166,8 +135,6 @@ g_paste_applet_item_init (GPasteAppletItem *self)
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
-
-    priv->text_mode = FALSE;
 }
 
 /**

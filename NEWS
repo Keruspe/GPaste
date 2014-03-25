@@ -1,8 +1,39 @@
 NEW in 3.11 (not released yet)
 =============
 
-NEW in 3.9 (not released yet)
+NEW in 3.10.1 (Not released yet)
 =============
+
+NEW in 3.10 (25/03/2014)
+=============
+
+- Follow GNOME versionning
+- Don't display error on daemon-reexec
+- Fix coredumps due to g_error
+- New library: libgpaste-applet
+- Unity support (for Ubuntu 14.04 and above) using libgpaste-applet
+- Port legacy applet to libgpaste-applet and rename to StatusIcon
+- Redesign GPaste StatusIcon to make it simpler and similar to gnome-shell extension
+- Vala is no longer required to build the applet (rewritten in C)
+- Lower automake dependency to 1.11
+- Be compatible with gnome-shell up to 3.12
+- libgpaste-settings: add reset
+- gpaste settings: add reset buttons
+- gpaste settings: add a switch to enable the gnome-shell extension
+- The gnome-shell gsettings schema is now required when --enable-gnome-shell-extension is provided (default)
+- gpasted: GetElement now returns the display string
+- gpasted now forwards the full history via dbus, letting the client manage the display limit
+- gpasted gained GetHistoryLength, GetRawHistory, GetRawElement and About
+- gpasted gained a new Version property
+- Add about dialog to all components
+- Prefer dark theme
+- Display more info at the end of configure
+- Provide appdata files
+- Parallel build fixes
+- Fix build issues for Fedora, Ubuntu and Debian
+- clang related fixes
+- Fix warnings
+- Translations update
 
 NEW in 3.8 (10/02/2014)
 =============

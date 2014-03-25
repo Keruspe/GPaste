@@ -38,9 +38,6 @@ typedef struct _GPasteAppletItemClass GPasteAppletItemClass;
 G_PASTE_VISIBLE
 GType g_paste_applet_item_get_type (void);
 
-void g_paste_applet_item_set_text_mode (GPasteAppletItem *self,
-                                        gboolean          value);
-
 GtkWidget *g_paste_applet_item_new (GPasteClient   *client,
                                     GPasteSettings *settings,
                                     guint32         index);

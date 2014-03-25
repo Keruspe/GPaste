@@ -57,5 +57,6 @@ local:
 
 LIBGPASTE_CORE_4 {
 global:
+    g_paste_history_get_display_string;
     g_paste_history_get_length;
 } LIBGPASTE_CORE_1;

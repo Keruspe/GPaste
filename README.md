@@ -20,11 +20,14 @@ A default daemon named `gpasted` is provided, with four keybindings:
 * sync clipboard with primary selection
 
 A simple CLI interface is provided: `gpaste`, with two subcommands: `gpaste settings` which makes the preferences
-utility pop, and `gpaste-applet` which starts the legacy applet in your notification area.
+utility pop, `gpaste applet` which starts the status icon in your notification area and `gpaste app-indicator` which
+starts the unity application indicator.
 
 A native gnome-shell extension is provided.
 
 /!\ Don't forget to run `gpaste dr` aka `gpaste daemon-reexec` after upgrading GPaste to activate new functionalities ;)
+
+You can then run `gpaste daemon-version` to check the correct daemon is now running.
 
 Steps to install it after cloning (skip the `./autogen.sh` part if you're building it from a tarball):
 
@@ -36,13 +39,15 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
 
 If you also want to build the status icon, you'll have to pass `--enable-applet` to configure.
 
+If you also want to build the unity application indicator, you'll have to pass `--enable-unity` to configure.
+
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
 ### If you use GNOME 3.9.90 or above
 
-Latest release is: [GPaste 3.8](http://www.imagination-land.org/posts/2014-02-10-gpaste-3.8-released.html).
+Latest release is: [GPaste 3.10](http://www.imagination-land.org/posts/2014-03-25-gpaste-3.10-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.8.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.10.tar.xz>
 
 ### If you use GNOME 3.9.5 or below
 

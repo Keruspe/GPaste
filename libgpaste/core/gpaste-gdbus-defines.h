@@ -40,6 +40,8 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_GET_ELEMENT                "GetElement"
 #define G_PASTE_DAEMON_GET_HISTORY                "GetHistory"
 #define G_PASTE_DAEMON_GET_HISTORY_SIZE           "GetHistorySize"
+#define G_PASTE_DAEMON_GET_RAW_ELEMENT            "GetRawElement"
+#define G_PASTE_DAEMON_GET_RAW_HISTORY            "GetRawHistory"
 #define G_PASTE_DAEMON_LIST_HISTORIES             "ListHistories"
 #define G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "OnExtensionStateChanged"
 #define G_PASTE_DAEMON_REEXECUTE                  "Reexecute"
@@ -53,63 +55,73 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
 #define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
 
-#define G_PASTE_DAEMON_PROP_ACTIVE "Active"
+#define G_PASTE_DAEMON_PROP_ACTIVE  "Active"
+#define G_PASTE_DAEMON_PROP_VERSION "Version"
 
 #define G_PASTE_DAEMON_INTERFACE                                               \
         "<node>"                                                               \
         "   <interface name='" G_PASTE_DAEMON_INTERFACE_NAME "'>"              \
-        "       <method name='" G_PASTE_DAEMON_GET_HISTORY "'>"                \
-        "           <arg type='as' direction='out' />"                         \
-        "       </method>"                                                     \
-        "       <method name='" G_PASTE_DAEMON_GET_HISTORY_SIZE "'>"           \
-        "           <arg type='u' direction='out' />"                          \
-        "       </method>"                                                     \
-        "       <method name='" G_PASTE_DAEMON_BACKUP_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                           \
-        "       </method>"                                                     \
-        "       <method name='" G_PASTE_DAEMON_SWITCH_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                           \
-        "       </method>"                                                     \
-        "       <method name='" G_PASTE_DAEMON_DELETE_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                           \
-        "       </method>"                                                     \
-        "       <method name='" G_PASTE_DAEMON_LIST_HISTORIES "'>"             \
-        "           <arg type='as' direction='out' />"                         \
-        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_ABOUT "' />"                    \
         "       <method name='" G_PASTE_DAEMON_ADD "'>"                        \
         "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ADD_FILE "'>"                   \
         "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
-        "       <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
-        "           <arg type='u' direction='in' />"                           \
-        "           <arg type='s' direction='out' />"                          \
-        "       </method>"                                                     \
-        "       <method name='" G_PASTE_DAEMON_SELECT "'>"                     \
-        "           <arg type='u' direction='in' />"                           \
+        "       <method name='" G_PASTE_DAEMON_BACKUP_HISTORY "'>"             \
+        "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_DELETE "'>"                     \
         "           <arg type='u' direction='in' />"                           \
         "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_DELETE_HISTORY "'>"             \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_EMPTY "' />"                    \
-        "       <method name='" G_PASTE_DAEMON_TRACK "'>"                      \
-        "           <arg type='b' direction='in' />"                           \
+        "       <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
+        "           <arg type='u' direction='in' />"                           \
+        "           <arg type='s' direction='out' />"                          \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_GET_HISTORY "'>"                \
+        "           <arg type='as' direction='out' />"                         \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_GET_HISTORY_SIZE "'>"           \
+        "           <arg type='u' direction='out' />"                          \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_GET_RAW_ELEMENT "'>"            \
+        "           <arg type='u' direction='in' />"                           \
+        "           <arg type='s' direction='out' />"                          \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_GET_RAW_HISTORY "'>"            \
+        "           <arg type='as' direction='out' />"                         \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_LIST_HISTORIES "'>"             \
+        "           <arg type='as' direction='out' />"                         \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "'>" \
         "           <arg type='b' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_REEXECUTE "' />"                \
-        "       <method name='" G_PASTE_DAEMON_ABOUT "' />"                    \
+        "       <method name='" G_PASTE_DAEMON_SELECT "'>"                     \
+        "           <arg type='u' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_SWITCH_HISTORY "'>"             \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_TRACK "'>"                      \
+        "           <arg type='b' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <signal name='" G_PASTE_DAEMON_SIG_CHANGED "' />"              \
+        "       <signal name='" G_PASTE_DAEMON_SIG_NAME_LOST "' />"            \
         "       <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \
+        "       <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "       <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
         "           <arg type='b' direction='out' />"                          \
         "       </signal>"                                                     \
-        "       <signal name='" G_PASTE_DAEMON_SIG_CHANGED "' />"              \
-        "       <signal name='" G_PASTE_DAEMON_SIG_NAME_LOST "' />"            \
-        "       <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "       <property name='" G_PASTE_DAEMON_PROP_ACTIVE "'"               \
         "                 type='b' access='read' />"                           \
+        "       <property name='" G_PASTE_DAEMON_PROP_VERSION "'"              \
+        "                 type='s' access='read' />"                           \
         "   </interface>"                                                      \
         "</node>"
 

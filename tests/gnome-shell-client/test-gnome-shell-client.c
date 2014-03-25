@@ -74,7 +74,7 @@ main (gint argc, gchar *argv[])
         return EXIT_FAILURE;
     } 
 
-    g_print ("gnome-shell mode: %s\n", g_paste_gnome_shell_client_get_mode (client));
+    g_print ("gnome-shell mode: %s\n", g_paste_gnome_shell_client_get_mode (client)); /* FIXME: leak */
     g_print ("gnome-shell version: %s\n", g_paste_gnome_shell_client_get_shell_version (client));
     
     g_print ("Will now play with overview's state, don't worry.\n");

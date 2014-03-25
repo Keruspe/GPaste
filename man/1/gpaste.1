@@ -1,4 +1,4 @@
-.\" Copyright (c) 2011-2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+.\" Copyright (c) 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 .\"
 .\" This is free documentation; you can redistribute it and/or
 .\" modify it under the terms of the GNU General Public License as
@@ -42,7 +42,7 @@ Display this size of the history
 .br
 .TP
 .B gpaste raw-history
-Display the history without indexes
+Display the history (raw) without indexes
 .br
 .TP
 .B gpaste backup-history
@@ -71,6 +71,10 @@ Add the text into the history
 .TP
 .B gpaste get <number>
 Get the <number>th item from the history
+.br
+.TP
+.B gpaste get-raw <number>
+Get the <number>th item from the history (raw)
 .br
 .TP
 .B gpaste select <number>
@@ -111,6 +115,10 @@ Launch the configuration tool
 .TP
 .B gpaste version
 Display the version
+.br
+.TP
+.B gpaste daemon-version
+Display the daemon version
 .br
 .TP
 .B gpaste help

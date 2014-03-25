@@ -328,7 +328,7 @@ g_paste_dbus_get_au_result (GVariant *variant)
 
 #define DBUS_GET_STRING_PROPERTY_BASE(TYPE_CHECKER, property) \
     DBUS_GET_PROPERTY_INIT (TYPE_CHECKER, property, NULL);    \
-    return g_variant_get_string (result, NULL)
+    return g_variant_dup_string (result, NULL)
 
 /************************/
 /* Properties / Setters */
