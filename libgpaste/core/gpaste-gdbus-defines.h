@@ -55,7 +55,8 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
 #define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
 
-#define G_PASTE_DAEMON_PROP_ACTIVE "Active"
+#define G_PASTE_DAEMON_PROP_ACTIVE  "Active"
+#define G_PASTE_DAEMON_PROP_VERSION "Version"
 
 #define G_PASTE_DAEMON_INTERFACE                                               \
         "<node>"                                                               \
@@ -119,6 +120,8 @@ G_BEGIN_DECLS
         "       </signal>"                                                     \
         "       <property name='" G_PASTE_DAEMON_PROP_ACTIVE "'"               \
         "                 type='b' access='read' />"                           \
+        "       <property name='" G_PASTE_DAEMON_PROP_VERSION "'"              \
+        "                 type='s' access='read' />"                           \
         "   </interface>"                                                      \
         "</node>"
 

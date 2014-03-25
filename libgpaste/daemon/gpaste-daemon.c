@@ -503,6 +503,8 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
 
     if (!g_strcmp0 (property_name, G_PASTE_DAEMON_PROP_ACTIVE))
         return g_variant_new_boolean (g_paste_settings_get_track_changes (priv->settings));
+    else if (!g_strcmp0 (property_name, G_PASTE_DAEMON_PROP_VERSION))
+        return g_variant_new_string (VERSION);
 
     return NULL;
 }
