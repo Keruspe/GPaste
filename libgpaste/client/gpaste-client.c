@@ -1197,7 +1197,7 @@ g_paste_client_is_active (GPasteClient *self)
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_version (GPasteClient *self)
 {
-    DBUS_GET_STRING_PROPERTY (ACTIVE);
+    DBUS_GET_STRING_PROPERTY (VERSION);
 }
 
 static void
