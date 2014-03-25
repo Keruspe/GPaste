@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-03-22 23:09+0900\n"
+"POT-Creation-Date: 2014-03-25 19:47+0900\n"
 "PO-Revision-Date: 2013-11-08 11:15+0100\n"
 "Last-Translator: Christian Schendel <doppelhelix@gmail.com>\n"
 "Language-Team: \n"
@@ -27,7 +27,7 @@ msgstr ""
 msgid "Empty history"
 msgstr "Chronik leeren"
 
-#: ../libgpaste/applet/gpaste-applet-menu.c:261
+#: ../libgpaste/applet/gpaste-applet-menu.c:281
 #: ../src/applets/gnome-shell/extension.js:155
 msgid "(Empty)"
 msgstr "(Leer)"
@@ -42,22 +42,28 @@ msgstr "Beenden"
 msgid "GPaste daemon settings"
 msgstr "GPaste Daemon Einstellungen"
 
-#: ../libgpaste/applet/gpaste-applet-switch.c:122
+#: ../libgpaste/applet/gpaste-applet-switch.c:86
+#, fuzzy
+msgid "Stop tracking changes"
+msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
+
+#: ../libgpaste/applet/gpaste-applet-switch.c:86
+#: ../libgpaste/applet/gpaste-applet-switch.c:155
 #: ../src/applets/gnome-shell/extension.js:63
 msgid "Track changes"
 msgstr "Änderungen überwachen"
 
-#: ../libgpaste/core/gpaste-history.c:530
+#: ../libgpaste/core/gpaste-history.c:552
 msgid "Could not create history dir"
 msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
 #. This is the date format "month/day/year time"
-#: ../libgpaste/core/gpaste-image-item.c:234
+#: ../libgpaste/core/gpaste-image-item.c:238
 msgid "%m/%d/%y %T"
 msgstr "%d. %m. %y - %T"
 
 #. This gets displayed in history when selecting an image
-#: ../libgpaste/core/gpaste-image-item.c:236
+#: ../libgpaste/core/gpaste-image-item.c:240
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Bild, %d x %d (%s)]"
@@ -154,7 +160,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr "Auswahl mit der Zwischenablage synchronisieren:"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:292
-#: ../src/gpaste/gpaste.c:136
+#: ../src/gpaste/gpaste.c:142
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
@@ -244,7 +250,8 @@ msgstr "Verfügbare Chroniken anzeigen"
 
 #. Translators: help for gpaste raw-history
 #: ../src/gpaste/gpaste.c:46
-msgid "print the history without indexes"
+#, fuzzy
+msgid "print the history (raw) without indexes"
 msgstr "Chronik ohne Index anzeigen"
 
 #. Translators: help for gpaste zero-history
@@ -262,10 +269,11 @@ msgid "set text to clipboard"
 msgstr "Den markierten Text in die Zwischenablage kopieren"
 
 #. Translators: help for gpaste get <number>
+#. Translators: help for gpaste get-raw <number>
 #. Translators: help for gpaste select <number>
 #. Translators: help for gpaste delete <number>
 #: ../src/gpaste/gpaste.c:52 ../src/gpaste/gpaste.c:54
-#: ../src/gpaste/gpaste.c:56
+#: ../src/gpaste/gpaste.c:56 ../src/gpaste/gpaste.c:58
 msgid "number"
 msgstr "Nummer"
 
@@ -274,101 +282,112 @@ msgid "get the <number>th item from the history"
 msgstr "Hole den <number>ten Eintrag aus der Chronik"
 
 #: ../src/gpaste/gpaste.c:54
+#, fuzzy
+msgid "get the <number>th item from the history (raw)"
+msgstr "Hole den <number>ten Eintrag aus der Chronik"
+
+#: ../src/gpaste/gpaste.c:56
 msgid "set the <number>th item from the history to the clipboard"
 msgstr "Setze den <number>ten Eintrag aus der Chronik in die Zwischenablage"
 
-#: ../src/gpaste/gpaste.c:56
+#: ../src/gpaste/gpaste.c:58
 msgid "delete <number>th item of the history"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #. Translators: help for gpaste file <path>
-#: ../src/gpaste/gpaste.c:58
+#: ../src/gpaste/gpaste.c:60
 msgid "path"
 msgstr "Pfad"
 
-#: ../src/gpaste/gpaste.c:58
+#: ../src/gpaste/gpaste.c:60
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "Kopiere den Inhalt der Datei in <path> zur Zwischenablage"
 
 #. Translators: help for whatever | gpaste
-#: ../src/gpaste/gpaste.c:60
+#: ../src/gpaste/gpaste.c:62
 msgid "whatever"
 msgstr "PROGRAMM"
 
-#: ../src/gpaste/gpaste.c:60
+#: ../src/gpaste/gpaste.c:62
 msgid "set the output of whatever to clipboard"
 msgstr "kopiert die Ausgabe von PROGRAMM in die Zwischenablage"
 
 #. Translators: help for gpaste empty
-#: ../src/gpaste/gpaste.c:62
+#: ../src/gpaste/gpaste.c:64
 msgid "empty the history"
 msgstr "Chronik leeren"
 
 #. Translators: help for gpaste start
-#: ../src/gpaste/gpaste.c:64
+#: ../src/gpaste/gpaste.c:66
 msgid "start tracking clipboard changes"
 msgstr "Startet die Verfolgung von Änderungen an der Zwischenablage"
 
 #. Translators: help for gpaste stop
-#: ../src/gpaste/gpaste.c:66
+#: ../src/gpaste/gpaste.c:68
 msgid "stop tracking clipboard changes"
 msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 
 #. Translators: help for gpaste quit
-#: ../src/gpaste/gpaste.c:68
+#: ../src/gpaste/gpaste.c:70
 msgid "alias for stop"
 msgstr "Alias für stop"
 
 #. Translators: help for gpaste daemon-reexec
-#: ../src/gpaste/gpaste.c:70
+#: ../src/gpaste/gpaste.c:72
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "Startet den Daemon neu (Nach einem Update...)"
 
 #. Translators: help for gpaste settings
-#: ../src/gpaste/gpaste.c:72
+#: ../src/gpaste/gpaste.c:74
 msgid "launch the configuration tool"
 msgstr "Konfigurationswerkzeug starten"
 
 #. Translators: help for gpaste applet
-#: ../src/gpaste/gpaste.c:75
+#: ../src/gpaste/gpaste.c:77
 msgid "launch the applet"
 msgstr "Applet starten"
 
 #. Translators: help for gpaste app-indicator
-#: ../src/gpaste/gpaste.c:79
+#: ../src/gpaste/gpaste.c:81
 #, fuzzy
 msgid "launch the unity application indicator"
 msgstr "Konfigurationswerkzeug starten"
 
 #. Translators: help for gpaste version
-#: ../src/gpaste/gpaste.c:82
+#: ../src/gpaste/gpaste.c:84
 msgid "display the version"
 msgstr "Programmversion anzeigen"
 
+#. Translators: help for gpaste daemon-version
+#: ../src/gpaste/gpaste.c:86
+#, fuzzy
+msgid "display the daemon version"
+msgstr "Programmversion anzeigen"
+
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:84
+#: ../src/gpaste/gpaste.c:88
 msgid "display this help"
 msgstr "Diesen Hilfetext anzeigen"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:86
+#: ../src/gpaste/gpaste.c:90
 #, fuzzy
 msgid "display the about dialog"
 msgstr "Programmversion anzeigen"
 
-#: ../src/gpaste/gpaste.c:213
-msgid "Couldn't spawn gpaste-applet.\n"
-msgstr "gpaste-applet konnte nicht gestartet werden.\n"
-
-#: ../src/gpaste/gpaste.c:225
-#, fuzzy
-msgid "Couldn't spawn gpaste-app-indicator.\n"
-msgstr "gpaste-applet konnte nicht gestartet werden.\n"
-
-#: ../src/gpaste/gpaste.c:244
+#: ../src/gpaste/gpaste.c:204
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Daemon wurde erfolgreich neu gestartet\n"
+
+#: ../src/gpaste/gpaste.c:276
+msgid "Couldn't spawn gpaste-applet.\n"
+msgstr "gpaste-applet konnte nicht gestartet werden.\n"
+
+#: ../src/gpaste/gpaste.c:288
+#, fuzzy
+msgid "Couldn't spawn gpaste-app-indicator.\n"
+msgstr "gpaste-applet konnte nicht gestartet werden.\n"
 
 #: ../src/gpasted/gpasted.c:46
 #, c-format
