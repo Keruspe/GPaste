@@ -90,13 +90,11 @@ g_paste_applet_item_set_text_size (GPasteSettings *settings,
     gtk_label_set_max_width_chars (label, g_paste_settings_get_element_size (settings));
 }
 
-static gboolean
-g_paste_applet_item_button_release_event (GtkWidget      *widget,
-                                          GdkEventButton *event G_GNUC_UNUSED)
+static void
+g_paste_applet_item_activate (GtkMenuItem *menu_item)
 {
-    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) widget);
+    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) menu_item);
     g_paste_client_select (priv->client, priv->index, NULL, NULL);
-    return FALSE;
 }
 
 static void
@@ -122,7 +120,7 @@ static void
 g_paste_applet_item_class_init (GPasteAppletItemClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_item_dispose;
-    GTK_WIDGET_CLASS (klass)->button_release_event = g_paste_applet_item_button_release_event;
+    GTK_MENU_ITEM_CLASS (klass)->activate = g_paste_applet_item_activate;
 }
 
 static void
