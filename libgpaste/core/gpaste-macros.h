@@ -42,15 +42,15 @@ G_BEGIN_DECLS
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;                                                \
     G_APPLICATION_GET_CLASS (gapp)->activate = activate_cb;                                         \
     g_application_register (gapp, NULL, &error);                                                    \
-    if (g_application_get_is_remote (gapp))                                                         \
-    {                                                                                               \
-        g_application_activate (gapp);                                                              \
-        return EXIT_SUCCESS;                                                                        \
-    }                                                                                               \
     if (error)                                                                                      \
     {                                                                                               \
         fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);  \
         return EXIT_FAILURE;                                                                        \
+    }                                                                                               \
+    if (g_application_get_is_remote (gapp))                                                         \
+    {                                                                                               \
+        g_application_activate (gapp);                                                              \
+        return EXIT_SUCCESS;                                                                        \
     }
 
 #define G_PASTE_INIT_APPLICATION(name) \
