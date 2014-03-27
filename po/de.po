@@ -8,19 +8,20 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2014-03-25 19:47+0900\n"
-"PO-Revision-Date: 2013-11-08 11:15+0100\n"
-"Last-Translator: Christian Schendel <doppelhelix@gmail.com>\n"
+"PO-Revision-Date: 2014-03-27 21:03+0100\n"
+"Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 1.5.5\n"
 
 #: ../libgpaste/applet/gpaste-applet-about.c:78
 #: ../src/applets/gnome-shell/extension.js:233
 msgid "About"
-msgstr ""
+msgstr "Über"
 
 #: ../libgpaste/applet/gpaste-applet-empty.c:78
 #: ../src/applets/gnome-shell/extension.js:220
@@ -40,7 +41,7 @@ msgstr "Beenden"
 #: ../src/applets/gnome-shell/extension.js:262
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
-msgstr "GPaste Daemon Einstellungen"
+msgstr "GPaste-Daemon-Einstellungen"
 
 #: ../libgpaste/applet/gpaste-applet-switch.c:86
 #, fuzzy
@@ -70,7 +71,7 @@ msgstr "[Bild, %d x %d (%s)]"
 
 #: ../libgpaste/core/gpaste-macros.h:52
 msgid "Failed to register the gtk application"
-msgstr "Initialisierung der gtk Anwendung fehlgeschlagen"
+msgstr "Initialisierung der Gtk-Anwendung fehlgeschlagen"
 
 #. Match options
 #. Error
@@ -85,11 +86,11 @@ msgstr "Verfolge Änderungen in der Zwischenablage"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:129
 msgid "Enable the gnome-shell extension"
-msgstr ""
+msgstr "Die Gnome-Shell-Erweiterung aktivieren"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:135
 msgid "Sync the daemon state with the extension's one"
-msgstr "Synchronisiere Daemon mit der erweiterung"
+msgstr "Synchronisiere Daemon mit der Erweiterung"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:143
 msgid "Primary selection affects history"
@@ -109,7 +110,7 @@ msgstr "Objekte trimmen"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:168
 msgid "Detect growing lines"
-msgstr ""
+msgstr "Länger werdende Zeilen entdecken"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:175
 msgid "Save history"
@@ -205,7 +206,7 @@ msgstr "Löschen"
 
 #: ../src/applets/gnome-shell/extension.js:155
 msgid "(Couldn't connect to GPaste daemon)"
-msgstr "(Verbindung zum GPaste daemon fehlgeschlagen)"
+msgstr "(Verbindung zum GPaste-Daemon fehlgeschlagen)"
 
 #: ../src/gpaste/gpaste.c:32
 #, c-format
@@ -329,13 +330,14 @@ msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 
 #. Translators: help for gpaste quit
 #: ../src/gpaste/gpaste.c:70
+#, fuzzy
 msgid "alias for stop"
 msgstr "Alias für stop"
 
 #. Translators: help for gpaste daemon-reexec
 #: ../src/gpaste/gpaste.c:72
 msgid "reexecute the daemon (after upgrading...)"
-msgstr "Startet den Daemon neu (Nach einem Update...)"
+msgstr "Startet den Daemon neu (Nach einem Update …)"
 
 #. Translators: help for gpaste settings
 #: ../src/gpaste/gpaste.c:74
@@ -385,9 +387,8 @@ msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "gpaste-applet konnte nicht gestartet werden.\n"
 
 #: ../src/gpaste/gpaste.c:288
-#, fuzzy
 msgid "Couldn't spawn gpaste-app-indicator.\n"
-msgstr "gpaste-applet konnte nicht gestartet werden.\n"
+msgstr "GPaste-Applet konnte nicht gestartet werden.\n"
 
 #: ../src/gpasted/gpasted.c:46
 #, c-format
@@ -396,11 +397,11 @@ msgstr "Signal %d wurde empfangen. Programm wird beendet\n"
 
 #: ../src/gpasted/gpasted.c:56
 msgid "Could not acquire DBus name."
-msgstr "DBus Name konnte nicht bestimmt werden."
+msgstr "DBus-Name konnte nicht bestimmt werden."
 
 #: ../src/gpasted/gpasted.c:123
 msgid "Could not register DBus service."
-msgstr "DBus Service konnte nicht registriert werden."
+msgstr "DBus-Service konnte nicht registriert werden."
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
@@ -419,12 +420,17 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste ist ein ein Managementsystem für die Zwischenablage, dass es erlaubt "
+"die Chronik der Zwischenablage auf eine sehr flexible Art zu verfolgen und "
+"zu managen."
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with an applet, in the form of a status icon which will "
 "give you access to your history in your tray area."
 msgstr ""
+"GPaste stellt ein Applet in Form eines Status-Icons bereit, das Zugriff auf "
+"die Chronik im Benachrichtigungsfeld ermöglicht."
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
@@ -443,26 +449,28 @@ msgid ""
 "GPaste provides you with an application indicator for unity which will give "
 "you access to your history in your indicator area."
 msgstr ""
+"GPaste stellt einen Applikations-Indikator für Unity bereit, der Zugriff auf "
+"die Chronik im Indikator-Feld ermöglicht."
 
 #: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:1
-#, fuzzy
 msgid "GPaste Settings"
-msgstr "GPaste Daemon Einstellungen"
+msgstr "GPaste-Daemon-Einstellungen"
 
 #: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:2
-#, fuzzy
 msgid "Manage GPaste settings"
-msgstr "GPaste Daemon Einstellungen"
+msgstr "GPaste-Daemon-Einstellungen"
 
 #: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with a settings utility allowing you to customize its "
 "behaviour as expected."
 msgstr ""
+"GPaste stellt ein Einstellungswerkzeug bereit, das es ermöglicht sein "
+"Verhalten nach den eigenen Vorstellungen anzupassen."
 
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
-msgstr "GPaste Daemon Einstellungen"
+msgstr "GPaste-Daemon-Einstellungen"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"
@@ -478,7 +486,7 @@ msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:3
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Werden länger werdende Zeilen in der Chronik entdeckt und ersetzt?"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:4
 msgid ""
@@ -486,6 +494,9 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"In der Standardeinstellung ergeben \"Dies ist\" und danach \"Dies ist ein "
+"Beispiel\" zwei Einträge in der Chronik. Wenn diese Einstellung aktiviert "
+"ist, wird der erste Eintrag durch den zweiten ersetzt."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:5
 msgid "The name of the current history"
@@ -493,7 +504,7 @@ msgstr "Name der Aktuellen Chronik"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:6
 msgid "The default name is \"history\""
-msgstr "Der Standard Name lautet \"history\""
+msgstr "Der Standard-Name lautet \"history\""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:7
 msgid "Do we save the images copied to history, or only text?"
