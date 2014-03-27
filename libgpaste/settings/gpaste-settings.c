@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -657,7 +657,7 @@ g_paste_settings_get_extension_enabled (const GPasteSettings *self)
 static inline gchar **
 g_paste_settings_private_get_enabled_extensions (GPasteSettingsPrivate *priv)
 {
-    return g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING);
+    return (priv->shell_settings) ? g_settings_get_strv (priv->shell_settings, G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING) : NULL;
 }
 
 static void
@@ -691,7 +691,8 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
     G_PASTE_CLEANUP_STRFREEV gchar **extensions = NULL;
-    if (value == priv->extension_enabled) return;
+    if (!priv->shell_settings || (value == priv->extension_enabled))
+        return;
 
     extensions = g_paste_settings_private_get_enabled_extensions (priv);
     gsize nb = g_strv_length (extensions);
@@ -912,7 +913,18 @@ g_paste_settings_init (GPasteSettings *self)
                                              G_CALLBACK (g_paste_settings_settings_changed),
                                              self);
 
+    priv->shell_settings = NULL;
+    priv->extension_enabled = FALSE;
+
 #if G_PASTE_CONFIG_ENABLE_EXTENSION
+    GSettingsSchemaSource *source = g_settings_schema_source_get_default ();
+    if (!source)
+        return;
+
+    G_PASTE_CLEANUP_GSCHEMA_UNREF GSettingsSchema *schema = g_settings_schema_source_lookup (source, G_PASTE_SHELL_SETTINGS_NAME, TRUE);
+    if (!schema)
+        return;
+
     priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
 
     g_paste_settings_private_set_extension_enabled_from_dconf (priv);

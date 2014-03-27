@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2013-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -73,6 +73,7 @@ G_BEGIN_DECLS
 #define G_PASTE_CLEANUP_LOOP_UNREF      G_PASTE_CLEANUP (g_paste_loop_unref_ptr)
 #define G_PASTE_CLEANUP_NODE_INFO_UNREF G_PASTE_CLEANUP (g_paste_node_info_unref_ptr)
 #define G_PASTE_CLEANUP_REGEX_UNREF     G_PASTE_CLEANUP (g_paste_regex_unref_ptr)
+#define G_PASTE_CLEANUP_GSCHEMA_UNREF   G_PASTE_CLEANUP (g_paste_gschema_unref_ptr)
 #define G_PASTE_CLEANUP_TARGETS_UNREF   G_PASTE_CLEANUP (g_paste_targets_unref_ptr)
 #define G_PASTE_CLEANUP_VARIANT_UNREF   G_PASTE_CLEANUP (g_paste_variant_unref_ptr)
 
@@ -108,6 +109,7 @@ G_PASTE_TRIVIAL_CLEANUP_FUN      (date_unref,      GDateTime *,        g_date_ti
 G_PASTE_TRIVIAL_CLEANUP_FUN      (loop_unref,      GMainLoop *,        g_main_loop_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN      (node_info_unref, GDBusNodeInfo *,    g_dbus_node_info_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN      (regex_unref,     GRegex *,           g_regex_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN      (gschema_unref,   GSettingsSchema *,  g_settings_schema_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN      (targets_unref,   GtkTargetList *,    gtk_target_list_unref)
 G_PASTE_TRIVIAL_CLEANUP_FUN      (variant_unref,   GVariant *,         g_variant_unref)
 
