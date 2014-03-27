@@ -96,6 +96,7 @@ CC_CHECK_CFLAGS_APPEND([ \
                          -Wcast-align \
                          -Wstrict-aliasing=2 \
                          -Wwrite-strings \
+                         -Wno-unknown-warning-option \
                          -Werror=overflow \
                          -Wp,-D_FORTIFY_SOURCE=2 \
                          -ffast-math \
