@@ -1,6 +1,9 @@
 NEW in 3.10.1 (Not released yet)
 =============
 
+- gpasted no longer fails at runtime if gnome-shell's settings schema is not installed
+- growing lines are detected for lines getting expanded at their left too
+
 NEW in 3.10 (25/03/2014)
 =============
 
