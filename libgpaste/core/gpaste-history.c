@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -188,8 +188,16 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
     if (!G_PASTE_IS_TEXT_ITEM (new))
         return FALSE;
 
-    return g_str_has_prefix (g_paste_item_get_value (new),
-                             g_paste_item_get_value (old));
+    const gchar *n = g_paste_item_get_value (new);
+    const gchar *o = g_paste_item_get_value (old);
+
+    if (g_str_has_prefix (n, o))
+        return TRUE;
+
+    if (g_str_has_suffix (n, o))
+        return TRUE;
+
+    return FALSE;
 }
 
 /**
