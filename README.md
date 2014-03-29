@@ -1,6 +1,5 @@
 GPaste is a clipboard management system.
-See <http://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more informations about what clipboards
-manager are. 
+See <http://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboards manager are. 
 
 Some libraries are available for development purpose:
 
