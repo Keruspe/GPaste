@@ -19,10 +19,20 @@
 @INTLTOOL_XML_RULE@
 
 appdata_in_files = \
-	data/appdata/org.gnome.GPaste.Applet.appdata.xml.in \
-	data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in \
 	data/appdata/org.gnome.GPaste.Settings.appdata.xml.in \
 	$(NULL)
+
+if ENABLE_APPLET
+appdata_in_files += \
+	data/appdata/org.gnome.GPaste.Applet.appdata.xml.in \
+	$(NULL)
+endif
+
+if ENABLE_UNITY
+appdata_in_files += \
+	data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in \
+	$(NULL)
+endif
 
 appdata_XML = $(appdata_in_files:.xml.in=.xml)
 
