@@ -93,6 +93,7 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
         if (priv->size)
         {
             GSList *last = g_slist_nth (priv->items, priv->size - 1);
+            g_return_if_fail (last);
             g_paste_applet_history_drop_list (g_slist_next (last), priv->menu);
             last->next = NULL;
         }
