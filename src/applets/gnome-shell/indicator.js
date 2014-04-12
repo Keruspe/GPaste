@@ -52,7 +52,7 @@ const GPasteIndicator = new Lang.Class({
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
 
-            this._header_size = 0;
+            this._headerSize = 0;
             this._postHeaderSize = 0;
             this._history = [];
             this._preFooterSize = 0;
