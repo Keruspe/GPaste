@@ -30,6 +30,7 @@ const _ = Gettext.domain('GPaste').gettext;
 
 const Me = ExtensionUtils.getCurrentExtension();
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
+const EmptyHistoryItem = Me.imports.emptyHistoryItem;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 
@@ -57,7 +58,7 @@ const GPasteIndicator = new Lang.Class({
             this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
             this._addToPostHeader(this._dummyHistoryItem);
             this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
-            //this._addToFooter(new GPasteEmptyHistoryItem(this._client));
+            this._addToFooter(new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client));
             this._addSettingsAction();
             //this._addToFooter(new GPasteAboutMenuItem(this._client));
 
