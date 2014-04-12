@@ -86,6 +86,11 @@ const GPasteIndicator = new Lang.Class({
         /* TODO: check max displayed history size */
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let size = client.get_history_size_finish(result);
+            if (size == 0) {
+                this._dummyHistoryItem.hide();
+            } else {
+                this._dummyHistoryItem.show();
+            }
             for (let index = this._history.length; index < size; ++index) {
                 this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
             }

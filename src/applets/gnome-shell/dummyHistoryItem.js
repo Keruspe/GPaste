@@ -30,12 +30,7 @@ const GPasteDummyHistoryItem = new Lang.Class({
     Extends: PopupMenu.PopupMenuItem,
 
     _init: function() {
-        this.parent("");
-
+        this.parent(_("(Empty)"));
         this.setSensitive(false);
-    },
-
-    update: function(error) {
-        this.label.text = (error) ? _("(Couldn't connect to GPaste daemon)") : _("(Empty)");
     }
 });

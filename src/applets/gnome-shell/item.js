@@ -70,10 +70,10 @@ const GPasteItem = new Lang.Class({
     },
 
     _resetText: function() {
-        this._client.get_element(this._index, function(client, result) {
+        this._client.get_element(this._index, Lang.bind(this, function(client, result) {
             let text = client.get_element_finish(result);
             this.label.clutter_text.set_text(text);
-        });
+        }));
     },
 
     _resetTextSize: function() {
