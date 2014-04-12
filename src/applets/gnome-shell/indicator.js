@@ -18,6 +18,7 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
+const Gettext = imports.gettext;
 const Lang = imports.lang;
 
 const PanelMenu = imports.ui.panelMenu;
@@ -25,7 +26,10 @@ const PopupMenu = imports.ui.popupMenu;
 
 const GPaste = imports.gi.GPaste;
 
+const _ = Gettext.domain('GPaste').gettext;
+
 const Me = ExtensionUtils.getCurrentExtension();
+const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const StatusIcon = Me.imports.statusIcon;
 
 const GPasteIndicator = new Lang.Class({
@@ -46,11 +50,11 @@ const GPasteIndicator = new Lang.Class({
             this._preFooterSize = 0;
             this._footerSize = 0;
 
-            //this._dummyHistoryItem = new GPasteDummyHistoryItem();
+            this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
             //this._addToHeader(new GPasteStateSwitch(this._client));
             this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
-            //this._addToPostHeader(this._dummyHistoryItem);
+            this._addToPostHeader(this._dummyHistoryItem);
             this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
             //this._addToFooter(new GPasteEmptyHistoryItem(this._client));
             this._addSettingsAction();
