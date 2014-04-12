@@ -64,6 +64,7 @@ const GPasteIndicator = new Lang.Class({
             this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
             this._addToPostHeader(this._dummyHistoryItem);
             this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
+            /* TODO: hide me when already empty (+ in libgpaste-applet) */
             this._addToFooter(new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client));
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
@@ -72,6 +73,8 @@ const GPasteIndicator = new Lang.Class({
                 this._refresh();
             }));
             this._refresh();
+
+            /* TODO/ bind show-history */
 
             this._onStateChanged (true);
         }));

@@ -1,3 +1,7 @@
+3.10.1:
+    gnome-shell:
+        handle errors
+
 3.12:
     general:
         merge 3.10
