@@ -34,7 +34,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
-const Intem = Me.imports.item;
+const Item = Me.imports.item;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 
