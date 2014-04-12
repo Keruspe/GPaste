@@ -70,7 +70,8 @@ const GPasteItem = new Lang.Class({
     },
 
     _resetText: function() {
-        this._client.get_element(this._index, function(text) {
+        this._client.get_element(this._index, function(client, result) {
+            let text = client.get_element_finish(result);
             this.label.set_text(text);
         });
     },
