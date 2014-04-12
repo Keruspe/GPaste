@@ -25,6 +25,9 @@ const PopupMenu = imports.ui.popupMenu;
 
 const GPaste = imports.gi.GPaste;
 
+const Me = ExtensionUtils.getCurrentExtension();
+const StatusIcon = Me.imports.statusIcon;
+
 const GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
     Extends: PanelMenu.Button,
@@ -32,7 +35,7 @@ const GPasteIndicator = new Lang.Class({
     _init: function() {
         this.parent(0.0, "GPaste");
 
-        //this.actor.add_child(new GPasteStatusIcon());
+        this.actor.add_child(new StatusIcon.GPasteStatusIcon());
 
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
