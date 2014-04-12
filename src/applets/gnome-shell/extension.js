@@ -22,7 +22,9 @@ const Gettext = imports.gettext;
 
 const Main = imports.ui.main;
 
+const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+
 const Indicator = Me.imports.indicator;
 
 function init(extension) {

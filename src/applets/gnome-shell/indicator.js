@@ -28,7 +28,9 @@ const GPaste = imports.gi.GPaste;
 
 const _ = Gettext.domain('GPaste').gettext;
 
+const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+
 const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
@@ -97,7 +99,7 @@ const GPasteIndicator = new Lang.Class({
         // Simulate _addToFooter
         this.menu.addSettingsAction(_("GPaste daemon settings"), 'org.gnome.GPaste.Settings.desktop');
         ++this._footerSize;
-    }
+    },
 
     _onStateChanged: function (state) {
         this._client.on_extension_state_changed(state, null);
