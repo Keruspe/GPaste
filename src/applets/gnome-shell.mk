@@ -20,6 +20,7 @@ gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.
 gnomeshell_extension_files =                 \
 	src/applets/gnome-shell/aboutItem.js \
 	src/applets/gnome-shell/deleteButton.js \
+	src/applets/gnome-shell/deleteItemPart.js \
 	src/applets/gnome-shell/dummyHistoryItem.js \
 	src/applets/gnome-shell/emptyHistoryItem.js \
 	src/applets/gnome-shell/extension.js \
