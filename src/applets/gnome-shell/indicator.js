@@ -74,7 +74,10 @@ const GPasteIndicator = new Lang.Class({
             }));
             this._refresh();
 
-            /* TODO/ bind show-history */
+            this._client.connect('show-history', Lang.bind(this, function() {
+                this.menu.open(true);
+                this.menu._getMenuItems()[this._headerSize + 1].setActive(true);
+            }));
 
             this._onStateChanged (true);
         }));
