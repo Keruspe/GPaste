@@ -34,6 +34,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
+const Intem = Me.imports.item;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 
@@ -45,6 +46,8 @@ const GPasteIndicator = new Lang.Class({
         this.parent(0.0, "GPaste");
 
         this.actor.add_child(new StatusIcon.GPasteStatusIcon());
+
+        this._settings = new GPaste.Settings();
 
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
@@ -65,6 +68,11 @@ const GPasteIndicator = new Lang.Class({
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
+            this._client.connect('changed', Lang.bind(this, function() {
+                this._refresh();
+            }));
+            this._refresh();
+
             this._onStateChanged (true);
         }));
     },
@@ -72,6 +80,18 @@ const GPasteIndicator = new Lang.Class({
     shutdown: function() {
         this._onStateChanged (false);
         this.destroy();
+    },
+
+    _refresh: function() {
+        /* TODO: check max displayed history size */
+        this._client.get_history_size(Lang.bind(this, function(size) {
+            for (let index = this._history.length; index < size; ++index) {
+                this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
+            }
+            for (let index = size; index < this._history.length; ++index) {
+                this._history.pop().destroy();
+            }
+        }));
     },
 
     _addToHeader: function(item) {
