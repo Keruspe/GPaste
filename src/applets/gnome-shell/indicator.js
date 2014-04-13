@@ -69,6 +69,10 @@ const GPasteIndicator = new Lang.Class({
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
+            this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, function() {
+                this._refresh();
+            }));
+
             this._client.connect('changed', Lang.bind(this, function() {
                 this._refresh();
             }));
@@ -89,9 +93,11 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _refresh: function() {
-        /* TODO: check max displayed history size */
         this._client.get_history_size(Lang.bind(this, function(client, result) {
-            let size = client.get_history_size_finish(result);
+            let maxSize = this._settings.get_max_displayed_history_size();
+            let size = client.get_history_size_finish(result) || maxSize;
+            if (maxSize < size)
+                size = maxSize;
             this._updateVisibility(size == 0);
             for (let index = this._history.length; index < size; ++index) {
                 this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
