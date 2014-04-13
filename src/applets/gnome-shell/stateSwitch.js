@@ -32,17 +32,29 @@ const GPasteStateSwitch = new Lang.Class({
     _init: function(client) {
         this.parent(_("Track changes"), client.is_active());
 
+        this._client = client;
         this._fromDaemon = false;
 
-        client.connect('tracking', Lang.bind(this, function(c, state) {
-            this._fromDaemon = true;
-            this.setToggleState(state);
-            this._fromDaemon = false;
+        this._clientTrackingId = client.connect('tracking', Lang.bind(this, function(c, state) {
+            this._toggle(state);
         }));
 
         this.connect('toggled', Lang.bind(this, function() {
-            if (!this._fromDaemon)
+            if (!this._fromDaemon) {
                 client.track(this.state, null);
+            }
         }));
+
+        this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
+    },
+
+    _toggle: function(state) {
+        this._fromDaemon = true;
+        this.setToggleState(state);
+        this._fromDaemon = false;
+    },
+
+    _onDestroy: function() {
+        this._client.disconnect(this._clientTrackingId);
     }
 });

@@ -72,23 +72,15 @@ const GPasteIndicator = new Lang.Class({
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
-            this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, function() {
-                this._refresh();
-            }));
-
-            this._client.connect('changed', Lang.bind(this, function() {
-                this._refresh();
-            }));
+            this._settingsChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._refresh));
+            this._clientChangedId = this._client.connect('changed', Lang.bind(this, this._refresh));
             this._refresh();
 
-            this._client.connect('show-history', Lang.bind(this, function() {
-                this.menu.open(true);
-                if (this._history.length > 0) {
-                    this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
-                }
-            }));
+            this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
 
             this._onStateChanged (true);
+
+            this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
         }));
     },
 
@@ -123,6 +115,13 @@ const GPasteIndicator = new Lang.Class({
         }
     },
 
+    _popup: function() {
+        this.menu.open(true);
+        if (this._history.length > 0) {
+            this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
+        }
+    },
+
     _addToHeader: function(item) {
         this.menu.addMenuItem(item, this._headerSize++);
     },
@@ -152,6 +151,12 @@ const GPasteIndicator = new Lang.Class({
 
     _onStateChanged: function (state) {
         this._client.on_extension_state_changed(state, null);
+    },
+
+    _onDestroy: function() {
+        this._client.disconnect(this._clientChangedId);
+        this._client.disconnect(this._clientShowId);
+        this._settings.disconnect(this._settingsChangedId);
     }
 });
 

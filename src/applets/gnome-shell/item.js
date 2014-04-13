@@ -60,27 +60,29 @@ const GPasteItem = new Lang.Class({
         if (index == 0)
             this.label.set_style("font-weight: bold;");
 
-        client.connect('changed', Lang.bind(this, function() {
-            this._resetText();
-        }));
+        this._clientChangedId = client.connect('changed', Lang.bind(this, this._resetText));
         this._resetText();
 
-        settings.connect('changed::element-size', Lang.bind(this, function() {
-            this._resetTextSize();
-        }));
+        this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
+
+        this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
     },
 
     _resetText: function() {
         this._client.get_element(this._index, Lang.bind(this, function(client, result) {
             let text = client.get_element_finish(result);
-            if (this.label.clutter_text)
-                this.label.clutter_text.set_text(text.replace(/\n/g, ' '));
+            this.label.clutter_text.set_text(text.replace(/\n/g, ' '));
         }));
     },
 
     _resetTextSize: function() {
         this.label.clutter_text.max_length = this._settings.get_element_size();
+    },
+
+    _onDestroy: function() {
+        this._client.disconnect(this._clientChangedId);
+        this._settings.disconnect(this._settingsChangedId);
     }
 });
