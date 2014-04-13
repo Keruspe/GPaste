@@ -49,6 +49,12 @@ const GPasteIndicator = new Lang.Class({
 
         this._settings = new GPaste.Settings();
 
+        this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
+
+        this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
+        this._addToPostHeader(this._dummyHistoryItem);
+        this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
+
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
 
@@ -58,13 +64,10 @@ const GPasteIndicator = new Lang.Class({
             this._preFooterSize = 0;
             this._footerSize = 0;
 
-            this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
+            this._dummyHistoryItem.update();
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
 
             this._addToHeader(new StateSwitch.GPasteStateSwitch(this._client));
-            this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
-            this._addToPostHeader(this._dummyHistoryItem);
-            this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
             this._addToFooter(this._emptyHistoryItem);
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
