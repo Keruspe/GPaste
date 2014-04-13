@@ -49,6 +49,12 @@ const GPasteIndicator = new Lang.Class({
 
         this._settings = new GPaste.Settings();
 
+        this._headerSize = 0;
+        this._postHeaderSize = 0;
+        this._history = [];
+        this._preFooterSize = 0;
+        this._footerSize = 0;
+
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
         this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
@@ -57,12 +63,6 @@ const GPasteIndicator = new Lang.Class({
 
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
-
-            this._headerSize = 0;
-            this._postHeaderSize = 0;
-            this._history = [];
-            this._preFooterSize = 0;
-            this._footerSize = 0;
 
             this._dummyHistoryItem.update();
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
@@ -113,13 +113,13 @@ const GPasteIndicator = new Lang.Class({
 
     _updateVisibility: function(empty) {
         if (empty) {
-            this._dummyHistoryItem.show();
-            this._emptyHistoryItem.hide();
+            this._dummyHistoryItem.actor.show();
+            this._emptyHistoryItem.actor.hide();
         } else {
-            this._dummyHistoryItem.hide();
-            this._emptyHistoryItem.show();
+            this._dummyHistoryItem.actor.hide();
+            this._emptyHistoryItem.actor.show();
         }
-    }
+    },
 
     _addToHeader: function(item) {
         this.menu.addMenuItem(item, this._headerSize++);
