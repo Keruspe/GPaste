@@ -72,21 +72,11 @@ const GPasteIndicator = new Lang.Class({
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
-            this._settingsChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, function() {
-                this._refresh();
-            }));
-
-            this._clientChangedId = this._client.connect('changed', Lang.bind(this, function() {
-                this._refresh();
-            }));
+            this._settingsChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._refresh));
+            this._clientChangedId = this._client.connect('changed', Lang.bind(this, this._refresh));
             this._refresh();
 
-            this._clientShowId = this._client.connect('show-history', Lang.bind(this, function() {
-                this.menu.open(true);
-                if (this._history.length > 0) {
-                    this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
-                }
-            }));
+            this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
 
             this._onStateChanged (true);
 
@@ -97,12 +87,6 @@ const GPasteIndicator = new Lang.Class({
     shutdown: function() {
         this._onStateChanged (false);
         this.destroy();
-    },
-
-    _onDestroy: function() {
-        this._client.disconnect(this._clientChangedId);
-        this._client.disconnect(this._clientShowId);
-        this._settings.disconnect(this._settingsChangedId);
     },
 
     _refresh: function() {
@@ -128,6 +112,13 @@ const GPasteIndicator = new Lang.Class({
         } else {
             this._dummyHistoryItem.actor.hide();
             this._emptyHistoryItem.actor.show();
+        }
+    },
+
+    _popup: function() {
+        this.menu.open(true);
+        if (this._history.length > 0) {
+            this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
         }
     },
 
@@ -160,6 +151,12 @@ const GPasteIndicator = new Lang.Class({
 
     _onStateChanged: function (state) {
         this._client.on_extension_state_changed(state, null);
+    },
+
+    _onDestroy: function() {
+        this._client.disconnect(this._clientChangedId);
+        this._client.disconnect(this._clientShowId);
+        this._settings.disconnect(this._settingsChangedId);
     }
 });
 

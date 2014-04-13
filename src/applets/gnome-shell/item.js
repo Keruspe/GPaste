@@ -60,23 +60,14 @@ const GPasteItem = new Lang.Class({
         if (index == 0)
             this.label.set_style("font-weight: bold;");
 
-        this._clientChangedId = client.connect('changed', Lang.bind(this, function() {
-            this._resetText();
-        }));
+        this._clientChangedId = client.connect('changed', Lang.bind(this, this._resetText));
         this._resetText();
 
-        this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, function() {
-            this._resetTextSize();
-        }));
+        this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
 
         this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
-    },
-
-    _onDestroy: function() {
-        this._client.disconnect(this._clientChangedId);
-        this._settings.disconnect(this._settingsChangedId);
     },
 
     _resetText: function() {
@@ -88,5 +79,10 @@ const GPasteItem = new Lang.Class({
 
     _resetTextSize: function() {
         this.label.clutter_text.max_length = this._settings.get_element_size();
+    },
+
+    _onDestroy: function() {
+        this._client.disconnect(this._clientChangedId);
+        this._settings.disconnect(this._settingsChangedId);
     }
 });
