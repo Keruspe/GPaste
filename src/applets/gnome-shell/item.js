@@ -57,6 +57,9 @@ const GPasteItem = new Lang.Class({
 
         this.actor.add(new DeleteItemPart.GPasteDeleteItemPart(client, index), { expand: true, x_align: St.Align.END });
 
+        if (index == 0)
+            this.label.set_style("font-weight: bold;");
+
         client.connect('changed', Lang.bind(this, function() {
             this._resetText();
         }));
