@@ -83,7 +83,7 @@ const GPasteIndicator = new Lang.Class({
 
             this._client.connect('show-history', Lang.bind(this, function() {
                 this.menu.open(true);
-                this.menu._getMenuItems()[this._headerSize + 1].setActive(true);
+                this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
             }));
 
             this._onStateChanged (true);
@@ -98,7 +98,7 @@ const GPasteIndicator = new Lang.Class({
     _refresh: function() {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let maxSize = this._settings.get_max_displayed_history_size();
-            let size = client.get_history_size_finish(result) || maxSize;
+            let size = client.get_history_size_finish(result);
             if (maxSize < size)
                 size = maxSize;
             this._updateVisibility(size == 0);
