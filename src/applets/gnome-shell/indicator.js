@@ -83,7 +83,9 @@ const GPasteIndicator = new Lang.Class({
 
             this._client.connect('show-history', Lang.bind(this, function() {
                 this.menu.open(true);
-                this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
+                if (this._history.length > 0) {
+                    this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
+                }
             }));
 
             this._onStateChanged (true);
@@ -105,7 +107,7 @@ const GPasteIndicator = new Lang.Class({
             for (let index = this._history.length; index < size; ++index) {
                 this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
             }
-            for (let index = size; index < this._history.length; ++index) {
+            for (let index = size, length = this._history.length; index < length; ++index) {
                 this._history.pop().destroy();
             }
         }));
