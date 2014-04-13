@@ -59,13 +59,13 @@ const GPasteIndicator = new Lang.Class({
             this._footerSize = 0;
 
             this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
+            this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
 
             this._addToHeader(new StateSwitch.GPasteStateSwitch(this._client));
             this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
             this._addToPostHeader(this._dummyHistoryItem);
             this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
-            /* TODO: hide me when already empty (+ in libgpaste-applet) */
-            this._addToFooter(new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client));
+            this._addToFooter(this._emptyHistoryItem);
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
@@ -92,11 +92,7 @@ const GPasteIndicator = new Lang.Class({
         /* TODO: check max displayed history size */
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let size = client.get_history_size_finish(result);
-            if (size == 0) {
-                this._dummyHistoryItem.hide();
-            } else {
-                this._dummyHistoryItem.show();
-            }
+            this._updateVisibility(size == 0);
             for (let index = this._history.length; index < size; ++index) {
                 this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
             }
@@ -105,6 +101,16 @@ const GPasteIndicator = new Lang.Class({
             }
         }));
     },
+
+    _updateVisibility: function(empty) {
+        if (empty) {
+            this._dummyHistoryItem.show();
+            this._emptyHistoryItem.hide();
+        } else {
+            this._dummyHistoryItem.hide();
+            this._emptyHistoryItem.show();
+        }
+    }
 
     _addToHeader: function(item) {
         this.menu.addMenuItem(item, this._headerSize++);
