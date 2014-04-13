@@ -81,6 +81,9 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
                                 GSList               *elem,
                                 gboolean              remove_leftovers)
 {
+    if (!elem)
+        return NULL;
+
     GPasteItem *item = elem->data;
 
     priv->size -= g_paste_item_get_size (item);
@@ -149,6 +152,7 @@ g_paste_history_private_check_memory_usage (GPasteHistoryPrivate *priv)
     while (priv->size > max_memory && !priv->biggest_index)
     {
         GSList *prev = g_slist_nth (priv->history, priv->biggest_index - 1);
+        g_return_if_fail (prev);
         prev->next = g_paste_history_private_remove (priv, g_slist_next (prev), TRUE);
         g_paste_history_private_elect_new_biggest (priv);
     }
@@ -164,6 +168,7 @@ g_paste_history_private_check_size (GPasteHistoryPrivate *priv)
     if (length > max_history_size)
     {
         GSList *previous = g_slist_nth (history, max_history_size - 1);
+        g_return_if_fail (previous);
         history = g_slist_next (previous);
         previous->next = NULL;
 
@@ -303,6 +308,7 @@ g_paste_history_remove (GPasteHistory *self,
     if (pos)
     {
         GSList *prev = g_slist_nth (history, pos - 1);
+        g_return_if_fail (prev);
         prev->next = g_paste_history_private_remove (priv, g_slist_next (prev), TRUE);
     }
     else

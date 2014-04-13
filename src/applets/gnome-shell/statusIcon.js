@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -18,25 +18,27 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Gettext = imports.gettext;
+const Lang = imports.lang;
 
-const Main = imports.ui.main;
+const Clutter = imports.gi.Clutter;
+const St = imports.gi.St;
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+const GPasteStatusIcon = new Lang.Class({
+    Name: 'GPasteStatusIcon',
+    Extends: St.BoxLayout,
 
-const Indicator = Me.imports.indicator;
+    _init: function() {
+        this.parent({ style_class: 'panel-status-menu-box' });
 
-function init(extension) {
-    let metadata = extension.metadata;
-    Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
-}
+        this.add_child(new St.Icon({
+            icon_name: 'edit-paste-symbolic',
+            style_class: 'system-status-icon'
+        }));
 
-function enable() {
-    Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
-}
-
-function disable() {
-    Main.panel.statusArea.gpaste.shutdown();
-}
-
+        this.add_child(new St.Label({
+            text: '\u25BE',
+            y_expand: true,
+            y_align: Clutter.ActorAlign.CENTER
+        }));
+    }
+});

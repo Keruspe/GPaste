@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -18,25 +18,22 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Gettext = imports.gettext;
+const Lang = imports.lang;
 
-const Main = imports.ui.main;
+const St = imports.gi.St;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const Indicator = Me.imports.indicator;
+const DeleteButton = Me.imports.deleteButton;
 
-function init(extension) {
-    let metadata = extension.metadata;
-    Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
-}
+const GPasteDeleteItemPart = new Lang.Class({
+    Name: 'GPasteDeleteItemPart',
+    Extends: St.Bin,
 
-function enable() {
-    Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
-}
-
-function disable() {
-    Main.panel.statusArea.gpaste.shutdown();
-}
-
+    _init: function(client, index) {
+        this.parent({ x_align: St.Align.END });
+        
+        this.child = new DeleteButton.GPasteDeleteButton(client, index);
+    }
+});

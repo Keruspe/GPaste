@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -19,24 +19,21 @@
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const Gettext = imports.gettext;
+const Lang = imports.lang;
 
-const Main = imports.ui.main;
+const PopupMenu = imports.ui.popupMenu;
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+const _ = Gettext.domain('GPaste').gettext;
 
-const Indicator = Me.imports.indicator;
+const GPasteAboutItem = new Lang.Class({
+    Name: 'GPasteAboutItem',
+    Extends: PopupMenu.PopupMenuItem,
 
-function init(extension) {
-    let metadata = extension.metadata;
-    Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
-}
+    _init: function(client) {
+        this.parent(_("About"));
 
-function enable() {
-    Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
-}
-
-function disable() {
-    Main.panel.statusArea.gpaste.shutdown();
-}
-
+        this.connect('activate', function() {
+            client.about(null);
+        });
+    }
+});

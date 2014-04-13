@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -19,24 +19,30 @@
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const Gettext = imports.gettext;
+const Lang = imports.lang;
 
-const Main = imports.ui.main;
+const PopupMenu = imports.ui.popupMenu;
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+const _ = Gettext.domain('GPaste').gettext;
 
-const Indicator = Me.imports.indicator;
+const GPasteStateSwitch = new Lang.Class({
+    Name: 'GPasteStateSwitch',
+    Extends: PopupMenu.PopupSwitchMenuItem,
 
-function init(extension) {
-    let metadata = extension.metadata;
-    Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
-}
+    _init: function(client) {
+        this.parent(_("Track changes"), client.is_active());
 
-function enable() {
-    Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
-}
+        this._fromDaemon = false;
 
-function disable() {
-    Main.panel.statusArea.gpaste.shutdown();
-}
+        client.connect('tracking', Lang.bind(this, function(c, state) {
+            this._fromDaemon = true;
+            this.setToggleState(state);
+            this._fromDaemon = false;
+        }));
 
+        this.connect('toggled', Lang.bind(this, function() {
+            if (!this._fromDaemon)
+                client.track(this.state, null);
+        }));
+    }
+});

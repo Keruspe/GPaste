@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2012-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,8 +18,17 @@
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
 
 gnomeshell_extension_files =                 \
+	src/applets/gnome-shell/aboutItem.js \
+	src/applets/gnome-shell/deleteButton.js \
+	src/applets/gnome-shell/deleteItemPart.js \
+	src/applets/gnome-shell/dummyHistoryItem.js \
+	src/applets/gnome-shell/emptyHistoryItem.js \
 	src/applets/gnome-shell/extension.js \
-	src/applets/gnome-shell/prefs.js     \
+	src/applets/gnome-shell/indicator.js \
+	src/applets/gnome-shell/item.js \
+	src/applets/gnome-shell/prefs.js \
+	src/applets/gnome-shell/stateSwitch.js \
+	src/applets/gnome-shell/statusIcon.js \
 	$(NULL)
 
 gnomeshell_metadata_file = src/applets/gnome-shell/metadata.json
