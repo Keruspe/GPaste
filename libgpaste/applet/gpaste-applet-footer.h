@@ -41,7 +41,8 @@ G_PASTE_VISIBLE
 GType g_paste_applet_footer_get_type (void);
 
 void g_paste_applet_footer_add_to_menu      (GPasteAppletFooter *self,
-                                             GtkMenu            *menu);
+                                             GtkMenu            *menu,
+                                             gboolean            empty);
 void g_paste_applet_footer_remove_from_menu (GPasteAppletFooter *self,
                                              GtkMenu            *menu);
 

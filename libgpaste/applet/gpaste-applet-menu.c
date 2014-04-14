@@ -88,7 +88,7 @@ g_paste_applet_menu_ensure_contents (GPasteAppletMenu *self)
 
     if (!priv->footer_added)
     {
-        g_paste_applet_footer_add_to_menu (priv->footer, menu);
+        g_paste_applet_footer_add_to_menu (priv->footer, menu, !priv->size);
         priv->footer_added = TRUE;
     }
 }

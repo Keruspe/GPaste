@@ -32,6 +32,7 @@ struct _GPasteAppletHistoryPrivate
     gsize             size;
 
     gulong            changed_id;
+    gulong            settings_changed_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletHistory, g_paste_applet_history, G_TYPE_OBJECT)
@@ -114,6 +115,16 @@ g_paste_applet_history_on_changed (GPasteClient *client,
 }
 
 static void
+g_paste_applet_history_on_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
+                                            const gchar    *key      G_GNUC_UNUSED,
+                                            gpointer        user_data)
+{
+    GPasteAppletHistory *self = user_data;
+    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
+    g_paste_client_get_history_size (priv->client, g_paste_applet_history_refresh_history, self);
+}
+
+static void
 g_paste_applet_history_dispose (GObject *object)
 {
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private ((GPasteAppletHistory *) object);
@@ -124,7 +135,11 @@ g_paste_applet_history_dispose (GObject *object)
         g_clear_object (&priv->client);
     }
 
-    g_clear_object (&priv->settings);
+    if (priv->settings)
+    {
+        g_signal_handler_disconnect (priv->settings, priv->settings_changed_id);
+        g_clear_object (&priv->settings);
+    }
 
     if (priv->items) {
         g_paste_applet_history_drop_list (priv->items, priv->menu);
@@ -180,6 +195,10 @@ g_paste_applet_history_new (GPasteClient       *client,
                                          "changed",
                                          G_CALLBACK (g_paste_applet_history_on_changed),
                                          self);
+    priv->settings_changed_id = g_signal_connect (G_OBJECT (settings),
+                                                  "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
+                                                  G_CALLBACK (g_paste_applet_history_on_settings_changed),
+                                                  self);
     g_paste_applet_history_on_changed (client, self);
 
     return self;
