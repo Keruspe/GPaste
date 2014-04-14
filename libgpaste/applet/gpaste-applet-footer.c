@@ -36,6 +36,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletFooter, g_paste_applet_footer, G_TYPE_OB
  * g_paste_applet_footer_add_to_menu:
  * @self: a #GPasteAppletFooter instance
  * @menu: The #GtkMenu to which the footer will be added
+ * @empty: whether the history is empty or not
  *
  * Add the footer to the botton of a menu
  *
@@ -43,7 +44,8 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletFooter, g_paste_applet_footer, G_TYPE_OB
  */
 G_PASTE_VISIBLE void
 g_paste_applet_footer_add_to_menu (GPasteAppletFooter *self,
-                                   GtkMenu            *menu)
+                                   GtkMenu            *menu,
+                                   gboolean            empty)
 {
     g_return_if_fail (G_PASTE_IS_APPLET_FOOTER (self));
     g_return_if_fail (GTK_IS_MENU (menu));
@@ -52,7 +54,8 @@ g_paste_applet_footer_add_to_menu (GPasteAppletFooter *self,
     GtkMenuShell *shell = GTK_MENU_SHELL (menu);
 
     gtk_menu_shell_append (shell, g_object_ref (priv->separator));
-    gtk_menu_shell_append (shell, g_object_ref (priv->empty));
+    if (!empty)
+        gtk_menu_shell_append (shell, g_object_ref (priv->empty));
     gtk_menu_shell_append (shell, g_object_ref (priv->settings));
     gtk_menu_shell_append (shell, g_object_ref (priv->about));
     if (priv->quit)
