@@ -129,9 +129,9 @@ const GPasteIndicator = new Lang.Class({
 
     _onSearch: function() {
         let search = this._searchItem.getText();
-        this._history.map(function(item) {
+        this._history.map(Lang.bind(this, function(item) {
             this._matchSearchWithItem(item, search);
-        }
+        }));
     },
 
     _matchSearchWithItem: function(item, search) {
