@@ -35,6 +35,7 @@ const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
 const Item = Me.imports.item;
+const SearchItem = Me.imports.searchItem;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 
@@ -57,6 +58,9 @@ const GPasteIndicator = new Lang.Class({
 
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
+        this._searchItem = new SearchItem.GPasteSearchItem();
+        this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
+
         this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
         this._addToPostHeader(this._dummyHistoryItem);
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
@@ -68,6 +72,7 @@ const GPasteIndicator = new Lang.Class({
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
 
             this._addToHeader(new StateSwitch.GPasteStateSwitch(this._client));
+            this._addToHeader(this._searchItem);
             this._addToFooter(this._emptyHistoryItem);
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
@@ -119,6 +124,23 @@ const GPasteIndicator = new Lang.Class({
         this.menu.open(true);
         if (this._history.length > 0) {
             this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
+        }
+    },
+
+    _onSearch: function() {
+        let search = this._searchItem.getText();
+        this._history.map(function(item) {
+            this._matchSearchWithItem(item, search);
+        }
+    },
+
+    _matchSearchWithItem: function(item, search) {
+        let actor = item.actor;
+        let text = item.getText();
+        if (search.length == 0 || text.match(search)) {
+            actor.show();
+        } else {
+            actor.hide();
         }
     },
 
