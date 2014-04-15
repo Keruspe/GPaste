@@ -54,6 +54,10 @@ const GPasteSearchItem = new Lang.Class({
         return this._entry.get_text();
     },
 
+    resetSize: function(size) {
+        this._entry.actor.style = 'width: ' + size + 'em';
+    },
+
     _onTextChanged: function(se, prop) {
         this.emit('text-changed');
     }

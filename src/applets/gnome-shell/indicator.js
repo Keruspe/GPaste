@@ -60,6 +60,8 @@ const GPasteIndicator = new Lang.Class({
 
         this._searchItem = new SearchItem.GPasteSearchItem();
         this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
+        this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetEntrySize));
+        this._resetEntrySize();
 
         this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
         this._addToPostHeader(this._dummyHistoryItem);
@@ -92,6 +94,10 @@ const GPasteIndicator = new Lang.Class({
     shutdown: function() {
         this._onStateChanged (false);
         this.destroy();
+    },
+
+    _resetEntrySize: function() {
+        this._searchItem.resetSize(this._settings.get_element_size()/2);
     },
 
     _refresh: function() {
