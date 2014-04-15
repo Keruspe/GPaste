@@ -55,6 +55,8 @@ const GPasteSearchItem = new Lang.Class({
             icon_name: (this._entry.get_text_direction() == Clutter.TextDirection.RTL) ? 'edit-clear-rtl-symbolic' : 'edit-clear-symbolic'
         });
         this._iconClickedId = 0;
+
+        this.actor.connect('key-focus-in', Lang.bind(this, this._onKeyFocusIn));
     },
 
     get text() {
@@ -79,5 +81,9 @@ const GPasteSearchItem = new Lang.Class({
             this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this.reset));
         }
         this.emit('text-changed');
+    },
+
+    _onKeyFocusIn: function() {
+        this._entry.grab_key_focus();
     }
 });
