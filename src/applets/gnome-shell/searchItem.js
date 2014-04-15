@@ -57,6 +57,7 @@ const GPasteSearchItem = new Lang.Class({
         this._iconClickedId = 0;
 
         this.actor.connect('key-focus-in', Lang.bind(this, this._onKeyFocusIn));
+        this.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressed));
     },
 
     get text() {
@@ -81,6 +82,14 @@ const GPasteSearchItem = new Lang.Class({
             this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this.reset));
         }
         this.emit('text-changed');
+    },
+
+    _onKeyPressed: function(actor, event) {
+        if (event.get_key_symbol() == Clutter.KEY_Escape) {
+            this.reset();
+            return true;
+        }
+        return false;
     },
 
     _onKeyFocusIn: function() {
