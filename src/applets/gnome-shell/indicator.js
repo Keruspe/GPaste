@@ -128,19 +128,23 @@ const GPasteIndicator = new Lang.Class({
 
     _popup: function() {
         this.menu.open(true);
+        this._selectFirst();
+    },
+
+    _selectFirst: function() {
         if (this._history.length > 0) {
             this._history[0].setActive(true);
         }
     },
 
     _onSearch: function() {
+        this._searchItem.setActive(true);
         let search = this._searchItem.text;
-        let activeSet = false;
         this._history.map(Lang.bind(this, function(item) {
-            activeSet = this._matchSearchWithItem(item, search, activeSet);
+            this._matchSearchWithItem(item, search);
         }));
-        if (!activeSet) {
-            this._searchItem.setActive(true);
+        if (search.length == 0) {
+            this._selectFirst();
         }
     },
 
