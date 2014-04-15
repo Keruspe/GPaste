@@ -129,25 +129,34 @@ const GPasteIndicator = new Lang.Class({
     _popup: function() {
         this.menu.open(true);
         if (this._history.length > 0) {
-            this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
+            this._history[0].setActive(true);
         }
     },
 
     _onSearch: function() {
         let search = this._searchItem.text;
+        let activeSet = false;
         this._history.map(Lang.bind(this, function(item) {
-            this._matchSearchWithItem(item, search);
+            activeSet = this._matchSearchWithItem(item, search, activeSet);
         }));
+        if (!activeSet) {
+            this._searchItem.setActive(true);
+        }
     },
 
-    _matchSearchWithItem: function(item, search) {
+    _matchSearchWithItem: function(item, search, activeSet) {
         let actor = item.actor;
         let text = item.text;
         if (search.length == 0 || text.match(search)) {
             actor.show();
+            if (!activeSet) {
+                item.setActive(true);
+                activeSet = true;
+            }
         } else {
             actor.hide();
         }
+        return activeSet
     },
 
     _addToHeader: function(item) {
