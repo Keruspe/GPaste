@@ -62,6 +62,7 @@ const GPasteIndicator = new Lang.Class({
         this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetEntrySize));
         this._resetEntrySize();
+        this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
 
         this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
         this._addToPostHeader(this._dummyHistoryItem);
@@ -190,14 +191,19 @@ const GPasteIndicator = new Lang.Class({
         ++this._footerSize;
     },
 
-    _onStateChanged: function (state) {
+    _onStateChanged: function(state) {
         this._client.on_extension_state_changed(state, null);
+    },
+
+    _onOpenStateChanged: function(state) {
+        this._searchItem.reset();
     },
 
     _onDestroy: function() {
         this._client.disconnect(this._clientChangedId);
         this._client.disconnect(this._clientShowId);
         this._settings.disconnect(this._settingsChangedId);
+        this._settings.disconnect(this._settingsSizeChangedId);
     }
 });
 

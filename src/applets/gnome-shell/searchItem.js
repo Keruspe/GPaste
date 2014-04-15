@@ -64,19 +64,19 @@ const GPasteSearchItem = new Lang.Class({
         this._entry.actor.style = 'width: ' + size + 'em';
     },
 
-    _onTextChanged: function(se, prop) {
-        let dummy = (this.text.length == 0);
-        this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
-        if (!dummy && this._iconClickedId == 0) {
-            this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this._reset));
-        }
-        this.emit('text-changed');
-    },
-
-    _reset: function() {
+    reset: function() {
         this._entry.text = '';
         let text = this._entry.clutter_text;
         text.set_cursor_visible(true);
         text.set_selection(0, 0);
+    },
+
+    _onTextChanged: function(se, prop) {
+        let dummy = (this.text.length == 0);
+        this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
+        if (!dummy && this._iconClickedId == 0) {
+            this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this.reset));
+        }
+        this.emit('text-changed');
     }
 });
