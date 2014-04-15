@@ -46,14 +46,7 @@ const GPasteItem = new Lang.Class({
             client.select(index, null);
         });
 
-        this.actor.connect('key-press-event', function(actor, event) {
-            let symbol = event.get_key_symbol();
-            if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
-                client.delete(index, null);
-                return true;
-            }
-            return false;
-        });
+        this.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressed));
 
         this.actor.add(new DeleteItemPart.GPasteDeleteItemPart(client, index), { expand: true, x_align: St.Align.END });
 
@@ -83,6 +76,15 @@ const GPasteItem = new Lang.Class({
 
     _resetTextSize: function() {
         this.label.clutter_text.max_length = this._settings.get_element_size();
+    },
+
+    _onKeyPressed: function(actor, event) {
+        let symbol = event.get_key_symbol();
+        if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
+            this._client.delete(this._index, null);
+            return Clutter.EVENT_STOP;
+        }
+        return Clutter.EVENT_PROPAGATE;
     },
 
     _onDestroy: function() {

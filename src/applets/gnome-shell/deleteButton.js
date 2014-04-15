@@ -20,6 +20,7 @@
 
 const Lang = imports.lang;
 
+const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 
 const GPasteDeleteButton = new Lang.Class({
@@ -36,7 +37,7 @@ const GPasteDeleteButton = new Lang.Class({
 
         this.connect('clicked', function() {
             client.delete(index, null);
-            return true;
+            return Clutter.EVENT_STOP;
         });
     }
 });
