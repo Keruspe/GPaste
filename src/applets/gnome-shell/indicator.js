@@ -60,6 +60,9 @@ const GPasteIndicator = new Lang.Class({
 
         this._searchItem = new SearchItem.GPasteSearchItem();
         this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
+        this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetEntrySize));
+        this._resetEntrySize();
+        this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
 
         this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
         this._addToPostHeader(this._dummyHistoryItem);
@@ -94,6 +97,10 @@ const GPasteIndicator = new Lang.Class({
         this.destroy();
     },
 
+    _resetEntrySize: function() {
+        this._searchItem.resetSize(this._settings.get_element_size()/2);
+    },
+
     _refresh: function() {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let maxSize = this._settings.get_max_displayed_history_size();
@@ -122,26 +129,39 @@ const GPasteIndicator = new Lang.Class({
 
     _popup: function() {
         this.menu.open(true);
+        this._selectFirst();
+    },
+
+    _selectFirst: function() {
         if (this._history.length > 0) {
-            this.menu._getMenuItems()[this._headerSize + this._postHeaderSize].setActive(true);
+            this._history[0].setActive(true);
         }
     },
 
     _onSearch: function() {
-        let search = this._searchItem.getText();
+        this._searchItem.setActive(true);
+        let search = this._searchItem.text;
         this._history.map(Lang.bind(this, function(item) {
             this._matchSearchWithItem(item, search);
         }));
+        if (search.length == 0) {
+            this._selectFirst();
+        }
     },
 
-    _matchSearchWithItem: function(item, search) {
+    _matchSearchWithItem: function(item, search, activeSet) {
         let actor = item.actor;
-        let text = item.getText();
+        let text = item.text;
         if (search.length == 0 || text.match(search)) {
             actor.show();
+            if (!activeSet) {
+                item.setActive(true);
+                activeSet = true;
+            }
         } else {
             actor.hide();
         }
+        return activeSet
     },
 
     _addToHeader: function(item) {
@@ -171,14 +191,19 @@ const GPasteIndicator = new Lang.Class({
         ++this._footerSize;
     },
 
-    _onStateChanged: function (state) {
+    _onStateChanged: function(state) {
         this._client.on_extension_state_changed(state, null);
+    },
+
+    _onOpenStateChanged: function(state) {
+        this._searchItem.reset();
     },
 
     _onDestroy: function() {
         this._client.disconnect(this._clientChangedId);
         this._client.disconnect(this._clientShowId);
         this._settings.disconnect(this._settingsChangedId);
+        this._settings.disconnect(this._settingsSizeChangedId);
     }
 });
 
