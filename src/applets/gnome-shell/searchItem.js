@@ -54,6 +54,7 @@ const GPasteSearchItem = new Lang.Class({
             style_class: 'search-entry-icon',
             icon_name: (this._entry.get_text_direction() == Clutter.TextDirection.RTL) ? 'edit-clear-rtl-symbolic' : 'edit-clear-symbolic'
         });
+        this._iconClickedId = 0;
     },
 
     get text() {
@@ -61,7 +62,7 @@ const GPasteSearchItem = new Lang.Class({
     },
 
     resetSize: function(size) {
-        this._entry.actor.style = 'width: ' + size + 'em';
+        this._entry.style = 'width: ' + size + 'em';
     },
 
     reset: function() {

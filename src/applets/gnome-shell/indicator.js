@@ -129,39 +129,31 @@ const GPasteIndicator = new Lang.Class({
 
     _popup: function() {
         this.menu.open(true);
-        this._selectFirst();
+        this._selectFirst(true);
     },
 
-    _selectFirst: function() {
+    _selectFirst: function(active) {
         if (this._history.length > 0) {
-            this._history[0].setActive(true);
+            this._history[0].setActive(active);
         }
     },
 
     _onSearch: function() {
-        this._searchItem.setActive(true);
+        this._selectFirst(false);
         let search = this._searchItem.text;
         this._history.map(Lang.bind(this, function(item) {
             this._matchSearchWithItem(item, search);
         }));
-        if (search.length == 0) {
-            this._selectFirst();
-        }
     },
 
-    _matchSearchWithItem: function(item, search, activeSet) {
+    _matchSearchWithItem: function(item, search) {
         let actor = item.actor;
         let text = item.text;
         if (search.length == 0 || text.match(search)) {
             actor.show();
-            if (!activeSet) {
-                item.setActive(true);
-                activeSet = true;
-            }
         } else {
             actor.hide();
         }
-        return activeSet
     },
 
     _addToHeader: function(item) {
@@ -195,8 +187,10 @@ const GPasteIndicator = new Lang.Class({
         this._client.on_extension_state_changed(state, null);
     },
 
-    _onOpenStateChanged: function(state) {
-        this._searchItem.reset();
+    _onOpenStateChanged: function(menu, state) {
+        if (state) {
+            this._searchItem.reset();
+        }
     },
 
     _onDestroy: function() {
