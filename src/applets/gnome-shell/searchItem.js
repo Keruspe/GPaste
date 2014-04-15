@@ -22,7 +22,7 @@ const Lang = imports.lang;
 
 const PopupMenu = imports.ui.popupMenu;
 
-const Clutter = imports.gi.Clutter
+const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 
 const GPasteSearchItem = new Lang.Class({
@@ -87,9 +87,9 @@ const GPasteSearchItem = new Lang.Class({
     _onKeyPressed: function(actor, event) {
         if (event.get_key_symbol() == Clutter.KEY_Escape) {
             this.reset();
-            return true;
+            return Clutter.EVENT_STOP;
         }
-        return false;
+        return Clutter.EVENT_PROPAGATE;
     },
 
     _onKeyFocusIn: function() {

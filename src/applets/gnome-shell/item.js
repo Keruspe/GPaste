@@ -82,9 +82,9 @@ const GPasteItem = new Lang.Class({
         let symbol = event.get_key_symbol();
         if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
             this._client.delete(this._index, null);
-            return true;
+            return Clutter.EVENT_STOP;
         }
-        return false;
+        return Clutter.EVENT_PROPAGATE;
     },
 
     _onDestroy: function() {
