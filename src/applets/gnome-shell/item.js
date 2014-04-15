@@ -70,7 +70,7 @@ const GPasteItem = new Lang.Class({
         this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
     },
 
-    getText: function() {
+    get text() {
         return this.label.get_text();
     },
 

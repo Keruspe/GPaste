@@ -50,7 +50,7 @@ const GPasteSearchItem = new Lang.Class({
         this._entry.clutter_text.connect('text-changed', Lang.bind(this, this._onTextChanged));
     },
 
-    getText: function() {
+    get text() {
         return this._entry.get_text();
     },
 
