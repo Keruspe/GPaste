@@ -30,14 +30,10 @@ const GPasteSearchItem = new Lang.Class({
     Extends: PopupMenu.PopupBaseMenuItem,
 
     _init: function () {
-        this.parent({reactive: false});
-
-        this.label = new St.Label({ text: '' });
-        this.actor.add(this.label);
-        this.actor.label_actor = this.label;
+        this.parent({activate: false, reactive: true});
 
         this._entry = new St.Entry({
-            name: 'searchEntry',
+            name: 'GPasteSearchEntry',
             track_hover: true,
             reactive: true,
             can_focus: true
@@ -57,7 +53,6 @@ const GPasteSearchItem = new Lang.Class({
         this._iconClickedId = 0;
 
         this.actor.connect('key-focus-in', Lang.bind(this, this._onKeyFocusIn));
-        this.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressed));
     },
 
     get text() {
@@ -82,14 +77,6 @@ const GPasteSearchItem = new Lang.Class({
             this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this.reset));
         }
         this.emit('text-changed');
-    },
-
-    _onKeyPressed: function(actor, event) {
-        if (event.get_key_symbol() == Clutter.KEY_Escape) {
-            this.reset();
-            return Clutter.EVENT_STOP;
-        }
-        return Clutter.EVENT_PROPAGATE;
     },
 
     _onKeyFocusIn: function() {

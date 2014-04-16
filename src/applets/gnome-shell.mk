@@ -30,6 +30,7 @@ gnomeshell_extension_files =                 \
 	src/applets/gnome-shell/searchItem.js \
 	src/applets/gnome-shell/stateSwitch.js \
 	src/applets/gnome-shell/statusIcon.js \
+	src/applets/gnome-shell/stylesheet.css \
 	$(NULL)
 
 gnomeshell_metadata_file = src/applets/gnome-shell/metadata.json
