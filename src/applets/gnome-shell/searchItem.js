@@ -37,7 +37,7 @@ const GPasteSearchItem = new Lang.Class({
         this.actor.label_actor = this.label;
 
         this._entry = new St.Entry({
-            name: 'searchEntry',
+            name: 'GPasteSearchEntry',
             track_hover: true,
             reactive: true,
             can_focus: true
