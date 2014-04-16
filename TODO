@@ -1,19 +1,22 @@
-3.10.1:
-    applet:
-        update gnome-shell (settings)
+3.10.2:
+    general:
+        password support (+ patch password-store)
+        https://wiki.gnome.org/HowDoI/DBusApplicationLaunching
+        kdbus support (busname)
+        gpg support
+
+3.12:
+    general:
+        merge 3.10.1
 
 3.12.1:
     general:
-        merge 3.10.1
+        merge 3.10.2
 
 3.14:
     general:
         properties all the way
         wayland support
-    plugins:
-        make it possible for both client and server
-        gpg
-        password-store
 
 future:
     gnome-shell:
