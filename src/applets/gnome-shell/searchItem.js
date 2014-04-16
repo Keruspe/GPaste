@@ -30,11 +30,7 @@ const GPasteSearchItem = new Lang.Class({
     Extends: PopupMenu.PopupBaseMenuItem,
 
     _init: function () {
-        this.parent({reactive: false});
-
-        this.label = new St.Label({ text: '' });
-        this.actor.add(this.label);
-        this.actor.label_actor = this.label;
+        this.parent({activate: false, reactive: true});
 
         this._entry = new St.Entry({
             name: 'GPasteSearchEntry',
