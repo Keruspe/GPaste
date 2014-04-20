@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include "gpaste-daemon-private.h"
 
 #include <gpaste-gdbus-defines.h>
-#include <gpaste-text-item.h>
+#include <gpaste-password-item.h>
 
 #include <string.h>
 
@@ -110,6 +110,22 @@ g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
 
     G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
     return g_variant_dup_string (variant, length);
+}
+
+static void
+g_paste_daemon_get_dbus_strings_parameter (GVariant *parameters,
+                                           gchar   **str1,
+                                           gchar   **str2)
+{
+    GVariantIter parameters_iter;
+    gsize length;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant1 = g_variant_iter_next_value (&parameters_iter);
+    *str1 = g_variant_dup_string (variant1, &length);
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant2 = g_variant_iter_next_value (&parameters_iter);
+    *str2 = g_variant_dup_string (variant2, &length);
 }
 
 static guint32
@@ -257,6 +273,25 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
     {
         g_paste_daemon_private_do_add (priv, content, length);
     }
+}
+
+static void
+g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
+                                     GVariant            *parameters)
+{
+    G_PASTE_CLEANUP_FREE gchar *name = NULL;
+    G_PASTE_CLEANUP_FREE gchar *password = NULL;
+
+    g_paste_daemon_get_dbus_strings_parameter (parameters, &name, &password);
+
+    if (!name || !password)
+        return;
+
+    /* FIXME: do we want to check size here? */
+    GPasteItem *item = g_paste_password_item_new (name, password);
+    /* TODO: split */
+    g_paste_history_add (priv->history, item);
+    g_paste_clipboards_manager_select (priv->clipboards_manager, item);
 }
 
 static void
@@ -456,6 +491,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_add (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_FILE))
         g_paste_daemon_private_add_file (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_PASSWORD))
+        g_paste_daemon_private_add_password (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
         g_paste_daemon_private_backup_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE))
