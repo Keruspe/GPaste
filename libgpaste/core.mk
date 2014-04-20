@@ -17,7 +17,7 @@
 
 libgpaste_core_la_file = libgpaste/core/libgpaste-core.la
 
-LIBGPASTE_CORE_CURRENT=4
+LIBGPASTE_CORE_CURRENT=5
 LIBGPASTE_CORE_REVISION=0
 LIBGPASTE_CORE_AGE=0
 
@@ -33,6 +33,7 @@ libgpaste_core_public_headers = \
 	libgpaste/core/gpaste-image-item.h \
 	libgpaste/core/gpaste-item.h \
 	libgpaste/core/gpaste-macros.h \
+	libgpaste/core/gpaste-password-item.h \
 	libgpaste/core/gpaste-text-item.h \
 	libgpaste/core/gpaste-uris-item.h \
 	$(NULL)
@@ -44,6 +45,7 @@ libgpaste_core_private_headers = \
 	libgpaste/core/gpaste-history-private.h \
 	libgpaste/core/gpaste-image-item-private.h \
 	libgpaste/core/gpaste-item-private.h \
+	libgpaste/core/gpaste-password-item-private.h \
 	libgpaste/core/gpaste-text-item-private.h \
 	libgpaste/core/gpaste-uris-item-private.h \
 	$(NULL)
@@ -56,6 +58,7 @@ libgpaste_core_libgpaste_core_la_SOURCES = \
 	libgpaste/core/gpaste-history.c \
 	libgpaste/core/gpaste-image-item.c \
 	libgpaste/core/gpaste-item.c \
+	libgpaste/core/gpaste-password-item.c \
 	libgpaste/core/gpaste-text-item.c \
 	libgpaste/core/gpaste-uris-item.c \
 	$(NULL)
