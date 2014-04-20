@@ -594,6 +594,10 @@ g_paste_history_save (GPasteHistory *self)
         {
             GPasteItem *item = history->data;
             const gchar *kind = g_paste_item_get_kind (item);
+
+            if (!g_strcmp0 (kind, "Password"))
+                continue;
+
             G_PASTE_CLEANUP_FREE gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
 
             if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
