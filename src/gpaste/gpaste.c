@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -185,7 +185,7 @@ main (gint argc, gchar *argv[])
     }
     else
     {
-        const gchar *arg1, *arg2;
+        const gchar *arg1, *arg2, *arg3;
         switch (argc)
         {
         case 1:
@@ -348,6 +348,21 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "switch-history"))
             {
                 g_paste_client_switch_history_sync (client, arg2, &error);
+            }
+            else
+            {
+                show_help (argv[0]);
+                status = EXIT_FAILURE;
+            }
+            break;
+        case 4:
+            arg1 = argv[1];
+            arg2 = argv[2];
+            arg3 = argv[3];
+            if (!g_strcmp0(arg1, "ap") ||
+                !g_strcmp0(arg1, "add-password"))
+            {
+                g_paste_client_add_password_sync (client, arg2, arg3, &error);
             }
             else
             {
