@@ -75,3 +75,10 @@ global:
     g_paste_client_get_raw_history_finish;
     g_paste_client_get_version;
 } LIBGPASTE_CLIENT_2;
+
+LIBGPASTE_CLIENT_4 {
+    global:
+        g_paste_client_add_password_sync;
+        g_paste_client_add_password;
+        g_paste_client_add_password_finish;
+} LIBGPASTE_CLIENT_3;

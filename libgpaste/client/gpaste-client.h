@@ -49,6 +49,10 @@ void    g_paste_client_add_sync                        (GPasteClient *self,
 void    g_paste_client_add_file_sync                   (GPasteClient *self,
                                                         const gchar  *file,
                                                         GError      **error);
+void    g_paste_client_add_password_sync               (GPasteClient *self,
+                                                        const gchar  *name,
+                                                        const gchar  *password,
+                                                        GError      **error);
 void    g_paste_client_backup_history_sync             (GPasteClient *self,
                                                         const gchar  *name,
                                                         GError      **error);
@@ -102,6 +106,11 @@ void g_paste_client_add                        (GPasteClient       *self,
                                                 gpointer            user_data);
 void g_paste_client_add_file                   (GPasteClient       *self,
                                                 const gchar        *file,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+void g_paste_client_add_password               (GPasteClient       *self,
+                                                const gchar        *name,
+                                                const gchar        *password,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_backup_history             (GPasteClient       *self,
@@ -170,6 +179,9 @@ void    g_paste_client_add_finish                        (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_add_file_finish                   (GPasteClient *self,
+                                                          GAsyncResult *result,
+                                                          GError      **error);
+void    g_paste_client_add_password_finish               (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_backup_history_finish             (GPasteClient *self,
