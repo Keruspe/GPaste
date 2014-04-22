@@ -129,7 +129,6 @@ const GPasteIndicator = new Lang.Class({
 
     _popup: function() {
         this.menu.open(true);
-        this._selectFirst(true);
     },
 
     _selectFirst: function(active) {
@@ -190,6 +189,7 @@ const GPasteIndicator = new Lang.Class({
     _onOpenStateChanged: function(menu, state) {
         if (state) {
             this._searchItem.reset();
+            this._selectFirst(true);
         }
     },
 
