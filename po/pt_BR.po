@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-03-25 19:47+0900\n"
+"POT-Creation-Date: 2014-05-01 16:02+0900\n"
 "PO-Revision-Date: 2014-02-09 14:45-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -18,17 +18,14 @@ msgstr ""
 "X-Generator: Poedit 1.5.4\n"
 
 #: ../libgpaste/applet/gpaste-applet-about.c:78
-#: ../src/applets/gnome-shell/extension.js:233
 msgid "About"
 msgstr ""
 
 #: ../libgpaste/applet/gpaste-applet-empty.c:78
-#: ../src/applets/gnome-shell/extension.js:220
 msgid "Empty history"
 msgstr "Esvaziar histórico"
 
 #: ../libgpaste/applet/gpaste-applet-menu.c:281
-#: ../src/applets/gnome-shell/extension.js:155
 msgid "(Empty)"
 msgstr "(Vazio)"
 
@@ -37,7 +34,6 @@ msgid "Quit"
 msgstr "Sair"
 
 #: ../libgpaste/applet/gpaste-applet-settings.c:57
-#: ../src/applets/gnome-shell/extension.js:262
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Configurações do daemon GPaste"
@@ -49,11 +45,10 @@ msgstr "pára o monitoramento de alterações na área de transferência"
 
 #: ../libgpaste/applet/gpaste-applet-switch.c:86
 #: ../libgpaste/applet/gpaste-applet-switch.c:155
-#: ../src/applets/gnome-shell/extension.js:63
 msgid "Track changes"
 msgstr "Monitorar a área de transferência"
 
-#: ../libgpaste/core/gpaste-history.c:552
+#: ../libgpaste/core/gpaste-history.c:566
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
@@ -68,7 +63,7 @@ msgstr "%d/%m/%y %T"
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Imagem, %d x %d (%s)]"
 
-#: ../libgpaste/core/gpaste-macros.h:52
+#: ../libgpaste/core/gpaste-macros.h:47
 msgid "Failed to register the gtk application"
 msgstr "Falha ao registrar a aplicação gtk"
 
@@ -202,10 +197,6 @@ msgstr "Alternar para"
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:526
 msgid "Delete"
 msgstr "Apagar"
-
-#: ../src/applets/gnome-shell/extension.js:155
-msgid "(Couldn't connect to GPaste daemon)"
-msgstr "(Não foi possível se conectar ao daemon do GPaste)"
 
 #: ../src/gpaste/gpaste.c:32
 #, c-format
