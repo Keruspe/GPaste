@@ -38,6 +38,7 @@ const GPasteStateSwitch = new Lang.Class({
         this._clientTrackingId = client.connect('tracking', Lang.bind(this, function(c, state) {
             this._toggle(state);
         }));
+        this._toggle(client.is_active());
 
         this.connect('toggled', Lang.bind(this, function() {
             if (!this._fromDaemon) {
