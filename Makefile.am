@@ -68,7 +68,6 @@ AM_LIBS = \
 EXTRA_DIST = \
 	autogen.sh \
 	README.md \
-	bindings/vapi/config.vapi \
 	$(NULL)
 
 CLEANFILES =
