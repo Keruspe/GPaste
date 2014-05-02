@@ -5,27 +5,22 @@
         kdbus support (busname)
         gpg support
 
-3.12:
-    general:
-        merge 3.10.1
+3.10.3:
+    gpaste-editor
 
 3.12.1:
-    general:
-        merge 3.10.2
+    merge 3.10.2
+
+3.12.2:
+    merge 3.10.3
 
 3.14:
-    general:
-        properties all the way
-        wayland support
+    wayland support
 
 future:
-    gnome-shell:
-        Try https://github.com/awamper/gpaste-integration
+    general:
+        properties all the way (when GProperty stuff lands)
     libgpaste-client:
         specify errors types when possible in g-i
     tests:
         split test, add interactive wrapper
-
-maybe:
-    plugins:
-        ClipperSync (https://clippersync.com/)
