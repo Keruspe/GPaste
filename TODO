@@ -1,33 +1,26 @@
-3.12:
+3.10.2:
     general:
-        merge 3.10
-    gnome-shell-client:
-        GVariantDict
+        password support (+ patch password-store)
+        https://wiki.gnome.org/HowDoI/DBusApplicationLaunching
+        kdbus support (busname)
+        gpg support
+
+3.10.3:
+    gpaste-editor
 
 3.12.1:
-    general:
-        merge 3.10.1
+    merge 3.10.2
 
 3.12.2:
-    keybinder:
-        switch to clutter event filter (not to have to parse X event)
-    tests:
-        split test, add interactive wrapper
+    merge 3.10.3
 
 3.14:
-    general:
-        wayland support
-    plugins:
-        make it possible for both client and server
-        gpg
-        password-store
+    wayland support
 
 future:
-    gnome-shell:
-        Try https://github.com/awamper/gpaste-integration
+    general:
+        properties all the way (when GProperty stuff lands)
     libgpaste-client:
         specify errors types when possible in g-i
-
-maybe:
-    plugins:
-        ClipperSync (https://clippersync.com/)
+    tests:
+        split test, add interactive wrapper
