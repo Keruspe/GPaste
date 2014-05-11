@@ -1,4 +1,10 @@
-NEW in 3.12 (02/05/2014
+NEW in 3.10.2 (Not released yet)
+=============
+
+- systemd support has been removed
+- GPaste is now compliant with https://wiki.gnome.org/HowDoI/DBusApplicationLaunching
+
+NEW in 3.12 (02/05/2014)
 =============
 
 - Improved compatibility with GNOME 3.12

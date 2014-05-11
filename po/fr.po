@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-05-11 14:14+0900\n"
+"POT-Creation-Date: 2014-05-11 14:30+0900\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -34,6 +34,7 @@ msgid "Quit"
 msgstr "Quitter"
 
 #: ../libgpaste/applet/gpaste-applet-settings.c:57
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Préférences du démon GPaste"
 
@@ -385,11 +386,12 @@ msgid "Could not register DBus service."
 msgstr "Impossible d'inscrire le service DBus au registre."
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "GPaste Applet"
 msgstr "Applet GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:2
-#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
 
@@ -412,11 +414,12 @@ msgstr ""
 "donnera accès à votre historique dans votre zone de notifications."
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
 msgid "GPaste AppIndicator"
 msgstr "Indicateur d'application GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
-#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
 msgid "Unity application indicator to manage GPaste"
 msgstr "Indicateur d'application pour unity pour gérer GPaste"
 
@@ -444,7 +447,7 @@ msgstr ""
 "GPaste vous fournit un outil de préférences vous permettant de configurer "
 "son fonctionnement."
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "Gérer les préférences du démon GPaste"
 

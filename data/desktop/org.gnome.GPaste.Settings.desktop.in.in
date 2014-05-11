@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=org.gnome.GPaste.Settings
+_Name=GPaste daemon settings
 _Comment=Manage the GPaste daemon settings
 Icon=gtk-paste
-Exec=@pkglibexecdir@/gpaste-settings --gapplication-service
+Exec=@pkglibexecdir@/gpaste-settings
 DBusActivatable=true
 Terminal=false
 Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
