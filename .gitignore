@@ -5,7 +5,6 @@
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
 /data/dbus/*.service
-/data/systemd/*.service
 /data/appdata/*.appdata.xml
 /data/appdata/*.appdata.valid
 /bindings/gi

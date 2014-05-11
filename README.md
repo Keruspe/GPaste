@@ -32,7 +32,7 @@ You can then run `gpaste daemon-version` to check the correct daemon is now runn
 Steps to install it after cloning (skip the `./autogen.sh` part if you're building it from a tarball):
 
     ./autogen.sh
-    ./configure --sysconfdir=/etc --enable-systemd
+    ./configure --sysconfdir=/etc
     make
     sudo make install
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/

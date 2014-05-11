@@ -1,4 +1,4 @@
-From 57633998926d551077d77c3dcba1fc6a1221a45f Mon Sep 17 00:00:00 2001
+From 6a384aff40408f260af8efd366cb4cb9fc93b39a Mon Sep 17 00:00:00 2001
 From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date: Sun, 11 May 2014 10:44:26 +0900
 Subject: [PATCH 1/2] ubuntu: disable appdata stuff
@@ -10,18 +10,18 @@ Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  2 files changed, 4 deletions(-)
 
 diff --git a/Makefile.am b/Makefile.am
-index dc5a200..1aba749 100644
+index 036a04f..716a99b 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -23,7 +23,6 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
+@@ -22,7 +22,6 @@ AM_MAKEFLAGS = --no-print-directory
+ AM_DISTCHECK_CONFIGURE_FLAGS = \
  	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)" \
- 	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
  	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
 -	--enable-appdata-validate \
  	--enable-applet \
  	--enable-introspection \
- 	--enable-systemd \
-@@ -109,7 +108,6 @@ include src/applets/gnome-shell.mk
+ 	--enable-unity \
+@@ -106,7 +105,6 @@ include src/applets/gnome-shell.mk
  include src/applets/app-indicator.mk
  include src/applets/status-icon.mk
  
@@ -30,7 +30,7 @@ index dc5a200..1aba749 100644
  include data/control-center.mk
  include data/dbus.mk
 diff --git a/configure.ac b/configure.ac
-index 1be55fa..58f4956 100644
+index b71c72b..e62aa1d 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -131,8 +131,6 @@ AC_SUBST(GIO_VALAFLAGS)
