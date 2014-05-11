@@ -48,6 +48,8 @@ show_help (const gchar *caller)
     printf ("  %s zero-history: %s\n", caller, _("print the history with NUL as separator"));
     /* Translators: help for gpaste add <text> */
     printf ("  %s add <%s>: %s\n", caller, _("text"), _("set text to clipboard"));
+    /* Translators: help for gpaste add-password <name> <text> */
+    printf ("  %s add-password <%s> <%s>: %s\n", caller, _("name"), _("password"), _("add the name - password couple to the clipboard"));
     /* Translators: help for gpaste get <number> */
     printf ("  %s get <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history"));
     /* Translators: help for gpaste get-raw <number> */
