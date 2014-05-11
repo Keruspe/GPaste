@@ -1,6 +1,9 @@
 3.10.2:
     general:
         password support (+ patch password-store)
+            - set-password
+            - set-name
+            - keyboard-shortcut
         gpg support
 
 3.10.3:
