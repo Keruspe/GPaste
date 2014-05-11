@@ -42,8 +42,8 @@ g_paste_password_item_init (GPastePasswordItem *self G_GNUC_UNUSED)
 
 /**
  * g_paste_password_item_new:
+ * @name: (allow-none): the name used to identify the password
  * @password: the content of the desired #GPastePasswordItem
- * @name: the name used to identify the password
  *
  * Create a new instance of #GPastePasswordItem
  *
@@ -55,11 +55,13 @@ g_paste_password_item_new (const gchar *name,
                            const gchar *password)
 {
     g_return_val_if_fail (password, NULL);
-    g_return_val_if_fail (name, NULL);
     g_return_val_if_fail (g_utf8_validate (password, -1, NULL), NULL);
-    g_return_val_if_fail (g_utf8_validate (name, -1, NULL), NULL);
+    g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
+
+    if (!name)
+        name = "******";
 
     // This is the prefix displayed in history to identify a password
     G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strconcat (_("[Password] "), name, NULL);
