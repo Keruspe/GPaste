@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -48,6 +48,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_ASYNC_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
+#define DBUS_CALL_TWO_PARAMS_ASYNC(method, params) \
+    DBUS_CALL_TWO_PARAMS_ASYNC_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
+
 /****************************/
 /* Methods / Async - Finish */
 /****************************/
@@ -82,6 +85,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+
+#define DBUS_CALL_TWO_PARAMS_NO_RETURN(method, params) \
+    DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
 
 /**************/
 /* Properties */
@@ -203,6 +209,31 @@ g_paste_client_add_file_sync (GPasteClient *self,
     }
 
     DBUS_CALL_ONE_PARAM_NO_RETURN (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+}
+
+/**
+ * g_paste_client_add_password_sync:
+ * @self: a #GPasteClient instance
+ * @name: the name to identify the password to add
+ * @password: the password to add
+ * @error: a #GError
+ *
+ * Add the password to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_password_sync (GPasteClient *self,
+                                  const gchar  *name,
+                                  const gchar  *password,
+                                  GError      **error)
+{
+    GVariant *params[] = {
+        g_variant_new_string (name),
+        g_variant_new_string (password)
+    };
+
+    DBUS_CALL_TWO_PARAMS_NO_RETURN (ADD_PASSWORD, params);
 }
 
 /**
@@ -534,6 +565,34 @@ g_paste_client_add_file (GPasteClient       *self,
     }
 
     DBUS_CALL_ONE_PARAM_ASYNC (ADD_FILE, string, ((absolute_path) ? absolute_path : file));
+}
+
+/**
+ * g_paste_client_add_password:
+ * @self: a #GPasteClient instance
+ * @name: the name to identify the password to add
+ * @password: the password to add
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Add the password to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_password (GPasteClient       *self,
+                             const gchar        *name,
+                             const gchar        *password,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
+{
+    GVariant *params[] = {
+        g_variant_new_string (name),
+        g_variant_new_string (password)
+    };
+
+    DBUS_CALL_TWO_PARAMS_ASYNC (ADD_PASSWORD, params);
 }
 
 /**
@@ -894,6 +953,24 @@ G_PASTE_VISIBLE void
 g_paste_client_add_file_finish (GPasteClient *self,
                                 GAsyncResult *result,
                                 GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_add_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Add the password to the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_add_password_finish (GPasteClient *self,
+                                    GAsyncResult *result,
+                                    GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

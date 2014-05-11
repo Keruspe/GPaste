@@ -60,3 +60,9 @@ global:
     g_paste_history_get_display_string;
     g_paste_history_get_length;
 } LIBGPASTE_CORE_1;
+
+LIBGPASTE_CORE_5 {
+global:
+    g_paste_password_item_get_type;
+    g_paste_password_item_new;
+} LIBGPASTE_CORE_4;

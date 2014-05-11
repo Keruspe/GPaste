@@ -594,6 +594,10 @@ g_paste_history_save (GPasteHistory *self)
         {
             GPasteItem *item = history->data;
             const gchar *kind = g_paste_item_get_kind (item);
+
+            if (!g_strcmp0 (kind, "Password"))
+                continue;
+
             G_PASTE_CLEANUP_FREE gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
 
             if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
@@ -634,7 +638,8 @@ typedef enum
 {
     TEXT,
     IMAGE,
-    URIS
+    URIS,
+    PASSWORD
 } Type;
 
 typedef struct
@@ -646,6 +651,7 @@ typedef struct
     guint32               max_size;
     gboolean              images_support;
     gchar                *date;
+    gchar                *name;
     gchar                *text;
 } Data;
 
@@ -688,6 +694,8 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                     data->type = IMAGE;
                 else if (!g_strcmp0 (*v, "Uris"))
                     data->type = URIS;
+                else if (!g_strcmp0 (*v, "Password"))
+                    data->type = PASSWORD;
                 else
                     g_critical ("Unknown item kind: %s", *v);
             }
@@ -699,6 +707,15 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                     return;
                 }
                 data->date = g_strdup (*v);
+            }
+            else if (!g_strcmp0 (*a, "name"))
+            {
+                if (data->type != PASSWORD)
+                {
+                    g_warning ("Expected type %d, but got %d", PASSWORD, data->type);
+                    return;
+                }
+                data->name = g_strdup (*v);
             }
             else
                 g_warning ("Unknown item attribute: %s", *a);
@@ -766,6 +783,9 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                     break;
                 case URIS:
                     item = g_paste_uris_item_new (value);
+                    break;
+                case PASSWORD:
+                    item = g_paste_password_item_new (data->name, value);
                     break;
                 case IMAGE:
                     if (data->images_support && data->date)
@@ -859,6 +879,7 @@ g_paste_history_load (GPasteHistory *self)
             0,
             g_paste_settings_get_max_history_size (settings),
             g_paste_settings_get_images_support (settings),
+            NULL,
             NULL,
             NULL
         };
