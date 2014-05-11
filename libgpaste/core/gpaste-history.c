@@ -20,6 +20,7 @@
 #include "gpaste-history-private.h"
 
 #include <gpaste-image-item.h>
+#include <gpaste-password-item.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
