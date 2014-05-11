@@ -1,7 +1,6 @@
 3.10.2:
     general:
         password support (+ patch password-store)
-        https://wiki.gnome.org/HowDoI/DBusApplicationLaunching
         gpg support
 
 3.10.3:
