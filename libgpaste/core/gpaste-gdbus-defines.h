@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_ABOUT                      "About"
 #define G_PASTE_DAEMON_ADD                        "Add"
 #define G_PASTE_DAEMON_ADD_FILE                   "AddFile"
+#define G_PASTE_DAEMON_ADD_PASSWORD               "AddPassword"
 #define G_PASTE_DAEMON_BACKUP_HISTORY             "BackupHistory"
 #define G_PASTE_DAEMON_DELETE                     "Delete"
 #define G_PASTE_DAEMON_DELETE_HISTORY             "DeleteHistory"
@@ -66,6 +67,10 @@ G_BEGIN_DECLS
         "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ADD_FILE "'>"                   \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_ADD_PASSWORD "'>"               \
+        "           <arg type='s' direction='in' />"                           \
         "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_BACKUP_HISTORY "'>"             \

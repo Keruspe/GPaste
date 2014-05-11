@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2013-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -261,6 +261,9 @@ g_paste_dbus_get_au_result (GVariant *variant)
 
 #define DBUS_CALL_ONE_PARAM_NO_RETURN_BASE(TYPE_CHECKER, param_type, param_name, method) \
     DBUS_CALL_NO_RETURN_BASE (TYPE_CHECKER, GVariant *parameter = g_variant_new_##param_type (param_name), method, &parameter, 1)
+
+#define DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE(TYPE_CHECKER, params, method) \
+    DBUS_CALL_NO_RETURN_BASE (TYPE_CHECKER, {}, method, params, 2)
 
 /**************************************************/
 /* Methods / Sync / Impl - With return - No param */
