@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-05-01 16:02+0900\n"
+"POT-Creation-Date: 2014-05-11 14:14+0900\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -35,7 +35,6 @@ msgid "Quit"
 msgstr "Beenden"
 
 #: ../libgpaste/applet/gpaste-applet-settings.c:57
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "GPaste-Daemon-Einstellungen"
 
@@ -395,12 +394,11 @@ msgid "Could not register DBus service."
 msgstr "DBus-Service konnte nicht registriert werden."
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
-#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "GPaste Applet"
 msgstr "GPaste-Applet"
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:2
-#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:2
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "Tray icon to manage GPaste"
 msgstr "Icon im Benachrichtigungsfeld um GPaste zu konfigurieren"
 
@@ -424,13 +422,12 @@ msgstr ""
 "die Chronik im Benachrichtigungsfeld ermöglicht."
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
-#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
 #, fuzzy
 msgid "GPaste AppIndicator"
 msgstr "GPaste-Applet"
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
-#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
 #, fuzzy
 msgid "Unity application indicator to manage GPaste"
 msgstr "Icon im Benachrichtigungsfeld um GPaste zu konfigurieren"
@@ -459,7 +456,7 @@ msgstr ""
 "GPaste stellt ein Einstellungswerkzeug bereit, das es ermöglicht sein "
 "Verhalten nach den eigenen Vorstellungen anzupassen."
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "Manage the GPaste daemon settings"
 msgstr "GPaste-Daemon-Einstellungen"
 

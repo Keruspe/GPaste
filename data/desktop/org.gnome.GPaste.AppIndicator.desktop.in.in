@@ -1,8 +1,11 @@
 [Desktop Entry]
 Type=Application
-_Name=GPaste AppIndicator
+Name=org.gnome.GPaste.AppIndicator
 _Comment=Unity application indicator to manage GPaste
 Icon=gtk-paste
-Exec=@pkglibexecdir@/gpaste-app-indicator
+Exec=@pkglibexecdir@/gpaste-app-indicator --gapplication-service
+DBusActivatable=true
 Terminal=false
+Categories=GTK;GNOME;Unity;
+StartupNotify=true
 OnlyShowIn=Unity

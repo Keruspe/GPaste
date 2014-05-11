@@ -1,7 +1,11 @@
 [Desktop Entry]
 Type=Application
-_Name=GPaste Applet
+Name=org.gnome.GPaste.Applet
 _Comment=Tray icon to manage GPaste
 Icon=gtk-paste
-Exec=@pkglibexecdir@/gpaste-applet
+Exec=@pkglibexecdir@/gpaste-applet --gapplication-service
+DBusActivatable=true
 Terminal=false
+Categories=GTK;GNOME;
+StartupNotify=true
+NotShowIn=Unity

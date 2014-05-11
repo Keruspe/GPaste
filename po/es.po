@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-05-01 16:02+0900\n"
+"POT-Creation-Date: 2014-05-11 14:14+0900\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -34,7 +34,6 @@ msgid "Quit"
 msgstr "Salir"
 
 #: ../libgpaste/applet/gpaste-applet-settings.c:57
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Ajustes del servicio GPaste"
 
@@ -395,12 +394,11 @@ msgid "Could not register DBus service."
 msgstr "No se pudo registrar el servicio DBus"
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
-#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "GPaste Applet"
 msgstr "Applet GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:2
-#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:2
+#: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "Tray icon to manage GPaste"
 msgstr "Icono de notificación para GPaste"
 
@@ -419,13 +417,12 @@ msgid ""
 msgstr ""
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
-#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
 #, fuzzy
 msgid "GPaste AppIndicator"
 msgstr "Applet GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
-#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
+#: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
 #, fuzzy
 msgid "Unity application indicator to manage GPaste"
 msgstr "Icono de notificación para GPaste"
@@ -452,7 +449,7 @@ msgid ""
 "behaviour as expected."
 msgstr ""
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "Manage the GPaste daemon settings"
 msgstr "Gestionar los ajustes del servicio GPaste"
 
