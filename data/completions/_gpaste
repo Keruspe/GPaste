@@ -6,6 +6,7 @@ if (( CURRENT == 2 )); then
 
     commands=(
         {add,a}:"Set text to clipboard"
+        {add-password,ap}:"Add a name - password couple to the clipboard"
         {about}:"Display the about dialog"
         {backup-history,bh}:"Backup current history"
         {daemon-reexec,dr}:"Reexecute the daemon"
