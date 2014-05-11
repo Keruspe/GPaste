@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -173,30 +173,6 @@ AC_ARG_WITH([dbusservicesdir],
             [with_dbusservicesdir=`$PKG_CONFIG --variable=session_bus_services_dir dbus-1`])
 AC_SUBST([dbusservicesdir], [$with_dbusservicesdir])
 
-AC_ARG_ENABLE(systemd, AS_HELP_STRING([--enable-systemd], [Enable systemd activation support]), [], enable_systemd=no)
-AC_ARG_WITH(systemduserunitdir, AS_HELP_STRING([--with-systemduserunitdir=DIR], [Directory for systemd user unit files]), [], with_systemduserunitdir=auto)
-if test x$enable_systemd = xyes; then
-    case "$with_systemduserunitdir" in
-        no|"")
-            AC_MSG_ERROR([*** You must specify systemduserunitdir when enabling systemd support])
-            ;;
-        auto)
-            PKG_CHECK_MODULES(SYSTEMD, [systemd])
-            systemduserunitdir="`$PKG_CONFIG --variable=systemduserunitdir systemd`"
-            if test x$systemduserunitdir = x; then
-                AC_MSG_ERROR([*** Could not detect systemduserunitdir when enabling systemd support])
-            fi
-            ;;
-        *)
-            systemduserunitdir="$with_systemduserunitdir"
-            ;;
-    esac
-else
-    systemduserunitdir="/dev/null"
-fi
-AC_SUBST(systemduserunitdir)
-AM_CONDITIONAL(ENABLE_SYSTEMD, test x$enable_systemd = xyes)
-
 ENABLE_APPLET=0
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
 if test x$enable_applet = xyes; then
@@ -267,6 +243,4 @@ AC_MSG_RESULT([
     Gnome-Shell extension:  ${enable_extension}
 
     X keybinder support:    ${enable_x_keybinder}
-
-    systemd support:        ${enable_systemd} (${systemduserunitdir})
 ])

@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,12 +21,10 @@ ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 AM_MAKEFLAGS = --no-print-directory
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)" \
-	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
 	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
 	--enable-appdata-validate \
 	--enable-applet \
 	--enable-introspection \
-	--enable-systemd \
 	--enable-unity \
 	--enable-vala \
 	$(NULL)
@@ -78,7 +76,6 @@ pkginclude_HEADERS =
 pkglibexec_PROGRAMS =
 lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
-nodist_systemduserunit_DATA =
 
 TESTS=
 noinst_PROGRAMS= \
@@ -115,7 +112,6 @@ include data/dbus.mk
 include data/desktop.mk
 include data/gsettings.mk
 include data/pkg-config.mk
-include data/systemd.mk
 
 include man/1.mk
 

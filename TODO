@@ -2,7 +2,6 @@
     general:
         password support (+ patch password-store)
         https://wiki.gnome.org/HowDoI/DBusApplicationLaunching
-        kdbus support (busname)
         gpg support
 
 3.10.3:

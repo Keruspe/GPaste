@@ -1,4 +1,4 @@
-From 157f416fb09bfad2f24082c14efdf94a1cdcb618 Mon Sep 17 00:00:00 2001
+From 8862dab883c71071b406f8cb0ed6719ff4c15bd0 Mon Sep 17 00:00:00 2001
 From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date: Sun, 11 May 2014 10:46:35 +0900
 Subject: [PATCH 2/2] ubuntu: fix for ubuntu breaking gnome-shell API
