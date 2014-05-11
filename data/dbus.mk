@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2012 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2012-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,20 @@
 
 nodist_dbusservices_DATA = \
 	data/dbus/org.gnome.GPaste.service \
+	data/dbus/org.gnome.GPaste.Settings.service \
 	$(NULL)
+
+if ENABLE_APPLET
+nodist_dbusservices_DATA += \
+	data/dbus/org.gnome.GPaste.Applet.service \
+	$(NULL)
+endif
+
+if ENABLE_UNITY
+nodist_dbusservices_DATA += \
+	data/dbus/org.gnome.GPaste.AppIndicator.service \
+	$(NULL)
+endif
 
 SUFFIXES += .service .dbus.in
 .dbus.in.service:
