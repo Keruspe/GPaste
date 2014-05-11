@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-05-11 14:30+0900\n"
+"POT-Creation-Date: 2014-05-11 15:10+0900\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -47,7 +47,7 @@ msgstr "lopettaa leikepöydän muutosten seuraamisen"
 msgid "Track changes"
 msgstr "Pidä kirjaa tapahtumista"
 
-#: ../libgpaste/core/gpaste-history.c:566
+#: ../libgpaste/core/gpaste-history.c:567
 msgid "Could not create history dir"
 msgstr "Historiakansion luominen epäonnistui"
 
@@ -65,6 +65,11 @@ msgstr "[Kuva, %d x %d (%s)]"
 #: ../libgpaste/core/gpaste-macros.h:47
 msgid "Failed to register the gtk application"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
+
+#. This is the prefix displayed in history to identify a password
+#: ../libgpaste/core/gpaste-password-item.c:67
+msgid "Password"
+msgstr ""
 
 #. Match options
 #. Error

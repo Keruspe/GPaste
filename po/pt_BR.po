@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-05-11 14:30+0900\n"
+"POT-Creation-Date: 2014-05-11 15:10+0900\n"
 "PO-Revision-Date: 2014-02-09 14:45-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -48,7 +48,7 @@ msgstr "pára o monitoramento de alterações na área de transferência"
 msgid "Track changes"
 msgstr "Monitorar a área de transferência"
 
-#: ../libgpaste/core/gpaste-history.c:566
+#: ../libgpaste/core/gpaste-history.c:567
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
@@ -66,6 +66,11 @@ msgstr "[Imagem, %d x %d (%s)]"
 #: ../libgpaste/core/gpaste-macros.h:47
 msgid "Failed to register the gtk application"
 msgstr "Falha ao registrar a aplicação gtk"
+
+#. This is the prefix displayed in history to identify a password
+#: ../libgpaste/core/gpaste-password-item.c:67
+msgid "Password"
+msgstr ""
 
 #. Match options
 #. Error

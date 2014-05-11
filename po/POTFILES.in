@@ -7,6 +7,7 @@ libgpaste/applet/gpaste-applet-switch.c
 libgpaste/core/gpaste-history.c
 libgpaste/core/gpaste-image-item.c
 libgpaste/core/gpaste-macros.h
+libgpaste/core/gpaste-password-item.c
 libgpaste/core/gpaste-uris-item.c
 libgpaste/settings/ui/gpaste-settings-ui-stack.c
 src/applets/gnome-shell/extension.js
