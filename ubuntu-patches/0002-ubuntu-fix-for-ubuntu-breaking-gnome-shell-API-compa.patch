@@ -1,0 +1,41 @@
+From 157f416fb09bfad2f24082c14efdf94a1cdcb618 Mon Sep 17 00:00:00 2001
+From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+Date: Sun, 11 May 2014 10:46:35 +0900
+Subject: [PATCH 2/2] ubuntu: fix for ubuntu breaking gnome-shell API
+ compatibility
+
+Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+---
+ libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c b/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
+index 62107c8..ea8e134 100644
+--- a/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
++++ b/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
+@@ -73,7 +73,6 @@
+             "<signal name='" G_PASTE_GNOME_SHELL_SIG_ACCELERATOR_ACTIVATED "'>"                            \
+                 "<arg name='action'    type='u' />"                                                        \
+                 "<arg name='deviceid'  type='u' />"                                                        \
+-                "<arg name='timestamp' type='u' />"                                                        \
+             "</signal>"                                                                                    \
+             "<property name='" G_PASTE_GNOME_SHELL_PROP_MODE "'            type='s' access='read'      />" \
+             "<property name='" G_PASTE_GNOME_SHELL_PROP_OVERVIEW_ACTIVE "' type='b' access='readwrite' />" \
+@@ -798,13 +797,12 @@ g_paste_gnome_shell_client_g_signal (GDBusProxy  *proxy,
+         g_variant_iter_init (&params_iter, parameters);
+         G_PASTE_CLEANUP_VARIANT_UNREF GVariant *action    = g_variant_iter_next_value (&params_iter);
+         G_PASTE_CLEANUP_VARIANT_UNREF GVariant *deviceid  = g_variant_iter_next_value (&params_iter);
+-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *timestamp = g_variant_iter_next_value (&params_iter);
+         g_signal_emit (self,
+                        signals[ACCELERATOR_ACTIVATED],
+                        0, /* detail */
+                        g_variant_get_uint32 (action),
+                        g_variant_get_uint32 (deviceid),
+-                       g_variant_get_uint32 (timestamp),
++                       0,
+                        NULL);
+     }
+ }
+-- 
+1.9.3
+
