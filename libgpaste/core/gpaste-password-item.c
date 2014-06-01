@@ -29,10 +29,22 @@ g_paste_password_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
     return "Password";
 }
 
+static gboolean
+g_paste_password_item_equals (const GPasteItem *self,
+                              const GPasteItem *other)
+{
+    g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
+
+    /* Passwords are never considered equals */
+    return FALSE;
+}
+
 static void
 g_paste_password_item_class_init (GPastePasswordItemClass *klass)
 {
     G_PASTE_ITEM_CLASS (klass)->get_kind = g_paste_password_item_get_kind;
+    G_PASTE_ITEM_CLASS (klass)->equals = g_paste_password_item_equals;
 }
 
 static void

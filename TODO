@@ -4,6 +4,7 @@
             - set-password
             - set-name
             - keyboard-shortcut
+            - delete-password
         gpg support
 
 3.10.3:
