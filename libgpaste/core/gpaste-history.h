@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -58,6 +58,8 @@ void              g_paste_history_select             (GPasteHistory *self,
                                                       guint32        index);
 void              g_paste_history_set_password       (GPasteHistory *self,
                                                       guint32        index,
+                                                      const gchar   *name);
+void              g_paste_history_delete_password    (GPasteHistory *self,
                                                       const gchar   *name);
 void          g_paste_history_empty       (GPasteHistory *self);
 gboolean      g_paste_history_save        (GPasteHistory *self);
