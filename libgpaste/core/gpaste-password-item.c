@@ -72,6 +72,9 @@ g_paste_password_item_new (const gchar *name,
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
 
+    /* Don't leak password length */
+    self->size = 0;
+
     if (!name)
         name = "******";
 
