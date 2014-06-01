@@ -430,19 +430,65 @@ g_paste_history_get_display_string (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_select (GPasteHistory *self,
-                        guint32        pos)
+                        guint32        index)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GSList *history = priv->history;
 
-    g_return_if_fail (pos < g_slist_length (history));
+    g_return_if_fail (index < g_slist_length (history));
 
-    GPasteItem *item = g_slist_nth_data (history, pos);
+    GPasteItem *item = g_slist_nth_data (history, index);
 
     g_paste_history_add (self, item);
     g_paste_history_selected (self, item);
+}
+
+/**
+ * g_paste_history_set_password:
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteTextItem to change as password
+ * @name: (allow-none): the name to give to the password
+ *
+ * Mark a text item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_set_password (GPasteHistory *self,
+                              guint32        index,
+                              const gchar   *name)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    GSList *history = priv->history;
+
+    g_return_if_fail (index < g_slist_length (history));
+
+    GSList *prev = (index) ? g_slist_nth (history, index - 1) : NULL;
+
+    g_return_if_fail (!index || prev);
+
+    GSList *todel = (index) ? g_slist_next (prev) : history;
+
+    g_return_if_fail (!todel);
+
+    GPasteItem *item = todel->data;
+
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
+
+    GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_value (item));
+
+    priv->size -= g_paste_item_get_size (item);
+    priv->size += g_paste_item_get_size (password);
+    prev->next = g_slist_prepend (g_slist_delete_link (todel, todel), password);
+
+    if (index == priv->biggest_index)
+        g_paste_history_private_elect_new_biggest (priv);
+
+    g_paste_history_changed (self);
 }
 
 /**

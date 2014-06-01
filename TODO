@@ -5,10 +5,10 @@
             - set-name
             - keyboard-shortcut
             - delete-password
-        gpg support
 
 3.10.3:
     gpaste-editor
+    gpg support
 
 3.12.1:
     merge 3.10.2
