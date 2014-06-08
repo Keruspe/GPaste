@@ -3,10 +3,11 @@
         password support (+ patch password-store)
             - set-password
             - set-name
-            - keyboard-shortcut
             - delete-password
 
 3.10.3:
+    dbus errors instead of asserts in daemon
+    set-password keyboard shortcut
     gpaste-editor
     gpg support
 
