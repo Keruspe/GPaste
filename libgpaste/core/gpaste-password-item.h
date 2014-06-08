@@ -45,6 +45,9 @@ GType g_paste_password_item_get_type (void);
 
 const gchar *g_paste_password_item_get_name (const GPastePasswordItem *self);
 
+void g_paste_password_item_set_name (GPastePasswordItem *self,
+                                     const char         *name);
+
 GPasteItem *g_paste_password_item_new (const gchar *name,
                                        const gchar *password);
 

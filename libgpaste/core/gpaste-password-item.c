@@ -38,6 +38,23 @@ g_paste_password_item_get_name (const GPastePasswordItem *self)
     return priv->name;
 }
 
+G_PASTE_VISIBLE void
+g_paste_password_item_set_name (GPastePasswordItem *self,
+                                const gchar        *name)
+{
+    g_return_if_fail (G_PASTE_IS_PASSWORD_ITEM (self));
+    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
+
+    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (self);
+
+    if (!name)
+        name = "******";
+
+    self->size += strlen (name) - strlen(priv->name);
+    g_free (priv->name);
+    priv->name = g_strdup (name);
+}
+
 static const gchar *
 g_paste_password_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
 {
@@ -78,8 +95,11 @@ g_paste_password_item_class_init (GPastePasswordItemClass *klass)
 }
 
 static void
-g_paste_password_item_init (GPastePasswordItem *self G_GNUC_UNUSED)
+g_paste_password_item_init (GPastePasswordItem *self )
 {
+    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (self);
+
+    priv->name = NULL;
 }
 
 /**
@@ -103,12 +123,9 @@ g_paste_password_item_new (const gchar *name,
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
     GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private ((GPastePasswordItem *) self);
 
-    if (!name)
-        name = "******";
-
     /* override password value length */
-    self->size = strlen (name);
-    priv->name = g_strdup (name);
+    self->size = 0;
+    g_paste_password_item_set_name (self, name);
 
     // This is the prefix displayed in history to identify a password
     G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strdup_printf ("[%s] %s ", _("Password"), name);
