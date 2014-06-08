@@ -24,7 +24,7 @@
 #ifndef __G_PASTE_HISTORY_H__
 #define __G_PASTE_HISTORY_H__
 
-#include <gpaste-item.h>
+#include <gpaste-password-item.h>
 #include <gpaste-settings.h>
 
 G_BEGIN_DECLS
