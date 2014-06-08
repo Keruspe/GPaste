@@ -1,15 +1,18 @@
 3.10.2:
     general:
+        get_value vs get_real_value
         password support (+ patch password-store)
             - set-password
             - set-name
             - delete-password
 
 3.10.3:
-    dbus errors instead of asserts in daemon
     set-password keyboard shortcut
-    gpaste-editor
     gpg support
+
+3.10.4:
+    dbus errors instead of asserts in daemon
+    gpaste-editor
 
 3.12.1:
     merge 3.10.2
@@ -17,11 +20,15 @@
 3.12.2:
     merge 3.10.3
 
+3.12.3:
+    merge 3.10.4
+
 3.14:
     wayland support
 
 future:
     general:
+        add class methods for signals
         properties all the way (when GProperty stuff lands)
     libgpaste-client:
         specify errors types when possible in g-i
