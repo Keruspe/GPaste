@@ -460,7 +460,7 @@ g_paste_history_set_password (GPasteHistory *self,
                               const gchar   *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
+    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GSList *history = priv->history;
@@ -473,7 +473,7 @@ g_paste_history_set_password (GPasteHistory *self,
 
     GSList *todel = (index) ? g_slist_next (prev) : history;
 
-    g_return_if_fail (!todel);
+    g_return_if_fail (todel);
 
     GPasteItem *item = todel->data;
 
@@ -483,7 +483,13 @@ g_paste_history_set_password (GPasteHistory *self,
 
     priv->size -= g_paste_item_get_size (item);
     priv->size += g_paste_item_get_size (password);
-    prev->next = g_slist_prepend (g_slist_delete_link (todel, todel), password);
+
+    GSList *next = g_slist_prepend (g_slist_delete_link (todel, todel), password);
+
+    if (prev)
+        prev->next = next;
+    else
+        priv->history = next;
 
     if (index == priv->biggest_index)
         g_paste_history_private_elect_new_biggest (priv);
@@ -528,7 +534,7 @@ G_PASTE_VISIBLE const GPastePasswordItem *
 g_paste_history_get_password (GPasteHistory *self,
                               const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
@@ -551,12 +557,12 @@ g_paste_history_delete_password (GPasteHistory *self,
                                  const gchar   *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
+    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     guint index;
    
-    if (g_paste_history_private_get_password (priv, name, &index))
+    if (_g_paste_history_private_get_password (priv, name, &index))
         g_paste_history_remove (self, index);
 }
 

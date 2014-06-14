@@ -50,7 +50,7 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
     if (!name)
         name = "******";
 
-    self->size += strlen (name) - strlen(priv->name);
+    G_PASTE_ITEM (self)->size += strlen (name) - strlen(priv->name);
     g_free (priv->name);
     priv->name = g_strdup (name);
 }
@@ -121,11 +121,10 @@ g_paste_password_item_new (const gchar *name,
     g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
-    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private ((GPastePasswordItem *) self);
 
     /* override password value length */
     self->size = 0;
-    g_paste_password_item_set_name (self, name);
+    g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (self), name);
 
     // This is the prefix displayed in history to identify a password
     G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strdup_printf ("[%s] %s ", _("Password"), name);
