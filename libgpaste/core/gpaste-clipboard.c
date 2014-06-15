@@ -390,9 +390,9 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
 }
 
 static void
-g_paste_clipboard_owner_change (GtkClipboard *clipboard G_GNUC_UNUSED,
-                                GdkEvent     *event,
-                                gpointer      user_data)
+g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
+                                GdkEventOwnerChange *event,
+                                gpointer             user_data)
 {
     GPasteClipboard *self = user_data;
 
@@ -484,7 +484,7 @@ g_paste_clipboard_new (GdkAtom         target,
 
     GtkClipboard *real = priv->real = gtk_clipboard_get (target);
 
-    priv->owner_change_signal = g_signal_connect (G_OBJECT (real),
+    priv->owner_change_signal = g_signal_connect (real,
                                                   "owner-change",
                                                   G_CALLBACK (g_paste_clipboard_owner_change),
                                                   self);

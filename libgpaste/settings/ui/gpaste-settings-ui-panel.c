@@ -102,9 +102,9 @@ g_paste_settings_ui_panel_add_label (GPasteSettingsUiPanel *self,
 }
 
 static gboolean
-g_paste_settings_ui_panel_on_reset_pressed (GtkWidget *widget G_GNUC_UNUSED,
-                                            GdkEvent  *event  G_GNUC_UNUSED,
-                                            gpointer   user_data)
+g_paste_settings_ui_panel_on_reset_pressed (GtkWidget       *widget G_GNUC_UNUSED,
+                                            GdkEventButton  *event  G_GNUC_UNUSED,
+                                            gpointer         user_data)
 {
     G_PASTE_RESET_CALLBACK () (data->custom_data);
     return FALSE;
@@ -114,7 +114,7 @@ static GtkWidget *
 g_paste_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
 {
     data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic", GTK_ICON_SIZE_BUTTON);
-    data->reset_signal = g_signal_connect (G_OBJECT (data->reset_widget),
+    data->reset_signal = g_signal_connect (data->reset_widget,
                                            "button-press-event",
                                            G_CALLBACK (g_paste_settings_ui_panel_on_reset_pressed),
                                            data);
@@ -214,7 +214,7 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
 
     gtk_widget_set_hexpand (button, TRUE);
     gtk_spin_button_set_value (b, value);
-    _data->signal = g_signal_connect (button, "value-changed", G_CALLBACK (range_wrapper), data);
+    _data->signal = g_signal_connect (GTK_SPIN_BUTTON (button), "value-changed", G_CALLBACK (range_wrapper), data);
     gtk_grid_attach_next_to (grid, button, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
     gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), button, GTK_POS_RIGHT, 1, 1);
 
@@ -256,7 +256,7 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
 
     gtk_widget_set_hexpand (entry, TRUE);
     gtk_entry_set_text (e, value);
-    _data->signal = g_signal_connect (entry, "changed", G_CALLBACK (text_wrapper), data);
+    _data->signal = g_signal_connect (GTK_EDITABLE (entry), "changed", G_CALLBACK (text_wrapper), data);
     gtk_grid_attach_next_to (GTK_GRID (self), entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);
     if (on_reset)
         gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), entry, GTK_POS_RIGHT, 1, 1);
@@ -275,12 +275,13 @@ g_paste_settings_ui_panel_add_confirm_button (GPasteSettingsUiPanel *self,
     return GTK_BUTTON (button);
 }
 
-static void
-text_confirm_wrapper (GtkWidget *widget G_GNUC_UNUSED,
-                      GdkEvent  *event G_GNUC_UNUSED,
-                      gpointer   user_data)
+static gboolean
+text_confirm_wrapper (GtkWidget      *widget G_GNUC_UNUSED,
+                      GdkEventButton *event G_GNUC_UNUSED,
+                      gpointer        user_data)
 {
     G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (data->user_data)), data->custom_data);
+    return GDK_EVENT_PROPAGATE;
 }
 
 /**
@@ -327,14 +328,15 @@ g_paste_settings_ui_panel_make_combo_box_text (const GStrv *labels)
     return combo_box;
 }
 
-static void
-multi_action_wrapper (GtkWidget *widget G_GNUC_UNUSED,
-                      GdkEvent  *event G_GNUC_UNUSED,
-                      gpointer   user_data)
+static gboolean
+multi_action_wrapper (GtkWidget       *widget G_GNUC_UNUSED,
+                      GdkEventButton  *event G_GNUC_UNUSED,
+                      gpointer         user_data)
 {
     G_PASTE_CALLBACK (GPasteMultiActionCallback) (gtk_combo_box_get_active_id (GTK_COMBO_BOX (data->user_data)),
                                                   gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (data->user_data2)),
                                                   data->custom_data);
+    return GDK_EVENT_PROPAGATE;
 }
 
 /**

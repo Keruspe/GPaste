@@ -108,7 +108,7 @@ g_paste_applet_icon_new (GType         type,
     priv->client = g_object_ref (client);
     priv->menu = menu;
 
-    priv->show_id = g_signal_connect (G_OBJECT (client),
+    priv->show_id = g_signal_connect (client,
                                       "show-history",
                                       G_CALLBACK (g_paste_applet_icon_show_history),
                                       self);

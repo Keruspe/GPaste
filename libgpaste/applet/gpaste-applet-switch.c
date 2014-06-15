@@ -187,7 +187,7 @@ g_paste_applet_switch_new (GPasteClient *client)
     priv->client = g_object_ref (client);
     g_paste_applet_switch_set_active (G_PASTE_APPLET_SWITCH (self), g_paste_client_is_active (client));
 
-    priv->tracking_id = g_signal_connect (G_OBJECT (client),
+    priv->tracking_id = g_signal_connect (client,
                                           "tracking",
                                           G_CALLBACK (g_paste_applet_switch_private_on_tracking),
                                           priv);

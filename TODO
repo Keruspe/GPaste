@@ -5,6 +5,9 @@
             - set-password
             - set-name
             - delete-password
+        name all sources
+    extension:
+        fix search bar
 
 3.10.3:
     set-password keyboard shortcut

@@ -610,19 +610,19 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     }
 
     gulong *c_signals = priv->c_signals;
-    c_signals[C_NAME_LOST] = g_signal_connect (G_OBJECT (self),
+    c_signals[C_NAME_LOST] = g_signal_connect (self,
                                               "name-lost",
                                                G_CALLBACK (g_paste_daemon_name_lost),
                                                NULL);
-    c_signals[C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (self),
+    c_signals[C_REEXECUTE_SELF] = g_signal_connect (self,
                                                     "reexecute-self",
                                                     G_CALLBACK (g_paste_daemon_reexecute_self),
                                                     NULL);
-    c_signals[C_TRACK] = g_signal_connect_swapped (G_OBJECT (priv->settings),
+    c_signals[C_TRACK] = g_signal_connect_swapped (priv->settings,
                                                    "track",
                                                    G_CALLBACK (g_paste_daemon_tracking),
                                                    self);
-    c_signals[C_CHANGED] = g_signal_connect_swapped (G_OBJECT (priv->history),
+    c_signals[C_CHANGED] = g_signal_connect_swapped (priv->history,
                                                      "changed",
                                                      G_CALLBACK (g_paste_daemon_private_changed),
                                                      priv);
