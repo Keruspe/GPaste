@@ -217,7 +217,7 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
-        g_signal_connect (clipboard->data,
+        g_signal_connect (G_PASTE_CLIPBOARD (clipboard->data),
                           "owner-change",
                           G_CALLBACK (g_paste_clipboards_manager_notify),
                           priv);
@@ -323,7 +323,7 @@ g_paste_clipboards_manager_new (GPasteHistory  *history,
     priv->history = g_object_ref (history);
     priv->settings = g_object_ref (settings);
 
-    priv->selected_signal = g_signal_connect_swapped (G_OBJECT (history),
+    priv->selected_signal = g_signal_connect_swapped (history,
                                                       "selected",
                                                       G_CALLBACK (on_item_selected),
                                                       self);

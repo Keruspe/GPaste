@@ -37,6 +37,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_BACKUP_HISTORY             "BackupHistory"
 #define G_PASTE_DAEMON_DELETE                     "Delete"
 #define G_PASTE_DAEMON_DELETE_HISTORY             "DeleteHistory"
+#define G_PASTE_DAEMON_DELETE_PASSWORD            "DeletePassword"
 #define G_PASTE_DAEMON_EMPTY                      "Empty"
 #define G_PASTE_DAEMON_GET_ELEMENT                "GetElement"
 #define G_PASTE_DAEMON_GET_HISTORY                "GetHistory"
@@ -47,6 +48,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "OnExtensionStateChanged"
 #define G_PASTE_DAEMON_REEXECUTE                  "Reexecute"
 #define G_PASTE_DAEMON_SELECT                     "Select"
+#define G_PASTE_DAEMON_SET_PASSWORD               "SetPassword"
 #define G_PASTE_DAEMON_SWITCH_HISTORY             "SwitchHistory"
 #define G_PASTE_DAEMON_TRACK                      "Track"
 
@@ -82,6 +84,9 @@ G_BEGIN_DECLS
         "       <method name='" G_PASTE_DAEMON_DELETE_HISTORY "'>"             \
         "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_DELETE_PASSWORD "'>"            \
+        "           <arg type='s' direction='in' />"                           \
+        "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_EMPTY "' />"                    \
         "       <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
         "           <arg type='u' direction='in' />"                           \
@@ -109,6 +114,10 @@ G_BEGIN_DECLS
         "       <method name='" G_PASTE_DAEMON_REEXECUTE "' />"                \
         "       <method name='" G_PASTE_DAEMON_SELECT "'>"                     \
         "           <arg type='u' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_SET_PASSWORD "'>"               \
+        "           <arg type='u' direction='in' />"                           \
+        "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_SWITCH_HISTORY "'>"             \
         "           <arg type='s' direction='in' />"                           \

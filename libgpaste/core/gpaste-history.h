@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #ifndef __G_PASTE_HISTORY_H__
 #define __G_PASTE_HISTORY_H__
 
-#include <gpaste-item.h>
+#include <gpaste-password-item.h>
 #include <gpaste-settings.h>
 
 G_BEGIN_DECLS
@@ -56,6 +56,13 @@ const gchar      *g_paste_history_get_value          (GPasteHistory *self,
                                                       guint32        index);
 void              g_paste_history_select             (GPasteHistory *self,
                                                       guint32        index);
+void                      g_paste_history_set_password    (GPasteHistory *self,
+                                                           guint32        index,
+                                                           const gchar   *name);
+const GPastePasswordItem *g_paste_history_get_password    (GPasteHistory *self,
+                                                           const gchar   *name);
+void                      g_paste_history_delete_password (GPasteHistory *self,
+                                                           const gchar   *name);
 void          g_paste_history_empty       (GPasteHistory *self);
 gboolean      g_paste_history_save        (GPasteHistory *self);
 void          g_paste_history_load        (GPasteHistory *self);

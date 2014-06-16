@@ -166,13 +166,13 @@ g_paste_applet_item_new (GPasteClient   *client,
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), g_paste_applet_delete_new (client, index), FALSE, TRUE, 0);
 
-    priv->changed_id = g_signal_connect (G_OBJECT (client),
+    priv->changed_id = g_signal_connect (client,
                                          "changed",
                                          G_CALLBACK (g_paste_applet_item_reset_text),
                                          priv);
     g_paste_applet_item_reset_text (client, priv);
 
-    priv->size_id = g_signal_connect (G_OBJECT (settings),
+    priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
                                       G_CALLBACK (g_paste_applet_item_set_text_size),
                                       priv->label);

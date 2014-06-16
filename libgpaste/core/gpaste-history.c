@@ -20,7 +20,6 @@
 #include "gpaste-history-private.h"
 
 #include <gpaste-image-item.h>
-#include <gpaste-password-item.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
@@ -430,19 +429,141 @@ g_paste_history_get_display_string (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_select (GPasteHistory *self,
-                        guint32        pos)
+                        guint32        index)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GSList *history = priv->history;
 
-    g_return_if_fail (pos < g_slist_length (history));
+    g_return_if_fail (index < g_slist_length (history));
 
-    GPasteItem *item = g_slist_nth_data (history, pos);
+    GPasteItem *item = g_slist_nth_data (history, index);
 
     g_paste_history_add (self, item);
     g_paste_history_selected (self, item);
+}
+
+/**
+ * g_paste_history_set_password:
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteTextItem to change as password
+ * @name: (allow-none): the name to give to the password
+ *
+ * Mark a text item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_set_password (GPasteHistory *self,
+                              guint32        index,
+                              const gchar   *name)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    GSList *history = priv->history;
+
+    g_return_if_fail (index < g_slist_length (history));
+
+    GSList *prev = (index) ? g_slist_nth (history, index - 1) : NULL;
+
+    g_return_if_fail (!index || prev);
+
+    GSList *todel = (index) ? g_slist_next (prev) : history;
+
+    g_return_if_fail (todel);
+
+    GPasteItem *item = todel->data;
+
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
+
+    GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_value (item));
+
+    priv->size -= g_paste_item_get_size (item);
+    priv->size += g_paste_item_get_size (password);
+
+    GSList *next = g_slist_prepend (g_slist_delete_link (todel, todel), password);
+
+    if (prev)
+        prev->next = next;
+    else
+        priv->history = next;
+
+    if (index == priv->biggest_index)
+        g_paste_history_private_elect_new_biggest (priv);
+
+    g_paste_history_changed (self);
+}
+
+static GPasteItem *
+_g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
+                                       const gchar                *name,
+                                       guint                      *index)
+{
+    guint idx = 0;
+
+    for (GSList *h = priv->history; h; h = g_slist_next (h), ++idx)
+    {
+        GPasteItem *i = h->data;
+        if (G_PASTE_IS_PASSWORD_ITEM (i) &&
+            !g_strcmp0 (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
+        {
+            if (index)
+                *index = idx;
+            return i;
+        }
+    }
+
+    if (index)
+        *index = (guint) -1;
+    return NULL;
+}
+
+/**
+ * g_paste_history_get_password:
+ * @self: a #GPasteHistory instance
+ * @name: the name of the #GpastePasswordItem
+ *
+ * Get the first password matching name
+ *
+ * Returns: (allow-none): a #GPastePasswordItem or %NULL
+ */
+G_PASTE_VISIBLE const GPastePasswordItem *
+g_paste_history_get_password (GPasteHistory *self,
+                              const gchar   *name)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    GPasteItem *item = _g_paste_history_private_get_password (priv, name, NULL);
+
+    return (item) ? G_PASTE_PASSWORD_ITEM (item) : NULL;
+}
+
+/**
+ * g_paste_history_delete_password:
+ * @self: a #GPasteHistory instance
+ * @name: the name of the #GpastePasswordItem
+ *
+ * Delete the password matching name
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_delete_password (GPasteHistory *self,
+                                 const gchar   *name)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    guint index;
+   
+    if (_g_paste_history_private_get_password (priv, name, &index))
+        g_paste_history_remove (self, index);
 }
 
 /**

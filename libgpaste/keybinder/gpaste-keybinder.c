@@ -250,7 +250,7 @@ _keybinding_new (GPasteKeybinding       *binding,
 
     G_PASTE_CLEANUP_FREE gchar *detailed_signal = g_strdup_printf ("rebind::%s",
                                                                    g_paste_keybinding_get_dconf_key (binding));
-    k->rebind_signal = g_signal_connect_swapped (G_OBJECT (settings),
+    k->rebind_signal = g_signal_connect_swapped (settings,
                                                  detailed_signal,
                                                  G_CALLBACK (_keybinding_rebind),
                                                  k);
@@ -703,7 +703,7 @@ g_paste_keybinder_new (GPasteSettings         *settings,
 
     if (shell_client)
     {
-        priv->accel_signal = g_signal_connect (G_OBJECT (shell_client),
+        priv->accel_signal = g_signal_connect (shell_client,
                                                "accelerator-activated",
                                                G_CALLBACK (on_accelerator_activated),
                                                priv);

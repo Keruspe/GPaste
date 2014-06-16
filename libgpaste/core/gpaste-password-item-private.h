@@ -26,6 +26,8 @@
 
 G_BEGIN_DECLS
 
+typedef struct _GPastePasswordItemPrivate GPastePasswordItemPrivate;
+
 struct _GPastePasswordItem
 {
     GPasteTextItem parent_instance;

@@ -93,11 +93,11 @@ main (gint argc, gchar *argv[])
     };
 
     gulong c_signals[C_LAST_SIGNAL] = {
-        [C_NAME_LOST] = g_signal_connect (G_OBJECT (g_paste_daemon),
+        [C_NAME_LOST] = g_signal_connect (g_paste_daemon,
                                           "name-lost",
                                           G_CALLBACK (on_name_lost),
                                           gapp),
-        [C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (g_paste_daemon),
+        [C_REEXECUTE_SELF] = g_signal_connect (g_paste_daemon,
                                                "reexecute-self",
                                                G_CALLBACK (reexec),
                                                gapp)

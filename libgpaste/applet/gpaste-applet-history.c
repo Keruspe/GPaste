@@ -191,11 +191,11 @@ g_paste_applet_history_new (GPasteClient       *client,
     priv->settings = g_object_ref (settings);
     priv->menu = menu;
 
-    priv->changed_id = g_signal_connect (G_OBJECT (client),
+    priv->changed_id = g_signal_connect (client,
                                          "changed",
                                          G_CALLBACK (g_paste_applet_history_on_changed),
                                          self);
-    priv->settings_changed_id = g_signal_connect (G_OBJECT (settings),
+    priv->settings_changed_id = g_signal_connect (settings,
                                                   "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
                                                   G_CALLBACK (g_paste_applet_history_on_settings_changed),
                                                   self);

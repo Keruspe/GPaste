@@ -339,6 +339,17 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_private_delete_password (GPasteDaemonPrivate *priv,
+                                        GVariant            *parameters)
+{
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name);
+
+    g_paste_history_delete_password (priv->history, name);
+}
+
+static void
 g_paste_daemon_private_empty (GPasteDaemonPrivate *priv)
 {
     g_paste_history_empty (priv->history);
@@ -461,6 +472,18 @@ g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
+                                     GVariant            *parameters)
+{
+    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
+    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_return_if_fail (name);
+
+    g_paste_history_set_password (priv->history, index, name);
+}
+
+static void
 g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
                                        GVariant            *parameters)
 {
@@ -499,6 +522,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_delete (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
         g_paste_daemon_private_delete_history (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
+        g_paste_daemon_private_delete_password (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_EMPTY))
         g_paste_daemon_private_empty (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT))
@@ -519,6 +544,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_reexecute (self);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SELECT))
         g_paste_daemon_private_select (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SET_PASSWORD))
+        g_paste_daemon_private_set_password (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
         g_paste_daemon_private_switch_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))
@@ -583,19 +610,19 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
     }
 
     gulong *c_signals = priv->c_signals;
-    c_signals[C_NAME_LOST] = g_signal_connect (G_OBJECT (self),
+    c_signals[C_NAME_LOST] = g_signal_connect (self,
                                               "name-lost",
                                                G_CALLBACK (g_paste_daemon_name_lost),
                                                NULL);
-    c_signals[C_REEXECUTE_SELF] = g_signal_connect (G_OBJECT (self),
+    c_signals[C_REEXECUTE_SELF] = g_signal_connect (self,
                                                     "reexecute-self",
                                                     G_CALLBACK (g_paste_daemon_reexecute_self),
                                                     NULL);
-    c_signals[C_TRACK] = g_signal_connect_swapped (G_OBJECT (priv->settings),
+    c_signals[C_TRACK] = g_signal_connect_swapped (priv->settings,
                                                    "track",
                                                    G_CALLBACK (g_paste_daemon_tracking),
                                                    self);
-    c_signals[C_CHANGED] = g_signal_connect_swapped (G_OBJECT (priv->history),
+    c_signals[C_CHANGED] = g_signal_connect_swapped (priv->history,
                                                      "changed",
                                                      G_CALLBACK (g_paste_daemon_private_changed),
                                                      priv);

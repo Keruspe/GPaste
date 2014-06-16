@@ -145,6 +145,38 @@ failure_exit (GError *error)
     exit (EXIT_FAILURE);
 }
 
+static int
+spawn (const gchar *app,
+       GError     **error)
+{
+    G_PASTE_CLEANUP_FREE gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    G_PASTE_CLEANUP_FREE gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
+    G_PASTE_CLEANUP_UNREF GDBusProxy *proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                                             G_DBUS_PROXY_FLAGS_NONE,
+                                                                             NULL,
+                                                                             name,
+                                                                             object,
+                                                                             "org.freedesktop.Application",
+                                                                             NULL,
+                                                                             error);
+
+    if (proxy)
+    {
+        GVariant *param = g_variant_new ("a{sv}", NULL);
+        GVariant *params = g_variant_new_tuple (&param, 1);
+        g_dbus_proxy_call_sync (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
+    }
+
+    if (*error)
+    {
+        g_critical ("%s %s: %s", _("Couldn't spawn"), app, (*error)->message);
+        g_clear_error (error);
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -250,7 +282,7 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "p")        ||
                      !g_strcmp0 (arg1, "preferences"))
             {
-                execl (PKGLIBEXECDIR "/gpaste-settings", "GPaste-Settings", NULL);
+                status = spawn ("Settings", &error);
             }
             else if (!g_strcmp0 (arg1, "start") ||
                      !g_strcmp0 (arg1, "d")     ||
@@ -272,25 +304,13 @@ main (gint argc, gchar *argv[])
 #if G_PASTE_CONFIG_ENABLE_APPLET
             else if (!g_strcmp0 (arg1, "applet"))
             {
-                g_spawn_command_line_async (PKGLIBEXECDIR "/gpaste-applet", &error);
-                if (error)
-                {
-                    g_critical ("%s: %s", _("Couldn't spawn gpaste-applet.\n"), error->message);
-                    g_clear_error (&error);
-                    status = EXIT_FAILURE;
-                }
+                status = spawn ("Applet", &error);
             }
 #endif
 #if G_PASTE_CONFIG_ENABLE_UNITY
             else if (!g_strcmp0 (arg1, "app-indicator"))
             {
-                g_spawn_command_line_async (PKGLIBEXECDIR "/gpaste-app-indicator", &error);
-                if (error)
-                {
-                    g_critical ("%s: %s", _("Couldn't spawn gpaste-app-indicator.\n"), error->message);
-                    g_clear_error (&error);
-                    status = EXIT_FAILURE;
-                }
+                status = spawn ("AppIndicator", &error);
             }
 #endif
             else

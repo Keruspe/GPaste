@@ -36,13 +36,14 @@ g_paste_applet_status_icon_real_popup (GPasteAppletIcon *self,
     g_paste_applet_icon_popup (G_PASTE_APPLET_ICON (self), event, gtk_status_icon_position_menu, priv->icon);
 }
 
-static void
-g_paste_applet_status_icon_popup (GtkStatusIcon *icon G_GNUC_UNUSED,
-                                  GdkEvent      *event,
-                                  gpointer       user_data)
+static gboolean
+g_paste_applet_status_icon_popup (GtkStatusIcon  *icon G_GNUC_UNUSED,
+                                  GdkEventButton *event,
+                                  gpointer        user_data)
 {
     GPasteAppletIcon *self = user_data;
-    g_paste_applet_status_icon_real_popup (self, event);
+    g_paste_applet_status_icon_real_popup (self, (GdkEvent *) event);
+    return GDK_EVENT_PROPAGATE;
 }
 
 static void
@@ -75,7 +76,7 @@ g_paste_applet_status_icon_init (GPasteAppletStatusIcon *self)
     gtk_status_icon_set_tooltip_text (priv->icon, "GPaste");
     gtk_status_icon_set_visible (priv->icon, TRUE);
 
-    priv->press_id = g_signal_connect (G_OBJECT (priv->icon),
+    priv->press_id = g_signal_connect (priv->icon,
                                        "button-press-event",
                                        G_CALLBACK (g_paste_applet_status_icon_popup),
                                        self);
