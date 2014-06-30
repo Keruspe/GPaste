@@ -246,14 +246,12 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
         g_paste_clipboard_select_item (clipboard->data, item);
 }
 
-static gboolean
+static void
 on_item_selected (GPasteClipboardsManager *self,
                   GPasteItem              *item,
-                  gpointer                 user_data G_GNUC_UNUSED)
+                  GPasteHistory           *history G_GNUC_UNUSED)
 {
     g_paste_clipboards_manager_select (self, item);
-
-    return TRUE;
 }
 
 static void

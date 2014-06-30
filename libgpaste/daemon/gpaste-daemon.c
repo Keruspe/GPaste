@@ -145,7 +145,7 @@ g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
     
 static void
 g_paste_daemon_private_changed (GPasteDaemonPrivate *priv,
-                                gpointer             user_data G_GNUC_UNUSED)
+                                GPasteHistory       *history G_GNUC_UNUSED)
 {
     G_PASTE_SEND_DBUS_SIGNAL (CHANGED);
 }
@@ -189,9 +189,9 @@ g_paste_daemon_show_history (GPasteDaemon *self,
 }
 
 static void
-g_paste_daemon_tracking (GPasteDaemon *self,
-                         gboolean      tracking_state,
-                         gpointer      user_data G_GNUC_UNUSED)
+g_paste_daemon_tracking (GPasteDaemon   *self,
+                         gboolean        tracking_state,
+                         GPasteSettings *settings G_GNUC_UNUSED)
 {
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GVariant *variant = g_variant_new_boolean (tracking_state);
