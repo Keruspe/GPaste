@@ -122,7 +122,7 @@ g_paste_applet_footer_init (GPasteAppletFooter *self)
 /**
  * g_paste_applet_footer_new:
  * @client: a #GPasteClient instance
- * @app: (allow-none): the #GApplication to quit
+ * @app: (nullable): the #GApplication to quit
  *
  * Create a new instance of #GPasteAppletFooter
  *

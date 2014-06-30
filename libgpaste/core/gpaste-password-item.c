@@ -104,7 +104,7 @@ g_paste_password_item_init (GPastePasswordItem *self )
 
 /**
  * g_paste_password_item_new:
- * @name: (allow-none): the name used to identify the password
+ * @name: (nullable): the name used to identify the password
  * @password: the content of the desired #GPastePasswordItem
  *
  * Create a new instance of #GPastePasswordItem

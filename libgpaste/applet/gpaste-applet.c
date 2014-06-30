@@ -251,7 +251,7 @@ g_paste_applet_new_app_indicator (GtkApplication *application)
 
 /**
  * g_paste_applet_new_status_icon:
- * @application: (allow-none): the #GtkApplication running
+ * @application: (nullable): the #GtkApplication running
  *
  * Create a new instance of #GPasteApplet
  *

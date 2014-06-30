@@ -448,7 +448,7 @@ g_paste_history_select (GPasteHistory *self,
  * g_paste_history_set_password:
  * @self: a #GPasteHistory instance
  * @index: the index of the #GPasteTextItem to change as password
- * @name: (allow-none): the name to give to the password
+ * @name: (nullable): the name to give to the password
  *
  * Mark a text item as password
  *
@@ -528,7 +528,7 @@ _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
  *
  * Get the first password matching name
  *
- * Returns: (allow-none): a #GPastePasswordItem or %NULL
+ * Returns: (nullable): a #GPastePasswordItem or %NULL
  */
 G_PASTE_VISIBLE const GPastePasswordItem *
 g_paste_history_get_password (GPasteHistory *self,

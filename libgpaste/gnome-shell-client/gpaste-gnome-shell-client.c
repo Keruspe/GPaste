@@ -177,7 +177,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * g_paste_gnome_shell_client_eval_sync:
  * @self: a #GPasteGnomeShellClient instance
  * @script: The script to eval
- * @output: (out callee-allocates) (allow-none): a plate to put the result in
+ * @output: (out callee-allocates) (nullable): a plate to put the result in
  * @error: a #GError
  *
  * Evaluate a javascript script
@@ -215,8 +215,8 @@ g_paste_gnome_shell_client_focus_search_sync (GPasteGnomeShellClient *self,
 /**
  * g_paste_gnome_shell_client_show_osd_sync:
  * @self: a #GPasteGnomeShellClient instance
- * @icon: (allow-none): the icon to display
- * @label: (allow-none): the text to display
+ * @icon: (nullable): the icon to display
+ * @label: (nullable): the text to display
  * @level: percentage to fill the bar with (-1 for none)
  * @error: a #GError
  *
@@ -362,9 +362,9 @@ g_paste_gnome_shell_client_ungrab_accelerator_sync (GPasteGnomeShellClient *self
  * g_paste_gnome_shell_client_eval:
  * @self: a #GPasteGnomeShellClient instance
  * @script: The script to eval
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Evaluate a javascript script
  *
@@ -382,9 +382,9 @@ g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
 /**
  * g_paste_gnome_shell_client_focus_seach:
  * @self: a #GPasteGnomeShellClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Focus the search field in overview
  *
@@ -401,12 +401,12 @@ g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
 /**
  * g_paste_gnome_shell_client_show_osd:
  * @self: a #GPasteGnomeShellClient instance
- * @icon: (allow-none): the icon to display
- * @label: (allow-none): the text to display
+ * @icon: (nullable): the icon to display
+ * @label: (nullable): the text to display
  * @level: percentage to fill the bar with (-1 for none)
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Display something to the user
  *
@@ -440,9 +440,9 @@ g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
  * g_paste_gnome_shell_client_focus_app:
  * @self: a #GPasteGnomeShellClient instance
  * @id: the application id
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Focus an app in overview
  *
@@ -460,9 +460,9 @@ g_paste_gnome_shell_client_focus_app (GPasteGnomeShellClient *self,
 /**
  * g_paste_gnome_shell_client_show_applications:
  * @self: a #GPasteGnomeShellClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Display the application pane in the overview
  *
@@ -480,9 +480,9 @@ g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
  * g_paste_gnome_shell_client_grab_accelerator:
  * @self: a #GPasteGnomeShellClient instance
  * @accelerator: a #GPasteGnomeShellAccelerator instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Grab a keybinding
  *
@@ -505,9 +505,9 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
  * g_paste_gnome_shell_client_grab_accelerators:
  * @self: a #GPasteGnomeShellClient instance
  * @accelerators: (array): an array of #GPasteGnomeShellAccelerator instances
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Grab some keybindings
  *
@@ -541,9 +541,9 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
  * g_paste_gnome_shell_client_ungrab_accelerator:
  * @self: a #GPasteGnomeShellClient instance
  * @action: the action id corresponding to the keybinding
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Ungrab a keybinding
  *
@@ -566,7 +566,7 @@ g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
  * g_paste_gnome_shell_client_eval_finish:
  * @self: a #GPasteGnomeShellClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @output: (out callee-allocates) (allow-none): a plate to put the result in
+ * @output: (out callee-allocates) (nullable): a plate to put the result in
  * @error: a #GError
  *
  * Evaluate a javascript script

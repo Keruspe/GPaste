@@ -501,9 +501,9 @@ g_paste_client_track_sync (GPasteClient *self,
 /**
  * g_paste_client_about:
  * @self: a #GPasteClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Display the about dialog
  *
@@ -521,9 +521,9 @@ g_paste_client_about (GPasteClient       *self,
  * g_paste_client_add:
  * @self: a #GPasteClient instance
  * @text: the text to add
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Add an item to the #GPasteDaemon
  *
@@ -542,9 +542,9 @@ g_paste_client_add (GPasteClient       *self,
  * g_paste_client_add_file:
  * @self: a #GPasteClient instance
  * @file: the file to add
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Add the file contents to the #GPasteDaemon
  *
@@ -572,9 +572,9 @@ g_paste_client_add_file (GPasteClient       *self,
  * @self: a #GPasteClient instance
  * @name: the name to identify the password to add
  * @password: the password to add
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Add the password to the #GPasteDaemon
  *
@@ -599,9 +599,9 @@ g_paste_client_add_password (GPasteClient       *self,
  * g_paste_client_backup_history:
  * @self: a #GPasteClient instance
  * @name: the name of the backup
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Backup the current history
  *
@@ -620,9 +620,9 @@ g_paste_client_backup_history (GPasteClient       *self,
  * g_paste_client_delete:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to delete
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Delete an item from the #GPasteDaemon
  *
@@ -641,9 +641,9 @@ g_paste_client_delete (GPasteClient       *self,
  * g_paste_client_delete_history:
  * @self: a #GPasteClient instance
  * @name: the name of the history to delete
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Delete an history
  *
@@ -661,9 +661,9 @@ g_paste_client_delete_history (GPasteClient       *self,
 /**
  * g_paste_client_empty:
  * @self: a #GPasteClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Empty the history from the #GPasteDaemon
  *
@@ -681,9 +681,9 @@ g_paste_client_empty (GPasteClient       *self,
  * g_paste_client_get_element:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to get
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Get an item from the #GPasteDaemon
  *
@@ -701,9 +701,9 @@ g_paste_client_get_element (GPasteClient       *self,
 /**
  * g_paste_client_get_history:
  * @self: a #GPasteClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the history from the #GPasteDaemon
  *
@@ -720,9 +720,9 @@ g_paste_client_get_history (GPasteClient       *self,
 /**
  * g_paste_client_get_history_size:
  * @self: a #GPasteClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the history isize from the #GPasteDaemon
  *
@@ -741,9 +741,9 @@ g_paste_client_get_history_size (GPasteClient       *self,
  * g_paste_client_get_raw_element:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to get
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Get an item from the #GPasteDaemon
  *
@@ -761,9 +761,9 @@ g_paste_client_get_raw_element (GPasteClient       *self,
 /**
  * g_paste_client_get_raw_history:
  * @self: a #GPasteClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the history from the #GPasteDaemon
  *
@@ -780,9 +780,9 @@ g_paste_client_get_raw_history (GPasteClient       *self,
 /**
  * g_paste_client_list_histories:
  * @self: a #GPasteClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * List all available hisotries
  *
@@ -800,9 +800,9 @@ g_paste_client_list_histories (GPasteClient       *self,
  * g_paste_client_on_extension_state_changed:
  * @self: a #GPasteClient instance
  * @state: the new state of the extension
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Call this when the extension changes its state
  *
@@ -820,9 +820,9 @@ g_paste_client_on_extension_state_changed (GPasteClient       *self,
 /**
  * g_paste_client_reexecute:
  * @self: a #GPasteClient instance
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Reexecute the #GPasteDaemon
  *
@@ -840,9 +840,9 @@ g_paste_client_reexecute (GPasteClient       *self,
  * g_paste_client_select:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to select
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Select an item from the #GPasteDaemon
  *
@@ -861,9 +861,9 @@ g_paste_client_select (GPasteClient       *self,
  * g_paste_client_switch_history:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable):The data to pass to @callback.
  *
  * Switch to another history
  *
@@ -882,9 +882,9 @@ g_paste_client_switch_history (GPasteClient       *self,
  * g_paste_client_track:
  * @self: a #GPasteClient instance
  * @state: the new tracking state of the #GPasteDaemon
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
- * @user_data: The data to pass to @callback.
+ * @user_data: (nullable): The data to pass to @callback.
  *
  * Change the tracking state of the #GPasteDaemon
  *
