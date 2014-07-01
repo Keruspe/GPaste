@@ -67,7 +67,7 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
     if (!name)
         name = "******";
 
-    G_PASTE_ITEM (self)->size += strlen (name) - strlen(priv->name);
+    G_PASTE_ITEM (self)->size += strlen (name) - ((priv->name) ? strlen(priv->name) : 0);
     g_free (priv->name);
     priv->name = g_strdup (name);
 }
