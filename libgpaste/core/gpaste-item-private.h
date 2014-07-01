@@ -40,10 +40,11 @@ struct _GPasteItemClass
     GObjectClass parent_class;
 
     /*< virtual >*/
-    gboolean (*equals)   (const GPasteItem *self,
-                          const GPasteItem *other);
-    void     (*set_state) (GPasteItem     *self,
-                           GPasteItemState state);
+    const gchar * (*get_value) (const GPasteItem *self);
+    gboolean      (*equals)    (const GPasteItem *self,
+                                const GPasteItem *other);
+    void          (*set_state) (GPasteItem     *self,
+                                GPasteItemState state);
 
     /*< pure virtual >*/
     const gchar *(*get_kind) (const GPasteItem *self);

@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -39,6 +39,23 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteItem, g_paste_item, G_TYPE_OBJECT)
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_item_get_value (const GPasteItem *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
+
+    return G_PASTE_ITEM_GET_CLASS (self)->get_value (self);
+}
+
+/**
+ * g_paste_item_get_real_value:
+ * @self: a #GPasteItem instance
+ *
+ * Get the real value of the given item (text, uris or path to the image)
+ * This is different from get_value only for #GPastePasswordItem
+ *
+ * Returns: read-only string containing the real value
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_item_get_real_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
@@ -200,6 +217,7 @@ static void
 g_paste_item_class_init (GPasteItemClass *klass)
 {
     klass->equals = g_paste_item_default_equals;
+    klass->get_value = g_paste_item_get_real_value;
     klass->get_kind = NULL;
     klass->set_state = g_paste_item_default_set_state;
 
