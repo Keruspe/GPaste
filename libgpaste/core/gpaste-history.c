@@ -570,7 +570,7 @@ g_paste_history_delete_password (GPasteHistory *self,
  * g_paste_history_rename_password:
  * @self: a #GPasteHistory instance
  * @old_name: the old name of the #GPastePasswordItem
- * @new_name: (allow-none): the new name of the #GPastePasswordItem
+ * @new_name: (nullable): the new name of the #GPastePasswordItem
  *
  * Rename the password item
  *
