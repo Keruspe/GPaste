@@ -174,6 +174,9 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GtkClipboard *real = priv->real;
 
+    /* Avoid cycling twice */
+    g_paste_clipboard_private_set_text (priv, text);
+
     /* Let the clipboards manager handle our internal text */
     gtk_clipboard_set_text (real, text, -1);
     gtk_clipboard_store (real);
@@ -382,11 +385,7 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
             if (G_PASTE_IS_URIS_ITEM (item))
                 g_paste_clipboard_private_select_uris (priv, G_PASTE_URIS_ITEM (item));
             else  if (G_PASTE_IS_TEXT_ITEM (item))
-            {
-                if (G_PASTE_IS_PASSWORD_ITEM (item))
-                    g_paste_clipboard_private_set_text (priv, text);
                 g_paste_clipboard_select_text (self, text);
-            }
             else
                 g_assert_not_reached ();
         }
