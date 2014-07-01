@@ -589,7 +589,10 @@ g_paste_history_rename_password (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, NULL);
     if (item)
+    {
         g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
+        g_paste_history_changed (self);
+    }
 }
 
 /**
