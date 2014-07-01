@@ -524,7 +524,7 @@ _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
 /**
  * g_paste_history_get_password:
  * @self: a #GPasteHistory instance
- * @name: the name of the #GpastePasswordItem
+ * @name: the name of the #GPastePasswordItem
  *
  * Get the first password matching name
  *
@@ -546,7 +546,7 @@ g_paste_history_get_password (GPasteHistory *self,
 /**
  * g_paste_history_delete_password:
  * @self: a #GPasteHistory instance
- * @name: the name of the #GpastePasswordItem
+ * @name: the name of the #GPastePasswordItem
  *
  * Delete the password matching name
  *
@@ -564,6 +564,32 @@ g_paste_history_delete_password (GPasteHistory *self,
    
     if (_g_paste_history_private_get_password (priv, name, &index))
         g_paste_history_remove (self, index);
+}
+
+/**
+ * g_paste_history_rename_password:
+ * @self: a #GPasteHistory instance
+ * @old_name: the old name of the #GPastePasswordItem
+ * @new_name: (allow-none): the new name of the #GPastePasswordItem
+ *
+ * Rename the password item
+ *
+ * Returns:
+ */
+// FIXME: return whether we did anything and handle the value
+G_PASTE_VISIBLE void
+g_paste_history_rename_password (GPasteHistory *self,
+                                 const gchar   *old_name,
+                                 const gchar   *new_name)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL), NULL);
+    g_return_val_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL), NULL);
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, NULL);
+    if (item)
+        g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
 }
 
 /**
