@@ -43,14 +43,6 @@ If you also want to build the unity application indicator, you'll have to pass `
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
-### If you use GNOME 3.9.90 or above
-
-Latest release is: [GPaste 3.12](http://www.imagination-land.org/posts/2014-05-02-gpaste-3.12-released.html).
+Latest release for GNOME 3.12 is: [GPaste 3.12](http://www.imagination-land.org/posts/2014-05-02-gpaste-3.12-released.html).
 
 Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.12.tar.xz>
-
-### If you use GNOME 3.9.5 or below
-
-Latest release is: [GPaste 3.3.1](http://www.imagination-land.org/posts/2014-03-22-gpaste-3.3.1-released.html).
-
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.3.1.tar.xz>

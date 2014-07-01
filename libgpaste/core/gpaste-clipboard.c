@@ -20,7 +20,7 @@
 #include "gpaste-clipboard-private.h"
 
 #include <gpaste-image-item.h>
-#include <gpaste-text-item.h>
+#include <gpaste-password-item.h>
 #include <gpaste-uris-item.h>
 
 #include <string.h>
@@ -174,6 +174,9 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GtkClipboard *real = priv->real;
 
+    /* Avoid cycling twice */
+    g_paste_clipboard_private_set_text (priv, text);
+
     /* Let the clipboards manager handle our internal text */
     gtk_clipboard_set_text (real, text, -1);
     gtk_clipboard_store (real);
@@ -245,7 +248,7 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
     GtkClipboard *real = priv->real;
     G_PASTE_CLEANUP_TARGETS_UNREF GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
 
-    g_paste_clipboard_private_set_text (priv, g_paste_item_get_value (G_PASTE_ITEM (item)));
+    g_paste_clipboard_private_set_text (priv, g_paste_item_get_real_value (G_PASTE_ITEM (item)));
 
     gtk_target_list_add_text_targets (target_list, 0);
     gtk_target_list_add_uri_targets (target_list, 0);
