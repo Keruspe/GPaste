@@ -28,6 +28,14 @@ struct _GPastePasswordItemPrivate
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPastePasswordItem, g_paste_password_item, G_PASTE_TYPE_TEXT_ITEM)
 
+/**
+ * g_paste_password_item_get_name:
+ * @self: a #GPastePasswordItem instance
+ *
+ * Get the name of the given item
+ *
+ * Returns: read-only string containing the name
+ */
 G_PASTE_VISIBLE const gchar *
 g_paste_password_item_get_name (const GPastePasswordItem *self)
 {
@@ -38,6 +46,15 @@ g_paste_password_item_get_name (const GPastePasswordItem *self)
     return priv->name;
 }
 
+/**
+ * g_paste_password_item_set_name:
+ * @self: a #GPastePasswordItem instance
+ * @name: (allow-none): the new name
+ *
+ * Set the name of the given item
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE void
 g_paste_password_item_set_name (GPastePasswordItem *self,
                                 const gchar        *name)
