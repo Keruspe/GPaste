@@ -1,6 +1,5 @@
 3.10.2:
     general:
-        get_value vs get_real_value
         password support (+ patch password-store)
             - set-password
             - set-name
