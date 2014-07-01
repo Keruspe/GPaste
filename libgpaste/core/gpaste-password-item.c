@@ -49,7 +49,7 @@ g_paste_password_item_get_name (const GPastePasswordItem *self)
 /**
  * g_paste_password_item_set_name:
  * @self: a #GPastePasswordItem instance
- * @name: (allow-none): the new name
+ * @name: (nullable): the new name
  *
  * Set the name of the given item
  *
