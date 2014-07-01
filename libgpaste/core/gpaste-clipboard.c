@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -193,7 +193,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
 
     /* The content is requested as text */
     if (gtk_targets_include_text (targets, 1))
-        gtk_selection_data_set_text (selection_data, g_paste_item_get_value (item), -1);
+        gtk_selection_data_set_text (selection_data, g_paste_item_get_real_value (item), -1);
     else if (G_PASTE_IS_IMAGE_ITEM (item))
     {
         if (gtk_targets_include_image (targets, 1, TRUE))
@@ -375,7 +375,7 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
     }
     else
     {
-        const gchar *text = g_paste_item_get_value (item);
+        const gchar *text = g_paste_item_get_real_value (item);
 
         if (g_strcmp0 (text, priv->text))
         {
