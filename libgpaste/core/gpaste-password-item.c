@@ -73,6 +73,12 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
 }
 
 static const gchar *
+g_paste_password_item_get_value (const GPasteItem *self G_GNUC_UNUSED)
+{
+    return "******";
+}
+
+static const gchar *
 g_paste_password_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
 {
     return "Password";
@@ -106,6 +112,7 @@ g_paste_password_item_class_init (GPastePasswordItemClass *klass)
     GPasteItemClass *item_class = G_PASTE_ITEM_CLASS (klass);
 
     item_class->get_kind = g_paste_password_item_get_kind;
+    item_class->get_value = g_paste_password_item_get_value;
     item_class->equals = g_paste_password_item_equals;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_password_item_finalize;

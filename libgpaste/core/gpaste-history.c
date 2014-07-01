@@ -193,6 +193,12 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
     if (!G_PASTE_IS_TEXT_ITEM (new))
         return FALSE;
 
+    if (G_PASTE_IS_PASSWORD_ITEM (old))
+        return FALSE;
+
+    if (G_PASTE_IS_PASSWORD_ITEM (new))
+        return FALSE;
+
     const gchar *n = g_paste_item_get_value (new);
     const gchar *o = g_paste_item_get_value (old);
 
@@ -479,7 +485,7 @@ g_paste_history_set_password (GPasteHistory *self,
 
     g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
 
-    GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_value (item));
+    GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
 
     priv->size -= g_paste_item_get_size (item);
     priv->size += g_paste_item_get_size (password);

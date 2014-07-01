@@ -63,6 +63,7 @@ global:
 
 LIBGPASTE_CORE_5 {
 global:
+    g_paste_item_get_real_value;
     g_paste_history_delete_password;
     g_paste_history_get_password;
     g_paste_history_set_password;
