@@ -464,6 +464,21 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
 }
 
 static void
+g_paste_daemon_private_rename_password (GPasteDaemonPrivate *priv,
+                                        GVariant            *parameters)
+{
+    G_PASTE_CLEANUP_FREE gchar *old_name = NULL;
+    G_PASTE_CLEANUP_FREE gchar *new_name = NULL;
+
+    g_paste_daemon_get_dbus_strings_parameter (parameters, &old_name, &new_name);
+
+    if (!old_name)
+        return;
+
+    g_paste_history_rename_password (priv->history, old_name, new_name);
+}
+
+static void
 g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
                                GVariant            *parameters)
 {
@@ -542,6 +557,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_on_extension_state_changed (self, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_REEXECUTE))
         g_paste_daemon_reexecute (self);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_RENAME_PASSWORD))
+        g_paste_daemon_private_rename_password (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SELECT))
         g_paste_daemon_private_select (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SET_PASSWORD))
