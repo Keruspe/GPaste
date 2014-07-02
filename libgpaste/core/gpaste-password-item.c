@@ -151,7 +151,7 @@ g_paste_password_item_new (const gchar *name,
     g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (self), name);
 
     // This is the prefix displayed in history to identify a password
-    G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strdup_printf ("[%s] %s ", _("Password"), name);
+    G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strdup_printf ("[%s] %s", _("Password"), name);
 
     g_paste_item_set_display_string (self, full_display_string);
 
