@@ -4,7 +4,6 @@
             - set-password
             - set-name
             - delete-password
-            - fix dupe on select
         name all sources
     extension:
         fix search bar
