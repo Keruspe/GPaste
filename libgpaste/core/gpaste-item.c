@@ -99,6 +99,9 @@ g_paste_item_equals (const GPasteItem *self,
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), FALSE);
     g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
 
+    if (self == other)
+        return TRUE;
+
     return G_PASTE_ITEM_GET_CLASS (self)->equals (self, other);
 }
 

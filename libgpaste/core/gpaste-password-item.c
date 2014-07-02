@@ -92,7 +92,7 @@ g_paste_password_item_equals (const GPasteItem *self,
     g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
 
     /* Passwords are never considered equals, except when it's the exact same object */
-    return self == other;
+    return FALSE;
 }
 
 static void
