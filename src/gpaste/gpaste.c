@@ -177,6 +177,12 @@ spawn (const gchar *app,
     return EXIT_SUCCESS;
 }
 
+static guint64
+_strtoull (const gchar *str)
+{
+    return g_ascii_strtoull (str, NULL, 0);
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -338,7 +344,7 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "rm")     ||
                      !g_strcmp0 (arg1, "remove"))
             {
-                g_paste_client_delete_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
+                g_paste_client_delete_sync (client, _strtoull (arg2), &error);
             }
             else if (!g_strcmp0 (arg1, "dh") ||
                      !g_strcmp0 (arg1, "delete-history"))
@@ -353,18 +359,18 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "g") ||
                      !g_strcmp0 (arg1, "get"))
             {
-                printf ("%s", g_paste_client_get_element_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error));
+                printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
             }
             else if (!g_strcmp0 (arg1, "gr") ||
                      !g_strcmp0 (arg1, "get-raw"))
             {
-                printf ("%s", g_paste_client_get_raw_element_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error));
+                printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
             }
             else if (!g_strcmp0 (arg1, "s")   ||
                      !g_strcmp0 (arg1, "set") ||
                      !g_strcmp0 (arg1, "select"))
             {
-                g_paste_client_select_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
+                g_paste_client_select_sync (client, _strtoull (arg2), &error);
             }
             else if (!g_strcmp0 (arg1, "sh") ||
                      !g_strcmp0 (arg1, "switch-history"))
