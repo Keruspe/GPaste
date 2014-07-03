@@ -588,9 +588,9 @@ g_paste_history_rename_password (GPasteHistory *self,
                                  const gchar   *old_name,
                                  const gchar   *new_name)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
-    g_return_val_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL), NULL);
-    g_return_val_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL), NULL);
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL));
+    g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, NULL);
