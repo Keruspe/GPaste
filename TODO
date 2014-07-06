@@ -1,7 +1,6 @@
 3.10.2:
     general:
         password support (+ patch password-store)
-            - set-password
             - set-name
             - delete-password
         name all sources

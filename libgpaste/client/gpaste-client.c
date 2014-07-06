@@ -459,6 +459,31 @@ g_paste_client_select_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_set_password_sync:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to set as password
+ * @name: the name to identify the password
+ * @error: a #GError
+ *
+ * Set the item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_set_password_sync (GPasteClient *self,
+                                  guint32       index,
+                                  const gchar  *name,
+                                  GError      **error)
+{
+    GVariant *params[] = {
+        g_variant_new_uint32 (index),
+        g_variant_new_string (name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_NO_RETURN (SET_PASSWORD, params);
+}
+
+/**
  * g_paste_client_switch_history_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to
@@ -858,6 +883,34 @@ g_paste_client_select (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_set_password:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to set as password
+ * @name: the name to identify the password
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Set the item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_set_password (GPasteClient       *self,
+                             guint32             index,
+                             const gchar        *name,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
+{
+    GVariant *params[] = {
+        g_variant_new_uint32 (index),
+        g_variant_new_string (name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_ASYNC (SET_PASSWORD, params);
+}
+
+/**
  * g_paste_client_switch_history:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to
@@ -1205,6 +1258,24 @@ G_PASTE_VISIBLE void
 g_paste_client_select_finish (GPasteClient *self,
                               GAsyncResult *result,
                               GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_set_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Set the item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_set_password_finish (GPasteClient *self,
+                                    GAsyncResult *result,
+                                    GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

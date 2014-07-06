@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -86,6 +86,10 @@ void    g_paste_client_reexecute_sync                  (GPasteClient *self,
 void    g_paste_client_select_sync                     (GPasteClient *self,
                                                         guint32       index,
                                                         GError      **error);
+void    g_paste_client_set_password_sync               (GPasteClient *self,
+                                                        guint32       index,
+                                                        const gchar  *name,
+                                                        GError      **error);
 void    g_paste_client_switch_history_sync             (GPasteClient *self,
                                                         const gchar  *name,
                                                         GError      **error);
@@ -159,6 +163,11 @@ void g_paste_client_select                     (GPasteClient       *self,
                                                 guint32             index,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_set_password               (GPasteClient       *self,
+                                                guint32             index,
+                                                const gchar        *name,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_switch_history             (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
@@ -221,6 +230,9 @@ void    g_paste_client_reexecute_finish                  (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_select_finish                     (GPasteClient *self,
+                                                          GAsyncResult *result,
+                                                          GError      **error);
+void    g_paste_client_set_password_finish               (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_switch_history_finish             (GPasteClient *self,
