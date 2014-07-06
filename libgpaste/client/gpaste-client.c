@@ -459,6 +459,31 @@ g_paste_client_reexecute_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_rename_password_sync:
+ * @self: a #GPasteClient instance
+ * @old_name: the name of the password to rename
+ * @new_name: the new name to give it
+ * @error: a #GError
+ *
+ * Rename the password in the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_rename_password_sync (GPasteClient *self,
+                                     const gchar  *old_name,
+                                     const gchar  *new_name,
+                                     GError      **error)
+{
+    GVariant *params[] = {
+        g_variant_new_string (old_name),
+        g_variant_new_string (new_name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_NO_RETURN (RENAME_PASSWORD, params);
+}
+
+/**
  * g_paste_client_select_sync:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to select
@@ -901,6 +926,34 @@ g_paste_client_reexecute (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_rename_password:
+ * @self: a #GPasteClient instance
+ * @old_name: the old name of the password to rename
+ * @new_name: the new name to give it
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Rename the password in the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_rename_password (GPasteClient       *self,
+                                const gchar        *old_name,
+                                const gchar        *new_name,
+                                GAsyncReadyCallback callback,
+                                gpointer            user_data)
+{
+    GVariant *params[] = {
+        g_variant_new_string (old_name),
+        g_variant_new_string (new_name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_ASYNC (RENAME_PASSWORD, params);
+}
+
+/**
  * g_paste_client_select:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to select
@@ -1297,6 +1350,24 @@ G_PASTE_VISIBLE void
 g_paste_client_reexecute_finish (GPasteClient *self,
                                  GAsyncResult *result,
                                  GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_rename_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Rename the password in the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_rename_password_finish (GPasteClient *self,
+                                       GAsyncResult *result,
+                                       GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

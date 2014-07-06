@@ -1,7 +1,5 @@
 3.10.2:
     general:
-        password support (+ patch password-store)
-            - set-name
         name all sources
     extension:
         fix search bar
