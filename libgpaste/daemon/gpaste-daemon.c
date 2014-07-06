@@ -490,8 +490,15 @@ static void
 g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
                                      GVariant            *parameters)
 {
-    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
-    G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    GVariantIter parameters_iter;
+    gsize length;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant1 = g_variant_iter_next_value (&parameters_iter);
+    guint32 index = g_variant_get_uint32 (variant1);
+    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant2 = g_variant_iter_next_value (&parameters_iter);
+    G_PASTE_CLEANUP_FREE gchar *name = g_variant_dup_string (variant2, &length);
 
     g_return_if_fail (name);
 
