@@ -2,7 +2,6 @@
     general:
         password support (+ patch password-store)
             - set-name
-            - delete-password
         name all sources
     extension:
         fix search bar

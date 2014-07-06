@@ -62,6 +62,9 @@ void    g_paste_client_delete_sync                     (GPasteClient *self,
 void    g_paste_client_delete_history_sync             (GPasteClient *self,
                                                         const gchar  *name,
                                                         GError      **error);
+void    g_paste_client_delete_password_sync            (GPasteClient *self,
+                                                        const gchar  *name,
+                                                        GError      **error);
 void    g_paste_client_empty_sync                      (GPasteClient *self,
                                                         GError      **error);
 gchar  *g_paste_client_get_element_sync                (GPasteClient *self,
@@ -126,6 +129,10 @@ void g_paste_client_delete                     (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_delete_history             (GPasteClient       *self,
+                                                const gchar        *name,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+void g_paste_client_delete_password            (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -200,6 +207,9 @@ void    g_paste_client_delete_finish                     (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_delete_history_finish             (GPasteClient *self,
+                                                          GAsyncResult *result,
+                                                          GError      **error);
+void    g_paste_client_delete_password_finish            (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_empty_finish                      (GPasteClient *self,

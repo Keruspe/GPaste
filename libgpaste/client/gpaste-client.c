@@ -291,6 +291,24 @@ g_paste_client_delete_history_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_delete_password_sync:
+ * @self: a #GPasteClient instance
+ * @name: the name of the password to delete
+ * @error: a #GError
+ *
+ * Delete the password from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_password_sync (GPasteClient *self,
+                                     const gchar  *name,
+                                     GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE_PASSWORD, string, name);
+}
+
+/**
  * g_paste_client_empty_sync:
  * @self: a #GPasteClient instance
  * @error: a #GError
@@ -681,6 +699,27 @@ g_paste_client_delete_history (GPasteClient       *self,
                                gpointer            user_data)
 {
     DBUS_CALL_ONE_PARAM_ASYNC (DELETE_HISTORY, string, name);
+}
+
+/**
+ * g_paste_client_delete_password:
+ * @self: a #GPasteClient instance
+ * @name: the name of the password to delete
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Delete the password from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_password (GPasteClient       *self,
+                                const gchar        *name,
+                                GAsyncReadyCallback callback,
+                                gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (DELETE_PASSWORD, string, name);
 }
 
 /**
@@ -1078,6 +1117,24 @@ G_PASTE_VISIBLE void
 g_paste_client_delete_history_finish (GPasteClient *self,
                                       GAsyncResult *result,
                                       GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_delete_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Delete the password from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_password_finish (GPasteClient *self,
+                                       GAsyncResult *result,
+                                       GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

@@ -82,11 +82,14 @@ global:
 LIBGPASTE_CLIENT_4 {
     global:
         g_paste_client_add_password_sync;
+        g_paste_client_delete_password_sync;
         g_paste_client_set_password_sync;
 
         g_paste_client_add_password;
+        g_paste_client_delete_password;
         g_paste_client_set_password;
 
         g_paste_client_add_password_finish;
+        g_paste_client_delete_password_finish;
         g_paste_client_set_password_finish;
 } LIBGPASTE_CLIENT_3;
