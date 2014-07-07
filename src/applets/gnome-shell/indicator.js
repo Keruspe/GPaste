@@ -59,7 +59,6 @@ const GPasteIndicator = new Lang.Class({
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
         this._searchItem = new SearchItem.GPasteSearchItem();
-        this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetEntrySize));
         this._resetEntrySize();
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
@@ -80,7 +79,6 @@ const GPasteIndicator = new Lang.Class({
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
-            this._settingsChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._refresh));
             this._clientChangedId = this._client.connect('changed', Lang.bind(this, this._refresh));
             this._refresh();
 
@@ -109,7 +107,7 @@ const GPasteIndicator = new Lang.Class({
                 size = maxSize;
             this._updateVisibility(size == 0);
             for (let index = this._history.length; index < size; ++index) {
-                this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
+                this._addToHistory(new Item.GPasteItem(this._client, this._settings, index, this._searchItem));
             }
             for (let index = size, length = this._history.length; index < length; ++index) {
                 this._history.pop().destroy();
@@ -135,24 +133,6 @@ const GPasteIndicator = new Lang.Class({
     _selectFirst: function(active) {
         if (this._history.length > 0) {
             this._history[0].setActive(active);
-        }
-    },
-
-    _onSearch: function() {
-        this._selectFirst(false);
-        let search = this._searchItem.text;
-        this._history.map(Lang.bind(this, function(item) {
-            this._matchSearchWithItem(item, search);
-        }));
-    },
-
-    _matchSearchWithItem: function(item, search) {
-        let actor = item.actor;
-        let text = item.text;
-        if (search.length == 0 || text.match(search)) {
-            actor.show();
-        } else {
-            actor.hide();
         }
     },
 
@@ -196,7 +176,6 @@ const GPasteIndicator = new Lang.Class({
     _onDestroy: function() {
         this._client.disconnect(this._clientChangedId);
         this._client.disconnect(this._clientShowId);
-        this._settings.disconnect(this._settingsChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
     }
 });
