@@ -349,7 +349,7 @@ grab_accelerators_cb (GObject      *source_object,
         if (error->code == 19 && priv->retries < 10)
         {
             ++priv->retries;
-            g_timeout_add_seconds (1, retry_grab_all_gnome_shell, priv);
+            g_source_set_name_by_id (g_timeout_add_seconds (1, retry_grab_all_gnome_shell, priv), "[GPaste] gnome-shell grab");
         }
         else
         {
