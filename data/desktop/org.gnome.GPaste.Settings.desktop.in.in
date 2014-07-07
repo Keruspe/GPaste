@@ -2,6 +2,7 @@
 Type=Application
 _Name=GPaste daemon settings
 _Comment=Manage the GPaste daemon settings
+_Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
 Icon=gtk-paste
 Exec=@pkglibexecdir@/gpaste-settings
 DBusActivatable=true

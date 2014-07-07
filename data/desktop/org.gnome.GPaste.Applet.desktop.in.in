@@ -2,6 +2,7 @@
 Type=Application
 _Name=GPaste Applet
 _Comment=Tray icon to manage GPaste
+_Keywords=Clipboard;Manager;
 Icon=gtk-paste
 Exec=@pkglibexecdir@/gpaste-applet
 DBusActivatable=true
