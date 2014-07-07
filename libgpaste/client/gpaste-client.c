@@ -291,6 +291,24 @@ g_paste_client_delete_history_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_delete_password_sync:
+ * @self: a #GPasteClient instance
+ * @name: the name of the password to delete
+ * @error: a #GError
+ *
+ * Delete the password from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_password_sync (GPasteClient *self,
+                                     const gchar  *name,
+                                     GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE_PASSWORD, string, name);
+}
+
+/**
  * g_paste_client_empty_sync:
  * @self: a #GPasteClient instance
  * @error: a #GError
@@ -441,6 +459,31 @@ g_paste_client_reexecute_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_rename_password_sync:
+ * @self: a #GPasteClient instance
+ * @old_name: the name of the password to rename
+ * @new_name: the new name to give it
+ * @error: a #GError
+ *
+ * Rename the password in the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_rename_password_sync (GPasteClient *self,
+                                     const gchar  *old_name,
+                                     const gchar  *new_name,
+                                     GError      **error)
+{
+    GVariant *params[] = {
+        g_variant_new_string (old_name),
+        g_variant_new_string (new_name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_NO_RETURN (RENAME_PASSWORD, params);
+}
+
+/**
  * g_paste_client_select_sync:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to select
@@ -456,6 +499,31 @@ g_paste_client_select_sync (GPasteClient *self,
                             GError      **error)
 {
     DBUS_CALL_ONE_PARAM_NO_RETURN (SELECT, uint32, index);
+}
+
+/**
+ * g_paste_client_set_password_sync:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to set as password
+ * @name: the name to identify the password
+ * @error: a #GError
+ *
+ * Set the item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_set_password_sync (GPasteClient *self,
+                                  guint32       index,
+                                  const gchar  *name,
+                                  GError      **error)
+{
+    GVariant *params[] = {
+        g_variant_new_uint32 (index),
+        g_variant_new_string (name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_NO_RETURN (SET_PASSWORD, params);
 }
 
 /**
@@ -659,6 +727,27 @@ g_paste_client_delete_history (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_delete_password:
+ * @self: a #GPasteClient instance
+ * @name: the name of the password to delete
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Delete the password from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_password (GPasteClient       *self,
+                                const gchar        *name,
+                                GAsyncReadyCallback callback,
+                                gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (DELETE_PASSWORD, string, name);
+}
+
+/**
  * g_paste_client_empty:
  * @self: a #GPasteClient instance
  * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
@@ -837,6 +926,34 @@ g_paste_client_reexecute (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_rename_password:
+ * @self: a #GPasteClient instance
+ * @old_name: the old name of the password to rename
+ * @new_name: the new name to give it
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Rename the password in the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_rename_password (GPasteClient       *self,
+                                const gchar        *old_name,
+                                const gchar        *new_name,
+                                GAsyncReadyCallback callback,
+                                gpointer            user_data)
+{
+    GVariant *params[] = {
+        g_variant_new_string (old_name),
+        g_variant_new_string (new_name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_ASYNC (RENAME_PASSWORD, params);
+}
+
+/**
  * g_paste_client_select:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to select
@@ -855,6 +972,34 @@ g_paste_client_select (GPasteClient       *self,
                        gpointer            user_data)
 {
     DBUS_CALL_ONE_PARAM_ASYNC (SELECT, uint32, index);
+}
+
+/**
+ * g_paste_client_set_password:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to set as password
+ * @name: the name to identify the password
+ * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Set the item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_set_password (GPasteClient       *self,
+                             guint32             index,
+                             const gchar        *name,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
+{
+    GVariant *params[] = {
+        g_variant_new_uint32 (index),
+        g_variant_new_string (name)
+    };
+
+    DBUS_CALL_TWO_PARAMS_ASYNC (SET_PASSWORD, params);
 }
 
 /**
@@ -1030,6 +1175,24 @@ g_paste_client_delete_history_finish (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_delete_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Delete the password from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_delete_password_finish (GPasteClient *self,
+                                       GAsyncResult *result,
+                                       GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
  * g_paste_client_empty_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
@@ -1192,6 +1355,24 @@ g_paste_client_reexecute_finish (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_rename_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Rename the password in the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_rename_password_finish (GPasteClient *self,
+                                       GAsyncResult *result,
+                                       GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
  * g_paste_client_select_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
@@ -1205,6 +1386,24 @@ G_PASTE_VISIBLE void
 g_paste_client_select_finish (GPasteClient *self,
                               GAsyncResult *result,
                               GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_set_password_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Set the item as password
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_set_password_finish (GPasteClient *self,
+                                    GAsyncResult *result,
+                                    GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

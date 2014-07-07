@@ -50,14 +50,20 @@ show_help (const gchar *caller)
     printf ("  %s add <%s>: %s\n", caller, _("text"), _("set text to clipboard"));
     /* Translators: help for gpaste add-password <name> <text> */
     printf ("  %s add-password <%s> <%s>: %s\n", caller, _("name"), _("password"), _("add the name - password couple to the clipboard"));
+    /* Translators: help for gpaste rename-password <old name> <new name> */
+    printf ("  %s rename-password <%s> <%s>: %s\n", caller, _("old name"), _("new name"), _("rename the password"));
     /* Translators: help for gpaste get <number> */
     printf ("  %s get <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history"));
     /* Translators: help for gpaste get-raw <number> */
     printf ("  %s get-raw <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history (raw)"));
     /* Translators: help for gpaste select <number> */
     printf ("  %s select <%s>: %s\n", caller, _("number"), _("set the <number>th item from the history to the clipboard"));
+    /* Translators: help for gpaste set-password <number> <name> */
+    printf ("  %s set-password <%s> <%s>: %s\n", caller, _("number"), _("name"), _("set the <number>th item from the history as a password named <name>"));
     /* Translators: help for gpaste delete <number> */
     printf ("  %s delete <%s>: %s\n", caller, _("number"), _("delete <number>th item of the history"));
+    /* Translators: help for gpaste delete-passworf <name> */
+    printf ("  %s delete-password <%s>: %s\n", caller, _("name"), _("delete the password <name> from the history"));
     /* Translators: help for gpaste file <path> */
     printf ("  %s file <%s>: %s\n", caller, _("path"), _("put the content of the file at <path> into the clipboard"));
     /* Translators: help for whatever | gpaste */
@@ -175,6 +181,12 @@ spawn (const gchar *app,
     }
 
     return EXIT_SUCCESS;
+}
+
+static guint64
+_strtoull (const gchar *str)
+{
+    return g_ascii_strtoull (str, NULL, 0);
 }
 
 gint
@@ -338,7 +350,12 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "rm")     ||
                      !g_strcmp0 (arg1, "remove"))
             {
-                g_paste_client_delete_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
+                g_paste_client_delete_sync (client, _strtoull (arg2), &error);
+            }
+            else if (!g_strcmp0 (arg1, "dp") ||
+                     !g_strcmp0 (arg1, "delete-password"))
+            {
+                g_paste_client_delete_password_sync (client, arg2, &error);
             }
             else if (!g_strcmp0 (arg1, "dh") ||
                      !g_strcmp0 (arg1, "delete-history"))
@@ -353,18 +370,18 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "g") ||
                      !g_strcmp0 (arg1, "get"))
             {
-                printf ("%s", g_paste_client_get_element_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error));
+                printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
             }
             else if (!g_strcmp0 (arg1, "gr") ||
                      !g_strcmp0 (arg1, "get-raw"))
             {
-                printf ("%s", g_paste_client_get_raw_element_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error));
+                printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
             }
             else if (!g_strcmp0 (arg1, "s")   ||
                      !g_strcmp0 (arg1, "set") ||
                      !g_strcmp0 (arg1, "select"))
             {
-                g_paste_client_select_sync (client, g_ascii_strtoull (arg2, NULL, 0), &error);
+                g_paste_client_select_sync (client, _strtoull (arg2), &error);
             }
             else if (!g_strcmp0 (arg1, "sh") ||
                      !g_strcmp0 (arg1, "switch-history"))
@@ -381,10 +398,20 @@ main (gint argc, gchar *argv[])
             arg1 = argv[1];
             arg2 = argv[2];
             arg3 = argv[3];
-            if (!g_strcmp0(arg1, "ap") ||
-                !g_strcmp0(arg1, "add-password"))
+            if (!g_strcmp0 (arg1, "ap") ||
+                !g_strcmp0 (arg1, "add-password"))
             {
                 g_paste_client_add_password_sync (client, arg2, arg3, &error);
+            }
+            else if (!g_strcmp0 (arg1, "rp") ||
+                     !g_strcmp0 (arg1, "rename-password"))
+            {
+                g_paste_client_rename_password_sync (client, arg2, arg3, &error);
+            }
+            else if (!g_strcmp0 (arg1, "sp")   ||
+                     !g_strcmp0 (arg1, "set-password"))
+            {
+                g_paste_client_set_password_sync (client, _strtoull (arg2), arg3, &error);
             }
             else
             {

@@ -85,7 +85,7 @@ g_paste_applet_delete_map (GtkWidget *widget)
 
     GPasteAppletDeletePrivate *priv = g_paste_applet_delete_get_instance_private (G_PASTE_APPLET_DELETE (widget));
     /* We need to delay that until next glib's loop to override the GtkMenuItem's one */
-    g_idle_add (g_paste_applet_delete_show_window, priv->event_window);
+    g_source_set_name_by_id (g_idle_add (g_paste_applet_delete_show_window, priv->event_window), "[GPaste] delete");
 }
 
 static void
