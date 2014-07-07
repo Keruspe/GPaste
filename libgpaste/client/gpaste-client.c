@@ -730,7 +730,7 @@ g_paste_client_delete_history (GPasteClient       *self,
  * g_paste_client_delete_password:
  * @self: a #GPasteClient instance
  * @name: the name of the password to delete
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: The data to pass to @callback.
  *
@@ -930,7 +930,7 @@ g_paste_client_reexecute (GPasteClient       *self,
  * @self: a #GPasteClient instance
  * @old_name: the old name of the password to rename
  * @new_name: the new name to give it
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: The data to pass to @callback.
  *
@@ -979,7 +979,7 @@ g_paste_client_select (GPasteClient       *self,
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to set as password
  * @name: the name to identify the password
- * @callback: (allow-none): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: The data to pass to @callback.
  *
