@@ -209,7 +209,7 @@ main (gint argc, gchar *argv[])
 
     g_print ("Now should recognize <Ctrl><Alt>D, <Super>F and <Super><Alt>G for 10 secondes.\n");
     G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *loop = g_main_loop_new (NULL, FALSE);
-    g_timeout_add_seconds (10, kill_loop, loop);
+    g_source_set_name_by_id (g_timeout_add_seconds (10, kill_loop, loop), "[GPaste] test loop");
     g_main_loop_run (loop);
     for (guint i = 0; i < 2; ++i)
     {

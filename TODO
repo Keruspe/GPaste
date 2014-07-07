@@ -1,6 +1,4 @@
 3.10.2:
-    general:
-        name all sources
     extension:
         fix search bar
 
