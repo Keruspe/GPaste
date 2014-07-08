@@ -48,7 +48,7 @@ const GPasteSearchItem = new Lang.Class({
 
         this._clearIcon = new St.Icon({
             style_class: 'search-entry-icon',
-            icon_name: (this._entry.get_text_direction() == Clutter.TextDirection.RTL) ? 'edit-clear-rtl-symbolic' : 'edit-clear-symbolic'
+            icon_name: 'edit-clear-symbolic'
         });
         this._iconClickedId = 0;
 
