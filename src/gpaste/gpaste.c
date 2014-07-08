@@ -216,7 +216,7 @@ main (gint argc, gchar *argv[])
     if (!client)
         failure_exit (error);
 
-    if (!isatty (fileno (stdin)))
+    if (!isatty (fileno (stdin)) && argc == 1)
     {
         /* We are being piped */
         G_PASTE_CLEANUP_STRING_FREE GString *data = g_string_new ("");
