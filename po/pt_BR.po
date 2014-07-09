@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2014-05-11 15:20+0900\n"
-"PO-Revision-Date: 2014-02-09 14:45-0300\n"
+"PO-Revision-Date: 2014-07-09 18:47-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -19,7 +19,7 @@ msgstr ""
 
 #: ../libgpaste/applet/gpaste-applet-about.c:78
 msgid "About"
-msgstr ""
+msgstr "Sobre"
 
 #: ../libgpaste/applet/gpaste-applet-empty.c:78
 msgid "Empty history"
@@ -39,9 +39,8 @@ msgid "GPaste daemon settings"
 msgstr "Configurações do daemon GPaste"
 
 #: ../libgpaste/applet/gpaste-applet-switch.c:86
-#, fuzzy
 msgid "Stop tracking changes"
-msgstr "pára o monitoramento de alterações na área de transferência"
+msgstr "Parar o monitoramento"
 
 #: ../libgpaste/applet/gpaste-applet-switch.c:86
 #: ../libgpaste/applet/gpaste-applet-switch.c:155
@@ -70,7 +69,7 @@ msgstr "Falha ao registrar a aplicação gtk"
 #. This is the prefix displayed in history to identify a password
 #: ../libgpaste/core/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "Senha"
 
 #. Match options
 #. Error
@@ -85,7 +84,7 @@ msgstr "Monitorar a área de transferência"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:129
 msgid "Enable the gnome-shell extension"
-msgstr ""
+msgstr "Habilitar a extensão do gnome-shell"
 
 #: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:135
 msgid "Sync the daemon state with the extension's one"
@@ -215,9 +214,8 @@ msgstr "imprime o histórico com os índices"
 
 #. Translators: help for gpaste history-size
 #: ../src/gpaste/gpaste.c:36
-#, fuzzy
 msgid "print the size of the history"
-msgstr "apaga o n-ésimo item do histórico"
+msgstr "imprime o tamanho do histórico"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -247,9 +245,8 @@ msgstr "lista os históricos disponíveis"
 
 #. Translators: help for gpaste raw-history
 #: ../src/gpaste/gpaste.c:46
-#, fuzzy
 msgid "print the history (raw) without indexes"
-msgstr "imprime o histórico sem os índices"
+msgstr "imprime o histórico (cru), sem os índices"
 
 #. Translators: help for gpaste zero-history
 #: ../src/gpaste/gpaste.c:48
@@ -267,12 +264,11 @@ msgstr "copia texto para a área de transferência"
 
 #: ../src/gpaste/gpaste.c:52
 msgid "password"
-msgstr ""
+msgstr "senha"
 
 #: ../src/gpaste/gpaste.c:52
-#, fuzzy
 msgid "add the name - password couple to the clipboard"
-msgstr "Sincronizar a seleção primária com a área de transferência: "
+msgstr "adiciona o par nome - senha para a área de transferência"
 
 #. Translators: help for gpaste get <number>
 #. Translators: help for gpaste get-raw <number>
@@ -288,9 +284,8 @@ msgid "get the <number>th item from the history"
 msgstr "obtém o n-ésimo item do histórico"
 
 #: ../src/gpaste/gpaste.c:56
-#, fuzzy
 msgid "get the <number>th item from the history (raw)"
-msgstr "obtém o n-ésimo item do histórico"
+msgstr "obtém o n-ésimo item do histórico (cru)"
 
 #: ../src/gpaste/gpaste.c:58
 msgid "set the <number>th item from the history to the clipboard"
@@ -355,9 +350,8 @@ msgstr "inicia o applet do GPaste"
 
 #. Translators: help for gpaste app-indicator
 #: ../src/gpaste/gpaste.c:83
-#, fuzzy
 msgid "launch the unity application indicator"
-msgstr "inicia a ferramenta de configuração"
+msgstr "inicia o aplicativo indicador do unity"
 
 #. Translators: help for gpaste version
 #: ../src/gpaste/gpaste.c:86
@@ -366,9 +360,8 @@ msgstr "mostra a versão"
 
 #. Translators: help for gpaste daemon-version
 #: ../src/gpaste/gpaste.c:88
-#, fuzzy
 msgid "display the daemon version"
-msgstr "mostra a versão"
+msgstr "mostra a versão do daemon"
 
 #. Translators: help for gpaste help
 #: ../src/gpaste/gpaste.c:90
@@ -377,9 +370,8 @@ msgstr "mostra esta ajuda"
 
 #. Translators: help for gpaste about
 #: ../src/gpaste/gpaste.c:92
-#, fuzzy
 msgid "display the about dialog"
-msgstr "mostra a versão"
+msgstr "mostra o diálogo Sobre"
 
 #: ../src/gpaste/gpaste.c:206
 #, c-format
@@ -391,9 +383,8 @@ msgid "Couldn't spawn gpaste-applet.\n"
 msgstr "Não foi possível abrir o gpaste-applet.\n"
 
 #: ../src/gpaste/gpaste.c:290
-#, fuzzy
 msgid "Couldn't spawn gpaste-app-indicator.\n"
-msgstr "Não foi possível abrir o gpaste-applet.\n"
+msgstr "Não foi possível abrir o gpaste-app-indicator.\n"
 
 #: ../src/gpasted/gpasted.c:46
 #, c-format
@@ -425,46 +416,50 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"O GPaste é um sistema de gerenciamento de área de transferência que permite "
+"controlar e gerenciar seu histórico de uma maneira altamente personalizável."
 
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with an applet, in the form of a status icon which will "
 "give you access to your history in your tray area."
 msgstr ""
+"O GPaste fornece um applet na forma de um ícone de status, que dá acesso ao "
+"seu histórico a partir da bandeja do sistema."
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
-#, fuzzy
 msgid "GPaste AppIndicator"
-msgstr "Applet do GPaste"
+msgstr "Aplicativo Indicador do GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
 #: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
-#, fuzzy
 msgid "Unity application indicator to manage GPaste"
-msgstr "Ícone da bandeja para gerenciar o GPaste"
+msgstr "Aplicativo indicador do Unity para gerenciar o GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with an application indicator for unity which will give "
 "you access to your history in your indicator area."
 msgstr ""
+"O GPaste fornece um aplicativo indicador para o unity que dá acesso ao seu "
+"histórico a partir da área de indicações."
 
 #: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:1
-#, fuzzy
 msgid "GPaste Settings"
-msgstr "Configurações do daemon GPaste"
+msgstr "Configurações do GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:2
-#, fuzzy
 msgid "Manage GPaste settings"
-msgstr "Gerenciar as configurações do daemon GPaste"
+msgstr "Gerenciar as configurações do GPaste"
 
 #: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with a settings utility allowing you to customize its "
 "behaviour as expected."
 msgstr ""
+"O GPaste fornece um utilitário de configurações que permite personalizar o "
+"comportamento da maneira como você espera."
 
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
