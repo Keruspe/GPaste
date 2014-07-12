@@ -58,7 +58,12 @@ const GPasteIndicator = new Lang.Class({
 
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
+        this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
+        this._resetMaxDisplayedSize(true);
+
         this._searchItem = new SearchItem.GPasteSearchItem();
+        this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
+
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetEntrySize));
         this._resetEntrySize();
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
@@ -95,23 +100,44 @@ const GPasteIndicator = new Lang.Class({
         this.destroy();
     },
 
+    _onSearch: function() {
+        let search = this._searchItem.text;
+        let i = 0;
+
+        this._history.map(function(item) {
+            if (i < this._maxSize) {
+                if (item.match(search)) {
+                    ++i;
+                    item.actor.show();
+                    continue;
+                }
+            }
+            item.actor.hide();
+        });
+    },
+
     _resetEntrySize: function() {
         this._searchItem.resetSize(this._settings.get_element_size()/2);
     },
 
+    _resetMaxDisplayedSize: function(fromInit) {
+        this._maxSize = this._settings.get_max_displayed_history_size();
+        if (!fromInit) {
+            this._onSearch();
+        }
+    },
+
     _refresh: function() {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
-            let maxSize = this._settings.get_max_displayed_history_size();
             let size = client.get_history_size_finish(result);
-            if (maxSize < size)
-                size = maxSize;
             this._updateVisibility(size == 0);
             for (let index = this._history.length; index < size; ++index) {
-                this._addToHistory(new Item.GPasteItem(this._client, this._settings, index, this._searchItem));
+                this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
             }
             for (let index = size, length = this._history.length; index < length; ++index) {
                 this._history.pop().destroy();
             }
+            this._onSearch();
         }));
     },
 
@@ -176,6 +202,7 @@ const GPasteIndicator = new Lang.Class({
     _onDestroy: function() {
         this._client.disconnect(this._clientChangedId);
         this._client.disconnect(this._clientShowId);
+        this._settings.disconnect(this._settingsMaxSizeChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
     }
 });
