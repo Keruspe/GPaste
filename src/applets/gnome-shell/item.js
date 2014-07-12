@@ -43,6 +43,9 @@ const GPasteItem = new Lang.Class({
         this._index = index;
         this._searchItem = searchItem;
 
+        /* initialize match stuff */
+        this.match("");
+
         this.connect('activate', function(actor, event) {
             client.select(index, null);
         });
@@ -67,6 +70,22 @@ const GPasteItem = new Lang.Class({
         this._resetText();
 
         this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
+    },
+
+    match: function(search) {
+        let match = true;
+
+        if (search.length > 0) {
+            if (search == this._lastSearch) {
+                return this._lastSearchMatched;
+            } else {
+                match = this.label.get_text().match(search)
+            }
+        }
+
+        this._lastSearch = search;
+        this._lastSearchMatched = match;
+        return match;
     },
 
     _onSearch: function() {
