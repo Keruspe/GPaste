@@ -60,9 +60,6 @@ const GPasteItem = new Lang.Class({
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
 
-        this._maxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
-        this._resetMaxDisplayedSize();
-
         this._clientChangedId = client.connect('changed', Lang.bind(this, this._resetText));
         this._resetText();
 
@@ -97,11 +94,6 @@ const GPasteItem = new Lang.Class({
         this.label.clutter_text.max_length = this._settings.get_element_size();
     },
 
-    _resetMaxDisplayedSize: function() {
-        this._maxSize = this._settings.get_max_displayed_history_size();
-        this._onSearch();
-    },
-
     _onKeyPressed: function(actor, event) {
         let symbol = event.get_key_symbol();
         if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
@@ -114,6 +106,5 @@ const GPasteItem = new Lang.Class({
     _onDestroy: function() {
         this._client.disconnect(this._clientChangedId);
         this._settings.disconnect(this._settingsChangedId);
-        this._settings.disconnect(this._maxSizeChangedId);
     }
 });
