@@ -120,10 +120,8 @@ const GPasteIndicator = new Lang.Class({
 
     _refresh: function() {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
-            let maxSize = this._settings.get_max_displayed_history_size();
             let size = client.get_history_size_finish(result);
-            if (maxSize < size)
-                size = maxSize;
+            let maxSize = this._settings.get_max_displayed_history_size();
             this._updateVisibility(size == 0);
             for (let index = this._history.length; index < size; ++index) {
                 this._addToHistory(new Item.GPasteItem(this._client, this._settings, index));
@@ -131,6 +129,7 @@ const GPasteIndicator = new Lang.Class({
             for (let index = size, length = this._history.length; index < length; ++index) {
                 this._history.pop().destroy();
             }
+            this._onSearch();
         }));
     },
 
