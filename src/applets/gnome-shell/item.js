@@ -35,13 +35,12 @@ const GPasteItem = new Lang.Class({
     Name: 'GPasteItem',
     Extends: PopupMenu.PopupMenuItem,
 
-    _init: function(client, settings, index, searchItem) {
+    _init: function(client, settings, index) {
         this.parent("");
 
         this._client = client;
         this._settings = settings;
         this._index = index;
-        this._searchItem = searchItem;
 
         /* initialize match stuff */
         this.match("");
@@ -60,8 +59,6 @@ const GPasteItem = new Lang.Class({
         this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
-
-        this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
 
         this._maxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
         this._resetMaxDisplayedSize();
@@ -86,23 +83,6 @@ const GPasteItem = new Lang.Class({
         this._lastSearch = search;
         this._lastSearchMatched = match;
         return match;
-    },
-
-    _onSearch: function() {
-        let search = this._searchItem.text;
-        if (search.length == 0) {
-            if (this._index < this._maxSize) {
-                this.actor.show()
-            } else {
-                this.actor.hide();
-            }
-        } else {
-            if (this.label.get_text().match(search)) {
-                this.actor.show()
-            } else {
-                this.actor.hide();
-            }
-        }
     },
 
     _resetText: function() {
