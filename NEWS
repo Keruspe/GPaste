@@ -3,6 +3,11 @@ NEW in 3.10.2 (Not released yet)
 
 - systemd support has been removed
 - GPaste is now compliant with https://wiki.gnome.org/HowDoI/DBusApplicationLaunching
+- GPaste now has built-in support for managing passwords, blog post coming.
+- Completions and man pages have been updated
+- Translations have been updated
+- Miscellaneous bugfixes with static analysis
+- The search feature of the gnome-shell extension has been improved
 
 NEW in 3.12 (02/05/2014)
 =============
