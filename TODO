@@ -1,7 +1,3 @@
-3.10.2:
-    extension:
-        fix search bar
-
 3.10.3:
     set-password keyboard shortcut
     gpg support
@@ -9,9 +5,6 @@
 3.10.4:
     dbus errors instead of asserts in daemon
     gpaste-editor
-
-3.12.1:
-    merge 3.10.2
 
 3.12.2:
     merge 3.10.3
