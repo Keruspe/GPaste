@@ -658,10 +658,13 @@ g_paste_daemon_on_bus_acquired (GDBusConnection *connection,
                                 gpointer         user_data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (user_data);
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
     g_paste_daemon_register_object (self,
                                     connection,
                                     G_PASTE_DAEMON_OBJECT_PATH);
+
+    g_paste_daemon_private_changed (priv, NULL);
 }
 
 static void
