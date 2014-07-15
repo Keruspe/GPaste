@@ -41,6 +41,10 @@ If you also want to build the status icon, you'll have to pass `--enable-applet`
 
 If you also want to build the unity application indicator, you'll have to pass `--enable-unity` to configure.
 
+If your distribution does not provide a appdata-tools package (like ubuntu 14.04), you can use `ubuntu-patches/0001-ubuntu-disable-appdata-stuff.patch`
+
+If your distribution ships with gnome-settings 3.8 and thus a patched version of gnome-shell 3.10 (like ubuntu 14.04), you can use `0002-ubuntu-fix-for-ubuntu-breaking-gnome-shell-API-compa.patch`
+
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
 This is the development branch for upcoming GNOME 3.14.
