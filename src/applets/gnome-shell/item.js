@@ -85,14 +85,11 @@ const GPasteItem = new Lang.Class({
 
     _resetText: function() {
         this._client.get_element(this._index, Lang.bind(this, function(client, result) {
-            if (this._destroyed) {
-                return;
-            }
             let text = client.get_element_finish(result).replace(/[\t\n\r]/g, '');
-            if (text == this.label.get_text()) {
+            if (this._destroyed || text == this.label.get_text()) {
                 return;
             }
-            this.label.clutter_text.set_text(text));
+            this.label.clutter_text.set_text(text);
             /* reset match stuff */
             this.match("");
             this.emit('changed');
