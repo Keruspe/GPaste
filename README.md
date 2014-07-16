@@ -43,12 +43,12 @@ If you also want to build the unity application indicator, you'll have to pass `
 
 If your distribution does not provide a appdata-tools package (like ubuntu 14.04), you can use `ubuntu-patches/0001-ubuntu-disable-appdata-stuff.patch`
 
-If your distribution ships with gnome-settings 3.8 and thus a patched version of gnome-shell 3.10 (like ubuntu 14.04), you can use `0002-ubuntu-fix-for-ubuntu-breaking-gnome-shell-API-compa.patch`
+If your distribution ships with gnome-settings 3.8 and thus a patched version of gnome-shell 3.10 (like ubuntu 14.04), you can use `ubuntu-patches/0002-ubuntu-fix-for-ubuntu-breaking-gnome-shell-API-compa.patch`
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
 This is the development branch for upcoming GNOME 3.14.
 
-Latest release for GNOME 3.12 is: [GPaste 3.12](http://www.imagination-land.org/posts/2014-05-02-gpaste-3.12-released.html).
+Latest release for GNOME 3.12 is: [GPaste 3.12.1](http://www.imagination-land.org/posts/2014-07-16-gpaste-3.12.1-released.html).
 
 Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.12.tar.xz>
