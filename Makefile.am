@@ -126,6 +126,7 @@ update-po:
 	$(MAKE) -C po $@
 
 release:
+	$(MAKE) update-po && \
 	$(MAKE) distcheck && \
 	git commit -asm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" && \
 	git tag -sm "Release $(PACKAGE_NAME) $(PACKAGE_VERSION)" v$(PACKAGE_VERSION)
