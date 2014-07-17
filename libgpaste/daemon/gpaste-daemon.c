@@ -653,7 +653,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
 }
 
 static gboolean
-_changed (gpointer data)
+_g_paste_daemon_changed (gpointer data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (data);
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
@@ -674,7 +674,7 @@ g_paste_daemon_on_bus_acquired (GDBusConnection *connection,
                                     connection,
                                     G_PASTE_DAEMON_OBJECT_PATH);
 
-    g_timeout_add_seconds (1, _changed, user_data);
+    g_source_set_name_by_id (g_timeout_add_seconds (1, _g_paste_daemon_changed, user_data), "[GPaste] Startup - changed");
 }
 
 static void

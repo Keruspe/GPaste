@@ -84,7 +84,7 @@ noinst_PROGRAMS= \
 
 @INTLTOOL_XML_NOMERGE_RULE@
 
-# Real stuff goes in these subfiles
+# Libraries
 
 include libgpaste/settings.mk
 include libgpaste/gnome-shell-client.mk
@@ -95,15 +95,24 @@ include libgpaste/daemon.mk
 include libgpaste/applet.mk
 include libgpaste/settings/ui.mk
 
+# Bindings
+
 include bindings/gi.mk
 include bindings/vapi.mk
 
+# Core utilities
+
+include src/daemon.mk
 include src/gpaste.mk
-include src/gpasted.mk
-include src/gpaste-settings.mk
-include src/applets/gnome-shell.mk
-include src/applets/app-indicator.mk
-include src/applets/status-icon.mk
+include src/settings.mk
+
+# Applets
+
+include src/applet.mk
+include src/app-indicator.mk
+include src/gnome-shell.mk
+
+# Data
 
 include data/appdata.mk
 include data/completions.mk
@@ -113,11 +122,17 @@ include data/desktop.mk
 include data/gsettings.mk
 include data/pkg-config.mk
 
+# Man pages
+
 include man/1.mk
 
 # Tests stuff
 
 include tests/gnome-shell-client.mk
+
+# Legacy wrapper
+
+include legacy/gpasted.mk
 
 # Maintainance stuff
 
