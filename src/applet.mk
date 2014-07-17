@@ -21,7 +21,7 @@ pkglibexec_PROGRAMS += \
 	$(NULL)
 
 bin_gpaste_applet_SOURCES = \
-	src/applets/status-icon/gpaste-applet.c \
+	src/applet/gpaste-applet.c \
 	$(NULL)
 
 bin_gpaste_applet_CFLAGS = \

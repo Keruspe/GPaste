@@ -21,7 +21,7 @@ pkglibexec_PROGRAMS += \
 	$(NULL)
 
 bin_gpaste_app_indicator_SOURCES = \
-	src/applets/app-indicator/gpaste-app-indicator.c \
+	src/app-indicator/gpaste-app-indicator.c \
 	$(NULL)
 
 bin_gpaste_app_indicator_CFLAGS = \

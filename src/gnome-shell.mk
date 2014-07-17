@@ -18,26 +18,26 @@
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
 
 gnomeshell_extension_files =                 \
-	src/applets/gnome-shell/aboutItem.js \
-	src/applets/gnome-shell/deleteButton.js \
-	src/applets/gnome-shell/deleteItemPart.js \
-	src/applets/gnome-shell/dummyHistoryItem.js \
-	src/applets/gnome-shell/emptyHistoryItem.js \
-	src/applets/gnome-shell/extension.js \
-	src/applets/gnome-shell/indicator.js \
-	src/applets/gnome-shell/item.js \
-	src/applets/gnome-shell/prefs.js \
-	src/applets/gnome-shell/searchItem.js \
-	src/applets/gnome-shell/stateSwitch.js \
-	src/applets/gnome-shell/statusIcon.js \
-	src/applets/gnome-shell/stylesheet.css \
+	src/gnome-shell/aboutItem.js \
+	src/gnome-shell/deleteButton.js \
+	src/gnome-shell/deleteItemPart.js \
+	src/gnome-shell/dummyHistoryItem.js \
+	src/gnome-shell/emptyHistoryItem.js \
+	src/gnome-shell/extension.js \
+	src/gnome-shell/indicator.js \
+	src/gnome-shell/item.js \
+	src/gnome-shell/prefs.js \
+	src/gnome-shell/searchItem.js \
+	src/gnome-shell/stateSwitch.js \
+	src/gnome-shell/statusIcon.js \
+	src/gnome-shell/stylesheet.css \
 	$(NULL)
 
-gnomeshell_metadata_file = src/applets/gnome-shell/metadata.json
+gnomeshell_metadata_file = src/gnome-shell/metadata.json
 
 SUFFIXES += .json .json.in
 .json.in.json:
-	@ $(MKDIR_P) src/applets/gnome-shell
+	@ $(MKDIR_P) src/gnome-shell
 	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
 			   -e 's,[@]gettext_package[@],$(GETTEXT_PACKAGE),g' \
 			   < $< > $@
