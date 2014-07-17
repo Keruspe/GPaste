@@ -22,7 +22,7 @@ pkglibexec_PROGRAMS += \
 	$(NULL)
 
 bin_gpasted_SOURCES = \
-	src/legacy/gpasted/gpasted.c \
+	legacy/gpasted/gpasted.c \
 	$(NULL)
 
 bin_gpasted_CFLAGS = \

@@ -133,7 +133,7 @@ include tests/gnome-shell-client.mk
 
 # Legacy wrapper
 
-include src/legacy/gpasted.mk
+include legacy/gpasted.mk
 
 # Maintainance stuff
 
