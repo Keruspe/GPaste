@@ -15,23 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-if ENABLE_UNITY
+gpasted_binary = bin/gpasted
+
 pkglibexec_PROGRAMS += \
-	bin/gpaste-app-indicator \
+	$(gpasted_binary) \
 	$(NULL)
 
-bin_gpaste_app_indicator_SOURCES = \
-	src/applets/app-indicator/gpaste-app-indicator.c \
+bin_gpasted_SOURCES = \
+	legacy/gpasted/gpasted.c \
 	$(NULL)
 
-bin_gpaste_app_indicator_CFLAGS = \
+bin_gpasted_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
 
-bin_gpaste_app_indicator_LDADD = \
-	$(builddir)/$(libgpaste_client_la_file) \
-	$(builddir)/$(libgpaste_applet_la_file) \
-	$(GTK_LIBS) \
+bin_gpasted_LDADD = \
 	$(AM_LIBS) \
 	$(NULL)
-endif

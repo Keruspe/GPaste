@@ -15,24 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-gpasted_binary = bin/gpasted
+gpaste_daemon_binary = bin/gpaste-daemon
 
 pkglibexec_PROGRAMS += \
-	$(gpasted_binary) \
+	$(gpaste_daemon_binary) \
 	$(NULL)
 
-$(gpasted_binary): $(libgpaste_daemon_la_file)
+$(gpaste_daemon_binary): $(libgpaste_daemon_la_file)
 
-bin_gpasted_SOURCES = \
-	src/gpasted/gpasted.c \
+bin_gpaste_daemon_SOURCES = \
+	src/daemon/gpaste-daemon.c \
 	$(NULL)
 
-bin_gpasted_CFLAGS = \
+bin_gpaste_daemon_CFLAGS = \
 	-I$(srcdir)/libgpaste/daemon/ \
 	$(AM_CFLAGS) \
 	$(NULL)
 
-bin_gpasted_LDADD = \
+bin_gpaste_daemon_LDADD = \
 	$(builddir)/$(libgpaste_core_la_file) \
 	$(builddir)/$(libgpaste_daemon_la_file) \
 	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \

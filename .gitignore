@@ -13,7 +13,7 @@
 /po/Makefile
 /po/missing
 /libgpaste/core/gpaste-config.h
-/src/applets/gnome-shell/metadata.json
+/src/gnome-shell/metadata.json
 /src/gpaste-settings/*.c
 /bindings/vapi/*.vapi
 !/bindings/vapi/config.vapi

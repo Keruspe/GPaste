@@ -20,7 +20,7 @@ pkglibexec_PROGRAMS += \
 	$(NULL)
 
 bin_gpaste_settings_SOURCES = \
-	src/gpaste-settings/gpaste-settings.c \
+	src/settings/gpaste-settings.c \
 	$(NULL)
 
 bin_gpaste_settings_CFLAGS = \

@@ -12,7 +12,7 @@ Some libraries are available for development purposes:
 * `libgpaste-gnome-shell-client` helps you integrate the gnome-shell dbus API in your application
 * `libgpaste-applet` allows you to write your own GPaste applet
 
-A default daemon named `gpasted` is provided, with four keybindings:
+A default daemon named `gpaste-daemon` is provided, with four keybindings:
 
 * show history
 * pop the item from the history
