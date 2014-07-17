@@ -65,7 +65,7 @@ reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
     GApplication *app = user_data;
 
     g_application_quit (app);
-    execl (PKGLIBEXECDIR "/gpasted", "gpasted", NULL);
+    execl (PKGLIBEXECDIR "/gpaste-daemon", "gpaste-daemon", NULL);
 }
 
 gint

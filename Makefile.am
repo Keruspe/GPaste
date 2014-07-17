@@ -99,8 +99,8 @@ include libgpaste/settings/ui.mk
 include bindings/gi.mk
 include bindings/vapi.mk
 
+include src/daemon.mk
 include src/gpaste.mk
-include src/gpasted.mk
 include src/gpaste-settings.mk
 include src/applets/gnome-shell.mk
 include src/applets/app-indicator.mk
@@ -119,6 +119,10 @@ include man/1.mk
 # Tests stuff
 
 include tests/gnome-shell-client.mk
+
+# Legacy wrapper
+
+include src/legacy/gpasted.mk
 
 # Maintainance stuff
 
