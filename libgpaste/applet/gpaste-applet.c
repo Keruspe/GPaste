@@ -118,6 +118,7 @@ g_paste_applet_set_text_mode (GPasteApplet *self,
     }
 
     g_paste_applet_menu_set_text_mode (priv->menu, value);
+    g_paste_applet_history_set_text_mode (priv->history, value);
 }
 
 static void
@@ -170,7 +171,11 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
     if ((priv->init_state >> 1) & 0x1)
         g_paste_applet_menu_set_active (priv->menu, priv->init_state & 0x1);
     if ((priv->init_state >> 3) & 0x1)
-        g_paste_applet_menu_set_text_mode (priv->menu, (priv->init_state >> 2) & 0x1);
+    {
+        gboolean value = (priv->init_state >> 2) & 0x1;
+        g_paste_applet_menu_set_text_mode (priv->menu, value);
+        g_paste_applet_history_set_text_mode (priv->history, value);
+    }
 
     return TRUE;
 }

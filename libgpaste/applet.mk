@@ -19,7 +19,7 @@ libgpaste_applet_la_file = libgpaste/applet/libgpaste-applet.la
 
 $(libgpaste_applet_la_file): $(libgpaste_client_la_file) $(libgpaste_settings_la_file)
 
-LIBGPASTE_APPLET_CURRENT=1
+LIBGPASTE_APPLET_CURRENT=2
 LIBGPASTE_APPLET_REVISION=0
 LIBGPASTE_APPLET_AGE=0
 

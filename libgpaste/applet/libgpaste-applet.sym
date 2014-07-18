@@ -63,3 +63,10 @@ global:
 local:
     *;
 };
+
+LIBGPASTE_APPLET_2 {
+global:
+    g_paste_applet_history_set_text_mode;
+
+    g_paste_applet_item_set_text_mode;
+} LIBGPASTE_APPLET_1;

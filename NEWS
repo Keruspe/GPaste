@@ -2,6 +2,8 @@ NEW in 3.10.3 (Not released yet)
 =============
 
 - gpasted has been renamed gpaste-daemon
+- Desktop files have been fixed
+- Fixes for the ubuntu app-indicator
 
 NEW in 3.12.1 and 3.10.2 (16/07/2014)
 =============
