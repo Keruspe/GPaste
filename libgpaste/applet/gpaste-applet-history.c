@@ -57,6 +57,9 @@ g_paste_applet_history_set_text_mode (GPasteAppletHistory *self,
 
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
     priv->text_mode = value;
+
+    for (GSList *i = priv->items; i; i = g_slist_next (i))
+        g_paste_applet_item_set_text_mode (i->data, value);
 }
 
 static void
