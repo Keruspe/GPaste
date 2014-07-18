@@ -31,11 +31,33 @@ struct _GPasteAppletHistoryPrivate
     GSList           *items;
     gsize             size;
 
+    gboolean          text_mode;
+
     gulong            changed_id;
     gulong            settings_changed_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletHistory, g_paste_applet_history, G_TYPE_OBJECT)
+
+/**
+ * g_paste_applet_history_set_text_mode:
+ * @self: a #GPasteAppletHistory instance
+ * @value: Whether to enable text mode or not
+ *
+ * Enable extra codepaths for when the text will
+ * be handled raw without trimming and such.
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_history_set_text_mode (GPasteAppletHistory *self,
+                                      gboolean             value)
+{
+    g_return_if_fail (G_PASTE_IS_APPLET_HISTORY (self));
+
+    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
+    priv->text_mode = value;
+}
 
 static void
 g_paste_applet_history_ref_item (gpointer data,
@@ -159,6 +181,8 @@ static void
 g_paste_applet_history_init (GPasteAppletHistory *self)
 {
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
+
+    priv->text_mode = FALSE;
 
     priv->items = NULL;
     priv->size = 0;

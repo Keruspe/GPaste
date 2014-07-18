@@ -29,11 +29,33 @@ struct _GPasteAppletItemPrivate
     GtkLabel       *label;
     guint32         index;
 
+    gboolean        text_mode;
+
     gulong          changed_id;
     gulong          size_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletItem, g_paste_applet_item, GTK_TYPE_MENU_ITEM)
+
+/**
+ * g_paste_applet_item_set_text_mode:
+ * @self: a #GPasteAppletItem instance
+ * @value: Whether to enable text mode or not
+ *
+ * Enable extra codepaths for when the text will
+ * be handled raw without trimming and such.
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_item_set_text_mode (GPasteAppletItem *self,
+                                   gboolean             value)
+{
+    g_return_if_fail (G_PASTE_IS_APPLET_ITEM (self));
+
+    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private (self);
+    priv->text_mode = value;
+}
 
 /* TODO: move me somewhere ( dupe from history ) */
 static gchar *
@@ -127,6 +149,8 @@ static void
 g_paste_applet_item_init (GPasteAppletItem *self)
 {
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private (self);
+
+    priv->text_mode = FALSE;
 
     GtkWidget *label = gtk_label_new ("");
     priv->label = GTK_LABEL (label);
