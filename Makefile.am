@@ -44,7 +44,7 @@ AM_VALAFLAGS = \
 AM_CFLAGS = \
 	-include config.h \
 	-I$(srcdir)/libgpaste/settings \
-	-I$(srcdir)/libgpaste/settings/ui \
+	-I$(srcdir)/libgpaste/settings-ui \
 	-I$(srcdir)/libgpaste/keybinder \
 	-I$(srcdir)/libgpaste/core \
 	-I$(srcdir)/libgpaste/daemon \
@@ -94,7 +94,7 @@ include libgpaste/core.mk
 include libgpaste/client.mk
 include libgpaste/daemon.mk
 include libgpaste/applet.mk
-include libgpaste/settings/ui.mk
+include libgpaste/settings-ui.mk
 
 # Bindings
 

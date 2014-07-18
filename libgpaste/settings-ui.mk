@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-libgpaste_settings_ui_la_file = libgpaste/settings/ui/libgpaste-settings-ui.la
+libgpaste_settings_ui_la_file = libgpaste/settings-ui/libgpaste-settings-ui.la
 
 $(libgpaste_settings_ui_la_file): $(libgpaste_client_la_file) $(libgpaste_settings_la_file)
 
@@ -24,23 +24,23 @@ LIBGPASTE_SETTINGS_UI_REVISION=0
 LIBGPASTE_SETTINGS_UI_AGE=0
 
 libgpaste_settings_ui_public_headers = \
-	libgpaste/settings/ui/gpaste-settings-ui-panel.h \
-	libgpaste/settings/ui/gpaste-settings-ui-stack.h \
-	libgpaste/settings/ui/gpaste-settings-ui-widget.h \
+	libgpaste/settings-ui/gpaste-settings-ui-panel.h \
+	libgpaste/settings-ui/gpaste-settings-ui-stack.h \
+	libgpaste/settings-ui/gpaste-settings-ui-widget.h \
 	$(NULL)
 
 libgpaste_settings_ui_private_headers = \
-	libgpaste/settings/ui/gpaste-settings-ui-panel-private.h \
-	libgpaste/settings/ui/gpaste-settings-ui-stack-private.h \
-	libgpaste/settings/ui/gpaste-settings-ui-widget-private.h \
+	libgpaste/settings-ui/gpaste-settings-ui-panel-private.h \
+	libgpaste/settings-ui/gpaste-settings-ui-stack-private.h \
+	libgpaste/settings-ui/gpaste-settings-ui-widget-private.h \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES = \
 	$(libgpaste_settings_ui_public_headers) \
 	$(libgpaste_settings_ui_private_headers) \
-	libgpaste/settings/ui/gpaste-settings-ui-panel.c \
-	libgpaste/settings/ui/gpaste-settings-ui-stack.c \
-	libgpaste/settings/ui/gpaste-settings-ui-widget.c \
+	libgpaste/settings-ui/gpaste-settings-ui-panel.c \
+	libgpaste/settings-ui/gpaste-settings-ui-stack.c \
+	libgpaste/settings-ui/gpaste-settings-ui-widget.c \
 	$(NULL)
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_CFLAGS = \
@@ -54,7 +54,7 @@ libgpaste_settings_ui_libgpaste_settings_ui_la_LIBADD = \
 	$(AM_LIBS) \
 	$(NULL)
 
-libgpaste_settings_ui_symbols_file = $(srcdir)/libgpaste/settings/ui/libgpaste-settings-ui.sym
+libgpaste_settings_ui_symbols_file = $(srcdir)/libgpaste/settings-ui/libgpaste-settings-ui.sym
 
 libgpaste_settings_ui_libgpaste_settings_ui_la_LDFLAGS = \
 	-version-info $(LIBGPASTE_SETTINGS_UI_CURRENT):$(LIBGPASTE_SETTINGS_UI_REVISION):$(LIBGPASTE_SETTINGS_UI_AGE) \
