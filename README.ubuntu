@@ -1,0 +1,5 @@
+In order to compile GPaste from git on ubuntu, you will need:
+
+git-core build-essential ui-auto intltool pkg-config libgtk-3-dev libgirepository1.0-dev libdbus-1-dev libclutter-1.0-dev valac libappindicator3-dev gnome-control-center-dev
+
+Don't forget to check if you need to apply the patches in the ubuntu-patches/ folder.
