@@ -30,12 +30,53 @@ struct _GPasteAppletItemPrivate
     guint32         index;
 
     gboolean        text_mode;
+    guint32         altered_index;
+    gchar           saved[4];
 
     gulong          changed_id;
     gulong          size_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletItem, g_paste_applet_item, GTK_TYPE_MENU_ITEM)
+
+static gchar ellipsis[] = "…";
+
+static void
+g_paste_applet_item_private_maybe_strip_contents (GPasteAppletItemPrivate *priv)
+{
+    if (!priv->text_mode)
+        return;
+
+    guint32 size = g_paste_settings_get_element_size (priv->settings);
+    guint32 altered_index = priv->altered_index;
+    if (size == altered_index + 1)
+        return;
+
+    const gchar *text = gtk_label_get_text (priv->label);
+    gsize len = strlen (text);
+    if (len > size)
+    {
+        G_PASTE_CLEANUP_FREE gchar *_text = g_strdup (text);
+        guint32 diff = size - len;
+        if (diff < 2) /* ensure we have room for ellipsis */
+            _text = g_realloc (_text, size + 3);
+
+        if (priv->altered_index > 0)
+        {
+            for (guint i = 0; i < 4; ++i)
+                _text[altered_index + i] = priv->saved[i];
+        }
+
+        altered_index = priv->altered_index = size - 1;
+        for (guint i = 0; i < 4; ++i)
+            priv->saved[i] = text[altered_index + i];
+
+        for (guint i = 0; i < 4; ++i)
+            _text[altered_index] = ellipsis[i];
+
+        gtk_label_set_text (priv->label, _text);
+    }
+}
 
 /**
  * g_paste_applet_item_set_text_mode:
@@ -94,6 +135,7 @@ g_paste_applet_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     G_PASTE_CLEANUP_FREE gchar *markup = (priv->index) ? NULL : g_strdup_printf ("<b>%s</b>", escaped);
 
     gtk_label_set_markup (priv->label, (markup) ? markup : escaped);
+    g_paste_applet_item_private_maybe_strip_contents (priv);
 }
 
 static void
@@ -108,8 +150,9 @@ g_paste_applet_item_set_text_size (GPasteSettings *settings,
                                    const gchar    *key G_GNUC_UNUSED,
                                    gpointer        user_data)
 {
-    GtkLabel *label = user_data;
-    gtk_label_set_max_width_chars (label, g_paste_settings_get_element_size (settings));
+    GPasteAppletItemPrivate *priv = user_data;
+    gtk_label_set_max_width_chars (priv->label, g_paste_settings_get_element_size (settings));
+    g_paste_applet_item_private_maybe_strip_contents (priv);
 }
 
 static void
@@ -151,6 +194,7 @@ g_paste_applet_item_init (GPasteAppletItem *self)
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private (self);
 
     priv->text_mode = FALSE;
+    priv->altered_index = 0;
 
     GtkWidget *label = gtk_label_new ("");
     priv->label = GTK_LABEL (label);
@@ -199,8 +243,8 @@ g_paste_applet_item_new (GPasteClient   *client,
     priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
                                       G_CALLBACK (g_paste_applet_item_set_text_size),
-                                      priv->label);
-    g_paste_applet_item_set_text_size (settings, NULL, priv->label);
+                                      priv);
+    g_paste_applet_item_set_text_size (settings, NULL, priv);
 
     return self;
 }
