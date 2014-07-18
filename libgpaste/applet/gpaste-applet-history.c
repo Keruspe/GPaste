@@ -31,11 +31,36 @@ struct _GPasteAppletHistoryPrivate
     GSList           *items;
     gsize             size;
 
+    gboolean          text_mode;
+
     gulong            changed_id;
     gulong            settings_changed_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletHistory, g_paste_applet_history, G_TYPE_OBJECT)
+
+/**
+ * g_paste_applet_history_set_text_mode:
+ * @self: a #GPasteAppletHistory instance
+ * @value: Whether to enable text mode or not
+ *
+ * Enable extra codepaths for when the text will
+ * be handled raw without trimming and such.
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_history_set_text_mode (GPasteAppletHistory *self,
+                                      gboolean             value)
+{
+    g_return_if_fail (G_PASTE_IS_APPLET_HISTORY (self));
+
+    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
+    priv->text_mode = value;
+
+    for (GSList *i = priv->items; i; i = g_slist_next (i))
+        g_paste_applet_item_set_text_mode (i->data, value);
+}
 
 static void
 g_paste_applet_history_ref_item (gpointer data,
@@ -86,7 +111,11 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
-            priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, priv->settings, i));
+        {
+            GPasteAppletItem *item = G_PASTE_APPLET_ITEM (g_paste_applet_item_new (priv->client, priv->settings, i));
+            g_paste_applet_item_set_text_mode (item, priv->text_mode);
+            priv->items = g_slist_append (priv->items, item);
+        }
         g_paste_applet_history_add_list_to_menu (g_slist_nth (priv->items, old_size), priv->menu);
     }
     else if (old_size > priv->size)
@@ -159,6 +188,8 @@ static void
 g_paste_applet_history_init (GPasteAppletHistory *self)
 {
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
+
+    priv->text_mode = FALSE;
 
     priv->items = NULL;
     priv->size = 0;
