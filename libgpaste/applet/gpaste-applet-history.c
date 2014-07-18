@@ -111,7 +111,11 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
-            priv->items = g_slist_append (priv->items, g_paste_applet_item_new (priv->client, priv->settings, i));
+        {
+            GPasteAppletItem *item = G_PASTE_APPLET_ITEM (g_paste_applet_item_new (priv->client, priv->settings, i));
+            g_paste_applet_item_set_text_mode (item, priv->text_mode);
+            priv->items = g_slist_append (priv->items, item);
+        }
         g_paste_applet_history_add_list_to_menu (g_slist_nth (priv->items, old_size), priv->menu);
     }
     else if (old_size > priv->size)
