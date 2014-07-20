@@ -75,8 +75,8 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
  *
  * Create a new instance of #GPasteSettingsUiWidget
  *
- * Returns: (allow-none): a newly allocated #GPasteSettingsUiWidget
- *                        free it with g_object_unref
+ * Returns: (nullable): a newly allocated #GPasteSettingsUiWidget
+ *                      free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
 g_paste_settings_ui_widget_new (void)

@@ -533,8 +533,8 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
  *
  * Create a new instance of #GPasteSettingsUiStack
  *
- * Returns: (allow-none): a newly allocated #GPasteSettingsUiStack
- *                        free it with g_object_unref
+ * Returns: (nullable): a newly allocated #GPasteSettingsUiStack
+ *                      free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteSettingsUiStack *
 g_paste_settings_ui_stack_new (void)
