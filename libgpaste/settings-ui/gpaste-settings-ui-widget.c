@@ -57,6 +57,10 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
     guint current_line = 0;
 
     GPasteSettingsUiStack *stack = priv->stack = g_paste_settings_ui_stack_new ();
+
+    if (!stack)
+        return;
+
     g_paste_settings_ui_stack_fill (stack);
 
     gtk_grid_attach (grid, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
@@ -71,11 +75,20 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
  *
  * Create a new instance of #GPasteSettingsUiWidget
  *
- * Returns: a newly allocated #GPasteSettingsUiWidget
- *          free it with g_object_unref
+ * Returns: (allow-none): a newly allocated #GPasteSettingsUiWidget
+ *                        free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
 g_paste_settings_ui_widget_new (void)
 {
-    return gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET, NULL);
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET, NULL);
+    GPasteSettingsUiWidgetPrivate *priv = g_paste_settings_ui_widget_get_instance_private (G_PASTE_SETTINGS_UI_WIDGET (self));
+
+    if (!priv->stack)
+    {
+        g_object_unref (self);
+        return NULL;
+    }
+
+    return self;
 }

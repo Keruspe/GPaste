@@ -100,7 +100,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onSearch: function() {
-        let search = this._searchItem.text;
+        let search = this._searchItem.text.toLowerCase();
         let maxSize = this._maxSize;
         let i = 0;
 
@@ -149,20 +149,22 @@ const GPasteIndicator = new Lang.Class({
         if (empty) {
             this._dummyHistoryItem.actor.show();
             this._emptyHistoryItem.actor.hide();
+            this._searchItem.actor.hide();
         } else {
             this._dummyHistoryItem.actor.hide();
             this._emptyHistoryItem.actor.show();
+            this._searchItem.actor.show();
         }
     },
 
     _popup: function() {
         this.menu.open(true);
-        this._selectFirst(true);
+        this._selectSearch(true);
     },
 
-    _selectFirst: function(active) {
+    _selectSearch: function(active) {
         if (this._history.length > 0) {
-            this._history[0].setActive(active);
+            this._searchItem.setActive(active);
         }
     },
 

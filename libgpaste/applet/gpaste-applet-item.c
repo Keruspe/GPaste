@@ -73,7 +73,7 @@ g_paste_applet_item_private_maybe_strip_contents (GPasteAppletItemPrivate *priv)
         if (diff < 2) /* ensure we have room for ellipsis */
             _text = g_realloc (_text, size + 3);
 
-        if (priv->altered_index)
+        if (altered_index)
         {
             for (guint i = 0; i < 4; ++i)
                 _text[altered_index + i] = priv->saved[i];
@@ -148,6 +148,7 @@ g_paste_applet_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     G_PASTE_CLEANUP_FREE gchar *markup = (priv->index) ? NULL : g_strdup_printf ("<b>%s</b>", escaped);
 
     gtk_label_set_markup (priv->label, (markup) ? markup : escaped);
+    priv->altered_index = 0;
     g_paste_applet_item_private_maybe_strip_contents (priv);
 }
 
