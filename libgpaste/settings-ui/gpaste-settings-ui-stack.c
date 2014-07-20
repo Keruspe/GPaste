@@ -31,6 +31,9 @@ struct _GPasteSettingsUiStackPrivate
 {
     GPasteClient    *client;
     GPasteSettings  *settings;
+
+    GError          *init_error;
+
     GtkSwitch       *images_support_switch;
     GtkSwitch       *growing_lines_switch;
     GtkSwitch       *primary_to_history_switch;
@@ -501,11 +504,8 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
 {
     GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
 
-    GError *error = NULL;
-    priv->client = g_paste_client_new_sync (&error);
-
-    if (g_paste_settings_ui_check_connection_error (error))
-        exit (EXIT_FAILURE);
+    priv->init_error = NULL;
+    priv->client = g_paste_client_new_sync (&priv->init_error);
 
     priv->settings = g_paste_settings_new ();
     priv->settings_signal = g_signal_connect (priv->settings,
@@ -533,14 +533,23 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
  *
  * Create a new instance of #GPasteSettingsUiStack
  *
- * Returns: a newly allocated #GPasteSettingsUiStack
- *          free it with g_object_unref
+ * Returns: (allow-none): a newly allocated #GPasteSettingsUiStack
+ *                        free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteSettingsUiStack *
 g_paste_settings_ui_stack_new (void)
 {
-    return G_PASTE_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_STACK,
-                                                      "margin",      12,
-                                                      "homogeneous", TRUE,
-                                                      NULL));
+    GPasteSettingsUiStack *self = G_PASTE_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_STACK,
+                                                                             "margin",      12,
+                                                                             "homogeneous", TRUE,
+                                                                             NULL));
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
+
+    if (g_paste_settings_ui_check_connection_error (priv->init_error))
+    {
+        g_object_unref (self);
+        return NULL;
+    }
+
+    return self;
 }
