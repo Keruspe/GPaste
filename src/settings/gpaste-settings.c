@@ -75,6 +75,10 @@ main (gint argc, gchar *argv[])
     gtk_application_set_app_menu (app, G_MENU_MODEL (menu));
 
     GPasteSettingsUiStack *stack = g_paste_settings_ui_stack_new ();
+
+    if (!stack)
+        exit (EXIT_FAILURE);
+
     g_paste_settings_ui_stack_fill (stack);
 
     GtkWidget *bar = gtk_header_bar_new ();

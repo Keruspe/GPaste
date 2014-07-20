@@ -35,6 +35,8 @@ function init() {
 
 function buildPrefsWidget() {
     let widget = new GPaste.SettingsUiWidget({ orientation: Gtk.Orientation.VERTICAL, margin: 12 });
-    widget.show_all();
+    if (widget) {
+        widget.show_all();
+    }
     return widget;
 }
