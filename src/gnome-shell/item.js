@@ -74,7 +74,7 @@ const GPasteItem = new Lang.Class({
             if (search == this._lastSearch) {
                 return this._lastSearchMatched;
             } else {
-                match = this.label.get_text().match(search)
+                match = this.label.get_text().toLowerCase().match(search)
             }
         }
 

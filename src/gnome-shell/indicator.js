@@ -100,7 +100,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onSearch: function() {
-        let search = this._searchItem.text;
+        let search = this._searchItem.text.toLowerCase();
         let maxSize = this._maxSize;
         let i = 0;
 
