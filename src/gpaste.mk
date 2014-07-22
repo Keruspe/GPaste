@@ -28,6 +28,6 @@ bin_gpaste_CFLAGS = \
 	$(NULL)
 
 bin_gpaste_LDADD = \
-	$(builddir)/$(libgpaste_client_la_file) \
+	$(builddir)/$(libgpaste_la_file) \
 	$(AM_LIBS) \
 	$(NULL)

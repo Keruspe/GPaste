@@ -43,15 +43,16 @@ AM_VALAFLAGS = \
 
 AM_CFLAGS = \
 	-include config.h \
-	-I$(srcdir)/libgpaste/settings \
-	-I$(srcdir)/libgpaste/settings-ui \
-	-I$(srcdir)/libgpaste/keybinder \
-	-I$(srcdir)/libgpaste/core \
-	-I$(srcdir)/libgpaste/daemon \
-	-I$(srcdir)/libgpaste/client \
-	-I$(srcdir)/libgpaste/applet \
-	-I$(srcdir)/libgpaste/gnome-shell-client \
-	-I$(builddir)/libgpaste/core \
+	-I$(srcdir)/src/libgpaste \
+	-I$(srcdir)/src/libgpaste/applet \
+	-I$(srcdir)/src/libgpaste/client \
+	-I$(srcdir)/src/libgpaste/core \
+	-I$(srcdir)/src/libgpaste/daemon \
+	-I$(srcdir)/src/libgpaste/gnome-shell-client \
+	-I$(srcdir)/src/libgpaste/keybinder \
+	-I$(srcdir)/src/libgpaste/settings \
+	-I$(srcdir)/src/libgpaste/settings-ui \
+	-I$(builddir)/src/libgpaste/core \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
@@ -87,14 +88,7 @@ noinst_PROGRAMS= \
 
 # Libraries
 
-include libgpaste/settings.mk
-include libgpaste/gnome-shell-client.mk
-include libgpaste/keybinder.mk
-include libgpaste/core.mk
-include libgpaste/client.mk
-include libgpaste/daemon.mk
-include libgpaste/applet.mk
-include libgpaste/settings-ui.mk
+include src/libgpaste.mk
 
 # Bindings
 
