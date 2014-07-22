@@ -87,6 +87,7 @@ main (gint argc, gchar *argv[])
     G_PASTE_CLEANUP_UNREF GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
     GPasteKeybinding *keybindings[] = {
+        g_paste_make_password_keybinding_new (history),
         g_paste_pop_keybinding_new (history),
         g_paste_show_history_keybinding_new (g_paste_daemon),
         g_paste_sync_clipboard_to_primary_keybinding_new (clipboards_manager),
