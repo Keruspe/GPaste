@@ -287,6 +287,7 @@ global:
     g_paste_settings_get_growing_lines;
     g_paste_settings_get_history_name;
     g_paste_settings_get_images_support;
+    g_paste_settings_get_make_password;
     g_paste_settings_get_max_displayed_history_size;
     g_paste_settings_get_max_history_size;
     g_paste_settings_get_max_memory_usage;
@@ -307,6 +308,7 @@ global:
     g_paste_settings_reset_growing_lines;
     g_paste_settings_reset_history_name;
     g_paste_settings_reset_images_support;
+    g_paste_settings_reset_make_password;
     g_paste_settings_reset_max_displayed_history_size;
     g_paste_settings_reset_max_history_size;
     g_paste_settings_reset_max_memory_usage;
@@ -327,6 +329,7 @@ global:
     g_paste_settings_set_growing_lines;
     g_paste_settings_set_history_name;
     g_paste_settings_set_images_support;
+    g_paste_settings_set_make_password;
     g_paste_settings_set_max_displayed_history_size;
     g_paste_settings_set_max_history_size;
     g_paste_settings_set_max_memory_usage;

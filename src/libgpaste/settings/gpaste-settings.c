@@ -30,6 +30,7 @@ struct _GPasteSettingsPrivate
     gboolean   growing_lines;
     gchar     *history_name;
     gboolean   images_support;
+    gchar     *make_password;
     guint32    max_displayed_history_size;
     guint32    max_history_size;
     guint32    max_memory_usage;
@@ -230,6 +231,33 @@ STRING_SETTING (history_name, HISTORY_NAME)
  * Returns:
  */
 BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
+
+/**
+ * g_paste_settings_get_make_password:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "make-password" setting
+ *
+ * Returns: the value of the "make-password" setting
+ */
+/**
+ * g_paste_settings_reset_make_password:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "make-password" setting
+ *
+ * Returns:
+ */
+/**
+ * g_paste_settings_set_make_password:
+ * @self: a #GPasteSettings instance
+ * @value: the new keyboard shortcut
+ *
+ * Change the "make-password" setting
+ *
+ * Returns:
+ */
+STRING_SETTING (make_password, MAKE_PASSWORD)
 
 /**
  * g_paste_settings_get_max_displayed_history_size:
@@ -766,6 +794,11 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_history_name_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         g_paste_settings_private_set_images_support_from_dconf (priv);
+    else if (!g_strcmp0 (key, G_PASTE_MAKE_PASSWORD_SETTING))
+    {
+        g_paste_settings_private_set_make_password_from_dconf (priv);
+        g_paste_settings_rebind (self, G_PASTE_MAKE_PASSWORD_SETTING);
+    }
     else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
@@ -855,10 +888,11 @@ g_paste_settings_finalize (GObject *object)
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
 
     g_free (priv->history_name);
+    g_free (priv->make_password);
+    g_free (priv->pop);
     g_free (priv->show_history);
     g_free (priv->sync_clipboard_to_primary);
     g_free (priv->sync_primary_to_clipboard);
-    g_free (priv->pop);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
 }
@@ -883,6 +917,7 @@ g_paste_settings_init (GPasteSettings *self)
     GSettings *settings = priv->settings = g_settings_new (G_PASTE_SETTINGS_NAME);
 
     priv->history_name = NULL;
+    priv->make_password = NULL;
     priv->pop = NULL;
     priv->show_history = NULL;
     priv->sync_clipboard_to_primary = NULL;
@@ -892,6 +927,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_growing_lines_from_dconf (priv);
     g_paste_settings_private_set_history_name_from_dconf (priv);
     g_paste_settings_private_set_images_support_from_dconf (priv);
+    g_paste_settings_private_set_make_password_from_dconf (priv);
     g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
     g_paste_settings_private_set_max_history_size_from_dconf (priv);
     g_paste_settings_private_set_max_memory_usage_from_dconf (priv);
