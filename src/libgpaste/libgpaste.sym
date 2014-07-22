@@ -1,0 +1,370 @@
+LIBGPASTE_1 {
+global:
+    g_paste_applet_get_type;
+    g_paste_applet_get_active;
+    g_paste_applet_set_active;
+    g_paste_applet_set_text_mode;
+    g_paste_applet_new_app_indicator;
+    g_paste_applet_new_status_icon;
+
+    g_paste_applet_about_get_type;
+    g_paste_applet_about_new;
+
+    g_paste_applet_app_indicator_get_type;
+    g_paste_applet_app_indicator_new;
+
+    g_paste_applet_delete_get_type;
+    g_paste_applet_delete_new;
+
+    g_paste_applet_empty_get_type;
+    g_paste_applet_empty_new;
+
+    g_paste_applet_footer_get_type;
+    g_paste_applet_footer_add_to_menu;
+    g_paste_applet_footer_remove_from_menu;
+    g_paste_applet_footer_new;
+
+    g_paste_applet_header_get_type;
+    g_paste_applet_header_get_active;
+    g_paste_applet_header_set_active;
+    g_paste_applet_header_set_text_mode;
+    g_paste_applet_header_add_to_menu;
+    g_paste_applet_header_remove_from_menu;
+    g_paste_applet_header_new;
+
+    g_paste_applet_history_get_type;
+    g_paste_applet_history_set_text_mode;
+    g_paste_applet_history_new;
+
+    g_paste_applet_icon_get_type;
+
+    g_paste_applet_item_get_type;
+    g_paste_applet_item_set_text_mode;
+    g_paste_applet_item_new;
+
+    g_paste_applet_menu_get_type;
+    g_paste_applet_menu_append;
+    g_paste_applet_menu_prepend;
+    g_paste_applet_menu_set_text_mode;
+    g_paste_applet_menu_new;
+
+    g_paste_applet_quit_get_type;
+    g_paste_applet_quit_new;
+
+    g_paste_applet_settings_get_type;
+    g_paste_applet_settings_new;
+
+    g_paste_applet_status_icon_get_type;
+    g_paste_applet_status_icon_new;
+
+    g_paste_applet_switch_get_type;
+    g_paste_applet_switch_get_active;
+    g_paste_applet_switch_set_active;
+    g_paste_applet_switch_set_text_mode;
+    g_paste_applet_switch_new;
+
+    g_paste_client_get_type;
+
+    g_paste_client_get_version;
+    g_paste_client_is_active;
+
+    g_paste_client_about_sync;
+    g_paste_client_add_sync;
+    g_paste_client_add_file_sync;
+    g_paste_client_add_password_sync;
+    g_paste_client_backup_history_sync;
+    g_paste_client_delete_sync;
+    g_paste_client_delete_history_sync;
+    g_paste_client_delete_password_sync;
+    g_paste_client_empty_sync;
+    g_paste_client_get_element_sync;
+    g_paste_client_get_history_sync;
+    g_paste_client_get_history_size_sync;
+    g_paste_client_get_raw_element_sync;
+    g_paste_client_get_raw_history_sync;
+    g_paste_client_list_histories_sync;
+    g_paste_client_on_extension_state_changed_sync;
+    g_paste_client_reexecute_sync;
+    g_paste_client_rename_password_sync;
+    g_paste_client_select_sync;
+    g_paste_client_set_password_sync;
+    g_paste_client_switch_history_sync;
+    g_paste_client_track_sync;
+
+    g_paste_client_about;
+    g_paste_client_add;
+    g_paste_client_add_file;
+    g_paste_client_add_password;
+    g_paste_client_backup_history;
+    g_paste_client_delete;
+    g_paste_client_delete_history;
+    g_paste_client_delete_password;
+    g_paste_client_empty;
+    g_paste_client_get_element;
+    g_paste_client_get_history;
+    g_paste_client_get_history_size;
+    g_paste_client_get_raw_element;
+    g_paste_client_get_raw_history;
+    g_paste_client_list_histories;
+    g_paste_client_on_extension_state_changed;
+    g_paste_client_reexecute;
+    g_paste_client_rename_password;
+    g_paste_client_select;
+    g_paste_client_set_password;
+    g_paste_client_switch_history;
+    g_paste_client_track;
+
+    g_paste_client_about_finish;
+    g_paste_client_add_finish;
+    g_paste_client_add_file_finish;
+    g_paste_client_add_password_finish;
+    g_paste_client_backup_history_finish;
+    g_paste_client_delete_finish;
+    g_paste_client_delete_history_finish;
+    g_paste_client_delete_password_finish;
+    g_paste_client_empty_finish;
+    g_paste_client_get_element_finish;
+    g_paste_client_get_history_finish;
+    g_paste_client_get_history_size_finish;
+    g_paste_client_get_raw_element_finish;
+    g_paste_client_get_raw_history_finish;
+    g_paste_client_list_histories_finish;
+    g_paste_client_on_extension_state_changed_finish;
+    g_paste_client_reexecute_finish;
+    g_paste_client_rename_password_finish;
+    g_paste_client_select_finish;
+    g_paste_client_set_password_finish;
+    g_paste_client_switch_history_finish;
+    g_paste_client_track_finish;
+
+    g_paste_client_new_sync;
+    g_paste_client_new;
+    g_paste_client_new_finish;
+    
+    g_paste_clipboard_get_type;
+    g_paste_clipboard_get_target;
+    g_paste_clipboard_get_real;
+    g_paste_clipboard_get_text;
+    g_paste_clipboard_set_text;
+    g_paste_clipboard_select_text;
+    g_paste_clipboard_get_image_checksum;
+    g_paste_clipboard_set_image;
+    g_paste_clipboard_select_item;
+    g_paste_clipboard_new;
+
+    g_paste_clipboards_manager_get_type;
+    g_paste_clipboards_manager_add_clipboard;
+    g_paste_clipboards_manager_sync_from_to;
+    g_paste_clipboards_manager_activate;
+    g_paste_clipboards_manager_select;
+    g_paste_clipboards_manager_new;
+
+    g_paste_history_get_type;
+    g_paste_history_add;
+    g_paste_history_remove;
+    g_paste_history_get;
+    g_paste_history_dup;
+    g_paste_history_get_display_string;
+    g_paste_history_get_value;
+    g_paste_history_select;
+    g_paste_history_set_password;
+    g_paste_history_get_password;
+    g_paste_history_delete_password;
+    g_paste_history_rename_password;
+    g_paste_history_empty;
+    g_paste_history_save;
+    g_paste_history_load;
+    g_paste_history_switch;
+    g_paste_history_delete;
+    g_paste_history_get_history;
+    g_paste_history_get_length;
+    g_paste_history_new;
+    g_paste_history_list;
+
+    g_paste_item_get_type;
+    g_paste_item_get_value;
+    g_paste_item_get_real_value;
+    g_paste_item_get_display_string;
+    g_paste_item_equals;
+    g_paste_item_get_kind;
+    g_paste_item_get_size;
+
+    g_paste_text_item_get_type;
+    g_paste_text_item_new;
+
+    g_paste_uris_item_get_type;
+    g_paste_uris_item_get_uris;
+    g_paste_uris_item_new;
+
+    g_paste_image_item_get_type;
+    g_paste_image_item_get_checksum;
+    g_paste_image_item_get_image;
+    g_paste_image_item_get_date;
+    g_paste_image_item_new;
+    g_paste_image_item_new_from_file;
+
+    g_paste_password_item_get_type;
+    g_paste_password_item_get_name;
+    g_paste_password_item_set_name;
+    g_paste_password_item_new;
+
+    g_paste_daemon_get_type;
+    g_paste_daemon_own_bus_name;
+    g_paste_daemon_show_history;
+    g_paste_daemon_new;
+
+    g_paste_gnome_shell_client_get_type;
+
+    g_paste_gnome_shell_client_eval_sync;
+    g_paste_gnome_shell_client_show_osd_sync;
+    g_paste_gnome_shell_client_focus_search_sync;
+    g_paste_gnome_shell_client_focus_app_sync;
+    g_paste_gnome_shell_client_show_applications_sync;
+    g_paste_gnome_shell_client_grab_accelerator_sync;
+    g_paste_gnome_shell_client_grab_accelerators_sync;
+    g_paste_gnome_shell_client_ungrab_accelerator_sync;
+
+    g_paste_gnome_shell_client_eval;
+    g_paste_gnome_shell_client_show_osd;
+    g_paste_gnome_shell_client_focus_search;
+    g_paste_gnome_shell_client_focus_app;
+    g_paste_gnome_shell_client_show_applications;
+    g_paste_gnome_shell_client_grab_accelerator;
+    g_paste_gnome_shell_client_grab_accelerators;
+    g_paste_gnome_shell_client_ungrab_accelerator;
+
+    g_paste_gnome_shell_client_eval_finish;
+    g_paste_gnome_shell_client_show_osd_finish;
+    g_paste_gnome_shell_client_focus_search_finish;
+    g_paste_gnome_shell_client_focus_app_finish;
+    g_paste_gnome_shell_client_show_applications_finish;
+    g_paste_gnome_shell_client_grab_accelerator_finish;
+    g_paste_gnome_shell_client_grab_accelerators_finish;
+    g_paste_gnome_shell_client_ungrab_accelerator_finish;
+
+    g_paste_gnome_shell_client_get_mode;
+    g_paste_gnome_shell_client_overview_is_active;
+    g_paste_gnome_shell_client_get_shell_version;
+    g_paste_gnome_shell_client_overview_set_active;
+
+    g_paste_gnome_shell_client_new_sync;
+    g_paste_gnome_shell_client_new;
+    g_paste_gnome_shell_client_new_finish;
+
+    g_paste_keybinder_get_type;
+    g_paste_keybinder_add_keybinding;
+    g_paste_keybinder_activate_all;
+    g_paste_keybinder_deactivate_all;
+    g_paste_keybinder_new;
+
+    g_paste_keybinding_get_type;
+    g_paste_keybinding_get_keycodes;
+    g_paste_keybinding_get_modifiers;
+    g_paste_keybinding_get_dconf_key;
+    g_paste_keybinding_get_accelerator;
+    g_paste_keybinding_activate;
+    g_paste_keybinding_deactivate;
+    g_paste_keybinding_is_active;
+    g_paste_keybinding_perform;
+    g_paste_keybinding_notify;
+    g_paste_keybinding_new;
+
+    g_paste_pop_keybinding_get_type;
+    g_paste_pop_keybinding_new;
+
+    g_paste_show_history_keybinding_get_type;
+    g_paste_show_history_keybinding_new;
+
+    g_paste_sync_clipboard_to_primary_keybinding_get_type;
+    g_paste_sync_clipboard_to_primary_keybinding_new;
+
+    g_paste_sync_primary_to_clipboard_keybinding_get_type;
+    g_paste_sync_primary_to_clipboard_keybinding_new;
+
+    g_paste_settings_get_type;
+
+    g_paste_settings_get_element_size;
+    g_paste_settings_get_growing_lines;
+    g_paste_settings_get_history_name;
+    g_paste_settings_get_images_support;
+    g_paste_settings_get_max_displayed_history_size;
+    g_paste_settings_get_max_history_size;
+    g_paste_settings_get_max_memory_usage;
+    g_paste_settings_get_max_text_item_size;
+    g_paste_settings_get_min_text_item_size;
+    g_paste_settings_get_pop;
+    g_paste_settings_get_primary_to_history;
+    g_paste_settings_get_save_history;
+    g_paste_settings_get_show_history;
+    g_paste_settings_get_sync_clipboard_to_primary;
+    g_paste_settings_get_sync_primary_to_clipboard;
+    g_paste_settings_get_synchronize_clipboards;
+    g_paste_settings_get_track_changes;
+    g_paste_settings_get_track_extension_state;
+    g_paste_settings_get_trim_items;
+
+    g_paste_settings_reset_element_size;
+    g_paste_settings_reset_growing_lines;
+    g_paste_settings_reset_history_name;
+    g_paste_settings_reset_images_support;
+    g_paste_settings_reset_max_displayed_history_size;
+    g_paste_settings_reset_max_history_size;
+    g_paste_settings_reset_max_memory_usage;
+    g_paste_settings_reset_max_text_item_size;
+    g_paste_settings_reset_min_text_item_size;
+    g_paste_settings_reset_pop;
+    g_paste_settings_reset_primary_to_history;
+    g_paste_settings_reset_save_history;
+    g_paste_settings_reset_show_history;
+    g_paste_settings_reset_sync_clipboard_to_primary;
+    g_paste_settings_reset_sync_primary_to_clipboard;
+    g_paste_settings_reset_synchronize_clipboards;
+    g_paste_settings_reset_track_changes;
+    g_paste_settings_reset_track_extension_state;
+    g_paste_settings_reset_trim_items;
+
+    g_paste_settings_set_element_size;
+    g_paste_settings_set_growing_lines;
+    g_paste_settings_set_history_name;
+    g_paste_settings_set_images_support;
+    g_paste_settings_set_max_displayed_history_size;
+    g_paste_settings_set_max_history_size;
+    g_paste_settings_set_max_memory_usage;
+    g_paste_settings_set_max_text_item_size;
+    g_paste_settings_set_min_text_item_size;
+    g_paste_settings_set_pop;
+    g_paste_settings_set_primary_to_history;
+    g_paste_settings_set_save_history;
+    g_paste_settings_set_show_history;
+    g_paste_settings_set_sync_clipboard_to_primary;
+    g_paste_settings_set_sync_primary_to_clipboard;
+    g_paste_settings_set_synchronize_clipboards;
+    g_paste_settings_set_track_changes;
+    g_paste_settings_set_track_extension_state;
+    g_paste_settings_set_trim_items;
+
+    g_paste_settings_get_extension_enabled;
+    g_paste_settings_set_extension_enabled;
+
+    g_paste_settings_new;
+
+    g_paste_settings_ui_stack_get_type;
+    g_paste_settings_ui_stack_add_panel;
+    g_paste_settings_ui_stack_fill;
+    g_paste_settings_ui_stack_new;
+
+    g_paste_settings_ui_panel_get_type;
+    g_paste_settings_ui_panel_add_boolean_setting;
+    g_paste_settings_ui_panel_add_separator;
+    g_paste_settings_ui_panel_add_range_setting;
+    g_paste_settings_ui_panel_add_text_setting;
+    g_paste_settings_ui_panel_add_text_confirm_setting;
+    g_paste_settings_ui_panel_add_multi_action_setting;
+    g_paste_settings_ui_panel_new;
+
+    g_paste_settings_ui_widget_get_type;
+    g_paste_settings_ui_widget_get_stack;
+    g_paste_settings_ui_widget_new;
+local:
+    *;
+};

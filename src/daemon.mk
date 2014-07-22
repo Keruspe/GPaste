@@ -21,23 +21,17 @@ pkglibexec_PROGRAMS += \
 	$(gpaste_daemon_binary) \
 	$(NULL)
 
-$(gpaste_daemon_binary): $(libgpaste_daemon_la_file)
+$(gpaste_daemon_binary): $(libgpaste_la_file)
 
 bin_gpaste_daemon_SOURCES = \
 	src/daemon/gpaste-daemon.c \
 	$(NULL)
 
 bin_gpaste_daemon_CFLAGS = \
-	-I$(srcdir)/libgpaste/daemon/ \
 	$(AM_CFLAGS) \
 	$(NULL)
 
 bin_gpaste_daemon_LDADD = \
-	$(builddir)/$(libgpaste_core_la_file) \
-	$(builddir)/$(libgpaste_daemon_la_file) \
-	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
-	$(builddir)/$(libgpaste_keybinder_la_file) \
-	$(builddir)/$(libgpaste_settings_la_file) \
-	$(GTK_LIBS) \
+	$(builddir)/$(libgpaste_la_file) \
 	$(AM_LIBS) \
 	$(NULL)
