@@ -26,11 +26,7 @@ SUFFIXES += .pc.in .pc
 
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = \
-	data/pkg-config/gpaste-core-1.0.pc \
-	data/pkg-config/gpaste-daemon-1.0.pc \
-	data/pkg-config/gpaste-client-1.0.pc \
-	data/pkg-config/gpaste-settings-1.0.pc \
-	data/pkg-config/gpaste-settings-ui-1.0.pc \
+	data/pkg-config/gpaste-1.0.pc \
 	$(NULL)
 
 EXTRA_DIST += \
