@@ -215,7 +215,7 @@ AM_CONDITIONAL(ENABLE_X_KEYBINDER, test x$enable_x_keybinder = xyes)
 AC_CONFIG_FILES([
     Makefile
     po/Makefile.in
-    libgpaste/core/gpaste-config.h
+    src/libgpaste/gpaste-config.h
 ])
 AC_OUTPUT
 AC_MSG_RESULT([

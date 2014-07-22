@@ -23,46 +23,15 @@ INTROSPECTION_GIRS = $(NULL)
 
 libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
-all_la_files = \
-	$(builddir)/$(libgpaste_applet_la_file) \
-	$(builddir)/$(libgpaste_client_la_file) \
-	$(builddir)/$(libgpaste_core_la_file) \
-	$(builddir)/$(libgpaste_daemon_la_file) \
-	$(builddir)/$(libgpaste_gnome_shell_client_la_file) \
-	$(builddir)/$(libgpaste_keybinder_la_file) \
-	$(builddir)/$(libgpaste_settings_la_file) \
-	$(builddir)/$(libgpaste_settings_ui_la_file) \
-	$(NULL)
-
-all_la_sources = \
-	$(libgpaste_client_libgpaste_client_la_SOURCES) \
-	$(libgpaste_applet_libgpaste_applet_la_SOURCES) \
-	$(libgpaste_core_libgpaste_core_la_SOURCES) \
-	$(libgpaste_daemon_libgpaste_daemon_la_SOURCES) \
-	$(libgpaste_gnome_shell_client_libgpaste_gnome_shell_client_la_SOURCES) \
-	$(libgpaste_keybinder_libgpaste_keybinder_la_SOURCES) \
-	$(libgpaste_settings_libgpaste_settings_la_SOURCES) \
-	$(libgpaste_settings_ui_libgpaste_settings_ui_la_SOURCES) \
-	$(NULL)
-
-$(libgpaste_gir_file): $(all_la_files)
+$(libgpaste_gir_file): $(libgpaste_la_file)
 bindings_gi_GPaste_1_0_gir_FILES = \
-	$(all_la_sources) \
+	$(lib_libgpaste_la_SOURCES) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
-bindings_gi_GPaste_1_0_gir_LIBS = $(all_la_files)
-bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = \
-	libgpaste-applet \
-	libgpaste-client \
-	libgpaste-core \
-	libgpaste-daemon \
-	libgpaste-gnome-shell-client \
-	libgpaste-keybinder \
-	libgpaste-settings \
-	libgpaste-settings-ui \
-	$(NULL)
+bindings_gi_GPaste_1_0_gir_LIBS = $(libgpaste_la_file)
+bindings_gi_GPaste_1_0_gir_EXPORT_PACKAGES = libgpaste
 bindings_gi_GPaste_1_0_gir_SCANNERFLAGS = --warn-all
 bindings_gi_GPaste_1_0_gir_INCLUDES = \
 	GdkPixbuf-2.0 \

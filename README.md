@@ -2,15 +2,9 @@ GPaste is a clipboard management system.
 See <http://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboard
 managers are.
 
-Some libraries are available for development purposes:
+A library is available for development purposes:
 
-* `libgpaste-core` contains all the basic objects used by GPaste
-* `libgpaste-settings` allows you to handle GPaste preferences over dconf
-* `libgpaste-keybinder` provides functionalities to add custom keybindings to GPaste
-* `libgpaste-daemon` allows you to write your own GPaste daemon
-* `libgpaste-client` helps you integrate GPaste in your application
-* `libgpaste-gnome-shell-client` helps you integrate the gnome-shell dbus API in your application
-* `libgpaste-applet` allows you to write your own GPaste applet
+* `libgpaste` contains all the basic objects used by GPaste and allows you to manage preferences and the GPaste daemon.
 
 A default daemon named `gpaste-daemon` is provided, with four keybindings:
 
