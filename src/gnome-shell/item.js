@@ -53,8 +53,15 @@ const GPasteItem = new Lang.Class({
 
         this.actor.add(new DeleteItemPart.GPasteDeleteItemPart(client, index), { expand: true, x_align: St.Align.END });
 
-        if (index == 0)
-            this.label.set_style("font-weight: bold;");
+        if (index <= 10) {
+            this._indexLabel = new St.Label({
+                text: index + ': '
+            });
+            this._indexLabelVisible = false;
+            if (index == 0) {
+                this.label.set_style("font-weight: bold;");
+            }
+        }
 
         this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -81,6 +88,17 @@ const GPasteItem = new Lang.Class({
         this._lastSearch = search;
         this._lastSearchMatched = match;
         return match;
+    },
+
+    showIndex: function(state) {
+        if (state) {
+            if (!this._indexLabelVisible) {
+                this.actor.insert_child_at_index(this._indexLabel, 1);
+            }
+        } else if (this._indexLabelVisible) {
+            this.actor.remove_child(this._indexLabel);
+        }
+        this._indexLabelVisible = state;
     },
 
     _resetText: function() {
