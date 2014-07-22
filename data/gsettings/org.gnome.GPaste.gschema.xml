@@ -35,6 +35,15 @@
       </description>
     </key>
 
+    <key name="make-password" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;S'</default>
+      <summary>The keyboard shortcut to mark the active item as being a password</summary>
+      <description>
+        By default, hitting ctrl + alt + s will mark the active item as being a password ("&lt;Ctrl&gt;&lt;Alt&gt;S").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
     <key name="max-displayed-history-size" type="u">
       <range min="5" max="255"/>
       <default>20</default>

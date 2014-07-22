@@ -35,6 +35,7 @@ G_BEGIN_DECLS
 #define G_PASTE_GROWING_LINES_SETTING              "growing-lines"
 #define G_PASTE_HISTORY_NAME_SETTING               "history-name"
 #define G_PASTE_IMAGES_SUPPORT_SETTING             "images-support"
+#define G_PASTE_MAKE_PASSWORD_SETTING              "make-password"
 #define G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING "max-displayed-history-size"
 #define G_PASTE_MAX_HISTORY_SIZE_SETTING           "max-history-size"
 #define G_PASTE_MAX_MEMORY_USAGE_SETTING           "max-memory-usage"

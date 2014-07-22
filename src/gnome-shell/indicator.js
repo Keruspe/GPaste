@@ -24,6 +24,8 @@ const Lang = imports.lang;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
+const Clutter = imports.gi.Clutter;
+
 const GPaste = imports.gi.GPaste;
 
 const _ = Gettext.domain('GPaste').gettext;
@@ -91,6 +93,7 @@ const GPasteIndicator = new Lang.Class({
             this._onStateChanged (true);
 
             this.menu.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressEvent));
+            this.menu.actor.connect('key-release-event', Lang.bind(this, this._onKeyReleaseEvent));
 
             this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
         }));
@@ -101,12 +104,31 @@ const GPasteIndicator = new Lang.Class({
         this.destroy();
     },
 
-    _onKeyPressEvent: function(o, e) {
-        if (e.has_control_modifier()) {
-            let nb = parseInt(e.get_key_unicode());
+    _onKeyPressEvent: function(actor, event) {
+        if (event.has_control_modifier()) {
+            let nb = parseInt(event.get_key_unicode());
             if (nb != NaN && nb >= 0 && nb <= 9 && nb < this._history.length) {
                 this._history[nb].setActive(true);
             }
+        } else {
+            this._maybeUpdateIndexVisibility(event, true);
+        }
+    },
+
+    _onKeyReleaseEvent: function(actor, event) {
+        this._maybeUpdateIndexVisibility(event, false);
+    },
+
+    _maybeUpdateIndexVisibility: function(event, state) {
+        let key = event.get_key_symbol();
+        if (key == Clutter.KEY_Control_L || key == Clutter.KEY_Control_R) {
+            this._updateIndexVisibility(state);
+        }
+    },
+
+    _updateIndexVisibility: function(state) {
+        for (let i = 0; i<10 && i < this._history.length; ++i) {
+            this._history[i].showIndex(state);
         }
     },
 
@@ -128,7 +150,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _resetEntrySize: function() {
-        this._searchItem.resetSize(this._settings.get_element_size()/2);
+        this._searchItem.resetSize(this._settings.get_element_size()/2 + 3);
     },
 
     _setMaxDisplayedSize: function() {
@@ -213,6 +235,8 @@ const GPasteIndicator = new Lang.Class({
     _onOpenStateChanged: function(menu, state) {
         if (state) {
             this._searchItem.reset();
+        } else {
+            this._updateIndexVisibility(false);
         }
     },
 

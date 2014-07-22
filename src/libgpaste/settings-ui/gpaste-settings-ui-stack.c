@@ -48,6 +48,7 @@ struct _GPasteSettingsUiStackPrivate
     GtkSpinButton   *max_text_item_size_button;
     GtkSpinButton   *min_text_item_size_button;
     GtkEntry        *backup_entry;
+    GtkEntry        *make_password_entry;
     GtkEntry        *pop_entry;
     GtkEntry        *show_history_entry;
     GtkEntry        *sync_clipboard_to_primary_entry;
@@ -243,6 +244,7 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     return panel;
 }
 
+STRING_CALLBACK (make_password)
 STRING_CALLBACK (pop)
 STRING_CALLBACK (show_history)
 STRING_CALLBACK (sync_clipboard_to_primary)
@@ -254,13 +256,20 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
     GPasteSettings *settings = priv->settings;
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
-    /* translators: Keyboard shortcut to paste and then delete the first item in history */
+    /* translators: Keyboard shortcut to delete the active item from history */
     priv->pop_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                  _("Delete the first item in history: "),
+                                                                  _("Delete the active item from history: "),
                                                                   g_paste_settings_get_pop (settings),
                                                                   pop_callback,
                                                                   (GPasteResetCallback) g_paste_settings_reset_pop,
                                                                   settings);
+    /* translators: Keyboard shortcut to mark the active item as being a password */
+    priv->make_password_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+                                                                            _("Mark the active item as being a password: "),
+                                                                            g_paste_settings_get_make_password (settings),
+                                                                            make_password_callback,
+                                                                            (GPasteResetCallback) g_paste_settings_reset_make_password,
+                                                                            settings);
     /* translators: Keyboard shortcut to display the history */
     priv->show_history_entry = g_paste_settings_ui_panel_add_text_setting (panel,
                                                                            _("Display the history: "),
@@ -426,6 +435,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_switch), g_paste_settings_get_images_support (settings));
+    else if (!g_strcmp0 (key, G_PASTE_MAKE_PASSWORD_SETTING))
+        gtk_entry_set_text (priv->make_password_entry, g_paste_settings_get_make_password (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
