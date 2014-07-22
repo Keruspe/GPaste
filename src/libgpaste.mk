@@ -50,6 +50,7 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client-private.h \
 	src/libgpaste/keybinder/gpaste-keybinder-private.h \
 	src/libgpaste/keybinder/gpaste-keybinding-private.h \
+	src/libgpaste/keybinder/gpaste-make-password-keybinding-private.h \
 	src/libgpaste/keybinder/gpaste-pop-keybinding-private.h \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding-private.h \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding-private.h \
@@ -92,6 +93,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.h \
 	src/libgpaste/keybinder/gpaste-keybinder.h \
 	src/libgpaste/keybinder/gpaste-keybinding.h \
+	src/libgpaste/keybinder/gpaste-make-password-keybinding.h \
 	src/libgpaste/keybinder/gpaste-pop-keybinding.h \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding.h \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.h \
@@ -132,6 +134,7 @@ lib_libgpaste_la_SOURCES = \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c \
 	src/libgpaste/keybinder/gpaste-keybinder.c \
 	src/libgpaste/keybinder/gpaste-keybinding.c \
+	src/libgpaste/keybinder/gpaste-make-password-keybinding.c \
 	src/libgpaste/keybinder/gpaste-pop-keybinding.c \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding.c \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.c \

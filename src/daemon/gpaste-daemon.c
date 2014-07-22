@@ -19,6 +19,7 @@
 
 #include <gpaste.h>
 #include <gpaste-daemon.h>
+#include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>
 #include <gpaste-show-history-keybinding.h>
 #include <gpaste-sync-clipboard-to-primary-keybinding.h>
