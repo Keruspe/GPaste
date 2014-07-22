@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <KeyListEntries schema="org.gnome.GPaste" group="system" name="GPaste">
 
-	<KeyListEntry name="pop" _description="Delete the first item in history: "></KeyListEntry>
+	<KeyListEntry name="make-password" _description="Mark the active item as being a password: "></KeyListEntry>
+
+	<KeyListEntry name="pop" _description="Delete the active item from history: "></KeyListEntry>
 
 	<KeyListEntry name="show-history" _description="Display the history: "></KeyListEntry>
 
