@@ -27,6 +27,7 @@ struct _GPasteAppletItemPrivate
     GPasteSettings *settings;
 
     GtkLabel       *label;
+    gchar          *text;
     guint32         index;
 
     gboolean        text_mode;
@@ -42,20 +43,36 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletItem, g_paste_applet_item, GTK_TYPE_MENU
 static gchar ellipsis[] = "…";
 
 static void
+g_paste_applet_item_private_set_text (GPasteAppletItemPrivate *priv,
+                                      const gchar             *text)
+{
+    if (priv->index && !priv->text_mode)
+    {
+        G_PASTE_CLEANUP_FREE gchar *escaped = g_markup_escape_text (text, -1);
+        G_PASTE_CLEANUP_FREE gchar *markup = g_strdup_printf ("<b>%s</b>", escaped);
+        gtk_label_set_markup (priv->label, priv->text);
+    }
+    else
+    {
+        gtk_label_set_text (priv->label, text);
+    }
+}
+
+static void
 g_paste_applet_item_private_maybe_strip_contents (GPasteAppletItemPrivate *priv)
 {
-    const gchar *text = gtk_label_get_text (priv->label);
+    const gchar *text = priv->text;
+
+    if (!text)
+        return;
+
     guint32 altered_index = priv->altered_index;
 
     if (!priv->text_mode)
     {
         if (altered_index)
         {
-            G_PASTE_CLEANUP_FREE gchar *_text = g_strdup (text);
-
-            for (guint i = 0; i < 4; ++i)
-                _text[altered_index + i] = priv->saved[i];
-
+            g_paste_applet_item_private_set_text (priv, text);
             priv->altered_index = 0;
         }
         return;
@@ -73,20 +90,20 @@ g_paste_applet_item_private_maybe_strip_contents (GPasteAppletItemPrivate *priv)
         if (diff < 2) /* ensure we have room for ellipsis */
             _text = g_realloc (_text, size + 3);
 
-        if (altered_index)
+        altered_index = size - 1;
+        for (guint i = 0; i < 4; ++i)
         {
-            for (guint i = 0; i < 4; ++i)
-                _text[altered_index + i] = priv->saved[i];
+            priv->saved[i] = text[altered_index + i];
+            _text[altered_index + i] = ellipsis[i];
         }
 
-        altered_index = priv->altered_index = size - 1;
-        for (guint i = 0; i < 4; ++i)
-            priv->saved[i] = text[altered_index + i];
-
-        for (guint i = 0; i < 4; ++i)
-            _text[altered_index] = ellipsis[i];
-
-        gtk_label_set_text (priv->label, _text);
+        g_paste_applet_item_private_set_text (priv, _text);
+        priv->altered_index = altered_index;
+    }
+    else if (altered_index)
+    {
+        g_paste_applet_item_private_set_text (priv, text);
+        priv->altered_index = 0;
     }
 }
 
@@ -143,12 +160,10 @@ g_paste_applet_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     G_PASTE_CLEANUP_FREE gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
     if (!txt || error)
         return;
-    G_PASTE_CLEANUP_FREE gchar *nospace = g_paste_applet_item_replace (txt, "\n", "");
-    G_PASTE_CLEANUP_FREE gchar *escaped = g_markup_escape_text (nospace, -1);
-    G_PASTE_CLEANUP_FREE gchar *markup = (priv->index) ? NULL : g_strdup_printf ("<b>%s</b>", escaped);
-
-    gtk_label_set_markup (priv->label, (markup) ? markup : escaped);
+    priv->text = g_paste_applet_item_replace (txt, "\n", "");
     priv->altered_index = 0;
+
+    g_paste_applet_item_private_set_text (priv, priv->text);
     g_paste_applet_item_private_maybe_strip_contents (priv);
 }
 
@@ -206,6 +221,8 @@ static void
 g_paste_applet_item_init (GPasteAppletItem *self)
 {
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private (self);
+
+    priv->text = NULL;
 
     priv->text_mode = FALSE;
     priv->altered_index = 0;
