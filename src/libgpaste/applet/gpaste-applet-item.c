@@ -211,9 +211,22 @@ g_paste_applet_item_dispose (GObject *object)
 }
 
 static void
+g_paste_applet_item_finalize (GObject *object)
+{
+    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) object);
+
+    g_free (priv->text);
+
+    G_OBJECT_CLASS (g_paste_applet_item_parent_class)->finalize (object);
+}
+
+static void
 g_paste_applet_item_class_init (GPasteAppletItemClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_applet_item_dispose;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_applet_item_dispose;
+    object_class->finalize = g_paste_applet_item_finalize;
     GTK_MENU_ITEM_CLASS (klass)->activate = g_paste_applet_item_activate;
 }
 
