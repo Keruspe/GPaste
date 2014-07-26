@@ -37,6 +37,7 @@ const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
 const Item = Me.imports.item;
+const PrefsItem = Me.imports.prefsItem;
 const SearchItem = Me.imports.searchItem;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
@@ -69,21 +70,28 @@ const GPasteIndicator = new Lang.Class({
         this._resetEntrySize();
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
 
+        this._actions = new PopupMenu.PopupBaseMenuItem({
+            reactive: false,
+            can_focus: false
+        });
+
         this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
         this._addToPostHeader(this._dummyHistoryItem);
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
+        this._addToFooter(this._actions);
 
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
 
             this._dummyHistoryItem.update();
+            this._prefsItem = new PrefsItem.GPastePrefsItem();
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
 
             this._addToHeader(new StateSwitch.GPasteStateSwitch(this._client));
             this._addToHeader(this._searchItem);
-            this._addToFooter(this._emptyHistoryItem);
-            this._addSettingsAction();
-            this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
+            this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
+            this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
+            this._actions.actor.add(new AboutItem.GPasteAboutItem(this._client), { expand: true, x_fill: false });
 
             this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
             this._refresh(0);
@@ -217,11 +225,11 @@ const GPasteIndicator = new Lang.Class({
     _updateVisibility: function(empty) {
         if (empty) {
             this._dummyHistoryItem.actor.show();
-            this._emptyHistoryItem.actor.hide();
+            this._emptyHistoryItem.hide();
             this._searchItem.actor.hide();
         } else {
             this._dummyHistoryItem.actor.hide();
-            this._emptyHistoryItem.actor.show();
+            this._emptyHistoryItem.show();
             this._searchItem.actor.show();
         }
     },
@@ -256,12 +264,6 @@ const GPasteIndicator = new Lang.Class({
 
     _addToFooter: function(item) {
         this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + this._history.length + this._preFooterSize + this._footerSize++);
-    },
-
-    _addSettingsAction: function() {
-        // Simulate _addToFooter
-        this.menu.addSettingsAction(_("GPaste daemon settings"), 'org.gnome.GPaste.Settings.desktop');
-        ++this._footerSize;
     },
 
     _onStateChanged: function(state) {

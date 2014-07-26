@@ -18,21 +18,25 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Gettext = imports.gettext;
 const Lang = imports.lang;
 
-const PopupMenu = imports.ui.popupMenu;
-
-const _ = Gettext.domain('GPaste').gettext;
+const St = imports.gi.St;
 
 const GPasteEmptyHistoryItem = new Lang.Class({
     Name: 'GPasteEmptyHistoryItem',
-    Extends: PopupMenu.PopupMenuItem,
+    Extends: St.Button,
 
     _init: function(client) {
-        this.parent(_("Empty history"));
+        this.parent({
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+            style_class: 'system-menu-action'
+        });
 
-        this.connect('activate', function() {
+        this.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
+
+        this.connect('clicked', function() {
             client.empty(null);
         });
     }

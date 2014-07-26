@@ -20,13 +20,14 @@
 
 const Lang = imports.lang;
 
+const Shell = imports.gi.Shell;
 const St = imports.gi.St;
 
-const GPasteAboutItem = new Lang.Class({
-    Name: 'GPasteAboutItem',
+const GPastePrefsItem = new Lang.Class({
+    Name: 'GPastePrefsItem',
     Extends: St.Button,
 
-    _init: function(client) {
+    _init: function() {
         this.parent({
             reactive: true,
             can_focus: true,
@@ -34,10 +35,10 @@ const GPasteAboutItem = new Lang.Class({
             style_class: 'system-menu-action'
         });
 
-        this.child = new St.Icon({ icon_name: 'dialog-information-symbolic' });
+        this.child = new St.Icon({ icon_name: 'emblem-system-symbolic' });
 
         this.connect('clicked', function() {
-            client.about(null);
+            Shell.AppSystem.get_default().lookup_app('org.gnome.GPaste.Settings.desktop').activate();
         });
     }
 });
