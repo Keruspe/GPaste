@@ -33,5 +33,6 @@ bin_gpaste_daemon_CFLAGS = \
 
 bin_gpaste_daemon_LDADD = \
 	$(builddir)/$(libgpaste_la_file) \
+	$(GTK_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)

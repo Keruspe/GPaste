@@ -30,6 +30,7 @@ bin_gpaste_app_indicator_CFLAGS = \
 
 bin_gpaste_app_indicator_LDADD = \
 	$(builddir)/$(libgpaste_la_file) \
+	$(GTK_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)
 endif
