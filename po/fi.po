@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-07-16 11:45+0900\n"
+"POT-Creation-Date: 2014-07-28 23:03+0200\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -16,191 +16,210 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../libgpaste/applet/gpaste-applet-about.c:78
+#: ../src/libgpaste/gpaste-macros.h:47
+msgid "Failed to register the gtk application"
+msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
+
+#: ../src/libgpaste/applet/gpaste-applet-about.c:78
 msgid "About"
 msgstr ""
 
-#: ../libgpaste/applet/gpaste-applet-empty.c:78
+#: ../src/libgpaste/applet/gpaste-applet-empty.c:78
 msgid "Empty history"
 msgstr "Tyhjennä historia"
 
-#: ../libgpaste/applet/gpaste-applet-menu.c:281
+#: ../src/libgpaste/applet/gpaste-applet-menu.c:281
 msgid "(Empty)"
 msgstr "(Tyhjä)"
 
-#: ../libgpaste/applet/gpaste-applet-quit.c:67
+#: ../src/libgpaste/applet/gpaste-applet-quit.c:67
 msgid "Quit"
 msgstr "Lopeta"
 
-#: ../libgpaste/applet/gpaste-applet-settings.c:57
+#: ../src/libgpaste/applet/gpaste-applet-settings.c:57
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "GPaste palvelun asetukset"
 
-#: ../libgpaste/applet/gpaste-applet-switch.c:86
+#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
 #, fuzzy
 msgid "Stop tracking changes"
 msgstr "lopettaa leikepöydän muutosten seuraamisen"
 
-#: ../libgpaste/applet/gpaste-applet-switch.c:86
-#: ../libgpaste/applet/gpaste-applet-switch.c:155
+#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
+#: ../src/libgpaste/applet/gpaste-applet-switch.c:155
 msgid "Track changes"
 msgstr "Pidä kirjaa tapahtumista"
 
-#: ../libgpaste/core/gpaste-history.c:723
+#: ../src/libgpaste/core/gpaste-history.c:723
 msgid "Could not create history dir"
 msgstr "Historiakansion luominen epäonnistui"
 
 #. This is the date format "month/day/year time"
-#: ../libgpaste/core/gpaste-image-item.c:238
+#: ../src/libgpaste/core/gpaste-image-item.c:238
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: ../libgpaste/core/gpaste-image-item.c:240
+#: ../src/libgpaste/core/gpaste-image-item.c:240
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Kuva, %d x %d (%s)]"
 
-#: ../libgpaste/core/gpaste-macros.h:47
-msgid "Failed to register the gtk application"
-msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
-
 #. This is the prefix displayed in history to identify a password
-#: ../libgpaste/core/gpaste-password-item.c:77
+#: ../src/libgpaste/core/gpaste-password-item.c:77
 msgid "Password"
 msgstr ""
 
 #. Match options
 #. Error
 #. This is the prefix displayed in history to identify selected files
-#: ../libgpaste/core/gpaste-uris-item.c:134
+#: ../src/libgpaste/core/gpaste-uris-item.c:134
 msgid "[Files] "
 msgstr "[Tiedostot]"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:122
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:126
 msgid "Track clipboard changes"
 msgstr "Pidä kirjaa leikepöydän tapahtumista"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:129
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:133
 msgid "Enable the gnome-shell extension"
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:135
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:139
 msgid "Sync the daemon state with the extension's one"
 msgstr "Synkronoi palvelun ja liitännäisen tilat"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:143
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:147
 msgid "Primary selection affects history"
 msgstr "Maalaminen vaikuttaa historiaan"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:149
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:153
 msgid "Synchronize clipboard with primary selection"
 msgstr "Synkronoi leikepöytä ja maalaaminen"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:156
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:160
 msgid "Images support"
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:162
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:166
 msgid "Trim items"
 msgstr "Trimmaa leikkeet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:168
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:172
 msgid "Detect growing lines"
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:175
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:179
 msgid "Save history"
 msgstr "Tallenna historia"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:198
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:202
 msgid "Max element size when displaying: "
 msgstr "Suurin koko elementtejä näytettäessä:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:205
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:209
 msgid "Max displayed history size: "
 msgstr "Historian suurin koko:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:212
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:216
 msgid "Max history size: "
 msgstr "Historian suurin koko:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:219
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:223
 msgid "Max memory usage (MB): "
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:226
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:230
 msgid "Max text item length: "
 msgstr "Pisin sallittu tekstileikkeen pituus:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:233
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:237
 msgid "Min text item length: "
 msgstr "Lyhin sallittu tekstileikkeen pituus:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:256
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:261
+#: ../data/control-center/42-gpaste.xml.in.in.h:2
+#, fuzzy
+msgid "Delete the active item from history: "
+msgstr "noutaa määritellyn leikkeen historiasta"
+
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:268
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
-msgid "Delete the first item in history: "
+msgid "Mark the active item as being a password: "
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:263
-#: ../data/control-center/42-gpaste.xml.in.in.h:2
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:275
+#: ../data/control-center/42-gpaste.xml.in.in.h:3
 msgid "Display the history: "
 msgstr "Näytä historia:"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:270
-#: ../data/control-center/42-gpaste.xml.in.in.h:3
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:282
+#: ../data/control-center/42-gpaste.xml.in.in.h:4
 msgid "Sync the clipboard to the primary selection: "
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:277
-#: ../data/control-center/42-gpaste.xml.in.in.h:4
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:289
+#: ../data/control-center/42-gpaste.xml.in.in.h:5
 msgid "Sync the primary selection to the clipboard: "
 msgstr ""
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:292
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: ../src/gpaste/gpaste.c:150
 msgid "Couldn't connect to GPaste daemon"
 msgstr "GPaste-palveluun ei saatu yhteyttä"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:367
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:379
 msgid "Backup history as: "
 msgstr "Historian varmuuskopio:"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:372
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:384
 msgid "Backup"
 msgstr "Varmuuskopioi"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:379
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:391
 msgid "Ok"
 msgstr "Ok"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:401
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:413
 msgid "General behaviour"
 msgstr "Yleiset ominaisuudet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:402
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:414
 msgid "History settings"
 msgstr "Historian asetukset"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:403
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:415
 msgid "Keyboard shortcuts"
 msgstr "Pikanäppäimet"
 
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:404
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:416
 msgid "Histories"
 msgstr "Historiat"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:521
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:532
 msgid "Switch to"
 msgstr "Vaihda kohteeseen"
 
 #. translators: This is the name of a multi-history management action
-#: ../libgpaste/settings/ui/gpaste-settings-ui-stack.c:526
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:537
 msgid "Delete"
 msgstr "Poista"
+
+#: ../src/daemon/gpaste-daemon.c:47
+#, c-format
+msgid "Signal %d received, exiting\n"
+msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
+
+#: ../src/daemon/gpaste-daemon.c:57
+msgid "Could not acquire DBus name."
+msgstr "DBus-nimen selvitys epäonnistui."
+
+#: ../src/daemon/gpaste-daemon.c:125
+msgid "Could not register DBus service."
+msgstr "DBus-palvelun rekisteröinti epäonnistui."
 
 #: ../src/gpaste/gpaste.c:32
 #, c-format
@@ -418,19 +437,6 @@ msgstr "GPaste-härpäkkeen esiintaikominen epäonnistui.\n"
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Palvelun uudelleenkäynnistäminen onnistui\n"
 
-#: ../src/gpasted/gpasted.c:46
-#, c-format
-msgid "Signal %d received, exiting\n"
-msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
-
-#: ../src/gpasted/gpasted.c:56
-msgid "Could not acquire DBus name."
-msgstr "DBus-nimen selvitys epäonnistui."
-
-#: ../src/gpasted/gpasted.c:123
-msgid "Could not register DBus service."
-msgstr "DBus-palvelun rekisteröinti epäonnistui."
-
 #: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "GPaste Applet"
@@ -542,50 +548,65 @@ msgid "By default, we're saving both"
 msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:9
+#, fuzzy
+msgid "The keyboard shortcut to mark the active item as being a password"
+msgstr "Valikon avaamiseen käytettävä näppäinyhdistelmä"
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:10
+#, fuzzy
+msgid ""
+"By default, hitting ctrl + alt + s will mark the active item as being a "
+"password (\"&lt;Ctrl&gt;&lt;Alt&gt;S\"). An empty string here disables this "
+"functionnality."
+msgstr ""
+"Oletuksena näppäinyhdistelmä ctrl + alt + h avaa valikon (\"&lt;Ctrl&gt;&lt;"
+"Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:11
 msgid "Max displayed history size"
 msgstr "Historian suurin koko"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:10
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:12
 msgid "Maximum number of items displayed in the history"
 msgstr "Suurin määrä historiassa näkyviä leikkeitä"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:11
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:13
 msgid "Max history size"
 msgstr "Historian suurin koko"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:12
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:14
 msgid "Maximum number of items in history"
 msgstr "Suurin määrä leikkeitä, joita historissa säilytettään"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:13
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:15
 msgid "Max memory usage (MB)"
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:14
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:16
 msgid "Maximum amount of memory used to store contents"
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:15
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:17
 msgid "Max text item size"
 msgstr "Suurin tekstileikkeen koko"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:16
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:18
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr "Suurin sallittu tekstileikkeen koko, suurempia leikkeitä ei huomioida."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:17
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:19
 msgid "Min text item size"
 msgstr "Pienin tekstileikkeen koko"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:18
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:20
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr "Pienin sallittu tekstileikkeen koko, lyhempiä leikkeitä ei huomioida."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:19
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:21
 msgid "The keyboard shortcut to delete the first element in history"
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:20
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:22
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"&lt;Ctrl&gt;&lt;Alt&gt;V\"). "
 "An empty string here disables this functionnality."
@@ -593,27 +614,27 @@ msgstr ""
 "Oletuksena näppäinyhdistelmä ctrl + alt + v tekee tämän(\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:21
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:23
 msgid "Does the primary selection affects history?"
 msgstr "Vaikuttaako maalaaminen historiaan?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:22
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:24
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Oletuksena vain leikeet (ctrl+c)  vaikuttvat historiaan."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:23
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:25
 msgid "Do we save the history from one session to another?"
 msgstr "Säilytetäänkö historia kirjautumiskertojen välillä?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:24
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
 msgid "By default, we're saving it"
 msgstr "Oletuksena tallennetaan."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:25
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
 msgid "The keyboard shortcut to display the menu"
 msgstr "Valikon avaamiseen käytettävä näppäinyhdistelmä"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:28
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). An empty string here disables this functionnality."
@@ -621,43 +642,43 @@ msgstr ""
 "Oletuksena näppäinyhdistelmä ctrl + alt + h avaa valikon (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:28
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:30
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:31
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:30
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:32
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
 msgstr ""
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:31
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:33
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "Synkronoidaanko leikepäytä ja maalaaminen toisiinsa?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:32
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:34
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr "Oletuksena maalaminen ja leikkeet ovat erillään."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:33
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:35
 msgid "Do we track the clipboard changes?"
 msgstr "Seurataanko leikepöydän tapahtumia?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:34
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:36
 msgid "By default, we're tracking those changes."
 msgstr "Oletuksena muutoksia seurataan."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:35
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:37
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -665,15 +686,15 @@ msgstr ""
 "Synkronoidaanko palvelun tila gnome-shell liitännäisen tlaan?(ota palvelu "
 "pois käytöstä, kun poistat liitännäisen)"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:36
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:38
 msgid "By default, the daemon state keeps unchanged"
 msgstr "Oletuksena palvelun tilaa ei muuteta"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:37
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:39
 msgid "Do we trim the textual items before adding them to history?"
 msgstr "Trimmataanko tekstileikkeet, ennen lisäämistä historiaan?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:38
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:40
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
