@@ -1,9 +1,12 @@
-NEW in 3.10.3 (Not released yet)
+NEW in 3.10.3 (28/07/2014)
 =============
 
 - gpasted has been renamed gpaste-daemon
 - Desktop files have been fixed
 - Fixes for the ubuntu app-indicator
+- Keybinding to mark an item as being a password
+- All libgpaste-* have been merged into a single libgpaste
+- Misc bugfixes reported for debian packaging
 
 NEW in 3.12.1 and 3.10.2 (16/07/2014)
 =============

@@ -30,6 +30,7 @@ bin_gpaste_applet_CFLAGS = \
 
 bin_gpaste_applet_LDADD = \
 	$(builddir)/$(libgpaste_la_file) \
+	$(GTK_LIBS) \
 	$(AM_LIBS) \
 	$(NULL)
 endif
