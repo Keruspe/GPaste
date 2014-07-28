@@ -52,7 +52,7 @@ AM_CFLAGS = \
 	-I$(srcdir)/src/libgpaste/keybinder \
 	-I$(srcdir)/src/libgpaste/settings \
 	-I$(srcdir)/src/libgpaste/settings-ui \
-	-I$(builddir)/src/libgpaste/core \
+	-I$(builddir)/src/libgpaste \
 	-DG_PASTE_COMPILATION \
 	-DLOCALEDIR=\"$(localedir)\" \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \

@@ -41,6 +41,6 @@ If your distribution ships with gnome-settings 3.8 and thus a patched version of
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 3.10 is: [GPaste 3.10.2](http://www.imagination-land.org/posts/2014-07-16-gpaste-3.10.2-released.html).
+Latest release for GNOME 3.10 is: [GPaste 3.10.3](http://www.imagination-land.org/posts/2014-07-28-gpaste-3.10.3-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.10.1.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.10.3.tar.xz>
