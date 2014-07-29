@@ -43,6 +43,7 @@ const GPasteItem = new Lang.Class({
         this._index = index;
 
         /* initialize match stuff */
+        this._changed = true;
         this.match("");
 
         this.connect('activate', function(actor, event) {
@@ -75,6 +76,11 @@ const GPasteItem = new Lang.Class({
     },
 
     match: function(search) {
+        if (!this._changed) {
+            return this._lastSearchMatched;
+        }
+
+        this._changed = false;
         let match = true;
 
         if (search.length > 0) {
@@ -108,8 +114,7 @@ const GPasteItem = new Lang.Class({
                 return;
             }
             this.label.clutter_text.set_text(text);
-            /* reset match stuff */
-            this.match("");
+            this._changed = true;
             this.emit('changed');
         }));
     },
