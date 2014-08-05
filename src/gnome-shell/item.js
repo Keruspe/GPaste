@@ -44,7 +44,7 @@ const GPasteItem = new Lang.Class({
 
         /* initialize match stuff */
         this._changed = true;
-        this.match("");
+        this.match("", true);
 
         this.connect('activate', function(actor, event) {
             client.select(index, null);
@@ -75,8 +75,8 @@ const GPasteItem = new Lang.Class({
         this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
     },
 
-    match: function(search) {
-        if (!this._changed) {
+    match: function(search, searchChanged) {
+        if (!searchChanged && !this._changed) {
             return this._lastSearchMatched;
         }
 
