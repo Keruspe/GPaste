@@ -28,6 +28,7 @@ G_BEGIN_DECLS
 
 typedef enum {
     G_PASTE_UPDATE_ACTION_REPLACE,
+    G_PASTE_UPDATE_ACTION_REMOVE,
     G_PASTE_UPDATE_ACTION_INVALID
 } GPasteUpdateAction;
 
@@ -43,6 +44,8 @@ g_paste_update_action_from_string (const gchar *action)
 {
     if (!g_strcmp0 (action, "REPLACE"))
         return G_PASTE_UPDATE_ACTION_REPLACE;
+    else if (!g_strcmp0 (action, "REMOVE"))
+        return G_PASTE_UPDATE_ACTION_REMOVE;
     else
         return G_PASTE_UPDATE_ACTION_INVALID;
 }

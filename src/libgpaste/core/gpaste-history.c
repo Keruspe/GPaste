@@ -346,7 +346,7 @@ g_paste_history_remove (GPasteHistory *self,
     else if (pos < priv->biggest_index)
         --priv->biggest_index;
 
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, pos);
 }
 
 static GPasteItem *
