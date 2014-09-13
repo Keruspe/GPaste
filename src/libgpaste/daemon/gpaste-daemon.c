@@ -678,9 +678,8 @@ static gboolean
 _g_paste_daemon_changed (gpointer data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (data);
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
-    g_paste_daemon_private_changed (priv, NULL);
+    g_paste_daemon_update (self, "REPLACE", "ALL", NULL);
 
     return G_SOURCE_REMOVE;
 }
