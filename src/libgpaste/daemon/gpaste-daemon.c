@@ -35,8 +35,8 @@
                                    data,                            \
                                    error)
 
-#define __NODATA     g_variant_new_tuple (NULL, 0)
-#define __DATA(data) g_variant_new_tuple (data, 1)
+#define __NODATA     g_variant_new_tuple (NULL,  0)
+#define __DATA(data) g_variant_new_tuple (&data, 1)
 
 #define G_PASTE_SEND_DBUS_SIGNAL(sig)             G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __NODATA,  NULL)
 #define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)  G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __NODATA,  error)
@@ -68,6 +68,7 @@
 enum
 {
     C_CHANGED,
+    C_UPDATE,
     C_NAME_LOST,
     C_REEXECUTE_SELF,
     C_TRACK,
@@ -154,17 +155,18 @@ g_paste_daemon_private_changed (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_update (GPasteDaemon *self,
-                       gchar        *action
-                       gchar        *target,
-                       GVariant     *other)
+g_paste_daemon_update (GPasteDaemon       *self,
+                       const gchar        *action,
+                       const gchar        *target,
+                       const GVariantType *other_type,
+                       GVariant           *other)
 {
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
     GVariant *data[] = {
         g_variant_new_string (action),
         g_variant_new_string (target),
-        g_variant_new_maybe (other)
+        g_variant_new_maybe (other_type, other)
     };
     G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
 
@@ -630,6 +632,16 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_CHANGED]);
+    g_signal_handler_disconnect (priv->history,  c_signals[C_UPDATE]);
+}
+
+static void
+g_paste_daemon_on_history_update (GPasteDaemon *self,
+                                  const gchar  *action,
+                                  const gchar  *target,
+                                  gpointer      user_data G_GNUC_UNUSED)
+{
+    g_paste_daemon_update (self, action, target, NULL, NULL);
 }
 
 static void
@@ -672,6 +684,10 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                                      "changed",
                                                      G_CALLBACK (g_paste_daemon_private_changed),
                                                      priv);
+    c_signals[C_UPDATE] = g_signal_connect_swapped (priv->history,
+                                                    "update",
+                                                    G_CALLBACK (g_paste_daemon_on_history_update),
+                                                    self);
 }
 
 static gboolean
@@ -679,7 +695,7 @@ _g_paste_daemon_changed (gpointer data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (data);
 
-    g_paste_daemon_update (self, "REPLACE", "ALL", NULL);
+    g_paste_daemon_update (self, "REPLACE", "ALL", NULL, NULL);
 
     return G_SOURCE_REMOVE;
 }
@@ -741,7 +757,6 @@ g_paste_daemon_own_bus_name (GPasteDaemon *self,
 
     return (!priv->inner_error);
 }
-
 
 static void
 g_paste_daemon_dispose (GObject *object)
