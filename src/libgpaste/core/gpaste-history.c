@@ -44,7 +44,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
 
 enum
 {
-    CHANGED,
     SELECTED,
     UPDATE,
 
@@ -103,17 +102,6 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
         g_object_unref (item);
     }
     return g_slist_delete_link (elem, elem);
-}
-
-static void
-g_paste_history_changed (GPasteHistory *self)
-{
-    g_paste_history_save (self);
-
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   0, /* detail */
-                   NULL);
 }
 
 static void
@@ -252,6 +240,7 @@ g_paste_history_add (GPasteHistory *self,
 
     GSList *history = priv->history;
     gboolean election_needed = FALSE;
+    GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_INVALID;
 
     if (history)
     {
@@ -261,9 +250,13 @@ g_paste_history_add (GPasteHistory *self,
             return;
 
         if (g_paste_history_private_is_growing_line (priv, old_first, item))
+        {
+            target = G_PASTE_UPDATE_TARGET_FIRST;
             priv->history = g_paste_history_private_remove (priv, history, FALSE);
+        }
         else
         {
+            target = G_PASTE_UPDATE_TARGET_ALL;
             /* size may change when state is idle */
             priv->size -= g_paste_item_get_size (old_first);
             g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
@@ -306,7 +299,9 @@ g_paste_history_add (GPasteHistory *self,
         g_paste_history_private_elect_new_biggest (priv);
 
     g_paste_history_private_check_memory_usage (priv);
-    g_paste_history_changed (self);
+
+    if (target != G_PASTE_UPDATE_TARGET_INVALID)
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0);
 }
 
 /**
@@ -1108,7 +1103,7 @@ g_paste_history_switch (GPasteHistory *self,
 
     g_paste_settings_set_history_name (priv->settings, name);
     g_paste_history_load (self);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UDPATE_TARGET_ALL, 0); /* TODO: is this sufficient ? */
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0); /* TODO: is this sufficient ? */
 }
 
 /**
@@ -1188,15 +1183,6 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
     object_class->dispose = g_paste_history_dispose;
     object_class->finalize = g_paste_history_finalize;
 
-    signals[CHANGED] = g_signal_new ("changed",
-                                     G_PASTE_TYPE_HISTORY,
-                                     G_SIGNAL_RUN_LAST,
-                                     0, /* class offset */
-                                     NULL, /* accumulator */
-                                     NULL, /* accumulator data */
-                                     g_cclosure_marshal_VOID__VOID,
-                                     G_TYPE_NONE,
-                                     0); /* number of params */
     signals[SELECTED] = g_signal_new ("selected",
                                       G_PASTE_TYPE_HISTORY,
                                       G_SIGNAL_RUN_LAST,
