@@ -19,6 +19,8 @@
 
 #include "gpaste-history-private.h"
 
+#include "gpaste-update-enums.h"
+
 #include <gpaste-image-item.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
@@ -126,15 +128,15 @@ g_paste_history_selected (GPasteHistory *self,
 }
 
 static void
-g_paste_history_update (GPasteHistory *self,
-                        const gchar   *action,
-                        const gchar   *target)
+g_paste_history_update (GPasteHistory     *self,
+                        GPasteUpdateAction action,
+                        GPasteUpdateTarget target)
 {
     g_signal_emit (self,
                    signals[UPDATE],
                    0, /* detail */
-                   action,
-                   target,
+                   g_paste_update_action_to_string (action),
+                   g_paste_update_target_to_string (target),
                    NULL);
 }
 
