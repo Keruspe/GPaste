@@ -26,18 +26,21 @@
 
 #define DEFAULT_HISTORY "history"
 
-#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,num,error)           \
+#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,error)               \
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
                                    priv->object_path,               \
                                    G_PASTE_DAEMON_BUS_NAME,         \
                                    G_PASTE_DAEMON_SIG_##sig,        \
-                                   g_variant_new_tuple (data, num), \
+                                   data,                            \
                                    error)
 
-#define G_PASTE_SEND_DBUS_SIGNAL(sig)                G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, NULL)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)     G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, NULL, 0, error)
-#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,data) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, &data, 1, NULL)
+#define __NODATA     g_variant_new_tuple (NULL, 0)
+#define __DATA(data) g_variant_new_tuple (data, 1)
+
+#define G_PASTE_SEND_DBUS_SIGNAL(sig)             G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __NODATA,  NULL)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)  G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __NODATA,  error)
+#define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,d) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __DATA(d), NULL)
 
 #define NEW_SIGNAL(name) \
     g_signal_new (name, \
@@ -147,6 +150,25 @@ static void
 g_paste_daemon_private_changed (GPasteDaemonPrivate *priv,
                                 GPasteHistory       *history G_GNUC_UNUSED)
 {
+    G_PASTE_SEND_DBUS_SIGNAL (CHANGED);
+}
+
+static void
+g_paste_daemon_update (GPasteDaemon *self,
+                       gchar        *action
+                       gchar        *target,
+                       GVariant     *other)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+
+    GVariant *data[] = {
+        g_variant_new_string (action),
+        g_variant_new_string (target),
+        g_variant_new_maybe (other)
+    };
+    G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
+
+    /* TODO: legacy compat, remove me later */
     G_PASTE_SEND_DBUS_SIGNAL (CHANGED);
 }
 
