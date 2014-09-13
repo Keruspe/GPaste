@@ -67,7 +67,6 @@
 
 enum
 {
-    C_CHANGED,
     C_UPDATE,
     C_NAME_LOST,
     C_REEXECUTE_SELF,
@@ -147,13 +146,6 @@ g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
 /* DBus Signals */
 /****************/
     
-static void
-g_paste_daemon_private_changed (GPasteDaemonPrivate *priv,
-                                GPasteHistory       *history G_GNUC_UNUSED)
-{
-    G_PASTE_SEND_DBUS_SIGNAL (CHANGED);
-}
-
 static void
 g_paste_daemon_update (GPasteDaemon       *self,
                        const gchar        *action,
@@ -631,7 +623,6 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handler_disconnect (self, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
-    g_signal_handler_disconnect (priv->history,  c_signals[C_CHANGED]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_UPDATE]);
 }
 
@@ -685,10 +676,6 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                                    "track",
                                                    G_CALLBACK (g_paste_daemon_tracking),
                                                    self);
-    c_signals[C_CHANGED] = g_signal_connect_swapped (priv->history,
-                                                     "changed",
-                                                     G_CALLBACK (g_paste_daemon_private_changed),
-                                                     priv);
     c_signals[C_UPDATE] = g_signal_connect_swapped (priv->history,
                                                     "update",
                                                     G_CALLBACK (g_paste_daemon_on_history_update),
