@@ -44,6 +44,7 @@ enum
 {
     CHANGED,
     SELECTED,
+    UPDATE,
 
     LAST_SIGNAL
 };
@@ -121,6 +122,19 @@ g_paste_history_selected (GPasteHistory *self,
                    signals[SELECTED],
                    0, /* detail */
                    item,
+                   NULL);
+}
+
+static void
+g_paste_history_update (GPasteHistory *self,
+                        const gchar   *action,
+                        const gchar   *target)
+{
+    g_signal_emit (self,
+                   signals[UPDATE],
+                   0, /* detail */
+                   action,
+                   target,
                    NULL);
 }
 
@@ -1188,6 +1202,17 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                       G_TYPE_NONE,
                                       1, /* number of params */
                                       G_PASTE_TYPE_ITEM);
+    signals[UPDATE] = g_signal_new ("update",
+                                    G_PASTE_TYPE_HISTORY,
+                                    G_SIGNAL_RUN_LAST,
+                                    0, /* class offset */
+                                    NULL, /* accumulator */
+                                    NULL, /* accumulator data */
+                                    g_cclosure_marshal_generic,
+                                    G_TYPE_NONE,
+                                    2, /* number of params */
+                                    G_TYPE_STRING,
+                                    G_TYPE_STRING);
 }
 
 static void
