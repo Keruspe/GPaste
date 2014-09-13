@@ -639,9 +639,14 @@ static void
 g_paste_daemon_on_history_update (GPasteDaemon *self,
                                   const gchar  *action,
                                   const gchar  *target,
+                                  guint         position,
                                   gpointer      user_data G_GNUC_UNUSED)
 {
-    g_paste_daemon_update (self, action, target, NULL, NULL);
+    g_paste_daemon_update (self,
+                           action,
+                           target,
+                           (position) ? G_VARIANT_TYPE_UINT32 : NULL,
+                           (position) ? g_variant_new_uint32 (position) : NULL);
 }
 
 static void

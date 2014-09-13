@@ -130,13 +130,15 @@ g_paste_history_selected (GPasteHistory *self,
 static void
 g_paste_history_update (GPasteHistory     *self,
                         GPasteUpdateAction action,
-                        GPasteUpdateTarget target)
+                        GPasteUpdateTarget target,
+                        guint              position)
 {
     g_signal_emit (self,
                    signals[UPDATE],
                    0, /* detail */
                    g_paste_update_action_to_string (action),
                    g_paste_update_target_to_string (target),
+                   position,
                    NULL);
 }
 
@@ -1212,9 +1214,10 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                     NULL, /* accumulator data */
                                     g_cclosure_marshal_generic,
                                     G_TYPE_NONE,
-                                    2, /* number of params */
+                                    3, /* number of params */
                                     G_TYPE_STRING,
-                                    G_TYPE_STRING);
+                                    G_TYPE_STRING,
+                                    G_TYPE_UINT);
 }
 
 static void
