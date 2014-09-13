@@ -518,7 +518,7 @@ g_paste_history_set_password (GPasteHistory *self,
     if (index == priv->biggest_index)
         g_paste_history_private_elect_new_biggest (priv);
 
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
 }
 
 static GPasteItem *
@@ -611,11 +611,12 @@ g_paste_history_rename_password (GPasteHistory *self,
     g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, NULL);
+    guint index = 0;
+    GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, &index);
     if (item)
     {
         g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
-        g_paste_history_changed (self);
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
     }
 }
 
@@ -640,7 +641,7 @@ g_paste_history_empty (GPasteHistory *self)
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
 static gchar *
@@ -1107,7 +1108,7 @@ g_paste_history_switch (GPasteHistory *self,
 
     g_paste_settings_set_history_name (priv->settings, name);
     g_paste_history_load (self);
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UDPATE_TARGET_ALL, 0); /* TODO: is this sufficient ? */
 }
 
 /**
