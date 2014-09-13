@@ -58,6 +58,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_SIG_REEXECUTE_SELF "ReexecuteSelf"
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
 #define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
+#define G_PASTE_DAEMON_SIG_UPDATE         "Update"
 
 #define G_PASTE_DAEMON_PROP_ACTIVE  "Active"
 #define G_PASTE_DAEMON_PROP_VERSION "Version"
@@ -136,6 +137,11 @@ G_BEGIN_DECLS
         "       <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "       <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
         "           <arg type='b' direction='out' />"                          \
+        "       </signal>"                                                     \
+        "       <signal name='" G_PASTE_DAEMON_SIG_UPDATE "'>"                 \
+        "           <arg type='s' direction='out' />"                          \
+        "           <arg type='s' direction='out' />"                          \
+        "           <arg type='m*' direction='out' />"                         \
         "       </signal>"                                                     \
         "       <property name='" G_PASTE_DAEMON_PROP_ACTIVE "'"               \
         "                 type='b' access='read' />"                           \
