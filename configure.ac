@@ -53,13 +53,24 @@ LT_INIT([disable-static pic-only])
 AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
 AM_SILENT_RULES([yes])
 
+AC_PROG_AWK
 AC_PROG_SED
 AC_PROG_MKDIR_P
+AC_PROG_LN_S
 AC_PROG_INSTALL
 
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+
+AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+
+AC_C_INLINE
+AC_TYPE_MODE_T
+AC_FUNC_ALLOCA
+AC_CHECK_FUNCS([mkdir])
 
 AC_CHECK_HEADER_STDBOOL
 

@@ -19,6 +19,8 @@
 
 #include "gpaste-history-private.h"
 
+#include "gpaste-update-enums.h"
+
 #include <gpaste-image-item.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
@@ -42,8 +44,8 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
 
 enum
 {
-    CHANGED,
     SELECTED,
+    UPDATE,
 
     LAST_SIGNAL
 };
@@ -103,17 +105,6 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
 }
 
 static void
-g_paste_history_changed (GPasteHistory *self)
-{
-    g_paste_history_save (self);
-
-    g_signal_emit (self,
-                   signals[CHANGED],
-                   0, /* detail */
-                   NULL);
-}
-
-static void
 g_paste_history_selected (GPasteHistory *self,
                           GPasteItem    *item)
 {
@@ -121,6 +112,21 @@ g_paste_history_selected (GPasteHistory *self,
                    signals[SELECTED],
                    0, /* detail */
                    item,
+                   NULL);
+}
+
+static void
+g_paste_history_update (GPasteHistory     *self,
+                        GPasteUpdateAction action,
+                        GPasteUpdateTarget target,
+                        guint              position)
+{
+    g_signal_emit (self,
+                   signals[UPDATE],
+                   0, /* detail */
+                   g_paste_update_action_to_string (action),
+                   g_paste_update_target_to_string (target),
+                   position,
                    NULL);
 }
 
@@ -234,6 +240,7 @@ g_paste_history_add (GPasteHistory *self,
 
     GSList *history = priv->history;
     gboolean election_needed = FALSE;
+    GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_INVALID;
 
     if (history)
     {
@@ -243,9 +250,13 @@ g_paste_history_add (GPasteHistory *self,
             return;
 
         if (g_paste_history_private_is_growing_line (priv, old_first, item))
+        {
+            target = G_PASTE_UPDATE_TARGET_FIRST;
             priv->history = g_paste_history_private_remove (priv, history, FALSE);
+        }
         else
         {
+            target = G_PASTE_UPDATE_TARGET_ALL;
             /* size may change when state is idle */
             priv->size -= g_paste_item_get_size (old_first);
             g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
@@ -288,7 +299,9 @@ g_paste_history_add (GPasteHistory *self,
         g_paste_history_private_elect_new_biggest (priv);
 
     g_paste_history_private_check_memory_usage (priv);
-    g_paste_history_changed (self);
+
+    if (target != G_PASTE_UPDATE_TARGET_INVALID)
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0);
 }
 
 /**
@@ -328,7 +341,7 @@ g_paste_history_remove (GPasteHistory *self,
     else if (pos < priv->biggest_index)
         --priv->biggest_index;
 
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, pos);
 }
 
 static GPasteItem *
@@ -500,7 +513,7 @@ g_paste_history_set_password (GPasteHistory *self,
     if (index == priv->biggest_index)
         g_paste_history_private_elect_new_biggest (priv);
 
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
 }
 
 static GPasteItem *
@@ -593,11 +606,12 @@ g_paste_history_rename_password (GPasteHistory *self,
     g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, NULL);
+    guint index = 0;
+    GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, &index);
     if (item)
     {
         g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
-        g_paste_history_changed (self);
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
     }
 }
 
@@ -622,7 +636,7 @@ g_paste_history_empty (GPasteHistory *self)
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
 static gchar *
@@ -1089,7 +1103,7 @@ g_paste_history_switch (GPasteHistory *self,
 
     g_paste_settings_set_history_name (priv->settings, name);
     g_paste_history_load (self);
-    g_paste_history_changed (self);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0); /* TODO: is this sufficient ? */
 }
 
 /**
@@ -1169,15 +1183,6 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
     object_class->dispose = g_paste_history_dispose;
     object_class->finalize = g_paste_history_finalize;
 
-    signals[CHANGED] = g_signal_new ("changed",
-                                     G_PASTE_TYPE_HISTORY,
-                                     G_SIGNAL_RUN_LAST,
-                                     0, /* class offset */
-                                     NULL, /* accumulator */
-                                     NULL, /* accumulator data */
-                                     g_cclosure_marshal_VOID__VOID,
-                                     G_TYPE_NONE,
-                                     0); /* number of params */
     signals[SELECTED] = g_signal_new ("selected",
                                       G_PASTE_TYPE_HISTORY,
                                       G_SIGNAL_RUN_LAST,
@@ -1188,6 +1193,18 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                       G_TYPE_NONE,
                                       1, /* number of params */
                                       G_PASTE_TYPE_ITEM);
+    signals[UPDATE] = g_signal_new ("update",
+                                    G_PASTE_TYPE_HISTORY,
+                                    G_SIGNAL_RUN_LAST,
+                                    0, /* class offset */
+                                    NULL, /* accumulator */
+                                    NULL, /* accumulator data */
+                                    g_cclosure_marshal_generic,
+                                    G_TYPE_NONE,
+                                    3, /* number of params */
+                                    G_TYPE_STRING,
+                                    G_TYPE_STRING,
+                                    G_TYPE_UINT);
 }
 
 static void
