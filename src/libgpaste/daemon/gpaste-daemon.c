@@ -158,7 +158,7 @@ g_paste_daemon_update (GPasteDaemon       *self,
     GVariant *data[] = {
         g_variant_new_string (action),
         g_variant_new_string (target),
-        g_variant_new_maybe (other_type, other)
+        g_variant_new_maybe ((other_type) ? other_type : G_VARIANT_TYPE_UNIT, other)
     };
     G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
 
