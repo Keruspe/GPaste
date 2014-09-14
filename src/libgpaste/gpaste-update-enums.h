@@ -70,6 +70,8 @@ g_paste_update_action_to_string (GPasteUpdateAction action)
     {
     case G_PASTE_UPDATE_ACTION_REPLACE:
         return "REPLACE";
+    case G_PASTE_UPDATE_ACTION_REMOVE:
+        return "REMOVE";
     default:
         return NULL;
     }
