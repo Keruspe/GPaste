@@ -220,10 +220,10 @@ main (gint argc, gchar *argv[])
     {
         /* We are being piped */
         G_PASTE_CLEANUP_STRING_FREE GString *data = g_string_new ("");
-        gchar c;
+        gint c;
 
         while ((c = fgetc (stdin)) != EOF)
-            data = g_string_append_c (data, c);
+            data = g_string_append_c (data, (guchar)c);
 
         data->str[data->len - 1] = '\0';
 
