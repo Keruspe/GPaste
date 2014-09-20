@@ -39,7 +39,6 @@ GType g_paste_update_action_get_type (void);
 
 typedef enum {
     G_PASTE_UPDATE_TARGET_ALL = 1,
-    G_PASTE_UPDATE_TARGET_FIRST,
     G_PASTE_UPDATE_TARGET_POSITION,
     G_PASTE_UPDATE_TARGET_INVALID = 0
 } GPasteUpdateTarget;
