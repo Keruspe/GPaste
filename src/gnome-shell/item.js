@@ -71,7 +71,7 @@ const GPasteItem = new Lang.Class({
         this._resetTextSize();
 
         this._clientChangedId = client.connect('update', Lang.bind(this, this._update));
-        this._resetText();
+        this.resetText();
 
         this._destroyed = false;
         this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
@@ -135,11 +135,11 @@ const GPasteItem = new Lang.Class({
         }
 
         if (reset) {
-            this._resetText();
+            this.resetText();
         }
     },
 
-    _resetText: function() {
+    resetText: function() {
         this._client.get_element(this._index, Lang.bind(this, function(client, result) {
             let text = client.get_element_finish(result).replace(/[\t\n\r]/g, '');
             if (this._destroyed || text == this.label.get_text()) {
