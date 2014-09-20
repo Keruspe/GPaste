@@ -147,16 +147,16 @@ g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
 /****************/
     
 static void
-g_paste_daemon_update (GPasteDaemon       *self,
-                       const gchar        *action,
-                       const gchar        *target,
-                       GVariant           *other)
+g_paste_daemon_update (GPasteDaemon      *self,
+                       GPasteUpdateAction action,
+                       GPasteUpdateTarget target,
+                       GVariant          *other)
 {
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
     GVariant *data[] = {
-        g_variant_new_string (action),
-        g_variant_new_string (target),
+        g_variant_new_string (g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), action)->value_nick),
+        g_variant_new_string (g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), target)->value_nick),
         g_variant_new_variant ((other) ? other : g_variant_new_boolean (FALSE))
     };
     G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
@@ -626,11 +626,11 @@ g_paste_daemon_unregister_object (gpointer user_data)
 }
 
 static void
-g_paste_daemon_on_history_update (GPasteDaemon *self,
-                                  const gchar  *action,
-                                  const gchar  *target,
-                                  guint         position,
-                                  gpointer      user_data G_GNUC_UNUSED)
+g_paste_daemon_on_history_update (GPasteDaemon      *self,
+                                  GPasteUpdateAction action,
+                                  GPasteUpdateTarget target,
+                                  guint              position,
+                                  gpointer           user_data G_GNUC_UNUSED)
 {
     g_paste_daemon_update (self,
                            action,
@@ -685,7 +685,7 @@ _g_paste_daemon_changed (gpointer data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (data);
 
-    g_paste_daemon_update (self, "REPLACE", "ALL", NULL);
+    g_paste_daemon_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, NULL);
 
     return G_SOURCE_REMOVE;
 }

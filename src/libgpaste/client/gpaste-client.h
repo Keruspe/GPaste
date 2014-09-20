@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_CLIENT_H__
 #define __G_PASTE_CLIENT_H__
 
-#include <gpaste-macros.h>
+#include <gpaste-update-enums.h>
 
 G_BEGIN_DECLS
 

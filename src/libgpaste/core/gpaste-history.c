@@ -124,8 +124,8 @@ g_paste_history_update (GPasteHistory     *self,
     g_signal_emit (self,
                    signals[UPDATE],
                    0, /* detail */
-                   g_paste_update_action_to_string (action),
-                   g_paste_update_target_to_string (target),
+                   action,
+                   target,
                    position,
                    NULL);
 }
@@ -1202,8 +1202,8 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                     g_cclosure_marshal_generic,
                                     G_TYPE_NONE,
                                     3, /* number of params */
-                                    G_TYPE_STRING,
-                                    G_TYPE_STRING,
+                                    G_PASTE_TYPE_UPDATE_ACTION,
+                                    G_PASTE_TYPE_UPDATE_TARGET,
                                     G_TYPE_UINT);
 }
 
@@ -1292,16 +1292,14 @@ g_paste_history_new (GPasteSettings *settings)
 G_PASTE_VISIBLE GStrv
 g_paste_history_list (GError **error)
 {
+    g_return_val_if_fail (!error || !(*error), NULL);
+
     G_PASTE_CLEANUP_UNREF GFile *history_dir = g_paste_history_get_history_dir ();
     G_PASTE_CLEANUP_UNREF GFileEnumerator *histories = g_file_enumerate_children (history_dir,
                                                                                   G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
                                                                                   G_FILE_QUERY_INFO_NONE,
                                                                                   NULL, /* cancellable */
                                                                                   error);
-
-    if (error)
-        return NULL;
-
     G_PASTE_CLEANUP_ARRAY_FREE GArray *history_names = g_array_new (TRUE, /* zero-terminated */
                                                                     TRUE, /* clear */
                                                                     sizeof (gchar *));
@@ -1311,7 +1309,7 @@ g_paste_history_list (GError **error)
                                                    NULL, /* cancellable */
                                                    error))) /* error */
     {
-        if (error)
+        if (error && *error)
             return NULL;
 
         const gchar *raw_name = g_file_info_get_display_name (history);
