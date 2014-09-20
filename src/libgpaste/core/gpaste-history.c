@@ -124,8 +124,8 @@ g_paste_history_update (GPasteHistory     *self,
     g_signal_emit (self,
                    signals[UPDATE],
                    0, /* detail */
-                   g_paste_update_action_to_string (action),
-                   g_paste_update_target_to_string (target),
+                   action,
+                   target,
                    position,
                    NULL);
 }
@@ -1202,8 +1202,8 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                     g_cclosure_marshal_generic,
                                     G_TYPE_NONE,
                                     3, /* number of params */
-                                    G_TYPE_STRING,
-                                    G_TYPE_STRING,
+                                    G_PASTE_TYPE_UPDATE_ACTION,
+                                    G_PASTE_TYPE_UPDATE_TARGET,
                                     G_TYPE_UINT);
 }
 
