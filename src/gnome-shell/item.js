@@ -26,6 +26,8 @@ const Clutter = imports.gi.Clutter;
 const Pango = imports.gi.Pango;
 const St = imports.gi.St;
 
+const GPaste = imports.gi.GPaste;
+
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
@@ -68,7 +70,7 @@ const GPasteItem = new Lang.Class({
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
 
-        this._clientChangedId = client.connect('changed', Lang.bind(this, this._resetText));
+        this._clientChangedId = client.connect('update', Lang.bind(this, this._update));
         this._resetText();
 
         this._destroyed = false;
@@ -105,6 +107,36 @@ const GPasteItem = new Lang.Class({
             this.actor.remove_child(this._indexLabel);
         }
         this._indexLabelVisible = state;
+    },
+
+    _update: function(client, action, target, data) {
+        let reset = false;
+        switch (action) {
+        case GPaste.UpdateAction.REPLACE:
+            switch (target) {
+            case GPaste.UpdateTarget.POSITION:
+                reset = (data == this._index);
+                break;
+            case GPaste.UpdateTarget.ALL:
+                reset = true;
+                break;
+            }
+            break;
+        case GPaste.UpdateAction.REMOVE:
+            switch (target) {
+            case GPaste.UpdateTarget.POSITION:
+                reset = (data <= this._index);
+                break;
+            case GPaste.UpdateTarget.ALL:
+                reset = true;
+                break;
+            }
+            break;
+        }
+
+        if (reset) {
+            this._resetText();
+        }
     },
 
     _resetText: function() {
