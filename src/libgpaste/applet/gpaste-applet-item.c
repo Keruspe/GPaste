@@ -34,7 +34,6 @@ struct _GPasteAppletItemPrivate
     guint32         altered_index;
     gchar           saved[4];
 
-    gulong          changed_id;
     gulong          size_id;
 };
 
@@ -167,11 +166,22 @@ g_paste_applet_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     g_paste_applet_item_private_maybe_strip_contents (priv);
 }
 
-static void
-g_paste_applet_item_reset_text (GPasteClient            *client,
-                                GPasteAppletItemPrivate *priv)
+/**
+ * g_paste_applet_item_reset_text:
+ * @self: a #GPasteAppletItem instance
+ *
+ * Reset the text of the #GPasteAppletItem
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_applet_item_reset_text (GPasteAppletItem *self)
 {
-    g_paste_client_get_element (client, priv->index, g_paste_applet_item_on_text_ready, priv);
+    g_return_if_fail (G_PASTE_IS_APPLET_ITEM (self));
+
+    GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private (self);
+
+    g_paste_client_get_element (priv->client, priv->index, g_paste_applet_item_on_text_ready, priv);
 }
 
 static void
@@ -196,11 +206,7 @@ g_paste_applet_item_dispose (GObject *object)
 {
     GPasteAppletItemPrivate *priv = g_paste_applet_item_get_instance_private ((GPasteAppletItem *) object);
 
-    if (priv->client)
-    {
-        g_signal_handler_disconnect (priv->client, priv->changed_id);
-        g_clear_object (&priv->client);
-    }
+    g_clear_object (&priv->client);
     if (priv->settings)
     {
         g_signal_handler_disconnect (priv->settings, priv->size_id);
@@ -278,17 +284,12 @@ g_paste_applet_item_new (GPasteClient   *client,
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), g_paste_applet_delete_new (client, index), FALSE, TRUE, 0);
 
-    priv->changed_id = g_signal_connect (client,
-                                         "changed",
-                                         G_CALLBACK (g_paste_applet_item_reset_text),
-                                         priv);
-    g_paste_applet_item_reset_text (client, priv);
-
     priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
                                       G_CALLBACK (g_paste_applet_item_set_text_size),
                                       priv);
     g_paste_applet_item_set_text_size (settings, NULL, priv);
+    g_paste_applet_item_reset_text ((GPasteAppletItem *) self);
 
     return self;
 }

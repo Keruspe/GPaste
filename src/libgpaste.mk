@@ -17,7 +17,7 @@
 
 libgpaste_la_file = lib/libgpaste.la
 
-LIBGPASTE_CURRENT=1
+LIBGPASTE_CURRENT=2
 LIBGPASTE_REVISION=0
 LIBGPASTE_AGE=0
 
