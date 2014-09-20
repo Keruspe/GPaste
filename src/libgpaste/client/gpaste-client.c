@@ -1496,23 +1496,13 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
         g_variant_iter_init (&params_iter, parameters);
         G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v1 = g_variant_iter_next_value (&params_iter);
         G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v2 = g_variant_iter_next_value (&params_iter);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v3 = g_variant_get_variant (g_variant_iter_next_value (&params_iter));
-        GPasteUpdateTarget target = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), g_variant_get_string (v2, NULL))->value;
-        gpointer data = NULL;
-        switch (target) {
-        case G_PASTE_UPDATE_TARGET_POSITION:
-            data = (gpointer) (glong) g_variant_get_uint32 (v3);
-            break;
-        default:
-            /* nothing */
-            break;
-        }
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v3 = g_variant_iter_next_value (&params_iter);
         g_signal_emit (self,
                        signals[UPDATE],
                        0, /* detail */
                        g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), g_variant_get_string (v1, NULL))->value,
-                       target,
-                       data,
+                       g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), g_variant_get_string (v2, NULL))->value,
+                       g_variant_get_uint32 (v3),
                        NULL);
     }
 }
@@ -1538,7 +1528,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
                                             3, /* number of params */
                                             G_PASTE_TYPE_UPDATE_ACTION,
                                             G_PASTE_TYPE_UPDATE_TARGET,
-                                            G_TYPE_POINTER);
+                                            G_TYPE_UINT);
 }
 
 static void
