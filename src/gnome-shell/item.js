@@ -117,9 +117,6 @@ const GPasteItem = new Lang.Class({
             case GPaste.UpdateTarget.POSITION:
                 reset = (data <= this._index);
                 break;
-            case GPaste.UpdateTarget.ALL:
-                reset = true;
-                break;
             }
             break;
         }

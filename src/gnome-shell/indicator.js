@@ -171,19 +171,19 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _update: function(client, action, target, position) {
-        switch (action) {
-        case GPaste.UpdateAction.REPLACE:
-            switch (target) {
-            case GPaste.UpdateTarget.ALL:
-                this._refresh(true);
-                break;
-            case GPaste.UpdateTarget.POSITION:
+        switch (target) {
+        case GPaste.UpdateTarget.ALL:
+            this._refresh(true);
+            break,
+        case GPaste.UpdateTarget.POSITION:
+            switch (action) {
+            case GPaste.UpdateAction.REPLACE:
                 this._history[position].resetText();
                 break;
+            case GPaste.UpdateAction.REMOVE:
+                this._refresh(false);
+                break;
             }
-            break;
-        case GPaste.UpdateAction.REMOVE:
-            this._refresh(false);
             break;
         }
     },
