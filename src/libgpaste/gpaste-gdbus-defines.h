@@ -141,7 +141,7 @@ G_BEGIN_DECLS
         "       <signal name='" G_PASTE_DAEMON_SIG_UPDATE "'>"                 \
         "           <arg type='s' direction='out' />"                          \
         "           <arg type='s' direction='out' />"                          \
-        "           <arg type='v' direction='out' />"                          \
+        "           <arg type='u' direction='out' />"                          \
         "       </signal>"                                                     \
         "       <property name='" G_PASTE_DAEMON_PROP_ACTIVE "'"               \
         "                 type='b' access='read' />"                           \
