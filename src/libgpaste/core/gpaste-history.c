@@ -251,7 +251,7 @@ g_paste_history_add (GPasteHistory *self,
 
         if (g_paste_history_private_is_growing_line (priv, old_first, item))
         {
-            target = G_PASTE_UPDATE_TARGET_FIRST;
+            target = G_PASTE_UPDATE_TARGET_POSITION;
             priv->history = g_paste_history_private_remove (priv, history, FALSE);
         }
         else
