@@ -174,7 +174,7 @@ const GPasteIndicator = new Lang.Class({
         switch (target) {
         case GPaste.UpdateTarget.ALL:
             this._refresh(0);
-            break,
+            break;
         case GPaste.UpdateTarget.POSITION:
             switch (action) {
             case GPaste.UpdateAction.REPLACE:
