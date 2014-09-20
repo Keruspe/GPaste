@@ -85,8 +85,8 @@ const GPasteIndicator = new Lang.Class({
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
-            this._clientChangedId = this._client.connect('update', Lang.bind(this, this._update));
-            this._refresh();
+            this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
+            this._refresh(0);
 
             this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
 
@@ -170,33 +170,45 @@ const GPasteIndicator = new Lang.Class({
         this._fakeSearch();
     },
 
-    _update: function(client, action, target) {
-        let refresh = false;
-        switch (action) {
-        case GPaste.UpdateAction.REPLACE:
-            refresh = (target == GPaste.UpdateTarget.ALL);
+    _update: function(client, action, target, position) {
+        switch (target) {
+        case GPaste.UpdateTarget.ALL:
+            this._refresh(0);
+            break,
+        case GPaste.UpdateTarget.POSITION:
+            switch (action) {
+            case GPaste.UpdateAction.REPLACE:
+                this._history[position].resetText();
+                break;
+            case GPaste.UpdateAction.REMOVE:
+                this._refresh(position);
+                break;
+            }
             break;
-        case GPaste.UpdateAction.REMOVE:
-            refresh = true;
-            break;
-        }
-
-        if (refresh) {
-            this._refresh();
         }
     },
 
-    _refresh: function() {
+    _refresh: function(resetTextFrom) {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let size = client.get_history_size_finish(result);
+            let length = this._history.length;
+            let resetTextBound = 0;
             this._updateVisibility(size == 0);
-            for (let index = this._history.length; index < size; ++index) {
-                let item = new Item.GPasteItem(this._client, this._settings, index);
-                item.connect('changed', Lang.bind(this, this._fakeSearch));
-                this._addToHistory(item);
+            if (size > length) {
+                for (let index = length; index < size; ++index) {
+                    let item = new Item.GPasteItem(this._client, this._settings, index);
+                    item.connect('changed', Lang.bind(this, this._fakeSearch));
+                    this._addToHistory(item);
+                }
+                resetTextBound = length;
+            } else {
+                for (let index = size; index < length; ++index) {
+                    this._history.pop().destroy();
+                }
+                resetTextBound = size;
             }
-            for (let index = size, length = this._history.length; index < length; ++index) {
-                this._history.pop().destroy();
+            for (let index = resetTextFrom; index < resetTextBound; ++index) {
+                this._history[index].resetText();
             }
             this._fakeSearch();
         }));
@@ -265,7 +277,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onDestroy: function() {
-        this._client.disconnect(this._clientChangedId);
+        this._client.disconnect(this._clientUpdateId);
         this._client.disconnect(this._clientShowId);
         this._settings.disconnect(this._settingsMaxSizeChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
