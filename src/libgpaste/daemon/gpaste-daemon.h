@@ -22,6 +22,7 @@
 
 #include <gpaste-clipboards-manager.h>
 #include <gpaste-keybinder.h>
+#include <gpaste-update-enums.h>
 
 G_BEGIN_DECLS
 

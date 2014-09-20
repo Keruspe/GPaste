@@ -32,6 +32,7 @@ enum
     REEXECUTE_SELF,
     SHOW_HISTORY,
     TRACKING,
+    UPDATE,
 
     LAST_SIGNAL
 };
@@ -1489,6 +1490,31 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
     else HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
     else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, boolean)
+    else if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
+    {
+        GVariantIter params_iter;
+        g_variant_iter_init (&params_iter, parameters);
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v1 = g_variant_iter_next_value (&params_iter);
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v2 = g_variant_iter_next_value (&params_iter);
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v3 = g_variant_get_variant (g_variant_iter_next_value (&params_iter));
+        GPasteUpdateTarget target = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), g_variant_get_string (v2, NULL))->value;
+        gpointer data = NULL;
+        switch (target) {
+        case G_PASTE_UPDATE_TARGET_POSITION:
+            data = (gpointer) (glong) g_variant_get_uint32 (v3);
+            break;
+        default:
+            /* nothing */
+            break;
+        }
+        g_signal_emit (self,
+                       signals[UPDATE],
+                       0, /* detail */
+                       g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), g_variant_get_string (v1, NULL))->value,
+                       target,
+                       data,
+                       NULL);
+    }
 }
 
 static void
@@ -1501,6 +1527,18 @@ g_paste_client_class_init (GPasteClientClass *klass)
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
     signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history");
     signals[TRACKING]       = NEW_SIGNAL_WITH_DATA ("tracking", BOOLEAN);
+    signals[UPDATE]         = g_signal_new ("update",
+                                            G_PASTE_TYPE_CLIENT,
+                                            G_SIGNAL_RUN_LAST,
+                                            0, /* class offset */
+                                            NULL, /* accumulator */
+                                            NULL, /* accumulator data */
+                                            g_cclosure_marshal_generic,
+                                            G_TYPE_NONE,
+                                            3, /* number of params */
+                                            G_PASTE_TYPE_UPDATE_ACTION,
+                                            G_PASTE_TYPE_UPDATE_TARGET,
+                                            G_TYPE_POINTER);
 }
 
 static void
