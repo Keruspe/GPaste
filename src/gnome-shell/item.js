@@ -112,16 +112,6 @@ const GPasteItem = new Lang.Class({
     _update: function(client, action, target, data) {
         let reset = false;
         switch (action) {
-        case GPaste.UpdateAction.REPLACE:
-            switch (target) {
-            case GPaste.UpdateTarget.POSITION:
-                reset = (data == this._index);
-                break;
-            case GPaste.UpdateTarget.ALL:
-                reset = true;
-                break;
-            }
-            break;
         case GPaste.UpdateAction.REMOVE:
             switch (target) {
             case GPaste.UpdateTarget.POSITION:

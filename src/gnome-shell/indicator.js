@@ -86,7 +86,7 @@ const GPasteIndicator = new Lang.Class({
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
             this._clientChangedId = this._client.connect('update', Lang.bind(this, this._update));
-            this._refresh();
+            this._refresh(true);
 
             this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
 
@@ -170,33 +170,49 @@ const GPasteIndicator = new Lang.Class({
         this._fakeSearch();
     },
 
-    _update: function(client, action, target) {
-        let refresh = false;
+    _update: function(client, action, target, position) {
         switch (action) {
         case GPaste.UpdateAction.REPLACE:
-            refresh = (target == GPaste.UpdateTarget.ALL);
+            switch (target) {
+            case GPaste.UpdateTarget.ALL:
+                this._refresh(true);
+                break;
+            case GPaste.UpdateTarget.POSITION:
+                this._history[position].resetText();
+                break;
+            }
             break;
         case GPaste.UpdateAction.REMOVE:
-            refresh = true;
+            this._refresh(false);
             break;
-        }
-
-        if (refresh) {
-            this._refresh();
         }
     },
 
-    _refresh: function() {
+    _refresh: function(resetText) {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let size = client.get_history_size_finish(result);
+            let length = this._history.length;
+            let resetTextBound = 0;
             this._updateVisibility(size == 0);
-            for (let index = this._history.length; index < size; ++index) {
-                let item = new Item.GPasteItem(this._client, this._settings, index);
-                item.connect('changed', Lang.bind(this, this._fakeSearch));
-                this._addToHistory(item);
+            if (size > length) {
+                for (let index = length; index < size; ++index) {
+                    let item = new Item.GPasteItem(this._client, this._settings, index);
+                    item.connect('changed', Lang.bind(this, this._fakeSearch));
+                    this._addToHistory(item);
+                }
+                if (resetText) {
+                    resetTextBound = length;
+                }
+            } else {
+                for (let index = size; index < length; ++index) {
+                    this._history.pop().destroy();
+                }
+                if (resetText) {
+                    resetTextBound = size;
+                }
             }
-            for (let index = size, length = this._history.length; index < length; ++index) {
-                this._history.pop().destroy();
+            for (let index = 0; index < resetTextBound; ++index) {
+                this._history[index].resetText();
             }
             this._fakeSearch();
         }));
