@@ -85,7 +85,7 @@ const GPasteIndicator = new Lang.Class({
             this._addSettingsAction();
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
-            this._clientChangedId = this._client.connect('update', Lang.bind(this, this._update));
+            this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
             this._refresh(0);
 
             this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
@@ -277,7 +277,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onDestroy: function() {
-        this._client.disconnect(this._clientChangedId);
+        this._client.disconnect(this._clientUpdateId);
         this._client.disconnect(this._clientShowId);
         this._settings.disconnect(this._settingsMaxSizeChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
