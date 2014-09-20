@@ -86,7 +86,7 @@ const GPasteIndicator = new Lang.Class({
             this._addToFooter(new AboutItem.GPasteAboutItem(this._client));
 
             this._clientChangedId = this._client.connect('update', Lang.bind(this, this._update));
-            this._refresh(true);
+            this._refresh(0);
 
             this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
 
@@ -173,7 +173,7 @@ const GPasteIndicator = new Lang.Class({
     _update: function(client, action, target, position) {
         switch (target) {
         case GPaste.UpdateTarget.ALL:
-            this._refresh(true);
+            this._refresh(0);
             break,
         case GPaste.UpdateTarget.POSITION:
             switch (action) {
@@ -181,14 +181,14 @@ const GPasteIndicator = new Lang.Class({
                 this._history[position].resetText();
                 break;
             case GPaste.UpdateAction.REMOVE:
-                this._refresh(false);
+                this._refresh(position);
                 break;
             }
             break;
         }
     },
 
-    _refresh: function(resetText) {
+    _refresh: function(resetTextFrom) {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let size = client.get_history_size_finish(result);
             let length = this._history.length;
@@ -200,18 +200,14 @@ const GPasteIndicator = new Lang.Class({
                     item.connect('changed', Lang.bind(this, this._fakeSearch));
                     this._addToHistory(item);
                 }
-                if (resetText) {
-                    resetTextBound = length;
-                }
+                resetTextBound = length;
             } else {
                 for (let index = size; index < length; ++index) {
                     this._history.pop().destroy();
                 }
-                if (resetText) {
-                    resetTextBound = size;
-                }
+                resetTextBound = size;
             }
-            for (let index = 0; index < resetTextBound; ++index) {
+            for (let index = resetTextFrom; index < resetTextBound; ++index) {
                 this._history[index].resetText();
             }
             this._fakeSearch();

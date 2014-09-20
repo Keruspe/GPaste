@@ -69,8 +69,6 @@ const GPasteItem = new Lang.Class({
         this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
-
-        this._clientChangedId = client.connect('update', Lang.bind(this, this._update));
         this.resetText();
 
         this._destroyed = false;
@@ -109,23 +107,6 @@ const GPasteItem = new Lang.Class({
         this._indexLabelVisible = state;
     },
 
-    _update: function(client, action, target, data) {
-        let reset = false;
-        switch (action) {
-        case GPaste.UpdateAction.REMOVE:
-            switch (target) {
-            case GPaste.UpdateTarget.POSITION:
-                reset = (data <= this._index);
-                break;
-            }
-            break;
-        }
-
-        if (reset) {
-            this.resetText();
-        }
-    },
-
     resetText: function() {
         this._client.get_element(this._index, Lang.bind(this, function(client, result) {
             let text = client.get_element_finish(result).replace(/[\t\n\r]/g, '');
@@ -156,7 +137,6 @@ const GPasteItem = new Lang.Class({
             return;
         }
         this._destroyed = true;
-        this._client.disconnect(this._clientChangedId);
         this._settings.disconnect(this._settingsChangedId);
     }
 });
