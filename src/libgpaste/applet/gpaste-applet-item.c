@@ -42,22 +42,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletItem, g_paste_applet_item, GTK_TYPE_MENU
 static gchar ellipsis[] = "…";
 
 static void
-g_paste_applet_item_private_set_text (GPasteAppletItemPrivate *priv,
-                                      const gchar             *text)
-{
-    if (priv->index && !priv->text_mode)
-    {
-        G_PASTE_CLEANUP_FREE gchar *escaped = g_markup_escape_text (text, -1);
-        G_PASTE_CLEANUP_FREE gchar *markup = g_strdup_printf ("<b>%s</b>", escaped);
-        gtk_label_set_markup (priv->label, priv->text);
-    }
-    else
-    {
-        gtk_label_set_text (priv->label, text);
-    }
-}
-
-static void
 g_paste_applet_item_private_maybe_strip_contents (GPasteAppletItemPrivate *priv)
 {
     const gchar *text = priv->text;
@@ -71,7 +55,7 @@ g_paste_applet_item_private_maybe_strip_contents (GPasteAppletItemPrivate *priv)
     {
         if (altered_index)
         {
-            g_paste_applet_item_private_set_text (priv, text);
+            gtk_label_set_text (priv->label, text);
             priv->altered_index = 0;
         }
         return;
@@ -96,12 +80,12 @@ g_paste_applet_item_private_maybe_strip_contents (GPasteAppletItemPrivate *priv)
             _text[altered_index + i] = ellipsis[i];
         }
 
-        g_paste_applet_item_private_set_text (priv, _text);
+        gtk_label_set_text (priv->label, _text);
         priv->altered_index = altered_index;
     }
     else if (altered_index)
     {
-        g_paste_applet_item_private_set_text (priv, text);
+        gtk_label_set_text (priv->label, text);
         priv->altered_index = 0;
     }
 }
@@ -162,7 +146,7 @@ g_paste_applet_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     priv->text = g_paste_applet_item_replace (txt, "\n", "");
     priv->altered_index = 0;
 
-    g_paste_applet_item_private_set_text (priv, priv->text);
+    gtk_label_set_text (priv->label, priv->text);
     g_paste_applet_item_private_maybe_strip_contents (priv);
 }
 
