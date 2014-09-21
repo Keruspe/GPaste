@@ -111,8 +111,8 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     GPasteAppletHistory *self = data->self;
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
 
-    guint refreshTextBound = 0;
     gsize old_size = priv->size;
+    guint refreshTextBound = old_size;
     priv->size = MIN (g_paste_client_get_history_size_finish (priv->client, res, NULL),
                       g_paste_settings_get_max_displayed_history_size (priv->settings));
     if (old_size < priv->size)
