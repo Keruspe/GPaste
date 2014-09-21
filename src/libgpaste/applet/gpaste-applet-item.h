@@ -40,6 +40,7 @@ GType g_paste_applet_item_get_type (void);
 
 void g_paste_applet_item_set_text_mode (GPasteAppletItem *self,
                                         gboolean          value);
+void g_paste_applet_item_reset_text    (GPasteAppletItem *self);
 
 GtkWidget *g_paste_applet_item_new (GPasteClient   *client,
                                     GPasteSettings *settings,

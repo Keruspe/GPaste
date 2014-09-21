@@ -28,6 +28,7 @@ struct _GPasteAppletFooterPrivate
     GtkWidget *about;
     GtkWidget *quit;
     GtkWidget *separator;
+    gboolean   empty_added;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletFooter, g_paste_applet_footer, G_TYPE_OBJECT)
@@ -56,6 +57,7 @@ g_paste_applet_footer_add_to_menu (GPasteAppletFooter *self,
     gtk_menu_shell_append (shell, g_object_ref (priv->separator));
     if (!empty)
         gtk_menu_shell_append (shell, g_object_ref (priv->empty));
+    priv->empty_added = !empty;
     gtk_menu_shell_append (shell, g_object_ref (priv->settings));
     gtk_menu_shell_append (shell, g_object_ref (priv->about));
     if (priv->quit)
@@ -82,7 +84,8 @@ g_paste_applet_footer_remove_from_menu (GPasteAppletFooter *self,
     GtkContainer *c = GTK_CONTAINER (menu);
 
     gtk_container_remove (c, priv->separator);
-    gtk_container_remove (c, priv->empty);
+    if (priv->empty_added)
+        gtk_container_remove (c, priv->empty);
     gtk_container_remove (c, priv->settings);
     gtk_container_remove (c, priv->about);
     if (priv->quit)
