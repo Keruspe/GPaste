@@ -33,7 +33,7 @@ struct _GPasteAppletHistoryPrivate
 
     gboolean          text_mode;
 
-    gulong            changed_id;
+    gulong            update_id;
     gulong            settings_changed_id;
 };
 
@@ -97,15 +97,22 @@ g_paste_applet_history_drop_list (GSList           *list,
     g_slist_free (list);
 }
 
+typedef struct {
+    GPasteAppletHistory *self;
+    guint                refreshFrom;
+} OnUpdateCallbackData;
+
 static void
 g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
                                         GAsyncResult *res,
                                         gpointer      user_data)
 {
-    GPasteAppletHistory *self = user_data;
+    G_PASTE_CLEANUP_FREE OnUpdateCallbackData *data = user_data;
+    GPasteAppletHistory *self = data->self;
     GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
 
     gsize old_size = priv->size;
+    guint refreshTextBound = old_size;
     priv->size = MIN (g_paste_client_get_history_size_finish (priv->client, res, NULL),
                       g_paste_settings_get_max_displayed_history_size (priv->settings));
     if (old_size < priv->size)
@@ -117,6 +124,7 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
             priv->items = g_slist_append (priv->items, item);
         }
         g_paste_applet_history_add_list_to_menu (g_slist_nth (priv->items, old_size), priv->menu);
+        refreshTextBound = old_size;
     }
     else if (old_size > priv->size)
     {
@@ -132,15 +140,56 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
             g_paste_applet_history_drop_list (priv->items, priv->menu);
             priv->items = NULL;
         }
+        refreshTextBound = priv->size;
     }
+
+    GSList *item = priv->items;
+    for (guint i = 0; i < data->refreshFrom; ++i)
+        item = g_slist_next (item);
+    for (guint i = data->refreshFrom; i < refreshTextBound; ++i, item = g_slist_next (item))
+        g_paste_applet_item_reset_text (item->data);
 }
 
 static void
-g_paste_applet_history_on_changed (GPasteClient *client,
-                                   gpointer      user_data)
+g_paste_applet_history_on_update (GPasteClient      *client,
+                                  GPasteUpdateAction action,
+                                  GPasteUpdateTarget target,
+                                  guint              position,
+                                  gpointer           user_data)
 {
     GPasteAppletHistory *self = user_data;
-    g_paste_client_get_history_size (client, g_paste_applet_history_refresh_history, self);
+    GPasteAppletHistoryPrivate *priv = g_paste_applet_history_get_instance_private (self);
+    gboolean refresh = FALSE;
+
+    switch (target)
+    {
+    case G_PASTE_UPDATE_TARGET_ALL:
+        refresh = TRUE;
+        break;
+    case G_PASTE_UPDATE_TARGET_POSITION:
+        switch (action)
+        {
+        case G_PASTE_UPDATE_ACTION_REPLACE:
+            g_paste_applet_item_reset_text (g_slist_nth_data (priv->items, position));
+            break;
+        case G_PASTE_UPDATE_ACTION_REMOVE:
+            refresh = TRUE;
+            break;
+        default:
+            g_assert_not_reached ();
+        }
+        break;
+    default:
+        g_assert_not_reached ();
+    }
+
+    if (refresh)
+    {
+        OnUpdateCallbackData *data = g_new (OnUpdateCallbackData, 1);
+        data->self = self;
+        data->refreshFrom = position;
+        g_paste_client_get_history_size (client, g_paste_applet_history_refresh_history, data);
+    }
 }
 
 static void
@@ -160,7 +209,7 @@ g_paste_applet_history_dispose (GObject *object)
 
     if (priv->client)
     {
-        g_signal_handler_disconnect (priv->client, priv->changed_id);
+        g_signal_handler_disconnect (priv->client, priv->update_id);
         g_clear_object (&priv->client);
     }
 
@@ -222,15 +271,15 @@ g_paste_applet_history_new (GPasteClient       *client,
     priv->settings = g_object_ref (settings);
     priv->menu = menu;
 
-    priv->changed_id = g_signal_connect (client,
-                                         "changed",
-                                         G_CALLBACK (g_paste_applet_history_on_changed),
-                                         self);
+    priv->update_id = g_signal_connect (client,
+                                        "update",
+                                        G_CALLBACK (g_paste_applet_history_on_update),
+                                        self);
     priv->settings_changed_id = g_signal_connect (settings,
                                                   "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
                                                   G_CALLBACK (g_paste_applet_history_on_settings_changed),
                                                   self);
-    g_paste_applet_history_on_changed (client, self);
+    g_paste_applet_history_on_update (client, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, self);
 
     return self;
 }

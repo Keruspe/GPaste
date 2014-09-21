@@ -377,6 +377,8 @@ local:
 
 LIBGPASTE_2 {
 global:
+    g_paste_applet_item_reset_text;
+
     g_paste_update_action_get_type;
     g_paste_update_target_get_type;
 } LIBGPASTE_1;
