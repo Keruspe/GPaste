@@ -33,7 +33,8 @@ const GPasteSearchItem = new Lang.Class({
         this.parent({activate: false, reactive: true});
 
         this._entry = new St.Entry({
-            name: 'GPasteSearchEntry',
+            name: 'searchEntry',
+            style_class:'gpaste-search',
             track_hover: true,
             reactive: true,
             can_focus: true

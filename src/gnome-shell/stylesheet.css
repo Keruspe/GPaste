@@ -17,54 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Based on #searchEntry from gnome-shell.css which is Copyright 2009, Red Hat, Inc. */
-
-#GPasteSearchEntry {
-    color: rgb(192, 192, 192);
-    caret-color: rgb(192, 192, 192);
-    selected-color: white;
-
-    font-size: 12pt;
-    caret-size: 1px;
-
-    border: 2px solid rgba(245,245,245,0.3);
-    border-radius: 1.5em;
-
-    padding: 0.2em 1em;
-
-    box-shadow: inset 0px 2px 4px rgba(0,0,0,0.6);
-
-    background-gradient-start: rgba(5,5,6,0.1);
-    background-gradient-end: rgba(254,254,254,0.1);
-    background-gradient-direction: vertical;
-
-    transition-duration: 300ms;
-}
-
-#GPasteSearchEntry:focus,
-#GPasteSearchEntry:hover {
-    border: 2px solid rgb(136,138,133);
-
-    background-gradient-start: rgb(200,200,200);
-    background-gradient-end: white;
-    background-gradient-direction: vertical;
-}
-
-#GPasteSearchEntry:hover {
-    color: rgb(128, 128, 128);
-    caret-color: rgb(128, 128, 128);
-}
-
-#GPasteSearchEntry:focus {
-    color: rgb(64, 64, 64);
-    caret-color: rgb(64, 64, 64);
-
-    font-weight: bold;
-
-    transition-duration: 0ms;
-}
-
-#GPasteSearchEntry:hover .search-entry-icon,
-#GPasteSearchEntry:focus .search-entry-icon {
-    color: #8d8f8a;
+.gpaste-search {
+	padding: 0.2em 1em;
 }
