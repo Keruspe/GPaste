@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -41,17 +41,29 @@ G_BEGIN_DECLS
 typedef struct _GPasteClipboard GPasteClipboard;
 typedef struct _GPasteClipboardClass GPasteClipboardClass;
 
+typedef void (*GPasteClipboardTextCallback) (GPasteClipboard *self,
+                                             const gchar     *text,
+                                             gpointer         user_data);
+
+typedef void (*GPasteClipboardImageCallback) (GPasteClipboard *self,
+                                              GdkPixbuf       *image,
+                                              gpointer         user_data);
+
 G_PASTE_VISIBLE
 GType g_paste_clipboard_get_type (void);
 
 GdkAtom       g_paste_clipboard_get_target  (const GPasteClipboard *self);
 GtkClipboard *g_paste_clipboard_get_real    (const GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_text    (const GPasteClipboard *self);
-const gchar  *g_paste_clipboard_set_text    (GPasteClipboard *self);
+void          g_paste_clipboard_set_text    (GPasteClipboard            *self,
+                                             GPasteClipboardTextCallback callback,
+                                             gpointer                    user_data);
 void          g_paste_clipboard_select_text (GPasteClipboard *self,
                                              const gchar     *text);
 const gchar  *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);
-GdkPixbuf    *g_paste_clipboard_set_image          (GPasteClipboard *self);
+void          g_paste_clipboard_set_image          (GPasteClipboard             *self,
+                                                    GPasteClipboardImageCallback callback,
+                                                    gpointer                     user_data);
 void          g_paste_clipboard_select_item        (GPasteClipboard  *self,
                                                     const GPasteItem *item);
 
