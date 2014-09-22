@@ -112,6 +112,89 @@ g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
     priv->image_checksum = NULL;
 }
 
+typedef struct {
+    GPasteClipboard            *self;
+    GPasteClipboardTextCallback callback;
+    gpointer                    user_data;
+} GPasteClipboardTextCallbackData;
+
+static void
+g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                 const gchar  *text,
+                                 gpointer      user_data)
+{
+    G_PASTE_CLEANUP_FREE GPasteClipboardTextCallbackData *data = user_data;
+    GPasteClipboard *self = data->self;
+
+    if (!text)
+    {
+        if (data->callback)
+            data->callback (self, NULL, data->user_data);
+        return;
+    }
+
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+    GPasteSettings *settings = priv->settings;
+    G_PASTE_CLEANUP_FREE gchar *stripped = g_strstrip (g_strdup (text));
+    gboolean trim_items = g_paste_settings_get_trim_items (settings);
+    const gchar *to_add = trim_items ? stripped : text;
+    gsize length = strlen (to_add);
+
+    if (length < g_paste_settings_get_min_text_item_size (settings) ||
+        length > g_paste_settings_get_max_text_item_size (settings) ||
+        !strlen (stripped))
+    {
+        if (data->callback)
+            data->callback (self, NULL, data->user_data);
+        return;
+    }
+    if (priv->text && !g_strcmp0 (priv->text, to_add))
+    {
+        if (data->callback)
+            data->callback (self, NULL, data->user_data);
+        return;
+    }
+
+    if (trim_items &&
+        priv->target == GDK_SELECTION_CLIPBOARD &&
+        g_strcmp0 (text, stripped))
+            g_paste_clipboard_select_text (self, stripped);
+    else
+        g_paste_clipboard_private_set_text (priv, to_add);
+
+    if (data->callback)
+        data->callback (self, priv->text, data->user_data);
+}
+
+/**
+ * g_paste_clipboard_set_text:
+ * @self: a #GPasteClipboard instance
+ * @callback: (scope async): the callback to be called when text is received
+ * @user_data: user data to pass to @callback
+ *
+ * Put the text from the intern GtkClipboard in the #GPasteClipboard
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_set_text (GPasteClipboard            *self,
+                            GPasteClipboardTextCallback callback,
+                            gpointer                    user_data)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
+
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardTextCallbackData *data = g_new (GPasteClipboardTextCallbackData, 1);
+
+    data->self = self;
+    data->callback = callback;
+    data->user_data = user_data;
+
+    gtk_clipboard_request_text (priv->real,
+                                g_paste_clipboard_on_text_ready,
+                                data);
+}
+
 /**
  * g_paste_clipboard_set_text2:
  * @self: a #GPasteClipboard instance

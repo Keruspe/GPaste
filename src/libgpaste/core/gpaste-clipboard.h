@@ -41,12 +41,19 @@ G_BEGIN_DECLS
 typedef struct _GPasteClipboard GPasteClipboard;
 typedef struct _GPasteClipboardClass GPasteClipboardClass;
 
+typedef void (*GPasteClipboardTextCallback) (GPasteClipboard *self,
+                                             const gchar     *text,
+                                             gpointer         user_data);
+
 G_PASTE_VISIBLE
 GType g_paste_clipboard_get_type (void);
 
 GdkAtom       g_paste_clipboard_get_target  (const GPasteClipboard *self);
 GtkClipboard *g_paste_clipboard_get_real    (const GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_text    (const GPasteClipboard *self);
+void          g_paste_clipboard_set_text    (GPasteClipboard            *self,
+                                             GPasteClipboardTextCallback callback,
+                                             gpointer                    user_data);
 const gchar  *g_paste_clipboard_set_text2   (GPasteClipboard *self);
 void          g_paste_clipboard_select_text (GPasteClipboard *self,
                                              const gchar     *text);
