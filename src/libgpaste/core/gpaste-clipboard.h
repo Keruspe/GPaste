@@ -58,14 +58,12 @@ const gchar  *g_paste_clipboard_get_text    (const GPasteClipboard *self);
 void          g_paste_clipboard_set_text    (GPasteClipboard            *self,
                                              GPasteClipboardTextCallback callback,
                                              gpointer                    user_data);
-const gchar  *g_paste_clipboard_set_text2   (GPasteClipboard *self);
 void          g_paste_clipboard_select_text (GPasteClipboard *self,
                                              const gchar     *text);
 const gchar  *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);
 void          g_paste_clipboard_set_image          (GPasteClipboard             *self,
                                                     GPasteClipboardImageCallback callback,
                                                     gpointer                     user_data);
-GdkPixbuf    *g_paste_clipboard_set_image2         (GPasteClipboard *self);
 void          g_paste_clipboard_select_item        (GPasteClipboard  *self,
                                                     const GPasteItem *item);
 

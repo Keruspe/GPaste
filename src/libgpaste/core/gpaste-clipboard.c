@@ -196,48 +196,6 @@ g_paste_clipboard_set_text (GPasteClipboard            *self,
 }
 
 /**
- * g_paste_clipboard_set_text2:
- * @self: a #GPasteClipboard instance
- *
- * Put the text from the intern GtkClipboard in the #GPasteClipboard
- *
- * Returns: The new text if it was modified, or NULL
- */
-G_PASTE_VISIBLE const gchar *
-g_paste_clipboard_set_text2 (GPasteClipboard *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
-
-    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
-    G_PASTE_CLEANUP_FREE gchar *text = gtk_clipboard_wait_for_text (priv->real);
-
-    if (!text)
-        return NULL;
-
-    GPasteSettings *settings = priv->settings;
-    G_PASTE_CLEANUP_FREE gchar *stripped = g_strstrip (g_strdup (text));
-    gboolean trim_items = g_paste_settings_get_trim_items (settings);
-    const gchar *to_add = trim_items ? stripped : text;
-    gsize length = strlen (to_add);
-
-    if (length < g_paste_settings_get_min_text_item_size (settings) ||
-        length > g_paste_settings_get_max_text_item_size (settings) ||
-        !strlen (stripped))
-            return NULL;
-    if (priv->text && !g_strcmp0 (priv->text, to_add))
-        return NULL;
-
-    if (trim_items &&
-        priv->target == GDK_SELECTION_CLIPBOARD &&
-        g_strcmp0 (text, stripped))
-            g_paste_clipboard_select_text (self, stripped);
-    else
-        g_paste_clipboard_private_set_text (priv, to_add);
-
-    return priv->text;
-}
-
-/**
  * g_paste_clipboard_select_text:
  * @self: a #GPasteClipboard instance
  * @text: the text to select
@@ -464,42 +422,6 @@ g_paste_clipboard_set_image (GPasteClipboard             *self,
     gtk_clipboard_request_image (priv->real,
                                  g_paste_clipboard_on_image_ready,
                                  data);
-}
-
-/**
- * g_paste_clipboard_set_image2:
- * @self: a #GPasteClipboard instance
- *
- * Put the image from the intern GtkClipboard in the #GPasteClipboard
- *
- * Returns: (transfer full): The new image if it was modified, or NULL
- */
-G_PASTE_VISIBLE GdkPixbuf *
-g_paste_clipboard_set_image2 (GPasteClipboard *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
-
-    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
-    GdkPixbuf *image = gtk_clipboard_wait_for_image (priv->real);
-    GdkPixbuf *ret = image;
-
-    if (image)
-    {
-        G_PASTE_CLEANUP_FREE gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                                            (guchar *) gdk_pixbuf_get_pixels (image),
-                                                                            -1);
-
-        if (g_strcmp0 (checksum, priv->image_checksum))
-        {
-            g_paste_clipboard_private_select_image (priv,
-                                                    image,
-                                                    checksum);
-        }
-        else
-            ret = NULL;
-    }
-
-    return ret;
 }
 
 /**
