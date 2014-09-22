@@ -177,6 +177,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
 
 typedef struct {
     GPasteClipboardsManagerPrivate *priv;
+    GPasteClipboard                *clip;
     gboolean                        track;
     gboolean                        uris_available;
 } GPasteClipboardsManagerCallbackData;
@@ -236,6 +237,38 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
 }
 
 static void
+g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNUSED,
+                                          GtkSelectionData *targets,
+                                          gpointer          user_data)
+{
+    G_PASTE_CLEANUP_FREE GPasteClipboardsManagerCallbackData *data = user_data;
+
+    if (targets)
+    {
+        data->uris_available = gtk_selection_data_targets_include_uri (targets);
+
+        if (data->uris_available || gtk_selection_data_targets_include_text (targets))
+        {
+            /* Update our cache from the real Clipboard */
+            g_paste_clipboard_set_text (data->clip,
+                                        g_paste_clipboards_manager_text_ready,
+                                        data);
+            data = NULL;
+        }
+        else if (g_paste_settings_get_images_support (data->priv->settings) && gtk_selection_data_targets_include_image (targets, FALSE))
+        {
+            /* Update our cache from the real Clipboard */
+            g_paste_clipboard_set_image (data->clip,
+                                         g_paste_clipboards_manager_image_ready,
+                                         data);
+            data = NULL;
+        }
+
+        gtk_selection_data_free (targets);
+    }
+}
+
+static void
 g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
                                    GdkEvent        *event G_GNUC_UNUSED,
                                    gpointer         user_data)
@@ -254,40 +287,16 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
         if (g_paste_clipboard_get_target (clip) != atom)
             continue;
 
-        G_PASTE_CLEANUP_SELECT_FREE GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
-                                                                                                 gdk_atom_intern_static_string ("TARGETS"));
+        GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
 
-        if (targets)
-        {
-            gboolean uris_available = gtk_selection_data_targets_include_uri (targets);
+        data->priv = priv;
+        data->clip = clip;
+        data->track = track;
 
-            if (uris_available || gtk_selection_data_targets_include_text (targets))
-            {
-                GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
-
-                data->priv = priv;
-                data->track = track;
-                data->uris_available = uris_available;
-
-                /* Update our cache from the real Clipboard */
-                g_paste_clipboard_set_text (clip,
-                                            g_paste_clipboards_manager_text_ready,
-                                            data);
-            }
-            else if (g_paste_settings_get_images_support (settings) && gtk_selection_data_targets_include_image (targets, FALSE))
-            {
-                GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
-
-                data->priv = priv;
-                data->track = track;
-                data->uris_available = uris_available;
-
-                /* Update our cache from the real Clipboard */
-                g_paste_clipboard_set_image (clip,
-                                             g_paste_clipboards_manager_image_ready,
-                                             data);
-            }
-        }
+        gtk_clipboard_request_contents (g_paste_clipboard_get_real (clip),
+                                        gdk_atom_intern_static_string ("TARGETS"),
+                                        g_paste_clipboards_manager_targets_ready,
+                                        data);
     }
 }
 
