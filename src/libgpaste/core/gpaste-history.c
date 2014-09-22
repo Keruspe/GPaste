@@ -240,7 +240,7 @@ g_paste_history_add (GPasteHistory *self,
 
     GSList *history = priv->history;
     gboolean election_needed = FALSE;
-    GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_INVALID;
+    GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_ALL;
 
     if (history)
     {
@@ -256,7 +256,6 @@ g_paste_history_add (GPasteHistory *self,
         }
         else
         {
-            target = G_PASTE_UPDATE_TARGET_ALL;
             /* size may change when state is idle */
             priv->size -= g_paste_item_get_size (old_first);
             g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
@@ -299,9 +298,7 @@ g_paste_history_add (GPasteHistory *self,
         g_paste_history_private_elect_new_biggest (priv);
 
     g_paste_history_private_check_memory_usage (priv);
-
-    if (target != G_PASTE_UPDATE_TARGET_INVALID)
-        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0);
 }
 
 /**
