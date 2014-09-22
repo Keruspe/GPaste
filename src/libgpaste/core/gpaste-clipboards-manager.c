@@ -252,7 +252,7 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
 {
     G_PASTE_CLEANUP_FREE GPasteClipboardsManagerCallbackData *data = user_data;
 
-    if (targets)
+    if (gtk_selection_data_get_length (targets) >= 0)
     {
         data->uris_available = gtk_selection_data_targets_include_uri (targets);
 
@@ -272,8 +272,6 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
                                          data);
             data = NULL;
         }
-
-        gtk_selection_data_free (targets);
     }
 }
 
