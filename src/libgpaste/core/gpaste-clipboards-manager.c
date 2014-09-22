@@ -34,6 +34,35 @@ struct _GPasteClipboardsManagerPrivate
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)
 
+static void
+g_paste_clipboards_manager_add_clipboard_finish (GPasteClipboardsManagerPrivate *priv,
+                                                 GPasteClipboard                *clipboard)
+{
+    if (!g_paste_clipboard_get_text (clipboard) &&
+        !g_paste_clipboard_get_image_checksum (clipboard))
+    {
+        const GSList *history = g_paste_history_get_history (priv->history);
+        if (history)
+            g_paste_clipboard_select_item (clipboard, history->data);
+    }
+}
+
+static void
+g_paste_clipboards_manager_on_text_ready (GPasteClipboard *clipboard,
+                                          const gchar     *text G_GNUC_UNUSED,
+                                          gpointer         user_data)
+{
+    g_paste_clipboards_manager_add_clipboard_finish (user_data, clipboard);
+}
+
+static void
+g_paste_clipboards_manager_on_image_ready (GPasteClipboard *clipboard,
+                                           GdkPixbuf       *image G_GNUC_UNUSED,
+                                           gpointer         user_data)
+{
+    g_paste_clipboards_manager_add_clipboard_finish (user_data, clipboard);
+}
+
 /**
  * g_paste_clipboards_manager_add_clipboard:
  * @self: a #GPasteClipboardsManager instance
@@ -57,16 +86,16 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
 
     if (gtk_clipboard_wait_is_uris_available (real) ||
         gtk_clipboard_wait_is_text_available (real))
-            g_paste_clipboard_set_text2 (clipboard);
-    else if (gtk_clipboard_wait_is_image_available (real))
-        g_paste_clipboard_set_image2 (clipboard);
-
-    if (!g_paste_clipboard_get_text (clipboard) &&
-        !g_paste_clipboard_get_image_checksum (clipboard))
     {
-        const GSList *history = g_paste_history_get_history (priv->history);
-        if (history)
-            g_paste_clipboard_select_item (clipboard, history->data);
+        g_paste_clipboard_set_text (clipboard,
+                                    g_paste_clipboards_manager_on_text_ready,
+                                    priv);
+    }
+    else if (gtk_clipboard_wait_is_image_available (real))
+    {
+        g_paste_clipboard_set_image (clipboard,
+                                     g_paste_clipboards_manager_on_image_ready,
+                                     priv);
     }
 }
 
