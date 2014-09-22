@@ -100,6 +100,15 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     }
 }
 
+static void
+g_paste_clipboards_manager_sync_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                       const gchar  *text,
+                                       gpointer user_data)
+{
+    if (text)
+        gtk_clipboard_set_text (user_data, text, -1);
+}
+
 /**
  * g_paste_clipboards_manager_sync_from_to:
  * @self: a #GPasteClipboardsManager instance
@@ -133,9 +142,9 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
 
     if (_from && _to)
     {
-        gchar *text = gtk_clipboard_wait_for_text (_from);
-        if (text)
-            gtk_clipboard_set_text (_to, text, -1);
+        gtk_clipboard_request_text (_from,
+                                    g_paste_clipboards_manager_sync_ready,
+                                    _to);
     }
 }
 
