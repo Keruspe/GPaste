@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -57,9 +57,9 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
 
     if (gtk_clipboard_wait_is_uris_available (real) ||
         gtk_clipboard_wait_is_text_available (real))
-            g_paste_clipboard_set_text (clipboard);
+            g_paste_clipboard_set_text2 (clipboard);
     else if (gtk_clipboard_wait_is_image_available (real))
-        g_paste_clipboard_set_image (clipboard);
+        g_paste_clipboard_set_image2 (clipboard);
 
     if (!g_paste_clipboard_get_text (clipboard) &&
         !g_paste_clipboard_get_image_checksum (clipboard))
@@ -142,7 +142,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             if (uris_available || gtk_selection_data_targets_include_text (targets))
             {
                 /* Update our cache from the real Clipboard */
-                const gchar *text = g_paste_clipboard_set_text (clip);
+                const gchar *text = g_paste_clipboard_set_text2 (clip);
 
                 /* Did we already have some contents, or did we get some now? */
                 something_in_clipboard = !!g_paste_clipboard_get_text (clip);
@@ -165,7 +165,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
             else if (g_paste_settings_get_images_support (settings) && gtk_selection_data_targets_include_image (targets, FALSE))
             {
                 /* Update our cache from the real Clipboard */
-                G_PASTE_CLEANUP_UNREF GdkPixbuf *image = g_paste_clipboard_set_image (clip);
+                G_PASTE_CLEANUP_UNREF GdkPixbuf *image = g_paste_clipboard_set_image2 (clip);
 
                 /* Did we already have some contents, or did we get some now? */
                 something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clip);

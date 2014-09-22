@@ -113,7 +113,7 @@ g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
 }
 
 /**
- * g_paste_clipboard_set_text:
+ * g_paste_clipboard_set_text2:
  * @self: a #GPasteClipboard instance
  *
  * Put the text from the intern GtkClipboard in the #GPasteClipboard
@@ -121,7 +121,7 @@ g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
  * Returns: The new text if it was modified, or NULL
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_clipboard_set_text (GPasteClipboard *self)
+g_paste_clipboard_set_text2 (GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
@@ -311,7 +311,7 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
 }
 
 /**
- * g_paste_clipboard_set_image:
+ * g_paste_clipboard_set_image2:
  * @self: a #GPasteClipboard instance
  *
  * Put the image from the intern GtkClipboard in the #GPasteClipboard
@@ -319,7 +319,7 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
  * Returns: (transfer full): The new image if it was modified, or NULL
  */
 G_PASTE_VISIBLE GdkPixbuf *
-g_paste_clipboard_set_image (GPasteClipboard *self)
+g_paste_clipboard_set_image2 (GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
