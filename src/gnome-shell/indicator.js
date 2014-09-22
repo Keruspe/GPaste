@@ -89,8 +89,8 @@ const GPasteIndicator = new Lang.Class({
 
             this._addToHeader(new StateSwitch.GPasteStateSwitch(this._client));
             this._addToHeader(this._searchItem);
-            this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
+            this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
             this._actions.actor.add(new AboutItem.GPasteAboutItem(this._client), { expand: true, x_fill: false });
 
             this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
