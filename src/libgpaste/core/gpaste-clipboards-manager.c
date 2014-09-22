@@ -57,9 +57,10 @@ g_paste_clipboards_manager_on_text_ready (GPasteClipboard *clipboard,
 
 static void
 g_paste_clipboards_manager_on_image_ready (GPasteClipboard *clipboard,
-                                           GdkPixbuf       *image G_GNUC_UNUSED,
+                                           GdkPixbuf       *image,
                                            gpointer         user_data)
 {
+    g_clear_object (&image);
     g_paste_clipboards_manager_add_clipboard_finish (user_data, clipboard);
 }
 
@@ -139,15 +140,109 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
 }
 
 static void
+g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
+                                          GPasteClipboard                *clipboard,
+                                          GPasteItem                     *item,
+                                          const gchar                    *synchronized_text,
+                                          gboolean                        something_in_clipboard)
+{
+    GPasteHistory *history = priv->history;
+
+    if (item)
+        g_paste_history_add (history, item);
+
+    if (!something_in_clipboard)
+    {
+        const GSList *hist = g_paste_history_get_history (history);
+        if (hist)
+            g_paste_clipboard_select_item (clipboard, hist->data);
+    }
+
+    if (synchronized_text)
+    {
+        for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
+        {
+            GPasteClipboard *clip = _clipboard->data;
+
+            if (clipboard == clip)
+                continue;
+
+            const gchar *text = g_paste_clipboard_get_text (clip);
+
+            if (!text || g_strcmp0 (text, synchronized_text))
+                g_paste_clipboard_select_text (clip, synchronized_text);
+        }
+    }
+}
+
+typedef struct {
+    GPasteClipboardsManagerPrivate *priv;
+    gboolean                        track;
+    gboolean                        uris_available;
+} GPasteClipboardsManagerCallbackData;
+
+static void
+g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
+                                       const gchar     *text,
+                                       gpointer         user_data)
+{
+    G_PASTE_CLEANUP_FREE GPasteClipboardsManagerCallbackData *data = user_data;
+    GPasteClipboardsManagerPrivate *priv = data->priv;
+    GPasteItem *item = NULL;
+    const gchar *synchronized_text = NULL;
+
+    /* Did we already have some contents, or did we get some now? */
+    gboolean something_in_clipboard = !!g_paste_clipboard_get_text (clipboard);
+
+    /* If our contents got updated */
+    if (text)
+    {
+        if (data->track)
+        {
+            if (data->uris_available)
+                item = G_PASTE_ITEM (g_paste_uris_item_new (text));
+            else
+                item = G_PASTE_ITEM (g_paste_text_item_new (text));
+        }
+
+        if (g_paste_settings_get_synchronize_clipboards (priv->settings))
+            synchronized_text = text;
+    }
+
+    g_paste_clipboards_manager_notify_finish (priv, clipboard, item, synchronized_text, something_in_clipboard);
+}
+
+static void
+g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
+                                        GdkPixbuf       *image,
+                                        gpointer         user_data)
+{
+    G_PASTE_CLEANUP_FREE GPasteClipboardsManagerCallbackData *data = user_data;
+    GPasteClipboardsManagerPrivate *priv = data->priv;
+    GPasteItem *item = NULL;
+
+    /* Did we already have some contents, or did we get some now? */
+    gboolean something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clipboard);
+
+    /* If our contents got updated */
+    if (image)
+    {
+        if (data->track)
+            item = G_PASTE_ITEM (g_paste_image_item_new (image));
+        g_object_unref (image);
+    }
+
+    g_paste_clipboards_manager_notify_finish (priv, clipboard, item, NULL, something_in_clipboard);
+}
+
+static void
 g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
                                    GdkEvent        *event G_GNUC_UNUSED,
                                    gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
 
-    GPasteHistory *history = priv->history;
     GPasteSettings *settings = priv->settings;
-    const gchar *synchronized_text = NULL;
     GdkAtom atom = g_paste_clipboard_get_target (clipboard);
     gboolean track = ((atom != GDK_SELECTION_PRIMARY || g_paste_settings_get_primary_to_history (settings)) &&
                       g_paste_settings_get_track_changes (settings));
@@ -159,72 +254,39 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
         if (g_paste_clipboard_get_target (clip) != atom)
             continue;
 
-        gboolean something_in_clipboard = FALSE;
         G_PASTE_CLEANUP_SELECT_FREE GtkSelectionData *targets = gtk_clipboard_wait_for_contents (g_paste_clipboard_get_real (clip),
                                                                                                  gdk_atom_intern_static_string ("TARGETS"));
 
         if (targets)
         {
-            GPasteItem *item = NULL;
             gboolean uris_available = gtk_selection_data_targets_include_uri (targets);
 
             if (uris_available || gtk_selection_data_targets_include_text (targets))
             {
+                GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
+
+                data->priv = priv;
+                data->track = track;
+                data->uris_available = uris_available;
+
                 /* Update our cache from the real Clipboard */
-                const gchar *text = g_paste_clipboard_set_text2 (clip);
-
-                /* Did we already have some contents, or did we get some now? */
-                something_in_clipboard = !!g_paste_clipboard_get_text (clip);
-
-                /* If our contents got updated */
-                if (text)
-                {
-                    if (track)
-                    {
-                        if (uris_available)
-                            item = G_PASTE_ITEM (g_paste_uris_item_new (text));
-                        else
-                            item = G_PASTE_ITEM (g_paste_text_item_new (text));
-                    }
-
-                    if (g_paste_settings_get_synchronize_clipboards (settings))
-                        synchronized_text = text;
-                }
+                g_paste_clipboard_set_text (clip,
+                                            g_paste_clipboards_manager_text_ready,
+                                            data);
             }
             else if (g_paste_settings_get_images_support (settings) && gtk_selection_data_targets_include_image (targets, FALSE))
             {
+                GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
+
+                data->priv = priv;
+                data->track = track;
+                data->uris_available = uris_available;
+
                 /* Update our cache from the real Clipboard */
-                G_PASTE_CLEANUP_UNREF GdkPixbuf *image = g_paste_clipboard_set_image2 (clip);
-
-                /* Did we already have some contents, or did we get some now? */
-                something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clip);
-
-                /* If our contents got updated */
-                if (image && track)
-                    item = G_PASTE_ITEM (g_paste_image_item_new (image));
+                g_paste_clipboard_set_image (clip,
+                                             g_paste_clipboards_manager_image_ready,
+                                             data);
             }
-
-            if (item)
-                g_paste_history_add (history, item);
-
-            if (!something_in_clipboard)
-            {
-                const GSList *hist = g_paste_history_get_history (history);
-                if (hist)
-                    g_paste_clipboard_select_item (clip, hist->data);
-            }
-        }
-    }
-
-    if (synchronized_text)
-    {
-        for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
-        {
-            GPasteClipboard *clip = _clipboard->data;
-            const gchar *text = g_paste_clipboard_get_text (clip);
-
-            if (!text || g_strcmp0 (text, synchronized_text))
-                g_paste_clipboard_select_text (clip, synchronized_text);
         }
     }
 }
