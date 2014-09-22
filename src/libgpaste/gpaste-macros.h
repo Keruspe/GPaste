@@ -65,7 +65,6 @@ G_BEGIN_DECLS
 #define G_PASTE_CLEANUP_ARRAY_FREE      G_PASTE_CLEANUP (g_paste_array_free_ptr)
 #define G_PASTE_CLEANUP_B_STRV_FREE     G_PASTE_CLEANUP (g_paste_b_strv_free_ptr)
 #define G_PASTE_CLEANUP_ERROR_FREE      G_PASTE_CLEANUP (g_paste_error_free_ptr)
-#define G_PASTE_CLEANUP_SELECT_FREE     G_PASTE_CLEANUP (g_paste_select_free_ptr)
 #define G_PASTE_CLEANUP_STRING_FREE     G_PASTE_CLEANUP (g_paste_string_free_ptr)
 #define G_PASTE_CLEANUP_STRFREEV        G_PASTE_CLEANUP (g_paste_strfreev_ptr)
 #define G_PASTE_CLEANUP_UNREF           G_PASTE_CLEANUP (g_paste_unref_ptr)
@@ -100,7 +99,6 @@ G_BEGIN_DECLS
 G_PASTE_TRIVIAL_CLEANUP_FUN_FULL (free,            gpointer,           g_free,                gpointer)
 
 G_PASTE_TRIVIAL_CLEANUP_FUN      (error_free,      GError *,           g_error_free)
-G_PASTE_TRIVIAL_CLEANUP_FUN      (select_free,     GtkSelectionData *, gtk_selection_data_free)
 G_PASTE_TRIVIAL_CLEANUP_FUN      (strfreev,        GStrv,              g_strfreev)
 
 G_PASTE_TRIVIAL_CLEANUP_FUN_FULL (unref,           GObject *,          g_object_unref,        gpointer)
