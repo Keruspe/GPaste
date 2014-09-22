@@ -35,8 +35,9 @@ const GPasteStatusIcon = new Lang.Class({
             style_class: 'system-status-icon'
         }));
 
-        this.add_child(new St.Label({
-            text: '\u25BE',
+        this.add_child(new St.Icon({
+            style_class: 'popup-menu-arrow',
+            icon_name: 'pan-down-symbolic',
             y_expand: true,
             y_align: Clutter.ActorAlign.CENTER
         }));
