@@ -26,7 +26,7 @@ const GPasteAboutItem = new Lang.Class({
     Name: 'GPasteAboutItem',
     Extends: St.Button,
 
-    _init: function(client) {
+    _init: function(client, menu) {
         this.parent({
             reactive: true,
             can_focus: true,
@@ -37,6 +37,7 @@ const GPasteAboutItem = new Lang.Class({
         this.child = new St.Icon({ icon_name: 'dialog-information-symbolic' });
 
         this.connect('clicked', function() {
+            menu.itemActivated();
             client.about(null);
         });
     }

@@ -27,7 +27,7 @@ const GPastePrefsItem = new Lang.Class({
     Name: 'GPastePrefsItem',
     Extends: St.Button,
 
-    _init: function() {
+    _init: function(menu) {
         this.parent({
             reactive: true,
             can_focus: true,
@@ -35,9 +35,10 @@ const GPastePrefsItem = new Lang.Class({
             style_class: 'system-menu-action'
         });
 
-        this.child = new St.Icon({ icon_name: 'emblem-system-symbolic' });
+        this.child = new St.Icon({ icon_name: 'preferences-system-symbolic' });
 
         this.connect('clicked', function() {
+            menu.itemActivated();
             Shell.AppSystem.get_default().lookup_app('org.gnome.GPaste.Settings.desktop').activate();
         });
     }
