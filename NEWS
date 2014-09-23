@@ -1,3 +1,15 @@
+NEW in 3.12.3 and 3.10.4 (Not released yet)
+=============
+
+- gpaste-daemon now has an Update dbus signal more precise than Changed
+- desktop files fixes
+- all calls to clipboard are now async
+- performance improvements
+- gpaste-client has been updated to match gpaste-daemon changes with an update signal
+- gnome-shell extension has been ported to the update signal
+- applets have been ported to the update signal
+- gnome-shell search bar now matches the user theme
+
 NEW in 3.12.2 and 3.10.3 (28/07/2014)
 =============
 
