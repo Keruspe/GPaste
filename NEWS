@@ -1,3 +1,10 @@
+NEW in 3.14 (Not released yet)
+=============
+
+- update for latest gobject-introspection
+- support gnome-shell 3.14
+- start redesign of the gnome-shell extension
+
 NEW in 3.12.3 and 3.10.4 (Not released yet)
 =============
 
