@@ -146,7 +146,7 @@ g_paste_applet_history_refresh_history (GObject      *source_object G_GNUC_UNUSE
     GSList *item = priv->items;
     for (guint i = 0; i < data->refreshFrom; ++i)
         item = g_slist_next (item);
-    for (guint i = data->refreshFrom; i < refreshTextBound; ++i, item = g_slist_next (item))
+    for (guint i = data->refreshFrom; item && i < refreshTextBound; ++i, item = g_slist_next (item))
         g_paste_applet_item_reset_text (item->data);
 }
 
