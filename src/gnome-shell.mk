@@ -17,7 +17,7 @@
 
 gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org
 
-gnomeshell_extension_files =                 \
+gnomeshell_extension_files = \
 	src/gnome-shell/aboutItem.js \
 	src/gnome-shell/deleteButton.js \
 	src/gnome-shell/deleteItemPart.js \
@@ -27,6 +27,7 @@ gnomeshell_extension_files =                 \
 	src/gnome-shell/indicator.js \
 	src/gnome-shell/item.js \
 	src/gnome-shell/prefs.js \
+	src/gnome-shell/prefsItem.js \
 	src/gnome-shell/searchItem.js \
 	src/gnome-shell/stateSwitch.js \
 	src/gnome-shell/statusIcon.js \
