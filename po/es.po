@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-07-28 22:54+0200\n"
+"POT-Creation-Date: 2014-09-25 20:19+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -52,7 +52,7 @@ msgstr "detener seguimiento de cambios en el portapapeles"
 msgid "Track changes"
 msgstr "Seguimiento de cambios"
 
-#: ../src/libgpaste/core/gpaste-history.c:723
+#: ../src/libgpaste/core/gpaste-history.c:734
 msgid "Could not create history dir"
 msgstr "No se pudo crear directorio de historial"
 
