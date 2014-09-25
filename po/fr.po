@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-07-28 23:03+0200\n"
+"POT-Creation-Date: 2014-09-25 20:24+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -51,7 +51,7 @@ msgstr "Arrêter de suivre les changements"
 msgid "Track changes"
 msgstr "Suivre les changements"
 
-#: ../src/libgpaste/core/gpaste-history.c:723
+#: ../src/libgpaste/core/gpaste-history.c:734
 msgid "Could not create history dir"
 msgstr "Impossible de créer le dossier d'historique"
 

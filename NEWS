@@ -1,4 +1,4 @@
-NEW in 3.12.3 and 3.10.4 (Not released yet)
+NEW in 3.12.3 and 3.10.4 (25/09/2014)
 =============
 
 - gpaste-daemon now has an Update dbus signal more precise than Changed
