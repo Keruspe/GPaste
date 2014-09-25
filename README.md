@@ -6,12 +6,13 @@ A library is available for development purposes:
 
 * `libgpaste` contains all the basic objects used by GPaste and allows you to manage preferences and the GPaste daemon.
 
-A default daemon named `gpaste-daemon` is provided, with four keybindings:
+A default daemon named `gpaste-daemon` is provided, with five keybindings:
 
 * show history
 * pop the item from the history
 * sync primary selection with clipboard
 * sync clipboard with primary selection
+* mark the active item as being a password
 
 A simple CLI interface is provided: `gpaste`, with two subcommands: `gpaste settings` which makes the preferences
 utility pop, `gpaste applet` which starts the status icon in your notification area and `gpaste app-indicator` which
@@ -43,6 +44,6 @@ You can see everything I'll post about GPaste [there](http://www.imagination-lan
 
 This is the development branch for upcoming GNOME 3.14.
 
-Latest release for GNOME 3.12 is: [GPaste 3.12.2](http://www.imagination-land.org/posts/2014-07-28-gpaste-3.12.2-released.html).
+Latest release for GNOME 3.12 is: [GPaste 3.12.3](http://www.imagination-land.org/posts/2014-09-25-gpaste-3.12.3-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.12.2.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.12.3.tar.xz>

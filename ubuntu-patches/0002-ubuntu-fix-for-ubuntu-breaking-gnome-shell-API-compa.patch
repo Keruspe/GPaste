@@ -1,4 +1,4 @@
-From 8862dab883c71071b406f8cb0ed6719ff4c15bd0 Mon Sep 17 00:00:00 2001
+From 9e36023c6544a0017465dac96f616f540898c5c0 Mon Sep 17 00:00:00 2001
 From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 Date: Sun, 11 May 2014 10:46:35 +0900
 Subject: [PATCH 2/2] ubuntu: fix for ubuntu breaking gnome-shell API
@@ -6,13 +6,13 @@ Subject: [PATCH 2/2] ubuntu: fix for ubuntu breaking gnome-shell API
 
 Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 ---
- libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c | 4 +---
+ src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c | 4 +---
  1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c b/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
+diff --git a/src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c b/src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
 index 62107c8..ea8e134 100644
---- a/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
-+++ b/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
+--- a/src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
++++ b/src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c
 @@ -73,7 +73,6 @@
              "<signal name='" G_PASTE_GNOME_SHELL_SIG_ACCELERATOR_ACTIVATED "'>"                            \
                  "<arg name='action'    type='u' />"                                                        \
@@ -37,5 +37,5 @@ index 62107c8..ea8e134 100644
      }
  }
 -- 
-1.9.3
+2.1.1
 
