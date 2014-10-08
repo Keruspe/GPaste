@@ -922,9 +922,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
 {
     Data *data = user_data;
 
-    gchar *txt = alloca (text_len + 1);
-    memcpy(txt, text, text_len);
-    txt[text_len] = '\0';
+    G_PASTE_CLEANUP_FREE gchar *txt = g_strndup (text, text_len);
     switch (data->state)
     {
     case IN_HISTORY:
