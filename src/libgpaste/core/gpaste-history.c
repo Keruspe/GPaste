@@ -121,6 +121,8 @@ g_paste_history_update (GPasteHistory     *self,
                         GPasteUpdateTarget target,
                         guint              position)
 {
+    g_paste_history_save (self);
+
     g_signal_emit (self,
                    signals[UPDATE],
                    0, /* detail */
