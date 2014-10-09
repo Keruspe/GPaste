@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-09-25 20:24+0200\n"
+"POT-Creation-Date: 2014-10-09 20:38+0200\n"
 "PO-Revision-Date: 2014-07-09 18:47-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -51,7 +51,7 @@ msgstr "Parar o monitoramento"
 msgid "Track changes"
 msgstr "Monitorar a área de transferência"
 
-#: ../src/libgpaste/core/gpaste-history.c:734
+#: ../src/libgpaste/core/gpaste-history.c:736
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
@@ -165,7 +165,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr "Sincronizar a seleção primária com a área de transferência: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: ../src/gpaste/gpaste.c:150
+#: ../src/gpaste/gpaste.c:164
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Não foi possível se conectar ao daemon do GPaste"
 
@@ -242,8 +242,8 @@ msgstr "imprime o tamanho do histórico"
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste delete-passworf <name>
 #: ../src/gpaste/gpaste.c:38 ../src/gpaste/gpaste.c:40
-#: ../src/gpaste/gpaste.c:42 ../src/gpaste/gpaste.c:52
-#: ../src/gpaste/gpaste.c:62 ../src/gpaste/gpaste.c:66
+#: ../src/gpaste/gpaste.c:42 ../src/gpaste/gpaste.c:54
+#: ../src/gpaste/gpaste.c:64 ../src/gpaste/gpaste.c:68
 msgid "name"
 msgstr "nome"
 
@@ -264,45 +264,51 @@ msgstr "apaga um histórico"
 msgid "list available histories"
 msgstr "lista os históricos disponíveis"
 
-#. Translators: help for gpaste raw-history
+#. Translators: help for gpaste oneline-history
 #: ../src/gpaste/gpaste.c:46
+#, fuzzy
+msgid "print the history without newlines"
+msgstr "imprime o histórico com os índices"
+
+#. Translators: help for gpaste raw-history
+#: ../src/gpaste/gpaste.c:48
 msgid "print the history (raw) without indexes"
 msgstr "imprime o histórico (cru), sem os índices"
 
 #. Translators: help for gpaste zero-history
-#: ../src/gpaste/gpaste.c:48
+#: ../src/gpaste/gpaste.c:50
 msgid "print the history with NUL as separator"
 msgstr "imprime o histórico com um NULO como separador"
 
 #. Translators: help for gpaste add <text>
-#: ../src/gpaste/gpaste.c:50
+#: ../src/gpaste/gpaste.c:52
 msgid "text"
 msgstr "texto"
 
-#: ../src/gpaste/gpaste.c:50
+#: ../src/gpaste/gpaste.c:52
 msgid "set text to clipboard"
 msgstr "copia texto para a área de transferência"
 
-#: ../src/gpaste/gpaste.c:52
+#: ../src/gpaste/gpaste.c:54
 msgid "password"
 msgstr "senha"
 
-#: ../src/gpaste/gpaste.c:52
+#: ../src/gpaste/gpaste.c:54
 msgid "add the name - password couple to the clipboard"
 msgstr "adiciona o par nome - senha para a área de transferência"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: ../src/gpaste/gpaste.c:54
+#: ../src/gpaste/gpaste.c:56
 #, fuzzy
 msgid "old name"
 msgstr "nome"
 
-#: ../src/gpaste/gpaste.c:54
+#: ../src/gpaste/gpaste.c:56
 #, fuzzy
 msgid "new name"
 msgstr "nome"
 
-#: ../src/gpaste/gpaste.c:54
+#: ../src/gpaste/gpaste.c:56
 msgid "rename the password"
 msgstr ""
 
@@ -311,122 +317,122 @@ msgstr ""
 #. Translators: help for gpaste select <number>
 #. Translators: help for gpaste set-password <number> <name>
 #. Translators: help for gpaste delete <number>
-#: ../src/gpaste/gpaste.c:56 ../src/gpaste/gpaste.c:58
-#: ../src/gpaste/gpaste.c:60 ../src/gpaste/gpaste.c:62
-#: ../src/gpaste/gpaste.c:64
+#: ../src/gpaste/gpaste.c:58 ../src/gpaste/gpaste.c:60
+#: ../src/gpaste/gpaste.c:62 ../src/gpaste/gpaste.c:64
+#: ../src/gpaste/gpaste.c:66
 msgid "number"
 msgstr "n"
 
-#: ../src/gpaste/gpaste.c:56
+#: ../src/gpaste/gpaste.c:58
 msgid "get the <number>th item from the history"
 msgstr "obtém o n-ésimo item do histórico"
 
-#: ../src/gpaste/gpaste.c:58
+#: ../src/gpaste/gpaste.c:60
 msgid "get the <number>th item from the history (raw)"
 msgstr "obtém o n-ésimo item do histórico (cru)"
 
-#: ../src/gpaste/gpaste.c:60
+#: ../src/gpaste/gpaste.c:62
 msgid "set the <number>th item from the history to the clipboard"
 msgstr "copia o n-ésimo item do histórico para a área de transferência"
 
-#: ../src/gpaste/gpaste.c:62
+#: ../src/gpaste/gpaste.c:64
 #, fuzzy
 msgid "set the <number>th item from the history as a password named <name>"
 msgstr "copia o n-ésimo item do histórico para a área de transferência"
 
-#: ../src/gpaste/gpaste.c:64
+#: ../src/gpaste/gpaste.c:66
 msgid "delete <number>th item of the history"
 msgstr "apaga o n-ésimo item do histórico"
 
-#: ../src/gpaste/gpaste.c:66
+#: ../src/gpaste/gpaste.c:68
 #, fuzzy
 msgid "delete the password <name> from the history"
 msgstr "obtém o n-ésimo item do histórico"
 
 #. Translators: help for gpaste file <path>
-#: ../src/gpaste/gpaste.c:68
+#: ../src/gpaste/gpaste.c:70
 msgid "path"
 msgstr "caminho"
 
-#: ../src/gpaste/gpaste.c:68
+#: ../src/gpaste/gpaste.c:70
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "coloca o conteúdo do arquivo em <caminho> na área de transferência"
 
 #. Translators: help for whatever | gpaste
-#: ../src/gpaste/gpaste.c:70
+#: ../src/gpaste/gpaste.c:72
 msgid "whatever"
 msgstr "qualquercomando"
 
-#: ../src/gpaste/gpaste.c:70
+#: ../src/gpaste/gpaste.c:72
 msgid "set the output of whatever to clipboard"
 msgstr "copia a saída de qualquercomando para a área de transferência"
 
 #. Translators: help for gpaste empty
-#: ../src/gpaste/gpaste.c:72
+#: ../src/gpaste/gpaste.c:74
 msgid "empty the history"
 msgstr "esvazia o histórico"
 
 #. Translators: help for gpaste start
-#: ../src/gpaste/gpaste.c:74
+#: ../src/gpaste/gpaste.c:76
 msgid "start tracking clipboard changes"
 msgstr "inicia o monitoramento de alterações na área de transferência"
 
 #. Translators: help for gpaste stop
-#: ../src/gpaste/gpaste.c:76
+#: ../src/gpaste/gpaste.c:78
 msgid "stop tracking clipboard changes"
 msgstr "pára o monitoramento de alterações na área de transferência"
 
 #. Translators: help for gpaste quit
-#: ../src/gpaste/gpaste.c:78
+#: ../src/gpaste/gpaste.c:80
 msgid "alias for stop"
 msgstr "apelido para stop"
 
 #. Translators: help for gpaste daemon-reexec
-#: ../src/gpaste/gpaste.c:80
+#: ../src/gpaste/gpaste.c:82
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "reinicia o daemon (depois de uma atualização...)"
 
 #. Translators: help for gpaste settings
-#: ../src/gpaste/gpaste.c:82
+#: ../src/gpaste/gpaste.c:84
 msgid "launch the configuration tool"
 msgstr "inicia a ferramenta de configuração"
 
 #. Translators: help for gpaste applet
-#: ../src/gpaste/gpaste.c:85
+#: ../src/gpaste/gpaste.c:87
 msgid "launch the applet"
 msgstr "inicia o applet do GPaste"
 
 #. Translators: help for gpaste app-indicator
-#: ../src/gpaste/gpaste.c:89
+#: ../src/gpaste/gpaste.c:91
 msgid "launch the unity application indicator"
 msgstr "inicia o aplicativo indicador do unity"
 
 #. Translators: help for gpaste version
-#: ../src/gpaste/gpaste.c:92
+#: ../src/gpaste/gpaste.c:94
 msgid "display the version"
 msgstr "mostra a versão"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:94
+#: ../src/gpaste/gpaste.c:96
 msgid "display the daemon version"
 msgstr "mostra a versão do daemon"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:96
+#: ../src/gpaste/gpaste.c:98
 msgid "display this help"
 msgstr "mostra esta ajuda"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:98
+#: ../src/gpaste/gpaste.c:100
 msgid "display the about dialog"
 msgstr "mostra o diálogo Sobre"
 
-#: ../src/gpaste/gpaste.c:178
+#: ../src/gpaste/gpaste.c:192
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "Não foi possível abrir o gpaste-applet.\n"
 
-#: ../src/gpaste/gpaste.c:250
+#: ../src/gpaste/gpaste.c:264
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "O daemon foi reiniciado com sucesso\n"
