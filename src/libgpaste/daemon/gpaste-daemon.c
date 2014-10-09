@@ -585,6 +585,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_select (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SET_PASSWORD))
         g_paste_daemon_private_set_password (priv, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
+        g_paste_daemon_show_history (self, NULL /* FIXME: answer error */);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
         g_paste_daemon_private_switch_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))

@@ -50,6 +50,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_RENAME_PASSWORD            "RenamePassword"
 #define G_PASTE_DAEMON_SELECT                     "Select"
 #define G_PASTE_DAEMON_SET_PASSWORD               "SetPassword"
+#define G_PASTE_DAEMON_SHOW_HISTORY               "ShowHistory"
 #define G_PASTE_DAEMON_SWITCH_HISTORY             "SwitchHistory"
 #define G_PASTE_DAEMON_TRACK                      "Track"
 
@@ -125,6 +126,7 @@ G_BEGIN_DECLS
         "           <arg type='u' direction='in' />"                           \
         "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_SHOW_HISTORY "' />"             \
         "       <method name='" G_PASTE_DAEMON_SWITCH_HISTORY "'>"             \
         "           <arg type='s' direction='in' />"                           \
         "       </method>"                                                     \
