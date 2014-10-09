@@ -22,6 +22,7 @@ if (( CURRENT == 2 )); then
         {history,h}:"Display the history with indexes"
         {history-size,hs}:"Display the size of the history"
         {list-histories,lh}:"List available histories"
+        {oneline,oh}:"Display the history without newlines"
         {raw-history,rh}:"Display the history (raw) without indexes"
         {rename-password,rp}:"Rename a password"
         {select,set,s}:"Select an element of the history"
