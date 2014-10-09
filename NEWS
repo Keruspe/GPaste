@@ -1,3 +1,10 @@
+NEW in 3.10.4.1 (09/10/2014)
+=============
+
+- a bug preventing the history to be saved to disk has been fixed
+- prevent a segfault when loading large histories
+- add a new gpaste oneline-history command
+
 NEW in 3.10.4 (25/09/2014)
 =============
 
