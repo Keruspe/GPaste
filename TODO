@@ -1,22 +1,12 @@
-3.10.3:
-    gpg support
-
-3.10.4:
+3.16:
     dbus errors instead of asserts in daemon
     gpaste-editor
-
-3.12.2:
-    merge 3.10.3
-
-3.12.3:
-    merge 3.10.4
-
-3.14:
     wayland support
 
 future:
     general:
         add class methods for signals
+        gpg support
         properties all the way (when GProperty stuff lands)
     libgpaste-client:
         specify errors types when possible in g-i
