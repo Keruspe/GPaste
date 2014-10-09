@@ -528,6 +528,21 @@ g_paste_client_set_password_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_show_history_sync:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * Emit the ShowHistory signal
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_show_history_sync (GPasteClient *self,
+                                  GError      **error)
+{
+    DBUS_CALL_NO_PARAM_NO_RETURN (SHOW_HISTORY);
+}
+/**
  * g_paste_client_switch_history_sync:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to
@@ -1004,6 +1019,25 @@ g_paste_client_set_password (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_show_history:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Emit the ShowHistory signal
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_show_history (GPasteClient       *self,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (SHOW_HISTORY);
+}
+
+/**
  * g_paste_client_switch_history:
  * @self: a #GPasteClient instance
  * @name: the name of the history to switch to
@@ -1403,6 +1437,24 @@ g_paste_client_select_finish (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password_finish (GPasteClient *self,
+                                    GAsyncResult *result,
+                                    GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_show_history_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Emit the ShowHistory signal
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_show_history_finish (GPasteClient *self,
                                     GAsyncResult *result,
                                     GError      **error)
 {

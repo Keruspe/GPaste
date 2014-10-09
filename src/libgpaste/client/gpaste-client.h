@@ -97,6 +97,8 @@ void    g_paste_client_set_password_sync               (GPasteClient *self,
                                                         guint32       index,
                                                         const gchar  *name,
                                                         GError      **error);
+void    g_paste_client_show_history_sync               (GPasteClient *self,
+                                                        GError      **error);
 void    g_paste_client_switch_history_sync             (GPasteClient *self,
                                                         const gchar  *name,
                                                         GError      **error);
@@ -184,6 +186,9 @@ void g_paste_client_set_password               (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_show_history               (GPasteClient       *self,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_switch_history             (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
@@ -255,6 +260,9 @@ void    g_paste_client_select_finish                     (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_set_password_finish               (GPasteClient *self,
+                                                          GAsyncResult *result,
+                                                          GError      **error);
+void    g_paste_client_show_history_finish               (GPasteClient *self,
                                                           GAsyncResult *result,
                                                           GError      **error);
 void    g_paste_client_switch_history_finish             (GPasteClient *self,
