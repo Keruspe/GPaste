@@ -42,6 +42,8 @@ show_help (const gchar *caller)
     printf ("  %s delete-history <%s>: %s\n", caller, _("name"),  _("delete a history"));
     /* Translators: help for gpaste list-histories */
     printf ("  %s list-histories: %s\n", caller, _("list available histories"));
+    /* Translators: help for gpaste oneline-history */
+    printf ("  %s oneline-history: %s\n", caller, _("print the history without newlines"));
     /* Translators: help for gpaste raw-history */
     printf ("  %s raw-history: %s\n", caller, _("print the history (raw) without indexes"));
     /* Translators: help for gpaste zero-history */
@@ -104,10 +106,22 @@ show_version (void)
     printf ("%s\n", PACKAGE_STRING);
 }
 
+static const gchar *
+strip_newline (gchar *str)
+{
+    for (gchar *s = str; *s; ++s)
+    {
+        if (*s == '\n')
+            *s = ' ';
+    }
+    return str;
+}
+
 static void
 show_history (GPasteClient *client,
               gboolean      raw,
               gboolean      zero,
+              gboolean      oneline,
               GError      **error)
 {
     G_PASTE_CLEANUP_STRFREEV GStrv history = (raw) ?
@@ -122,7 +136,7 @@ show_history (GPasteClient *client,
         {
             if (!raw)
                 printf ("%d: ", i++);
-            printf ("%s%c", *h, (zero) ? '\0' : '\n');
+            printf ("%s%c", (oneline) ? strip_newline (*h) : *h, (zero) ? '\0' : '\n');
         }
     }
 }
@@ -235,7 +249,7 @@ main (gint argc, gchar *argv[])
         switch (argc)
         {
         case 1:
-            show_history (client, FALSE, FALSE, &error);
+            show_history (client, FALSE, FALSE, FALSE, &error);
             break;
         case 2:
             arg1 = argv[1];
@@ -265,7 +279,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "h") ||
                      !g_strcmp0 (arg1, "history"))
             {
-                show_history (client, FALSE, FALSE, &error);
+                show_history (client, FALSE, FALSE, FALSE, &error);
             }
             else if (!g_strcmp0 (arg1, "hs") ||
                      !g_strcmp0 (arg1, "history-size"))
@@ -284,10 +298,15 @@ main (gint argc, gchar *argv[])
                         printf ("%s\n", *h);
                 }
             }
+            else if (!g_strcmp0 (arg1, "oh") ||
+                     !g_strcmp0 (arg1, "oneline-history"))
+            {
+                show_history (client, FALSE, FALSE, TRUE, &error);
+            }
             else if (!g_strcmp0 (arg1, "rh") ||
                      !g_strcmp0 (arg1, "raw-history"))
             {
-                show_history (client, TRUE, FALSE, &error);
+                show_history (client, TRUE, FALSE, FALSE, &error);
             }
             else if (!g_strcmp0 (arg1, "s")        ||
                      !g_strcmp0 (arg1, "settings") ||
@@ -311,7 +330,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "zh") ||
                      !g_strcmp0 (arg1, "zero-history"))
             {
-                show_history (client, FALSE, TRUE, &error);
+                show_history (client, FALSE, TRUE, FALSE, &error);
             }
 #if G_PASTE_CONFIG_ENABLE_APPLET
             else if (!g_strcmp0 (arg1, "applet"))
