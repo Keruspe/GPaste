@@ -90,6 +90,8 @@ show_help (const gchar *caller)
     /* Translators: help for gpaste app-indicator */
     printf ("  %s app-indicator: %s\n", caller, _("launch the unity application indicator"));
 #endif
+    /* Translators: help for gpaste show-history */
+    printf ("  %s show-history: %s\n", caller, _("make the applet or extension display the history"));
     /* Translators: help for gpaste version */
     printf ("  %s version: %s\n", caller, _("display the version"));
     /* Translators: help for gpaste daemon-version */
@@ -314,6 +316,10 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "preferences"))
             {
                 status = spawn ("Settings", &error);
+            }
+            else if (!g_strcmp0 (arg1, "show-history"))
+            {
+                g_paste_client_show_history_sync (client, &error);
             }
             else if (!g_strcmp0 (arg1, "start") ||
                      !g_strcmp0 (arg1, "d")     ||

@@ -30,6 +30,7 @@ if (( CURRENT == 2 )); then
         {settings,s,preferences,p}:"Launch the configuration tool"
         {start,daemon,d}:"Start the daemon"
         {stop,quit,q}:"Shutdown the daemon"
+        {show-history}:"Make the applet or extension display the history"
         {switch-history,sh}:"Switch to another history"
         {version,v,--version,-v}:"Display the version"
         {zero-history,zh}:"Display the history with NUL as separator"
