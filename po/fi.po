@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-10-09 20:38+0200\n"
+"POT-Creation-Date: 2014-10-09 21:01+0200\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -165,7 +165,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr ""
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: ../src/gpaste/gpaste.c:164
+#: ../src/gpaste/gpaste.c:166
 msgid "Couldn't connect to GPaste daemon"
 msgstr "GPaste-palveluun ei saatu yhteyttä"
 
@@ -411,34 +411,40 @@ msgstr "käynnistää härpäkkeen"
 msgid "launch the unity application indicator"
 msgstr "käynnistää asetusten hallinan"
 
-#. Translators: help for gpaste version
+#. Translators: help for gpaste show-history
 #: ../src/gpaste/gpaste.c:94
+#, fuzzy
+msgid "make the applet or extension display the history"
+msgstr "Suurin määrä historiassa näkyviä leikkeitä"
+
+#. Translators: help for gpaste version
+#: ../src/gpaste/gpaste.c:96
 msgid "display the version"
 msgstr "tulostaa ohjelman version"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:96
+#: ../src/gpaste/gpaste.c:98
 #, fuzzy
 msgid "display the daemon version"
 msgstr "tulostaa ohjelman version"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:98
+#: ../src/gpaste/gpaste.c:100
 msgid "display this help"
 msgstr "tulostaa tämän ohjeen"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:100
+#: ../src/gpaste/gpaste.c:102
 #, fuzzy
 msgid "display the about dialog"
 msgstr "tulostaa ohjelman version"
 
-#: ../src/gpaste/gpaste.c:192
+#: ../src/gpaste/gpaste.c:194
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "GPaste-härpäkkeen esiintaikominen epäonnistui.\n"
 
-#: ../src/gpaste/gpaste.c:264
+#: ../src/gpaste/gpaste.c:266
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Palvelun uudelleenkäynnistäminen onnistui\n"

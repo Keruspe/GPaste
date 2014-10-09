@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-10-09 20:38+0200\n"
+"POT-Creation-Date: 2014-10-09 21:01+0200\n"
 "PO-Revision-Date: 2014-07-09 18:47-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -165,7 +165,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr "Sincronizar a seleção primária com a área de transferência: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: ../src/gpaste/gpaste.c:164
+#: ../src/gpaste/gpaste.c:166
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Não foi possível se conectar ao daemon do GPaste"
 
@@ -407,32 +407,38 @@ msgstr "inicia o applet do GPaste"
 msgid "launch the unity application indicator"
 msgstr "inicia o aplicativo indicador do unity"
 
-#. Translators: help for gpaste version
+#. Translators: help for gpaste show-history
 #: ../src/gpaste/gpaste.c:94
+#, fuzzy
+msgid "make the applet or extension display the history"
+msgstr "Número máximo de itens exibidos no histórico"
+
+#. Translators: help for gpaste version
+#: ../src/gpaste/gpaste.c:96
 msgid "display the version"
 msgstr "mostra a versão"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:96
+#: ../src/gpaste/gpaste.c:98
 msgid "display the daemon version"
 msgstr "mostra a versão do daemon"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:98
+#: ../src/gpaste/gpaste.c:100
 msgid "display this help"
 msgstr "mostra esta ajuda"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:100
+#: ../src/gpaste/gpaste.c:102
 msgid "display the about dialog"
 msgstr "mostra o diálogo Sobre"
 
-#: ../src/gpaste/gpaste.c:192
+#: ../src/gpaste/gpaste.c:194
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "Não foi possível abrir o gpaste-applet.\n"
 
-#: ../src/gpaste/gpaste.c:264
+#: ../src/gpaste/gpaste.c:266
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "O daemon foi reiniciado com sucesso\n"

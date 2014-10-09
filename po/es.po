@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-10-09 20:38+0200\n"
+"POT-Creation-Date: 2014-10-09 21:01+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -166,7 +166,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr "Sincronizar selección principal con el portapapeles: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: ../src/gpaste/gpaste.c:164
+#: ../src/gpaste/gpaste.c:166
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
@@ -414,34 +414,40 @@ msgstr "iniciar el applet"
 msgid "launch the unity application indicator"
 msgstr "iniciar la herramienta de configuración"
 
-#. Translators: help for gpaste version
+#. Translators: help for gpaste show-history
 #: ../src/gpaste/gpaste.c:94
+#, fuzzy
+msgid "make the applet or extension display the history"
+msgstr "Número máximo de elementos mostrados en el historial"
+
+#. Translators: help for gpaste version
+#: ../src/gpaste/gpaste.c:96
 msgid "display the version"
 msgstr "mostrar la versión"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:96
+#: ../src/gpaste/gpaste.c:98
 #, fuzzy
 msgid "display the daemon version"
 msgstr "mostrar la versión"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:98
+#: ../src/gpaste/gpaste.c:100
 msgid "display this help"
 msgstr "mostrar esta ayuda"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:100
+#: ../src/gpaste/gpaste.c:102
 #, fuzzy
 msgid "display the about dialog"
 msgstr "mostrar la versión"
 
-#: ../src/gpaste/gpaste.c:192
+#: ../src/gpaste/gpaste.c:194
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "No se pudo iniciar el applet de gpaste.\n"
 
-#: ../src/gpaste/gpaste.c:264
+#: ../src/gpaste/gpaste.c:266
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Servicio reiniciado con éxito\n"

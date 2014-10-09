@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-10-09 20:38+0200\n"
+"POT-Creation-Date: 2014-10-09 21:01+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -164,7 +164,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr "Synchroniser la sélection primaire avec le presse-papier: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: ../src/gpaste/gpaste.c:164
+#: ../src/gpaste/gpaste.c:166
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 
@@ -403,31 +403,36 @@ msgstr "lance l'applet GPaste"
 msgid "launch the unity application indicator"
 msgstr "lance l'indicateur d'application pour unity"
 
-#. Translators: help for gpaste version
+#. Translators: help for gpaste show-history
 #: ../src/gpaste/gpaste.c:94
+msgid "make the applet or extension display the history"
+msgstr "forcer l'applet ou l'extension à afficher l'historique"
+
+#. Translators: help for gpaste version
+#: ../src/gpaste/gpaste.c:96
 msgid "display the version"
 msgstr "affiche la version"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:96
+#: ../src/gpaste/gpaste.c:98
 msgid "display the daemon version"
 msgstr "affiche la version du démon"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:98
+#: ../src/gpaste/gpaste.c:100
 msgid "display this help"
 msgstr "affiche cette aide"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:100
+#: ../src/gpaste/gpaste.c:102
 msgid "display the about dialog"
 msgstr "affiche le dialogue d'à propos"
 
-#: ../src/gpaste/gpaste.c:192
+#: ../src/gpaste/gpaste.c:194
 msgid "Couldn't spawn"
 msgstr "Impossible de lancer"
 
-#: ../src/gpaste/gpaste.c:264
+#: ../src/gpaste/gpaste.c:266
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Démon redémarré avec succès\n"

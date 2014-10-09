@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2014-10-09 20:38+0200\n"
+"POT-Creation-Date: 2014-10-09 21:01+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -167,7 +167,7 @@ msgid "Sync the primary selection to the clipboard: "
 msgstr "Auswahl mit der Zwischenablage synchronisieren:"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: ../src/gpaste/gpaste.c:164
+#: ../src/gpaste/gpaste.c:166
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
@@ -415,34 +415,40 @@ msgstr "Applet starten"
 msgid "launch the unity application indicator"
 msgstr "Konfigurationswerkzeug starten"
 
-#. Translators: help for gpaste version
+#. Translators: help for gpaste show-history
 #: ../src/gpaste/gpaste.c:94
+#, fuzzy
+msgid "make the applet or extension display the history"
+msgstr "Die maximale Anzahl der anzuzeigenden Einträge in der Chronik"
+
+#. Translators: help for gpaste version
+#: ../src/gpaste/gpaste.c:96
 msgid "display the version"
 msgstr "Programmversion anzeigen"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:96
+#: ../src/gpaste/gpaste.c:98
 #, fuzzy
 msgid "display the daemon version"
 msgstr "Programmversion anzeigen"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:98
+#: ../src/gpaste/gpaste.c:100
 msgid "display this help"
 msgstr "Diesen Hilfetext anzeigen"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:100
+#: ../src/gpaste/gpaste.c:102
 #, fuzzy
 msgid "display the about dialog"
 msgstr "Programmversion anzeigen"
 
-#: ../src/gpaste/gpaste.c:192
+#: ../src/gpaste/gpaste.c:194
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "gpaste-applet konnte nicht gestartet werden.\n"
 
-#: ../src/gpaste/gpaste.c:264
+#: ../src/gpaste/gpaste.c:266
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Daemon wurde erfolgreich neu gestartet\n"
