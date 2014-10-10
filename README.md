@@ -42,6 +42,8 @@ If your distribution ships with gnome-settings 3.8 and thus a patched version of
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
+This is the development branch for GNOME 3.16
+
 Latest release for GNOME 3.14 is: [GPaste 3.14](http://www.imagination-land.org/posts/2014-10-10-gpaste-3.14-released.html).
 
 Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.14.tar.xz>
