@@ -124,10 +124,6 @@ include man/1.mk
 
 include tests/gnome-shell-client.mk
 
-# Legacy wrapper
-
-include legacy/gpasted.mk
-
 # Maintainance stuff
 
 update-po:
