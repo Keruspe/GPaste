@@ -160,9 +160,6 @@ g_paste_daemon_update (GPasteDaemon      *self,
         g_variant_new_uint32 (position)
     };
     G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
-
-    /* TODO: legacy compat, remove me later */
-    G_PASTE_SEND_DBUS_SIGNAL (CHANGED);
 }
 
 static void

@@ -27,7 +27,6 @@ G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 
 enum
 {
-    CHANGED,
     NAME_LOST,
     REEXECUTE_SELF,
     SHOW_HISTORY,
@@ -1537,8 +1536,7 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
 {
     GPasteClient *self = G_PASTE_CLIENT (proxy);
 
-    HANDLE_SIGNAL (CHANGED)
-    else HANDLE_SIGNAL (NAME_LOST)
+    HANDLE_SIGNAL (NAME_LOST)
     else HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
     else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, boolean)
@@ -1564,7 +1562,6 @@ g_paste_client_class_init (GPasteClientClass *klass)
 {
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_client_g_signal;
 
-    signals[CHANGED]        = NEW_SIGNAL ("changed");
     signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
     signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history");
