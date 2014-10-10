@@ -1,9 +1,10 @@
-NEW in 3.14 (Not released yet)
+NEW in 3.14 (10/10/2014)
 =============
 
 - update for latest gobject-introspection
 - support gnome-shell 3.14
 - start redesign of the gnome-shell extension
+- new gpaste show-history command
 
 NEW in 3.12.3.1 and 3.10.4.1 (09/10/2014)
 =============
