@@ -106,6 +106,11 @@ void    g_paste_client_track_sync                      (GPasteClient *self,
                                                         gboolean      state,
                                                         GError      **error);
 
+const guint32 *g_paste_client_search_sync              (GPasteClient *self,
+                                                        const gchar  *pattern,
+                                                        gsize        *hits,
+                                                        GError      **error);
+
 /*******************/
 /* Methods / Async */
 /*******************/
@@ -175,6 +180,10 @@ void g_paste_client_reexecute                  (GPasteClient       *self,
 void g_paste_client_rename_password            (GPasteClient       *self,
                                                 const gchar        *old_name,
                                                 const gchar        *new_name,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+void g_paste_client_search                     (GPasteClient       *self,
+                                                const gchar        *pattern,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_select                     (GPasteClient       *self,
@@ -270,6 +279,11 @@ void    g_paste_client_switch_history_finish             (GPasteClient *self,
                                                           GError      **error);
 void    g_paste_client_track_finish                      (GPasteClient *self,
                                                           GAsyncResult *result,
+                                                          GError      **error);
+
+const guint32 *g_paste_client_search_finish              (GPasteClient *self,
+                                                          GAsyncResult *result,
+                                                          gsize        *hits,
                                                           GError      **error);
 
 /**************/
