@@ -379,6 +379,10 @@ LIBGPASTE_2 {
 global:
     g_paste_applet_item_reset_text;
 
+    g_paste_client_search;
+    g_paste_client_search_finish;
+    g_paste_client_search_sync;
+
     g_paste_client_show_history;
     g_paste_client_show_history_finish;
     g_paste_client_show_history_sync;

@@ -68,6 +68,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_ASYNC_FINISH_RET_UINT32 \
     DBUS_ASYNC_FINISH_RET_UINT32_BASE (CLIENT)
 
+#define DBUS_ASYNC_FINISH_RET_UINTV(len) \
+    DBUS_ASYNC_FINISH_RET_UINTV_BASE (CLIENT, len)
+
 /******************/
 /* Methods / Sync */
 /******************/
@@ -86,6 +89,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+
+#define DBUS_CALL_ONE_PARAM_RET_UINTV(method, param_type, param_name, len) \
+    DBUS_CALL_ONE_PARAM_RET_UINTV_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
 
 #define DBUS_CALL_TWO_PARAMS_NO_RETURN(method, params) \
     DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
@@ -482,6 +488,26 @@ g_paste_client_rename_password_sync (GPasteClient *self,
     };
 
     DBUS_CALL_TWO_PARAMS_NO_RETURN (RENAME_PASSWORD, params);
+}
+
+/**
+ * g_paste_client_search_sync:
+ * @self: a #GPasteClient instance
+ * @pattern: the pattern to look for in history
+ * @hits: (out): number of hits
+ * @error: a #GError
+ *
+ * Search for items matching @pattern in history
+ *
+ * Returns: The indexes of the matching items
+ */
+G_PASTE_VISIBLE const guint32 *
+g_paste_client_search_sync (GPasteClient *self,
+                            const gchar  *pattern,
+                            gsize        *hits,
+                            GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_RET_UINTV (SEARCH, string, pattern, hits);
 }
 
 /**
@@ -970,6 +996,27 @@ g_paste_client_rename_password (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_search:
+ * @self: a #GPasteClient instance
+ * @pattern: the pattern to look for in history
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Search for items matching @pattern in history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_search (GPasteClient       *self,
+                       const gchar        *pattern,
+                       GAsyncReadyCallback callback,
+                       gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, string, pattern);
+}
+
+/**
  * g_paste_client_select:
  * @self: a #GPasteClient instance
  * @index: the index of the element we want to select
@@ -1405,6 +1452,26 @@ g_paste_client_rename_password_finish (GPasteClient *self,
                                        GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_search_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @hits: (out): number of hits
+ * @error: a #GError
+ *
+ * Search for items matching @pattern in history
+ *
+ * Returns: The indexes of the matching items
+ */
+G_PASTE_VISIBLE const guint32 *
+g_paste_client_search_finish (GPasteClient *self,
+                              GAsyncResult *result,
+                              gsize        *hits,
+                              GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_UINTV (hits);
 }
 
 /**
