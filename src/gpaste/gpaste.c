@@ -402,6 +402,22 @@ main (gint argc, gchar *argv[])
             {
                 printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
             }
+            else if (!g_strcmp0 (arg1, "search"))
+            {
+                gsize hits;
+                const guint32 *results = g_paste_client_search_sync (client, arg2, &hits, &error);
+
+                if (!error)
+                {
+                    if (hits > 0)
+                    {
+                        printf ("%u", *results);
+                        for (gsize i = 1; i < hits; ++i)
+                            printf (" %u", results[i]);
+                        printf ("\n");
+                    }
+                }
+            }
             else if (!g_strcmp0 (arg1, "s")   ||
                      !g_strcmp0 (arg1, "set") ||
                      !g_strcmp0 (arg1, "select"))
