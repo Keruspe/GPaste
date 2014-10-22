@@ -1252,6 +1252,49 @@ g_paste_history_get_length (const GPasteHistory *self)
 }
 
 /**
+ * g_paste_history_search:
+ * @self: a #GPasteHistory instance
+ * @pattern: the pattern to match
+ *
+ * Get the elements matching @pattern in the history
+ *
+ * Returns: (element-type guint32) (transfer full): The indexes of the matching elements
+ */
+G_PASTE_VISIBLE GArray *
+g_paste_history_search (const GPasteHistory *self,
+                        const gchar         *pattern)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
+    
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (pattern,
+                                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
+                                                             G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
+                                                             &error);
+
+    if (error)
+    {
+        g_debug ("error while creating regex: %s", error->message);
+        return NULL;
+    }
+    if (!regex)
+        return NULL;
+
+    GArray *results = g_array_new (TRUE, TRUE, sizeof (guint32));
+    guint32 index = 0;
+
+    for (GSList *history = priv->history; history; history = g_slist_next (history), ++index)
+    {
+        if (g_regex_match (regex, g_paste_item_get_value (history->data), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
+            g_array_append_val (results, index);
+    }
+
+    return results;
+}
+
+/**
  * g_paste_history_new:
  * @settings: (transfer none): a #GPasteSettings instance
  *
