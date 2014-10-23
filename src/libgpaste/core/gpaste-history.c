@@ -1282,7 +1282,9 @@ g_paste_history_search (const GPasteHistory *self,
     if (!regex)
         return NULL;
 
-    GArray *results = g_array_new (TRUE, TRUE, sizeof (guint32));
+    GArray *results = g_array_new (FALSE, /* zero-terminated */
+                                   TRUE,  /* clear */
+                                   sizeof (guint32));
     guint32 index = 0;
 
     for (GSList *history = priv->history; history; history = g_slist_next (history), ++index)
