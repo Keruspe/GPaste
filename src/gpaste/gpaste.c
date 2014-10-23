@@ -405,7 +405,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "search"))
             {
                 gsize hits;
-                const guint32 *results = g_paste_client_search_sync (client, arg2, &hits, &error);
+                G_PASTE_CLEANUP_FREE guint32 *results = g_paste_client_search_sync (client, arg2, &hits, &error);
 
                 if (!error)
                 {
