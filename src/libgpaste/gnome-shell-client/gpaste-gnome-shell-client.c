@@ -19,7 +19,6 @@
 
 #include "gpaste-gnome-shell-client-private.h"
 
-#define __G_PASTE_NEEDS_AU__
 #define __G_PASTE_NEEDS_BS__
 #include "gpaste-gdbus-macros.h"
 
@@ -122,7 +121,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     DBUS_ASYNC_FINISH_RET_UINT32_BASE (GNOME_SHELL_CLIENT)
 
 #define DBUS_ASYNC_FINISH_RET_AU \
-    DBUS_ASYNC_FINISH_RET_AU_BASE (GNOME_SHELL_CLIENT)
+    DBUS_ASYNC_FINISH_RET_AU_BASE (GNOME_SHELL_CLIENT, NULL)
 
 #define DBUS_ASYNC_FINISH_RET_BS \
     DBUS_ASYNC_FINISH_RET_BS_BASE (GNOME_SHELL_CLIENT)
@@ -151,7 +150,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     DBUS_CALL_ONE_PARAM_RET_BS_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
 #define DBUS_CALL_ONE_PARAMV_RET_AU(method, paramv) \
-    DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv)
+    DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv, NULL)
 
 #define DBUS_CALL_TWO_PARAMS_RET_UINT32(method, params) \
     DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
