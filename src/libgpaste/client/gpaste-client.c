@@ -501,7 +501,7 @@ g_paste_client_rename_password_sync (GPasteClient *self,
  *
  * Returns: The indexes of the matching items
  */
-G_PASTE_VISIBLE const guint32 *
+G_PASTE_VISIBLE guint32 *
 g_paste_client_search_sync (GPasteClient *self,
                             const gchar  *pattern,
                             gsize        *hits,
@@ -1465,7 +1465,7 @@ g_paste_client_rename_password_finish (GPasteClient *self,
  *
  * Returns: The indexes of the matching items
  */
-G_PASTE_VISIBLE const guint32 *
+G_PASTE_VISIBLE guint32 *
 g_paste_client_search_finish (GPasteClient *self,
                               GAsyncResult *result,
                               gsize        *hits,

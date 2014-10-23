@@ -41,75 +41,74 @@ GType g_paste_client_get_type (void);
 /* Methods /  Sync */
 /*******************/
 
-void    g_paste_client_about_sync                      (GPasteClient *self,
-                                                        GError      **error);
-void    g_paste_client_add_sync                        (GPasteClient *self,
-                                                        const gchar  *text,
-                                                        GError      **error);
-void    g_paste_client_add_file_sync                   (GPasteClient *self,
-                                                        const gchar  *file,
-                                                        GError      **error);
-void    g_paste_client_add_password_sync               (GPasteClient *self,
-                                                        const gchar  *name,
-                                                        const gchar  *password,
-                                                        GError      **error);
-void    g_paste_client_backup_history_sync             (GPasteClient *self,
-                                                        const gchar  *name,
-                                                        GError      **error);
-void    g_paste_client_delete_sync                     (GPasteClient *self,
-                                                        guint32       index,
-                                                        GError      **error);
-void    g_paste_client_delete_history_sync             (GPasteClient *self,
-                                                        const gchar  *name,
-                                                        GError      **error);
-void    g_paste_client_delete_password_sync            (GPasteClient *self,
-                                                        const gchar  *name,
-                                                        GError      **error);
-void    g_paste_client_empty_sync                      (GPasteClient *self,
-                                                        GError      **error);
-gchar  *g_paste_client_get_element_sync                (GPasteClient *self,
-                                                        guint32       index,
-                                                        GError      **error);
-GStrv   g_paste_client_get_history_sync                (GPasteClient *self,
-                                                        GError      **error);
-guint32 g_paste_client_get_history_size_sync           (GPasteClient *self,
-                                                        GError      **error);
-gchar  *g_paste_client_get_raw_element_sync            (GPasteClient *self,
-                                                        guint32       index,
-                                                        GError      **error);
-GStrv   g_paste_client_get_raw_history_sync            (GPasteClient *self,
-                                                        GError      **error);
-GStrv   g_paste_client_list_histories_sync             (GPasteClient *self,
-                                                        GError      **error);
-void    g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
-                                                        gboolean      state,
-                                                        GError      **error);
-void    g_paste_client_reexecute_sync                  (GPasteClient *self,
-                                                        GError      **error);
-void    g_paste_client_rename_password_sync            (GPasteClient *self,
-                                                        const gchar  *old_name,
-                                                        const gchar  *new_name,
-                                                        GError      **error);
-void    g_paste_client_select_sync                     (GPasteClient *self,
-                                                        guint32       index,
-                                                        GError      **error);
-void    g_paste_client_set_password_sync               (GPasteClient *self,
-                                                        guint32       index,
-                                                        const gchar  *name,
-                                                        GError      **error);
-void    g_paste_client_show_history_sync               (GPasteClient *self,
-                                                        GError      **error);
-void    g_paste_client_switch_history_sync             (GPasteClient *self,
-                                                        const gchar  *name,
-                                                        GError      **error);
-void    g_paste_client_track_sync                      (GPasteClient *self,
-                                                        gboolean      state,
-                                                        GError      **error);
-
-const guint32 *g_paste_client_search_sync              (GPasteClient *self,
-                                                        const gchar  *pattern,
-                                                        gsize        *hits,
-                                                        GError      **error);
+void     g_paste_client_about_sync                      (GPasteClient *self,
+                                                         GError      **error);
+void     g_paste_client_add_sync                        (GPasteClient *self,
+                                                         const gchar  *text,
+                                                         GError      **error);
+void     g_paste_client_add_file_sync                   (GPasteClient *self,
+                                                         const gchar  *file,
+                                                         GError      **error);
+void     g_paste_client_add_password_sync               (GPasteClient *self,
+                                                         const gchar  *name,
+                                                         const gchar  *password,
+                                                         GError      **error);
+void     g_paste_client_backup_history_sync             (GPasteClient *self,
+                                                         const gchar  *name,
+                                                         GError      **error);
+void     g_paste_client_delete_sync                     (GPasteClient *self,
+                                                         guint32       index,
+                                                         GError      **error);
+void     g_paste_client_delete_history_sync             (GPasteClient *self,
+                                                         const gchar  *name,
+                                                         GError      **error);
+void     g_paste_client_delete_password_sync            (GPasteClient *self,
+                                                         const gchar  *name,
+                                                         GError      **error);
+void     g_paste_client_empty_sync                      (GPasteClient *self,
+                                                         GError      **error);
+gchar   *g_paste_client_get_element_sync                (GPasteClient *self,
+                                                         guint32       index,
+                                                         GError      **error);
+GStrv    g_paste_client_get_history_sync                (GPasteClient *self,
+                                                         GError      **error);
+guint32  g_paste_client_get_history_size_sync           (GPasteClient *self,
+                                                         GError      **error);
+gchar   *g_paste_client_get_raw_element_sync            (GPasteClient *self,
+                                                         guint32       index,
+                                                         GError      **error);
+GStrv    g_paste_client_get_raw_history_sync            (GPasteClient *self,
+                                                         GError      **error);
+GStrv    g_paste_client_list_histories_sync             (GPasteClient *self,
+                                                         GError      **error);
+void     g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
+                                                         gboolean      state,
+                                                         GError      **error);
+void     g_paste_client_reexecute_sync                  (GPasteClient *self,
+                                                         GError      **error);
+void     g_paste_client_rename_password_sync            (GPasteClient *self,
+                                                         const gchar  *old_name,
+                                                         const gchar  *new_name,
+                                                         GError      **error);
+guint32 *g_paste_client_search_sync                     (GPasteClient *self,
+                                                         const gchar  *pattern,
+                                                         gsize        *hits,
+                                                         GError      **error);
+void     g_paste_client_select_sync                     (GPasteClient *self,
+                                                         guint32       index,
+                                                         GError      **error);
+void     g_paste_client_set_password_sync               (GPasteClient *self,
+                                                         guint32       index,
+                                                         const gchar  *name,
+                                                         GError      **error);
+void     g_paste_client_show_history_sync               (GPasteClient *self,
+                                                         GError      **error);
+void     g_paste_client_switch_history_sync             (GPasteClient *self,
+                                                         const gchar  *name,
+                                                         GError      **error);
+void     g_paste_client_track_sync                      (GPasteClient *self,
+                                                         gboolean      state,
+                                                         GError      **error);
 
 /*******************/
 /* Methods / Async */
@@ -211,80 +210,79 @@ void g_paste_client_track                      (GPasteClient       *self,
 /* Methods / Async - Finish */
 /****************************/
 
-void    g_paste_client_about_finish                      (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_add_finish                        (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_add_file_finish                   (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_add_password_finish               (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_backup_history_finish             (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_delete_finish                     (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_delete_history_finish             (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_delete_password_finish            (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_empty_finish                      (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-gchar  *g_paste_client_get_element_finish                (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-GStrv   g_paste_client_get_history_finish                (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-guint32 g_paste_client_get_history_size_finish           (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-gchar  *g_paste_client_get_raw_element_finish            (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-GStrv   g_paste_client_get_raw_history_finish            (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-GStrv   g_paste_client_list_histories_finish             (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_reexecute_finish                  (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_rename_password_finish            (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_select_finish                     (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_set_password_finish               (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_show_history_finish               (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_switch_history_finish             (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-void    g_paste_client_track_finish                      (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          GError      **error);
-
-const guint32 *g_paste_client_search_finish              (GPasteClient *self,
-                                                          GAsyncResult *result,
-                                                          gsize        *hits,
-                                                          GError      **error);
+void     g_paste_client_about_finish                      (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_add_finish                        (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_add_file_finish                   (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_add_password_finish               (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_backup_history_finish             (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_delete_finish                     (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_delete_history_finish             (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_delete_password_finish            (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_empty_finish                      (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+gchar   *g_paste_client_get_element_finish                (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+GStrv    g_paste_client_get_history_finish                (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+guint32  g_paste_client_get_history_size_finish           (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+gchar   *g_paste_client_get_raw_element_finish            (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+GStrv    g_paste_client_get_raw_history_finish            (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+GStrv    g_paste_client_list_histories_finish             (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_reexecute_finish                  (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_rename_password_finish            (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+guint32 *g_paste_client_search_finish                     (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           gsize        *hits,
+                                                           GError      **error);
+void     g_paste_client_select_finish                     (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_set_password_finish               (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_show_history_finish               (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_switch_history_finish             (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_track_finish                      (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
 
 /**************/
 /* Properties */
