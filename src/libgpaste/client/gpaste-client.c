@@ -67,8 +67,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_ASYNC_FINISH_RET_UINT32 \
     DBUS_ASYNC_FINISH_RET_UINT32_BASE (CLIENT)
 
-#define DBUS_ASYNC_FINISH_RET_UINTV(len) \
-    DBUS_ASYNC_FINISH_RET_UINTV_BASE (CLIENT, len)
+#define DBUS_ASYNC_FINISH_RET_AU(len) \
+    DBUS_ASYNC_FINISH_RET_AU_BASE (CLIENT, len)
 
 /******************/
 /* Methods / Sync */
@@ -89,8 +89,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
-#define DBUS_CALL_ONE_PARAM_RET_UINTV(method, param_type, param_name, len) \
-    DBUS_CALL_ONE_PARAM_RET_UINTV_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
+#define DBUS_CALL_ONE_PARAM_RET_AU(method, param_type, param_name, len) \
+    DBUS_CALL_ONE_PARAM_RET_AU_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
 
 #define DBUS_CALL_TWO_PARAMS_NO_RETURN(method, params) \
     DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
@@ -506,7 +506,7 @@ g_paste_client_search_sync (GPasteClient *self,
                             gsize        *hits,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_UINTV (SEARCH, string, pattern, hits);
+    DBUS_CALL_ONE_PARAM_RET_AU (SEARCH, string, pattern, hits);
 }
 
 /**
@@ -1470,7 +1470,7 @@ g_paste_client_search_finish (GPasteClient *self,
                               gsize        *hits,
                               GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_UINTV (hits);
+    DBUS_ASYNC_FINISH_RET_AU (hits);
 }
 
 /**
