@@ -23,83 +23,86 @@
 #include <gio/gio.h>
 #include <glib/gi18n-lib.h>
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+extern const char *__progname;
+
 static void
-show_help (const gchar *caller)
+show_help (void)
 {
     printf (_("Usage:\n"));
     /* Translators: help for gpaste history */
-    printf ("  %s [history]: %s\n", caller, _("print the history with indexes"));
+    printf ("  %s [history]: %s\n", __progname, _("print the history with indexes"));
     /* Translators: help for gpaste history-size */
-    printf ("  %s history-size: %s\n", caller, _("print the size of the history"));
+    printf ("  %s history-size: %s\n", __progname, _("print the size of the history"));
     /* Translators: help for gpaste backup-history <name> */
-    printf ("  %s backup-history <%s>: %s\n", caller, _("name"), _("backup current history"));
+    printf ("  %s backup-history <%s>: %s\n", __progname, _("name"), _("backup current history"));
     /* Translators: help for gpaste switch-history <name> */
-    printf ("  %s switch-history <%s>: %s\n", caller, _("name"), _("switch to another history"));
+    printf ("  %s switch-history <%s>: %s\n", __progname, _("name"), _("switch to another history"));
     /* Translators: help for gpaste delete-history <name> */
-    printf ("  %s delete-history <%s>: %s\n", caller, _("name"),  _("delete a history"));
+    printf ("  %s delete-history <%s>: %s\n", __progname, _("name"),  _("delete a history"));
     /* Translators: help for gpaste list-histories */
-    printf ("  %s list-histories: %s\n", caller, _("list available histories"));
+    printf ("  %s list-histories: %s\n", __progname, _("list available histories"));
     /* Translators: help for gpaste oneline-history */
-    printf ("  %s oneline-history: %s\n", caller, _("print the history without newlines"));
+    printf ("  %s oneline-history: %s\n", __progname, _("print the history without newlines"));
     /* Translators: help for gpaste raw-history */
-    printf ("  %s raw-history: %s\n", caller, _("print the history (raw) without indexes"));
+    printf ("  %s raw-history: %s\n", __progname, _("print the history (raw) without indexes"));
     /* Translators: help for gpaste zero-history */
-    printf ("  %s zero-history: %s\n", caller, _("print the history with NUL as separator"));
+    printf ("  %s zero-history: %s\n", __progname, _("print the history with NUL as separator"));
     /* Translators: help for gpaste add <text> */
-    printf ("  %s add <%s>: %s\n", caller, _("text"), _("set text to clipboard"));
+    printf ("  %s add <%s>: %s\n", __progname, _("text"), _("set text to clipboard"));
     /* Translators: help for gpaste add-password <name> <text> */
-    printf ("  %s add-password <%s> <%s>: %s\n", caller, _("name"), _("password"), _("add the name - password couple to the clipboard"));
+    printf ("  %s add-password <%s> <%s>: %s\n", __progname, _("name"), _("password"), _("add the name - password couple to the clipboard"));
     /* Translators: help for gpaste rename-password <old name> <new name> */
-    printf ("  %s rename-password <%s> <%s>: %s\n", caller, _("old name"), _("new name"), _("rename the password"));
+    printf ("  %s rename-password <%s> <%s>: %s\n", __progname, _("old name"), _("new name"), _("rename the password"));
     /* Translators: help for gpaste get <number> */
-    printf ("  %s get <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history"));
+    printf ("  %s get <%s>: %s\n", __progname, _("number"), _("get the <number>th item from the history"));
     /* Translators: help for gpaste get-raw <number> */
-    printf ("  %s get-raw <%s>: %s\n", caller, _("number"), _("get the <number>th item from the history (raw)"));
+    printf ("  %s get-raw <%s>: %s\n", __progname, _("number"), _("get the <number>th item from the history (raw)"));
     /* Translators: help for gpaste select <number> */
-    printf ("  %s select <%s>: %s\n", caller, _("number"), _("set the <number>th item from the history to the clipboard"));
+    printf ("  %s select <%s>: %s\n", __progname, _("number"), _("set the <number>th item from the history to the clipboard"));
     /* Translators: help for gpaste set-password <number> <name> */
-    printf ("  %s set-password <%s> <%s>: %s\n", caller, _("number"), _("name"), _("set the <number>th item from the history as a password named <name>"));
+    printf ("  %s set-password <%s> <%s>: %s\n", __progname, _("number"), _("name"), _("set the <number>th item from the history as a password named <name>"));
     /* Translators: help for gpaste delete <number> */
-    printf ("  %s delete <%s>: %s\n", caller, _("number"), _("delete <number>th item of the history"));
+    printf ("  %s delete <%s>: %s\n", __progname, _("number"), _("delete <number>th item of the history"));
     /* Translators: help for gpaste delete-passworf <name> */
-    printf ("  %s delete-password <%s>: %s\n", caller, _("name"), _("delete the password <name> from the history"));
+    printf ("  %s delete-password <%s>: %s\n", __progname, _("name"), _("delete the password <name> from the history"));
     /* Translators: help for gpaste file <path> */
-    printf ("  %s file <%s>: %s\n", caller, _("path"), _("put the content of the file at <path> into the clipboard"));
+    printf ("  %s file <%s>: %s\n", __progname, _("path"), _("put the content of the file at <path> into the clipboard"));
     /* Translators: help for whatever | gpaste */
-    printf ("  %s | %s: %s\n", _("whatever"), caller, _("set the output of whatever to clipboard"));
+    printf ("  %s | %s: %s\n", _("whatever"), __progname, _("set the output of whatever to clipboard"));
     /* Translators: help for gpaste empty */
-    printf ("  %s empty: %s\n", caller, _("empty the history"));
+    printf ("  %s empty: %s\n", __progname, _("empty the history"));
     /* Translators: help for gpaste start */
-    printf ("  %s start: %s\n", caller, _("start tracking clipboard changes"));
+    printf ("  %s start: %s\n", __progname, _("start tracking clipboard changes"));
     /* Translators: help for gpaste stop */
-    printf ("  %s stop: %s\n", caller, _("stop tracking clipboard changes"));
+    printf ("  %s stop: %s\n", __progname, _("stop tracking clipboard changes"));
     /* Translators: help for gpaste quit */
-    printf ("  %s quit: %s\n", caller, _("alias for stop"));
+    printf ("  %s quit: %s\n", __progname, _("alias for stop"));
     /* Translators: help for gpaste daemon-reexec */
-    printf ("  %s daemon-reexec: %s\n", caller, _("reexecute the daemon (after upgrading...)"));
+    printf ("  %s daemon-reexec: %s\n", __progname, _("reexecute the daemon (after upgrading...)"));
     /* Translators: help for gpaste settings */
-    printf ("  %s settings: %s\n", caller, _("launch the configuration tool"));
+    printf ("  %s settings: %s\n", __progname, _("launch the configuration tool"));
 #if G_PASTE_CONFIG_ENABLE_APPLET
     /* Translators: help for gpaste applet */
-    printf ("  %s applet: %s\n", caller, _("launch the applet"));
+    printf ("  %s applet: %s\n", __progname, _("launch the applet"));
 #endif
 #if G_PASTE_CONFIG_ENABLE_UNITY
     /* Translators: help for gpaste app-indicator */
-    printf ("  %s app-indicator: %s\n", caller, _("launch the unity application indicator"));
+    printf ("  %s app-indicator: %s\n", __progname, _("launch the unity application indicator"));
 #endif
     /* Translators: help for gpaste show-history */
-    printf ("  %s show-history: %s\n", caller, _("make the applet or extension display the history"));
+    printf ("  %s show-history: %s\n", __progname, _("make the applet or extension display the history"));
     /* Translators: help for gpaste version */
-    printf ("  %s version: %s\n", caller, _("display the version"));
+    printf ("  %s version: %s\n", __progname, _("display the version"));
     /* Translators: help for gpaste daemon-version */
-    printf ("  %s daemon-version: %s\n", caller, _("display the daemon version"));
+    printf ("  %s daemon-version: %s\n", __progname, _("display the daemon version"));
     /* Translators: help for gpaste help */
-    printf ("  %s help: %s\n", caller, _("display this help"));
+    printf ("  %s help: %s\n", __progname, _("display this help"));
     /* Translators: help for gpaste about */
-    printf ("  %s about: %s\n", caller, _("display the about dialog"));
+    printf ("  %s about: %s\n", __progname, _("display the about dialog"));
 }
 
 static void
@@ -121,9 +124,9 @@ strip_newline (gchar *str)
 
 static void
 show_history (GPasteClient *client,
+              gboolean      oneline,
               gboolean      raw,
               gboolean      zero,
-              gboolean      oneline,
               GError      **error)
 {
     G_PASTE_CLEANUP_STRFREEV GStrv history = (raw) ?
@@ -210,14 +213,45 @@ main (gint argc, gchar *argv[])
 {
     G_PASTE_INIT_GETTEXT ();
 
-    if (argc > 1)
+    struct option long_options[] = {
+        {"oneline", no_argument, NULL,  'o' },
+        {"raw"    , no_argument, NULL,  'r' },
+        {"zero",    no_argument, NULL,  'z' },
+        {0,         no_argument, NULL,  0 }
+    };
+
+    gboolean oneline = FALSE, raw = FALSE, zero = FALSE;
+    gint c;
+
+    while ((c = getopt_long(argc, argv, "orz", long_options, NULL)) != -1)
     {
-        if (is_help (argv[1]))
+        switch (c)
         {
-            show_help (argv[0]);
+        case 'o':
+            oneline = TRUE;
+            break;
+        case 'r':
+            raw = TRUE;
+            break;
+        case 'z':
+            zero = TRUE;
+            break;
+        default:
+            return EXIT_FAILURE;
+        }
+    }
+
+    argv += optind;
+    argc -= optind;
+
+    if (argc > 0)
+    {
+        if (is_help (argv[0]))
+        {
+            show_help ();
             return EXIT_SUCCESS;
         }
-        else if (is_version (argv[1]))
+        else if (is_version (argv[0]))
         {
             show_version ();
             return EXIT_SUCCESS;
@@ -232,11 +266,10 @@ main (gint argc, gchar *argv[])
     if (!client)
         failure_exit (error);
 
-    if (!isatty (fileno (stdin)) && argc == 1)
+    if (!isatty (fileno (stdin)) && !argc)
     {
         /* We are being piped */
         G_PASTE_CLEANUP_STRING_FREE GString *data = g_string_new ("");
-        gint c;
 
         while ((c = fgetc (stdin)) != EOF)
             data = g_string_append_c (data, (guchar)c);
@@ -250,11 +283,11 @@ main (gint argc, gchar *argv[])
         const gchar *arg1, *arg2, *arg3;
         switch (argc)
         {
-        case 1:
-            show_history (client, FALSE, FALSE, FALSE, &error);
+        case 0:
+            show_history (client, oneline, raw, zero, &error);
             break;
-        case 2:
-            arg1 = argv[1];
+        case 1:
+            arg1 = argv[0];
             if (!g_strcmp0 (arg1, "about"))
                 g_paste_client_about_sync (client, &error);
             else if (!g_strcmp0 (arg1, "dr") ||
@@ -281,7 +314,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "h") ||
                      !g_strcmp0 (arg1, "history"))
             {
-                show_history (client, FALSE, FALSE, FALSE, &error);
+                show_history (client, oneline, raw, zero, &error);
             }
             else if (!g_strcmp0 (arg1, "hs") ||
                      !g_strcmp0 (arg1, "history-size"))
@@ -303,12 +336,12 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "oh") ||
                      !g_strcmp0 (arg1, "oneline-history"))
             {
-                show_history (client, FALSE, FALSE, TRUE, &error);
+                show_history (client, TRUE, raw, zero, &error);
             }
             else if (!g_strcmp0 (arg1, "rh") ||
                      !g_strcmp0 (arg1, "raw-history"))
             {
-                show_history (client, TRUE, FALSE, FALSE, &error);
+                show_history (client, oneline, TRUE, zero, &error);
             }
             else if (!g_strcmp0 (arg1, "s")        ||
                      !g_strcmp0 (arg1, "settings") ||
@@ -336,7 +369,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "zh") ||
                      !g_strcmp0 (arg1, "zero-history"))
             {
-                show_history (client, FALSE, TRUE, FALSE, &error);
+                show_history (client, oneline, raw, TRUE, &error);
             }
 #if G_PASTE_CONFIG_ENABLE_APPLET
             else if (!g_strcmp0 (arg1, "applet"))
@@ -352,13 +385,13 @@ main (gint argc, gchar *argv[])
 #endif
             else
             {
-                show_help (argv[0]);
+                show_help ();
                 status = EXIT_FAILURE;
             }
             break;
-        case 3:
-            arg1 = argv[1];
-            arg2 = argv[2];
+        case 2:
+            arg1 = argv[0];
+            arg2 = argv[1];
             if (!g_strcmp0 (arg1, "a") ||
                 !g_strcmp0 (arg1, "add"))
             {
@@ -434,14 +467,14 @@ main (gint argc, gchar *argv[])
             }
             else
             {
-                show_help (argv[0]);
+                show_help ();
                 status = EXIT_FAILURE;
             }
             break;
-        case 4:
-            arg1 = argv[1];
-            arg2 = argv[2];
-            arg3 = argv[3];
+        case 3:
+            arg1 = argv[0];
+            arg2 = argv[1];
+            arg3 = argv[2];
             if (!g_strcmp0 (arg1, "ap") ||
                 !g_strcmp0 (arg1, "add-password"))
             {
@@ -459,12 +492,12 @@ main (gint argc, gchar *argv[])
             }
             else
             {
-                show_help (argv[0]);
+                show_help ();
                 status = EXIT_FAILURE;
             }
             break;
         default:
-            show_help (argv[0]);
+            show_help ();
             status = EXIT_FAILURE;
             break;
         }
