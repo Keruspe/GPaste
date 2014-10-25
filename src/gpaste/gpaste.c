@@ -43,12 +43,6 @@ show_help (const char *progname)
     printf ("  %s delete-history <%s>: %s\n", progname, _("name"),  _("delete a history"));
     /* Translators: help for gpaste list-histories */
     printf ("  %s list-histories: %s\n", progname, _("list available histories"));
-    /* Translators: help for gpaste oneline-history */
-    printf ("  %s oneline-history: %s\n", progname, _("print the history without newlines"));
-    /* Translators: help for gpaste raw-history */
-    printf ("  %s raw-history: %s\n", progname, _("print the history (raw) without indexes"));
-    /* Translators: help for gpaste zero-history */
-    printf ("  %s zero-history: %s\n", progname, _("print the history with NUL as separator"));
     /* Translators: help for gpaste add <text> */
     printf ("  %s add <%s>: %s\n", progname, _("text"), _("set text to clipboard"));
     /* Translators: help for gpaste add-password <name> <text> */
@@ -333,16 +327,6 @@ main (gint argc, gchar *argv[])
                         printf ("%s\n", *h);
                 }
             }
-            else if (!g_strcmp0 (arg1, "oh") ||
-                     !g_strcmp0 (arg1, "oneline-history"))
-            {
-                show_history (client, TRUE, raw, zero, &error);
-            }
-            else if (!g_strcmp0 (arg1, "rh") ||
-                     !g_strcmp0 (arg1, "raw-history"))
-            {
-                show_history (client, oneline, TRUE, zero, &error);
-            }
             else if (!g_strcmp0 (arg1, "s")        ||
                      !g_strcmp0 (arg1, "settings") ||
                      !g_strcmp0 (arg1, "p")        ||
@@ -365,11 +349,6 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "quit"))
             {
                 g_paste_client_track_sync (client, FALSE, &error);
-            }
-            else if (!g_strcmp0 (arg1, "zh") ||
-                     !g_strcmp0 (arg1, "zero-history"))
-            {
-                show_history (client, oneline, raw, TRUE, &error);
             }
 #if G_PASTE_CONFIG_ENABLE_APPLET
             else if (!g_strcmp0 (arg1, "applet"))
