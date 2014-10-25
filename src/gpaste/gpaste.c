@@ -411,10 +411,13 @@ main (gint argc, gchar *argv[])
                 {
                     if (hits > 0)
                     {
-                        printf ("%u", *results);
-                        for (gsize i = 1; i < hits; ++i)
-                            printf (" %u", results[i]);
-                        printf ("\n");
+                        for (gsize i = 0; i < hits; ++i)
+                        {
+                            guint32 index = results[i];
+                            printf ("%u: %s\n", index, g_paste_client_get_element_sync (client, index, &error));
+                            if (error)
+                                break;
+                        }
                     }
                 }
             }
