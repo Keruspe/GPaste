@@ -498,7 +498,7 @@ g_paste_client_rename_password_sync (GPasteClient *self,
  *
  * Search for items matching @pattern in history
  *
- * Returns: (array): The indexes of the matching items
+ * Returns: (array length=hits): The indexes of the matching items
  */
 G_PASTE_VISIBLE guint32 *
 g_paste_client_search_sync (GPasteClient *self,
@@ -1462,7 +1462,7 @@ g_paste_client_rename_password_finish (GPasteClient *self,
  *
  * Search for items matching @pattern in history
  *
- * Returns: (array): The indexes of the matching items
+ * Returns: (array length=hits): The indexes of the matching items
  */
 G_PASTE_VISIBLE guint32 *
 g_paste_client_search_finish (GPasteClient *self,
