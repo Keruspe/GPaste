@@ -42,12 +42,12 @@ const GPasteItem = new Lang.Class({
 
         this._client = client;
         this._settings = settings;
-        this._indexLabelVisible = false;
 
         if (index <= 10) {
             this._indexLabel = new St.Label({
                 text: index + ': '
             });
+            this._indexLabelVisible = false;
         }
 
         this.connect('activate', Lang.bind (this, this._onActivate));
@@ -83,6 +83,7 @@ const GPasteItem = new Lang.Class({
 
     setIndex: function(index) {
         let oldIndex = this._index || -1;
+        this._index = index;
 
         if (index == 0) {
             this.label.set_style("font-weight: bold;");
