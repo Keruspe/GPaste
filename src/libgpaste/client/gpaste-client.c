@@ -1012,7 +1012,7 @@ g_paste_client_search (GPasteClient       *self,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, string, pattern);
+    DBUS_CALL_ONE_PARAM_ASYNC (SEARCH, string, pattern);
 }
 
 /**
