@@ -78,9 +78,6 @@ const GPasteIndicator = new Lang.Class({
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
         this._addToFooter(this._actions);
 
-        this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
-        this._resetMaxDisplayedSize();
-
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
 
@@ -94,9 +91,10 @@ const GPasteIndicator = new Lang.Class({
             this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
             this._actions.actor.add(new AboutItem.GPasteAboutItem(this._client, this.menu), { expand: true, x_fill: false });
 
-            this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
-            this._refresh(0);
+            this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
+            this._resetMaxDisplayedSize();
 
+            this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
             this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
 
             this._onStateChanged (true);
