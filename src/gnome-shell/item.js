@@ -107,7 +107,7 @@ const GPasteItem = new Lang.Class({
             this.label.clutter_text.set_text(null);
             this.actor.hide();
         }
-    }
+    },
 
     _resetTextSize: function() {
         this.label.clutter_text.max_length = this._settings.get_element_size();
@@ -115,7 +115,7 @@ const GPasteItem = new Lang.Class({
 
     _onActivate: function(actor, event) {
         this._client.select(this._index, null);
-    }),
+    },
 
     _onKeyPressed: function(actor, event) {
         let symbol = event.get_key_symbol();
