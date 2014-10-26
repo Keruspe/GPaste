@@ -494,12 +494,12 @@ g_paste_client_rename_password_sync (GPasteClient *self,
  * g_paste_client_search_sync:
  * @self: a #GPasteClient instance
  * @pattern: the pattern to look for in history
- * @hits: (out): number of hits
+ * @hits: (out) (optional): number of hits
  * @error: a #GError
  *
  * Search for items matching @pattern in history
  *
- * Returns: The indexes of the matching items
+ * Returns: (array): The indexes of the matching items
  */
 G_PASTE_VISIBLE guint32 *
 g_paste_client_search_sync (GPasteClient *self,
@@ -1458,12 +1458,12 @@ g_paste_client_rename_password_finish (GPasteClient *self,
  * g_paste_client_search_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @hits: (out): number of hits
+ * @hits: (out) (optional): number of hits
  * @error: a #GError
  *
  * Search for items matching @pattern in history
  *
- * Returns: The indexes of the matching items
+ * Returns: (array): The indexes of the matching items
  */
 G_PASTE_VISIBLE guint32 *
 g_paste_client_search_finish (GPasteClient *self,
