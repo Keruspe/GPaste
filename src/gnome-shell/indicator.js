@@ -137,7 +137,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _updateIndexVisibility: function(state) {
-        for (let i = 0; i<10 && i < this._history.length; ++i) {
+        for (let i = 0; i < 10 && i < this._maxSize; ++i) {
             this._history[i].showIndex(state);
         }
     },
