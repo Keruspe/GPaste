@@ -167,7 +167,7 @@ const GPasteIndicator = new Lang.Class({
             }
         }
 
-        this._updateVisibility(newSize == 0);
+        this._refresh(oldSize);
     },
 
     _update: function(client, action, target, position) {
