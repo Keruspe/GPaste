@@ -145,8 +145,8 @@ const GPasteIndicator = new Lang.Class({
         let search = this._searchItem.text.toLowerCase();
 
         if (search.length > 0) {
-            //this._client.search(search, Lang.bind(this, function(client, result) {
-                this._searchResults = this._client.search_sync(search);
+            this._client.search(search, Lang.bind(this, function(client, result) {
+                this._searchResults = client.search_finish(result);
                 let results = this._searchResults.length;
                 let maxSize = this._history.length;
 
@@ -159,7 +159,7 @@ const GPasteIndicator = new Lang.Class({
                 for (let i = results; i < maxSize; ++i) {
                     this._history[i].setIndex(-1);
                 }
-            //}));
+            }));
         } else {
             this._searchResults = [];
             this._refresh(0);
