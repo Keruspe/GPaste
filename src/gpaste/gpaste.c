@@ -28,8 +28,10 @@
 #include <stdlib.h>
 
 static void
-show_help (const char *progname)
+show_help (void)
 {
+    const char *progname = g_get_prgname ();
+
     printf (_("Usage:\n"));
     /* Translators: help for gpaste history */
     printf ("  %s [history]: %s\n", progname, _("print the history with indexes"));
@@ -210,8 +212,7 @@ gint
 main (gint argc, gchar *argv[])
 {
     G_PASTE_INIT_GETTEXT ();
-
-    const char *progname = argv[0];
+    g_set_prgname (argv[0]);
 
     struct option long_options[] = {
         {"oneline", no_argument, NULL,  'o' },
@@ -248,7 +249,7 @@ main (gint argc, gchar *argv[])
     {
         if (is_help (argv[0]))
         {
-            show_help (progname);
+            show_help ();
             return EXIT_SUCCESS;
         }
         else if (is_version (argv[0]))
@@ -385,7 +386,7 @@ main (gint argc, gchar *argv[])
 #endif
             else
             {
-                show_help (progname);
+                show_help ();
                 status = EXIT_FAILURE;
             }
             break;
@@ -467,7 +468,7 @@ main (gint argc, gchar *argv[])
             }
             else
             {
-                show_help (progname);
+                show_help ();
                 status = EXIT_FAILURE;
             }
             break;
@@ -492,12 +493,12 @@ main (gint argc, gchar *argv[])
             }
             else
             {
-                show_help (progname);
+                show_help ();
                 status = EXIT_FAILURE;
             }
             break;
         default:
-            show_help (progname);
+            show_help ();
             status = EXIT_FAILURE;
             break;
         }
