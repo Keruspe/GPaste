@@ -59,6 +59,8 @@ const GPasteIndicator = new Lang.Class({
         this._preFooterSize = 0;
         this._footerSize = 0;
 
+        this._searchResults = [];
+
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
         this._searchItem = new SearchItem.GPasteSearchItem();
@@ -141,7 +143,27 @@ const GPasteIndicator = new Lang.Class({
 
     _onSearch: function() {
         let search = this._searchItem.text.toLowerCase();
-        /* FIXME: add back search */
+
+        if (search.length > 0) {
+            this._client.search(search, Lang.bind(this, function(client, result) {
+                this._searchResults = client.search_finish(result);
+                let results = this._searchResults.length;
+                let maxSize = this._history.length;
+
+                if (results > maxSize)
+                    results = maxSize;
+
+                for (let i = 0; i < results; ++i) {
+                    this._history[i].setIndex(this._searchResults[i]);
+                }
+                for (let i = results; i < maxSize; ++i) {
+                    this._history[i].setIndex(-1);
+                }
+            }));
+        } else {
+            this._searchResults = [];
+            this._refresh(0);
+        }
     },
 
     _resetEntrySize: function() {
