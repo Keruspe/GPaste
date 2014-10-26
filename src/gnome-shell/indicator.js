@@ -202,6 +202,8 @@ const GPasteIndicator = new Lang.Class({
             for (let i = size ; i < maxSize; ++i) {
                 this._history[i].setIndex(-1);
             }
+
+            this._updateVisibility(size == 0);
         }));
     },
 
