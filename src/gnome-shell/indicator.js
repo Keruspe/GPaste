@@ -62,8 +62,6 @@ const GPasteIndicator = new Lang.Class({
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
         this._searchItem = new SearchItem.GPasteSearchItem();
-        this._setMaxDisplayedSize();
-        this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
         this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
 
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetEntrySize));
@@ -79,6 +77,9 @@ const GPasteIndicator = new Lang.Class({
         this._addToPostHeader(this._dummyHistoryItem);
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
         this._addToFooter(this._actions);
+
+        this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
+        this._resetMaxDisplayedSize();
 
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
@@ -116,7 +117,7 @@ const GPasteIndicator = new Lang.Class({
         if (event.has_control_modifier()) {
             let nb = parseInt(event.get_key_unicode());
             if (nb != NaN && nb >= 0 && nb <= 9 && nb < this._history.length) {
-                this._history[nb].setActive(true);
+                this._history[nb].activate();
             }
         } else {
             this._maybeUpdateIndexVisibility(event, true);
@@ -135,34 +136,14 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _updateIndexVisibility: function(state) {
-        for (let i = 0; i<10 && i < this._history.length; ++i) {
+        for (let i = 0; i < 10 && i < this._history.length; ++i) {
             this._history[i].showIndex(state);
         }
     },
 
-    _doSearch: function(searchChanged) {
-        let search = this._searchItem.text.toLowerCase();
-        let maxSize = this._maxSize;
-        let i = 0;
-
-        this._history.map(function(item) {
-            if (i < maxSize) {
-                if (item.match(search, searchChanged)) {
-                    ++i;
-                    item.actor.show();
-                    return;
-                }
-            }
-            item.actor.hide();
-        });
-    },
-
     _onSearch: function() {
-        this._doSearch(true);
-    },
-
-    _fakeSearch: function() {
-        this._doSearch(false);
+        let search = this._searchItem.text.toLowerCase();
+        /* FIXME: add back search */
     },
 
     _resetEntrySize: function() {
@@ -170,12 +151,23 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _setMaxDisplayedSize: function() {
-        this._maxSize = this._settings.get_max_displayed_history_size();
     },
 
     _resetMaxDisplayedSize: function() {
-        this._setMaxDisplayedSize();
-        this._fakeSearch();
+        let oldSize = this._history.length;
+        let newSize = this._settings.get_max_displayed_history_size();
+
+        if (newSize > oldSize) {
+            for (let index = oldSize; index < newSize; ++index) {
+                let item = new Item.GPasteItem(this._client, this._settings, index);
+                this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
+                this._history[index] = item;
+            }
+        } else {
+            for (let i = newSize; i < oldSize; ++i) {
+                this._history.pop().destroy();
+            }
+        }
     },
 
     _update: function(client, action, target, position) {
@@ -186,7 +178,7 @@ const GPasteIndicator = new Lang.Class({
         case GPaste.UpdateTarget.POSITION:
             switch (action) {
             case GPaste.UpdateAction.REPLACE:
-                this._history[position].resetText();
+                this._history[position].refresh();
                 break;
             case GPaste.UpdateAction.REMOVE:
                 this._refresh(position);
@@ -199,26 +191,17 @@ const GPasteIndicator = new Lang.Class({
     _refresh: function(resetTextFrom) {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let size = client.get_history_size_finish(result);
-            let length = this._history.length;
-            let resetTextBound = 0;
-            this._updateVisibility(size == 0);
-            if (size > length) {
-                for (let index = length; index < size; ++index) {
-                    let item = new Item.GPasteItem(this._client, this._settings, index);
-                    item.connect('changed', Lang.bind(this, this._fakeSearch));
-                    this._addToHistory(item);
-                }
-                resetTextBound = length;
-            } else {
-                for (let index = size; index < length; ++index) {
-                    this._history.pop().destroy();
-                }
-                resetTextBound = size;
+            let maxSize = this._history.length;
+
+            if (size > maxSize)
+                size = maxSize;
+
+            for (let i = resetTextFrom; i < size; ++i) {
+                this._history[i].setIndex(i);
             }
-            for (let index = resetTextFrom; index < resetTextBound; ++index) {
-                this._history[index].resetText();
+            for (let i = size ; i < maxSize; ++i) {
+                this._history[i].setIndex(-1);
             }
-            this._fakeSearch();
         }));
     },
 
@@ -251,11 +234,6 @@ const GPasteIndicator = new Lang.Class({
 
     _addToPostHeader: function(item) {
         this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize++);
-    },
-
-    _addToHistory: function(item) {
-        this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + this._history.length);
-        this._history[this._history.length] = item;
     },
 
     _addToPreFooter: function(item) {
