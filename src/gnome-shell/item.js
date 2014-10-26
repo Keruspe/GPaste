@@ -42,58 +42,22 @@ const GPasteItem = new Lang.Class({
 
         this._client = client;
         this._settings = settings;
-        this._index = index;
+        this._indexLabelVisible = false;
 
-        /* initialize match stuff */
-        this._changed = true;
-        this.match("", true);
-
-        this.connect('activate', function(actor, event) {
-            client.select(index, null);
-        });
-
+        this.connect('activate', Lang.bind (this, this._onActivate));
         this.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressed));
 
-        this.actor.add(new DeleteItemPart.GPasteDeleteItemPart(client, index), { expand: true, x_align: St.Align.END });
-
-        if (index <= 10) {
-            this._indexLabel = new St.Label({
-                text: index + ': '
-            });
-            this._indexLabelVisible = false;
-            if (index == 0) {
-                this.label.set_style("font-weight: bold;");
-            }
-        }
+        this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, index);
+        this.actor.add(this._deleteItem, { expand: true, x_align: St.Align.END });
 
         this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
-        this.resetText();
+
+        this.setIndex(index);
 
         this._destroyed = false;
         this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
-    },
-
-    match: function(search, searchChanged) {
-        if (!searchChanged && !this._changed) {
-            return this._lastSearchMatched;
-        }
-
-        this._changed = false;
-        let match = true;
-
-        if (search.length > 0) {
-            if (search == this._lastSearch) {
-                return this._lastSearchMatched;
-            } else {
-                match = this.label.get_text().toLowerCase().match(search)
-            }
-        }
-
-        this._lastSearch = search;
-        this._lastSearchMatched = match;
-        return match;
     },
 
     showIndex: function(state) {
@@ -107,21 +71,54 @@ const GPasteItem = new Lang.Class({
         this._indexLabelVisible = state;
     },
 
-    resetText: function() {
-        this._client.get_element(this._index, Lang.bind(this, function(client, result) {
-            let text = client.get_element_finish(result).replace(/[\t\n\r]/g, '');
-            if (this._destroyed || text == this.label.get_text()) {
-                return;
-            }
-            this.label.clutter_text.set_text(text);
-            this._changed = true;
-            this.emit('changed');
-        }));
+    refresh: function() {
+        this.setIndex(this._index);
     },
+
+    setIndex: function(index) {
+        let oldIndex = this._index || -1;
+
+        if (index <= 10) { /* FIXME: visualIndex */
+            this._indexLabel = new St.Label({
+                text: index + ': '
+            });
+            if (index == 0) {
+                this.label.set_style("font-weight: bold;");
+            }
+        } else if (oldIndex <= 10 && oldIndex > -1) {
+            this._indexLabel.destroy();
+            this._indexLabelVisible = false;;
+            if (oldIndex == 0) {
+                this.label.set_style(null);
+            }
+        }
+
+        this._deleteItem.setIndex(index);
+
+        if (index != -1) {
+            this._client.get_element(index, Lang.bind(this, function(client, result) {
+                let text = client.get_element_finish(result).replace(/[\t\n\r]/g, '');
+                if (this._destroyed || text == this.label.get_text()) {
+                    return;
+                }
+                this.label.clutter_text.set_text(text);
+                if (oldIndex == -1) {
+                    this.actor.show();
+                }
+            }));
+        } else {
+            this.label.clutter_text.set_text(null);
+            this.actor.hide();
+        }
+    }
 
     _resetTextSize: function() {
         this.label.clutter_text.max_length = this._settings.get_element_size();
     },
+
+    _onActivate: function(actor, event) {
+        this._client.select(this._index, null);
+    }),
 
     _onKeyPressed: function(actor, event) {
         let symbol = event.get_key_symbol();

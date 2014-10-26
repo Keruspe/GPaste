@@ -35,9 +35,18 @@ const GPasteDeleteButton = new Lang.Class({
             style_class: 'system-status-icon'
         });
 
-        this.connect('clicked', function() {
-            client.delete(index, null);
-            return Clutter.EVENT_STOP;
-        });
+        this._client = client;
+        this.setIndex(index);
+
+        this.connect('clicked', Lang.bind(this, this._onClick));
+    },
+
+    setIndex: function(index) {
+        this._index = index;
+    },
+
+    _onClick: function() {
+        this._client.delete(this._index, null);
+        return Clutter.EVENT_STOP;
     }
 });
