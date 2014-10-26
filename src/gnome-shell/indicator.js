@@ -78,7 +78,6 @@ const GPasteIndicator = new Lang.Class({
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
         this._addToFooter(this._actions);
 
-        this._maxSize = 0;
         this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
         this._resetMaxDisplayedSize();
 
@@ -118,7 +117,7 @@ const GPasteIndicator = new Lang.Class({
         if (event.has_control_modifier()) {
             let nb = parseInt(event.get_key_unicode());
             if (nb != NaN && nb >= 0 && nb <= 9 && nb < this._history.length) {
-                this._history[nb].setActive(true); /* FIXME: do activate the item */
+                this._history[nb].activate();
             }
         } else {
             this._maybeUpdateIndexVisibility(event, true);
@@ -137,7 +136,7 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _updateIndexVisibility: function(state) {
-        for (let i = 0; i < 10 && i < this._maxSize; ++i) {
+        for (let i = 0; i < 10 && i < this._history.length; ++i) {
             this._history[i].showIndex(state);
         }
     },
@@ -152,22 +151,20 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _setMaxDisplayedSize: function() {
-        this._maxSize = this._settings.get_max_displayed_history_size();
     },
 
     _resetMaxDisplayedSize: function() {
-        let oldSize = this._maxSize;
-        this._setMaxDisplayedSize();
-        let maxSize = this._maxSize;
+        let oldSize = this._history.length;
+        let newSize = this._settings.get_max_displayed_history_size();
 
-        if (maxSize > oldSize) {
-            for (let index = oldSize; index < maxSize; ++index) {
+        if (newSize > oldSize) {
+            for (let index = oldSize; index < newSize; ++index) {
                 let item = new Item.GPasteItem(this._client, this._settings, index);
                 this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
                 this._history[index] = item;
             }
         } else {
-            for (let i = maxSize; i < oldSize; ++i) {
+            for (let i = newSize; i < oldSize; ++i) {
                 this._history.pop().destroy();
             }
         }
@@ -194,7 +191,7 @@ const GPasteIndicator = new Lang.Class({
     _refresh: function(resetTextFrom) {
         this._client.get_history_size(Lang.bind(this, function(client, result) {
             let size = client.get_history_size_finish(result);
-            let maxSize = this._maxSize;
+            let maxSize = this._history.length;
 
             if (size > maxSize)
                 size = maxSize;
