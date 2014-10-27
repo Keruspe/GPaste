@@ -45,7 +45,7 @@
     </key>
 
     <key name="max-displayed-history-size" type="u">
-      <range min="5" max="255"/>
+      <range min="10" max="255"/>
       <default>20</default>
       <summary>Max displayed history size</summary>
       <description>
