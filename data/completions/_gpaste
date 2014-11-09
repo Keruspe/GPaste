@@ -1,13 +1,39 @@
 #compdef gpaste
 
-if (( CURRENT == 2 )); then
+(( $+functions[_gpaste_base_arguments] )) ||
+_gpaste_base_arguments() {
+    _arguments -s : \
+        '(-h --help)'{-h,--help}'[Display the help.]' \
+        '(-v --version)'{-v,--version}'[Display the version.]'
+}
 
-    local commands
+(( $+functions[_gpaste_file_arguments] )) ||
+_gpaste_file_arguments() {
+    _arguments -s : \
+       '*:file:_files'
+}
 
-    commands=(
+(( $+functions[_gpaste_get_arguments] )) ||
+_gpaste_get_arguments() {
+    _arguments -s : \
+        '(-r --raw)'{-r,--raw}'[Display the raw item, not the display string.]'
+}
+
+(( $+functions[_gpaste_history_arguments] )) ||
+_gpaste_history_arguments() {
+    _arguments -s : \
+        '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]' \
+        '(-r --raw)'{-r,--raw}'[Display each item raw (without index).]' \
+        '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]'
+}
+
+(( $+functions[_gpaste_complete_subcommands] )) ||
+_gpaste_complete_subcommands() {
+    local -a subcommands
+    subcommands=(
         {add,a}:"Set text to clipboard"
         {add-password,ap}:"Add a name - password couple to the clipboard"
-        {about}:"Display the about dialog"
+        "about:Display the about dialog"
         {backup-history,bh}:"Backup current history"
         {daemon-reexec,dr}:"Reexecute the daemon"
         {daemon-version,dv}:"Display the daemon version"
@@ -17,32 +43,52 @@ if (( CURRENT == 2 )); then
         {empty,e}:"Empty the history"
         {file,f}:"Put content of file into clipboard"
         {get,g}:"Display an element of the history"
-        {get-raw,gr}:"Display an element of the history (raw)"
-        {help,--help,-h}:"Display the help"
+        "help:Display the help"
         {history,h}:"Display the history with indexes"
         {history-size,hs}:"Display the size of the history"
         {list-histories,lh}:"List available histories"
-        {oneline,oh}:"Display the history without newlines"
-        {raw-history,rh}:"Display the history (raw) without indexes"
         {rename-password,rp}:"Rename a password"
         {select,set,s}:"Select an element of the history"
         {set-password,sp}:"Mark an item as being a password"
         {settings,s,preferences,p}:"Launch the configuration tool"
         {start,daemon,d}:"Start the daemon"
         {stop,quit,q}:"Shutdown the daemon"
-        {show-history}:"Make the applet or extension display the history"
+        "show-history:Make the applet or extension display the history"
         {switch-history,sh}:"Switch to another history"
-        {version,v,--version,-v}:"Display the version"
+        {version,v}:"Display the version"
         {zero-history,zh}:"Display the history with NUL as separator"
     )
 
-    _describe -t commands command commands
+    _describe -t gpaste-commands 'gpaste' subcommands
+#    _gpaste_base_arguments
+#    _gpaste_history_arguments
+}
 
-else if  (( CURRENT == 3 ))
-
-    case "${words[2]}" in
-        "file"|"f")
-            _arguments -s : '*: :_files'
+(( $+functions[_gpaste_complete_arguments] )) ||
+_gpaste_complete_arguments() {
+    case "${1}" in
+        file|f)
+            _gpaste_file_arguments
+            ;;
+        get|g)
+            _gpaste_get_arguments
+            ;;
+        history|h)
+            _gpaste_history_arguments
+            ;;
     esac
+}
 
-fi
+_gpaste() {
+    if (( CURRENT > 2 )); then
+        local cmd="${words[2]}"
+        curcontext="${curcontext%:*:*}:gpaste-${cmd}"
+        (( CURRENT-- ))
+        shift words
+        _gpaste_complete_arguments "${cmd}"
+    else
+        _gpaste_complete_subcommands
+    fi
+}
+
+_gpaste "${@}"
