@@ -1266,7 +1266,7 @@ g_paste_history_search (const GPasteHistory *self,
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
-    
+
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
     G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
     G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (pattern,
