@@ -103,6 +103,14 @@ show_help (void)
     printf ("  %s help: %s\n", progname, _("display this help"));
     /* Translators: help for gpaste about */
     printf ("  %s about: %s\n", progname, _("display the about dialog"));
+
+    printf(_("\nDisplay options:\n"));
+    /* Translators: help for --oneline */
+    printf("  --oneline: %s\n", _("display each item on only one line"));
+    /* Translators: help for --oneline */
+    printf("  --raw: %s\n", _("display each item raw (without line numbers)"));
+    /* Translators: help for --oneline */
+    printf("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
 }
 
 static void
@@ -431,7 +439,10 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "g") ||
                      !g_strcmp0 (arg1, "get"))
             {
-                printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
+                if (!raw)
+                    printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
+                else
+                    printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
             }
             else if (!g_strcmp0 (arg1, "gr") ||
                      !g_strcmp0 (arg1, "get-raw"))
