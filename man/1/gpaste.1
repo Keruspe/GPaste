@@ -41,14 +41,6 @@ Display the history with indexes
 Display this size of the history
 .br
 .TP
-.B gpaste oneline-history
-Display the history without newlines
-.br
-.TP
-.B gpaste raw-history
-Display the history (raw) without indexes
-.br
-.TP
 .B gpaste backup-history
 Backup the current history
 .br
@@ -63,10 +55,6 @@ Delete a history
 .TP
 .B gpaste list-histories
 List available histories
-.br
-.TP
-.B gpaste zero-history
-Display the history with NUL as separator
 .br
 .TP
 .B gpaste add <text>
@@ -91,10 +79,6 @@ Rename the password
 .TP
 .B gpaste get <number>
 Get the <number>th item from the history
-.br
-.TP
-.B gpaste get-raw <number>
-Get the <number>th item from the history (raw)
 .br
 .TP
 .B gpaste select <number>
@@ -153,3 +137,17 @@ Display the about dialog
 Make the applet or extension display the history
 .br
 
+.SH "OPTIONS"
+
+.TP
+.B --oneline
+Display each item on one line, without new lines
+.br
+.TP
+.B --raw
+Display the item raw (without index)
+.br
+.TP
+.B --zero
+Use NUL character instead of new lines between each item
+.br

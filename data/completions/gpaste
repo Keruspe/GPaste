@@ -1,23 +1,33 @@
 _gpaste()
 {
+    local cur
+
+    cur="${COMP_WORDS[${COMP_CWORD}]}"
     COMPREPLY=()
 
-    if [[ $COMP_CWORD == 1 ]]; then
+    if [[ ${COMP_CWORD} == 1 ]]; then
 
-        local cur opts
+        local opts
 
-        cur="${COMP_WORDS[$COMP_CWORD]}"
-        opts="about add add-password backup-history daemon daemon-reexec daemon-version delete delete-history delete-password empty file get get-raw help --help -h history history-size list-histories oneline-history preferences quit raw-history remove rename-password select set set-password settings show-history start stop switch-history version --version -v zero-history"
-        COMPREPLY=( $(compgen -W "$opts" -- $cur ) )
+        opts="about add add-password backup-history daemon daemon-reexec daemon-version delete delete-history delete-password empty file get help --help -h history history-size list-histories --oneline -o preferences quit remove --raw -r rename-password select set set-password settings show-history start stop switch-history version --version -v --zero -z"
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) )
 
-    elif [[ $COMP_CWORD == 2 ]]; then
+    elif [[ ${COMP_CWORD} == 2 ]]; then
 
         local action
 
         action="${COMP_WORDS[1]}"
-        if [[ "${action}" == "file" ]]; then
-            COMPREPLY=( $(compgen -f ) )
-        fi
+        case "${action}" in
+            file|f)
+                COMPREPLY=( $(compgen -f ) )
+                ;;
+            get|g)
+                COMPREPLY=( compgen -W "--raw -r" -- ${cur} )
+                ;;
+            history|h)
+                COMPREPLY=( compgen -W "--oneline -o --raw -r --zero -z" -- ${cur} )
+                ;;
+        esac
 
     fi
 }

@@ -97,6 +97,14 @@ show_help (void)
     printf ("  %s help: %s\n", progname, _("display this help"));
     /* Translators: help for gpaste about */
     printf ("  %s about: %s\n", progname, _("display the about dialog"));
+
+    printf(_("\nDisplay options:\n"));
+    /* Translators: help for --oneline */
+    printf("  --oneline: %s\n", _("display each item on only one line"));
+    /* Translators: help for --oneline */
+    printf("  --raw: %s\n", _("display each item raw (without line numbers)"));
+    /* Translators: help for --oneline */
+    printf("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
 }
 
 static void
@@ -143,18 +151,14 @@ show_history (GPasteClient *client,
 static gboolean
 is_help (const gchar *option)
 {
-    return (!g_strcmp0 (option, "help") ||
-            !g_strcmp0 (option, "-h") ||
-            !g_strcmp0 (option, "--help"));
+    return !g_strcmp0 (option, "help");
 }
 
 static gboolean
 is_version (const gchar *option)
 {
     return (!g_strcmp0 (option, "v") ||
-            !g_strcmp0 (option, "version") ||
-            !g_strcmp0 (option, "-v") ||
-            !g_strcmp0 (option, "--version"));
+            !g_strcmp0 (option, "version"));
 }
 
 G_PASTE_NORETURN static void
@@ -209,12 +213,15 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     struct option long_options[] = {
+        {"help",    no_argument, NULL,  'h' },
         {"oneline", no_argument, NULL,  'o' },
         {"raw"    , no_argument, NULL,  'r' },
+        {"version", no_argument, NULL,  'v' },
         {"zero",    no_argument, NULL,  'z' },
         {0,         no_argument, NULL,  0 }
     };
 
+    gboolean help = FALSE, version = FALSE;
     gboolean oneline = FALSE, raw = FALSE, zero = FALSE;
     gint c;
 
@@ -222,11 +229,17 @@ main (gint argc, gchar *argv[])
     {
         switch (c)
         {
+        case 'h':
+            help = TRUE;
+            break;
         case 'o':
             oneline = TRUE;
             break;
         case 'r':
             raw = TRUE;
+            break;
+        case 'v':
+            version = TRUE;
             break;
         case 'z':
             zero = TRUE;
@@ -239,18 +252,15 @@ main (gint argc, gchar *argv[])
     argv += optind;
     argc -= optind;
 
-    if (argc > 0)
+    if (help || (argc > 0 && is_help (argv[0])))
     {
-        if (is_help (argv[0]))
-        {
-            show_help ();
-            return EXIT_SUCCESS;
-        }
-        else if (is_version (argv[0]))
-        {
-            show_version ();
-            return EXIT_SUCCESS;
-        }
+        show_help ();
+        return EXIT_SUCCESS;
+    }
+    else if (version || (argc > 0 && is_version (argv[0])))
+    {
+        show_version ();
+        return EXIT_SUCCESS;
     }
 
     int status = EXIT_SUCCESS;
@@ -328,8 +338,7 @@ main (gint argc, gchar *argv[])
                         printf ("%s\n", *h);
                 }
             }
-            else if (!g_strcmp0 (arg1, "s")        ||
-                     !g_strcmp0 (arg1, "settings") ||
+            else if (!g_strcmp0 (arg1, "settings") ||
                      !g_strcmp0 (arg1, "p")        ||
                      !g_strcmp0 (arg1, "preferences"))
             {
@@ -408,7 +417,10 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "g") ||
                      !g_strcmp0 (arg1, "get"))
             {
-                printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
+                if (!raw)
+                    printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
+                else
+                    printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
             }
             else if (!g_strcmp0 (arg1, "gr") ||
                      !g_strcmp0 (arg1, "get-raw"))
