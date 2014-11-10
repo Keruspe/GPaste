@@ -354,8 +354,7 @@ main (gint argc, gchar *argv[])
             {
                 show_history (client, oneline, TRUE, zero, &error);
             }
-            else if (!g_strcmp0 (arg1, "s")        ||
-                     !g_strcmp0 (arg1, "settings") ||
+            else if (!g_strcmp0 (arg1, "settings") ||
                      !g_strcmp0 (arg1, "p")        ||
                      !g_strcmp0 (arg1, "preferences"))
             {

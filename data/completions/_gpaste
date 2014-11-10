@@ -50,7 +50,7 @@ _gpaste_complete_subcommands() {
         {rename-password,rp}:"Rename a password"
         {select,set,s}:"Select an element of the history"
         {set-password,sp}:"Mark an item as being a password"
-        {settings,s,preferences,p}:"Launch the configuration tool"
+        {settings,preferences,p}:"Launch the configuration tool"
         {start,daemon,d}:"Start the daemon"
         {stop,quit,q}:"Shutdown the daemon"
         "show-history:Make the applet or extension display the history"
