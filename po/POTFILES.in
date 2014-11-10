@@ -15,9 +15,9 @@ src/applet/gpaste-applet.c
 src/daemon/gpaste-daemon.c
 src/settings/gpaste-settings.c
 src/gpaste/gpaste.c
-data/appdata/org.gnome.GPaste.Applet.appdata.xml.in
-data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in
-data/appdata/org.gnome.GPaste.Settings.appdata.xml.in
+data/appstream/org.gnome.GPaste.Applet.appdata.xml.in
+data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in
+data/appstream/org.gnome.GPaste.Settings.appdata.xml.in
 data/control-center/42-gpaste.xml.in.in
 data/desktop/org.gnome.GPaste.Applet.desktop.in.in
 data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in

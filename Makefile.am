@@ -22,7 +22,7 @@ AM_MAKEFLAGS = --no-print-directory
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)" \
 	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
-	--enable-appdata-validate \
+	--enable-appstream-util \
 	--enable-applet \
 	--enable-introspection \
 	--enable-unity \
@@ -108,7 +108,7 @@ include src/gnome-shell.mk
 
 # Data
 
-include data/appdata.mk
+include data/appstream.mk
 include data/completions.mk
 include data/control-center.mk
 include data/dbus.mk
