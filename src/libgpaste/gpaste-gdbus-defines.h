@@ -54,6 +54,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_SHOW_HISTORY               "ShowHistory"
 #define G_PASTE_DAEMON_SWITCH_HISTORY             "SwitchHistory"
 #define G_PASTE_DAEMON_TRACK                      "Track"
+#define G_PASTE_DAEMON_UPLOAD                     "Upload"
 
 #define G_PASTE_DAEMON_SIG_NAME_LOST      "NameLost"
 #define G_PASTE_DAEMON_SIG_REEXECUTE_SELF "ReexecuteSelf"
@@ -136,6 +137,9 @@ G_BEGIN_DECLS
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_TRACK "'>"                      \
         "           <arg type='b' direction='in' />"                           \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_UPLOAD "'>"                     \
+        "           <arg type='u' direction='in' />"                           \
         "       </method>"                                                     \
         "       <signal name='" G_PASTE_DAEMON_SIG_NAME_LOST "' />"            \
         "       <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \

@@ -239,7 +239,7 @@ g_paste_daemon_show_about_dialog (void)
 
 static void
 g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
-                               gchar               *text,
+                               const gchar         *text,
                                gsize                length)
 {
     g_return_if_fail (text);
@@ -540,6 +540,40 @@ g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_private_upload_finish (GObject      *source_object,
+                                      GAsyncResult *res,
+                                      gpointer      user_data G_GNUC_UNUSED)
+{
+    G_PASTE_CLEANUP_UNREF GSubprocess *upload = G_SUBPROCESS (source_object);
+    G_PASTE_CLEANUP_FREE gchar *url = NULL;
+    GPasteDaemonPrivate *priv = user_data;
+
+    g_subprocess_communicate_utf8_finish (upload,
+                                          res,
+                                          &url,
+                                          NULL, /* stderr */
+                                          NULL); /* error */
+
+    if (url)
+        g_paste_daemon_private_do_add (priv, url, strlen (url));
+}
+
+static void
+g_paste_daemon_private_upload (GPasteDaemonPrivate *priv,
+                               GVariant            *parameters)
+{
+    GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, NULL, "wgetpaste", NULL);
+    const gchar *value = g_paste_history_get_value (priv->history,
+                                                    g_paste_daemon_get_dbus_uint32_parameter (parameters));
+
+    g_subprocess_communicate_utf8_async (upload,
+                                         value,
+                                         NULL, /* cancellable */
+                                         g_paste_daemon_private_upload_finish,
+                                         priv);
+}
+
+static void
 g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UNUSED,
                                  const gchar           *sender         G_GNUC_UNUSED,
                                  const gchar           *object_path    G_GNUC_UNUSED,
@@ -601,6 +635,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_switch_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))
         g_paste_daemon_track (self, parameters);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_UPLOAD))
+        g_paste_daemon_private_upload (priv, parameters);
 
     g_dbus_method_invocation_return_value (invocation, answer);
 }
