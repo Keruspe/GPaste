@@ -23,40 +23,10 @@
 G_BEGIN_DECLS
 
 /*********************/
-/* Custom Data Types */
-/*********************/
-
-#ifdef __G_PASTE_NEEDS_BS__
-typedef struct
-{
-    gboolean b;
-    gchar   *s;
-} GPasteDBusBSResult;
-#endif /* __G_PASTE_NEEDS_BS__ */
-
-/*********************/
 /* Custom Extractors */
 /*********************/
 
-#ifdef __G_PASTE_NEEDS_BS__
-static GPasteDBusBSResult
-g_paste_dbus_get_bs_result (GVariant *variant)
-{
-    GVariantIter iter;
-    g_variant_iter_init (&iter, variant);
-
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *b = g_variant_iter_next_value (&iter);
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *s = g_variant_iter_next_value (&iter);
-
-    GPasteDBusBSResult r = {
-        .b = g_variant_get_boolean (b),
-        .s = g_variant_dup_string (s, NULL /* length */)
-    };
-
-    return r;
-}
-#endif /* __G_PASTE_NEEDS_BS__ */
-
+#ifdef __G_PASTE_NEEDS_AU__
 static guint32 *
 g_paste_dbus_get_au_result (GVariant *variant,
                             gsize    *len)
@@ -70,6 +40,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
 
     return ret;
 }
+#endif
 
 /***************/
 /* Constructor */
@@ -197,9 +168,6 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_ASYNC_FINISH_RET_AU_BASE(TYPE_CHECKER, len) \
     DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, NULL, return g_paste_dbus_get_au_result (variant, len))
 
-#define DBUS_ASYNC_FINISH_RET_BS_BASE(TYPE_CHECKER) \
-    DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, FALSE, GPasteDBusBSResult bs = g_paste_dbus_get_bs_result (variant))
-
 /****************************/
 /* Methods / Sync / General */
 /****************************/
@@ -292,9 +260,6 @@ g_paste_dbus_get_au_result (GVariant *variant,
 
 #define DBUS_CALL_ONE_PARAM_RET_AU_BASE(TYPE_CHECKER, param_type, param_name, method, len) \
     DBUS_CALL_ONE_PARAM_BASE(TYPE_CHECKER, param_type, param_name, method, NULL, return g_paste_dbus_get_au_result (variant, len))
-
-#define DBUS_CALL_ONE_PARAM_RET_BS_BASE(TYPE_CHECKER, param_type, param_name, method) \
-    DBUS_CALL_ONE_PARAM_RAW_BASE(TYPE_CHECKER, param_type, param_name, method, FALSE, GPasteDBusBSResult bs = g_paste_dbus_get_bs_result (variant))
 
 /****************************************************/
 /* Methods / Sync / Impl - With return - Two params */

@@ -98,7 +98,9 @@ show_help (void)
     /* Translators: help for gpaste about */
     printf ("  %s about: %s\n", progname, _("display the about dialog"));
 
-    printf(_("\nDisplay options:\n"));
+    printf("\n");
+    printf(_("Display options:"));
+    printf("\n");
     /* Translators: help for --oneline */
     printf("  --oneline: %s\n", _("display each item on only one line"));
     /* Translators: help for --oneline */

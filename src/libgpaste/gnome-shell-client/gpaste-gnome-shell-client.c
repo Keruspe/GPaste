@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2013-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -19,43 +19,21 @@
 
 #include "gpaste-gnome-shell-client-private.h"
 
-#define __G_PASTE_NEEDS_BS__
+#define __G_PASTE_NEEDS_AU__
 #include "gpaste-gdbus-macros.h"
 
 #define G_PASTE_GNOME_SHELL_OBJECT_PATH    "/org/gnome/Shell"
 #define G_PASTE_GNOME_SHELL_INTERFACE_NAME "org.gnome.Shell"
 
-#define G_PASTE_GNOME_SHELL_EVAL               "Eval"
-#define G_PASTE_GNOME_SHELL_FOCUS_SEARCH       "FocusSearch"
-#define G_PASTE_GNOME_SHELL_SHOW_OSD           "ShowOSD"
-#define G_PASTE_GNOME_SHELL_FOCUS_APP          "FocusApp"
-#define G_PASTE_GNOME_SHELL_SHOW_APPLICATIONS  "ShowApplications"
 #define G_PASTE_GNOME_SHELL_GRAB_ACCELERATOR   "GrabAccelerator"
 #define G_PASTE_GNOME_SHELL_GRAB_ACCELERATORS  "GrabAccelerators"
 #define G_PASTE_GNOME_SHELL_UNGRAB_ACCELERATOR "UngrabAccelerator"
 
 #define G_PASTE_GNOME_SHELL_SIG_ACCELERATOR_ACTIVATED "AcceleratorActivated"
 
-#define G_PASTE_GNOME_SHELL_PROP_MODE            "Mode"
-#define G_PASTE_GNOME_SHELL_PROP_OVERVIEW_ACTIVE "OverviewActive"
-#define G_PASTE_GNOME_SHELL_PROP_SHELL_VERSION   "ShellVersion"
-
 #define G_PASTE_GNOME_SHELL_INTERFACE                                                                      \
     "<node>"                                                                                               \
         "<interface  name='" G_PASTE_GNOME_SHELL_INTERFACE_NAME "'>"                                       \
-            "<method name='" G_PASTE_GNOME_SHELL_EVAL "'>"                                                 \
-                "<arg type='s' direction='in'  name='script'  />"                                          \
-                "<arg type='b' direction='out' name='success' />"                                          \
-                "<arg type='s' direction='out' name='result'  />"                                          \
-            "</method>"                                                                                    \
-            "<method name='" G_PASTE_GNOME_SHELL_FOCUS_SEARCH "' />"                                       \
-            "<method name='" G_PASTE_GNOME_SHELL_SHOW_OSD "'>"                                             \
-                "<arg type='a{sv}' direction='in' name='params' />"                                        \
-            "</method>"                                                                                    \
-            "<method name='" G_PASTE_GNOME_SHELL_FOCUS_APP "'>"                                            \
-                "<arg type='s' direction='in' name='id' />"                                                \
-            "</method>"                                                                                    \
-            "<method name='" G_PASTE_GNOME_SHELL_SHOW_APPLICATIONS "' />"                                  \
             "<method name='" G_PASTE_GNOME_SHELL_GRAB_ACCELERATOR "'>"                                     \
                 "<arg type='s' direction='in'  name='accelerator' />"                                      \
                 "<arg type='u' direction='in'  name='flags'       />"                                      \
@@ -74,9 +52,6 @@
                 "<arg name='deviceid'  type='u' />"                                                        \
                 "<arg name='timestamp' type='u' />"                                                        \
             "</signal>"                                                                                    \
-            "<property name='" G_PASTE_GNOME_SHELL_PROP_MODE "'            type='s' access='read'      />" \
-            "<property name='" G_PASTE_GNOME_SHELL_PROP_OVERVIEW_ACTIVE "' type='b' access='readwrite' />" \
-            "<property name='" G_PASTE_GNOME_SHELL_PROP_SHELL_VERSION "'   type='s' access='read'      />" \
         "</interface>"                                                                                     \
     "</node>"
 
@@ -95,9 +70,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /* Methods / Async */
 /*******************/
 
-#define DBUS_CALL_NO_PARAM_ASYNC(method) \
-    DBUS_CALL_NO_PARAM_ASYNC_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
-
 #define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_ASYNC_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
@@ -111,33 +83,14 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /* Methods / Async - Finish */
 /****************************/
 
-#define DBUS_ASYNC_FINISH_NO_RETURN \
-    DBUS_ASYNC_FINISH_NO_RETURN_BASE (GNOME_SHELL_CLIENT)
-
 #define DBUS_ASYNC_FINISH_RET_BOOL \
     DBUS_ASYNC_FINISH_RET_BOOL_BASE (GNOME_SHELL_CLIENT)
-
-#define DBUS_ASYNC_FINISH_RET_UINT32 \
-    DBUS_ASYNC_FINISH_RET_UINT32_BASE (GNOME_SHELL_CLIENT)
 
 #define DBUS_ASYNC_FINISH_RET_AU \
     DBUS_ASYNC_FINISH_RET_AU_BASE (GNOME_SHELL_CLIENT, NULL)
 
-#define DBUS_ASYNC_FINISH_RET_BS \
-    DBUS_ASYNC_FINISH_RET_BS_BASE (GNOME_SHELL_CLIENT)
-
-/******************************/
-/* Methods / Sync - No return */
-/******************************/
-
-#define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
-    DBUS_CALL_NO_PARAM_NO_RETURN_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method)
-
-#define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
-
-#define DBUS_CALL_ONE_PARAMV_NO_RETURN(method, paramv) \
-    DBUS_CALL_ONE_PARAMV_NO_RETURN_BASE (GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
+#define DBUS_ASYNC_FINISH_RET_UINT32 \
+    DBUS_ASYNC_FINISH_RET_UINT32_BASE (GNOME_SHELL_CLIENT)
 
 /********************************/
 /* Methods / Sync - With return */
@@ -146,139 +99,15 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_RET_BOOL(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_BOOL_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
 
-#define DBUS_CALL_ONE_PARAM_RET_BS(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_BS_BASE (GNOME_SHELL_CLIENT, param_type, param_name, G_PASTE_GNOME_SHELL_##method)
-
 #define DBUS_CALL_ONE_PARAMV_RET_AU(method, paramv) \
     DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv, NULL)
 
 #define DBUS_CALL_TWO_PARAMS_RET_UINT32(method, params) \
     DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
 
-/**************/
-/* Properties */
-/**************/
-
-#define DBUS_GET_BOOLEAN_PROPERTY(property) \
-    DBUS_GET_BOOLEAN_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_PROP_##property)
-
-#define DBUS_GET_STRING_PROPERTY(property) \
-    DBUS_GET_STRING_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_PROP_##property)
-
-#define DBUS_SET_BOOLEAN_PROPERTY(property, value) \
-    DBUS_SET_BOOLEAN_PROPERTY_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_INTERFACE_NAME, G_PASTE_GNOME_SHELL_PROP_##property, value)
-
 /******************/
 /* Methods / Sync */
 /******************/
-
-/**
- * g_paste_gnome_shell_client_eval_sync:
- * @self: a #GPasteGnomeShellClient instance
- * @script: The script to eval
- * @output: (out callee-allocates) (nullable): a plate to put the result in
- * @error: a #GError
- *
- * Evaluate a javascript script
- *
- * Returns: Whether the eval was successful or not
- */
-G_PASTE_VISIBLE gboolean
-g_paste_gnome_shell_client_eval_sync (GPasteGnomeShellClient *self,
-                                      const gchar            *script,
-                                      gchar                 **output,
-                                      GError                **error)
-{
-    DBUS_CALL_ONE_PARAM_RET_BS (EVAL, string, script);
-    if (output)
-        *output = bs.s;
-    return bs.b;
-}
-
-/**
- * g_paste_gnome_shell_client_focus_seach_sync:
- * @self: a #GPasteGnomeShellClient instance
- * @error: a #GError
- *
- * Focus the search field in overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_search_sync (GPasteGnomeShellClient *self,
-                                              GError                **error)
-{
-    DBUS_CALL_NO_PARAM_NO_RETURN (FOCUS_SEARCH);
-}
-
-/**
- * g_paste_gnome_shell_client_show_osd_sync:
- * @self: a #GPasteGnomeShellClient instance
- * @icon: (nullable): the icon to display
- * @label: (nullable): the text to display
- * @level: percentage to fill the bar with (-1 for none)
- * @error: a #GError
- *
- * Display something to the user
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_osd_sync (GPasteGnomeShellClient *self,
-                                          const gchar            *icon,
-                                          const gchar            *label,
-                                          gint32                  level,
-                                          GError                **error)
-{
-    GVariantDict dict;
-
-    g_variant_dict_init (&dict, NULL);
-
-    if (icon)
-        g_variant_dict_insert_value (&dict, "icon", g_variant_new_string (icon));
-    if (label)
-        g_variant_dict_insert_value (&dict, "label", g_variant_new_string (label));
-    if (level >= 0)
-        g_variant_dict_insert_value (&dict, "level", g_variant_new_int32 (level));
-
-    GVariant *vardict = g_variant_dict_end (&dict);
-
-    DBUS_CALL_ONE_PARAMV_NO_RETURN (SHOW_OSD, vardict);
-}
-
-/**
- * g_paste_gnome_shell_client_focus_app_sync:
- * @self: a #GPasteGnomeShellClient instance
- * @id: the application id
- * @error: a #GError
- *
- * Focus an app in overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_app_sync (GPasteGnomeShellClient *self,
-                                           const gchar            *id,
-                                           GError                **error)
-{
-    DBUS_CALL_ONE_PARAM_NO_RETURN (FOCUS_APP, string, id);
-}
-
-/**
- * g_paste_gnome_shell_client_show_applications_sync:
- * @self: a #GPasteGnomeShellClient instance
- * @error: a #GError
- *
- * Display the application pane in the overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_applications_sync (GPasteGnomeShellClient *self,
-                                                   GError                **error)
-{
-    DBUS_CALL_NO_PARAM_NO_RETURN (SHOW_APPLICATIONS);
-}
 
 /**
  * g_paste_gnome_shell_client_grab_accelerator_sync:
@@ -356,124 +185,6 @@ g_paste_gnome_shell_client_ungrab_accelerator_sync (GPasteGnomeShellClient *self
 /*******************/
 /* Methods / Async */
 /*******************/
-
-/**
- * g_paste_gnome_shell_client_eval:
- * @self: a #GPasteGnomeShellClient instance
- * @script: The script to eval
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Evaluate a javascript script
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_eval (GPasteGnomeShellClient *self,
-                                 const gchar            *script,
-                                 GAsyncReadyCallback     callback,
-                                 gpointer                user_data)
-{
-    DBUS_CALL_ONE_PARAM_ASYNC (EVAL, string, script);
-}
-
-/**
- * g_paste_gnome_shell_client_focus_seach:
- * @self: a #GPasteGnomeShellClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Focus the search field in overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_search (GPasteGnomeShellClient *self,
-                                         GAsyncReadyCallback     callback,
-                                         gpointer                user_data)
-{
-    DBUS_CALL_NO_PARAM_ASYNC (FOCUS_SEARCH);
-}
-
-/**
- * g_paste_gnome_shell_client_show_osd:
- * @self: a #GPasteGnomeShellClient instance
- * @icon: (nullable): the icon to display
- * @label: (nullable): the text to display
- * @level: percentage to fill the bar with (-1 for none)
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Display something to the user
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_osd (GPasteGnomeShellClient *self,
-                                     const gchar            *icon,
-                                     const gchar            *label,
-                                     gint32                  level,
-                                     GAsyncReadyCallback     callback,
-                                     gpointer                user_data)
-{
-    GVariantDict dict;
-
-    g_variant_dict_init (&dict, NULL);
-
-    if (icon)
-        g_variant_dict_insert_value (&dict, "icon", g_variant_new_string (icon));
-    if (label)
-        g_variant_dict_insert_value (&dict, "label", g_variant_new_string (label));
-    if (level >= 0)
-        g_variant_dict_insert_value (&dict, "level", g_variant_new_int32 (level));
-
-    GVariant *vardict = g_variant_dict_end (&dict);
-
-    DBUS_CALL_ONE_PARAMV_ASYNC (SHOW_OSD, vardict);
-}
-
-/**
- * g_paste_gnome_shell_client_focus_app:
- * @self: a #GPasteGnomeShellClient instance
- * @id: the application id
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Focus an app in overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_app (GPasteGnomeShellClient *self,
-                                      const gchar            *id,
-                                      GAsyncReadyCallback     callback,
-                                      gpointer                user_data)
-{
-    DBUS_CALL_ONE_PARAM_ASYNC (FOCUS_APP, string, id);
-}
-
-/**
- * g_paste_gnome_shell_client_show_applications:
- * @self: a #GPasteGnomeShellClient instance
- * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
- * care about the result of the method invocation.
- * @user_data: (nullable): The data to pass to @callback.
- *
- * Display the application pane in the overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_applications (GPasteGnomeShellClient *self,
-                                              GAsyncReadyCallback     callback,
-                                              gpointer                user_data)
-{
-    DBUS_CALL_NO_PARAM_ASYNC (SHOW_APPLICATIONS);
-}
 
 /**
  * g_paste_gnome_shell_client_grab_accelerator:
@@ -562,101 +273,6 @@ g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
 /****************************/
 
 /**
- * g_paste_gnome_shell_client_eval_finish:
- * @self: a #GPasteGnomeShellClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @output: (out callee-allocates) (nullable): a plate to put the result in
- * @error: a #GError
- *
- * Evaluate a javascript script
- *
- * Returns: Whether the eval was successful or not
- */
-G_PASTE_VISIBLE gboolean
-g_paste_gnome_shell_client_eval_finish (GPasteGnomeShellClient *self,
-                                        GAsyncResult           *result,
-                                        gchar                 **output,
-                                        GError                **error)
-{
-    DBUS_ASYNC_FINISH_RET_BS;
-    if (output)
-        *output = bs.s;
-    return bs.b;
-}
-
-/**
- * g_paste_gnome_shell_client_focus_seach_finish:
- * @self: a #GPasteGnomeShellClient instance
- * @res: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
- *
- * Focus the search field in overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_search_finish (GPasteGnomeShellClient *self,
-                                                GAsyncResult           *result,
-                                                GError                **error)
-{
-    DBUS_ASYNC_FINISH_NO_RETURN;
-}
-
-/**
- * g_paste_gnome_shell_client_show_osd_finish:
- * @self: a #GPasteGnomeShellClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
- *
- * Display something to the user
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_osd_finish (GPasteGnomeShellClient *self,
-                                            GAsyncResult           *result,
-                                            GError                **error)
-{
-    DBUS_ASYNC_FINISH_NO_RETURN;
-}
-
-/**
- * g_paste_gnome_shell_client_focus_app_finish:
- * @self: a #GPasteGnomeShellClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
- *
- * Focus an app in overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_focus_app_finish (GPasteGnomeShellClient *self,
-                                             GAsyncResult           *result,
-                                             GError                **error)
-{
-    DBUS_ASYNC_FINISH_NO_RETURN;
-}
-
-/**
- * g_paste_gnome_shell_client_show_applications_finish:
- * @self: a #GPasteGnomeShellClient instance
- * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @error: a #GError
- *
- * Display the application pane in the overview
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_gnome_shell_client_show_applications_finish (GPasteGnomeShellClient *self,
-                                                     GAsyncResult           *result,
-                                                     GError                **error)
-{
-    DBUS_ASYNC_FINISH_NO_RETURN;
-}
-
-/**
  * g_paste_gnome_shell_client_grab_accelerator_finish:
  * @self: a #GPasteGnomeShellClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
@@ -708,70 +324,6 @@ g_paste_gnome_shell_client_ungrab_accelerator_finish (GPasteGnomeShellClient *se
                                                       GError                **error)
 {
     DBUS_ASYNC_FINISH_RET_BOOL;
-}
-
-/**************/
-/* Properties */
-/**************/
-
-/**
- * g_paste_gnome_shell_client_get_mode:
- * @self: a #GPasteGnomeShellClient instance
- *
- * Get the mode gnome-shell is ran as
- *
- * Returns: the "Mode" property
- */
-G_PASTE_VISIBLE gchar *
-g_paste_gnome_shell_client_get_mode (GPasteGnomeShellClient *self)
-{
-    DBUS_GET_STRING_PROPERTY (MODE);
-}
-
-/**
- * g_paste_gnome_shell_client_overview_is_active:
- * @self: a #GPasteGnomeShellClient instance
- *
- * Whether the overview is active or not
- *
- * Returns: the "OverviewActive" property
- */
-G_PASTE_VISIBLE gboolean
-g_paste_gnome_shell_client_overview_is_active (GPasteGnomeShellClient *self)
-{
-    DBUS_GET_BOOLEAN_PROPERTY (OVERVIEW_ACTIVE);
-}
-
-/**
- * g_paste_gnome_shell_client_get_shell_version:
- * @self: a #GPasteGnomeShellClient instance
- *
- * Get the shell version
- *
- * Returns: the "ShellVersion" property
- */
-G_PASTE_VISIBLE gchar *
-g_paste_gnome_shell_client_get_shell_version (GPasteGnomeShellClient *self)
-{
-    DBUS_GET_STRING_PROPERTY (SHELL_VERSION);
-}
-
-/**
- * g_paste_gnome_shell_client_overview_set_active:
- * @self: a #GPasteGnomeShellClient instance
- * @value: the active state
- * @error: a #GError
- *
- * Set whether the overview is active or not
- *
- * Returns: Whether the "OverviewActive" property has been set or not
- */
-G_PASTE_VISIBLE gboolean
-g_paste_gnome_shell_client_overview_set_active (GPasteGnomeShellClient *self,
-                                                gboolean                value,
-                                                GError                **error)
-{
-    DBUS_SET_BOOLEAN_PROPERTY (OVERVIEW_ACTIVE, value);
 }
 
 static void

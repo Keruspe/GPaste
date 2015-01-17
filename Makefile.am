@@ -50,6 +50,7 @@ AM_CFLAGS = \
 	-I$(srcdir)/src/libgpaste/daemon \
 	-I$(srcdir)/src/libgpaste/gnome-shell-client \
 	-I$(srcdir)/src/libgpaste/keybinder \
+	-I$(srcdir)/src/libgpaste/screensaver-client \
 	-I$(srcdir)/src/libgpaste/settings \
 	-I$(srcdir)/src/libgpaste/settings-ui \
 	-I$(builddir)/src/libgpaste \

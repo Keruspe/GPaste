@@ -55,6 +55,7 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding-private.h \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding-private.h \
 	src/libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding-private.h \
+	src/libgpaste/screensaver-client/gpaste-screensaver-client-private.h \
 	src/libgpaste/settings/gpaste-settings-private.h \
 	src/libgpaste/settings-ui/gpaste-settings-ui-panel-private.h \
 	src/libgpaste/settings-ui/gpaste-settings-ui-stack-private.h \
@@ -99,6 +100,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding.h \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.h \
 	src/libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.h \
+	src/libgpaste/screensaver-client/gpaste-screensaver-client.h \
 	src/libgpaste/settings/gpaste-settings.h \
 	src/libgpaste/settings-ui/gpaste-settings-ui-panel.h \
 	src/libgpaste/settings-ui/gpaste-settings-ui-stack.h \
@@ -141,6 +143,7 @@ lib_libgpaste_la_SOURCES = \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding.c \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.c \
 	src/libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.c \
+	src/libgpaste/screensaver-client/gpaste-screensaver-client.c \
 	src/libgpaste/settings/gpaste-settings.c \
 	src/libgpaste/settings-ui/gpaste-settings-ui-panel.c \
 	src/libgpaste/settings-ui/gpaste-settings-ui-stack.c \

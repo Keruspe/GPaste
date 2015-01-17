@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2013-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -90,22 +90,6 @@ GType g_paste_gnome_shell_client_get_type (void);
 /* Methods /  Sync */
 /*******************/
 
-gboolean g_paste_gnome_shell_client_eval_sync               (GPasteGnomeShellClient      *self,
-                                                             const gchar                 *script,
-                                                             gchar                      **output,
-                                                             GError                     **error);
-void     g_paste_gnome_shell_client_show_osd_sync           (GPasteGnomeShellClient      *self,
-                                                             const gchar                 *icon,
-                                                             const gchar                 *label,
-                                                             gint32                       level,
-                                                             GError                     **error);
-void     g_paste_gnome_shell_client_focus_search_sync       (GPasteGnomeShellClient      *self,
-                                                             GError                     **error);
-void     g_paste_gnome_shell_client_focus_app_sync          (GPasteGnomeShellClient      *self,
-                                                             const gchar                 *id,
-                                                             GError                     **error);
-void     g_paste_gnome_shell_client_show_applications_sync  (GPasteGnomeShellClient      *self,
-                                                             GError                     **error);
 guint32  g_paste_gnome_shell_client_grab_accelerator_sync   (GPasteGnomeShellClient      *self,
                                                              GPasteGnomeShellAccelerator  accelerator,
                                                              GError                     **error);
@@ -120,26 +104,6 @@ gboolean g_paste_gnome_shell_client_ungrab_accelerator_sync (GPasteGnomeShellCli
 /* Methods /  Async */
 /********************/
 
-void g_paste_gnome_shell_client_eval               (GPasteGnomeShellClient      *self,
-                                                    const gchar                 *script,
-                                                    GAsyncReadyCallback          callback,
-                                                    gpointer                     user_data);
-void g_paste_gnome_shell_client_show_osd           (GPasteGnomeShellClient      *self,
-                                                    const gchar                 *icon,
-                                                    const gchar                 *label,
-                                                    gint32                       level,
-                                                    GAsyncReadyCallback          callback,
-                                                    gpointer                     user_data);
-void g_paste_gnome_shell_client_focus_search       (GPasteGnomeShellClient      *self,
-                                                    GAsyncReadyCallback          callback,
-                                                    gpointer                     user_data);
-void g_paste_gnome_shell_client_focus_app          (GPasteGnomeShellClient      *self,
-                                                    const gchar                 *id,
-                                                    GAsyncReadyCallback          callback,
-                                                    gpointer                     user_data);
-void g_paste_gnome_shell_client_show_applications  (GPasteGnomeShellClient      *self,
-                                                    GAsyncReadyCallback          callback,
-                                                    gpointer                     user_data);
 void g_paste_gnome_shell_client_grab_accelerator   (GPasteGnomeShellClient      *self,
                                                     GPasteGnomeShellAccelerator  accelerator,
                                                     GAsyncReadyCallback          callback,
@@ -157,22 +121,6 @@ void g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient      
 /* Methods /  Async - Finish */
 /*****************************/
 
-gboolean g_paste_gnome_shell_client_eval_finish               (GPasteGnomeShellClient *self,
-                                                               GAsyncResult           *result,
-                                                               gchar                 **output,
-                                                               GError                **error);
-void     g_paste_gnome_shell_client_show_osd_finish           (GPasteGnomeShellClient *self,
-                                                               GAsyncResult           *result,
-                                                               GError                **error);
-void     g_paste_gnome_shell_client_focus_search_finish       (GPasteGnomeShellClient *self,
-                                                               GAsyncResult           *result,
-                                                               GError                **error);
-void     g_paste_gnome_shell_client_focus_app_finish          (GPasteGnomeShellClient *self,
-                                                               GAsyncResult           *result,
-                                                               GError                **error);
-void     g_paste_gnome_shell_client_show_applications_finish  (GPasteGnomeShellClient *self,
-                                                               GAsyncResult           *result,
-                                                               GError                **error);
 guint32  g_paste_gnome_shell_client_grab_accelerator_finish   (GPasteGnomeShellClient *self,
                                                                GAsyncResult           *result,
                                                                GError                **error);
@@ -182,18 +130,6 @@ guint32 *g_paste_gnome_shell_client_grab_accelerators_finish  (GPasteGnomeShellC
 gboolean g_paste_gnome_shell_client_ungrab_accelerator_finish (GPasteGnomeShellClient *self,
                                                                GAsyncResult           *result,
                                                                GError                **error);
-
-/**************/
-/* Properties */
-/**************/
-
-gchar   *g_paste_gnome_shell_client_get_mode           (GPasteGnomeShellClient *self);
-gboolean g_paste_gnome_shell_client_overview_is_active (GPasteGnomeShellClient *self);
-gchar   *g_paste_gnome_shell_client_get_shell_version  (GPasteGnomeShellClient *self);
-
-gboolean g_paste_gnome_shell_client_overview_set_active (GPasteGnomeShellClient *self,
-                                                         gboolean                value,
-                                                         GError                **error);
 
 /****************/
 /* Constructors */
