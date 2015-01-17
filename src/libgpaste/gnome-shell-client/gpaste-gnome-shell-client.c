@@ -19,6 +19,7 @@
 
 #include "gpaste-gnome-shell-client-private.h"
 
+#define __G_PASTE_NEEDS_AU__
 #include "gpaste-gdbus-macros.h"
 
 #define G_PASTE_GNOME_SHELL_OBJECT_PATH    "/org/gnome/Shell"

@@ -26,6 +26,7 @@ G_BEGIN_DECLS
 /* Custom Extractors */
 /*********************/
 
+#ifdef __G_PASTE_NEEDS_AU__
 static guint32 *
 g_paste_dbus_get_au_result (GVariant *variant,
                             gsize    *len)
@@ -39,6 +40,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
 
     return ret;
 }
+#endif
 
 /***************/
 /* Constructor */

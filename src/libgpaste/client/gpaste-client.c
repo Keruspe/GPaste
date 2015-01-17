@@ -19,6 +19,7 @@
 
 #include "gpaste-client-private.h"
 
+#define __G_PASTE_NEEDS_AU__
 #include "gpaste-gdbus-macros.h"
 
 #include <gpaste-gdbus-defines.h>
