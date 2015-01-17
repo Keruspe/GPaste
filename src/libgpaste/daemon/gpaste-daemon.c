@@ -21,6 +21,7 @@
 
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-password-item.h>
+#include <gpaste-screensaver-client.h>
 
 #include <string.h>
 
@@ -71,6 +72,7 @@ enum
     C_NAME_LOST,
     C_REEXECUTE_SELF,
     C_TRACK,
+    C_ACTIVE_CHANGED,
 
     C_LAST_SIGNAL
 };
@@ -85,6 +87,7 @@ struct _GPasteDaemonPrivate
     GPasteSettings          *settings;
     GPasteClipboardsManager *clipboards_manager;
     GPasteKeybinder         *keybinder;
+    GPasteScreensaverClient *screensaver;
     GDBusNodeInfo           *g_paste_daemon_dbus_info;
     GDBusInterfaceVTable     g_paste_daemon_dbus_vtable;
 
@@ -638,6 +641,9 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_UPDATE]);
+
+    if (priv->screensaver)
+        g_signal_handler_disconnect (priv->screensaver,  c_signals[C_ACTIVE_CHANGED]);
 }
 
 static void
@@ -648,6 +654,25 @@ g_paste_daemon_on_history_update (GPasteDaemon      *self,
                                   gpointer           user_data G_GNUC_UNUSED)
 {
     g_paste_daemon_update (self, action, target, position);
+}
+
+static void
+g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
+                                              gboolean             active,
+                                              gpointer             user_data G_GNUC_UNUSED)
+{
+    if (active)
+    {
+        G_PASTE_CLEANUP_UNREF GPasteItem *item = g_paste_text_item_new ("");
+        g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+    }
+    else
+    {
+        const GPasteItem *item = g_paste_history_get (priv->history, 0);
+
+        if (item)
+            g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+    }
 }
 
 static void
@@ -690,6 +715,14 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                                     "update",
                                                     G_CALLBACK (g_paste_daemon_on_history_update),
                                                     self);
+
+    if (priv->screensaver)
+    {
+        c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
+                                                                "active-changed",
+                                                                G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
+                                                                priv);
+    }
 }
 
 static gboolean
@@ -773,6 +806,7 @@ g_paste_daemon_dispose (GObject *object)
         g_clear_object (&priv->settings);
         g_clear_object (&priv->clipboards_manager);
         g_clear_object (&priv->keybinder);
+        g_clear_object (&priv->screensaver);
         g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
     }
 
@@ -814,6 +848,8 @@ g_paste_daemon_init (GPasteDaemon *self)
     vtable->method_call = g_paste_daemon_dbus_method_call;
     vtable->get_property = g_paste_daemon_dbus_get_property;
     vtable->set_property = NULL;
+
+    priv->screensaver = g_paste_screensaver_client_new_sync (NULL);
 }
 
 /**

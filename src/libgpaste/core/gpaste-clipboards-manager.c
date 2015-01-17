@@ -342,7 +342,7 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
-                                   GPasteItem              *item)
+                                   const GPasteItem        *item)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
     g_return_if_fail (G_PASTE_IS_ITEM (item));
