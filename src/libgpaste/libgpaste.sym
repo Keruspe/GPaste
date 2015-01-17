@@ -369,6 +369,12 @@ global:
 
     g_paste_history_search;
 
+    g_paste_screensaver_client_get_type;
+
+    g_paste_screensaver_client_new_sync;
+    g_paste_screensaver_client_new;
+    g_paste_screensaver_client_new_finish;
+
     g_paste_update_action_get_type;
     g_paste_update_target_get_type;
 } LIBGPASTE_1;
