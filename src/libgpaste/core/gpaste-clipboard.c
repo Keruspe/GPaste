@@ -536,6 +536,8 @@ g_paste_clipboard_fake_event (gpointer user_data)
         gtk_clipboard_request_text (priv->real, g_paste_clipboard_fake_event_finish_text, self);
     else if (priv->image_checksum)
         gtk_clipboard_request_image (priv->real, g_paste_clipboard_fake_event_finish_image, self);
+    else
+        g_paste_clipboard_owner_change (NULL, NULL, self);
 
     return G_SOURCE_CONTINUE;
 }
