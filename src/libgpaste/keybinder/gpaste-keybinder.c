@@ -55,7 +55,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 static void
 g_paste_keybinder_change_grab_wayland (void)
 {
-    g_critical ("Wayland is currently not supported outside of gnome-shell.");
+    g_warning ("Wayland is currently not supported outside of gnome-shell.");
 }
 #endif
 
@@ -462,7 +462,7 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 static void
 g_paste_keybinder_parse_event_wayland (void)
 {
-    g_critical ("Wayland is currently not supported outside of gnome-shell.");
+    g_warning ("Wayland is currently not supported outside of gnome-shell.");
 }
 #endif
 
