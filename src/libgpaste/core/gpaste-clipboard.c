@@ -484,6 +484,15 @@ g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
                    NULL);
 }
 
+static gboolean
+g_paste_clipboard_fake_event (gpointer user_data)
+{
+    /* TODO: conditionalize this */
+    g_paste_clipboard_owner_change (NULL, NULL, user_data);
+
+    return G_SOURCE_CONTINUE;
+}
+
 static void
 g_paste_clipboard_dispose (GObject *object)
 {
@@ -554,9 +563,6 @@ g_paste_clipboard_new (GdkAtom         target,
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    if (!gdk_display_request_selection_notification (gdk_display_get_default (), target))
-        g_critical ("Clipboard notifications not supported, GPaste won't work (XFixes not found).");
-
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
@@ -569,6 +575,12 @@ g_paste_clipboard_new (GdkAtom         target,
                                                   "owner-change",
                                                   G_CALLBACK (g_paste_clipboard_owner_change),
                                                   self);
+
+    if (!gdk_display_request_selection_notification (gdk_display_get_default (), target))
+    {
+        g_warning ("Selection notification not supported, using active poll");
+        g_source_set_name_by_id (g_timeout_add_seconds (1, g_paste_clipboard_fake_event, self), "[GPaste] clipboard fake events");
+    }
 
     return self;
 }
