@@ -485,6 +485,64 @@ g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
 }
 
 static void
+g_paste_clipboard_fake_event_finish_text (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                          const gchar  *text,
+                                          gpointer      user_data)
+{
+    GPasteClipboard *self = user_data;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    if (g_strcmp0 (text, priv->text))
+        g_paste_clipboard_owner_change (NULL, NULL, self);
+}
+
+/* FIXME: dedupe from gpaste-image-item */
+static gchar *
+image_compute_checksum (GdkPixbuf *image)
+{
+    if (!image)
+        return NULL;
+
+    guint length;
+    const guchar *data = gdk_pixbuf_get_pixels_with_length (image,
+                                                            &length);
+    return g_compute_checksum_for_data (G_CHECKSUM_SHA256,
+                                        data,
+                                        length);
+}
+
+static void
+g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                           GdkPixbuf    *image,
+                                           gpointer      user_data)
+{
+    GPasteClipboard *self = user_data;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+    G_PASTE_CLEANUP_FREE gchar *checksum = image_compute_checksum (image);
+
+    if (g_strcmp0 (checksum, priv->image_checksum))
+        g_paste_clipboard_owner_change (NULL, NULL, self);
+
+    g_object_unref (image);
+}
+
+static gboolean
+g_paste_clipboard_fake_event (gpointer user_data)
+{
+    GPasteClipboard *self = user_data;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    if (priv->text)
+        gtk_clipboard_request_text (priv->real, g_paste_clipboard_fake_event_finish_text, self);
+    else if (priv->image_checksum)
+        gtk_clipboard_request_image (priv->real, g_paste_clipboard_fake_event_finish_image, self);
+    else
+        g_paste_clipboard_owner_change (NULL, NULL, self);
+
+    return G_SOURCE_CONTINUE;
+}
+
+static void
 g_paste_clipboard_dispose (GObject *object)
 {
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (G_PASTE_CLIPBOARD (object));
@@ -554,9 +612,6 @@ g_paste_clipboard_new (GdkAtom         target,
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    if (!gdk_display_request_selection_notification (gdk_display_get_default (), target))
-        g_critical ("Clipboard notifications not supported, GPaste won't work (XFixes not found).");
-
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
@@ -569,6 +624,12 @@ g_paste_clipboard_new (GdkAtom         target,
                                                   "owner-change",
                                                   G_CALLBACK (g_paste_clipboard_owner_change),
                                                   self);
+
+    if (!gdk_display_request_selection_notification (gdk_display_get_default (), target))
+    {
+        g_warning ("Selection notification not supported, using active poll");
+        g_source_set_name_by_id (g_timeout_add_seconds (1, g_paste_clipboard_fake_event, self), "[GPaste] clipboard fake events");
+    }
 
     return self;
 }
