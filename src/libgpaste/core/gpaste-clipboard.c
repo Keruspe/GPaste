@@ -485,15 +485,45 @@ g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
 }
 
 static void
-g_paste_clipboard_fake_event_finish (GtkClipboard *clipboard G_GNUC_UNUSED,
-                                     const gchar  *text,
-                                     gpointer      user_data)
+g_paste_clipboard_fake_event_finish_text (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                          const gchar  *text,
+                                          gpointer      user_data)
 {
     GPasteClipboard *self = user_data;
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     if (g_strcmp0 (text, priv->text))
         g_paste_clipboard_owner_change (NULL, NULL, self);
+}
+
+/* FIXME: dedupe from gpaste-image-item */
+static gchar *
+image_compute_checksum (GdkPixbuf *image)
+{
+    if (!image)
+        return NULL;
+
+    guint length;
+    const guchar *data = gdk_pixbuf_get_pixels_with_length (image,
+                                                            &length);
+    return g_compute_checksum_for_data (G_CHECKSUM_SHA256,
+                                        data,
+                                        length);
+}
+
+static void
+g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                           GdkPixbuf    *image,
+                                           gpointer      user_data)
+{
+    GPasteClipboard *self = user_data;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+    G_PASTE_CLEANUP_FREE gchar *checksum = image_compute_checksum (image);
+
+    if (g_strcmp0 (checksum, priv->image_checksum))
+        g_paste_clipboard_owner_change (NULL, NULL, self);
+
+    g_object_unref (image);
 }
 
 static gboolean
@@ -503,9 +533,9 @@ g_paste_clipboard_fake_event (gpointer user_data)
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     if (priv->text)
-        gtk_clipboard_request_text (priv->real, g_paste_clipboard_fake_event_finish, self);
-    else if (priv->image_checksum) /* TODO: check if image checksum changed */
-        g_paste_clipboard_owner_change (NULL, NULL, user_data);
+        gtk_clipboard_request_text (priv->real, g_paste_clipboard_fake_event_finish_text, self);
+    else if (priv->image_checksum)
+        gtk_clipboard_request_image (priv->real, g_paste_clipboard_fake_event_finish_image, self);
 
     return G_SOURCE_CONTINUE;
 }
