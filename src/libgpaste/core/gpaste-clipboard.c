@@ -484,11 +484,28 @@ g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
                    NULL);
 }
 
+static void
+g_paste_clipboard_fake_event_finish (GtkClipboard *clipboard G_GNUC_UNUSED,
+                                     const gchar  *text,
+                                     gpointer      user_data)
+{
+    GPasteClipboard *self = user_data;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    if (g_strcmp0 (text, priv->text))
+        g_paste_clipboard_owner_change (NULL, NULL, self);
+}
+
 static gboolean
 g_paste_clipboard_fake_event (gpointer user_data)
 {
-    /* TODO: conditionalize this */
-    g_paste_clipboard_owner_change (NULL, NULL, user_data);
+    GPasteClipboard *self = user_data;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    if (priv->text)
+        gtk_clipboard_request_text (priv->real, g_paste_clipboard_fake_event_finish, self);
+    else if (priv->image_checksum) /* TODO: check if image checksum changed */
+        g_paste_clipboard_owner_change (NULL, NULL, user_data);
 
     return G_SOURCE_CONTINUE;
 }
