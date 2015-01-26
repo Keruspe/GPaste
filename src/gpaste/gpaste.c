@@ -233,7 +233,7 @@ main (gint argc, gchar *argv[])
     gboolean oneline = FALSE, raw = FALSE, zero = FALSE;
     gint c;
 
-    while ((c = getopt_long(argc, argv, "orz", long_options, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "horvz", long_options, NULL)) != -1)
     {
         switch (c)
         {
