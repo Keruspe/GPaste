@@ -25,16 +25,20 @@ _gpaste_complete_arguments() {
 
     case "${1}" in
         base)
-            _arguments -s : "${base_arguments} ${history_arguments}"
+            _arguments -s : \
+                ${base_arguments} ${history_arguments}
             ;;
         file|f)
-            _arguments -s : "${file_arguments}"
+            _arguments -s : \
+                ${file_arguments}
             ;;
         get|g)
-            _arguments -s : "${get_arguments}"
+            _arguments -s : \
+                ${get_arguments}
             ;;
         history|h)
-            _arguments -s : "${history_arguments}"
+            _arguments -s : \
+                ${history_arguments}
             ;;
     esac
 }
