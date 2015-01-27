@@ -1,6 +1,6 @@
 #compdef gpaste
 
-( $+functions[_gpaste_complete_arguments] )) ||
+(( $+functions[_gpaste_complete_arguments] )) ||
 _gpaste_complete_arguments() {
     local -a base_arguments file_arguments get_arguments history_arguments
 
