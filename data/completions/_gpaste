@@ -31,36 +31,36 @@ _gpaste_history_arguments() {
 _gpaste_complete_subcommands() {
     local -a subcommands
     subcommands=(
-        {add,a}:"Set text to clipboard"
-        {add-password,ap}:"Add a name - password couple to the clipboard"
+        "add:Set text to clipboard"
+        "add-password:Add a name - password couple to the clipboard"
         "about:Display the about dialog"
-        {backup-history,bh}:"Backup current history"
-        {daemon-reexec,dr}:"Reexecute the daemon"
-        {daemon-version,dv}:"Display the daemon version"
-        {delete,del,d,remove,rm}:"Delete an element of the history"
-        {delete-history,dh}:"Delete a history"
-        {delete-password,dp}:"Delete a password"
-        {empty,e}:"Empty the history"
-        {file,f}:"Put content of file into clipboard"
-        {get,g}:"Display an element of the history"
+        "backup-history:Backup current history"
+        "daemon-reexec:Reexecute the daemon"
+        "daemon-version:Display the daemon version"
+        "delete:Delete an element of the history"
+        "delete-history:Delete a history"
+        "delete-password:Delete a password"
+        "empty:Empty the history"
+        "file:Put content of file into clipboard"
+        "get:Display an element of the history"
         "help:Display the help"
-        {history,h}:"Display the history with indexes"
-        {history-size,hs}:"Display the size of the history"
-        {list-histories,lh}:"List available histories"
-        {rename-password,rp}:"Rename a password"
-        {select,set,s}:"Select an element of the history"
-        {set-password,sp}:"Mark an item as being a password"
-        {settings,preferences,p}:"Launch the configuration tool"
-        {start,daemon,d}:"Start the daemon"
-        {stop,quit,q}:"Shutdown the daemon"
+        "history:Display the history with indexes"
+        "history-size:Display the size of the history"
+        "list-histories:List available histories"
+        "rename-password:Rename a password"
+        "select:Select an element of the history"
+        "set-password:Mark an item as being a password"
+        "settings:Launch the configuration tool"
+        "start:Start the daemon"
+        "stop:Shutdown the daemon"
         "show-history:Make the applet or extension display the history"
-        {switch-history,sh}:"Switch to another history"
-        {version,v}:"Display the version"
-        {zero-history,zh}:"Display the history with NUL as separator"
+        "switch-history:Switch to another history"
+        "version:Display the version"
+        "zero-history:Display the history with NUL as separator"
     )
 
-    _describe -t gpaste-commands 'gpaste' subcommands
-#    _gpaste_base_arguments
+    _describe -t commands 'gpaste subcommand' subcommands
+    _gpaste_base_arguments
 #    _gpaste_history_arguments
 }
 
