@@ -26,21 +26,23 @@ _gpaste_complete_arguments() {
     case "${1}" in
         base)
             _arguments -s : \
-                ${base_arguments} ${history_arguments}
+                ${base_arguments} ${history_arguments} && return 0
             ;;
         file|f)
             _arguments -s : \
-                ${file_arguments}
+                ${file_arguments} && return 0
             ;;
         get|g)
             _arguments -s : \
-                ${get_arguments}
+                ${get_arguments} && return 0
             ;;
         history|h)
             _arguments -s : \
-                ${history_arguments}
+                ${history_arguments} && return 0
             ;;
     esac
+
+    return 1
 }
 
 (( $+functions[_gpaste_complete_subcommands] )) ||
@@ -75,8 +77,10 @@ _gpaste_complete_subcommands() {
         "zero-history:Display the history with NUL as separator"
     )
 
-    _describe -t commands 'gpaste subcommand' subcommands
-    _gpaste_complete_arguments "base"
+    _describe -t commands 'gpaste subcommand' subcommands && return 0
+    _gpaste_complete_arguments "base" && return 0
+
+    return 1
 }
 
 _gpaste() {
@@ -85,10 +89,12 @@ _gpaste() {
         curcontext="${curcontext%:*:*}:gpaste-${cmd}"
         (( CURRENT-- ))
         shift words
-        _gpaste_complete_arguments "${cmd}"
+        _gpaste_complete_arguments "${cmd}" && return 0
     else
-        _gpaste_complete_subcommands
+        _gpaste_complete_subcommands && return 0
     fi
+
+    return 1
 }
 
 _gpaste "${@}"
