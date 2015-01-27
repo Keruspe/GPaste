@@ -1,30 +1,42 @@
 #compdef gpaste
 
-(( $+functions[_gpaste_base_arguments] )) ||
-_gpaste_base_arguments() {
-    _arguments -s : \
-        '(-h --help)'{-h,--help}'[Display the help.]' \
+( $+functions[_gpaste_complete_arguments] )) ||
+_gpaste_complete_arguments() {
+    local -a base_arguments file_arguments get_arguments history_arguments
+
+    base_arguments=(
+        '(-h --help)'{-h,--help}'[Display the help.]'
         '(-v --version)'{-v,--version}'[Display the version.]'
-}
+    )
 
-(( $+functions[_gpaste_file_arguments] )) ||
-_gpaste_file_arguments() {
-    _arguments -s : \
+    file_arguments=(
        '*:file:_files'
-}
+    )
 
-(( $+functions[_gpaste_get_arguments] )) ||
-_gpaste_get_arguments() {
-    _arguments -s : \
+    get_arguments=(
         '(-r --raw)'{-r,--raw}'[Display the raw item, not the display string.]'
-}
+    )
 
-(( $+functions[_gpaste_history_arguments] )) ||
-_gpaste_history_arguments() {
-    _arguments -s : \
+    history_arguments=(
         '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]' \
         '(-r --raw)'{-r,--raw}'[Display each item raw (without index).]' \
         '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]'
+    )
+
+    case "${1}" in
+        base)
+            _arguments -s : "${base_arguments} ${history_arguments}"
+            ;;
+        file|f)
+            _arguments -s : "${file_arguments}"
+            ;;
+        get|g)
+            _arguments -s : "${get_arguments}"
+            ;;
+        history|h)
+            _arguments -s : "${history_arguments}"
+            ;;
+    esac
 }
 
 (( $+functions[_gpaste_complete_subcommands] )) ||
@@ -60,23 +72,7 @@ _gpaste_complete_subcommands() {
     )
 
     _describe -t commands 'gpaste subcommand' subcommands
-    _gpaste_base_arguments
-#    _gpaste_history_arguments
-}
-
-(( $+functions[_gpaste_complete_arguments] )) ||
-_gpaste_complete_arguments() {
-    case "${1}" in
-        file|f)
-            _gpaste_file_arguments
-            ;;
-        get|g)
-            _gpaste_get_arguments
-            ;;
-        history|h)
-            _gpaste_history_arguments
-            ;;
-    esac
+    _gpaste_complete_arguments "base"
 }
 
 _gpaste() {
