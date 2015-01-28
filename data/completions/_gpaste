@@ -18,8 +18,8 @@ _gpaste_complete_arguments() {
     )
 
     history_arguments=(
-        '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]' \
-        '(-r --raw)'{-r,--raw}'[Display each item raw (without index).]' \
+        '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]'
+        '(-r --raw)'{-r,--raw}'[Display each item raw (without index).]'
         '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]'
     )
 
