@@ -559,8 +559,6 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 static void
 on_accelerator_activated (GPasteGnomeShellClient *client    G_GNUC_UNUSED,
                           guint32                 action,
-                          guint32                 deviceid  G_GNUC_UNUSED,
-                          guint32                 timestamp G_GNUC_UNUSED,
                           gpointer                user_data)
 {
     GPasteKeybinderPrivate *priv = user_data;

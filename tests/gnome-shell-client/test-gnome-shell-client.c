@@ -33,13 +33,11 @@ typedef struct
 static void
 on_accelerator_activated (GPasteGnomeShellClient *client G_GNUC_UNUSED,
                           guint32                 action,
-                          guint32                 deviceid,
-                          guint32                 timestamp,
                           gpointer                user_data)
 {
     Accelerator *accels = user_data;
 
-    g_print ("Recieved action %u, deviceid %u, timestamp %u, was ", action, deviceid, timestamp);
+    g_print ("Recieved action %u, was ", action);
     for (guint i = 0; i < 3; ++i)
     {
         if (accels[i].action == action)
