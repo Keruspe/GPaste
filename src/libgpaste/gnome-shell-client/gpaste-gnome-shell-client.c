@@ -48,9 +48,8 @@
                 "<arg type='b' direction='out' name='success' />"                                          \
             "</method>"                                                                                    \
             "<signal name='" G_PASTE_GNOME_SHELL_SIG_ACCELERATOR_ACTIVATED "'>"                            \
-                "<arg name='action'    type='u' />"                                                        \
-                "<arg name='deviceid'  type='u' />"                                                        \
-                "<arg name='timestamp' type='u' />"                                                        \
+                "<arg name='action'     type='u' />"                                                       \
+                "<arg name='parameters' type='a{sv}' />"                                                   \
             "</signal>"                                                                                    \
         "</interface>"                                                                                     \
     "</node>"
@@ -338,15 +337,12 @@ g_paste_gnome_shell_client_g_signal (GDBusProxy  *proxy,
     {
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *action    = g_variant_iter_next_value (&params_iter);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *deviceid  = g_variant_iter_next_value (&params_iter);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *timestamp = g_variant_iter_next_value (&params_iter);
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *action = g_variant_iter_next_value (&params_iter);
+        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *params = g_variant_iter_next_value (&params_iter);
         g_signal_emit (self,
                        signals[ACCELERATOR_ACTIVATED],
                        0, /* detail */
                        g_variant_get_uint32 (action),
-                       g_variant_get_uint32 (deviceid),
-                       g_variant_get_uint32 (timestamp),
                        NULL);
     }
 }
@@ -364,9 +360,7 @@ g_paste_gnome_shell_client_class_init (GPasteGnomeShellClientClass *klass G_GNUC
                                                    NULL, /* accumulator data */
                                                    g_cclosure_marshal_generic,
                                                    G_TYPE_NONE,
-                                                   3,
-                                                   G_TYPE_UINT,
-                                                   G_TYPE_UINT,
+                                                   1,
                                                    G_TYPE_UINT);
 }
 
