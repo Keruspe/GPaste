@@ -178,13 +178,7 @@ show_history (GPasteClient *client,
     }
 }
 
-static gboolean
-is_help (const gchar *option)
-{
-    return !g_strcmp0 (option, "help");
-}
-
-static gboolean
+static inline gboolean
 is_version (const gchar *option)
 {
     return (!g_strcmp0 (option, "v") ||
@@ -282,7 +276,7 @@ main (gint argc, gchar *argv[])
     argv += optind;
     argc -= optind;
 
-    if (help || (argc > 0 && is_help (argv[0])))
+    if (help || (argc > 0 && !g_strcmp0 (argv[0], "help")))
     {
         show_help ();
         return EXIT_SUCCESS;
