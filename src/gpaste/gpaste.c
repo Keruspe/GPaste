@@ -27,6 +27,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static inline gboolean
+has_applet(void)
+{
+    return g_file_test (PKGLIBEXECDIR "/gpaste-applet", G_FILE_TEST_IS_EXECUTABLE);
+}
+
+static inline gboolean
+has_unity(void)
+{
+    return g_file_test (PKGLIBEXECDIR "/gpaste-app-indicator", G_FILE_TEST_IS_EXECUTABLE);
+}
+
 static void
 show_help (void)
 {
@@ -53,8 +65,6 @@ show_help (void)
     printf ("  %s rename-password <%s> <%s>: %s\n", progname, _("old name"), _("new name"), _("rename the password"));
     /* Translators: help for gpaste get <number> */
     printf ("  %s get <%s>: %s\n", progname, _("number"), _("get the <number>th item from the history"));
-    /* Translators: help for gpaste get-raw <number> */
-    printf ("  %s get-raw <%s>: %s\n", progname, _("number"), _("get the <number>th item from the history (raw)"));
     /* Translators: help for gpaste select <number> */
     printf ("  %s select <%s>: %s\n", progname, _("number"), _("set the <number>th item from the history to the clipboard"));
     /* Translators: help for gpaste set-password <number> <name> */
@@ -79,14 +89,16 @@ show_help (void)
     printf ("  %s daemon-reexec: %s\n", progname, _("reexecute the daemon (after upgrading...)"));
     /* Translators: help for gpaste settings */
     printf ("  %s settings: %s\n", progname, _("launch the configuration tool"));
-#if G_PASTE_CONFIG_ENABLE_APPLET
-    /* Translators: help for gpaste applet */
-    printf ("  %s applet: %s\n", progname, _("launch the applet"));
-#endif
-#if G_PASTE_CONFIG_ENABLE_UNITY
-    /* Translators: help for gpaste app-indicator */
-    printf ("  %s app-indicator: %s\n", progname, _("launch the unity application indicator"));
-#endif
+    if (has_applet ())
+    {
+        /* Translators: help for gpaste applet */
+        printf ("  %s applet: %s\n", progname, _("launch the applet"));
+    }
+    if (has_unity ())
+    {
+        /* Translators: help for gpaste app-indicator */
+        printf ("  %s app-indicator: %s\n", progname, _("launch the unity application indicator"));
+    }
     /* Translators: help for gpaste show-history */
     printf ("  %s show-history: %s\n", progname, _("make the applet or extension display the history"));
     /* Translators: help for gpaste version */
@@ -370,18 +382,14 @@ main (gint argc, gchar *argv[])
             {
                 g_paste_client_track_sync (client, FALSE, &error);
             }
-#if G_PASTE_CONFIG_ENABLE_APPLET
-            else if (!g_strcmp0 (arg1, "applet"))
+            else if (has_applet () && !g_strcmp0 (arg1, "applet"))
             {
                 status = spawn ("Applet", &error);
             }
-#endif
-#if G_PASTE_CONFIG_ENABLE_UNITY
-            else if (!g_strcmp0 (arg1, "app-indicator"))
+            else if (has_unity () && !g_strcmp0 (arg1, "app-indicator"))
             {
                 status = spawn ("AppIndicator", &error);
             }
-#endif
             else
             {
                 show_help ();
@@ -431,11 +439,6 @@ main (gint argc, gchar *argv[])
                     printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
                 else
                     printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
-            }
-            else if (!g_strcmp0 (arg1, "gr") ||
-                     !g_strcmp0 (arg1, "get-raw"))
-            {
-                printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
             }
             else if (!g_strcmp0 (arg1, "search"))
             {
