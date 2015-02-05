@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@ gboolean     g_paste_settings_get_synchronize_clipboards     (const GPasteSettin
 gboolean     g_paste_settings_get_track_changes              (const GPasteSettings *self);
 gboolean     g_paste_settings_get_track_extension_state      (const GPasteSettings *self);
 gboolean     g_paste_settings_get_trim_items                 (const GPasteSettings *self);
+const gchar *g_paste_settings_get_upload                     (const GPasteSettings *self);
 
 void g_paste_settings_reset_element_size               (GPasteSettings *self);
 void g_paste_settings_reset_growing_lines              (GPasteSettings *self);
@@ -80,6 +81,7 @@ void g_paste_settings_reset_synchronize_clipboards     (GPasteSettings *self);
 void g_paste_settings_reset_track_changes              (GPasteSettings *self);
 void g_paste_settings_reset_track_extension_state      (GPasteSettings *self);
 void g_paste_settings_reset_trim_items                 (GPasteSettings *self);
+void g_paste_settings_reset_upload                     (GPasteSettings *self);
 
 void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint32         value);
@@ -121,6 +123,8 @@ void g_paste_settings_set_track_extension_state      (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_trim_items                 (GPasteSettings *self,
                                                       gboolean        value);
+void g_paste_settings_set_upload                     (GPasteSettings *self,
+                                                      const gchar    *value);
 
 #if G_PASTE_CONFIG_ENABLE_EXTENSION
 gboolean g_paste_settings_get_extension_enabled (const GPasteSettings *self);

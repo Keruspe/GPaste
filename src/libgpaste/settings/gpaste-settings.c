@@ -46,6 +46,7 @@ struct _GPasteSettingsPrivate
     gboolean   track_changes;
     gboolean   track_extension_state;
     gboolean   trim_items;
+    gchar     *upload;
 
     gboolean   extension_enabled;
 
@@ -664,6 +665,33 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  */
 BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
 
+/**
+ * g_paste_settings_get_upload:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "upload" setting
+ *
+ * Returns: the value of the "upload" setting
+ */
+/**
+ * g_paste_settings_reset_upload:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "upload" setting
+ *
+ * Returns:
+ */
+/**
+ * g_paste_settings_set_upload:
+ * @self: a #GPasteSettings instance
+ * @value: the new keyboard shortcut
+ *
+ * Change the "upload" setting
+ *
+ * Returns:
+ */
+STRING_SETTING (upload, UPLOAD)
+
 #if G_PASTE_CONFIG_ENABLE_EXTENSION
 #define EXTENSION_NAME "GPaste@gnome-shell-extensions.gnome.org"
 /**
@@ -848,6 +876,11 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
         g_paste_settings_private_set_trim_items_from_dconf (priv);
+    else if (!g_strcmp0 (key, G_PASTE_UPLOAD_SETTING))
+    {
+        g_paste_settings_private_set_upload_from_dconf (priv);
+        g_paste_settings_rebind (self, G_PASTE_UPLOAD_SETTING);
+    }
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -893,6 +926,7 @@ g_paste_settings_finalize (GObject *object)
     g_free (priv->show_history);
     g_free (priv->sync_clipboard_to_primary);
     g_free (priv->sync_primary_to_clipboard);
+    g_free (priv->upload);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->finalize (object);
 }
@@ -922,6 +956,7 @@ g_paste_settings_init (GPasteSettings *self)
     priv->show_history = NULL;
     priv->sync_clipboard_to_primary = NULL;
     priv->sync_primary_to_clipboard = NULL;
+    priv->upload = NULL;
 
     g_paste_settings_private_set_element_size_from_dconf (priv);
     g_paste_settings_private_set_growing_lines_from_dconf (priv);
@@ -943,6 +978,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_track_changes_from_dconf (priv);
     g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     g_paste_settings_private_set_trim_items_from_dconf (priv);
+    g_paste_settings_private_set_upload_from_dconf (priv);
 
     priv->changed_signal = g_signal_connect (settings,
                                              "changed",

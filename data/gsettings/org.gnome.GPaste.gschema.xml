@@ -98,6 +98,15 @@
       </description>
     </key>
 
+    <key name="upload" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;U'</default>
+      <summary>The keyboard shortcut to upload the first element in history to a pastebin service</summary>
+      <description>
+        By default, hitting ctrl + alt + u does that ("&lt;Ctrl&gt;&lt;Alt&gt;U").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
     <key name="primary-to-history" type="b">
       <default>false</default>
       <summary>Does the primary selection affects history?</summary>

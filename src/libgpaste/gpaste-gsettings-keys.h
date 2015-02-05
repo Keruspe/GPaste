@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2012-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2012-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ G_BEGIN_DECLS
 #define G_PASTE_TRACK_CHANGES_SETTING              "track-changes"
 #define G_PASTE_TRACK_EXTENSION_STATE_SETTING      "track-extension-state"
 #define G_PASTE_TRIM_ITEMS_SETTING                 "trim-items"
+#define G_PASTE_UPLOAD_SETTING                     "upload"
 
 #define G_PASTE_EXTENSION_ENABLED_SETTING          "extension-enabled"
 #define G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING   "enabled-extensions"
