@@ -102,7 +102,7 @@ show_help (void)
     /* Translators: help for gpaste show-history */
     printf ("  %s show-history: %s\n", progname, _("make the applet or extension display the history"));
     /* Translators: help for gpaste upload */
-    printf ("  %s upload <%s>: %s\n", progname, _("number"), _("upload the <number>th to a pastebin service"));
+    printf ("  %s upload <%s>: %s\n", progname, _("number"), _("upload the <number>th item to a pastebin service"));
     /* Translators: help for gpaste version */
     printf ("  %s version: %s\n", progname, _("display the version"));
     /* Translators: help for gpaste daemon-version */

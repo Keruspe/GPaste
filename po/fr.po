@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-01-17 10:46+0100\n"
+"POT-Creation-Date: 2015-02-05 17:59+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -78,160 +78,165 @@ msgstr "Mot de passe"
 msgid "[Files] "
 msgstr "[Fichiers] "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:126
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:127
 msgid "Track clipboard changes"
 msgstr "Suivre les changements du presse-papier"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:133
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:134
 msgid "Enable the gnome-shell extension"
 msgstr "Activer l'extension gnome-shell"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:139
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:140
 msgid "Sync the daemon state with the extension's one"
 msgstr "Synchroniser l'état du démon avec celui de l'extension"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:147
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:148
 msgid "Primary selection affects history"
 msgstr "La sélection primaire affecte l'historique"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:153
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:154
 msgid "Synchronize clipboard with primary selection"
 msgstr "Synchroniser le presse-papier avec la sélection primaire"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:160
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:161
 msgid "Images support"
 msgstr "Support des images"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:166
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:167
 msgid "Trim items"
 msgstr "Tronquer les éléments (éliminer les espaces au début et à la fin)"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:172
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:173
 msgid "Detect growing lines"
 msgstr "Détecter les lignes grandissantes"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:179
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:180
 msgid "Save history"
 msgstr "Sauvegarder l'historique"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:202
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:203
 msgid "Max element size when displaying: "
 msgstr "Taille maximale d'un élément quand on l'affiche : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:209
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:210
 msgid "Max displayed history size: "
 msgstr "Taille maximale de l'historique affiché : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:216
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:217
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:223
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:224
 msgid "Max memory usage (MB): "
 msgstr "Utilisation mémoire maximale (MO): "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:230
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:231
 msgid "Max text item length: "
 msgstr "Taille maximale d'un élément textuel"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:237
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:238
 msgid "Min text item length: "
 msgstr "Taille minimale d'un élément textuel"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:261
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:263
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
 msgid "Delete the active item from history: "
 msgstr "Supprimer l'élément actif de l'historique : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:268
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:270
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
 msgid "Mark the active item as being a password: "
 msgstr "Marquer l'élément actif comme étant un mot de passe : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:275
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:277
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
 msgid "Display the history: "
 msgstr "Afficher l'historique : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:282
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:284
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
 msgid "Sync the clipboard to the primary selection: "
 msgstr "Synchroniser le presse-papier avec la sélection primaire: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:289
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:291
 #: ../data/control-center/42-gpaste.xml.in.in.h:5
 msgid "Sync the primary selection to the clipboard: "
 msgstr "Synchroniser la sélection primaire avec le presse-papier: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: ../src/gpaste/gpaste.c:175
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:298
+#: ../data/control-center/42-gpaste.xml.in.in.h:6
+msgid "Upload the active item to a pastebin service: "
+msgstr "Téléverser l'élément actif vers un sevice type pastebin : "
+
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
+#: ../src/gpaste/gpaste.c:185
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:379
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:388
 msgid "Backup history as: "
 msgstr "Copier l'historique en tant que : "
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:384
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:393
 msgid "Backup"
 msgstr "Copier"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:391
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:400
 msgid "Ok"
 msgstr "Ok"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:413
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:422
 msgid "General behaviour"
 msgstr "Comportement général"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:414
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:423
 msgid "History settings"
 msgstr "Préférences de l'historique"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:415
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:424
 msgid "Keyboard shortcuts"
 msgstr "Raccourcis clavier"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:416
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:425
 msgid "Histories"
 msgstr "Historiques"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:532
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:543
 msgid "Switch to"
 msgstr "Passer à"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:537
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:548
 msgid "Delete"
 msgstr "Supprimer"
 
-#: ../src/daemon/gpaste-daemon.c:47
+#: ../src/daemon/gpaste-daemon.c:48
 #, c-format
 msgid "Signal %d received, exiting\n"
 msgstr "Signal %d reçu, arrêt.\n"
 
-#: ../src/daemon/gpaste-daemon.c:57
+#: ../src/daemon/gpaste-daemon.c:58
 msgid "Could not acquire DBus name."
 msgstr "Impossible d'acquérir le nom DBus."
 
-#: ../src/daemon/gpaste-daemon.c:125
+#: ../src/daemon/gpaste-daemon.c:127
 msgid "Could not register DBus service."
 msgstr "Impossible d'inscrire le service DBus au registre."
 
-#: ../src/gpaste/gpaste.c:35
+#: ../src/gpaste/gpaste.c:47
 #, c-format
 msgid "Usage:\n"
 msgstr "Mode d'emploi :\n"
 
 #. Translators: help for gpaste history
-#: ../src/gpaste/gpaste.c:37
+#: ../src/gpaste/gpaste.c:49
 msgid "print the history with indexes"
 msgstr "affiche l'historique avec les indices"
 
 #. Translators: help for gpaste history-size
-#: ../src/gpaste/gpaste.c:39
+#: ../src/gpaste/gpaste.c:51
 msgid "print the size of the history"
 msgstr "affiche la taille de l'historique"
 
@@ -240,237 +245,224 @@ msgstr "affiche la taille de l'historique"
 #. Translators: help for gpaste delete-history <name>
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste delete-passworf <name>
-#: ../src/gpaste/gpaste.c:41 ../src/gpaste/gpaste.c:43
-#: ../src/gpaste/gpaste.c:45 ../src/gpaste/gpaste.c:57
-#: ../src/gpaste/gpaste.c:67 ../src/gpaste/gpaste.c:71
+#: ../src/gpaste/gpaste.c:53 ../src/gpaste/gpaste.c:55
+#: ../src/gpaste/gpaste.c:57 ../src/gpaste/gpaste.c:63
+#: ../src/gpaste/gpaste.c:71 ../src/gpaste/gpaste.c:75
 msgid "name"
 msgstr "nom"
 
-#: ../src/gpaste/gpaste.c:41
+#: ../src/gpaste/gpaste.c:53
 msgid "backup current history"
 msgstr "sauvegarde l'historique actuel"
 
-#: ../src/gpaste/gpaste.c:43
+#: ../src/gpaste/gpaste.c:55
 msgid "switch to another history"
 msgstr "passer à un autre historique"
 
-#: ../src/gpaste/gpaste.c:45
+#: ../src/gpaste/gpaste.c:57
 msgid "delete a history"
 msgstr "supprime un historique"
 
 #. Translators: help for gpaste list-histories
-#: ../src/gpaste/gpaste.c:47
+#: ../src/gpaste/gpaste.c:59
 msgid "list available histories"
 msgstr "liste les historiques disponibles"
 
-#. Translators: help for gpaste oneline-history
-#: ../src/gpaste/gpaste.c:49
-msgid "print the history without newlines"
-msgstr "affiche l'historique sans retours à la ligne"
-
-#. Translators: help for gpaste raw-history
-#: ../src/gpaste/gpaste.c:51
-msgid "print the history (raw) without indexes"
-msgstr "affiche l'historique (brut) sans les indices"
-
-#. Translators: help for gpaste zero-history
-#: ../src/gpaste/gpaste.c:53
-msgid "print the history with NUL as separator"
-msgstr "affiche l'historique avec NUL comme séparateur"
-
 #. Translators: help for gpaste add <text>
-#: ../src/gpaste/gpaste.c:55
+#: ../src/gpaste/gpaste.c:61
 msgid "text"
 msgstr "texte"
 
-#: ../src/gpaste/gpaste.c:55
+#: ../src/gpaste/gpaste.c:61
 msgid "set text to clipboard"
 msgstr "met le texte dans le presse-papier"
 
-#: ../src/gpaste/gpaste.c:57
+#: ../src/gpaste/gpaste.c:63
 msgid "password"
 msgstr "mot de passe"
 
-#: ../src/gpaste/gpaste.c:57
+#: ../src/gpaste/gpaste.c:63
 msgid "add the name - password couple to the clipboard"
 msgstr "ajouter le couple nom - mot de passe au presse-papier"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: ../src/gpaste/gpaste.c:59
+#: ../src/gpaste/gpaste.c:65
 msgid "old name"
 msgstr "ancien nom"
 
-#: ../src/gpaste/gpaste.c:59
+#: ../src/gpaste/gpaste.c:65
 msgid "new name"
 msgstr "nouveau nom"
 
-#: ../src/gpaste/gpaste.c:59
+#: ../src/gpaste/gpaste.c:65
 msgid "rename the password"
 msgstr "renommer le mot de passe"
 
 #. Translators: help for gpaste get <number>
-#. Translators: help for gpaste get-raw <number>
 #. Translators: help for gpaste select <number>
 #. Translators: help for gpaste set-password <number> <name>
 #. Translators: help for gpaste delete <number>
-#: ../src/gpaste/gpaste.c:61 ../src/gpaste/gpaste.c:63
-#: ../src/gpaste/gpaste.c:65 ../src/gpaste/gpaste.c:67
-#: ../src/gpaste/gpaste.c:69
+#. Translators: help for gpaste upload
+#: ../src/gpaste/gpaste.c:67 ../src/gpaste/gpaste.c:69
+#: ../src/gpaste/gpaste.c:71 ../src/gpaste/gpaste.c:73
+#: ../src/gpaste/gpaste.c:105
 msgid "number"
 msgstr "nombre"
 
-#: ../src/gpaste/gpaste.c:61
+#: ../src/gpaste/gpaste.c:67
 msgid "get the <number>th item from the history"
 msgstr "renvoie le <nombre>e élément de l'historique"
 
-#: ../src/gpaste/gpaste.c:63
-msgid "get the <number>th item from the history (raw)"
-msgstr "renvoie le <nombre>e élément de l'historique (brut)"
-
-#: ../src/gpaste/gpaste.c:65
+#: ../src/gpaste/gpaste.c:69
 msgid "set the <number>th item from the history to the clipboard"
 msgstr "met le <nombre>e élément de l'historique dans le presse-papier"
 
-#: ../src/gpaste/gpaste.c:67
+#: ../src/gpaste/gpaste.c:71
 msgid "set the <number>th item from the history as a password named <name>"
 msgstr ""
 "marque le <nombre>e élément de l'historique comme étant un mot de passe "
 "nommé <nom>"
 
-#: ../src/gpaste/gpaste.c:69
+#: ../src/gpaste/gpaste.c:73
 msgid "delete <number>th item of the history"
 msgstr "supprime le <nombre>e élément de l'historique"
 
-#: ../src/gpaste/gpaste.c:71
+#: ../src/gpaste/gpaste.c:75
 msgid "delete the password <name> from the history"
 msgstr "supprime le mot de passe nommé <nom> de l'historique"
 
 #. Translators: help for gpaste file <path>
-#: ../src/gpaste/gpaste.c:73
+#: ../src/gpaste/gpaste.c:77
 msgid "path"
 msgstr "chemin"
 
-#: ../src/gpaste/gpaste.c:73
+#: ../src/gpaste/gpaste.c:77
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "place le contenu du fichier situé à ce chemin dans le presse-papier"
 
 #. Translators: help for whatever | gpaste
-#: ../src/gpaste/gpaste.c:75
+#: ../src/gpaste/gpaste.c:79
 msgid "whatever"
 msgstr "quelquechose"
 
-#: ../src/gpaste/gpaste.c:75
+#: ../src/gpaste/gpaste.c:79
 msgid "set the output of whatever to clipboard"
 msgstr "met la sortie de quelquechose dans le presse-papier"
 
 #. Translators: help for gpaste empty
-#: ../src/gpaste/gpaste.c:77
+#: ../src/gpaste/gpaste.c:81
 msgid "empty the history"
 msgstr "vide l'historique"
 
 #. Translators: help for gpaste start
-#: ../src/gpaste/gpaste.c:79
+#: ../src/gpaste/gpaste.c:83
 msgid "start tracking clipboard changes"
 msgstr "suivre les changements du presse-papier"
 
 #. Translators: help for gpaste stop
-#: ../src/gpaste/gpaste.c:81
+#: ../src/gpaste/gpaste.c:85
 msgid "stop tracking clipboard changes"
 msgstr "arrêter de suivre les changements du presse-papier"
 
 #. Translators: help for gpaste quit
-#: ../src/gpaste/gpaste.c:83
+#: ../src/gpaste/gpaste.c:87
 msgid "alias for stop"
 msgstr "alias pour stop"
 
 #. Translators: help for gpaste daemon-reexec
-#: ../src/gpaste/gpaste.c:85
+#: ../src/gpaste/gpaste.c:89
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "reexecuter le démon (après une mise à jour...)"
 
 #. Translators: help for gpaste settings
-#: ../src/gpaste/gpaste.c:87
+#: ../src/gpaste/gpaste.c:91
 msgid "launch the configuration tool"
 msgstr "lance l'outil de configuration"
 
 #. Translators: help for gpaste applet
-#: ../src/gpaste/gpaste.c:90
+#: ../src/gpaste/gpaste.c:95
 msgid "launch the applet"
 msgstr "lance l'applet GPaste"
 
 #. Translators: help for gpaste app-indicator
-#: ../src/gpaste/gpaste.c:94
+#: ../src/gpaste/gpaste.c:100
 msgid "launch the unity application indicator"
 msgstr "lance l'indicateur d'application pour unity"
 
 #. Translators: help for gpaste show-history
-#: ../src/gpaste/gpaste.c:97
+#: ../src/gpaste/gpaste.c:103
 msgid "make the applet or extension display the history"
 msgstr "forcer l'applet ou l'extension à afficher l'historique"
 
+#: ../src/gpaste/gpaste.c:105
+msgid "upload the <number>th item to a pastebin service"
+msgstr ""
+"téléverser le <nombre>e élément de l'historique vers un service de type "
+"pastebin"
+
 #. Translators: help for gpaste version
-#: ../src/gpaste/gpaste.c:99
+#: ../src/gpaste/gpaste.c:107
 msgid "display the version"
 msgstr "affiche la version"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:101
+#: ../src/gpaste/gpaste.c:109
 msgid "display the daemon version"
 msgstr "affiche la version du démon"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:103
+#: ../src/gpaste/gpaste.c:111
 msgid "display this help"
 msgstr "affiche cette aide"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:105
+#: ../src/gpaste/gpaste.c:113
 msgid "display the about dialog"
 msgstr "affiche le dialogue d'à propos"
 
-#: ../src/gpaste/gpaste.c:108
+#: ../src/gpaste/gpaste.c:116
 #, c-format
 msgid "Display options:"
 msgstr "Options d'affichage : "
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:111
+#: ../src/gpaste/gpaste.c:119
 msgid "display each item on only one line"
 msgstr "affiche chaque élément sur seulement une ligne"
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:113
+#: ../src/gpaste/gpaste.c:121
 msgid "display each item raw (without line numbers)"
 msgstr "affiche chaque élément brut (sans numéro de ligne)"
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:115
+#: ../src/gpaste/gpaste.c:123
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
 "utilise un caractère NUL au lieu des sauts de ligne entre chaque élément"
 
-#: ../src/gpaste/gpaste.c:203
+#: ../src/gpaste/gpaste.c:213
 msgid "Couldn't spawn"
 msgstr "Impossible de lancer"
 
-#: ../src/gpaste/gpaste.c:312
+#: ../src/gpaste/gpaste.c:322
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Démon redémarré avec succès\n"
 
-#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:1
+#: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
 msgid "GPaste Applet"
 msgstr "Applet GPaste"
 
-#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:2
+#: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:2
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:2
 msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
 
-#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:3
-#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
-#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:3
+#: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
+#: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
+#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:3
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -478,7 +470,7 @@ msgstr ""
 "GPaste est un outil de gestion du presse-papier qui vous permet de suivre et "
 "de manipuler votre historique de presse-papier de façon très configurable."
 
-#: ../data/appdata/org.gnome.GPaste.Applet.appdata.xml.in.h:4
+#: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with an applet, in the form of a status icon which will "
 "give you access to your history in your tray area."
@@ -486,17 +478,17 @@ msgstr ""
 "GPaste vous fournit un applet, sous la force d'une icon de status qui vous "
 "donnera accès à votre historique dans votre zone de notifications."
 
-#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
+#: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:1
 msgid "GPaste AppIndicator"
 msgstr "Indicateur d'application GPaste"
 
-#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
+#: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:2
 #: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:2
 msgid "Unity application indicator to manage GPaste"
 msgstr "Indicateur d'application pour unity pour gérer GPaste"
 
-#: ../data/appdata/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:4
+#: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with an application indicator for unity which will give "
 "you access to your history in your indicator area."
@@ -504,15 +496,15 @@ msgstr ""
 "GPaste vous fournit un indicateur d'appliation pour unity qui voud donnera "
 "accès à votre historique dans votre zone d'indicateurs."
 
-#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:1
+#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
 msgid "GPaste Settings"
 msgstr "Préférences du démon GPaste"
 
-#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:2
+#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:2
 msgid "Manage GPaste settings"
 msgstr "Gérer les préférences du démon GPaste"
 
-#: ../data/appdata/org.gnome.GPaste.Settings.appdata.xml.in.h:4
+#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:4
 msgid ""
 "GPaste provides you with a settings utility allowing you to customize its "
 "behaviour as expected."
@@ -652,26 +644,42 @@ msgstr ""
 "\"). Une chaîne vide désactive cette fonctionnalité."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:23
+msgid ""
+"The keyboard shortcut to upload the first element in history to a pastebin "
+"service"
+msgstr ""
+"Le raccourcis clavier pour téléverser le premier élément de l'historique "
+"vers un service de type pastebin"
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:24
+msgid ""
+"By default, hitting ctrl + alt + u does that (\"&lt;Ctrl&gt;&lt;Alt&gt;U\"). "
+"An empty string here disables this functionnality."
+msgstr ""
+"Par défaut, appuyer sur ctrl + alt + u le fait (\"&lt;Ctrl&gt;&lt;Alt&gt;U"
+"\"). Une chaîne vide désactive cette fonctionnalité."
+
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:25
 msgid "Does the primary selection affects history?"
 msgstr "La selection primaire doit-elle affecter l'historique?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:24
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Par défaut, seulement le presse-papier (ctrl+c) affecte l'historique."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:25
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
 msgid "Do we save the history from one session to another?"
 msgstr "Sauvegarde-t-on l'historique d'une session à l'autre ?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:26
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:28
 msgid "By default, we're saving it"
 msgstr "Par défaut, on le sauvegarde."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:27
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
 msgid "The keyboard shortcut to display the menu"
 msgstr "Le raccourcis clavier pour afficher l'historique"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:28
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:30
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). An empty string here disables this functionnality."
@@ -679,13 +687,13 @@ msgstr ""
 "Par défaut, appuyer sur ctrl + alt + h affiche le menu (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Une chaîne vide désactive cette fonctionnalité."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:29
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:31
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 "Le raccourcis clavier pour synchroniser le presse-papier avec la sélection "
 "primaire"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:30
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:32
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
@@ -693,13 +701,13 @@ msgstr ""
 "Par défaut, appuyer sur ctrl + alt + o les synchronise (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;O\"). Une chaîne vide désactive cette fonctionnalité."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:31
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:33
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
 "Le raccourcis clavier pour synchroniser la sélection primaire avec le presse-"
 "papier"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:32
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:34
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"&lt;Ctrl&gt;&lt;Alt&gt;P"
 "\"). An empty string here disables this functionnality."
@@ -707,25 +715,25 @@ msgstr ""
 "Par défaut, appuyer sur ctrl + alt + p les synchronise (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;P\"). Une chaîne vide désactive cette fonctionnalité."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:33
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:35
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr ""
 "La sélection primaire et le presse-papier doivent-ils être synchronisés?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:34
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:36
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Par défaut, la sélection primaire et le presse-papier sont indépendents."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:35
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:37
 msgid "Do we track the clipboard changes?"
 msgstr "Suit-on les changements du presse-papier?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:36
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:38
 msgid "By default, we're tracking those changes."
 msgstr "Par défaut, on suit ces changements."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:37
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:39
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -733,16 +741,16 @@ msgstr ""
 "Doit-on synchroniser l'état du démon avec celui de l'extension gnome-shell ? "
 "(le désactiver quand on la désactive)"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:38
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:40
 msgid "By default, the daemon state keeps unchanged"
 msgstr "Par défaut, l'état du démon reste inchangé."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:39
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:41
 msgid "Do we trim the textual items before adding them to history?"
 msgstr ""
 "Doit-on tronquer les éléments textuels avant de les ajouter à l'historique ?"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:40
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:42
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
