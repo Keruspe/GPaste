@@ -133,6 +133,18 @@ strip_newline (gchar *str)
 }
 
 static void
+print_history_line (gchar   *line,
+                    guint32  index,
+                    gboolean oneline,
+                    gboolean raw,
+                    gboolean zero)
+{
+    if (!raw)
+        printf ("%d: ", index);
+    printf ("%s%c", (oneline) ? strip_newline (line) : line, (zero) ? '\0' : '\n');
+}
+
+static void
 show_history (GPasteClient *client,
               gboolean      oneline,
               gboolean      raw,
@@ -145,14 +157,10 @@ show_history (GPasteClient *client,
 
     if (!*error)
     {
-        unsigned int i = 0;
+        guint32 i = 0;
 
         for (GStrv h = history; *h; ++h)
-        {
-            if (!raw)
-                printf ("%d: ", i++);
-            printf ("%s%c", (oneline) ? strip_newline (*h) : *h, (zero) ? '\0' : '\n');
-        }
+            print_history_line (*h, i++, oneline, raw, zero);
     }
 }
 
@@ -462,9 +470,12 @@ main (gint argc, gchar *argv[])
                         for (gsize i = 0; i < hits; ++i)
                         {
                             guint32 index = results[i];
-                            printf ("%u: %s\n", index, g_paste_client_get_element_sync (client, index, &error));
+                            gchar *line = g_paste_client_get_element_sync (client, index, &error);
+
                             if (error)
                                 break;
+
+                            print_history_line (line, index, oneline, raw, zero);
                         }
                     }
                 }
