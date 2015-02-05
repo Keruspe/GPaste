@@ -27,6 +27,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static inline gboolean
+has_applet(void)
+{
+    return g_file_test (PKGLIBEXECDIR "/gpaste-applet", G_FILE_TEST_IS_EXECUTABLE);
+}
+
+static inline gboolean
+has_unity(void)
+{
+    return g_file_test (PKGLIBEXECDIR "/gpaste-app-indicator", G_FILE_TEST_IS_EXECUTABLE);
+}
+
 static void
 show_help (void)
 {
@@ -85,14 +97,16 @@ show_help (void)
     printf ("  %s daemon-reexec: %s\n", progname, _("reexecute the daemon (after upgrading...)"));
     /* Translators: help for gpaste settings */
     printf ("  %s settings: %s\n", progname, _("launch the configuration tool"));
-#if G_PASTE_CONFIG_ENABLE_APPLET
-    /* Translators: help for gpaste applet */
-    printf ("  %s applet: %s\n", progname, _("launch the applet"));
-#endif
-#if G_PASTE_CONFIG_ENABLE_UNITY
-    /* Translators: help for gpaste app-indicator */
-    printf ("  %s app-indicator: %s\n", progname, _("launch the unity application indicator"));
-#endif
+    if (has_applet ())
+    {
+        /* Translators: help for gpaste applet */
+        printf ("  %s applet: %s\n", progname, _("launch the applet"));
+    }
+    if (has_unity ())
+    {
+        /* Translators: help for gpaste app-indicator */
+        printf ("  %s app-indicator: %s\n", progname, _("launch the unity application indicator"));
+    }
     /* Translators: help for gpaste show-history */
     printf ("  %s show-history: %s\n", progname, _("make the applet or extension display the history"));
     /* Translators: help for gpaste version */
@@ -391,18 +405,14 @@ main (gint argc, gchar *argv[])
             {
                 show_history (client, oneline, raw, TRUE, &error);
             }
-#if G_PASTE_CONFIG_ENABLE_APPLET
-            else if (!g_strcmp0 (arg1, "applet"))
+            else if (has_applet () && !g_strcmp0 (arg1, "applet"))
             {
                 status = spawn ("Applet", &error);
             }
-#endif
-#if G_PASTE_CONFIG_ENABLE_UNITY
-            else if (!g_strcmp0 (arg1, "app-indicator"))
+            else if (has_unity () && !g_strcmp0 (arg1, "app-indicator"))
             {
                 status = spawn ("AppIndicator", &error);
             }
-#endif
             else
             {
                 show_help ();
