@@ -101,6 +101,8 @@ show_help (void)
     }
     /* Translators: help for gpaste show-history */
     printf ("  %s show-history: %s\n", progname, _("make the applet or extension display the history"));
+    /* Translators: help for gpaste upload */
+    printf ("  %s upload <%s>: %s\n", progname, _("number"), _("upload the <number>th to a pastebin service"));
     /* Translators: help for gpaste version */
     printf ("  %s version: %s\n", progname, _("display the version"));
     /* Translators: help for gpaste daemon-version */
@@ -466,6 +468,11 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "switch-history"))
             {
                 g_paste_client_switch_history_sync (client, arg2, &error);
+            }
+            else if (!g_strcmp0 (arg1, "u") ||
+                     !g_strcmp0 (arg1, "upload"))
+            {
+                g_paste_client_upload_sync (client, _strtoull (arg2), &error);
             }
             else
             {

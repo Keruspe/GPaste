@@ -71,6 +71,7 @@ _gpaste_complete_subcommands() {
         {stop,quit,q}:"Shutdown the daemon"
         "show-history:Make the applet or extension display the history"
         {switch-history,sh}:"Switch to another history"
+        {upload,u}:"Upload item to a pastebin service"
         {version,v}:"Display the version"
         {zero-history,zh}:"Display the history with NUL as separator"
     )
