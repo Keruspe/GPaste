@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2013-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@ struct _GPasteSettingsUiStackPrivate
     GtkEntry        *show_history_entry;
     GtkEntry        *sync_clipboard_to_primary_entry;
     GtkEntry        *sync_primary_to_clipboard_entry;
+    GtkEntry        *upload_entry;
     GtkComboBoxText *targets;
     gchar         ***actions;
 
@@ -249,6 +250,7 @@ STRING_CALLBACK (pop)
 STRING_CALLBACK (show_history)
 STRING_CALLBACK (sync_clipboard_to_primary)
 STRING_CALLBACK (sync_primary_to_clipboard)
+STRING_CALLBACK (upload)
 
 static GPasteSettingsUiPanel *
 g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackPrivate *priv)
@@ -291,6 +293,13 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
                                                                                         sync_primary_to_clipboard_callback,
                                                                                         (GPasteResetCallback) g_paste_settings_reset_sync_primary_to_clipboard,
                                                                                         settings);
+    /* translators: Keyboard shortcut to upload the active item from history to a pastebin service */
+    priv->upload_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+                                                                     _("Upload the active item to a pastebin service: "),
+                                                                     g_paste_settings_get_upload (settings),
+                                                                     upload_callback,
+                                                                     (GPasteResetCallback) g_paste_settings_reset_upload,
+                                                                     settings);
 
     return panel;
 }
@@ -459,6 +468,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_entry_set_text (priv->sync_clipboard_to_primary_entry, g_paste_settings_get_sync_clipboard_to_primary (settings));
     else if (!g_strcmp0 (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
         gtk_entry_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings));
+    else if (!g_strcmp0 (key, G_PASTE_UPLOAD_SETTING))
+        gtk_entry_set_text (priv->upload_entry, g_paste_settings_get_upload (settings));
     else if (!g_strcmp0 (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_switch), g_paste_settings_get_synchronize_clipboards (settings));
     else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))

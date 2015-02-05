@@ -11,4 +11,6 @@
 
 	<KeyListEntry name="sync-primary-to-clipboard" _description="Sync the primary selection to the clipboard: "></KeyListEntry>
 
+	<KeyListEntry name="upload" _description="Upload the active item to a pastebin service: "></KeyListEntry>
+
 </KeyListEntries>
