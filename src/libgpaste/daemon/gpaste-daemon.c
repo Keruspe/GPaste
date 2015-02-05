@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -561,19 +561,37 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
         g_paste_daemon_private_do_add (priv, url, strlen (url));
 }
 
-static void
-g_paste_daemon_private_upload (GPasteDaemonPrivate *priv,
-                               GVariant            *parameters)
+/**
+ * g_paste_daemon_upload:
+ * @self: (transfer none): the #GPasteDaemon
+ * @index: the index of the item to upload
+ *
+ * Upload an item to a pastebin service
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_upload (GPasteDaemon *self,
+                       guint32       index)
 {
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, NULL, "wgetpaste", NULL);
-    const gchar *value = g_paste_history_get_value (priv->history,
-                                                    g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    const gchar *value = g_paste_history_get_value (priv->history, index);
 
     g_subprocess_communicate_utf8_async (upload,
                                          value,
                                          NULL, /* cancellable */
                                          g_paste_daemon_private_upload_finish,
                                          priv);
+}
+
+static void
+_g_paste_daemon_upload (GPasteDaemon *self,
+                        GVariant     *parameters)
+{
+    g_paste_daemon_upload(self, g_paste_daemon_get_dbus_uint32_parameter (parameters));
 }
 
 static void
@@ -639,7 +657,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))
         g_paste_daemon_track (self, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_UPLOAD))
-        g_paste_daemon_private_upload (priv, parameters);
+        _g_paste_daemon_upload (self, parameters);
 
     g_dbus_method_invocation_return_value (invocation, answer);
 }
@@ -792,7 +810,6 @@ g_paste_daemon_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
                    0, /* detail */
                    NULL);
 }
-
 
 /**
  * g_paste_daemon_own_bus_name:

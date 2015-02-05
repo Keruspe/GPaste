@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2013 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -43,6 +43,8 @@ gboolean g_paste_daemon_own_bus_name (GPasteDaemon *self,
                                       GError      **error);
 void     g_paste_daemon_show_history (GPasteDaemon *self,
                                       GError      **error);
+void     g_paste_daemon_upload       (GPasteDaemon *self,
+                                      guint32       index);
 
 GPasteDaemon *g_paste_daemon_new (GPasteHistory           *history,
                                   GPasteSettings          *settings,

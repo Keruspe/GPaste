@@ -371,6 +371,11 @@ global:
     g_paste_client_upload_finish;
     g_paste_client_upload_sync;
 
+    g_paste_daemon_upload;
+
+    g_paste_upload_keybinding_get_type;
+    g_paste_upload_keybinding_new;
+
     g_paste_history_search;
 
     g_paste_screensaver_client_get_type;
