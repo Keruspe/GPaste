@@ -109,6 +109,9 @@ void     g_paste_client_switch_history_sync             (GPasteClient *self,
 void     g_paste_client_track_sync                      (GPasteClient *self,
                                                          gboolean      state,
                                                          GError      **error);
+void     g_paste_client_upload_sync                     (GPasteClient *self,
+                                                         guint32       index,
+                                                         GError      **error);
 
 /*******************/
 /* Methods / Async */
@@ -205,6 +208,10 @@ void g_paste_client_track                      (GPasteClient       *self,
                                                 gboolean            state,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_upload                     (GPasteClient       *self,
+                                                guint32             index,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 
 /****************************/
 /* Methods / Async - Finish */
@@ -281,6 +288,9 @@ void     g_paste_client_switch_history_finish             (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_track_finish                      (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_upload_finish                     (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 

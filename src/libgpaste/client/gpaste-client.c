@@ -604,6 +604,24 @@ g_paste_client_track_sync (GPasteClient *self,
     DBUS_CALL_ONE_PARAM_NO_RETURN (TRACK, boolean, state);
 }
 
+/**
+ * g_paste_client_upload_sync:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to upload
+ * @error: a #GError
+ *
+ * Upload an item to a pastebin service
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_upload_sync (GPasteClient *self,
+                            guint32       index,
+                            GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_NO_RETURN (UPLOAD, uint32, index);
+}
+
 /*******************/
 /* Methods / Async */
 /*******************/
@@ -1126,6 +1144,27 @@ g_paste_client_track (GPasteClient *self,
     DBUS_CALL_ONE_PARAM_ASYNC (TRACK, boolean, state);
 }
 
+/**
+ * g_paste_client_upload:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to upload
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Upload an item to a pastebin service
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_upload (GPasteClient       *self,
+                       guint32             index,
+                       GAsyncReadyCallback callback,
+                       gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (UPLOAD, uint32, index);
+}
+
 /****************************/
 /* Methods / Async - Finish */
 /****************************/
@@ -1560,6 +1599,24 @@ G_PASTE_VISIBLE void
 g_paste_client_track_finish (GPasteClient *self,
                              GAsyncResult *result,
                              GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_upload_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Upload an item to a pastebin service
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_upload_finish (GPasteClient *self,
+                              GAsyncResult *result,
+                              GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }
