@@ -17,26 +17,26 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-list-box-private.h"
+#include "gpaste-ui-history-private.h"
 
-struct _GPasteUiListBoxPrivate
+struct _GPasteUiHistoryPrivate
 {
     gulong activated_id;
 };
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiListBox, g_paste_ui_list_box, GTK_TYPE_LIST_BOX)
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_BOX)
 
 static void
-on_row_activated (GtkListBox    *list_box G_GNUC_UNUSED,
+on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
                   GtkListBoxRow *row G_GNUC_UNUSED,
                   gpointer       user_data G_GNUC_UNUSED)
 {
 }
 
 static void
-g_paste_ui_list_box_dispose (GObject *object)
+g_paste_ui_history_dispose (GObject *object)
 {
-    GPasteUiListBoxPrivate *priv = g_paste_ui_list_box_get_instance_private (G_PASTE_UI_LIST_BOX (object));
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
 
     if (priv->activated_id)
     {
@@ -44,19 +44,19 @@ g_paste_ui_list_box_dispose (GObject *object)
         priv->activated_id = 0;
     }
 
-    G_OBJECT_CLASS (g_paste_ui_list_box_parent_class)->dispose (object);
+    G_OBJECT_CLASS (g_paste_ui_history_parent_class)->dispose (object);
 }
 
 static void
-g_paste_ui_list_box_class_init (GPasteUiListBoxClass *klass)
+g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_list_box_dispose;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_history_dispose;
 }
 
 static void
-g_paste_ui_list_box_init (GPasteUiListBox *self)
+g_paste_ui_history_init (GPasteUiHistory *self)
 {
-    GPasteUiListBoxPrivate *priv = g_paste_ui_list_box_get_instance_private (self);
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
     priv->activated_id = g_signal_connect (G_OBJECT (self),
                                            "row-activated",
@@ -65,15 +65,15 @@ g_paste_ui_list_box_init (GPasteUiListBox *self)
 }
 
 /**
- * g_paste_ui_list_box_new:
+ * g_paste_ui_history_new:
  *
- * Create a new instance of #GPasteUiListBox
+ * Create a new instance of #GPasteUiHistory
  *
- * Returns: a newly allocated #GPasteUiListBox
+ * Returns: a newly allocated #GPasteUiHistory
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_list_box_new (void)
+g_paste_ui_history_new (void)
 {
-    return gtk_widget_new (G_PASTE_TYPE_UI_LIST_BOX, NULL);
+    return gtk_widget_new (G_PASTE_TYPE_UI_HISTORY, NULL);
 }

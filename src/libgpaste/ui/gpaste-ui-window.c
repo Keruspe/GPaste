@@ -34,7 +34,7 @@ g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_window_init (GPasteUiWindow *self)
 {
-    GtkWidget *list_box = g_paste_ui_list_box_new ();
+    GtkWidget *list_box = g_paste_ui_history_new ();
     gtk_container_add (GTK_CONTAINER (self), list_box);
 }
 

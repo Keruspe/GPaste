@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_UI_WINDOW_H__
 #define __G_PASTE_UI_WINDOW_H__
 
-#include <gpaste-ui-list-box.h>
+#include <gpaste-ui-history.h>
 
 G_BEGIN_DECLS
 

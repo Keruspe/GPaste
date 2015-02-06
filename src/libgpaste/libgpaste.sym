@@ -387,8 +387,8 @@ global:
     g_paste_update_action_get_type;
     g_paste_update_target_get_type;
 
-    g_paste_ui_list_box_get_type;
-    g_paste_ui_list_box_new;
+    g_paste_ui_history_get_type;
+    g_paste_ui_history_new;
 
     g_paste_ui_window_get_type;
     g_paste_ui_window_new;

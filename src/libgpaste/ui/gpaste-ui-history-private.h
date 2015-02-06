@@ -17,27 +17,27 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_UI_LIST_BOX_PRIVATE_H__
-#define __G_PASTE_UI_LIST_BOX_PRIVATE_H__
+#ifndef __G_PASTE_UI_HISTORY_PRIVATE_H__
+#define __G_PASTE_UI_HISTORY_PRIVATE_H__
 
-#include <gpaste-ui-list-box.h>
+#include <gpaste-ui-history.h>
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteUiListBoxPrivate GPasteUiListBoxPrivate;
+typedef struct _GPasteUiHistoryPrivate GPasteUiHistoryPrivate;
 
-struct _GPasteUiListBox
+struct _GPasteUiHistory
 {
     GtkListBox parent_instance;
 };
 
-struct _GPasteUiListBoxClass
+struct _GPasteUiHistoryClass
 {
     GtkListBoxClass parent_class;
 };
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_LIST_BOX_PRIVATE_H__*/
+#endif /*__G_PASTE_UI_HISTORY_PRIVATE_H__*/
