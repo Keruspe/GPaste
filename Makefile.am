@@ -101,6 +101,7 @@ include bindings/vapi.mk
 include src/daemon.mk
 include src/gpaste.mk
 include src/settings.mk
+include src/ui.mk
 
 # Applets
 

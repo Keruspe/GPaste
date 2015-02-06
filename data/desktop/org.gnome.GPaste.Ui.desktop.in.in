@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+_Name=GPaste user interface
+_Comment=Manage GPaste
+_Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
+Icon=gtk-paste
+Exec=@pkglibexecdir@/gpaste-ui
+DBusActivatable=true
+Terminal=false
+Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
+StartupNotify=true
