@@ -37,7 +37,8 @@ typedef struct _GPasteUiWindowClass GPasteUiWindowClass;
 G_PASTE_VISIBLE
 GType g_paste_ui_window_get_type (void);
 
-GtkWidget *g_paste_ui_window_new (GtkApplication *app);
+GtkWidget *g_paste_ui_window_new (GtkApplication *app,
+                                  GPasteClient   *client);
 
 G_END_DECLS
 

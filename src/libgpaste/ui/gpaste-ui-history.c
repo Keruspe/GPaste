@@ -21,7 +21,9 @@
 
 struct _GPasteUiHistoryPrivate
 {
-    gulong activated_id;
+    GPasteSettings *settings;
+
+    gulong          activated_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_BOX)
@@ -37,6 +39,8 @@ static void
 g_paste_ui_history_dispose (GObject *object)
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
+
+    g_clear_object (&priv->settings);
 
     if (priv->activated_id)
     {
@@ -58,6 +62,8 @@ g_paste_ui_history_init (GPasteUiHistory *self)
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
+    priv->settings = g_paste_settings_new ();
+
     priv->activated_id = g_signal_connect (G_OBJECT (self),
                                            "row-activated",
                                            G_CALLBACK (on_row_activated),
@@ -66,6 +72,7 @@ g_paste_ui_history_init (GPasteUiHistory *self)
 
 /**
  * g_paste_ui_history_new:
+ * @client: a #GPasteClient instance
  *
  * Create a new instance of #GPasteUiHistory
  *
@@ -73,7 +80,16 @@ g_paste_ui_history_init (GPasteUiHistory *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_history_new (void)
+g_paste_ui_history_new (GPasteClient *client)
 {
-    return gtk_widget_new (G_PASTE_TYPE_UI_HISTORY, NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY, NULL);
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (self));
+    GtkContainer *lb = GTK_CONTAINER (self);
+
+    for (guint32 i = 0; i < 20 /* FIXME */; ++i)
+        gtk_container_add (lb, g_paste_ui_item_new (client, priv->settings, i));
+
+    return self;
 }

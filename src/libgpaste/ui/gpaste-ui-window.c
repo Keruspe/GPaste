@@ -32,15 +32,14 @@ g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
 }
 
 static void
-g_paste_ui_window_init (GPasteUiWindow *self)
+g_paste_ui_window_init (GPasteUiWindow *self G_GNUC_UNUSED)
 {
-    GtkWidget *list_box = g_paste_ui_history_new ();
-    gtk_container_add (GTK_CONTAINER (self), list_box);
 }
 
 /**
  * g_paste_ui_window_new:
  * @app: the #GtkApplication
+ * @client: a #GPasteClient instance
  *
  * Create a new instance of #GPasteUiWindow
  *
@@ -48,9 +47,11 @@ g_paste_ui_window_init (GPasteUiWindow *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_window_new (GtkApplication *app)
+g_paste_ui_window_new (GtkApplication *app,
+                       GPasteClient   *client)
 {
     g_return_val_if_fail (GTK_IS_APPLICATION (app), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_WINDOW,
                                       "application",     app,
@@ -59,6 +60,10 @@ g_paste_ui_window_new (GtkApplication *app)
                                       "resizable",       FALSE,
                                       NULL);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private ((GPasteUiWindow *) self);
+
     priv->app = app;
+
+    gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
+
     return self;
 }

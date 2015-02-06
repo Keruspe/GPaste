@@ -77,7 +77,7 @@ main (gint argc, gchar *argv[])
     g_menu_append (menu, "Quit", "app.quit");
     gtk_application_set_app_menu (app, G_MENU_MODEL (menu));
 
-    GtkWidget *window = g_paste_ui_window_new (app);
+    GtkWidget *window = g_paste_ui_window_new (app, client);
 
     if (!window)
         exit (EXIT_FAILURE);

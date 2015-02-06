@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_UI_HISTORY_H__
 #define __G_PASTE_UI_HISTORY_H__
 
-#include <gpaste-macros.h>
+#include <gpaste-ui-item.h>
 
 G_BEGIN_DECLS
 
@@ -37,7 +37,7 @@ typedef struct _GPasteUiHistoryClass GPasteUiHistoryClass;
 G_PASTE_VISIBLE
 GType g_paste_ui_history_get_type (void);
 
-GtkWidget *g_paste_ui_history_new (void);
+GtkWidget *g_paste_ui_history_new (GPasteClient *client);
 
 G_END_DECLS
 
