@@ -25,99 +25,18 @@ struct _GPasteUiDeletePrivate
 {
     GPasteClient *client;
     guint32       index;
-
-    GdkWindow    *event_window;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiDelete, g_paste_ui_delete, GTK_TYPE_BUTTON)
-
-static void
-g_paste_ui_delete_realize (GtkWidget *widget)
-{
-    GTK_WIDGET_CLASS (g_paste_ui_delete_parent_class)->realize (widget);
-
-    GdkWindow *window = gtk_widget_get_parent_window (widget);
-    gtk_widget_set_window (widget, window);
-    g_object_ref (window);
-
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (widget));
-
-    GtkAllocation allocation;
-    gtk_widget_get_allocation (widget, &allocation);
-
-    GdkWindowAttr attributes;
-    attributes.x = allocation.x;
-    attributes.y = allocation.y;
-    attributes.width = allocation.width;
-    attributes.height = allocation.height;
-    attributes.window_type = GDK_WINDOW_CHILD;
-    attributes.wclass = GDK_INPUT_ONLY;
-    attributes.event_mask = gtk_widget_get_events (widget) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK;
-
-    priv->event_window = gdk_window_new (gtk_widget_get_parent_window (widget),
-                                         &attributes, GDK_WA_X | GDK_WA_Y);
-    gtk_widget_register_window (widget, priv->event_window);
-}
-
-static void
-g_paste_ui_delete_unrealize (GtkWidget *widget)
-{
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (widget));
-
-    gtk_widget_unregister_window (widget, priv->event_window);
-    gdk_window_destroy (priv->event_window);
-    priv->event_window = NULL;
-
-    GTK_WIDGET_CLASS (g_paste_ui_delete_parent_class)->unrealize (widget);
-}
-
-static gboolean
-g_paste_ui_delete_show_window (gpointer win)
-{
-    gdk_window_show ((GdkWindow *) win);
-    return FALSE;
-}
-
-static void
-g_paste_ui_delete_map (GtkWidget *widget)
-{
-    GTK_WIDGET_CLASS (g_paste_ui_delete_parent_class)->map (widget);
-
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (widget));
-    /* We need to delay that until next glib's loop to override the GtkMenuItem's one */
-    g_source_set_name_by_id (g_idle_add (g_paste_ui_delete_show_window, priv->event_window), "[GPaste] delete");
-}
-
-static void
-g_paste_ui_delete_unmap (GtkWidget *widget)
-{
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (widget));
-    gdk_window_hide (priv->event_window);
-
-    GTK_WIDGET_CLASS (g_paste_ui_delete_parent_class)->unmap (widget);
-}
-
-static void
-g_paste_ui_delete_size_allocate (GtkWidget     *widget,
-                                 GtkAllocation *allocation)
-{
-    GTK_WIDGET_CLASS (g_paste_ui_delete_parent_class)->size_allocate (widget, allocation);
-
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (widget));
-    if (gtk_widget_get_realized (widget))
-    {
-        gdk_window_move_resize (priv->event_window,
-                allocation->x, allocation->y,
-                allocation->width, allocation->height);
-    }
-}
 
 static gboolean
 g_paste_ui_delete_button_press_event (GtkWidget      *widget,
                                       GdkEventButton *event G_GNUC_UNUSED)
 {
     GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private ((GPasteUiDelete *) widget);
+
     g_paste_client_delete (priv->client, priv->index, NULL, NULL);
+
     return TRUE;
 }
 
@@ -135,14 +54,7 @@ static void
 g_paste_ui_delete_class_init (GPasteUiDeleteClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_delete_dispose;
-
-    GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
-    widget_class->realize = g_paste_ui_delete_realize;
-    widget_class->unrealize = g_paste_ui_delete_unrealize;
-    widget_class->map = g_paste_ui_delete_map;
-    widget_class->unmap = g_paste_ui_delete_unmap;
-    widget_class->size_allocate = g_paste_ui_delete_size_allocate;
-    widget_class->button_press_event = g_paste_ui_delete_button_press_event;
+    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_delete_button_press_event;
 }
 
 static void
@@ -169,7 +81,9 @@ g_paste_ui_delete_new (GPasteClient *client,
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_DELETE, NULL);
     GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private ((GPasteUiDelete *) self);
+
     priv->client = g_object_ref (client);
     priv->index = index;
+
     return self;
 }
