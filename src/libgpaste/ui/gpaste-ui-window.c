@@ -19,8 +19,6 @@
 
 #include "gpaste-ui-window-private.h"
 
-#include <glib/gi18n-lib.h>
-
 struct _GPasteUiWindowPrivate
 {
     GtkApplication *app;
@@ -34,8 +32,10 @@ g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
 }
 
 static void
-g_paste_ui_window_init (GPasteUiWindow *self G_GNUC_UNUSED)
+g_paste_ui_window_init (GPasteUiWindow *self)
 {
+    GtkWidget *list_box = g_paste_ui_list_box_new ();
+    gtk_container_add (GTK_CONTAINER (self), list_box);
 }
 
 /**

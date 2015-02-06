@@ -19,8 +19,6 @@
 
 #include "gpaste-ui-list-box-private.h"
 
-#include <glib/gi18n-lib.h>
-
 struct _GPasteUiListBoxPrivate
 {
     gulong activated_id;
