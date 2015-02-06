@@ -29,12 +29,12 @@ struct _GPasteUiHistoryPrivate
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_BOX)
 
 static void
-on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
+on_row_activated (GtkListBox    *history,
                   GtkListBoxRow *row,
                   gpointer       user_data G_GNUC_UNUSED)
 {
-    /* FIXME: why is it needed? */
     gtk_widget_activate (GTK_WIDGET (row));
+    gtk_list_box_unselect_row (history, row);
 }
 
 static void
@@ -69,7 +69,7 @@ g_paste_ui_history_init (GPasteUiHistory *self)
     priv->activated_id = g_signal_connect (G_OBJECT (self),
                                            "row-activated",
                                            G_CALLBACK (on_row_activated),
-                                           self);
+                                           NULL);
 }
 
 /**
@@ -92,6 +92,8 @@ g_paste_ui_history_new (GPasteClient *client)
 
     for (guint32 i = 0; i < 20 /* FIXME */; ++i)
         gtk_container_add (lb, g_paste_ui_item_new (client, priv->settings, i));
+
+    /* FIXME: 0 is selected at startup, unselect it */
 
     return self;
 }
