@@ -1,6 +1,5 @@
 3.16:
     cleanup public headers includes
-    cleanup README
     dbus errors instead of asserts in daemon
     gpaste-ui
 
