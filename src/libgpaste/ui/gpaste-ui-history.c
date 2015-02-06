@@ -29,12 +29,12 @@ struct _GPasteUiHistoryPrivate
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_BOX)
 
 static void
-on_row_activated (GtkListBox    *history,
+on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
                   GtkListBoxRow *row,
                   gpointer       user_data G_GNUC_UNUSED)
 {
+    /* FIXME: Why is it needed? */
     gtk_widget_activate (GTK_WIDGET (row));
-    gtk_list_box_unselect_row (history, row);
 }
 
 static void

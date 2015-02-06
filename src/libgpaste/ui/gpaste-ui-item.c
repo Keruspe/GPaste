@@ -161,7 +161,7 @@ g_paste_ui_item_new (GPasteClient   *client,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ITEM, NULL);
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ITEM, "selectable", FALSE, NULL);
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private ((GPasteUiItem *) self);
 
     priv->client = g_object_ref (client);
