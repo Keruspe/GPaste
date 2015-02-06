@@ -1,10 +1,12 @@
 3.16:
+    cleanup public headers includes
+    cleanup README
     dbus errors instead of asserts in daemon
-    gpaste-editor
-    wayland support
+    gpaste-ui
 
 future:
     general:
+        wayland support
         add class methods for signals
         gpg support
         properties all the way (when GProperty stuff lands)
