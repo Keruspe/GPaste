@@ -30,9 +30,11 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_B
 
 static void
 on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
-                  GtkListBoxRow *row G_GNUC_UNUSED,
+                  GtkListBoxRow *row,
                   gpointer       user_data G_GNUC_UNUSED)
 {
+    /* FIXME: why is it needed? */
+    gtk_widget_activate (GTK_WIDGET (row));
 }
 
 static void
