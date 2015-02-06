@@ -169,6 +169,7 @@ g_paste_ui_item_new (GPasteClient   *client,
     priv->index = index;
 
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
+    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), g_paste_ui_delete_new (client, index), FALSE, TRUE, 0);
 
     priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
