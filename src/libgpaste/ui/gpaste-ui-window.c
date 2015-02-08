@@ -32,8 +32,14 @@ g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
 }
 
 static void
-g_paste_ui_window_init (GPasteUiWindow *self G_GNUC_UNUSED)
+g_paste_ui_window_init (GPasteUiWindow *self)
 {
+    GtkWidget *bar = gtk_header_bar_new ();
+    GtkHeaderBar *header_bar = GTK_HEADER_BAR (bar);
+
+    gtk_header_bar_set_title(header_bar, PACKAGE_STRING);
+    gtk_header_bar_set_show_close_button (header_bar, TRUE);
+    gtk_window_set_titlebar (GTK_WINDOW (self), bar);
 }
 
 /**
