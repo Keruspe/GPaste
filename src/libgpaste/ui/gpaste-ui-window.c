@@ -63,7 +63,7 @@ g_paste_ui_window_new (GtkApplication *app,
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_WINDOW,
                                       "application",     app,
                                       "type",            GTK_WINDOW_TOPLEVEL,
-                                      "window-position", GTK_WIN_POS_CENTER,
+                                      "window-position", GTK_WIN_POS_CENTER_ALWAYS,
                                       "resizable",       FALSE,
                                       NULL);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private ((GPasteUiWindow *) self);

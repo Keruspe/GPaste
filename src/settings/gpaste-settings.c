@@ -91,7 +91,7 @@ main (gint argc, gchar *argv[])
     GtkWidget *win = gtk_widget_new (GTK_TYPE_APPLICATION_WINDOW,
                                      "application",     app,
                                      "type",            GTK_WINDOW_TOPLEVEL,
-                                     "window-position", GTK_WIN_POS_CENTER,
+                                     "window-position", GTK_WIN_POS_CENTER_ALWAYS,
                                      "resizable",       FALSE,
                                      NULL);
     gtk_window_set_titlebar(GTK_WINDOW (win), bar);
