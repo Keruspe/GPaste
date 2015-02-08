@@ -69,6 +69,8 @@ g_paste_ui_window_new (GtkApplication *app,
 
     priv->app = app;
 
+    gtk_header_bar_pack_end (GTK_HEADER_BAR (gtk_window_get_titlebar (GTK_WINDOW (self))), gtk_menu_button_new ());
+
     gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
 
     return self;
