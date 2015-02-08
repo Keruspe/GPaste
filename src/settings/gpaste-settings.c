@@ -17,30 +17,20 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-settings-ui-widget.h>
 #include <gpaste-client.h>
+#include <gpaste-util.h>
+#include <gpaste-settings-ui-widget.h>
 
 #include <glib/gi18n.h>
 
 #include <stdlib.h>
 
 static void
-client_ready (GObject      *source_object G_GNUC_UNUSED,
-              GAsyncResult *res,
-              gpointer      user_data     G_GNUC_UNUSED)
-{
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-    G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new_finish (res, &error);
-    if (!error)
-        g_paste_client_about (client, NULL, NULL);
-}
-
-static void
 about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
-                 gpointer       user_data G_GNUC_UNUSED)
+                 gpointer       user_data)
 {
-    g_paste_client_new (client_ready, NULL);
+    g_paste_util_show_about_dialog (GTK_WINDOW (gtk_application_get_windows (GTK_APPLICATION (user_data))->data));
 }
 
 static void
@@ -48,7 +38,7 @@ quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
                 GVariant      *parameter G_GNUC_UNUSED,
                 gpointer       user_data G_GNUC_UNUSED)
 {
-    g_application_quit (user_data);
+    g_application_quit (G_APPLICATION (user_data));
 }
 
 static void

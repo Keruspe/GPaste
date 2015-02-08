@@ -66,12 +66,13 @@ g_paste_ui_window_new (GtkApplication *app,
                                       "window-position", GTK_WIN_POS_CENTER_ALWAYS,
                                       "resizable",       FALSE,
                                       NULL);
+    GtkWindow *win = GTK_WINDOW (self);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private ((GPasteUiWindow *) self);
-    GtkHeaderBar *bar = GTK_HEADER_BAR (gtk_window_get_titlebar (GTK_WINDOW (self)));
+    GtkHeaderBar *bar = GTK_HEADER_BAR (gtk_window_get_titlebar (win));
 
     priv->app = app;
 
-    gtk_header_bar_pack_end (bar, g_paste_ui_about_new (client));
+    gtk_header_bar_pack_end (bar, g_paste_ui_about_new (win));
     gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
 
     return self;

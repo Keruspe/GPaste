@@ -19,6 +19,7 @@
 
 #include "gpaste-daemon-private.h"
 
+#include <gpaste-util.h>
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-password-item.h>
 #include <gpaste-screensaver-client.h>
@@ -53,18 +54,6 @@
                   g_cclosure_marshal_VOID__VOID, \
                   G_TYPE_NONE,                   \
                   0)
-
-#define LICENSE                                                            \
-    "GPaste is free software: you can redistribute it and/or modify"       \
-    "it under the terms of the GNU General Public License as published by" \
-    "the Free Software Foundation, either version 3 of the License, or"    \
-    "(at your option) any later version.\n\n"                              \
-    "GPaste is distributed in the hope that it will be useful,"            \
-    "but WITHOUT ANY WARRANTY; without even the implied warranty of"       \
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"        \
-    "GNU General Public License for more details.\n\n"                     \
-    "You should have received a copy of the GNU General Public License"    \
-    "along with GPaste.  If not, see <http://www.gnu.org/licenses/>."
 
 enum
 {
@@ -218,28 +207,6 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
 /* DBus Mathods */
 /****************/
     
-static void
-g_paste_daemon_show_about_dialog (void)
-{
-    const gchar *_authors[] = {
-        "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
-        NULL
-    };
-    G_PASTE_CLEANUP_B_STRV_FREE GStrv authors = g_boxed_copy (G_TYPE_STRV, _authors);
-    gtk_show_about_dialog (NULL,
-                           "program-name",   PACKAGE_NAME,
-                           "version",        PACKAGE_VERSION,
-                           "logo-icon-name", "gtk-paste",
-                           "license",        LICENSE,
-                           "authors",        authors,
-                           "copyright",      "Copyright © 2010-2014 Marc-Antoine Perennou",
-                           "comments",       "Clipboard management system",
-                           "website",        "http://www.imagination-land.org/tags/GPaste.html",
-                           "website-label",  "Follow GPaste news",
-                           "wrap-license",   TRUE,
-                           NULL);
-}
-
 static void
 g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
                                const gchar         *text,
@@ -609,7 +576,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     GVariant *answer = NULL;
 
     if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ABOUT))
-        g_paste_daemon_show_about_dialog ();
+        g_paste_util_show_about_dialog (NULL);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD))
         g_paste_daemon_private_add (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_FILE))

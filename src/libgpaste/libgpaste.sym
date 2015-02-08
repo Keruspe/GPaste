@@ -405,4 +405,6 @@ global:
 
     g_paste_ui_window_get_type;
     g_paste_ui_window_new;
+
+    g_paste_util_show_about_dialog;
 } LIBGPASTE_1;

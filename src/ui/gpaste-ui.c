@@ -17,21 +17,20 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-ui-window.h>
 #include <gpaste-client.h>
+#include <gpaste-util.h>
+#include <gpaste-ui-window.h>
 
 #include <glib/gi18n.h>
 
 #include <stdlib.h>
-
-#define ACTION_DATA(index) ((gpointer *) user_data)[index]
 
 static void
 about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data)
 {
-    g_paste_client_about (G_PASTE_CLIENT (ACTION_DATA (1)), NULL, NULL);
+    g_paste_util_show_about_dialog (GTK_WINDOW (gtk_application_get_windows (GTK_APPLICATION (user_data))->data));
 }
 
 static void
@@ -39,7 +38,7 @@ quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
                 GVariant      *parameter G_GNUC_UNUSED,
                 gpointer       user_data)
 {
-    g_application_quit (G_APPLICATION (ACTION_DATA (0)));
+    g_application_quit (G_APPLICATION (user_data));
 }
 
 static void
@@ -55,7 +54,6 @@ main (gint argc, gchar *argv[])
     G_PASTE_INIT_APPLICATION_FULL ("Ui", show_win);
     G_PASTE_CLEANUP_ERROR_FREE GError *e = NULL;
     G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new_sync (&e);
-    G_PASTE_CLEANUP_FREE gpointer *action_data = g_malloc (2 * sizeof (gpointer));
 
     if (!client)
     {
@@ -63,14 +61,11 @@ main (gint argc, gchar *argv[])
         exit (EXIT_FAILURE);
     }
 
-    action_data[0] = app;
-    action_data[1] = client;
-
     GActionEntry app_entries[] = {
         { "about", about_activated, NULL, NULL, NULL, { 0 } },
         { "quit",  quit_activated,  NULL, NULL, NULL, { 0 } }
     };
-    g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), (gpointer) action_data);
+    g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
 
     GMenu *menu = g_menu_new ();
     g_menu_append (menu, "About GPaste", "app.about");

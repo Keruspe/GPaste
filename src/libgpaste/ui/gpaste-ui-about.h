@@ -20,7 +20,7 @@
 #ifndef __G_PASTE_UI_ABOUT_H__
 #define __G_PASTE_UI_ABOUT_H__
 
-#include <gpaste-client.h>
+#include <gpaste-util.h>
 
 G_BEGIN_DECLS
 
@@ -37,7 +37,7 @@ typedef struct _GPasteUiAboutClass GPasteUiAboutClass;
 G_PASTE_VISIBLE
 GType g_paste_ui_about_get_type (void);
 
-GtkWidget *g_paste_ui_about_new (GPasteClient *client);
+GtkWidget *g_paste_ui_about_new (GtkWindow *topwin);
 
 G_END_DECLS
 
