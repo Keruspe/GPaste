@@ -18,6 +18,7 @@
 nodist_dbusservices_DATA = \
 	data/dbus/org.gnome.GPaste.service \
 	data/dbus/org.gnome.GPaste.Settings.service \
+	data/dbus/org.gnome.GPaste.Ui.service \
 	$(NULL)
 
 if ENABLE_APPLET
