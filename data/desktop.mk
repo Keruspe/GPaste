@@ -27,7 +27,7 @@ all_desktop_files = \
 	$(gpaste_applet_desktop_file) \
 	$(gpaste_app_indicator_desktop_file) \
 	$(gpaste_settings_desktop_file) \
-	$(gpaste_settings_ui_file) \
+	$(gpaste_ui_desktop_file) \
 	$(NULL)
 
 nodist_autostart_DATA = \
