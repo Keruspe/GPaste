@@ -20,6 +20,7 @@
 #ifndef __G_PASTE_UI_WINDOW_H__
 #define __G_PASTE_UI_WINDOW_H__
 
+#include <gpaste-ui-about.h>
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-settings.h>
 

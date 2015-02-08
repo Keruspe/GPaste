@@ -39,6 +39,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     gtk_header_bar_set_title(header_bar, PACKAGE_STRING);
     gtk_header_bar_set_show_close_button (header_bar, TRUE);
+    gtk_header_bar_pack_end (header_bar, g_paste_ui_settings_new ());
     gtk_window_set_titlebar (GTK_WINDOW (self), bar);
 }
 
@@ -66,10 +67,11 @@ g_paste_ui_window_new (GtkApplication *app,
                                       "resizable",       FALSE,
                                       NULL);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private ((GPasteUiWindow *) self);
+    GtkHeaderBar *bar = GTK_HEADER_BAR (gtk_window_get_titlebar (GTK_WINDOW (self)));
 
     priv->app = app;
 
-    gtk_header_bar_pack_end (GTK_HEADER_BAR (gtk_window_get_titlebar (GTK_WINDOW (self))), g_paste_ui_settings_new ());
+    gtk_header_bar_pack_end (bar, g_paste_ui_about_new (client));
     gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
 
     return self;
