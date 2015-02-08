@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-05 17:59+0100\n"
+"POT-Creation-Date: 2015-02-08 18:24+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -172,7 +172,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "Eliminar el primer elemento del historial"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
-#: ../src/gpaste/gpaste.c:185
+#: ../src/ui/gpaste-ui.c:62 ../src/gpaste/gpaste.c:185
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
@@ -530,8 +530,18 @@ msgid "Manage the GPaste daemon settings"
 msgstr "Gestionar los ajustes del servicio GPaste"
 
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:3
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr ""
+
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
+msgid "GPaste user interface"
+msgstr ""
+
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
+#, fuzzy
+msgid "Manage GPaste"
+msgstr "Gestionar los ajustes del servicio GPaste"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"
