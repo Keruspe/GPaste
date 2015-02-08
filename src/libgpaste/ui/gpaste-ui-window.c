@@ -19,8 +19,6 @@
 
 #include "gpaste-ui-window-private.h"
 
-#include <gpaste-settings-ui-widget.h>
-
 struct _GPasteUiWindowPrivate
 {
     GtkApplication *app;
@@ -68,21 +66,10 @@ g_paste_ui_window_new (GtkApplication *app,
                                       "resizable",       FALSE,
                                       NULL);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private ((GPasteUiWindow *) self);
-    GtkWidget *button = gtk_menu_button_new ();
-    GtkWidget *popover = gtk_popover_new (button);
-    GtkWidget *swidget = g_paste_settings_ui_widget_new ();
-    GtkMenuButton *menu = GTK_MENU_BUTTON (button);
 
     priv->app = app;
 
-    gtk_menu_button_set_use_popover (menu, TRUE);
-    gtk_menu_button_set_popover (menu, popover);
-
-    gtk_container_add (GTK_CONTAINER (popover), swidget);
-    gtk_widget_show_all (swidget);
-
-    gtk_header_bar_pack_end (GTK_HEADER_BAR (gtk_window_get_titlebar (GTK_WINDOW (self))), button);
-
+    gtk_header_bar_pack_end (GTK_HEADER_BAR (gtk_window_get_titlebar (GTK_WINDOW (self))), g_paste_ui_settings_new ());
     gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
 
     return self;

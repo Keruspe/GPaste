@@ -21,6 +21,7 @@
 #define __G_PASTE_UI_WINDOW_H__
 
 #include <gpaste-ui-history.h>
+#include <gpaste-ui-settings.h>
 
 G_BEGIN_DECLS
 
