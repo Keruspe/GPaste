@@ -19,6 +19,8 @@
 
 #include "gpaste-ui-settings-private.h"
 
+#include <glib/gi18n-lib.h>
+
 G_DEFINE_TYPE (GPasteUiSettings, g_paste_ui_settings, GTK_TYPE_MENU_BUTTON)
 
 static void
@@ -32,6 +34,8 @@ g_paste_ui_settings_init (GPasteUiSettings *self)
     GtkMenuButton *menu = GTK_MENU_BUTTON (self);
     GtkWidget *popover = gtk_popover_new (GTK_WIDGET (self));
     GtkWidget *settings_widget = g_paste_settings_ui_widget_new ();
+
+    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("GPaste Settings"));
 
     gtk_menu_button_set_direction (menu, GTK_ARROW_NONE);
     gtk_menu_button_set_use_popover (menu, TRUE);

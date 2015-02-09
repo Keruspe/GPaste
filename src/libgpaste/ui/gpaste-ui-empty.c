@@ -62,8 +62,9 @@ g_paste_ui_empty_class_init (GPasteUiEmptyClass *klass)
 }
 
 static void
-g_paste_ui_empty_init (GPasteUiEmpty *self G_GNUC_UNUSED)
+g_paste_ui_empty_init (GPasteUiEmpty *self)
 {
+    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Empty history"));
 }
 
 /**

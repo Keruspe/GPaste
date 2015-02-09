@@ -19,6 +19,8 @@
 
 #include "gpaste-ui-about-private.h"
 
+#include <glib/gi18n-lib.h>
+
 struct _GPasteUiAboutPrivate
 {
     GtkWindow *topwin;
@@ -41,8 +43,9 @@ g_paste_ui_about_class_init (GPasteUiAboutClass *klass)
 }
 
 static void
-g_paste_ui_about_init (GPasteUiAbout *self G_GNUC_UNUSED)
+g_paste_ui_about_init (GPasteUiAbout *self)
 {
+    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("About"));
 }
 
 /**

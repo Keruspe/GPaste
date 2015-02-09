@@ -95,6 +95,8 @@ g_paste_ui_switch_init (GPasteUiSwitch *self)
 {
     GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) self);
 
+    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Track clipboard changes"));
+
     priv->active_id = g_signal_connect (G_OBJECT (self),
                                         "notify::active",
                                         G_CALLBACK (on_active_changed),
