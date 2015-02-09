@@ -2,6 +2,7 @@
     cleanup public headers includes
     dbus errors instead of asserts in daemon
     gpaste-ui
+    fix histories view in settings refresh
 
 future:
     general:
