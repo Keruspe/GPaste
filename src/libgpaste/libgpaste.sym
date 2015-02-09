@@ -393,6 +393,9 @@ global:
     g_paste_ui_delete_get_type;
     g_paste_ui_delete_new;
 
+    g_paste_ui_empty_get_type;
+    g_paste_ui_empty_new;
+
     g_paste_ui_history_get_type;
     g_paste_ui_history_new;
 
