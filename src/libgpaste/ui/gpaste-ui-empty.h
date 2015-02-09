@@ -37,7 +37,8 @@ typedef struct _GPasteUiEmptyClass GPasteUiEmptyClass;
 G_PASTE_VISIBLE
 GType g_paste_ui_empty_get_type (void);
 
-GtkWidget *g_paste_ui_empty_new (GPasteClient *client);
+GtkWidget *g_paste_ui_empty_new (GtkWindow    *topwin,
+                                 GPasteClient *client);
 
 G_END_DECLS
 

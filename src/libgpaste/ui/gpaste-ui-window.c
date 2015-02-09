@@ -73,7 +73,7 @@ g_paste_ui_window_new (GtkApplication *app,
     priv->app = app;
 
     gtk_header_bar_pack_end (bar, g_paste_ui_about_new (win));
-    gtk_header_bar_pack_end (bar, g_paste_ui_empty_new (client));
+    gtk_header_bar_pack_end (bar, g_paste_ui_empty_new (win, client));
     gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
 
     return self;
