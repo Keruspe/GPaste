@@ -10,6 +10,7 @@ src/libgpaste/core/gpaste-image-item.c
 src/libgpaste/core/gpaste-password-item.c
 src/libgpaste/core/gpaste-uris-item.c
 src/libgpaste/settings-ui/gpaste-settings-ui-stack.c
+src/libgpaste/ui/gpaste-ui-empty.c
 src/gnome-shell/extension.js
 src/applet/gpaste-applet.c
 src/daemon/gpaste-daemon.c

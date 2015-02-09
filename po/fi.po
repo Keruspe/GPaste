@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-08 18:24+0100\n"
+"POT-Creation-Date: 2015-02-09 20:10+0100\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -171,7 +171,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "noutaa määritellyn leikkeen historiasta"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
-#: ../src/ui/gpaste-ui.c:62 ../src/gpaste/gpaste.c:185
+#: ../src/ui/gpaste-ui.c:60 ../src/gpaste/gpaste.c:185
 msgid "Couldn't connect to GPaste daemon"
 msgstr "GPaste-palveluun ei saatu yhteyttä"
 
@@ -213,6 +213,10 @@ msgstr "Vaihda kohteeseen"
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:548
 msgid "Delete"
 msgstr "Poista"
+
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:40
+msgid "Do you really want to empty the history?"
+msgstr ""
 
 #: ../src/daemon/gpaste-daemon.c:48
 #, c-format
