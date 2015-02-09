@@ -23,6 +23,7 @@
 #include <gpaste-ui-about.h>
 #include <gpaste-ui-empty.h>
 #include <gpaste-ui-settings.h>
+#include <gpaste-ui-switch.h>
 
 G_BEGIN_DECLS
 
