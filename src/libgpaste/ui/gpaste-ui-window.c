@@ -32,15 +32,8 @@ g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
 }
 
 static void
-g_paste_ui_window_init (GPasteUiWindow *self)
+g_paste_ui_window_init (GPasteUiWindow *self G_GNUC_UNUSED)
 {
-    GtkWidget *bar = gtk_header_bar_new ();
-    GtkHeaderBar *header_bar = GTK_HEADER_BAR (bar);
-
-    gtk_header_bar_set_title(header_bar, PACKAGE_STRING);
-    gtk_header_bar_set_show_close_button (header_bar, TRUE);
-    gtk_header_bar_pack_end (header_bar, g_paste_ui_settings_new ());
-    gtk_window_set_titlebar (GTK_WINDOW (self), bar);
 }
 
 /**
@@ -68,12 +61,10 @@ g_paste_ui_window_new (GtkApplication *app,
                                       NULL);
     GtkWindow *win = GTK_WINDOW (self);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private ((GPasteUiWindow *) self);
-    GtkHeaderBar *bar = GTK_HEADER_BAR (gtk_window_get_titlebar (win));
 
     priv->app = app;
 
-    gtk_header_bar_pack_end (bar, g_paste_ui_about_new (win));
-    gtk_header_bar_pack_end (bar, g_paste_ui_empty_new (win, client));
+    gtk_window_set_titlebar (win, g_paste_ui_header_new (win, client));
     gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
 
     return self;

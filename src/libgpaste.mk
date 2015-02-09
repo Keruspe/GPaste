@@ -64,6 +64,7 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/ui/gpaste-ui-about-private.h \
 	src/libgpaste/ui/gpaste-ui-delete-private.h \
 	src/libgpaste/ui/gpaste-ui-empty-private.h \
+	src/libgpaste/ui/gpaste-ui-header-private.h \
 	src/libgpaste/ui/gpaste-ui-history-private.h \
 	src/libgpaste/ui/gpaste-ui-item-private.h \
 	src/libgpaste/ui/gpaste-ui-settings-private.h \
@@ -118,6 +119,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/ui/gpaste-ui-about.h \
 	src/libgpaste/ui/gpaste-ui-delete.h \
 	src/libgpaste/ui/gpaste-ui-empty.h \
+	src/libgpaste/ui/gpaste-ui-header.h \
 	src/libgpaste/ui/gpaste-ui-history.h \
 	src/libgpaste/ui/gpaste-ui-item.h \
 	src/libgpaste/ui/gpaste-ui-settings.h \
@@ -169,6 +171,7 @@ lib_libgpaste_la_SOURCES = \
 	src/libgpaste/ui/gpaste-ui-about.c \
 	src/libgpaste/ui/gpaste-ui-delete.c \
 	src/libgpaste/ui/gpaste-ui-empty.c \
+	src/libgpaste/ui/gpaste-ui-header.c \
 	src/libgpaste/ui/gpaste-ui-history.c \
 	src/libgpaste/ui/gpaste-ui-item.c \
 	src/libgpaste/ui/gpaste-ui-settings.c \

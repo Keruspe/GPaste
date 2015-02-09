@@ -17,25 +17,25 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_UI_SETTINGS_PRIVATE_H__
-#define __G_PASTE_UI_SETTINGS_PRIVATE_H__
+#ifndef __G_PASTE_UI_HEADER_PRIVATE_H__
+#define __G_PASTE_UI_HEADER_PRIVATE_H__
 
-#include <gpaste-ui-settings.h>
+#include <gpaste-ui-header.h>
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-struct _GPasteUiSettings
+struct _GPasteUiHeader
 {
-    GtkMenuButton parent_instance;
+    GtkHeaderBar parent_instance;
 };
 
-struct _GPasteUiSettingsClass
+struct _GPasteUiHeaderClass
 {
-    GtkMenuButtonClass parent_class;
+    GtkHeaderBarClass parent_class;
 };
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_SETTINGS_PRIVATE_H__*/
+#endif /*__G_PASTE_UI_HEADER_PRIVATE_H__*/
