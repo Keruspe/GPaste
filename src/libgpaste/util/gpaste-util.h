@@ -28,6 +28,8 @@
 
 #include <gtk/gtk.h>
 
-void g_paste_util_show_about_dialog (GtkWindow *parent);
+void     g_paste_util_show_about_dialog (GtkWindow *parent);
+gboolean g_paste_util_confirm_dialog    (GtkWindow   *parent,
+                                         const gchar *msg);
 
 #endif /*__G_PASTE_UTIL_H__*/

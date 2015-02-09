@@ -33,15 +33,9 @@ static void
 g_paste_ui_empty_clicked (GtkButton *button)
 {
     GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private ((GPasteUiEmpty *) button);
-    GtkWidget *dialog = gtk_message_dialog_new (priv->topwin,
-                                                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
-                                                GTK_MESSAGE_QUESTION,
-                                                GTK_BUTTONS_OK_CANCEL,
-                                                _("Do you really want to empty the history?"));
 
-    if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK)
+    if (g_paste_util_confirm_dialog (priv->topwin, _("Do you really want to empty the history?")))
         g_paste_client_empty (priv->client, NULL, NULL);
-    gtk_widget_destroy (dialog);
 }
 
 static void

@@ -21,6 +21,7 @@
 #define __G_PASTE_UI_EMPTY_H__
 
 #include <gpaste-client.h>
+#include <gpaste-util.h>
 
 G_BEGIN_DECLS
 

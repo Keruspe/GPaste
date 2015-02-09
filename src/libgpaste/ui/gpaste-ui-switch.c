@@ -31,21 +31,6 @@ struct _GPasteUiSwitchPrivate
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSwitch, g_paste_ui_switch, GTK_TYPE_SWITCH)
 
-static gboolean
-confirm_stop (GtkWindow *win)
-{
-    GtkWidget *dialog = gtk_message_dialog_new (win,
-                                                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
-                                                GTK_MESSAGE_QUESTION,
-                                                GTK_BUTTONS_OK_CANCEL,
-                                                _("Do you really want to stop tracking clipboard changes?"));
-    gboolean ret = gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK;
-
-    gtk_widget_destroy (dialog);
-
-    return ret;
-}
-
 static void
 on_active_changed (GObject *gobject)
 {
@@ -56,16 +41,14 @@ on_active_changed (GObject *gobject)
 
     if (!track)
     {
-        track = confirm_stop (priv->topwin);
-        if (track)
-        {
-            gtk_switch_set_state (sw, TRUE);
-            changed = FALSE;
-        }
+        changed = g_paste_util_confirm_dialog (priv->topwin, _("Do you really want to stop tracking clipboard changes?"));
+        track = !changed;
     }
 
     if (changed)
         g_paste_client_track (priv->client, track, NULL, NULL);
+    else
+        gtk_switch_set_active (sw, TRUE); /* FIXME: infinite loop */
 }
 
 static void

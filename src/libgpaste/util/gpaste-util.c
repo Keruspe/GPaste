@@ -33,6 +33,7 @@
 
 /**
  * g_paste_util_show_about_dialog:
+ * @parent: the parent #GtkWindow
  *
  * Show GPaste about dialog
  *
@@ -59,3 +60,29 @@ g_paste_util_show_about_dialog (GtkWindow *parent)
                            "wrap-license",   TRUE,
                            NULL);
 }
+
+/**
+ * g_paste_util_confirm_dialog:
+ * @parent: the parent #GtkWindow
+ * @msg: the message to display
+ *
+ * Show GPaste about dialog
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_confirm_dialog (GtkWindow   *parent,
+                             const gchar *msg)
+{
+    GtkWidget *dialog = gtk_message_dialog_new (parent,
+                                                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+                                                GTK_MESSAGE_QUESTION,
+                                                GTK_BUTTONS_OK_CANCEL,
+                                                "%s", msg);
+    gboolean ret = gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK;
+
+    gtk_widget_destroy (dialog);
+
+    return ret;
+}
+
