@@ -4,6 +4,8 @@
         dbus errors instead of asserts in daemon
         fix histories view in settings refresh
         confirm dialog for history deletion
+        check G_DECLARE_*
+        g_autoptr
     gpaste-ui:
         add command
         add appstream
