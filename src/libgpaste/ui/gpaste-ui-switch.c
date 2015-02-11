@@ -26,17 +26,28 @@ struct _GPasteUiSwitchPrivate
     GtkWindow    *topwin;
     GPasteClient *client;
 
-    gulong        active_id;
+    gulong        tracking_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSwitch, g_paste_ui_switch, GTK_TYPE_SWITCH)
 
 static void
-on_active_changed (GObject *gobject)
+on_tracking_changed (GPasteClient *client G_GNUC_UNUSED,
+                     gboolean      state,
+                     gpointer      user_data)
 {
-    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) gobject);
-    GtkSwitch *sw = GTK_SWITCH (gobject);
-    gboolean track = gtk_switch_get_active (sw);
+    GtkSwitch *sw = user_data;
+
+    gtk_switch_set_active (sw, state);
+}
+
+static gboolean
+g_paste_ui_button_press_event (GtkWidget      *widget,
+                               GdkEventButton *event G_GNUC_UNUSED)
+{
+    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) widget);
+    GtkSwitch *sw = GTK_SWITCH (widget);
+    gboolean track = !gtk_switch_get_active (sw);
     gboolean changed = TRUE;
 
     if (!track)
@@ -47,8 +58,8 @@ on_active_changed (GObject *gobject)
 
     if (changed)
         g_paste_client_track (priv->client, track, NULL, NULL);
-    else
-        gtk_switch_set_active (sw, TRUE); /* FIXME: infinite loop */
+
+    return GDK_EVENT_STOP;
 }
 
 static void
@@ -56,13 +67,13 @@ g_paste_ui_switch_dispose (GObject *object)
 {
     GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) object);
 
-    g_clear_object (&priv->client);
-
-    if (priv->active_id)
+    if (priv->tracking_id)
     {
-        g_signal_handler_disconnect (object, priv->active_id);
-        priv->active_id = 0;
+        g_signal_handler_disconnect (priv->client, priv->tracking_id);
+        priv->tracking_id = 0;
     }
+
+    g_clear_object (&priv->client);
 
     G_OBJECT_CLASS (g_paste_ui_switch_parent_class)->dispose (object);
 }
@@ -70,20 +81,14 @@ g_paste_ui_switch_dispose (GObject *object)
 static void
 g_paste_ui_switch_class_init (GPasteUiSwitchClass *klass)
 {
+    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_button_press_event;
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_switch_dispose;
 }
 
 static void
 g_paste_ui_switch_init (GPasteUiSwitch *self)
 {
-    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) self);
-
     gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Track clipboard changes"));
-
-    priv->active_id = g_signal_connect (G_OBJECT (self),
-                                        "notify::active",
-                                        G_CALLBACK (on_active_changed),
-                                        NULL);
 }
 
 /**
@@ -101,13 +106,20 @@ g_paste_ui_switch_new (GtkWindow    *topwin,
                        GPasteClient *client)
 {
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL); /* FIXME: track state changes */
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_SWITCH, NULL);
     GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) self);
 
     priv->topwin = topwin;
     priv->client = g_object_ref (client);
+
+    priv->tracking_id = g_signal_connect (G_OBJECT (priv->client),
+                                          "tracking",
+                                          G_CALLBACK (on_tracking_changed),
+                                          self);
+
+    gtk_switch_set_active (GTK_SWITCH (self), g_paste_client_is_active (client));
 
     return self;
 }
