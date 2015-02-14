@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-09 20:10+0100\n"
+"POT-Creation-Date: 2015-02-14 18:24+0100\n"
 "PO-Revision-Date: 2014-07-09 18:47-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -22,10 +22,12 @@ msgid "Failed to register the gtk application"
 msgstr "Falha ao registrar a aplicação gtk"
 
 #: ../src/libgpaste/applet/gpaste-applet-about.c:78
+#: ../src/libgpaste/ui/gpaste-ui-about.c:48
 msgid "About"
 msgstr "Sobre"
 
 #: ../src/libgpaste/applet/gpaste-applet-empty.c:78
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
 msgid "Empty history"
 msgstr "Esvaziar histórico"
 
@@ -79,6 +81,7 @@ msgid "[Files] "
 msgstr "[Arquivos]"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:127
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:91
 msgid "Track clipboard changes"
 msgstr "Monitorar a área de transferência"
 
@@ -214,9 +217,19 @@ msgstr "Alternar para"
 msgid "Delete"
 msgstr "Apagar"
 
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:40
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:37
 msgid "Do you really want to empty the history?"
 msgstr ""
+
+#: ../src/libgpaste/ui/gpaste-ui-settings.c:38
+#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
+msgid "GPaste Settings"
+msgstr "Configurações do GPaste"
+
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:55
+#, fuzzy
+msgid "Do you really want to stop tracking clipboard changes?"
+msgstr "pára o monitoramento de alterações na área de transferência"
 
 #: ../src/daemon/gpaste-daemon.c:48
 #, c-format
@@ -504,10 +517,6 @@ msgid ""
 msgstr ""
 "O GPaste fornece um aplicativo indicador para o unity que dá acesso ao seu "
 "histórico a partir da área de indicações."
-
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
-msgid "GPaste Settings"
-msgstr "Configurações do GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:2
 msgid "Manage GPaste settings"

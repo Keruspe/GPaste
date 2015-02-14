@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-09 20:10+0100\n"
+"POT-Creation-Date: 2015-02-14 18:24+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -22,10 +22,12 @@ msgid "Failed to register the gtk application"
 msgstr "Impossible d'inscrire l'application gtk au registre"
 
 #: ../src/libgpaste/applet/gpaste-applet-about.c:78
+#: ../src/libgpaste/ui/gpaste-ui-about.c:48
 msgid "About"
 msgstr "À propos"
 
 #: ../src/libgpaste/applet/gpaste-applet-empty.c:78
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
 msgid "Empty history"
 msgstr "Vider l'historique"
 
@@ -79,6 +81,7 @@ msgid "[Files] "
 msgstr "[Fichiers] "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:127
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:91
 msgid "Track clipboard changes"
 msgstr "Suivre les changements du presse-papier"
 
@@ -212,9 +215,19 @@ msgstr "Passer à"
 msgid "Delete"
 msgstr "Supprimer"
 
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:40
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:37
 msgid "Do you really want to empty the history?"
 msgstr "Voulez-vous vraiment vider l'historique ?"
+
+#: ../src/libgpaste/ui/gpaste-ui-settings.c:38
+#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
+msgid "GPaste Settings"
+msgstr "Préférences du démon GPaste"
+
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:55
+msgid "Do you really want to stop tracking clipboard changes?"
+msgstr ""
+"Voulez-vous vraiment arrêter de suivre les changements du presse-papier"
 
 #: ../src/daemon/gpaste-daemon.c:48
 #, c-format
@@ -499,10 +512,6 @@ msgid ""
 msgstr ""
 "GPaste vous fournit un indicateur d'appliation pour unity qui voud donnera "
 "accès à votre historique dans votre zone d'indicateurs."
-
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
-msgid "GPaste Settings"
-msgstr "Préférences du démon GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:2
 msgid "Manage GPaste settings"
