@@ -17,8 +17,8 @@
 
 libgpaste_la_file = lib/libgpaste.la
 
-LIBGPASTE_CURRENT=2
-LIBGPASTE_REVISION=2
+LIBGPASTE_CURRENT=3
+LIBGPASTE_REVISION=0
 LIBGPASTE_AGE=0
 
 lib_libgpaste_la_private_headers = \

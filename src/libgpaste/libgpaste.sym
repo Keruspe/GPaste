@@ -367,15 +367,6 @@ global:
     g_paste_client_show_history_finish;
     g_paste_client_show_history_sync;
 
-    g_paste_client_upload;
-    g_paste_client_upload_finish;
-    g_paste_client_upload_sync;
-
-    g_paste_daemon_upload;
-
-    g_paste_upload_keybinding_get_type;
-    g_paste_upload_keybinding_new;
-
     g_paste_history_search;
 
     g_paste_screensaver_client_get_type;
@@ -386,6 +377,18 @@ global:
 
     g_paste_update_action_get_type;
     g_paste_update_target_get_type;
+} LIBGPASTE_1;
+
+LIBGPASTE_3 {
+global:
+    g_paste_client_upload;
+    g_paste_client_upload_finish;
+    g_paste_client_upload_sync;
+
+    g_paste_daemon_upload;
+
+    g_paste_upload_keybinding_get_type;
+    g_paste_upload_keybinding_new;
 
     g_paste_ui_about_get_type;
     g_paste_ui_about_new;
@@ -415,4 +418,4 @@ global:
     g_paste_ui_window_new;
 
     g_paste_util_show_about_dialog;
-} LIBGPASTE_1;
+} LIBGPASTE_2;
