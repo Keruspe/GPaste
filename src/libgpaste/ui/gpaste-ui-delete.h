@@ -37,6 +37,9 @@ typedef struct _GPasteUiDeleteClass GPasteUiDeleteClass;
 G_PASTE_VISIBLE
 GType g_paste_ui_delete_get_type (void);
 
+void g_paste_ui_delete_set_index (GPasteUiDelete *self,
+                                  guint32         index);
+
 GtkWidget *g_paste_ui_delete_new (GPasteClient *client,
                                   guint32       index);
 

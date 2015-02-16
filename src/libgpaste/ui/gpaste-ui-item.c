@@ -25,6 +25,7 @@ struct _GPasteUiItemPrivate
 {
     GPasteClient   *client;
     GPasteSettings *settings;
+    GPasteUiDelete *delete;
 
     GtkLabel       *label;
     guint32         index;
@@ -54,6 +55,23 @@ g_paste_ui_item_replace (const gchar *text,
                                     NULL); /* Error */
 }
 
+/**
+ * g_paste_ui_item_refresh:
+ * @self: a #GPasteUiItem instance
+ *
+ * Refresh the item
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_refresh (GPasteUiItem *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
+
+    g_paste_ui_item_set_index (self, priv->index);
+}
+
 static void
 g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
@@ -74,10 +92,47 @@ static void
 g_paste_ui_item_reset_text (GPasteUiItem *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
-
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
 
     g_paste_client_get_element (priv->client, priv->index, g_paste_ui_item_on_text_ready, priv);
+}
+
+/**
+ * g_paste_ui_item_set_index:
+ * @self: a #GPasteUiItem instance
+ * @index: the index of the corresponding item
+ *
+ * Track a new index
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_set_index (GPasteUiItem *self,
+                           guint32       index)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
+
+    guint32 old_index = priv->index;
+    priv->index = index;
+
+    if (!index)
+    { ; } /* FIXME: bold */
+    else if (!old_index)
+    { ; } /* FIXME: unbold */
+
+    g_paste_ui_delete_set_index (priv->delete, index);
+
+    if (index != (guint32)-1)
+    {
+        g_paste_ui_item_reset_text (self);
+        gtk_widget_show (GTK_WIDGET (self));
+    }
+    else
+    {
+        gtk_label_set_text (priv->label, "");
+        gtk_widget_hide (GTK_WIDGET (self));
+    }
 }
 
 static void
@@ -127,6 +182,7 @@ g_paste_ui_item_init (GPasteUiItem *self)
 
     GtkWidget *label = gtk_label_new ("");
     priv->label = GTK_LABEL (label);
+    priv->index = (guint32)-1;
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
@@ -155,20 +211,21 @@ g_paste_ui_item_new (GPasteClient   *client,
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ITEM, "selectable", FALSE, NULL);
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private ((GPasteUiItem *) self);
+    GtkWidget *delete = g_paste_ui_delete_new (client, index);
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
-    priv->index = index;
+    priv->delete = G_PASTE_UI_DELETE (delete);
 
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
-    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), g_paste_ui_delete_new (client, index), FALSE, TRUE, 0);
+    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), delete, FALSE, TRUE, 0);
 
     priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
                                       G_CALLBACK (g_paste_ui_item_set_text_size),
                                       priv);
     g_paste_ui_item_set_text_size (settings, NULL, priv);
-    g_paste_ui_item_reset_text ((GPasteUiItem *) self);
+    g_paste_ui_item_set_index (G_PASTE_UI_ITEM (self), index);
 
     return self;
 }

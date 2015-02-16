@@ -394,6 +394,7 @@ global:
     g_paste_ui_about_new;
 
     g_paste_ui_delete_get_type;
+    g_paste_ui_delete_set_index;
     g_paste_ui_delete_new;
 
     g_paste_ui_empty_get_type;
@@ -406,6 +407,8 @@ global:
     g_paste_ui_history_new;
 
     g_paste_ui_item_get_type;
+    g_paste_ui_item_refresh;
+    g_paste_ui_item_set_index;
     g_paste_ui_item_new;
 
     g_paste_ui_settings_get_type;

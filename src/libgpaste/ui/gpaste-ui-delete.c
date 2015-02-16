@@ -24,10 +24,30 @@
 struct _GPasteUiDeletePrivate
 {
     GPasteClient *client;
+
     guint32       index;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiDelete, g_paste_ui_delete, GTK_TYPE_BUTTON)
+
+/**
+ * g_paste_ui_delete_set_index:
+ * @self: a #GPasteUiDelete instance
+ * @index: the index of the corresponding item
+ *
+ * Track a new index
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_delete_set_index (GPasteUiDelete *self,
+                             guint32         index)
+{
+    g_return_if_fail (G_PASTE_IS_UI_DELETE (self));
+    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (self);
+
+    priv->index = index;
+}
 
 static gboolean
 g_paste_ui_delete_button_press_event (GtkWidget      *widget,
