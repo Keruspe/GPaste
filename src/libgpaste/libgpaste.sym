@@ -407,6 +407,7 @@ global:
     g_paste_ui_history_new;
 
     g_paste_ui_item_get_type;
+    g_paste_ui_item_activate;
     g_paste_ui_item_refresh;
     g_paste_ui_item_set_index;
     g_paste_ui_item_new;

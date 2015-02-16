@@ -39,6 +39,7 @@ typedef struct _GPasteUiItemClass GPasteUiItemClass;
 G_PASTE_VISIBLE
 GType g_paste_ui_item_get_type (void);
 
+void g_paste_ui_item_activate  (GPasteUiItem *self);
 void g_paste_ui_item_refresh   (GPasteUiItem *self);
 void g_paste_ui_item_set_index (GPasteUiItem *self,
                                 guint32       index);

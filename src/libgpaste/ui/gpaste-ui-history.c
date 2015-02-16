@@ -33,8 +33,7 @@ on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
                   GtkListBoxRow *row,
                   gpointer       user_data G_GNUC_UNUSED)
 {
-    /* FIXME: Why is it needed? */
-    gtk_widget_activate (GTK_WIDGET (row));
+    g_paste_ui_item_activate (G_PASTE_UI_ITEM (row));
 }
 
 static void
@@ -92,8 +91,6 @@ g_paste_ui_history_new (GPasteClient *client)
 
     for (guint32 i = 0; i < 20 /* FIXME */; ++i)
         gtk_container_add (lb, g_paste_ui_item_new (client, priv->settings, i));
-
-    /* FIXME: 0 is selected at startup, unselect it */
 
     return self;
 }

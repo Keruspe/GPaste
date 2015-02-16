@@ -56,6 +56,23 @@ g_paste_ui_item_replace (const gchar *text,
 }
 
 /**
+ * g_paste_ui_item_activate:
+ * @self: a #GPasteUiItem instance
+ *
+ * Refresh the item
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_activate (GPasteUiItem *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
+
+    g_paste_client_select (priv->client, priv->index, NULL, NULL);
+}
+
+/**
  * g_paste_ui_item_refresh:
  * @self: a #GPasteUiItem instance
  *
@@ -145,13 +162,6 @@ g_paste_ui_item_set_text_size (GPasteSettings *settings,
 }
 
 static void
-g_paste_ui_item_activate (GtkListBoxRow *row)
-{
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private ((GPasteUiItem *) row);
-    g_paste_client_select (priv->client, priv->index, NULL, NULL);
-}
-
-static void
 g_paste_ui_item_dispose (GObject *object)
 {
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private ((GPasteUiItem *) object);
@@ -169,10 +179,7 @@ g_paste_ui_item_dispose (GObject *object)
 static void
 g_paste_ui_item_class_init (GPasteUiItemClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_ui_item_dispose;
-    GTK_LIST_BOX_ROW_CLASS (klass)->activate = g_paste_ui_item_activate;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_item_dispose;
 }
 
 static void
