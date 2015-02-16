@@ -19,6 +19,8 @@
 
 #include "gpaste-ui-header-private.h"
 
+#include <glib/gi18n-lib.h>
+
 G_DEFINE_TYPE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_BAR)
 
 static void
@@ -56,9 +58,10 @@ g_paste_ui_header_new (GtkWindow    *topwin,
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HEADER, NULL);
     GtkHeaderBar *bar = GTK_HEADER_BAR (self);
 
+    gtk_header_bar_pack_start (bar, g_paste_ui_switch_new (topwin, client));
+
     gtk_header_bar_pack_end (bar, g_paste_ui_about_new (topwin));
     gtk_header_bar_pack_end (bar, g_paste_ui_empty_new (topwin, client));
-    gtk_header_bar_pack_end (bar, g_paste_ui_switch_new (topwin, client));
 
     return self;
 }
