@@ -39,8 +39,6 @@ typedef struct _GPasteUiItemClass GPasteUiItemClass;
 G_PASTE_VISIBLE
 GType g_paste_ui_item_get_type (void);
 
-void g_paste_ui_item_reset_text (GPasteUiItem *self);
-
 GtkWidget *g_paste_ui_item_new (GPasteClient   *client,
                                 GPasteSettings *settings,
                                 guint32         index);

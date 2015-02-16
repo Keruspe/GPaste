@@ -70,15 +70,7 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     gtk_label_set_text (priv->label, g_paste_ui_item_replace (txt, "\n", ""));
 }
 
-/**
- * g_paste_ui_item_reset_text:
- * @self: a #GPasteUiItem instance
- *
- * Reset the text of the #GPasteUiItem
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
+static void
 g_paste_ui_item_reset_text (GPasteUiItem *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
