@@ -19,107 +19,17 @@
 
 #include "gpaste-applet-private.h"
 
-/*
-    Temporary values for menu settings are stored in an int as such
-    0x1 << 3 : Is text mode set?
-    0x1 << 2 : What is the value of text mode?
-    0x1 << 1 : Is Active set?
-    0x1 << 0 : What is the value of Active?
-*/
-#define SET_ACTIVE(v, s) v = (v & ~0x1) | (0x1 << 1) | (s & 0x1)
-#define SET_TEXT_MODE(v, s) v = (v & ~(0x1 << 2)) | (0x1 << 3) | ((s & 0x1) << 2)
-
 struct _GPasteAppletPrivate
 {
     GPasteClient        *client;
-    GPasteSettings      *settings;
 
-    GPasteAppletMenu    *menu;
-    GPasteAppletHistory *history;
     GPasteAppletIcon    *icon; 
 
     GApplication        *application;
     GtkWidget           *win;
-
-    guint                init_state;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteApplet, g_paste_applet, G_TYPE_OBJECT)
-
-/**
- * g_paste_applet_get_active:
- * @self: a #GPasteApplet instance
- *
- * Gets whether the switch is in its "on" or "off" state.
- *
- * Returns: TRUE if the switch is active, and FALSE otherwise
- */
-G_PASTE_VISIBLE gboolean
-g_paste_applet_get_active (const GPasteApplet *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_APPLET (self), FALSE);
-
-    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private ((GPasteApplet *) self);
-
-    if (G_UNLIKELY (!priv->menu)) /* Not yet initialized */
-        return (priv->init_state & 0x1);
-
-    return g_paste_applet_menu_get_active (priv->menu);
-}
-
-/**
- * g_paste_applet_set_active:
- * @self: a #GPasteApplet instance
- * @active: TRUE if the switch should be active, and FALSE otherwise
- *
- * Changes the state of the switch to the desired one.
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_applet_set_active (GPasteApplet *self,
-                           gboolean      active)
-{
-    g_return_if_fail (G_PASTE_IS_APPLET (self));
-
-    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
-
-    if (G_UNLIKELY (!priv->menu)) /* Not yet initialized */
-    {
-        SET_ACTIVE (priv->init_state, active);
-        return;
-    }
-
-    g_paste_applet_menu_set_active (priv->menu, active);
-}
-
-/**
- * g_paste_applet_set_text_mode:
- * @self: a #GPasteApplet instance
- * @value: Whether to enable text mode or not
- *
- * Enable extra codepaths for when the switch and the delete
- * buttons are not visible.
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_applet_set_text_mode (GPasteApplet *self,
-                              gboolean      value)
-{
-    g_return_if_fail (G_PASTE_IS_APPLET (self));
-
-    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
-
-    if (G_UNLIKELY (!priv->menu)) /* Not yet initialized */
-    {
-        SET_TEXT_MODE (priv->init_state, value);
-        return;
-    }
-
-    g_paste_applet_menu_set_text_mode (priv->menu, value);
-    g_paste_applet_history_set_text_mode (priv->history, value);
-}
 
 static void
 g_paste_applet_dispose (GObject *object)
@@ -127,8 +37,6 @@ g_paste_applet_dispose (GObject *object)
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private ((GPasteApplet *) object);
 
     g_clear_object (&priv->client);
-    g_clear_object (&priv->settings);
-    g_clear_object (&priv->history);
     g_clear_object (&priv->icon);
 
     G_OBJECT_CLASS (g_paste_applet_parent_class)->dispose (object);
@@ -141,14 +49,8 @@ g_paste_applet_class_init (GPasteAppletClass *klass)
 }
 
 static void
-g_paste_applet_init (GPasteApplet *self)
+g_paste_applet_init (GPasteApplet *self G_GNUC_UNUSED)
 {
-    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
-
-    priv->settings = g_paste_settings_new ();
-
-    priv->menu = NULL;
-    priv->init_state = 0;
 }
 
 static gboolean
@@ -165,18 +67,6 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
         return FALSE;
     }
 
-    priv->menu = g_paste_applet_menu_new (priv->client, priv->application);
-    priv->history = g_paste_applet_history_new (priv->client, priv->settings, priv->menu);
-
-    if ((priv->init_state >> 1) & 0x1)
-        g_paste_applet_menu_set_active (priv->menu, priv->init_state & 0x1);
-    if ((priv->init_state >> 3) & 0x1)
-    {
-        gboolean value = (priv->init_state >> 2) & 0x1;
-        g_paste_applet_menu_set_text_mode (priv->menu, value);
-        g_paste_applet_history_set_text_mode (priv->history, value);
-    }
-
     return TRUE;
 }
 
@@ -191,7 +81,7 @@ g_paste_applet_app_indicator_client_ready (GObject      *source_object G_GNUC_UN
     if (!g_paste_applet_new_finish (priv, res))
         return;
 
-    priv->icon = g_paste_applet_app_indicator_new (priv->client, GTK_MENU (priv->menu));
+    priv->icon = g_paste_applet_app_indicator_new (priv->client);
 }
 #endif
 
@@ -205,7 +95,7 @@ g_paste_applet_status_icon_client_ready (GObject      *source_object G_GNUC_UNUS
     if (!g_paste_applet_new_finish (priv, res))
         return;
 
-    priv->icon = g_paste_applet_status_icon_new (priv->client, GTK_MENU (priv->menu));
+    priv->icon = g_paste_applet_status_icon_new (priv->client);
 }
 
 static GPasteApplet *
@@ -248,7 +138,6 @@ g_paste_applet_new_app_indicator (GtkApplication *application)
     GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
     g_paste_client_new (g_paste_applet_app_indicator_client_ready, priv);
-    g_paste_applet_set_text_mode (self, TRUE);
 
     return self;
 }

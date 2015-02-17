@@ -21,8 +21,6 @@
 #define __G_PASTE_APPLET_H__
 
 #include <gpaste-config.h>
-#include <gpaste-applet-menu.h>
-#include <gpaste-applet-history.h>
 #include <gpaste-applet-status-icon.h>
 
 #if G_PASTE_CONFIG_ENABLE_UNITY
@@ -43,13 +41,6 @@ typedef struct _GPasteAppletClass GPasteAppletClass;
 
 G_PASTE_VISIBLE
 GType g_paste_applet_get_type (void);
-
-gboolean g_paste_applet_get_active (const GPasteApplet *self);
-void     g_paste_applet_set_active (GPasteApplet *self,
-                                    gboolean      active);
-
-void g_paste_applet_set_text_mode (GPasteApplet *self,
-                                   gboolean      value);
 
 #if G_PASTE_CONFIG_ENABLE_UNITY
 GPasteApplet *g_paste_applet_new_app_indicator (GtkApplication *application);

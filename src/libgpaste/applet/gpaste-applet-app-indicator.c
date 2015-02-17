@@ -24,17 +24,10 @@
 struct _GPasteAppletAppIndicatorPrivate
 {
     AppIndicator *icon;
+    /* FIXME: react to click */
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletAppIndicator, g_paste_applet_app_indicator, G_PASTE_TYPE_APPLET_ICON)
-
-static void
-g_paste_applet_app_indicator_popup (GPasteAppletIcon *self,
-                                    GdkEvent         *event)
-{
-    /* FIXME: position func */
-    g_paste_applet_icon_popup (G_PASTE_APPLET_ICON (self), event, NULL, NULL);
-}
 
 static void
 g_paste_applet_app_indicator_dispose (GObject *object)
@@ -50,7 +43,6 @@ static void
 g_paste_applet_app_indicator_class_init (GPasteAppletAppIndicatorClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_app_indicator_dispose;
-    G_PASTE_APPLET_ICON_CLASS (klass)->popup = g_paste_applet_app_indicator_popup;
 }
 
 static void
@@ -66,7 +58,6 @@ g_paste_applet_app_indicator_init (GPasteAppletAppIndicator *self)
 /**
  * g_paste_applet_app_indicator_new:
  * @client: a #GPasteClient
- * @menu: the menu linked to the status icon
  *
  * Create a new instance of #GPasteAppletAppIndicator
  *
@@ -74,16 +65,9 @@ g_paste_applet_app_indicator_init (GPasteAppletAppIndicator *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteAppletIcon *
-g_paste_applet_app_indicator_new (GPasteClient *client,
-                                  GtkMenu      *menu)
+g_paste_applet_app_indicator_new (GPasteClient *client)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (GTK_IS_MENU (menu), NULL);
 
-    GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_APP_INDICATOR, client, menu);
-    GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private ((GPasteAppletAppIndicator *) self);
-
-    app_indicator_set_menu (priv->icon, menu);
-
-    return self;
+    return g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_APP_INDICATOR, client);
 }

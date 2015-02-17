@@ -23,29 +23,18 @@
 struct _GPasteAppletStatusIconPrivate
 {
     GtkStatusIcon *icon;
+
     gulong         press_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletStatusIcon, g_paste_applet_status_icon, G_PASTE_TYPE_APPLET_ICON)
 
-static void
-g_paste_applet_status_icon_real_popup (GPasteAppletIcon *self,
-                                       GdkEvent         *event)
-{
-    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private (G_PASTE_APPLET_STATUS_ICON (self));
-
-    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-    g_paste_applet_icon_popup (G_PASTE_APPLET_ICON (self), event, gtk_status_icon_position_menu, priv->icon);
-    G_GNUC_END_IGNORE_DEPRECATIONS
-}
-
 static gboolean
 g_paste_applet_status_icon_popup (GtkStatusIcon  *icon G_GNUC_UNUSED,
-                                  GdkEventButton *event,
-                                  gpointer        user_data)
+                                  GdkEventButton *event G_GNUC_UNUSED,
+                                  gpointer        user_data G_GNUC_UNUSED)
 {
-    GPasteAppletIcon *self = user_data;
-    g_paste_applet_status_icon_real_popup (self, (GdkEvent *) event);
+    /* FIXME: spawn Ui */
     return GDK_EVENT_PROPAGATE;
 }
 
@@ -67,7 +56,6 @@ static void
 g_paste_applet_status_icon_class_init (GPasteAppletStatusIconClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_applet_status_icon_dispose;
-    G_PASTE_APPLET_ICON_CLASS (klass)->popup = g_paste_applet_status_icon_real_popup;
 }
 
 static void
@@ -90,7 +78,6 @@ g_paste_applet_status_icon_init (GPasteAppletStatusIcon *self)
 /**
  * g_paste_applet_status_icon_new:
  * @client: a #GPasteClient
- * @menu: the menu linked to the status icon
  *
  * Create a new instance of #GPasteAppletStatusIcon
  *
@@ -98,11 +85,9 @@ g_paste_applet_status_icon_init (GPasteAppletStatusIcon *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteAppletIcon *
-g_paste_applet_status_icon_new (GPasteClient *client,
-                                GtkMenu      *menu)
+g_paste_applet_status_icon_new (GPasteClient *client)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (GTK_IS_MENU (menu), NULL);
 
-    return g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_STATUS_ICON, client, menu);
+    return g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_STATUS_ICON, client);
 }

@@ -24,19 +24,8 @@ LIBGPASTE_AGE=0
 lib_libgpaste_la_private_headers = \
 	src/libgpaste/gpaste-gdbus-macros.h \
 	src/libgpaste/applet/gpaste-applet-private.h \
-	src/libgpaste/applet/gpaste-applet-about-private.h \
-	src/libgpaste/applet/gpaste-applet-delete-private.h \
-	src/libgpaste/applet/gpaste-applet-empty-private.h \
-	src/libgpaste/applet/gpaste-applet-footer-private.h \
-	src/libgpaste/applet/gpaste-applet-header-private.h \
-	src/libgpaste/applet/gpaste-applet-history-private.h \
 	src/libgpaste/applet/gpaste-applet-icon-private.h \
-	src/libgpaste/applet/gpaste-applet-item-private.h \
-	src/libgpaste/applet/gpaste-applet-menu-private.h \
-	src/libgpaste/applet/gpaste-applet-quit-private.h \
-	src/libgpaste/applet/gpaste-applet-settings-private.h \
 	src/libgpaste/applet/gpaste-applet-status-icon-private.h \
-	src/libgpaste/applet/gpaste-applet-switch-private.h \
 	src/libgpaste/client/gpaste-client-private.h \
 	src/libgpaste/core/gpaste-clipboard-private.h \
 	src/libgpaste/core/gpaste-clipboards-manager-private.h \
@@ -79,19 +68,8 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/gpaste-gsettings-keys.h \
 	src/libgpaste/gpaste-macros.h \
 	src/libgpaste/applet/gpaste-applet.h \
-	src/libgpaste/applet/gpaste-applet-about.h \
-	src/libgpaste/applet/gpaste-applet-delete.h \
-	src/libgpaste/applet/gpaste-applet-empty.h \
-	src/libgpaste/applet/gpaste-applet-footer.h \
-	src/libgpaste/applet/gpaste-applet-header.h \
-	src/libgpaste/applet/gpaste-applet-history.h \
 	src/libgpaste/applet/gpaste-applet-icon.h \
-	src/libgpaste/applet/gpaste-applet-item.h \
-	src/libgpaste/applet/gpaste-applet-menu.h \
-	src/libgpaste/applet/gpaste-applet-quit.h \
-	src/libgpaste/applet/gpaste-applet-settings.h \
 	src/libgpaste/applet/gpaste-applet-status-icon.h \
-	src/libgpaste/applet/gpaste-applet-switch.h \
 	src/libgpaste/client/gpaste-client.h \
 	src/libgpaste/core/gpaste-clipboard.h \
 	src/libgpaste/core/gpaste-clipboards-manager.h \
@@ -132,19 +110,8 @@ lib_libgpaste_la_SOURCES = \
 	$(lib_libgpaste_la_public_headers) \
 	$(lib_libgpaste_la_private_headers) \
 	src/libgpaste/applet/gpaste-applet.c \
-	src/libgpaste/applet/gpaste-applet-about.c \
-	src/libgpaste/applet/gpaste-applet-delete.c \
-	src/libgpaste/applet/gpaste-applet-empty.c \
-	src/libgpaste/applet/gpaste-applet-footer.c \
-	src/libgpaste/applet/gpaste-applet-header.c \
-	src/libgpaste/applet/gpaste-applet-history.c \
 	src/libgpaste/applet/gpaste-applet-icon.c \
-	src/libgpaste/applet/gpaste-applet-item.c \
-	src/libgpaste/applet/gpaste-applet-menu.c \
-	src/libgpaste/applet/gpaste-applet-quit.c \
-	src/libgpaste/applet/gpaste-applet-settings.c \
 	src/libgpaste/applet/gpaste-applet-status-icon.c \
-	src/libgpaste/applet/gpaste-applet-switch.c \
 	src/libgpaste/client/gpaste-client.c \
 	src/libgpaste/core/gpaste-clipboard.c \
 	src/libgpaste/core/gpaste-clipboards-manager.c \

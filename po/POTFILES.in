@@ -1,10 +1,4 @@
 src/libgpaste/gpaste-macros.h
-src/libgpaste/applet/gpaste-applet-about.c
-src/libgpaste/applet/gpaste-applet-empty.c
-src/libgpaste/applet/gpaste-applet-menu.c
-src/libgpaste/applet/gpaste-applet-quit.c
-src/libgpaste/applet/gpaste-applet-settings.c
-src/libgpaste/applet/gpaste-applet-switch.c
 src/libgpaste/core/gpaste-history.c
 src/libgpaste/core/gpaste-image-item.c
 src/libgpaste/core/gpaste-password-item.c

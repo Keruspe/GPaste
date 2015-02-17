@@ -38,8 +38,7 @@ typedef struct _GPasteAppletAppIndicatorClass GPasteAppletAppIndicatorClass;
 G_PASTE_VISIBLE
 GType g_paste_applet_app_indicator_get_type (void);
 
-GPasteAppletIcon *g_paste_applet_app_indicator_new (GPasteClient *client,
-                                                    GtkMenu      *menu);
+GPasteAppletIcon *g_paste_applet_app_indicator_new (GPasteClient *client);
 
 G_END_DECLS
 
