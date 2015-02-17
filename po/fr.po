@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-14 18:24+0100\n"
+"POT-Creation-Date: 2015-02-17 23:38+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -20,38 +20,6 @@ msgstr ""
 #: ../src/libgpaste/gpaste-macros.h:47
 msgid "Failed to register the gtk application"
 msgstr "Impossible d'inscrire l'application gtk au registre"
-
-#: ../src/libgpaste/applet/gpaste-applet-about.c:78
-#: ../src/libgpaste/ui/gpaste-ui-about.c:48
-msgid "About"
-msgstr "À propos"
-
-#: ../src/libgpaste/applet/gpaste-applet-empty.c:78
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
-msgid "Empty history"
-msgstr "Vider l'historique"
-
-#: ../src/libgpaste/applet/gpaste-applet-menu.c:281
-msgid "(Empty)"
-msgstr "(Vide)"
-
-#: ../src/libgpaste/applet/gpaste-applet-quit.c:67
-msgid "Quit"
-msgstr "Quitter"
-
-#: ../src/libgpaste/applet/gpaste-applet-settings.c:57
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
-msgid "GPaste daemon settings"
-msgstr "Préférences du démon GPaste"
-
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
-msgid "Stop tracking changes"
-msgstr "Arrêter de suivre les changements"
-
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:155
-msgid "Track changes"
-msgstr "Suivre les changements"
 
 #: ../src/libgpaste/core/gpaste-history.c:736
 msgid "Could not create history dir"
@@ -215,9 +183,17 @@ msgstr "Passer à"
 msgid "Delete"
 msgstr "Supprimer"
 
+#: ../src/libgpaste/ui/gpaste-ui-about.c:48
+msgid "About"
+msgstr "À propos"
+
 #: ../src/libgpaste/ui/gpaste-ui-empty.c:37
 msgid "Do you really want to empty the history?"
 msgstr "Voulez-vous vraiment vider l'historique ?"
+
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
+msgid "Empty history"
+msgstr "Vider l'historique"
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:38
 #: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
@@ -530,6 +506,10 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr "Presse-Papier;Gestionnaire;"
 
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "Préférences du démon GPaste"
+
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "Gérer les préférences du démon GPaste"
@@ -779,3 +759,6 @@ msgid ""
 msgstr ""
 "Tronquer signifie supprimer tous les espaces au début et à la fin. Par "
 "défaut, on laisse les éléments tels-quels"
+
+#~ msgid "(Empty)"
+#~ msgstr "(Vide)"

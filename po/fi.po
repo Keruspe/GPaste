@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-14 18:24+0100\n"
+"POT-Creation-Date: 2015-02-17 23:38+0100\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -19,39 +19,6 @@ msgstr ""
 #: ../src/libgpaste/gpaste-macros.h:47
 msgid "Failed to register the gtk application"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
-
-#: ../src/libgpaste/applet/gpaste-applet-about.c:78
-#: ../src/libgpaste/ui/gpaste-ui-about.c:48
-msgid "About"
-msgstr ""
-
-#: ../src/libgpaste/applet/gpaste-applet-empty.c:78
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
-msgid "Empty history"
-msgstr "Tyhjennä historia"
-
-#: ../src/libgpaste/applet/gpaste-applet-menu.c:281
-msgid "(Empty)"
-msgstr "(Tyhjä)"
-
-#: ../src/libgpaste/applet/gpaste-applet-quit.c:67
-msgid "Quit"
-msgstr "Lopeta"
-
-#: ../src/libgpaste/applet/gpaste-applet-settings.c:57
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
-msgid "GPaste daemon settings"
-msgstr "GPaste palvelun asetukset"
-
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
-#, fuzzy
-msgid "Stop tracking changes"
-msgstr "lopettaa leikepöydän muutosten seuraamisen"
-
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:155
-msgid "Track changes"
-msgstr "Pidä kirjaa tapahtumista"
 
 #: ../src/libgpaste/core/gpaste-history.c:736
 msgid "Could not create history dir"
@@ -217,9 +184,17 @@ msgstr "Vaihda kohteeseen"
 msgid "Delete"
 msgstr "Poista"
 
+#: ../src/libgpaste/ui/gpaste-ui-about.c:48
+msgid "About"
+msgstr ""
+
 #: ../src/libgpaste/ui/gpaste-ui-empty.c:37
 msgid "Do you really want to empty the history?"
 msgstr ""
+
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
+msgid "Empty history"
+msgstr "Tyhjennä historia"
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:38
 #: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
@@ -535,6 +510,10 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr ""
 
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "GPaste palvelun asetukset"
+
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "Hallitse GPaste palvelun asetuksia"
@@ -762,6 +741,19 @@ msgid ""
 msgstr ""
 "Trimmaaminen tarkoittaa leikkeen lopussa olevien välilyöntien poistamista. "
 "Oletuksena niiden annetaan olla rauhassa."
+
+#~ msgid "(Empty)"
+#~ msgstr "(Tyhjä)"
+
+#~ msgid "Quit"
+#~ msgstr "Lopeta"
+
+#, fuzzy
+#~ msgid "Stop tracking changes"
+#~ msgstr "lopettaa leikepöydän muutosten seuraamisen"
+
+#~ msgid "Track changes"
+#~ msgstr "Pidä kirjaa tapahtumista"
 
 #, fuzzy
 #~ msgid "print the history without newlines"

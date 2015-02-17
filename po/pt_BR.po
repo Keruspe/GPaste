@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-14 18:24+0100\n"
+"POT-Creation-Date: 2015-02-17 23:38+0100\n"
 "PO-Revision-Date: 2014-07-09 18:47-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -20,38 +20,6 @@ msgstr ""
 #: ../src/libgpaste/gpaste-macros.h:47
 msgid "Failed to register the gtk application"
 msgstr "Falha ao registrar a aplicação gtk"
-
-#: ../src/libgpaste/applet/gpaste-applet-about.c:78
-#: ../src/libgpaste/ui/gpaste-ui-about.c:48
-msgid "About"
-msgstr "Sobre"
-
-#: ../src/libgpaste/applet/gpaste-applet-empty.c:78
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
-msgid "Empty history"
-msgstr "Esvaziar histórico"
-
-#: ../src/libgpaste/applet/gpaste-applet-menu.c:281
-msgid "(Empty)"
-msgstr "(Vazio)"
-
-#: ../src/libgpaste/applet/gpaste-applet-quit.c:67
-msgid "Quit"
-msgstr "Sair"
-
-#: ../src/libgpaste/applet/gpaste-applet-settings.c:57
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
-msgid "GPaste daemon settings"
-msgstr "Configurações do daemon GPaste"
-
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
-msgid "Stop tracking changes"
-msgstr "Parar o monitoramento"
-
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:86
-#: ../src/libgpaste/applet/gpaste-applet-switch.c:155
-msgid "Track changes"
-msgstr "Monitorar a área de transferência"
 
 #: ../src/libgpaste/core/gpaste-history.c:736
 msgid "Could not create history dir"
@@ -217,9 +185,17 @@ msgstr "Alternar para"
 msgid "Delete"
 msgstr "Apagar"
 
+#: ../src/libgpaste/ui/gpaste-ui-about.c:48
+msgid "About"
+msgstr "Sobre"
+
 #: ../src/libgpaste/ui/gpaste-ui-empty.c:37
 msgid "Do you really want to empty the history?"
 msgstr ""
+
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:61
+msgid "Empty history"
+msgstr "Esvaziar histórico"
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:38
 #: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
@@ -535,6 +511,10 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr ""
 
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "Configurações do daemon GPaste"
+
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "Gerenciar as configurações do daemon GPaste"
@@ -779,6 +759,18 @@ msgid ""
 msgstr ""
 "Aparar significa que espaços em branco antes e depois do texto serão "
 "removidos. Por padrão, é deixado como está."
+
+#~ msgid "(Empty)"
+#~ msgstr "(Vazio)"
+
+#~ msgid "Quit"
+#~ msgstr "Sair"
+
+#~ msgid "Stop tracking changes"
+#~ msgstr "Parar o monitoramento"
+
+#~ msgid "Track changes"
+#~ msgstr "Monitorar a área de transferência"
 
 #, fuzzy
 #~ msgid "print the history without newlines"
