@@ -19,6 +19,8 @@
 
 #include "gpaste-image-item-private.h"
 
+#include <gpaste-util.h>
+
 #include <glib/gi18n-lib.h>
 
 #include <sys/stat.h>
@@ -128,20 +130,6 @@ g_paste_image_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
     return "Image";
 }
 
-static gchar *
-g_paste_image_item_compute_checksum (GdkPixbuf *image)
-{
-    if (!image)
-        return NULL;
-
-    guint length;
-    const guchar *data = gdk_pixbuf_get_pixels_with_length (image,
-                                                            &length);
-    return g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                        data,
-                                        length);
-}
-
 static void
 g_paste_image_item_set_state (GPasteItem     *self,
                               GPasteItemState state)
@@ -162,7 +150,7 @@ g_paste_image_item_set_state (GPasteItem     *self,
         {
             priv->image = gdk_pixbuf_new_from_file (g_paste_item_get_value (self),
                                                     NULL); /* Error */
-            priv->checksum = g_paste_image_item_compute_checksum (priv->image);
+            priv->checksum = g_paste_util_compute_checksum (priv->image);
         }
         break;
     }
@@ -230,7 +218,7 @@ _g_paste_image_item_new (const gchar *path,
     priv->image = image;
 
     if (image)
-        priv->checksum = (checksum) ? checksum : g_paste_image_item_compute_checksum (image);
+        priv->checksum = (checksum) ? checksum : g_paste_util_compute_checksum (image);
     else
         g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
 
@@ -265,7 +253,7 @@ g_paste_image_item_new (GdkPixbuf *img)
 {
     g_return_val_if_fail (GDK_IS_PIXBUF (img), NULL);
 
-    gchar *checksum = g_paste_image_item_compute_checksum (img);
+    gchar *checksum = g_paste_util_compute_checksum (img);
     G_PASTE_CLEANUP_FREE gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
     G_PASTE_CLEANUP_UNREF GFile *images_dir = g_file_new_for_path (images_dir_path);
 

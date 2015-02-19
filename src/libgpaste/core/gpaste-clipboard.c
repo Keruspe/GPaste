@@ -22,6 +22,7 @@
 #include <gpaste-image-item.h>
 #include <gpaste-password-item.h>
 #include <gpaste-uris-item.h>
+#include <gpaste-util.h>
 
 #include <string.h>
 
@@ -496,21 +497,6 @@ g_paste_clipboard_fake_event_finish_text (GtkClipboard *clipboard G_GNUC_UNUSED,
         g_paste_clipboard_owner_change (NULL, NULL, self);
 }
 
-/* FIXME: dedupe from gpaste-image-item */
-static gchar *
-image_compute_checksum (GdkPixbuf *image)
-{
-    if (!image)
-        return NULL;
-
-    guint length;
-    const guchar *data = gdk_pixbuf_get_pixels_with_length (image,
-                                                            &length);
-    return g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                        data,
-                                        length);
-}
-
 static void
 g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED,
                                            GdkPixbuf    *image,
@@ -518,7 +504,7 @@ g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED
 {
     GPasteClipboard *self = user_data;
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
-    G_PASTE_CLEANUP_FREE gchar *checksum = image_compute_checksum (image);
+    G_PASTE_CLEANUP_FREE gchar *checksum = g_paste_util_compute_checksum (image);
 
     if (g_strcmp0 (checksum, priv->image_checksum))
         g_paste_clipboard_owner_change (NULL, NULL, self);

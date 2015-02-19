@@ -27,14 +27,16 @@
 #include <gpaste-macros.h>
 
 #include <gtk/gtk.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 void     g_paste_util_show_about_dialog (GtkWindow *parent);
 gboolean g_paste_util_confirm_dialog    (GtkWindow   *parent,
                                          const gchar *msg);
 gboolean g_paste_util_spawn             (const gchar *app,
                                          GError     **error);
-gchar   *g_paste_util_replace (const gchar *text,
-                               const gchar *pattern,
-                               const gchar *substitution);
+gchar   *g_paste_util_replace           (const gchar *text,
+                                         const gchar *pattern,
+                                         const gchar *substitution);
+gchar   *g_paste_util_compute_checksum  (GdkPixbuf *image);
 
 #endif /*__G_PASTE_UTIL_H__*/
