@@ -38,6 +38,8 @@ struct _GPasteAppletIconClass
     GObjectClass parent_class;
 };
 
+void g_paste_applet_icon_activate (void);
+
 GPasteAppletIcon *g_paste_applet_icon_new (GType         type,
                                            GPasteClient *client);
 

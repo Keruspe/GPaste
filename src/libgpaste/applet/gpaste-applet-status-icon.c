@@ -34,7 +34,8 @@ g_paste_applet_status_icon_popup (GtkStatusIcon  *icon G_GNUC_UNUSED,
                                   GdkEventButton *event G_GNUC_UNUSED,
                                   gpointer        user_data G_GNUC_UNUSED)
 {
-    /* FIXME: spawn Ui */
+    g_paste_applet_icon_activate ();
+
     return GDK_EVENT_PROPAGATE;
 }
 

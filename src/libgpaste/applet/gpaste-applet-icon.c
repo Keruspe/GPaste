@@ -19,6 +19,8 @@
 
 #include "gpaste-applet-icon-private.h"
 
+#include <gpaste-util.h>
+
 struct _GPasteAppletIconPrivate
 {
     GPasteClient *client;
@@ -28,11 +30,20 @@ struct _GPasteAppletIconPrivate
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TYPE_OBJECT)
 
+/*
+ * g_paste_applet_icon_activate: (skip)
+ */
+void
+g_paste_applet_icon_activate (void)
+{
+    g_paste_util_spawn ("Ui", NULL);
+}
+
 static void
 g_paste_applet_icon_show_history (GPasteClient *client G_GNUC_UNUSED,
                                   gpointer      user_data G_GNUC_UNUSED)
 {
-    /* FIXME: spawn UI */
+    g_paste_applet_icon_activate ();
 }
 
 static void
