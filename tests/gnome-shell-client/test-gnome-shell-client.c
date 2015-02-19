@@ -121,8 +121,6 @@ main (gint argc, gchar *argv[])
     g_print ("Now should no longer recognize keybindings for 3 secondes.\n");
     g_usleep (3000000);
 
-    // TODO: grab accelerator
-
     g_signal_handler_disconnect (client, signal_id);
 
     return EXIT_SUCCESS;
