@@ -20,7 +20,8 @@
 
 const Lang = imports.lang;
 
-const Shell = imports.gi.Shell;
+const GPaste = imports.gi.GPaste;
+
 const St = imports.gi.St;
 
 const GPastePrefsItem = new Lang.Class({
@@ -39,7 +40,7 @@ const GPastePrefsItem = new Lang.Class({
 
         this.connect('clicked', function() {
             menu.itemActivated();
-            Shell.AppSystem.get_default().lookup_app('org.gnome.GPaste.Settings.desktop').activate();
+            GPaste.util_spawn('Settings');
         });
     }
 });
