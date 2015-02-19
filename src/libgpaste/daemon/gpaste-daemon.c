@@ -206,7 +206,15 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
 /****************/
 /* DBus Mathods */
 /****************/
-    
+
+static void
+g_paste_daemon_private_do_add_item (GPasteDaemonPrivate *priv,
+                                    GPasteItem          *item)
+{
+    g_paste_history_add (priv->history, item);
+    g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+}
+
 static void
 g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
                                const gchar         *text,
@@ -221,9 +229,8 @@ g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
         length <= g_paste_settings_get_max_text_item_size (settings) &&
         strlen (stripped) != 0)
     {
-        GPasteItem *item = g_paste_text_item_new (g_paste_settings_get_trim_items (settings) ? stripped : text);
-        g_paste_history_add (priv->history, item);
-        g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+        g_paste_daemon_private_do_add_item (priv,
+                                            g_paste_text_item_new (g_paste_settings_get_trim_items (settings) ? stripped : text));
     }
 }
 
@@ -269,11 +276,8 @@ g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
     if (!name || !password)
         return;
 
-    /* FIXME: do we want to check size here? */
-    GPasteItem *item = g_paste_password_item_new (name, password);
-    /* TODO: split */
-    g_paste_history_add (priv->history, item);
-    g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+    g_paste_daemon_private_do_add_item (priv,
+                                        g_paste_password_item_new (name, password));
 }
 
 static void
