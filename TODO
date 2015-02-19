@@ -1,4 +1,6 @@
 3.16:
+    daemon:
+        fix dr
     general:
         cleanup public headers includes
         dbus errors instead of asserts in daemon
