@@ -19,6 +19,8 @@
 
 #include "gpaste-uris-item-private.h"
 
+#include <gpaste-util.h>
+
 #include <glib/gi18n-lib.h>
 
 struct _GPasteUrisItemPrivate
@@ -106,29 +108,8 @@ g_paste_uris_item_new (const gchar *uris)
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
     GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
 
-    G_PASTE_CLEANUP_FREE gchar *home_escaped = g_regex_escape_string (g_get_home_dir (), -1);
-    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (home_escaped,
-                                                             0, /* Compile options */
-                                                             0, /* Match options */
-                                                             NULL); /* Error */
-    G_PASTE_CLEANUP_FREE gchar *display_string_with_newlines = g_regex_replace_literal (regex,
-                                                                                        uris,
-                                                                                        (gssize) -1,
-                                                                                        0, /* Start position */
-                                                                                        "~",
-                                                                                        0, /* Match options */
-                                                                                        NULL); /* Error */
-    G_PASTE_CLEANUP_REGEX_UNREF GRegex *_regex = g_regex_new ("\\n",
-                                                              0, /* Compile options */
-                                                              0, /* Match options */
-                                                              NULL); /* Error */
-    G_PASTE_CLEANUP_FREE gchar *display_string = g_regex_replace_literal (_regex,
-                                                                          display_string_with_newlines,
-                                                                          (gssize) -1,
-                                                                          0, /* Start position */
-                                                                          " ",
-                                                                          0, /* Match options */
-                                                                          NULL); /* Error */
+    G_PASTE_CLEANUP_FREE gchar *display_string_with_newlines = g_paste_util_replace (uris, g_get_home_dir (), "~");
+    G_PASTE_CLEANUP_FREE gchar *display_string = g_paste_util_replace (display_string_with_newlines, "\n", " ");
 
     // This is the prefix displayed in history to identify selected files
     G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);

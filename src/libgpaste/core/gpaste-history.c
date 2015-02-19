@@ -24,6 +24,7 @@
 #include <gpaste-image-item.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
+#include <gpaste-util.h>
 
 #include <glib/gi18n-lib.h>
 
@@ -639,36 +640,17 @@ g_paste_history_empty (GPasteHistory *self)
 }
 
 static gchar *
-g_paste_history_replace (const gchar *text,
-                         const gchar *pattern,
-                         const gchar *substitution)
-{
-    G_PASTE_CLEANUP_FREE gchar *regex_string = g_regex_escape_string (pattern, -1);
-    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (regex_string,
-                                                             0, /* Compile options */
-                                                             0, /* Match options */
-                                                             NULL); /* Error */
-    return g_regex_replace_literal (regex,
-                                    text,
-                                    (gssize) -1,
-                                    0, /* Start position */
-                                    substitution,
-                                    0, /* Match options */
-                                    NULL); /* Error */
-}
-
-static gchar *
 g_paste_history_encode (const gchar *text)
 {
-    G_PASTE_CLEANUP_FREE gchar *_encoded_text = g_paste_history_replace (text, "&", "&amp;");
-    return g_paste_history_replace (_encoded_text, ">", "&gt;");
+    G_PASTE_CLEANUP_FREE gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
+    return g_paste_util_replace (_encoded_text, ">", "&gt;");
 }
 
 static gchar *
 g_paste_history_decode (const gchar *text)
 {
-    G_PASTE_CLEANUP_FREE gchar *_decoded_text = g_paste_history_replace (text, "&gt;", ">");
-    return g_paste_history_replace (_decoded_text, "&amp;", "&");
+    G_PASTE_CLEANUP_FREE gchar *_decoded_text = g_paste_util_replace (text, "&gt;", ">");
+    return g_paste_util_replace (_decoded_text, "&amp;", "&");
 }
 
 static gchar *

@@ -19,6 +19,8 @@
 
 #include "gpaste-ui-item-private.h"
 
+#include <gpaste-util.h>
+
 #include <glib/gi18n-lib.h>
 
 struct _GPasteUiItemPrivate
@@ -34,26 +36,6 @@ struct _GPasteUiItemPrivate
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiItem, g_paste_ui_item, GTK_TYPE_LIST_BOX_ROW)
-
-/* TODO: move me somewhere ( dupe from history ) */
-static gchar *
-g_paste_ui_item_replace (const gchar *text,
-                         const gchar *pattern,
-                         const gchar *substitution)
-{
-    G_PASTE_CLEANUP_FREE gchar *regex_string = g_regex_escape_string (pattern, -1);
-    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (regex_string,
-                                                             0, /* Compile options */
-                                                             0, /* Match options */
-                                                             NULL); /* Error */
-    return g_regex_replace_literal (regex,
-                                    text,
-                                    (gssize) -1,
-                                    0, /* Start position */
-                                    substitution,
-                                    0, /* Match options */
-                                    NULL); /* Error */
-}
 
 /**
  * g_paste_ui_item_activate:
@@ -102,7 +84,7 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!txt || error)
         return;
 
-    gtk_label_set_text (priv->label, g_paste_ui_item_replace (txt, "\n", ""));
+    gtk_label_set_text (priv->label, g_paste_util_replace (txt, "\n", ""));
 }
 
 static void
