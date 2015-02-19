@@ -371,4 +371,6 @@ global:
     g_paste_ui_window_new;
 
     g_paste_util_show_about_dialog;
+    g_paste_util_confirm_dialog;
+    g_paste_util_spawn;
 } LIBGPASTE_2;

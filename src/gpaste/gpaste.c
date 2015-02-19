@@ -19,6 +19,7 @@
 
 #include <gpaste-config.h>
 #include <gpaste-client.h>
+#include <gpaste-util.h>
 
 #include <gio/gio.h>
 #include <glib/gi18n-lib.h>
@@ -187,31 +188,13 @@ failure_exit (GError *error)
 }
 
 static int
-spawn (const gchar *app,
-       GError     **error)
+spawn (const gchar *app)
 {
-    G_PASTE_CLEANUP_FREE gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    G_PASTE_CLEANUP_FREE gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
-    G_PASTE_CLEANUP_UNREF GDBusProxy *proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                             G_DBUS_PROXY_FLAGS_NONE,
-                                                                             NULL,
-                                                                             name,
-                                                                             object,
-                                                                             "org.freedesktop.Application",
-                                                                             NULL,
-                                                                             error);
+    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
 
-    if (proxy)
+    if (!g_paste_util_spawn (app, &error))
     {
-        GVariant *param = g_variant_new ("a{sv}", NULL);
-        GVariant *params = g_variant_new_tuple (&param, 1);
-        g_dbus_proxy_call_sync (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
-    }
-
-    if (*error)
-    {
-        g_critical ("%s %s: %s", _("Couldn't spawn"), app, (*error)->message);
-        g_clear_error (error);
+        g_critical ("%s %s: %s", _("Couldn't spawn"), app, error->message);
         return EXIT_FAILURE;
     }
 
@@ -360,7 +343,7 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "p")        ||
                      !g_strcmp0 (arg1, "preferences"))
             {
-                status = spawn ("Settings", &error);
+                status = spawn ("Settings");
             }
             else if (!g_strcmp0 (arg1, "show-history"))
             {
@@ -380,11 +363,11 @@ main (gint argc, gchar *argv[])
             }
             else if (has_applet () && !g_strcmp0 (arg1, "applet"))
             {
-                status = spawn ("Applet", &error);
+                status = spawn ("Applet");
             }
             else if (has_unity () && !g_strcmp0 (arg1, "app-indicator"))
             {
-                status = spawn ("AppIndicator", &error);
+                status = spawn ("AppIndicator");
             }
             else
             {

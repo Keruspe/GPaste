@@ -86,3 +86,37 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
     return ret;
 }
 
+/**
+ * g_paste_util_spawn:
+ * @app: the GPaste app to spawn
+ * @error: a #GError or %NULL
+ *
+ * spawn a GPaste app
+ *
+ * Returns: whether the spawn was successful
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_spawn (const gchar *app,
+                    GError     **error)
+{
+    G_PASTE_CLEANUP_FREE gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    G_PASTE_CLEANUP_FREE gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
+    G_PASTE_CLEANUP_UNREF GDBusProxy *proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                                             G_DBUS_PROXY_FLAGS_NONE,
+                                                                             NULL,
+                                                                             name,
+                                                                             object,
+                                                                             "org.freedesktop.Application",
+                                                                             NULL,
+                                                                             error);
+
+    if (!proxy)
+        return FALSE;
+
+    GVariant *param = g_variant_new ("a{sv}", NULL);
+    GVariant *params = g_variant_new_tuple (&param, 1);
+
+    g_dbus_proxy_call_sync (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
+
+    return TRUE;
+}

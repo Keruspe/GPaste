@@ -31,5 +31,7 @@
 void     g_paste_util_show_about_dialog (GtkWindow *parent);
 gboolean g_paste_util_confirm_dialog    (GtkWindow   *parent,
                                          const gchar *msg);
+gboolean g_paste_util_spawn             (const gchar *app,
+                                         GError     **error);
 
 #endif /*__G_PASTE_UTIL_H__*/
