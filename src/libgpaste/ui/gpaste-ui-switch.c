@@ -23,8 +23,9 @@
 
 struct _GPasteUiSwitchPrivate
 {
-    GtkWindow    *topwin;
     GPasteClient *client;
+
+    GtkWindow    *topwin;
 
     gulong        tracking_id;
 };
