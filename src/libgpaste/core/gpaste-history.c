@@ -1082,7 +1082,7 @@ g_paste_history_switch (GPasteHistory *self,
 
     g_paste_settings_set_history_name (priv->settings, name);
     g_paste_history_load (self);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0); /* TODO: is this sufficient ? */
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
 /**
