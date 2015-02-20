@@ -18,3 +18,6 @@
 /bindings/vapi/*.vapi
 !/bindings/vapi/config.vapi
 /test-suite.log
+/result
+/result-tmp
+/tmp
