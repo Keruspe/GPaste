@@ -1,4 +1,9 @@
 3.16:
+    applet:
+        menu for app-indicator and applet right click
+            - ui
+            - settings
+            - quit
     daemon:
         fix dr
     general:
