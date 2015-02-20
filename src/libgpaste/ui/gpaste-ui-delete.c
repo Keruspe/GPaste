@@ -19,8 +19,6 @@
 
 #include "gpaste-ui-delete-private.h"
 
-#include <glib/gi18n-lib.h>
-
 struct _GPasteUiDeletePrivate
 {
     GPasteClient *client;

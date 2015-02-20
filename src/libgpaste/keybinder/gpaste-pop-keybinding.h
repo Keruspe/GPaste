@@ -24,8 +24,8 @@
 #ifndef __G_PASTE_POP_KEYBINDING_H__
 #define __G_PASTE_POP_KEYBINDING_H__
 
-#include "gpaste-keybinding.h"
-#include "gpaste-history.h"
+#include <gpaste-history.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 

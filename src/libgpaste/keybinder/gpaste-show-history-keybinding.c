@@ -19,6 +19,8 @@
 
 #include "gpaste-show-history-keybinding-private.h"
 
+#include <gpaste-gsettings-keys.h>
+
 G_DEFINE_TYPE (GPasteShowHistoryKeybinding, g_paste_show_history_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
@@ -51,7 +53,7 @@ g_paste_show_history_keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUS
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_show_history_keybinding_new (GPasteDaemon     *gpaste_daemon)
+g_paste_show_history_keybinding_new (GPasteDaemon *gpaste_daemon)
 {
     return _g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
                                     G_PASTE_SHOW_HISTORY_SETTING,

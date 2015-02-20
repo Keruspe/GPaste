@@ -17,11 +17,14 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
+#error "Only <gpaste.h> can be included directly."
+#endif
+
 #ifndef __G_PASTE_UI_ITEM_H__
 #define __G_PASTE_UI_ITEM_H__
 
-#include <gpaste-ui-delete.h>
-
+#include <gpaste-client.h>
 #include <gpaste-settings.h>
 
 G_BEGIN_DECLS

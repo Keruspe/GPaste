@@ -19,6 +19,8 @@
 
 #include "gpaste-make-password-keybinding-private.h"
 
+#include <gpaste-gsettings-keys.h>
+
 G_DEFINE_TYPE (GPasteMakePasswordKeybinding, g_paste_make_password_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void

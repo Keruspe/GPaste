@@ -21,8 +21,7 @@
 
 #include <gpaste-util.h>
 
-#include <glib/gi18n-lib.h>
-
+#include <string.h>
 #include <sys/stat.h>
 
 struct _GPasteImageItemPrivate

@@ -21,8 +21,6 @@
 
 #include <gpaste-util.h>
 
-#include <glib/gi18n-lib.h>
-
 struct _GPasteUrisItemPrivate
 {
     GStrv uris;

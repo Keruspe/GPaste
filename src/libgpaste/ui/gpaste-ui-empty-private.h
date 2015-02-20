@@ -22,8 +22,6 @@
 
 #include <gpaste-ui-empty.h>
 
-#include <gtk/gtk.h>
-
 G_BEGIN_DECLS
 
 typedef struct _GPasteUiEmptyPrivate GPasteUiEmptyPrivate;

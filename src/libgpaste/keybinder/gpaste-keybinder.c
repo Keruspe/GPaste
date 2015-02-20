@@ -19,7 +19,8 @@
 
 #include "gpaste-keybinder-private.h"
 
-#include <gdk/gdk.h>
+#include <gpaste-gnome-shell-client.h>
+#include <gpaste-settings.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
 #  include <gdk/gdkwayland.h>

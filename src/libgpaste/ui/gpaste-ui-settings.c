@@ -19,7 +19,7 @@
 
 #include "gpaste-ui-settings-private.h"
 
-#include <glib/gi18n-lib.h>
+#include <gpaste-settings-ui-widget.h>
 
 G_DEFINE_TYPE (GPasteUiSettings, g_paste_ui_settings, GTK_TYPE_MENU_BUTTON)
 

@@ -19,7 +19,10 @@
 
 #include "gpaste-ui-header-private.h"
 
-#include <glib/gi18n-lib.h>
+#include <gpaste-ui-about.h>
+#include <gpaste-ui-empty.h>
+#include <gpaste-ui-settings.h>
+#include <gpaste-ui-switch.h>
 
 G_DEFINE_TYPE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_BAR)
 

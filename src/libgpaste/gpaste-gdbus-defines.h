@@ -21,8 +21,8 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_DAEMON_DEFINES_H__
-#define __G_PASTE_DAEMON_DEFINES_H__
+#ifndef __G_PASTE_GDBUS_DEFINES_H__
+#define __G_PASTE_GDBUS_DEFINES_H__
 
 G_BEGIN_DECLS
 
@@ -161,4 +161,4 @@ G_BEGIN_DECLS
 
 G_END_DECLS
 
-#endif /*__G_PASTE_DAEMON_DEFINES_H__*/
+#endif /*__G_PASTE_GDBUS_DEFINES_H__*/

@@ -19,9 +19,9 @@
 
 #include "gpaste-ui-item-private.h"
 
+#include <gpaste-gsettings-keys.h>
+#include <gpaste-ui-delete.h>
 #include <gpaste-util.h>
-
-#include <glib/gi18n-lib.h>
 
 struct _GPasteUiItemPrivate
 {

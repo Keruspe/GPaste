@@ -17,6 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gpaste-macros.h>
 #include <gpaste-util.h>
 
 #define LICENSE                                                            \

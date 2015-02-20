@@ -19,6 +19,10 @@
 
 #include "gpaste-ui-history-private.h"
 
+#include <gpaste-settings.h>
+#include <gpaste-ui-item.h>
+#include <gpaste-update-enums.h>
+
 struct _GPasteUiHistoryPrivate
 {
     GPasteClient   *client;

@@ -24,6 +24,8 @@
 #ifndef __GPASTE_MACROS_H__
 #define __GPASTE_MACROS_H__
 
+#include <gio/gio.h>
+#include <glib/gi18n-lib.h>
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS

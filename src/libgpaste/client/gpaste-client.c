@@ -19,10 +19,10 @@
 
 #include "gpaste-client-private.h"
 
-#define __G_PASTE_NEEDS_AU__
-#include "gpaste-gdbus-macros.h"
-
 #include <gpaste-gdbus-defines.h>
+#define __G_PASTE_NEEDS_AU__
+#include <gpaste-gdbus-macros.h>
+#include <gpaste-update-enums.h>
 
 G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 

@@ -17,11 +17,8 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-client.h>
-#include <gpaste-util.h>
 #include <gpaste-ui-window.h>
-
-#include <glib/gi18n.h>
+#include <gpaste-util.h>
 
 #include <stdlib.h>
 

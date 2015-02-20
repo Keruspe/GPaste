@@ -22,8 +22,6 @@
 
 #include <gpaste-ui-window.h>
 
-#include <gtk/gtk.h>
-
 G_BEGIN_DECLS
 
 typedef struct _GPasteUiWindowPrivate GPasteUiWindowPrivate;

@@ -19,14 +19,13 @@
 
 #include "gpaste-history-private.h"
 
-#include "gpaste-update-enums.h"
-
 #include <gpaste-image-item.h>
+#include <gpaste-gsettings-keys.h>
+#include <gpaste-settings.h>
 #include <gpaste-text-item.h>
+#include <gpaste-update-enums.h>
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
-
-#include <glib/gi18n-lib.h>
 
 struct _GPasteHistoryPrivate
 {

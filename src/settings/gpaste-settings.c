@@ -17,13 +17,8 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-client.h>
+#include <gpaste-settings-ui-stack.h>
 #include <gpaste-util.h>
-#include <gpaste-settings-ui-widget.h>
-
-#include <glib/gi18n.h>
-
-#include <stdlib.h>
 
 static void
 about_activated (GSimpleAction *action    G_GNUC_UNUSED,

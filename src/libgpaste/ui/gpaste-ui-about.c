@@ -19,7 +19,7 @@
 
 #include "gpaste-ui-about-private.h"
 
-#include <glib/gi18n-lib.h>
+#include <gpaste-util.h>
 
 struct _GPasteUiAboutPrivate
 {

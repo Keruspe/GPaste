@@ -42,7 +42,7 @@ typedef struct _GPasteShowHistoryKeybindingClass GPasteShowHistoryKeybindingClas
 G_PASTE_VISIBLE
 GType g_paste_show_history_keybinding_get_type (void);
 
-GPasteKeybinding *g_paste_show_history_keybinding_new (GPasteDaemon   *gpaste_daemon);
+GPasteKeybinding *g_paste_show_history_keybinding_new (GPasteDaemon *gpaste_daemon);
 
 G_END_DECLS
 

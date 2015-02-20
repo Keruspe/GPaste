@@ -19,6 +19,9 @@
 
 #include "gpaste-ui-window-private.h"
 
+#include <gpaste-ui-header.h>
+#include <gpaste-ui-history.h>
+
 struct _GPasteUiWindowPrivate
 {
     GtkApplication *app;

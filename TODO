@@ -7,7 +7,6 @@
     daemon:
         fix dr
     general:
-        cleanup public headers includes
         dbus errors instead of asserts in daemon
         fix histories view in settings refresh
         confirm dialog for history deletion

@@ -24,8 +24,8 @@
 #ifndef __G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING_H__
 #define __G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING_H__
 
-#include <gpaste-keybinding.h>
 #include <gpaste-clipboards-manager.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 

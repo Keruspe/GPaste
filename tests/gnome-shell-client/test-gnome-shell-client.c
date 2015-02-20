@@ -19,7 +19,6 @@
 
 #include <gpaste-gnome-shell-client.h>
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #define EXIT_TEST_SKIP 77

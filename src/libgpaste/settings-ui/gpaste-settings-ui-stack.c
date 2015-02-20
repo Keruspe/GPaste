@@ -19,13 +19,9 @@
 
 #include "gpaste-settings-ui-stack-private.h"
 
-#include <gpaste-config.h>
 #include <gpaste-client.h>
+#include <gpaste-gsettings-keys.h>
 #include <gpaste-settings.h>
-
-#include <glib/gi18n.h>
-
-#include <stdlib.h>
 
 struct _GPasteSettingsUiStackPrivate
 {

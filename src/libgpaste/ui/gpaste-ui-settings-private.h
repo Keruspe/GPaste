@@ -22,8 +22,6 @@
 
 #include <gpaste-ui-settings.h>
 
-#include <gtk/gtk.h>
-
 G_BEGIN_DECLS
 
 struct _GPasteUiSettings

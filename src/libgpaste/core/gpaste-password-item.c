@@ -19,7 +19,7 @@
 
 #include "gpaste-password-item-private.h"
 
-#include <glib/gi18n-lib.h>
+#include <string.h>
 
 struct _GPastePasswordItemPrivate
 {

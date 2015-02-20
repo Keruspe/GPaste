@@ -19,10 +19,6 @@
 
 #include <gpaste-applet.h>
 
-#include <glib/gi18n.h>
-
-#include <stdlib.h>
-
 gint
 main (gint argc, gchar *argv[])
 {

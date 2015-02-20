@@ -17,15 +17,15 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
+#error "Only <gpaste.h> can be included directly."
+#endif
+
 #ifndef __G_PASTE_APPLET_H__
 #define __G_PASTE_APPLET_H__
 
 #include <gpaste-config.h>
-#include <gpaste-applet-status-icon.h>
-
-#if G_PASTE_CONFIG_ENABLE_UNITY
-#include <gpaste-applet-app-indicator.h>
-#endif
+#include <gpaste-macros.h>
 
 G_BEGIN_DECLS
 

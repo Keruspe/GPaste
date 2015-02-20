@@ -24,11 +24,9 @@
 #ifndef __G_PASTE_PASSWORD_ITEM_H__
 #define __G_PASTE_PASSWORD_ITEM_H__
 
-#include <gpaste-text-item.h>
+#include <gpaste-item.h>
 
 G_BEGIN_DECLS
-
-/* GPaste PasswordItem */
 
 #define G_PASTE_TYPE_PASSWORD_ITEM                (g_paste_password_item_get_type ())
 #define G_PASTE_PASSWORD_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_PASSWORD_ITEM, GPastePasswordItem))

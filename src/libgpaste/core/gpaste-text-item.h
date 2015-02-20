@@ -28,8 +28,6 @@
 
 G_BEGIN_DECLS
 
-/* GPaste TextItem */
-
 #define G_PASTE_TYPE_TEXT_ITEM                (g_paste_text_item_get_type ())
 #define G_PASTE_TEXT_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_TEXT_ITEM, GPasteTextItem))
 #define G_PASTE_IS_TEXT_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_TEXT_ITEM))
