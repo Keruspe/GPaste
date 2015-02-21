@@ -34,6 +34,7 @@ const GPasteDeleteButton = new Lang.Class({
             icon_name: 'edit-delete-symbolic',
             style_class: 'system-status-icon'
         });
+        this.child.set_icon_size(22 * St.ThemeContext.get_for_stage(global.stage).scale_factor);
 
         this._client = client;
         this.setIndex(index);
