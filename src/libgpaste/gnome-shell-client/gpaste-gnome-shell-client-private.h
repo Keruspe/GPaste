@@ -29,11 +29,6 @@ struct _GPasteGnomeShellClient
     GDBusProxy parent_instance;
 };
 
-struct _GPasteGnomeShellClientClass
-{
-    GDBusProxyClass parent_class;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_GNOME_SHELL_CLIENT_PRIVATE_H__*/

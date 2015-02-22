@@ -69,15 +69,7 @@ typedef enum {
   G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL = ~0,
 } GPasteGnomeShellKeyBindingMode;
 
-#define G_PASTE_TYPE_GNOME_SHELL_CLIENT            (g_paste_gnome_shell_client_get_type ())
-#define G_PASTE_GNOME_SHELL_CLIENT(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_GNOME_SHELL_CLIENT, GPasteGnomeShellClient))
-#define G_PASTE_IS_GNOME_SHELL_CLIENT(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_GNOME_SHELL_CLIENT))
-#define G_PASTE_GNOME_SHELL_CLIENT_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_GNOME_SHELL_CLIENT, GPasteGnomeShellClientClass))
-#define G_PASTE_IS_GNOME_SHELL_CLIENT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_GNOME_SHELL_CLIENT))
-#define G_PASTE_GNOME_SHELL_CLIENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_GNOME_SHELL_CLIENT, GPasteGnomeShellClientClass))
-
-typedef struct _GPasteGnomeShellClient GPasteGnomeShellClient;
-typedef struct _GPasteGnomeShellClientClass GPasteGnomeShellClientClass;
+#define G_PASTE_TYPE_GNOME_SHELL_CLIENT (g_paste_gnome_shell_client_get_type ())
 
 typedef struct
 {
@@ -87,8 +79,7 @@ typedef struct
 
 #define G_PASTE_GNOME_SHELL_ACCELERATOR(accelerator) ((GPasteGnomeShellAccelerator) {accelerator, G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL})
 
-G_PASTE_VISIBLE
-GType g_paste_gnome_shell_client_get_type (void);
+G_PASTE_FINAL_TYPE (GnomeShellClient, gnome_shell_client, GNOME_SHELL_CLIENT, GDBusProxy)
 
 /*******************/
 /* Methods /  Sync */
