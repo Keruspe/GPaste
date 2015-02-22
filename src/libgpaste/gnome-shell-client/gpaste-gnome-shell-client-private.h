@@ -22,8 +22,6 @@
 
 #include <gpaste-gnome-shell-client.h>
 
-#include <gio/gio.h>
-
 G_BEGIN_DECLS
 
 struct _GPasteGnomeShellClient

@@ -22,7 +22,6 @@
 
 #include <getopt.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 static inline gboolean
 has_applet(void)

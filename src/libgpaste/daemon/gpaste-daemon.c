@@ -19,13 +19,8 @@
 
 #include "gpaste-daemon-private.h"
 
-#include <gpaste-clipboards-manager.h>
 #include <gpaste-gdbus-defines.h>
-#include <gpaste-history.h>
-#include <gpaste-keybinder.h>
-#include <gpaste-password-item.h>
 #include <gpaste-screensaver-client.h>
-#include <gpaste-settings.h>
 #include <gpaste-text-item.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-util.h>

@@ -21,7 +21,6 @@
 
 #include <gpaste-image-item.h>
 #include <gpaste-gsettings-keys.h>
-#include <gpaste-settings.h>
 #include <gpaste-text-item.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-uris-item.h>

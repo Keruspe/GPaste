@@ -19,9 +19,7 @@
 
 #include "gpaste-clipboards-manager-private.h"
 
-#include <gpaste-history.h>
 #include <gpaste-image-item.h>
-#include <gpaste-settings.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 

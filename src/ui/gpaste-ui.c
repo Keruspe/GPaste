@@ -20,8 +20,6 @@
 #include <gpaste-ui-window.h>
 #include <gpaste-util.h>
 
-#include <stdlib.h>
-
 static void
 about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,

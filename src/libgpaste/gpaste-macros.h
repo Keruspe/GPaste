@@ -28,6 +28,8 @@
 #include <glib/gi18n-lib.h>
 #include <gtk/gtk.h>
 
+#include <stdlib.h>
+
 G_BEGIN_DECLS
 
 #define G_PASTE_INIT_GETTEXT()                          \

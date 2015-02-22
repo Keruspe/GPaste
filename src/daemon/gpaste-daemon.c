@@ -17,15 +17,12 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-keybinding.h>
 #include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>
 #include <gpaste-show-history-keybinding.h>
 #include <gpaste-sync-clipboard-to-primary-keybinding.h>
 #include <gpaste-sync-primary-to-clipboard-keybinding.h>
 #include <gpaste-upload-keybinding.h>
-
-#include <stdlib.h>
 
 static GApplication *_app;
 

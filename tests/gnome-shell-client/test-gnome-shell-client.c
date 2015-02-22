@@ -19,8 +19,6 @@
 
 #include <gpaste-gnome-shell-client.h>
 
-#include <stdlib.h>
-
 #define EXIT_TEST_SKIP 77
 
 typedef struct

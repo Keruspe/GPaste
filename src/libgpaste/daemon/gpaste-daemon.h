@@ -24,10 +24,8 @@
 #ifndef __G_PASTE_DAEMON_H__
 #define __G_PASTE_DAEMON_H__
 
-#include <gpaste-history.h>
 #include <gpaste-clipboards-manager.h>
 #include <gpaste-keybinder.h>
-#include <gpaste-settings.h>
 
 G_BEGIN_DECLS
 
