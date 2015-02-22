@@ -56,6 +56,8 @@
                   G_TYPE_NONE,                   \
                   0)
 
+typedef struct _GPasteDaemonPrivate GPasteDaemonPrivate;
+
 enum
 {
     C_UPDATE,
@@ -656,7 +658,7 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
 static void
 g_paste_daemon_unregister_object (gpointer user_data)
 {
-    G_PASTE_CLEANUP_UNREF GPasteDaemon *self = G_PASTE_DAEMON (user_data);
+    g_autoptr (GPasteDaemon) self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     gulong *c_signals = priv->c_signals;
 

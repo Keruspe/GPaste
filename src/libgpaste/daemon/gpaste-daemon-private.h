@@ -24,16 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteDaemonPrivate GPasteDaemonPrivate;
-
 struct _GPasteDaemon
 {
     GObject parent_instance;
-};
-
-struct _GPasteDaemonClass
-{
-    GObjectClass parent_class;
 };
 
 G_END_DECLS
