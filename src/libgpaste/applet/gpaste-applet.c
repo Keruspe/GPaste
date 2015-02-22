@@ -22,6 +22,8 @@
 #include <gpaste-applet-app-indicator.h>
 #include <gpaste-applet-status-icon.h>
 
+typedef struct _GPasteAppletPrivate GPasteAppletPrivate;
+
 struct _GPasteAppletPrivate
 {
     GPasteClient        *client;

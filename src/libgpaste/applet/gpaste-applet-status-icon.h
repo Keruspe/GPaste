@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_APPLET_STATUS_ICON                (g_paste_applet_status_icon_get_type ())
-#define G_PASTE_APPLET_STATUS_ICON(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_APPLET_STATUS_ICON, GPasteAppletStatusIcon))
-#define G_PASTE_IS_APPLET_STATUS_ICON(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_APPLET_STATUS_ICON))
-#define G_PASTE_APPLET_STATUS_ICON_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_APPLET_STATUS_ICON, GPasteAppletStatusIconClass))
-#define G_PASTE_IS_APPLET_STATUS_ICON_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_APPLET_STATUS_ICON))
-#define G_PASTE_APPLET_STATUS_ICON_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_APPLET_STATUS_ICON, GPasteAppletStatusIconClass))
+#define G_PASTE_TYPE_APPLET_STATUS_ICON (g_paste_applet_status_icon_get_type ())
 
-typedef struct _GPasteAppletStatusIcon GPasteAppletStatusIcon;
-typedef struct _GPasteAppletStatusIconClass GPasteAppletStatusIconClass;
-
-G_PASTE_VISIBLE
-GType g_paste_applet_status_icon_get_type (void);
+G_PASTE_FINAL_TYPE (AppletStatusIcon, applet_status_icon, APPLET_STATUS_ICON, GPasteAppletIcon)
 
 GPasteAppletIcon *g_paste_applet_status_icon_new (GPasteClient *client);
 

@@ -25,18 +25,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_APPLET_APP_INDICATOR                (g_paste_applet_app_indicator_get_type ())
-#define G_PASTE_APPLET_APP_INDICATOR(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_APPLET_APP_INDICATOR, GPasteAppletAppIndicator))
-#define G_PASTE_IS_APPLET_APP_INDICATOR(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_APPLET_APP_INDICATOR))
-#define G_PASTE_APPLET_APP_INDICATOR_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_APPLET_APP_INDICATOR, GPasteAppletAppIndicatorClass))
-#define G_PASTE_IS_APPLET_APP_INDICATOR_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_APPLET_APP_INDICATOR))
-#define G_PASTE_APPLET_APP_INDICATOR_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_APPLET_APP_INDICATOR, GPasteAppletAppIndicatorClass))
+#define G_PASTE_TYPE_APPLET_APP_INDICATOR (g_paste_applet_app_indicator_get_type ())
 
-typedef struct _GPasteAppletAppIndicator GPasteAppletAppIndicator;
-typedef struct _GPasteAppletAppIndicatorClass GPasteAppletAppIndicatorClass;
-
-G_PASTE_VISIBLE
-GType g_paste_applet_app_indicator_get_type (void);
+G_PASTE_FINAL_TYPE (AppletAppIndicator, applet_app_indicator, APPLET_APP_INDICATOR, GPasteAppletIcon)
 
 GPasteAppletIcon *g_paste_applet_app_indicator_new (GPasteClient *client);
 

@@ -28,18 +28,14 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_APPLET_ICON                (g_paste_applet_icon_get_type ())
-#define G_PASTE_APPLET_ICON(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_APPLET_ICON, GPasteAppletIcon))
-#define G_PASTE_IS_APPLET_ICON(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_APPLET_ICON))
-#define G_PASTE_APPLET_ICON_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_APPLET_ICON, GPasteAppletIconClass))
-#define G_PASTE_IS_APPLET_ICON_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_APPLET_ICON))
-#define G_PASTE_APPLET_ICON_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_APPLET_ICON, GPasteAppletIconClass))
+#define G_PASTE_TYPE_APPLET_ICON (g_paste_applet_icon_get_type ())
 
-typedef struct _GPasteAppletIcon GPasteAppletIcon;
-typedef struct _GPasteAppletIconClass GPasteAppletIconClass;
+G_PASTE_DERIVABLE_TYPE (AppletIcon, applet_icon, APPLET_ICON, GObject)
 
-G_PASTE_VISIBLE
-GType g_paste_applet_icon_get_type (void);
+struct _GPasteAppletIconClass
+{
+    GObjectClass parent_class;
+};
 
 G_END_DECLS
 

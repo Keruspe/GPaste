@@ -21,6 +21,8 @@
 
 #include <libappindicator/app-indicator.h>
 
+typedef struct _GPasteAppletAppIndicatorPrivate GPasteAppletAppIndicatorPrivate;
+
 /* FIXME: react to click */
 struct _GPasteAppletAppIndicatorPrivate
 {

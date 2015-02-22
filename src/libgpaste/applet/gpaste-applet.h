@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_APPLET            (g_paste_applet_get_type ())
-#define G_PASTE_APPLET(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_APPLET, GPasteApplet))
-#define G_PASTE_IS_APPLET(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_APPLET))
-#define G_PASTE_APPLET_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_APPLET, GPasteAppletClass))
-#define G_PASTE_IS_APPLET_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_APPLET))
-#define G_PASTE_APPLET_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_APPLET, GPasteAppletClass))
+#define G_PASTE_TYPE_APPLET (g_paste_applet_get_type ())
 
-typedef struct _GPasteApplet GPasteApplet;
-typedef struct _GPasteAppletClass GPasteAppletClass;
-
-G_PASTE_VISIBLE
-GType g_paste_applet_get_type (void);
+G_PASTE_FINAL_TYPE (Applet, applet, APPLET, GObject)
 
 #if G_PASTE_CONFIG_ENABLE_UNITY
 GPasteApplet *g_paste_applet_new_app_indicator (GtkApplication *application);

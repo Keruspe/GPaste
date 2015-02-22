@@ -26,16 +26,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteAppletAppIndicatorPrivate GPasteAppletAppIndicatorPrivate;
-
 struct _GPasteAppletAppIndicator
 {
     GPasteAppletIcon parent_instance;
-};
-
-struct _GPasteAppletAppIndicatorClass
-{
-    GPasteAppletIconClass parent_class;
 };
 
 G_END_DECLS

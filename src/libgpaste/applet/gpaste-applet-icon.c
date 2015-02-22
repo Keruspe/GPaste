@@ -21,6 +21,8 @@
 
 #include <gpaste-util.h>
 
+typedef struct _GPasteAppletIconPrivate GPasteAppletIconPrivate;
+
 struct _GPasteAppletIconPrivate
 {
     GPasteClient *client;

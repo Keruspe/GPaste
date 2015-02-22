@@ -25,19 +25,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteAppletIconPrivate GPasteAppletIconPrivate;
-
-/*< abstract >*/
-struct _GPasteAppletIcon
-{
-    GObject parent_instance;
-};
-
-struct _GPasteAppletIconClass
-{
-    GObjectClass parent_class;
-};
-
 void g_paste_applet_icon_activate (void);
 
 GPasteAppletIcon *g_paste_applet_icon_new (GType         type,
