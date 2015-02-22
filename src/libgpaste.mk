@@ -59,7 +59,6 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/ui/gpaste-ui-settings-private.h \
 	src/libgpaste/ui/gpaste-ui-switch-private.h \
 	src/libgpaste/ui/gpaste-ui-window-private.h \
-	src/libgpaste/util/gpaste-util.h \
 	$(NULL)
 
 lib_libgpaste_la_public_headers = \
@@ -104,6 +103,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/ui/gpaste-ui-settings.h \
 	src/libgpaste/ui/gpaste-ui-switch.h \
 	src/libgpaste/ui/gpaste-ui-window.h \
+	src/libgpaste/util/gpaste-util.h \
 	$(NULL)
 
 lib_libgpaste_la_SOURCES = \

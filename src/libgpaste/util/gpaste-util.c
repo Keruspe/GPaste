@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-util.h"
+#include <gpaste-util.h>
 
 #define LICENSE                                                            \
     "GPaste is free software: you can redistribute it and/or modify"       \
