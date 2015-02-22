@@ -48,7 +48,7 @@ main (gint argc, gchar *argv[])
 {
     G_PASTE_INIT_APPLICATION_FULL ("Ui", show_win);
     G_PASTE_CLEANUP_ERROR_FREE GError *e = NULL;
-    G_PASTE_CLEANUP_UNREF GPasteClient *client = g_paste_client_new_sync (&e);
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&e);
 
     if (!client)
     {
