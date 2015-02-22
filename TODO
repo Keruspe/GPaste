@@ -1,21 +1,25 @@
 3.16:
+    general:
+        fix histories view in settings refresh
+        confirm dialog for history deletion
+        check G_DECLARE_*
+        g_autoptr
     applet:
         menu for app-indicator and applet right click
             - ui
             - settings
             - quit
-    general:
-        dbus errors instead of asserts in daemon
-        fix histories view in settings refresh
-        confirm dialog for history deletion
-        check G_DECLARE_*
-        g_autoptr
     gpaste-ui:
         add appstream
         TODOs
+        empty history item
+
+3.18:
+    general:
+        dbus errors instead of asserts in daemon
+    gpaste-ui:
         search bar
         history chooser
-        check empty history
 
 future:
     general:
