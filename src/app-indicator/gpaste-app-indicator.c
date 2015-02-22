@@ -24,7 +24,7 @@ main (gint argc, gchar *argv[])
 {
     G_PASTE_INIT_APPLICATION ("AppIndicator");
 
-    G_GNUC_UNUSED G_PASTE_CLEANUP_UNREF GPasteApplet *applet = g_paste_applet_new_app_indicator (app);
+    G_GNUC_UNUSED g_autoptr (GPasteApplet) applet = g_paste_applet_new_app_indicator (app);
 
     return g_application_run (gapp, argc, argv);
 }
