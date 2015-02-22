@@ -85,6 +85,8 @@ show_help (void)
     printf ("  %s daemon-reexec: %s\n", progname, _("reexecute the daemon (after upgrading...)"));
     /* Translators: help for gpaste settings */
     printf ("  %s settings: %s\n", progname, _("launch the configuration tool"));
+    /* Translators: help for gpaste ui */
+    printf ("  %s ui: %s\n", progname, _("launch the graphical tool"));
     if (has_applet ())
     {
         /* Translators: help for gpaste applet */
@@ -355,6 +357,10 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "quit"))
             {
                 g_paste_client_track_sync (client, FALSE, &error);
+            }
+            else if (!g_strcmp0 (arg1, "ui"))
+            {
+                status = spawn ("Ui");
             }
             else if (has_applet () && !g_strcmp0 (arg1, "applet"))
             {

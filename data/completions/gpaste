@@ -9,7 +9,7 @@ _gpaste()
 
         local opts
 
-        opts="about add add-password backup-history daemon daemon-reexec daemon-version delete delete-history delete-password empty file get help --help -h history history-size list-histories --oneline -o preferences quit remove --raw -r rename-password select set set-password settings show-history start stop switch-history upload version --version -v --zero -z"
+        opts="about add add-password backup-history daemon daemon-reexec daemon-version delete delete-history delete-password empty file get help --help -h history history-size list-histories --oneline -o preferences quit remove --raw -r rename-password select set set-password settings show-history start stop switch-history upload ui version --version -v --zero -z"
         COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) )
 
     elif [[ ${COMP_CWORD} == 2 ]]; then

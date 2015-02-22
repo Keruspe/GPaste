@@ -4,8 +4,6 @@
             - ui
             - settings
             - quit
-    daemon:
-        fix dr
     general:
         dbus errors instead of asserts in daemon
         fix histories view in settings refresh
@@ -13,7 +11,6 @@
         check G_DECLARE_*
         g_autoptr
     gpaste-ui:
-        add command
         add appstream
         TODOs
         search bar

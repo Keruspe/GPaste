@@ -71,6 +71,7 @@ _gpaste_complete_subcommands() {
         {stop,quit,q}:"Shutdown the daemon"
         "show-history:Make the applet or extension display the history"
         {switch-history,sh}:"Switch to another history"
+        "ui:Launch the graphical tool"
         {upload,u}:"Upload item to a pastebin service"
         {version,v}:"Display the version"
         {zero-history,zh}:"Display the history with NUL as separator"
@@ -83,9 +84,13 @@ _gpaste_complete_subcommands() {
 _gpaste() {
     if (( CURRENT > 2 )); then
         local cmd="${words[2]}"
-        curcontext="${curcontext%:*:*}:gpaste-${cmd}"
-        (( CURRENT-- ))
-        shift words
+        local ctx="gpaste"
+        while (( CURRENT > 2 )); do
+            ctx="${ctx}-${words[2]}"
+            (( CURRENT-- ))
+            shift words
+        done
+        curcontext="${curcontext%:*:*}:${ctx}"
         _gpaste_complete_arguments "${cmd}"
     else
         _gpaste_complete_subcommands
