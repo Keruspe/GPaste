@@ -74,7 +74,7 @@ main (gint argc, gchar *argv[])
     G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_sync (NULL);
-    G_PASTE_CLEANUP_UNREF GPasteKeybinder *keybinder = g_paste_keybinder_new (settings, shell_client);
+    g_autoptr (GPasteKeybinder) keybinder = g_paste_keybinder_new (settings, shell_client);
     g_autoptr (GPasteDaemon) g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
     G_PASTE_CLEANUP_UNREF GPasteClipboard *clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboard *primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);

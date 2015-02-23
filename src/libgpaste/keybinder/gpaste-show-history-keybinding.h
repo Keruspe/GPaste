@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING            (g_paste_show_history_keybinding_get_type ())
-#define G_PASTE_SHOW_HISTORY_KEYBINDING(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING, GPasteShowHistoryKeybinding))
-#define G_PASTE_IS_SHOW_HISTORY_KEYBINDING(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING))
-#define G_PASTE_SHOW_HISTORY_KEYBINDING_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING, GPasteShowHistoryKeybindingClass))
-#define G_PASTE_IS_SHOW_HISTORY_KEYBINDING_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING))
-#define G_PASTE_SHOW_HISTORY_KEYBINDING_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING, GPasteShowHistoryKeybindingClass))
+#define G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING (g_paste_show_history_keybinding_get_type ())
 
-typedef struct _GPasteShowHistoryKeybinding GPasteShowHistoryKeybinding;
-typedef struct _GPasteShowHistoryKeybindingClass GPasteShowHistoryKeybindingClass;
-
-G_PASTE_VISIBLE
-GType g_paste_show_history_keybinding_get_type (void);
+G_PASTE_FINAL_TYPE (ShowHistoryKeybinding, show_history_keybinding, SHOW_HISTORY_KEYBINDING, GPasteKeybinding)
 
 GPasteKeybinding *g_paste_show_history_keybinding_new (GPasteDaemon *gpaste_daemon);
 

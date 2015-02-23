@@ -31,3 +31,7 @@ future:
         specify errors types when possible in g-i
     tests:
         split test, add interactive wrapper
+
+upstream:
+    const in *_get_private
+    const in G_DECLARE macros

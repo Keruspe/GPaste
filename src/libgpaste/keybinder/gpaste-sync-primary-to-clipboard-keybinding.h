@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING            (g_paste_sync_primary_to_clipboard_keybinding_get_type ())
-#define G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING, GPasteSyncPrimaryToClipboardKeybinding))
-#define G_PASTE_IS_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING))
-#define G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING, GPasteSyncPrimaryToClipboardKeybindingClass))
-#define G_PASTE_IS_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING))
-#define G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING, GPasteSyncPrimaryToClipboardKeybindingClass))
+#define G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING (g_paste_sync_primary_to_clipboard_keybinding_get_type ())
 
-typedef struct _GPasteSyncPrimaryToClipboardKeybinding GPasteSyncPrimaryToClipboardKeybinding;
-typedef struct _GPasteSyncPrimaryToClipboardKeybindingClass GPasteSyncPrimaryToClipboardKeybindingClass;
-
-G_PASTE_VISIBLE
-GType g_paste_sync_primary_to_clipboard_keybinding_get_type (void);
+G_PASTE_FINAL_TYPE (SyncPrimaryToClipboardKeybinding, sync_primary_to_clipboard_keybinding, SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING, GPasteKeybinding)
 
 GPasteKeybinding *g_paste_sync_primary_to_clipboard_keybinding_new (GPasteClipboardsManager *gcm);
 

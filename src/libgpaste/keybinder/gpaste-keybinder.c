@@ -29,6 +29,8 @@
 
 #define MAX_BINDINGS 7
 
+typedef struct _GPasteKeybinderPrivate GPasteKeybinderPrivate;
+
 struct _GPasteKeybinderPrivate
 {
     GSList                 *keybindings;

@@ -26,16 +26,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteShowHistoryKeybindingPrivate GPasteShowHistoryKeybindingPrivate;
-
 struct _GPasteShowHistoryKeybinding
 {
     GPasteKeybinding parent_instance;
-};
-
-struct _GPasteShowHistoryKeybindingClass
-{
-    GPasteKeybindingClass parent_class;
 };
 
 G_END_DECLS

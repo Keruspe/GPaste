@@ -24,18 +24,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteKeybindingPrivate GPasteKeybindingPrivate;
-
-struct _GPasteKeybinding
-{
-    GObject parent_instance;
-};
-
-struct _GPasteKeybindingClass
-{
-    GObjectClass parent_class;
-};
-
 GPasteKeybinding *_g_paste_keybinding_new (GType                  type,
                                            const gchar           *dconf_key,
                                            GPasteKeybindingGetter getter,

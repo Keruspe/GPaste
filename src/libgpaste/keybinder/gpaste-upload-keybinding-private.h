@@ -26,16 +26,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteUploadKeybindingPrivate GPasteUploadKeybindingPrivate;
-
 struct _GPasteUploadKeybinding
 {
     GPasteKeybinding parent_instance;
-};
-
-struct _GPasteUploadKeybindingClass
-{
-    GPasteKeybindingClass parent_class;
 };
 
 G_END_DECLS

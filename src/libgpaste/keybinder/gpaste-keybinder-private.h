@@ -24,16 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteKeybinderPrivate GPasteKeybinderPrivate;
-
 struct _GPasteKeybinder
 {
     GObject parent_instance;
-};
-
-struct _GPasteKeybinderClass
-{
-    GObjectClass parent_class;
 };
 
 G_END_DECLS

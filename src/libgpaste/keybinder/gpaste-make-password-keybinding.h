@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING            (g_paste_make_password_keybinding_get_type ())
-#define G_PASTE_MAKE_PASSWORD_KEYBINDING(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING, GPasteMakePasswordKeybinding))
-#define G_PASTE_IS_MAKE_PASSWORD_KEYBINDING(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING))
-#define G_PASTE_MAKE_PASSWORD_KEYBINDING_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING, GPasteMakePasswordKeybindingClass))
-#define G_PASTE_IS_MAKE_PASSWORD_KEYBINDING_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING))
-#define G_PASTE_MAKE_PASSWORD_KEYBINDING_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING, GPasteMakePasswordKeybindingClass))
+#define G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING (g_paste_make_password_keybinding_get_type ())
 
-typedef struct _GPasteMakePasswordKeybinding GPasteMakePasswordKeybinding;
-typedef struct _GPasteMakePasswordKeybindingClass GPasteMakePasswordKeybindingClass;
-
-G_PASTE_VISIBLE
-GType g_paste_make_password_keybinding_get_type (void);
+G_PASTE_FINAL_TYPE (MakePasswordKeybinding, make_password_keybinding, MAKE_PASSWORD_KEYBINDING, GPasteKeybinding)
 
 GPasteKeybinding *g_paste_make_password_keybinding_new (GPasteHistory *history);
 

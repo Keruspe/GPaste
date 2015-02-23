@@ -26,16 +26,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteMakePasswordKeybindingPrivate GPasteMakePasswordKeybindingPrivate;
-
 struct _GPasteMakePasswordKeybinding
 {
     GPasteKeybinding parent_instance;
-};
-
-struct _GPasteMakePasswordKeybindingClass
-{
-    GPasteKeybindingClass parent_class;
 };
 
 G_END_DECLS

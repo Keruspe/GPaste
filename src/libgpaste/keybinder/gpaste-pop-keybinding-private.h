@@ -26,16 +26,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPastePopKeybindingPrivate GPastePopKeybindingPrivate;
-
 struct _GPastePopKeybinding
 {
     GPasteKeybinding parent_instance;
-};
-
-struct _GPastePopKeybindingClass
-{
-    GPasteKeybindingClass parent_class;
 };
 
 G_END_DECLS

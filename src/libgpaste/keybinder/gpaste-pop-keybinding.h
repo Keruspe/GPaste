@@ -29,20 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_POP_KEYBINDING            (g_paste_pop_keybinding_get_type ())
-#define G_PASTE_POP_KEYBINDING(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_POP_KEYBINDING, GPastePopKeybinding))
-#define G_PASTE_IS_POP_KEYBINDING(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_POP_KEYBINDING))
-#define G_PASTE_POP_KEYBINDING_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_POP_KEYBINDING, GPastePopKeybindingClass))
-#define G_PASTE_IS_POP_KEYBINDING_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_POP_KEYBINDING))
-#define G_PASTE_POP_KEYBINDING_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_POP_KEYBINDING, GPastePopKeybindingClass))
+#define G_PASTE_TYPE_POP_KEYBINDING (g_paste_pop_keybinding_get_type ())
 
-typedef struct _GPastePopKeybinding GPastePopKeybinding;
-typedef struct _GPastePopKeybindingClass GPastePopKeybindingClass;
-
-#ifdef G_PASTE_COMPILATION
-G_PASTE_VISIBLE
-#endif
-GType g_paste_pop_keybinding_get_type (void);
+G_PASTE_FINAL_TYPE (PopKeybinding, pop_keybinding, POP_KEYBINDING, GPasteKeybinding)
 
 GPasteKeybinding *g_paste_pop_keybinding_new (GPasteHistory *history);
 

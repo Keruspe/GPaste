@@ -26,16 +26,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteSyncPrimaryToClipboardKeybindingPrivate GPasteShowHistoryKeybindingPrivate;
-
 struct _GPasteSyncPrimaryToClipboardKeybinding
 {
     GPasteKeybinding parent_instance;
-};
-
-struct _GPasteSyncPrimaryToClipboardKeybindingClass
-{
-    GPasteKeybindingClass parent_class;
 };
 
 G_END_DECLS

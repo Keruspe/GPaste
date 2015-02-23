@@ -21,6 +21,8 @@
 
 #include <gpaste-gsettings-keys.h>
 
+typedef struct _GPasteUploadKeybindingPrivate GPasteUploadKeybindingPrivate;
+
 struct _GPasteUploadKeybindingPrivate
 {
     GPasteDaemon *daemon;

@@ -28,22 +28,18 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_KEYBINDING            (g_paste_keybinding_get_type ())
-#define G_PASTE_KEYBINDING(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_KEYBINDING, GPasteKeybinding))
-#define G_PASTE_IS_KEYBINDING(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_KEYBINDING))
-#define G_PASTE_KEYBINDING_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_KEYBINDING, GPasteKeybindingClass))
-#define G_PASTE_IS_KEYBINDING_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_KEYBINDING))
-#define G_PASTE_KEYBINDING_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_KEYBINDING, GPasteKeybindingClass))
+#define G_PASTE_TYPE_KEYBINDING (g_paste_keybinding_get_type ())
 
-typedef struct _GPasteKeybinding GPasteKeybinding;
-typedef struct _GPasteKeybindingClass GPasteKeybindingClass;
+G_PASTE_DERIVABLE_TYPE (Keybinding, keybinding, KEYBINDING, GObject)
+
+struct _GPasteKeybindingClass
+{
+    GObjectClass parent_class;
+};
 
 typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
-typedef void         (*GPasteKeybindingFunc) (GPasteKeybinding *self, /* FIXME: g-i */
-                                              gpointer          data);
-
-G_PASTE_VISIBLE
-GType g_paste_keybinding_get_type (void);
+typedef void         (*GPasteKeybindingFunc)   (GPasteKeybinding *self, /* FIXME: g-i */
+                                                gpointer          data);
 
 const guint    *g_paste_keybinding_get_keycodes    (const GPasteKeybinding *self);
 GdkModifierType g_paste_keybinding_get_modifiers   (const GPasteKeybinding *self);
