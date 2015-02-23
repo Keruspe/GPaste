@@ -30,18 +30,9 @@ G_BEGIN_DECLS
 
 #define G_PASTE_SCREENSAVER_BUS_NAME "org.gnome.ScreenSaver"
 
-#define G_PASTE_TYPE_SCREENSAVER_CLIENT            (g_paste_screensaver_client_get_type ())
-#define G_PASTE_SCREENSAVER_CLIENT(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_SCREENSAVER_CLIENT, GPasteScreensaverClient))
-#define G_PASTE_IS_SCREENSAVER_CLIENT(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_SCREENSAVER_CLIENT))
-#define G_PASTE_SCREENSAVER_CLIENT_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_SCREENSAVER_CLIENT, GPasteScreensaverClientClass))
-#define G_PASTE_IS_SCREENSAVER_CLIENT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_SCREENSAVER_CLIENT))
-#define G_PASTE_SCREENSAVER_CLIENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_SCREENSAVER_CLIENT, GPasteScreensaverClientClass))
+#define G_PASTE_TYPE_SCREENSAVER_CLIENT (g_paste_screensaver_client_get_type ())
 
-typedef struct _GPasteScreensaverClient GPasteScreensaverClient;
-typedef struct _GPasteScreensaverClientClass GPasteScreensaverClientClass;
-
-G_PASTE_VISIBLE
-GType g_paste_screensaver_client_get_type (void);
+G_PASTE_FINAL_TYPE (ScreensaverClient, screensaver_client, SCREENSAVER_CLIENT, GDBusProxy)
 
 GPasteScreensaverClient *g_paste_screensaver_client_new_sync   (GError **error);
 void                     g_paste_screensaver_client_new        (GAsyncReadyCallback callback,

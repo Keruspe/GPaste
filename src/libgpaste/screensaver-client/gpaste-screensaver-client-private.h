@@ -29,11 +29,6 @@ struct _GPasteScreensaverClient
     GDBusProxy parent_instance;
 };
 
-struct _GPasteScreensaverClientClass
-{
-    GDBusProxyClass parent_class;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_SCREENSAVER_CLIENT_PRIVATE_H__*/
