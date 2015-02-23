@@ -24,16 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteSettingsUiStackPrivate GPasteSettingsUiStackPrivate;
-
 struct _GPasteSettingsUiStack
 {
     GtkStack parent_instance;
-};
-
-struct _GPasteSettingsUiStackClass
-{
-    GtkStackClass parent_class;
 };
 
 G_END_DECLS

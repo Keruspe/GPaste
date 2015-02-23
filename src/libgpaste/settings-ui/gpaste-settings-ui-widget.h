@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_SETTINGS_UI_WIDGET            (g_paste_settings_ui_widget_get_type ())
-#define G_PASTE_SETTINGS_UI_WIDGET(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_SETTINGS_UI_WIDGET, GPasteSettingsUiWidget))
-#define G_PASTE_IS_SETTINGS_UI_WIDGET(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_SETTINGS_UI_WIDGET))
-#define G_PASTE_SETTINGS_UI_WIDGET_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_SETTINGS_UI_WIDGET, GPasteSettingsUiWidgetClass))
-#define G_PASTE_IS_SETTINGS_UI_WIDGET_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_SETTINGS_UI_WIDGET))
-#define G_PASTE_SETTINGS_UI_WIDGET_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_SETTINGS_UI_WIDGET, GPasteSettingsUiWidgetClass))
+#define G_PASTE_TYPE_SETTINGS_UI_WIDGET (g_paste_settings_ui_widget_get_type ())
 
-typedef struct _GPasteSettingsUiWidget GPasteSettingsUiWidget;
-typedef struct _GPasteSettingsUiWidgetClass GPasteSettingsUiWidgetClass;
-
-G_PASTE_VISIBLE
-GType g_paste_settings_ui_widget_get_type (void);
+G_PASTE_FINAL_TYPE (SettingsUiWidget, settings_ui_widget, SETTINGS_UI_WIDGET, GtkGrid)
 
 GPasteSettingsUiStack *g_paste_settings_ui_widget_get_stack (GPasteSettingsUiWidget *self);
 

@@ -19,6 +19,8 @@
 
 #include "gpaste-settings-ui-panel-private.h"
 
+typedef struct _GPasteSettingsUiPanelPrivate GPasteSettingsUiPanelPrivate;
+
 struct _GPasteSettingsUiPanelPrivate
 {
     GSList *callback_data;

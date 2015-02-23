@@ -19,6 +19,8 @@
 
 #include "gpaste-settings-ui-widget-private.h"
 
+typedef struct _GPasteSettingsUiWidgetPrivate GPasteSettingsUiWidgetPrivate;
+
 struct _GPasteSettingsUiWidgetPrivate
 {
     GPasteSettingsUiStack *stack;

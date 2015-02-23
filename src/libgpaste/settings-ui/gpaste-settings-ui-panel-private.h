@@ -24,16 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteSettingsUiPanelPrivate GPasteSettingsUiPanelPrivate;
-
 struct _GPasteSettingsUiPanel
 {
     GtkGrid parent_instance;
-};
-
-struct _GPasteSettingsUiPanelClass
-{
-    GtkGridClass parent_class;
 };
 
 G_END_DECLS

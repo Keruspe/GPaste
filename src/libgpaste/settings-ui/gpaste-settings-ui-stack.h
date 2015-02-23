@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_SETTINGS_UI_STACK            (g_paste_settings_ui_stack_get_type ())
-#define G_PASTE_SETTINGS_UI_STACK(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_SETTINGS_UI_STACK, GPasteSettingsUiStack))
-#define G_PASTE_IS_SETTINGS_UI_STACK(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_SETTINGS_UI_STACK))
-#define G_PASTE_SETTINGS_UI_STACK_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_SETTINGS_UI_STACK, GPasteSettingsUiStackClass))
-#define G_PASTE_IS_SETTINGS_UI_STACK_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_SETTINGS_UI_STACK))
-#define G_PASTE_SETTINGS_UI_STACK_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_SETTINGS_UI_STACK, GPasteSettingsUiStackClass))
+#define G_PASTE_TYPE_SETTINGS_UI_STACK (g_paste_settings_ui_stack_get_type ())
 
-typedef struct _GPasteSettingsUiStack GPasteSettingsUiStack;
-typedef struct _GPasteSettingsUiStackClass GPasteSettingsUiStackClass;
-
-G_PASTE_VISIBLE
-GType g_paste_settings_ui_stack_get_type (void);
+G_PASTE_FINAL_TYPE (SettingsUiStack, settings_ui_stack, SETTINGS_UI_STACK, GtkStack)
 
 void g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
                                           const gchar              *name,

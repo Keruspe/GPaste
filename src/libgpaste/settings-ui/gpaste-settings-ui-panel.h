@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_SETTINGS_UI_PANEL            (g_paste_settings_ui_panel_get_type ())
-#define G_PASTE_SETTINGS_UI_PANEL(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_SETTINGS_UI_PANEL, GPasteSettingsUiPanel))
-#define G_PASTE_IS_SETTINGS_UI_PANEL(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_SETTINGS_UI_PANEL))
-#define G_PASTE_SETTINGS_UI_PANEL_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_SETTINGS_UI_PANEL, GPasteSettingsUiPanelClass))
-#define G_PASTE_IS_SETTINGS_UI_PANEL_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_SETTINGS_UI_PANEL))
-#define G_PASTE_SETTINGS_UI_PANEL_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_SETTINGS_UI_PANEL, GPasteSettingsUiPanelClass))
+#define G_PASTE_TYPE_SETTINGS_UI_PANEL (g_paste_settings_ui_panel_get_type ())
 
-typedef struct _GPasteSettingsUiPanel GPasteSettingsUiPanel;
-typedef struct _GPasteSettingsUiPanelClass GPasteSettingsUiPanelClass;
-
-G_PASTE_VISIBLE
-GType g_paste_settings_ui_panel_get_type (void);
+G_PASTE_FINAL_TYPE (SettingsUiPanel, settings_ui_panel, SETTINGS_UI_PANEL, GtkGrid)
 
 typedef void (*GPasteBooleanCallback)     (gboolean data,
                                            gpointer user_data);

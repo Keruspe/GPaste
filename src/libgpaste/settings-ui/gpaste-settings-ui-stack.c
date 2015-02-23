@@ -23,6 +23,8 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-settings.h>
 
+typedef struct _GPasteSettingsUiStackPrivate GPasteSettingsUiStackPrivate;
+
 struct _GPasteSettingsUiStackPrivate
 {
     GPasteClient    *client;
