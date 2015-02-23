@@ -2,7 +2,7 @@
     general:
         fix histories view in settings refresh
         confirm dialog for history deletion
-        check G_DECLARE_*
+        check G_DECLARE_* => core, ui
         g_autoptr
     applet:
         menu for app-indicator and applet right click
