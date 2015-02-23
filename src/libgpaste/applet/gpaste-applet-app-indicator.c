@@ -21,17 +21,15 @@
 
 #include <libappindicator/app-indicator.h>
 
-typedef struct _GPasteAppletAppIndicatorPrivate GPasteAppletAppIndicatorPrivate;
-
 /* FIXME: react to click */
-struct _GPasteAppletAppIndicatorPrivate
+typedef struct
 {
     GPasteClient *client;
 
     AppIndicator *icon;
 
     gulong        tracking_id;
-};
+} GPasteAppletAppIndicatorPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletAppIndicator, g_paste_applet_app_indicator, G_PASTE_TYPE_APPLET_ICON)
 

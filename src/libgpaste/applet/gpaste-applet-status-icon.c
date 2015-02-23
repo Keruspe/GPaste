@@ -19,14 +19,12 @@
 
 #include "gpaste-applet-status-icon-private.h"
 
-typedef struct _GPasteAppletStatusIconPrivate GPasteAppletStatusIconPrivate;
-
-struct _GPasteAppletStatusIconPrivate
+typedef struct
 {
     GtkStatusIcon *icon;
 
     gulong         press_id;
-};
+} GPasteAppletStatusIconPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletStatusIcon, g_paste_applet_status_icon, G_PASTE_TYPE_APPLET_ICON)
 

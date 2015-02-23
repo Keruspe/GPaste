@@ -21,14 +21,12 @@
 
 #include <gpaste-util.h>
 
-typedef struct _GPasteAppletIconPrivate GPasteAppletIconPrivate;
-
-struct _GPasteAppletIconPrivate
+typedef struct
 {
     GPasteClient *client;
 
     gulong         show_id;
-};
+} GPasteAppletIconPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TYPE_OBJECT)
 

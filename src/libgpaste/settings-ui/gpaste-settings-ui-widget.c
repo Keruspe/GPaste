@@ -19,12 +19,10 @@
 
 #include "gpaste-settings-ui-widget-private.h"
 
-typedef struct _GPasteSettingsUiWidgetPrivate GPasteSettingsUiWidgetPrivate;
-
-struct _GPasteSettingsUiWidgetPrivate
+typedef struct
 {
     GPasteSettingsUiStack *stack;
-};
+} GPasteSettingsUiWidgetPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiWidget, g_paste_settings_ui_widget, GTK_TYPE_GRID)
 

@@ -19,9 +19,7 @@
 
 #include "gpaste-keybinding-private.h"
 
-typedef struct _GPasteKeybindingPrivate GPasteKeybindingPrivate;
-
-struct _GPasteKeybindingPrivate
+typedef struct _GPasteKeybindingPrivate
 {
     GPasteKeybindingGetter getter;
     gchar                 *dconf_key;
@@ -30,7 +28,7 @@ struct _GPasteKeybindingPrivate
     gboolean               active;
     GdkModifierType        modifiers;
     guint                 *keycodes;
-};
+} GPasteKeybindingPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 

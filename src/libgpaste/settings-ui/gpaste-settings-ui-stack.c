@@ -23,9 +23,7 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-settings.h>
 
-typedef struct _GPasteSettingsUiStackPrivate GPasteSettingsUiStackPrivate;
-
-struct _GPasteSettingsUiStackPrivate
+typedef struct
 {
     GPasteClient    *client;
     GPasteSettings  *settings;
@@ -59,7 +57,7 @@ struct _GPasteSettingsUiStackPrivate
     GtkSwitch       *track_extension_state_switch;
 
     gulong           settings_signal;
-};
+} GPasteSettingsUiStackPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiStack, g_paste_settings_ui_stack, GTK_TYPE_STACK)
 

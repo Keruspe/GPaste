@@ -29,9 +29,7 @@
 
 #define MAX_BINDINGS 7
 
-typedef struct _GPasteKeybinderPrivate GPasteKeybinderPrivate;
-
-struct _GPasteKeybinderPrivate
+typedef struct
 {
     GSList                 *keybindings;
 
@@ -43,7 +41,7 @@ struct _GPasteKeybinderPrivate
 
     gulong                  accel_signal;
     guint                   shell_watch;
-};
+} GPasteKeybinderPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
 

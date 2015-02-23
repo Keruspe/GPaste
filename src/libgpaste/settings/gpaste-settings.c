@@ -21,9 +21,7 @@
 
 #include <gpaste-gsettings-keys.h>
 
-typedef struct _GPasteSettingsPrivate GPasteSettingsPrivate;
-
-struct _GPasteSettingsPrivate
+typedef struct
 {
     GSettings *settings;
     GSettings *shell_settings;
@@ -54,7 +52,7 @@ struct _GPasteSettingsPrivate
 
     gulong     changed_signal;
     gulong     shell_changed_signal;
-};
+} GPasteSettingsPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
 

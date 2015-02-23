@@ -19,13 +19,11 @@
 
 #include "gpaste-settings-ui-panel-private.h"
 
-typedef struct _GPasteSettingsUiPanelPrivate GPasteSettingsUiPanelPrivate;
-
-struct _GPasteSettingsUiPanelPrivate
+typedef struct
 {
     GSList *callback_data;
     guint   current_line;
-};
+} GPasteSettingsUiPanelPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)
 

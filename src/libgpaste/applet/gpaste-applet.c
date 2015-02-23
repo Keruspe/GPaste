@@ -22,9 +22,7 @@
 #include <gpaste-applet-app-indicator.h>
 #include <gpaste-applet-status-icon.h>
 
-typedef struct _GPasteAppletPrivate GPasteAppletPrivate;
-
-struct _GPasteAppletPrivate
+typedef struct
 {
     GPasteClient        *client;
 
@@ -32,7 +30,7 @@ struct _GPasteAppletPrivate
 
     GApplication        *application;
     GtkWidget           *win;
-};
+} GPasteAppletPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteApplet, g_paste_applet, G_TYPE_OBJECT)
 

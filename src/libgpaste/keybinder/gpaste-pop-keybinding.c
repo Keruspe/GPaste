@@ -21,12 +21,10 @@
 
 #include <gpaste-gsettings-keys.h>
 
-typedef struct _GPastePopKeybindingPrivate GPastePopKeybindingPrivate;
-
-struct _GPastePopKeybindingPrivate
+typedef struct
 {
     GPasteHistory *history;
-};
+} GPastePopKeybindingPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPastePopKeybinding, g_paste_pop_keybinding, G_PASTE_TYPE_KEYBINDING)
 

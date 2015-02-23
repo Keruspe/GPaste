@@ -21,12 +21,10 @@
 
 #include <gpaste-gsettings-keys.h>
 
-typedef struct _GPasteUploadKeybindingPrivate GPasteUploadKeybindingPrivate;
-
-struct _GPasteUploadKeybindingPrivate
+typedef struct
 {
     GPasteDaemon *daemon;
-};
+} GPasteUploadKeybindingPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUploadKeybinding, g_paste_upload_keybinding, G_PASTE_TYPE_KEYBINDING)
 

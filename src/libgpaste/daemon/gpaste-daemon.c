@@ -56,8 +56,6 @@
                   G_TYPE_NONE,                   \
                   0)
 
-typedef struct _GPasteDaemonPrivate GPasteDaemonPrivate;
-
 enum
 {
     C_UPDATE,
@@ -69,7 +67,7 @@ enum
     C_LAST_SIGNAL
 };
 
-struct _GPasteDaemonPrivate
+typedef struct
 {
     GDBusConnection         *connection;
     gchar                   *object_path;
@@ -84,7 +82,7 @@ struct _GPasteDaemonPrivate
     GDBusInterfaceVTable     g_paste_daemon_dbus_vtable;
 
     gulong                   c_signals[C_LAST_SIGNAL];
-};
+} GPasteDaemonPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
 
