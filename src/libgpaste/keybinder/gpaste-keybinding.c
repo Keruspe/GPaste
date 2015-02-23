@@ -101,7 +101,7 @@ g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
                                     const GPasteSettings   *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) settings), NULL);
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 

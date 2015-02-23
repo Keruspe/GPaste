@@ -21,6 +21,8 @@
 
 #include <gpaste-gsettings-keys.h>
 
+typedef struct _GPasteSettingsPrivate GPasteSettingsPrivate;
+
 struct _GPasteSettingsPrivate
 {
     GSettings *settings;
@@ -71,7 +73,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     G_PASTE_VISIBLE type                                                                               \
     g_paste_settings_get_##name (const GPasteSettings *self)                                           \
     {                                                                                                  \
-        g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), fail);                                       \
+        g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), fail);                                       \
         GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self); \
         return priv->name;                                                                             \
     }                                                                                                  \
@@ -705,7 +707,7 @@ STRING_SETTING (upload, UPLOAD)
 G_PASTE_VISIBLE gboolean
 g_paste_settings_get_extension_enabled (const GPasteSettings *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), FALSE);
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
     return priv->extension_enabled;
 }

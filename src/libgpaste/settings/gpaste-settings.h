@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_SETTINGS            (g_paste_settings_get_type ())
-#define G_PASTE_SETTINGS(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_SETTINGS, GPasteSettings))
-#define G_PASTE_IS_SETTINGS(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_SETTINGS))
-#define G_PASTE_SETTINGS_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_SETTINGS, GPasteSettingsClass))
-#define G_PASTE_IS_SETTINGS_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_SETTINGS))
-#define G_PASTE_SETTINGS_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_SETTINGS, GPasteSettingsClass))
+#define G_PASTE_TYPE_SETTINGS (g_paste_settings_get_type ())
 
-typedef struct _GPasteSettings GPasteSettings;
-typedef struct _GPasteSettingsClass GPasteSettingsClass;
-
-G_PASTE_VISIBLE
-GType g_paste_settings_get_type (void);
+G_PASTE_FINAL_TYPE (Settings, settings, SETTINGS, GObject)
 
 guint32      g_paste_settings_get_element_size               (const GPasteSettings *self);
 gboolean     g_paste_settings_get_growing_lines              (const GPasteSettings *self);

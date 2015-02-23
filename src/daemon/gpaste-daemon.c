@@ -70,7 +70,7 @@ main (gint argc, gchar *argv[])
     gtk_widget_hide (gtk_application_window_new (app));
     _app = gapp;
 
-    G_PASTE_CLEANUP_UNREF GPasteSettings *settings = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     G_PASTE_CLEANUP_UNREF GPasteHistory *history = g_paste_history_new (settings);
     G_PASTE_CLEANUP_UNREF GPasteClipboardsManager *clipboards_manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_sync (NULL);

@@ -24,16 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteSettingsPrivate GPasteSettingsPrivate;
-
 struct _GPasteSettings
 {
     GObject parent_instance;
-};
-
-struct _GPasteSettingsClass
-{
-    GObjectClass parent_class;
 };
 
 G_END_DECLS
