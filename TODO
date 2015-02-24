@@ -2,7 +2,6 @@
     general:
         fix histories view in settings refresh
         confirm dialog for history deletion
-        TODOs
         FIXMEs
     applet:
         menu for app-indicator and applet right click
@@ -11,7 +10,6 @@
             - quit
     gpaste-ui:
         add appstream
-        empty history item
 
 3.18:
     general:

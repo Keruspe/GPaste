@@ -349,6 +349,9 @@ global:
     g_paste_ui_empty_get_type;
     g_paste_ui_empty_new;
 
+    g_paste_ui_empty_item_get_type;
+    g_paste_ui_empty_item_new;
+
     g_paste_ui_header_get_type;
     g_paste_ui_header_new;
 

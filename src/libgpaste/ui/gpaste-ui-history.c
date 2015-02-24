@@ -17,6 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gpaste-ui-empty-item.h>
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-item.h>
 #include <gpaste-update-enums.h>
@@ -30,7 +31,7 @@ typedef struct
 {
     GPasteClient   *client;
     GPasteSettings *settings;
-    /* TODO: dummy item */
+    GtkWidget      *dummy_item;
 
     GSList         *items;
     gsize           size;
@@ -104,6 +105,10 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     guint refreshTextBound = old_size;
     priv->size = MIN (g_paste_client_get_history_size_finish (priv->client, res, NULL),
                       g_paste_settings_get_max_displayed_history_size (priv->settings));
+    if (priv->size)
+        gtk_widget_hide (priv->dummy_item);
+    else
+        gtk_widget_show (priv->dummy_item);
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
@@ -215,6 +220,9 @@ g_paste_ui_history_init (GPasteUiHistory *self)
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
     priv->settings = g_paste_settings_new ();
+    priv->dummy_item = g_paste_ui_empty_item_new ();
+
+    gtk_container_add (GTK_CONTAINER (self), priv->dummy_item);
 
     priv->activated_id = g_signal_connect (G_OBJECT (self),
                                            "row-activated",
