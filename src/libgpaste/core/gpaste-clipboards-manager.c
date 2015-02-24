@@ -19,7 +19,6 @@
 
 #include <gpaste-clipboards-manager.h>
 #include <gpaste-image-item.h>
-#include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
 struct _GPasteClipboardsManager

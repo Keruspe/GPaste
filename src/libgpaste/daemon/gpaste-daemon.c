@@ -20,7 +20,6 @@
 #include <gpaste-daemon.h>
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-screensaver-client.h>
-#include <gpaste-text-item.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-util.h>
 

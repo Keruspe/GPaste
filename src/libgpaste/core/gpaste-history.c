@@ -20,7 +20,6 @@
 #include <gpaste-history.h>
 #include <gpaste-image-item.h>
 #include <gpaste-gsettings-keys.h>
-#include <gpaste-text-item.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
