@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-settings-ui-panel-private.h"
+#include <gpaste-settings-ui-panel.h>
 
 struct _GPasteSettingsUiPanel
 {

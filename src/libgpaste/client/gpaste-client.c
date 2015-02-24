@@ -17,8 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-client-private.h"
-
+#include <gpaste-client.h>
 #include <gpaste-gdbus-defines.h>
 #define __G_PASTE_NEEDS_AU__
 #include <gpaste-gdbus-macros.h>

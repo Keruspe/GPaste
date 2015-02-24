@@ -17,9 +17,8 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-settings-private.h"
-
 #include <gpaste-gsettings-keys.h>
+#include <gpaste-settings.h>
 
 struct _GPasteSettings
 {

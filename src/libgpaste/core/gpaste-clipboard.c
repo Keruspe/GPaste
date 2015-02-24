@@ -17,8 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-clipboard-private.h"
-
+#include <gpaste-clipboard.h>
 #include <gpaste-image-item.h>
 #include <gpaste-password-item.h>
 #include <gpaste-text-item.h>

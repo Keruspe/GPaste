@@ -17,8 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-applet-private.h"
-
+#include <gpaste-applet.h>
 #include <gpaste-applet-app-indicator.h>
 #include <gpaste-applet-status-icon.h>
 

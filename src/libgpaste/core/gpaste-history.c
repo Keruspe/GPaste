@@ -17,8 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-history-private.h"
-
+#include <gpaste-history.h>
 #include <gpaste-image-item.h>
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-text-item.h>

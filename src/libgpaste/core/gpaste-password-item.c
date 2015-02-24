@@ -18,7 +18,8 @@
  */
 
 #include "gpaste-item-private.h"
-#include "gpaste-password-item-private.h"
+
+#include <gpaste-password-item.h>
 
 #include <string.h>
 

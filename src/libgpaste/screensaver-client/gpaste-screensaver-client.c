@@ -17,9 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-screensaver-client-private.h"
-
 #include "gpaste-gdbus-macros.h"
+
+#include <gpaste-screensaver-client.h>
 
 #define G_PASTE_SCREENSAVER_OBJECT_PATH    "/org/gnome/ScreenSaver"
 #define G_PASTE_SCREENSAVER_INTERFACE_NAME "org.gnome.ScreenSaver"

@@ -17,9 +17,10 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-sync-clipboard-to-primary-keybinding-private.h"
+#include "gpaste-keybinding-private.h"
 
 #include <gpaste-gsettings-keys.h>
+#include <gpaste-sync-clipboard-to-primary-keybinding.h>
 
 struct _GPasteSyncClipboardToPrimaryKeybinding
 {

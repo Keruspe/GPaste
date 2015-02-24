@@ -17,10 +17,10 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-gnome-shell-client-private.h"
-
 #define __G_PASTE_NEEDS_AU__
 #include "gpaste-gdbus-macros.h"
+
+#include <gpaste-gnome-shell-client.h>
 
 #define G_PASTE_GNOME_SHELL_OBJECT_PATH    "/org/gnome/Shell"
 #define G_PASTE_GNOME_SHELL_INTERFACE_NAME "org.gnome.Shell"

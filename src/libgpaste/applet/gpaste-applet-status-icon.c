@@ -17,7 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-applet-status-icon-private.h"
+#include "gpaste-applet-icon-private.h"
+
+#include <gpaste-applet-status-icon.h>
 
 struct _GPasteAppletStatusIcon
 {

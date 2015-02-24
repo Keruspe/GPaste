@@ -17,9 +17,10 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-pop-keybinding-private.h"
+#include "gpaste-keybinding-private.h"
 
 #include <gpaste-gsettings-keys.h>
+#include <gpaste-pop-keybinding.h>
 
 struct _GPastePopKeybinding
 {

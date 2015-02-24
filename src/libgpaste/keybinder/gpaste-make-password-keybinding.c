@@ -17,9 +17,10 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-make-password-keybinding-private.h"
+#include "gpaste-keybinding-private.h"
 
 #include <gpaste-gsettings-keys.h>
+#include <gpaste-make-password-keybinding.h>
 
 struct _GPasteMakePasswordKeybinding
 {

@@ -17,8 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-daemon-private.h"
-
+#include <gpaste-daemon.h>
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-screensaver-client.h>
 #include <gpaste-text-item.h>

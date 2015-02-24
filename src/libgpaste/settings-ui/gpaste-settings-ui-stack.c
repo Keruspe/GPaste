@@ -17,11 +17,10 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-settings-ui-stack-private.h"
-
 #include <gpaste-client.h>
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-settings.h>
+#include <gpaste-settings-ui-stack.h>
 
 struct _GPasteSettingsUiStack
 {

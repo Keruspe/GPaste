@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-settings-ui-widget-private.h"
+#include <gpaste-settings-ui-widget.h>
 
 struct _GPasteSettingsUiWidget
 {

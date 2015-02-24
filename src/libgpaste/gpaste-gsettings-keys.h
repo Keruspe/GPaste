@@ -24,6 +24,8 @@
 #ifndef __GPASTE_GSETTINGS_KEYS_H__
 #define __GPASTE_GSETTINGS_KEYS_H__
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 #define G_PASTE_SETTINGS_NAME       "org.gnome.GPaste"

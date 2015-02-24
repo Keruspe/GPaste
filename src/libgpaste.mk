@@ -23,32 +23,9 @@ LIBGPASTE_AGE=0
 
 lib_libgpaste_la_private_headers = \
 	src/libgpaste/gpaste-gdbus-macros.h \
-	src/libgpaste/applet/gpaste-applet-private.h \
 	src/libgpaste/applet/gpaste-applet-icon-private.h \
-	src/libgpaste/applet/gpaste-applet-status-icon-private.h \
-	src/libgpaste/client/gpaste-client-private.h \
-	src/libgpaste/core/gpaste-clipboard-private.h \
-	src/libgpaste/core/gpaste-clipboards-manager-private.h \
-	src/libgpaste/core/gpaste-history-private.h \
-	src/libgpaste/core/gpaste-image-item-private.h \
 	src/libgpaste/core/gpaste-item-private.h \
-	src/libgpaste/core/gpaste-password-item-private.h \
-	src/libgpaste/core/gpaste-uris-item-private.h \
-	src/libgpaste/daemon/gpaste-daemon-private.h \
-	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client-private.h \
-	src/libgpaste/keybinder/gpaste-keybinder-private.h \
 	src/libgpaste/keybinder/gpaste-keybinding-private.h \
-	src/libgpaste/keybinder/gpaste-make-password-keybinding-private.h \
-	src/libgpaste/keybinder/gpaste-pop-keybinding-private.h \
-	src/libgpaste/keybinder/gpaste-show-history-keybinding-private.h \
-	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding-private.h \
-	src/libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding-private.h \
-	src/libgpaste/keybinder/gpaste-upload-keybinding-private.h \
-	src/libgpaste/screensaver-client/gpaste-screensaver-client-private.h \
-	src/libgpaste/settings/gpaste-settings-private.h \
-	src/libgpaste/settings-ui/gpaste-settings-ui-panel-private.h \
-	src/libgpaste/settings-ui/gpaste-settings-ui-stack-private.h \
-	src/libgpaste/settings-ui/gpaste-settings-ui-widget-private.h \
 	src/libgpaste/ui/gpaste-ui-about-private.h \
 	src/libgpaste/ui/gpaste-ui-delete-private.h \
 	src/libgpaste/ui/gpaste-ui-empty-private.h \
@@ -154,9 +131,6 @@ lib_libgpaste_la_source_files = \
 	$(NULL)
 
 if ENABLE_UNITY
-lib_libgpaste_la_private_headers += \
-	src/libgpaste/applet/gpaste-applet-app-indicator-private.h \
-	$(NULL)
 lib_libgpaste_la_public_headers += \
 	src/libgpaste/applet/gpaste-applet-app-indicator.h \
 	$(NULL)

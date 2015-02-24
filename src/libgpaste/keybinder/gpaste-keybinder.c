@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinder-private.h"
+#include <gpaste-keybinder.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
 #  include <gdk/gdkwayland.h>

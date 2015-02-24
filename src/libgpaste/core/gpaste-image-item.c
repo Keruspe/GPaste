@@ -17,8 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-image-item-private.h"
+#include "gpaste-item-private.h"
 
+#include <gpaste-image-item.h>
 #include <gpaste-util.h>
 
 #include <string.h>
