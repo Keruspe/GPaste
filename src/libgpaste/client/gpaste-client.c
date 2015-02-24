@@ -118,18 +118,18 @@ static guint signals[LAST_SIGNAL] = { 0 };
                        0, /* detail */                      \
                        NULL);                               \
     }
-#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)                                        \
-    if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_##sig))                                         \
-    {                                                                                               \
-        GVariantIter params_iter;                                                                   \
-        g_variant_iter_init (&params_iter, parameters);                                             \
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&params_iter); \
-        ans_type answer = g_variant_get_##variant_type (variant);                                   \
-        g_signal_emit (self,                                                                        \
-                       signals[sig],                                                                \
-                       0, /* detail */                                                              \
-                       answer,                                                                      \
-                       NULL);                                                                       \
+#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)                     \
+    if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_##sig))                      \
+    {                                                                            \
+        GVariantIter params_iter;                                                \
+        g_variant_iter_init (&params_iter, parameters);                          \
+        g_autoptr (GVariant) variant = g_variant_iter_next_value (&params_iter); \
+        ans_type answer = g_variant_get_##variant_type (variant);                \
+        g_signal_emit (self,                                                     \
+                       signals[sig],                                             \
+                       0, /* detail */                                           \
+                       answer,                                                   \
+                       NULL);                                                    \
     }
 
 #define NEW_SIGNAL(name)                         \
@@ -1669,9 +1669,9 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
     {
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v1 = g_variant_iter_next_value (&params_iter);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v2 = g_variant_iter_next_value (&params_iter);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *v3 = g_variant_iter_next_value (&params_iter);
+        g_autoptr (GVariant) v1 = g_variant_iter_next_value (&params_iter);
+        g_autoptr (GVariant) v2 = g_variant_iter_next_value (&params_iter);
+        g_autoptr (GVariant) v3 = g_variant_iter_next_value (&params_iter);
         g_signal_emit (self,
                        signals[UPDATE],
                        0, /* detail */

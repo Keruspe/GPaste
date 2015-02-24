@@ -289,7 +289,7 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
                                        GPasteUrisItem         *item)
 {
     GtkClipboard *real = priv->real;
-    G_PASTE_CLEANUP_TARGETS_UNREF GtkTargetList *target_list = gtk_target_list_new (NULL, 0);
+    g_autoptr (GtkTargetList) target_list = gtk_target_list_new (NULL, 0);
 
     g_paste_clipboard_private_set_text (priv, g_paste_item_get_real_value (G_PASTE_ITEM (item)));
 

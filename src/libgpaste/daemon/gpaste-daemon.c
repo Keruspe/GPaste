@@ -104,7 +104,7 @@ g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     return g_variant_dup_string (variant, length);
 }
 
@@ -118,9 +118,9 @@ g_paste_daemon_get_dbus_strings_parameter (GVariant *parameters,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant1 = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     *str1 = g_variant_dup_string (variant1, &length);
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant2 = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     *str2 = g_variant_dup_string (variant2, &length);
 }
 
@@ -131,7 +131,7 @@ g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     return g_variant_get_uint32 (variant);
 }
 
@@ -422,7 +422,7 @@ g_paste_daemon_track (GPasteDaemon *self,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     gboolean tracking_state = g_variant_get_boolean (variant);
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
@@ -493,9 +493,9 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant1 = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     guint32 index = g_variant_get_uint32 (variant1);
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant2 = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     G_PASTE_CLEANUP_FREE gchar *name = g_variant_dup_string (variant2, &length);
 
     g_return_if_fail (name);
@@ -519,7 +519,7 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
                                       GAsyncResult *res,
                                       gpointer      user_data G_GNUC_UNUSED)
 {
-    G_PASTE_CLEANUP_UNREF GSubprocess *upload = G_SUBPROCESS (source_object);
+    g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     G_PASTE_CLEANUP_FREE gchar *url = NULL;
     GPasteDaemonPrivate *priv = user_data;
 

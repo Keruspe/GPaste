@@ -60,7 +60,7 @@ static gboolean
 g_paste_applet_new_finish (GPasteAppletPrivate *priv,
                            GAsyncResult        *res)
 {
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     
     priv->client = g_paste_client_new_finish (res, &error);
     if (error)

@@ -79,7 +79,7 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     GPasteUiItemPrivate *priv = user_data;
     if (!G_PASTE_IS_CLIENT (priv->client))
         return;
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     G_PASTE_CLEANUP_FREE gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
     if (!txt || error)
         return;

@@ -102,14 +102,14 @@ g_paste_util_spawn (const gchar *app,
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
     G_PASTE_CLEANUP_FREE gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
-    G_PASTE_CLEANUP_UNREF GDBusProxy *proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                             G_DBUS_PROXY_FLAGS_NONE,
-                                                                             NULL,
-                                                                             name,
-                                                                             object,
-                                                                             "org.freedesktop.Application",
-                                                                             NULL,
-                                                                             error);
+    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                                  G_DBUS_PROXY_FLAGS_NONE,
+                                                                  NULL,
+                                                                  name,
+                                                                  object,
+                                                                  "org.freedesktop.Application",
+                                                                  NULL,
+                                                                  error);
 
     if (!proxy)
         return FALSE;
@@ -138,10 +138,10 @@ g_paste_util_replace (const gchar *text,
                       const gchar *substitution)
 {
     G_PASTE_CLEANUP_FREE gchar *regex_string = g_regex_escape_string (pattern, -1);
-    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (regex_string,
-                                                             0, /* Compile options */
-                                                             0, /* Match options */
-                                                             NULL); /* Error */
+    g_autoptr (GRegex) regex = g_regex_new (regex_string,
+                                            0, /* Compile options */
+                                            0, /* Match options */
+                                            NULL); /* Error */
     return g_regex_replace_literal (regex,
                                     text,
                                     (gssize) -1,

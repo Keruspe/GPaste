@@ -66,12 +66,12 @@ g_paste_dbus_get_au_result (GVariant *variant,
                                 "g-interface-name", G_PASTE_##BUS_ID##_INTERFACE_NAME, \
                                 NULL)
 
-#define CUSTOM_PROXY_NEW_FINISH(TYPE)                                                  \
-    G_PASTE_CLEANUP_UNREF GObject *source = g_async_result_get_source_object (result); \
-    g_assert (source);                                                                 \
-    GObject *self = g_async_initable_new_finish (G_ASYNC_INITABLE (source),            \
-                                                 result,                               \
-                                                 error);                               \
+#define CUSTOM_PROXY_NEW_FINISH(TYPE)                                       \
+    g_autoptr (GObject) source = g_async_result_get_source_object (result); \
+    g_assert (source);                                                      \
+    GObject *self = g_async_initable_new_finish (G_ASYNC_INITABLE (source), \
+                                                 result,                    \
+                                                 error);                    \
     return (self) ? G_PASTE_##TYPE (self) : NULL;
 
 #define CUSTOM_PROXY_NEW(TYPE, BUS_ID)                                                       \
@@ -93,7 +93,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_PREPARE_EXTRACTION                      \
         GVariantIter result_iter;                    \
         g_variant_iter_init (&result_iter, _result); \
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *variant = g_variant_iter_next_value (&result_iter)
+        g_autoptr (GVariant) variant = g_variant_iter_next_value (&result_iter)
 
 #define DBUS_RETURN(if_fail, extract_and_return_answer) \
     if (!_result)                                       \
@@ -136,11 +136,11 @@ g_paste_dbus_get_au_result (GVariant *variant,
 /* Methods / Async / General - Finish */
 /**************************************/
 
-#define DBUS_ASYNC_FINISH_FULL(guard, if_fail, extract_and_return_answer)                            \
-    guard;                                                                                           \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *_result = g_dbus_proxy_call_finish (G_DBUS_PROXY (self), \
-                                                                                result,              \
-                                                                                error);              \
+#define DBUS_ASYNC_FINISH_FULL(guard, if_fail, extract_and_return_answer)         \
+    guard;                                                                        \
+    g_autoptr (GVariant) _result = g_dbus_proxy_call_finish (G_DBUS_PROXY (self), \
+                                                             result,              \
+                                                             error);              \
     DBUS_RETURN (if_fail, extract_and_return_answer)
 
 #define DBUS_ASYNC_FINISH_WITH_RETURN(TYPE_CHECKER, if_fail, extract_and_return_answer)                \
@@ -179,16 +179,16 @@ g_paste_dbus_get_au_result (GVariant *variant,
 /* Methods / Sync / General */
 /****************************/
 
-#define DBUS_CALL_FULL(guard, decl, method, params, n_params, if_fail, extract_and_return_answer)                     \
-    guard;                                                                                                            \
-    decl;                                                                                                             \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *_result = g_dbus_proxy_call_sync (G_DBUS_PROXY (self),                    \
-                                                                              method,                                 \
-                                                                              g_variant_new_tuple (params, n_params), \
-                                                                              G_DBUS_CALL_FLAGS_NONE,                 \
-                                                                              -1,                                     \
-                                                                              NULL, /* cancellable */                 \
-                                                                              error);                                 \
+#define DBUS_CALL_FULL(guard, decl, method, params, n_params, if_fail, extract_and_return_answer)  \
+    guard;                                                                                         \
+    decl;                                                                                          \
+    g_autoptr (GVariant) _result = g_dbus_proxy_call_sync (G_DBUS_PROXY (self),                    \
+                                                           method,                                 \
+                                                           g_variant_new_tuple (params, n_params), \
+                                                           G_DBUS_CALL_FLAGS_NONE,                 \
+                                                           -1,                                     \
+                                                           NULL, /* cancellable */                 \
+                                                           error);                                 \
     DBUS_RETURN (if_fail, extract_and_return_answer)
 
 /****************************************/
@@ -282,11 +282,11 @@ g_paste_dbus_get_au_result (GVariant *variant,
 /* Properties / Getters */
 /************************/
 
-#define DBUS_GET_PROPERTY_INIT(TYPE_CHECKER, property,  _default)                                           \
-    g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), _default);                                      \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), \
-                                                                                       property);           \
-    if (!result)                                                                                            \
+#define DBUS_GET_PROPERTY_INIT(TYPE_CHECKER, property,  _default)                        \
+    g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), _default);                   \
+    g_autoptr (GVariant) result = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), \
+                                                                    property);           \
+    if (!result)                                                                         \
         return _default
 
 #define DBUS_GET_BOOLEAN_PROPERTY_BASE(TYPE_CHECKER, property) \
@@ -301,20 +301,20 @@ g_paste_dbus_get_au_result (GVariant *variant,
 /* Properties / Setters */
 /************************/
 
-#define DBUS_SET_GENERIC_PROPERTY_BASE(TYPE_CHECKER, iface, property, value, vtype)                                 \
-    g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), FALSE);                                                 \
-    GVariant *prop[] = {                                                                                            \
-        g_variant_new_string (iface),                                                                               \
-        g_variant_new_string (property),                                                                            \
-        g_variant_new_variant (g_variant_new_##vtype (value))                                                       \
-    };                                                                                                              \
-    G_PASTE_CLEANUP_VARIANT_UNREF GVariant *result = g_dbus_proxy_call_sync (G_DBUS_PROXY (self),                   \
-                                                                             "org.freedesktop.DBus.Properties.Set", \
-                                                                             g_variant_new_tuple (prop, 3),         \
-                                                                             G_DBUS_CALL_FLAGS_NONE,                \
-                                                                             -1,                                    \
-                                                                             NULL, /* cancellable */                \
-                                                                             error);                                \
+#define DBUS_SET_GENERIC_PROPERTY_BASE(TYPE_CHECKER, iface, property, value, vtype)              \
+    g_return_val_if_fail (G_PASTE_IS_##TYPE_CHECKER (self), FALSE);                              \
+    GVariant *prop[] = {                                                                         \
+        g_variant_new_string (iface),                                                            \
+        g_variant_new_string (property),                                                         \
+        g_variant_new_variant (g_variant_new_##vtype (value))                                    \
+    };                                                                                           \
+    g_autoptr (GVariant) result = g_dbus_proxy_call_sync (G_DBUS_PROXY (self),                   \
+                                                          "org.freedesktop.DBus.Properties.Set", \
+                                                          g_variant_new_tuple (prop, 3),         \
+                                                          G_DBUS_CALL_FLAGS_NONE,                \
+                                                          -1,                                    \
+                                                          NULL, /* cancellable */                \
+                                                          error);                                \
     return !!result
 
 #define DBUS_SET_BOOLEAN_PROPERTY_BASE(TYPE_CHECKER, iface, property, value) \

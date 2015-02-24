@@ -93,7 +93,7 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
     {
         if (G_PASTE_IS_IMAGE_ITEM (item))
         {
-            G_PASTE_CLEANUP_UNREF GFile *image = g_file_new_for_path (g_paste_item_get_value (item));
+            g_autoptr (GFile) image = g_file_new_for_path (g_paste_item_get_value (item));
             g_file_delete (image,
                            NULL, /* cancellable */
                            NULL); /* error */
@@ -696,9 +696,9 @@ g_paste_history_save (GPasteHistory *self)
 
     GPasteSettings *settings = priv->settings;
     gboolean save_history = g_paste_settings_get_save_history (settings);
-    G_PASTE_CLEANUP_UNREF GFile *history_dir = g_paste_history_get_history_dir ();
+    g_autoptr (GFile) history_dir = g_paste_history_get_history_dir ();
     G_PASTE_CLEANUP_FREE gchar *history_file_path = NULL;
-    G_PASTE_CLEANUP_UNREF GFile *history_file = NULL;
+    g_autoptr (GFile) history_file = NULL;
 
     if (!g_file_query_exists (history_dir,
                               NULL)) /* cancellable */
@@ -706,7 +706,7 @@ g_paste_history_save (GPasteHistory *self)
         if (!save_history)
             return TRUE;
 
-        G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+        g_autoptr (GError) error = NULL;
 
         g_file_make_directory_with_parents (history_dir,
                                             NULL, /* cancellable */
@@ -729,12 +729,12 @@ g_paste_history_save (GPasteHistory *self)
     }
     else
     {
-        G_PASTE_CLEANUP_UNREF GOutputStream *stream = G_OUTPUT_STREAM (g_file_replace (history_file,
-                                                                                       NULL,
-                                                                                       FALSE,
-                                                                                       G_FILE_CREATE_REPLACE_DESTINATION,
-                                                                                       NULL, /* cancellable */
-                                                                                       NULL)); /* error */
+        g_autoptr (GOutputStream) stream = G_OUTPUT_STREAM (g_file_replace (history_file,
+                                                            NULL,
+                                                            FALSE,
+                                                            G_FILE_CREATE_REPLACE_DESTINATION,
+                                                            NULL, /* cancellable */
+                                                            NULL)); /* error */
 
         if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
@@ -938,14 +938,14 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                 case IMAGE:
                     if (data->images_support && data->date)
                     {
-                        G_PASTE_CLEANUP_DATE_UNREF GDateTime *date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
-                                                                                                           NULL, /* end */
-                                                                                                           0)); /* base */
+                        g_autoptr (GDateTime) date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
+                                                                                                            NULL, /* end */
+                                                                                                            0)); /* base */
                         item = g_paste_image_item_new_from_file (value, date_time);
                     }
                     else
                     {
-                        G_PASTE_CLEANUP_UNREF GFile *img_file = g_file_new_for_path (value);
+                        g_autoptr (GFile) img_file = g_file_new_for_path (value);
 
                         if (g_file_query_exists (img_file,
                                                  NULL)) /* cancellable */
@@ -1008,7 +1008,7 @@ g_paste_history_load (GPasteHistory *self)
     priv->history = NULL;
 
     G_PASTE_CLEANUP_FREE gchar *history_file_path = g_paste_history_get_history_file_path (settings);
-    G_PASTE_CLEANUP_UNREF GFile *history_file = g_file_new_for_path (history_file_path);
+    g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
@@ -1100,7 +1100,7 @@ g_paste_history_delete (GPasteHistory *self,
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    G_PASTE_CLEANUP_UNREF GFile *history_file = g_paste_history_get_history_file (priv->settings);
+    g_autoptr (GFile) history_file = g_paste_history_get_history_file (priv->settings);
 
     g_paste_history_empty (self);
     if (g_file_query_exists (history_file,
@@ -1248,11 +1248,11 @@ g_paste_history_search (const GPasteHistory *self,
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
-    G_PASTE_CLEANUP_REGEX_UNREF GRegex *regex = g_regex_new (pattern,
-                                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
-                                                             G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
-                                                             &error);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GRegex) regex = g_regex_new (pattern,
+                                            G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
+                                            G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
+                                            &error);
 
     if (error)
     {
@@ -1316,12 +1316,12 @@ g_paste_history_list (GError **error)
 {
     g_return_val_if_fail (!error || !(*error), NULL);
 
-    G_PASTE_CLEANUP_UNREF GFile *history_dir = g_paste_history_get_history_dir ();
-    G_PASTE_CLEANUP_UNREF GFileEnumerator *histories = g_file_enumerate_children (history_dir,
-                                                                                  G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                                                                                  G_FILE_QUERY_INFO_NONE,
-                                                                                  NULL, /* cancellable */
-                                                                                  error);
+    g_autoptr (GFile) history_dir = g_paste_history_get_history_dir ();
+    g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
+                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                                                                       G_FILE_QUERY_INFO_NONE,
+                                                                       NULL, /* cancellable */
+                                                                       error);
     G_PASTE_CLEANUP_ARRAY_FREE GArray *history_names = g_array_new (TRUE, /* zero-terminated */
                                                                     TRUE, /* clear */
                                                                     sizeof (gchar *));

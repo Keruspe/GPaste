@@ -145,7 +145,7 @@ g_paste_gnome_shell_client_grab_accelerators_sync (GPasteGnomeShellClient      *
                                                    GPasteGnomeShellAccelerator *accelerators,
                                                    GError                     **error)
 {
-    GVariantBuilder builder;
+    g_auto (GVariantBuilder) builder;
     guint n_accelerators = 0;
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE_ARRAY);
@@ -228,7 +228,7 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
                                               GAsyncReadyCallback          callback,
                                               gpointer                     user_data)
 {
-    GVariantBuilder builder;
+    g_auto (GVariantBuilder) builder;
     guint n_accelerators = 0;
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE_ARRAY);
@@ -337,8 +337,8 @@ g_paste_gnome_shell_client_g_signal (GDBusProxy  *proxy,
     {
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *action = g_variant_iter_next_value (&params_iter);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *params = g_variant_iter_next_value (&params_iter);
+        g_autoptr (GVariant) action = g_variant_iter_next_value (&params_iter);
+        g_autoptr (GVariant) params = g_variant_iter_next_value (&params_iter);
         g_signal_emit (self,
                        signals[ACCELERATOR_ACTIVATED],
                        0, /* detail */

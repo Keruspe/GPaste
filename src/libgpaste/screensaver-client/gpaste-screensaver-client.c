@@ -58,7 +58,7 @@ g_paste_screensaver_client_g_signal (GDBusProxy  *proxy,
     {
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);
-        G_PASTE_CLEANUP_VARIANT_UNREF GVariant *value = g_variant_iter_next_value (&params_iter);
+        g_autoptr (GVariant) value = g_variant_iter_next_value (&params_iter);
         g_signal_emit (self,
                        signals[ACTIVE_CHANGED],
                        0, /* detail */

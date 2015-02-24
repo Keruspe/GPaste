@@ -187,7 +187,7 @@ failure_exit (GError *error)
 static int
 spawn (const gchar *app)
 {
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
 
     if (!g_paste_util_spawn (app, &error))
     {
@@ -263,7 +263,7 @@ main (gint argc, gchar *argv[])
 
     int status = EXIT_SUCCESS;
 
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
 
     if (!client)

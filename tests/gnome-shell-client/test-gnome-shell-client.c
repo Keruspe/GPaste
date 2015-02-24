@@ -61,7 +61,7 @@ main (gint argc, gchar *argv[])
 
     g_setenv ("G_MESSAGES_DEBUG", "all", TRUE);
 
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     g_autoptr (GPasteGnomeShellClient) client = g_paste_gnome_shell_client_new_sync (&error);
     if (!client)
     {
@@ -101,7 +101,7 @@ main (gint argc, gchar *argv[])
     }
 
     g_print ("Now should recognize <Ctrl><Alt>D, <Super>F and <Super><Alt>G for 10 secondes.\n");
-    G_PASTE_CLEANUP_LOOP_UNREF GMainLoop *loop = g_main_loop_new (NULL, FALSE);
+    g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
     g_source_set_name_by_id (g_timeout_add_seconds (10, kill_loop, loop), "[GPaste] test loop");
     g_main_loop_run (loop);
     for (guint i = 0; i < 2; ++i)

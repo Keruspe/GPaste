@@ -313,7 +313,7 @@ g_paste_settings_ui_check_connection_error (GError *error)
 static void
 g_paste_settings_ui_stack_private_refill_histories (GPasteSettingsUiStackPrivate *priv)
 {
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     GStrv histories = g_paste_client_list_histories_sync (priv->client, &error);
 
     if (g_paste_settings_ui_check_connection_error (error))
@@ -341,7 +341,7 @@ backup_callback (const gchar *value,
                  gpointer     user_data)
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
 
     g_paste_client_backup_history_sync (priv->client, value, &error);
 
@@ -358,7 +358,7 @@ targets_callback (const gchar *action,
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
     GPasteClient *client = priv->client;
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
 
     if (!g_strcmp0 (action, "switch"))
         g_paste_client_switch_history_sync (client, target, &error);

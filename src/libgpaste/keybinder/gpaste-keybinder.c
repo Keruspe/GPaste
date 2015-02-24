@@ -182,7 +182,7 @@ _keybinding_grab_gnome_shell (_Keybinding *k)
         G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL
     };
 
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     k->action = g_paste_gnome_shell_client_grab_accelerator_sync (k->shell_client, accel, &error);
 
     if (error)
@@ -202,7 +202,7 @@ _keybinding_grab (_Keybinding *k)
 static void
 _keybinding_ungrab_gnome_shell (_Keybinding *k)
 {
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     if (k->action)
     {
         g_paste_gnome_shell_client_ungrab_accelerator_sync (k->shell_client, k->action, &error);
@@ -337,7 +337,7 @@ grab_accelerators_cb (GObject      *source_object,
                       gpointer      user_data)
 {
     GPasteKeybinderPrivate *priv = user_data;
-    G_PASTE_CLEANUP_ERROR_FREE GError *error = NULL;
+    g_autoptr (GError) error = NULL;
     G_PASTE_CLEANUP_FREE guint *actions = g_paste_gnome_shell_client_grab_accelerators_finish (G_PASTE_GNOME_SHELL_CLIENT (source_object),
                                                                                                res,
                                                                                                &error);
