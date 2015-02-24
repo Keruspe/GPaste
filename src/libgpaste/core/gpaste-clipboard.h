@@ -29,17 +29,11 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_CLIPBOARD            (g_paste_clipboard_get_type ())
-#define G_PASTE_CLIPBOARD(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_CLIPBOARD, GPasteClipboard))
-#define G_PASTE_IS_CLIPBOARD(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_CLIPBOARD))
-#define G_PASTE_CLIPBOARD_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_CLIPBOARD, GPasteClipboardClass))
-#define G_PASTE_IS_CLIPBOARD_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_CLIPBOARD))
-#define G_PASTE_CLIPBOARD_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_CLIPBOARD, GPasteClipboardClass))
+#define G_PASTE_TYPE_CLIPBOARD (g_paste_clipboard_get_type ())
+
+G_PASTE_FINAL_TYPE (Clipboard, clipboard, CLIPBOARD, GObject)
 
 #define g_paste_clipboard_copy_files_target gdk_atom_intern_static_string ("x-special/gnome-copied-files")
-
-typedef struct _GPasteClipboard GPasteClipboard;
-typedef struct _GPasteClipboardClass GPasteClipboardClass;
 
 typedef void (*GPasteClipboardTextCallback) (GPasteClipboard *self,
                                              const gchar     *text,
@@ -48,9 +42,6 @@ typedef void (*GPasteClipboardTextCallback) (GPasteClipboard *self,
 typedef void (*GPasteClipboardImageCallback) (GPasteClipboard *self,
                                               GdkPixbuf       *image,
                                               gpointer         user_data);
-
-G_PASTE_VISIBLE
-GType g_paste_clipboard_get_type (void);
 
 GdkAtom       g_paste_clipboard_get_target  (const GPasteClipboard *self);
 GtkClipboard *g_paste_clipboard_get_real    (const GPasteClipboard *self);

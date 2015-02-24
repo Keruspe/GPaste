@@ -24,16 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteClipboardPrivate GPasteClipboardPrivate;
-
 struct _GPasteClipboard
 {
     GObject parent_instance;
-};
-
-struct _GPasteClipboardClass
-{
-    GObjectClass parent_class;
 };
 
 G_END_DECLS

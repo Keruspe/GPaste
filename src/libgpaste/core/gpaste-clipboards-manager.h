@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_CLIPBOARDS_MANAGER            (g_paste_clipboards_manager_get_type ())
-#define G_PASTE_CLIPBOARDS_MANAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_CLIPBOARDS_MANAGER, GPasteClipboardsManager))
-#define G_PASTE_IS_CLIPBOARDS_MANAGER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_CLIPBOARDS_MANAGER))
-#define G_PASTE_CLIPBOARDS_MANAGER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_CLIPBOARDS_MANAGER, GPasteClipboardsManagerClass))
-#define G_PASTE_IS_CLIPBOARDS_MANAGER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_CLIPBOARDS_MANAGER))
-#define G_PASTE_CLIPBOARDS_MANAGER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_CLIPBOARDS_MANAGER, GPasteClipboardsManagerClass))
+#define G_PASTE_TYPE_CLIPBOARDS_MANAGER (g_paste_clipboards_manager_get_type ())
 
-typedef struct _GPasteClipboardsManager GPasteClipboardsManager;
-typedef struct _GPasteClipboardsManagerClass GPasteClipboardsManagerClass;
-
-G_PASTE_VISIBLE
-GType g_paste_clipboards_manager_get_type (void);
+G_PASTE_FINAL_TYPE (ClipboardsManager, clipboards_manager, CLIPBOARDS_MANAGER, GObject)
 
 void g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
                                                GPasteClipboard         *clipboard);

@@ -24,22 +24,13 @@
 #ifndef __G_PASTE_URIS_ITEM_H__
 #define __G_PASTE_URIS_ITEM_H__
 
-#include <gpaste-item.h>
+#include <gpaste-text-item.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_URIS_ITEM                (g_paste_uris_item_get_type ())
-#define G_PASTE_URIS_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_URIS_ITEM, GPasteUrisItem))
-#define G_PASTE_IS_URIS_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_URIS_ITEM))
-#define G_PASTE_URIS_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_URIS_ITEM, GPasteUrisItemClass))
-#define G_PASTE_IS_URIS_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_URIS_ITEM))
-#define G_PASTE_URIS_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_URIS_ITEM, GPasteUrisItemClass))
+#define G_PASTE_TYPE_URIS_ITEM (g_paste_uris_item_get_type ())
 
-typedef struct _GPasteUrisItem GPasteUrisItem;
-typedef struct _GPasteUrisItemClass GPasteUrisItemClass;
-
-G_PASTE_VISIBLE
-GType g_paste_uris_item_get_type (void);
+G_PASTE_FINAL_TYPE (UrisItem, uris_item, URIS_ITEM, GPasteTextItem)
 
 const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
 

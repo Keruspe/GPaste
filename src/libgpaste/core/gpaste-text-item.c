@@ -17,7 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-text-item-private.h"
+#include "gpaste-item-private.h"
+
+#include <gpaste-text-item.h>
 
 G_DEFINE_TYPE (GPasteTextItem, g_paste_text_item, G_PASTE_TYPE_ITEM)
 

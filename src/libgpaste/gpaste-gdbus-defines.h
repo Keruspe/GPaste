@@ -24,6 +24,8 @@
 #ifndef __G_PASTE_GDBUS_DEFINES_H__
 #define __G_PASTE_GDBUS_DEFINES_H__
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 #define G_PASTE_DAEMON_BUS_NAME       "org.gnome.GPaste"

@@ -17,14 +17,15 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "gpaste-item-private.h"
 #include "gpaste-uris-item-private.h"
 
 #include <gpaste-util.h>
 
-struct _GPasteUrisItemPrivate
+typedef struct
 {
     GStrv uris;
-};
+} GPasteUrisItemPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUrisItem, g_paste_uris_item, G_PASTE_TYPE_TEXT_ITEM)
 
@@ -117,13 +118,13 @@ g_paste_uris_item_new (const gchar *uris)
     G_PASTE_CLEANUP_STRFREEV GStrv paths = g_strsplit (uris, "\n", 0);
     guint length = g_strv_length (paths);
 
-    self->size += length + 1;
+    g_paste_item_add_size (self, length + 1);
 
     GStrv _uris = priv->uris = g_new (gchar *, length + 1);
     for (guint i = 0; i < length; ++i)
     {
         _uris[i] = g_strconcat ("file://", paths[i], NULL);
-        self->size += strlen (_uris[i]) + 1;
+        g_paste_item_add_size (self, strlen (_uris[i]) + 1);
     }
     _uris[length] = NULL;
 

@@ -33,7 +33,6 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/core/gpaste-image-item-private.h \
 	src/libgpaste/core/gpaste-item-private.h \
 	src/libgpaste/core/gpaste-password-item-private.h \
-	src/libgpaste/core/gpaste-text-item-private.h \
 	src/libgpaste/core/gpaste-uris-item-private.h \
 	src/libgpaste/daemon/gpaste-daemon-private.h \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client-private.h \

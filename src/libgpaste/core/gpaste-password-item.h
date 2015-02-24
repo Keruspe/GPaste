@@ -24,22 +24,13 @@
 #ifndef __G_PASTE_PASSWORD_ITEM_H__
 #define __G_PASTE_PASSWORD_ITEM_H__
 
-#include <gpaste-item.h>
+#include <gpaste-text-item.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_PASSWORD_ITEM                (g_paste_password_item_get_type ())
-#define G_PASTE_PASSWORD_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_PASSWORD_ITEM, GPastePasswordItem))
-#define G_PASTE_IS_PASSWORD_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_PASSWORD_ITEM))
-#define G_PASTE_PASSWORD_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_PASSWORD_ITEM, GPastePasswordItemClass))
-#define G_PASTE_IS_PASSWORD_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_PASSWORD_ITEM))
-#define G_PASTE_PASSWORD_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_PASSWORD_ITEM, GPastePasswordItemClass))
+#define G_PASTE_TYPE_PASSWORD_ITEM (g_paste_password_item_get_type ())
 
-typedef struct _GPastePasswordItem GPastePasswordItem;
-typedef struct _GPastePasswordItemClass GPastePasswordItemClass;
-
-G_PASTE_VISIBLE
-GType g_paste_password_item_get_type (void);
+G_PASTE_FINAL_TYPE (PasswordItem, password_item, PASSWORD_ITEM, GPasteTextItem)
 
 const gchar *g_paste_password_item_get_name (const GPastePasswordItem *self);
 

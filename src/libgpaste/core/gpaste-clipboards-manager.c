@@ -23,14 +23,14 @@
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
-struct _GPasteClipboardsManagerPrivate
+typedef struct
 {
     GSList         *clipboards;
     GPasteHistory  *history;
     GPasteSettings *settings;
 
     gulong          selected_signal;
-};
+} GPasteClipboardsManagerPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)
 

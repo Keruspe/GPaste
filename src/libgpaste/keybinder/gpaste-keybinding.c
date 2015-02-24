@@ -43,7 +43,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 G_PASTE_VISIBLE GdkModifierType
 g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), 0);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 
@@ -61,7 +61,7 @@ g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
 G_PASTE_VISIBLE const guint *
 g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private ((GPasteKeybinding *) self);
 

@@ -26,7 +26,7 @@
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
 
-struct _GPasteHistoryPrivate
+typedef struct
 {
     GPasteSettings *settings;
     GSList         *history;
@@ -37,7 +37,7 @@ struct _GPasteHistoryPrivate
     gsize           biggest_size;
 
     gulong          changed_signal;
-};
+} GPasteHistoryPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
 

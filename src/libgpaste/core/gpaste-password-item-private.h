@@ -20,22 +20,13 @@
 #ifndef __G_PASTE_PASSWORD_ITEM_PRIVATE_H__
 #define __G_PASTE_PASSWORD_ITEM_PRIVATE_H__
 
-#include "gpaste-text-item-private.h"
-
 #include <gpaste-password-item.h>
 
 G_BEGIN_DECLS
 
-typedef struct _GPastePasswordItemPrivate GPastePasswordItemPrivate;
-
 struct _GPastePasswordItem
 {
     GPasteTextItem parent_instance;
-};
-
-struct _GPastePasswordItemClass
-{
-    GPasteTextItemClass parent_class;
 };
 
 G_END_DECLS

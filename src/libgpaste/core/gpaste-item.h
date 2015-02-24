@@ -33,18 +33,24 @@ typedef enum {
     G_PASTE_ITEM_STATE_ACTIVE
 } GPasteItemState;
 
-#define G_PASTE_TYPE_ITEM                (g_paste_item_get_type ())
-#define G_PASTE_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_ITEM, GPasteItem))
-#define G_PASTE_IS_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_ITEM))
-#define G_PASTE_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_ITEM, GPasteItemClass))
-#define G_PASTE_IS_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_ITEM))
-#define G_PASTE_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_ITEM, GPasteItemClass))
+#define G_PASTE_TYPE_ITEM (g_paste_item_get_type ())
 
-typedef struct _GPasteItem GPasteItem;
-typedef struct _GPasteItemClass GPasteItemClass;
+G_PASTE_DERIVABLE_TYPE (Item, item, ITEM, GObject)
 
-G_PASTE_VISIBLE
-GType g_paste_item_get_type (void);
+struct _GPasteItemClass
+{
+    GObjectClass parent_class;
+
+    /*< virtual >*/
+    const gchar * (*get_value) (const GPasteItem *self);
+    gboolean      (*equals)    (const GPasteItem *self,
+                                const GPasteItem *other);
+    void          (*set_state) (GPasteItem     *self,
+                                GPasteItemState state);
+
+    /*< pure virtual >*/
+    const gchar *(*get_kind) (const GPasteItem *self);
+};
 
 const gchar *g_paste_item_get_value          (const GPasteItem *self);
 const gchar *g_paste_item_get_real_value     (const GPasteItem *self);

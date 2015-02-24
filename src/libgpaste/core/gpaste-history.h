@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_HISTORY            (g_paste_history_get_type ())
-#define G_PASTE_HISTORY(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_HISTORY, GPasteHistory))
-#define G_PASTE_IS_HISTORY(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_HISTORY))
-#define G_PASTE_HISTORY_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_HISTORY, GPasteHistoryClass))
-#define G_PASTE_IS_HISTORY_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_HISTORY))
-#define G_PASTE_HISTORY_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_HISTORY, GPasteHistoryClass))
+#define G_PASTE_TYPE_HISTORY (g_paste_history_get_type ())
 
-typedef struct _GPasteHistory GPasteHistory;
-typedef struct _GPasteHistoryClass GPasteHistoryClass;
-
-G_PASTE_VISIBLE
-GType g_paste_history_get_type (void);
+G_PASTE_FINAL_TYPE (History, history, HISTORY, GObject)
 
 void              g_paste_history_add                (GPasteHistory *self,
                                                       GPasteItem    *item);

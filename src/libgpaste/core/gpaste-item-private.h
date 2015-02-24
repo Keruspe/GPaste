@@ -24,34 +24,15 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteItemPrivate GPasteItemPrivate;
-
-/*< abstract >*/
-struct _GPasteItem
-{
-    GObject parent_instance;
-
-    /*< protected >*/
-    gsize              size;
-};
-
-struct _GPasteItemClass
-{
-    GObjectClass parent_class;
-
-    /*< virtual >*/
-    const gchar * (*get_value) (const GPasteItem *self);
-    gboolean      (*equals)    (const GPasteItem *self,
-                                const GPasteItem *other);
-    void          (*set_state) (GPasteItem     *self,
-                                GPasteItemState state);
-
-    /*< pure virtual >*/
-    const gchar *(*get_kind) (const GPasteItem *self);
-};
-
 void g_paste_item_set_display_string (GPasteItem  *self,
                                       const gchar *display_string);
+
+void g_paste_item_set_size    (GPasteItem *self,
+                               gsize       size);
+void g_paste_item_add_size    (GPasteItem *self,
+                               gsize       size);
+void g_paste_item_remove_size (GPasteItem *self,
+                               gsize       size);
 
 GPasteItem *g_paste_item_new (GType        type,
                               const gchar *value);

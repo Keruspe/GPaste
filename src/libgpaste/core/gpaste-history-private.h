@@ -24,16 +24,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteHistoryPrivate GPasteHistoryPrivate;
-
 struct _GPasteHistory
 {
     GObject parent_instance;
-};
-
-struct _GPasteHistoryClass
-{
-    GObjectClass parent_class;
 };
 
 G_END_DECLS

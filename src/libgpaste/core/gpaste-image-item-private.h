@@ -26,16 +26,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteImageItemPrivate GPasteImageItemPrivate;
-
 struct _GPasteImageItem
 {
     GPasteItem parent_instance;
-};
-
-struct _GPasteImageItemClass
-{
-    GPasteItemClass parent_class;
 };
 
 G_END_DECLS

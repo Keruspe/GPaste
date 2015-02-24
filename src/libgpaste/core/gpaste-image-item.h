@@ -30,18 +30,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_IMAGE_ITEM                (g_paste_image_item_get_type ())
-#define G_PASTE_IMAGE_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_IMAGE_ITEM, GPasteImageItem))
-#define G_PASTE_IS_IMAGE_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_IMAGE_ITEM))
-#define G_PASTE_IMAGE_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_IMAGE_ITEM, GPasteImageItemClass))
-#define G_PASTE_IS_IMAGE_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_IMAGE_ITEM))
-#define G_PASTE_IMAGE_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_IMAGE_ITEM, GPasteImageItemClass))
+#define G_PASTE_TYPE_IMAGE_ITEM (g_paste_image_item_get_type ())
 
-typedef struct _GPasteImageItem GPasteImageItem;
-typedef struct _GPasteImageItemClass GPasteImageItemClass;
-
-G_PASTE_VISIBLE
-GType g_paste_image_item_get_type (void);
+G_PASTE_FINAL_TYPE (ImageItem, image_item, IMAGE_ITEM, GPasteItem)
 
 const gchar     *g_paste_image_item_get_checksum (const GPasteImageItem *self);
 const GDateTime *g_paste_image_item_get_date     (const GPasteImageItem *self);

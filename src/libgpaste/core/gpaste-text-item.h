@@ -28,18 +28,14 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_TEXT_ITEM                (g_paste_text_item_get_type ())
-#define G_PASTE_TEXT_ITEM(obj)                (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_TEXT_ITEM, GPasteTextItem))
-#define G_PASTE_IS_TEXT_ITEM(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_TEXT_ITEM))
-#define G_PASTE_TEXT_ITEM_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_TEXT_ITEM, GPasteTextItemClass))
-#define G_PASTE_IS_TEXT_ITEM_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_TEXT_ITEM))
-#define G_PASTE_TEXT_ITEM_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_TEXT_ITEM, GPasteTextItemClass))
+#define G_PASTE_TYPE_TEXT_ITEM (g_paste_text_item_get_type ())
 
-typedef struct _GPasteTextItem GPasteTextItem;
-typedef struct _GPasteTextItemClass GPasteTextItemClass;
+G_PASTE_DERIVABLE_TYPE (TextItem, text_item, TEXT_ITEM, GPasteItem)
 
-G_PASTE_VISIBLE
-GType g_paste_text_item_get_type (void);
+struct _GPasteTextItemClass
+{
+    GPasteItemClass parent_class;
+};
 
 GPasteItem *g_paste_text_item_new (const gchar *text);
 

@@ -24,14 +24,14 @@
 #include <string.h>
 #include <sys/stat.h>
 
-struct _GPasteImageItemPrivate
+typedef struct _GPasteImageItemPrivate
 {
     gchar     *checksum;
     GDateTime *date;
     GdkPixbuf *image;
 
     gsize      additional_size;
-};
+} GPasteImageItemPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_ITEM)
 
@@ -113,12 +113,12 @@ g_paste_image_item_set_size (GPasteItem *self)
         if (!priv->additional_size)
         {
             priv->additional_size += strlen (priv->checksum) + 1 + gdk_pixbuf_get_byte_length (image);
-            self->size += priv->additional_size;
+            g_paste_item_add_size (self, priv->additional_size);
         }
     }
     else
     {
-        self->size -= priv->additional_size;
+        g_paste_item_remove_size (self, priv->additional_size);
         priv->additional_size = 0;
     }
 }

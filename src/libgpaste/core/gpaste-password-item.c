@@ -17,14 +17,15 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "gpaste-item-private.h"
 #include "gpaste-password-item-private.h"
 
 #include <string.h>
 
-struct _GPastePasswordItemPrivate
+typedef struct
 {
     gchar *name;
-};
+} GPastePasswordItemPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPastePasswordItem, g_paste_password_item, G_PASTE_TYPE_TEXT_ITEM)
 
@@ -69,7 +70,7 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
 
     GPasteItem *item = G_PASTE_ITEM (self);
 
-    item->size += strlen (name) - ((priv->name) ? strlen(priv->name) : 0);
+    g_paste_item_add_size (item, strlen (name) - ((priv->name) ? strlen(priv->name) : 0));
     g_free (priv->name);
     priv->name = g_strdup (name);
 
@@ -153,7 +154,7 @@ g_paste_password_item_new (const gchar *name,
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
 
     /* override password value length */
-    self->size = 0;
+    g_paste_item_set_size (self, 0);
     g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (self), name);
 
     return self;

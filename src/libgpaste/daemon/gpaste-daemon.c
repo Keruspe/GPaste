@@ -686,7 +686,7 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
 {
     if (active)
     {
-        G_PASTE_CLEANUP_UNREF GPasteItem *item = g_paste_text_item_new ("");
+        g_autoptr (GPasteItem) item = g_paste_text_item_new ("");
         g_paste_clipboards_manager_select (priv->clipboards_manager, item);
     }
     else

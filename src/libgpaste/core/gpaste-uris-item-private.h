@@ -20,22 +20,13 @@
 #ifndef __G_PASTE_URIS_ITEM_PRIVATE_H__
 #define __G_PASTE_URIS_ITEM_PRIVATE_H__
 
-#include "gpaste-text-item-private.h"
-
 #include <gpaste-uris-item.h>
 
 G_BEGIN_DECLS
 
-typedef struct _GPasteUrisItemPrivate GPasteUrisItemPrivate;
-
 struct _GPasteUrisItem
 {
     GPasteTextItem parent_instance;
-};
-
-struct _GPasteUrisItemClass
-{
-    GPasteTextItemClass parent_class;
 };
 
 G_END_DECLS

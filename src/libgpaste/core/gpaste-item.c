@@ -21,11 +21,12 @@
 
 #include <string.h>
 
-struct _GPasteItemPrivate
+typedef struct
 {
     gchar *value;
     gchar *display_string;
-};
+    gsize  size;
+} GPasteItemPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteItem, g_paste_item, G_TYPE_OBJECT)
 
@@ -139,7 +140,53 @@ g_paste_item_get_size (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), 0);
 
-    return self->size;
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
+
+    return priv->size;
+}
+
+/**
+ * g_paste_item_set_size: (skip)
+ */
+void
+g_paste_item_set_size (GPasteItem *self,
+                       gsize       size)
+{
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
+
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+
+    priv->size = size;
+}
+
+/**
+ * g_paste_item_add_size: (skip)
+ */
+void
+g_paste_item_add_size (GPasteItem *self,
+                       gsize       size)
+{
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
+
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+
+    priv->size += size;
+}
+
+/**
+ * g_paste_item_remove_size: (skip)
+ */
+void
+g_paste_item_remove_size (GPasteItem *self,
+                          gsize       size)
+{
+    g_return_if_fail (G_PASTE_IS_ITEM (self));
+
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+
+    g_return_if_fail (priv->size >= size);
+
+    priv->size -= size;
 }
 
 /**
@@ -155,14 +202,14 @@ g_paste_item_set_display_string (GPasteItem  *self,
 
     if (priv->display_string)
     {
-        self->size -= (strlen (priv->display_string) + 1);
+        priv->size -= (strlen (priv->display_string) + 1);
         g_free (priv->display_string);
     }
 
     if (display_string)
     {
         priv->display_string = g_strdup (display_string);
-        self->size += strlen (display_string) + 1;
+        priv->size += strlen (display_string) + 1;
     }
     else
         priv->display_string = NULL;
@@ -248,7 +295,7 @@ g_paste_item_new (GType        type,
     priv->value = g_strdup (value);
     priv->display_string = NULL;
 
-    self->size = strlen (priv->value) + 1;
+    priv->size = strlen (priv->value) + 1;
 
     return self;
 }

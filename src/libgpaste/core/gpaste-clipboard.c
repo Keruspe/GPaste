@@ -27,7 +27,7 @@
 
 #include <string.h>
 
-struct _GPasteClipboardPrivate
+typedef struct
 {
     GdkAtom         target;
     GtkClipboard   *real;
@@ -36,7 +36,7 @@ struct _GPasteClipboardPrivate
     gchar          *image_checksum;
 
     gulong          owner_change_signal;
-};
+} GPasteClipboardPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboard, g_paste_clipboard, G_TYPE_OBJECT)
 
