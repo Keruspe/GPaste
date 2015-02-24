@@ -17,13 +17,17 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-item-private.h"
-
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-delete.h>
+#include <gpaste-ui-item.h>
 #include <gpaste-util.h>
 
-struct _GPasteUiItemPrivate
+struct _GPasteUiItem
+{
+    GtkListBoxRow parent_instance;
+};
+
+typedef struct
 {
     GPasteClient   *client;
     GPasteSettings *settings;
@@ -33,7 +37,7 @@ struct _GPasteUiItemPrivate
     guint32         index;
 
     gulong          size_id;
-};
+} GPasteUiItemPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiItem, g_paste_ui_item, GTK_TYPE_LIST_BOX_ROW)
 

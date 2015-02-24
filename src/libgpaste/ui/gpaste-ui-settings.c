@@ -17,9 +17,13 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-settings-private.h"
-
 #include <gpaste-settings-ui-widget.h>
+#include <gpaste-ui-settings.h>
+
+struct _GPasteUiSettings
+{
+    GtkMenuButton parent_instance;
+};
 
 G_DEFINE_TYPE (GPasteUiSettings, g_paste_ui_settings, GTK_TYPE_MENU_BUTTON)
 

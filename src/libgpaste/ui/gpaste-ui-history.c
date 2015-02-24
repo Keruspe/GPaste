@@ -17,12 +17,16 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-history-private.h"
-
+#include <gpaste-ui-history.h>
 #include <gpaste-ui-item.h>
 #include <gpaste-update-enums.h>
 
-struct _GPasteUiHistoryPrivate
+struct _GPasteUiHistory
+{
+    GtkListBox parent_instance;
+};
+
+typedef struct
 {
     GPasteClient   *client;
     GPasteSettings *settings;
@@ -33,7 +37,7 @@ struct _GPasteUiHistoryPrivate
 
     gulong          activated_id;
     gulong          update_id;
-};
+} GPasteUiHistoryPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_BOX)
 

@@ -29,18 +29,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_ITEM            (g_paste_ui_item_get_type ())
-#define G_PASTE_UI_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_UI_ITEM, GPasteUiItem))
-#define G_PASTE_IS_UI_ITEM(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_UI_ITEM))
-#define G_PASTE_UI_ITEM_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_UI_ITEM, GPasteUiItemClass))
-#define G_PASTE_IS_UI_ITEM_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_UI_ITEM))
-#define G_PASTE_UI_ITEM_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_UI_ITEM, GPasteUiItemClass))
+#define G_PASTE_TYPE_UI_ITEM (g_paste_ui_item_get_type ())
 
-typedef struct _GPasteUiItem GPasteUiItem;
-typedef struct _GPasteUiItemClass GPasteUiItemClass;
-
-G_PASTE_VISIBLE
-GType g_paste_ui_item_get_type (void);
+G_PASTE_FINAL_TYPE (UiItem, ui_item, UI_ITEM, GtkListBoxRow)
 
 void g_paste_ui_item_activate  (GPasteUiItem *self);
 void g_paste_ui_item_refresh   (GPasteUiItem *self);

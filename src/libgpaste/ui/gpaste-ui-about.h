@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_ABOUT            (g_paste_ui_about_get_type ())
-#define G_PASTE_UI_ABOUT(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_UI_ABOUT, GPasteUiAbout))
-#define G_PASTE_IS_UI_ABOUT(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_UI_ABOUT))
-#define G_PASTE_UI_ABOUT_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_UI_ABOUT, GPasteUiAboutClass))
-#define G_PASTE_IS_UI_ABOUT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_UI_ABOUT))
-#define G_PASTE_UI_ABOUT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_UI_ABOUT, GPasteUiAboutClass))
+#define G_PASTE_TYPE_UI_ABOUT (g_paste_ui_about_get_type ())
 
-typedef struct _GPasteUiAbout GPasteUiAbout;
-typedef struct _GPasteUiAboutClass GPasteUiAboutClass;
-
-G_PASTE_VISIBLE
-GType g_paste_ui_about_get_type (void);
+G_PASTE_FINAL_TYPE (UiAbout, ui_about, UI_ABOUT, GtkButton)
 
 GtkWidget *g_paste_ui_about_new (GtkWindow *topwin);
 

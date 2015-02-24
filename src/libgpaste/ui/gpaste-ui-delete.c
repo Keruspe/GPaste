@@ -17,14 +17,19 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-delete-private.h"
+#include <gpaste-ui-delete.h>
 
-struct _GPasteUiDeletePrivate
+struct _GPasteUiDelete
+{
+    GtkButton parent_instance;
+};
+
+typedef struct
 {
     GPasteClient *client;
 
     guint32       index;
-};
+} GPasteUiDeletePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiDelete, g_paste_ui_delete, GTK_TYPE_BUTTON)
 

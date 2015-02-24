@@ -10,7 +10,6 @@
             - settings
             - quit
     gpaste-ui:
-        G_DECLARE_*
         add appstream
         empty history item
 

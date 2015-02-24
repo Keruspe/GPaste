@@ -17,18 +17,22 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-switch-private.h"
-
+#include <gpaste-ui-switch.h>
 #include <gpaste-util.h>
 
-struct _GPasteUiSwitchPrivate
+struct _GPasteUiSwitch
+{
+    GtkSwitch parent_instance;
+};
+
+typedef struct
 {
     GPasteClient *client;
 
     GtkWindow    *topwin;
 
     gulong        tracking_id;
-};
+} GPasteUiSwitchPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSwitch, g_paste_ui_switch, GTK_TYPE_SWITCH)
 

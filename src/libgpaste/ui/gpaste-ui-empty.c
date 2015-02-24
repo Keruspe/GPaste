@@ -17,15 +17,19 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-empty-private.h"
-
+#include <gpaste-ui-empty.h>
 #include <gpaste-util.h>
 
-struct _GPasteUiEmptyPrivate
+struct _GPasteUiEmpty
+{
+    GtkButton parent_instance;
+};
+
+typedef struct
 {
     GtkWindow    *topwin;
     GPasteClient *client;
-};
+} GPasteUiEmptyPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEmpty, g_paste_ui_empty, GTK_TYPE_BUTTON)
 

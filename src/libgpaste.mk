@@ -26,15 +26,6 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/applet/gpaste-applet-icon-private.h \
 	src/libgpaste/core/gpaste-item-private.h \
 	src/libgpaste/keybinder/gpaste-keybinding-private.h \
-	src/libgpaste/ui/gpaste-ui-about-private.h \
-	src/libgpaste/ui/gpaste-ui-delete-private.h \
-	src/libgpaste/ui/gpaste-ui-empty-private.h \
-	src/libgpaste/ui/gpaste-ui-header-private.h \
-	src/libgpaste/ui/gpaste-ui-history-private.h \
-	src/libgpaste/ui/gpaste-ui-item-private.h \
-	src/libgpaste/ui/gpaste-ui-settings-private.h \
-	src/libgpaste/ui/gpaste-ui-switch-private.h \
-	src/libgpaste/ui/gpaste-ui-window-private.h \
 	$(NULL)
 
 lib_libgpaste_la_config_headers = \

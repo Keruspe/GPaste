@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_DELETE            (g_paste_ui_delete_get_type ())
-#define G_PASTE_UI_DELETE(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_UI_DELETE, GPasteUiDelete))
-#define G_PASTE_IS_UI_DELETE(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_UI_DELETE))
-#define G_PASTE_UI_DELETE_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_UI_DELETE, GPasteUiDeleteClass))
-#define G_PASTE_IS_UI_DELETE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_UI_DELETE))
-#define G_PASTE_UI_DELETE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_UI_DELETE, GPasteUiDeleteClass))
+#define G_PASTE_TYPE_UI_DELETE (g_paste_ui_delete_get_type ())
 
-typedef struct _GPasteUiDelete GPasteUiDelete;
-typedef struct _GPasteUiDeleteClass GPasteUiDeleteClass;
-
-G_PASTE_VISIBLE
-GType g_paste_ui_delete_get_type (void);
+G_PASTE_FINAL_TYPE (UiDelete, ui_delete, UI_DELETE, GtkButton)
 
 void g_paste_ui_delete_set_index (GPasteUiDelete *self,
                                   guint32         index);

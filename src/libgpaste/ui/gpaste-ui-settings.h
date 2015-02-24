@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_SETTINGS            (g_paste_ui_settings_get_type ())
-#define G_PASTE_UI_SETTINGS(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_UI_SETTINGS, GPasteUiSettings))
-#define G_PASTE_IS_UI_SETTINGS(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_UI_SETTINGS))
-#define G_PASTE_UI_SETTINGS_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_UI_SETTINGS, GPasteUiSettingsClass))
-#define G_PASTE_IS_UI_SETTINGS_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_UI_SETTINGS))
-#define G_PASTE_UI_SETTINGS_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_UI_SETTINGS, GPasteUiSettingsClass))
+#define G_PASTE_TYPE_UI_SETTINGS (g_paste_ui_settings_get_type ())
 
-typedef struct _GPasteUiSettings GPasteUiSettings;
-typedef struct _GPasteUiSettingsClass GPasteUiSettingsClass;
-
-G_PASTE_VISIBLE
-GType g_paste_ui_settings_get_type (void);
+G_PASTE_FINAL_TYPE (UiSettings, ui_settings, UI_SETTINGS, GtkMenuButton)
 
 GtkWidget *g_paste_ui_settings_new (void);
 

@@ -28,18 +28,9 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_EMPTY            (g_paste_ui_empty_get_type ())
-#define G_PASTE_UI_EMPTY(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), G_PASTE_TYPE_UI_EMPTY, GPasteUiEmpty))
-#define G_PASTE_IS_UI_EMPTY(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_PASTE_TYPE_UI_EMPTY))
-#define G_PASTE_UI_EMPTY_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), G_PASTE_TYPE_UI_EMPTY, GPasteUiEmptyClass))
-#define G_PASTE_IS_UI_EMPTY_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), G_PASTE_TYPE_UI_EMPTY))
-#define G_PASTE_UI_EMPTY_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), G_PASTE_TYPE_UI_EMPTY, GPasteUiEmptyClass))
+#define G_PASTE_TYPE_UI_EMPTY (g_paste_ui_empty_get_type ())
 
-typedef struct _GPasteUiEmpty GPasteUiEmpty;
-typedef struct _GPasteUiEmptyClass GPasteUiEmptyClass;
-
-G_PASTE_VISIBLE
-GType g_paste_ui_empty_get_type (void);
+G_PASTE_FINAL_TYPE (UiEmpty, ui_empty, UI_EMPTY, GtkButton)
 
 GtkWidget *g_paste_ui_empty_new (GtkWindow    *topwin,
                                  GPasteClient *client);

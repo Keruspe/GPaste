@@ -17,15 +17,19 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-window-private.h"
-
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
+#include <gpaste-ui-window.h>
 
-struct _GPasteUiWindowPrivate
+struct _GPasteUiWindow
+{
+    GtkApplicationWindow parent_instance;
+};
+
+typedef struct
 {
     GtkApplication *app;
-};
+} GPasteUiWindowPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
 

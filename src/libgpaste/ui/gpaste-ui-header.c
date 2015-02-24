@@ -17,12 +17,16 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-ui-header-private.h"
-
 #include <gpaste-ui-about.h>
 #include <gpaste-ui-empty.h>
+#include <gpaste-ui-header.h>
 #include <gpaste-ui-settings.h>
 #include <gpaste-ui-switch.h>
+
+struct _GPasteUiHeader
+{
+    GtkHeaderBar parent_instance;
+};
 
 G_DEFINE_TYPE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_BAR)
 
