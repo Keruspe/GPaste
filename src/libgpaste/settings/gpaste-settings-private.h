@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteSettings
-{
-    GObject parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_SETTINGS_PRIVATE_H__*/

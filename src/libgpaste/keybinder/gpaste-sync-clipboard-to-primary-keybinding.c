@@ -21,6 +21,11 @@
 
 #include <gpaste-gsettings-keys.h>
 
+struct _GPasteSyncClipboardToPrimaryKeybinding
+{
+    GPasteKeybinding parent_instance;
+};
+
 G_DEFINE_TYPE (GPasteSyncClipboardToPrimaryKeybinding, g_paste_sync_clipboard_to_primary_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void

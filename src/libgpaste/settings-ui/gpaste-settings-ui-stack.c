@@ -23,6 +23,11 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-settings.h>
 
+struct _GPasteSettingsUiStack
+{
+    GtkStack parent_instance;
+};
+
 typedef struct
 {
     GPasteClient    *client;

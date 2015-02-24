@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteHistory
-{
-    GObject parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_HISTORY_PRIVATE_H__*/

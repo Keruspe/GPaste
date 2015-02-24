@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteApplet
-{
-    GObject parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_APPLET_PRIVATE_H__*/

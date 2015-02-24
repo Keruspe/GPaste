@@ -19,6 +19,11 @@
 
 #include "gpaste-settings-ui-widget-private.h"
 
+struct _GPasteSettingsUiWidget
+{
+    GtkGrid parent_instance;
+};
+
 typedef struct
 {
     GPasteSettingsUiStack *stack;

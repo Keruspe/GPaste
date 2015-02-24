@@ -19,6 +19,11 @@
 
 #include "gpaste-settings-ui-panel-private.h"
 
+struct _GPasteSettingsUiPanel
+{
+    GtkGrid parent_instance;
+};
+
 typedef struct
 {
     GSList *callback_data;

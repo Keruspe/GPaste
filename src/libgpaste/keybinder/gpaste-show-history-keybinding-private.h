@@ -26,11 +26,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteShowHistoryKeybinding
-{
-    GPasteKeybinding parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_SHOW_HISTORY_KEYBINDING_PRIVATE_H__*/

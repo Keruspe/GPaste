@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteUrisItem
-{
-    GPasteTextItem parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_URIS_ITEM_PRIVATE_H__*/

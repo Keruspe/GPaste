@@ -21,6 +21,11 @@
 
 #include <gpaste-gsettings-keys.h>
 
+struct _GPasteSettings
+{
+    GObject parent_instance;
+};
+
 typedef struct
 {
     GSettings *settings;

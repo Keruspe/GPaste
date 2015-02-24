@@ -21,6 +21,11 @@
 
 #include <gpaste-gsettings-keys.h>
 
+struct _GPastePopKeybinding
+{
+    GPasteKeybinding parent_instance;
+};
+
 typedef struct
 {
     GPasteHistory *history;

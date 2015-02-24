@@ -26,11 +26,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteAppletAppIndicator
-{
-    GPasteAppletIcon parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_APPLET_APP_INDICATOR_PRIVATE_H__*/

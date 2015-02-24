@@ -19,6 +19,11 @@
 
 #include "gpaste-applet-status-icon-private.h"
 
+struct _GPasteAppletStatusIcon
+{
+    GPasteAppletIcon parent_instance;
+};
+
 typedef struct
 {
     GtkStatusIcon *icon;

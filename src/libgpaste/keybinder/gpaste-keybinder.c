@@ -29,6 +29,11 @@
 
 #define MAX_BINDINGS 7
 
+struct _GPasteKeybinder
+{
+    GObject parent_instance;
+};
+
 typedef struct
 {
     GSList                 *keybindings;

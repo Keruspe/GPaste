@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteDaemon
-{
-    GObject parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_DAEMON_PRIVATE_H__*/

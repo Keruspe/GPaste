@@ -23,6 +23,11 @@
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
+struct _GPasteClipboardsManager
+{
+    GObject parent_instance;
+};
+
 typedef struct
 {
     GSList         *clipboards;

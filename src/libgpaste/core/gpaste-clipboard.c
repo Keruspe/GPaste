@@ -27,6 +27,11 @@
 
 #include <string.h>
 
+struct _GPasteClipboard
+{
+    GObject parent_instance;
+};
+
 typedef struct
 {
     GdkAtom         target;

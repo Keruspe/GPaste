@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteClient
-{
-    GDBusProxy parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_CLIENT_PRIVATE_H__*/

@@ -22,6 +22,11 @@
 
 #include <gpaste-util.h>
 
+struct _GPasteUrisItem
+{
+    GPasteTextItem parent_instance;
+};
+
 typedef struct
 {
     GStrv uris;

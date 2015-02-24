@@ -26,6 +26,11 @@
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
 
+struct _GPasteHistory
+{
+    GObject parent_instance;
+};
+
 typedef struct
 {
     GPasteSettings *settings;

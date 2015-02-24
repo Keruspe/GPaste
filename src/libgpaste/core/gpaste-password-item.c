@@ -22,6 +22,11 @@
 
 #include <string.h>
 
+struct _GPastePasswordItem
+{
+    GPasteTextItem parent_instance;
+};
+
 typedef struct
 {
     gchar *name;

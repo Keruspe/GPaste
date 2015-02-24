@@ -24,6 +24,11 @@
 #include <string.h>
 #include <sys/stat.h>
 
+struct _GPasteImageItem
+{
+    GPasteItem parent_instance;
+};
+
 typedef struct _GPasteImageItemPrivate
 {
     gchar     *checksum;

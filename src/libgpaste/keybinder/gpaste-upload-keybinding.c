@@ -21,6 +21,11 @@
 
 #include <gpaste-gsettings-keys.h>
 
+struct _GPasteUploadKeybinding
+{
+    GPasteKeybinding parent_instance;
+};
+
 typedef struct
 {
     GPasteDaemon *daemon;

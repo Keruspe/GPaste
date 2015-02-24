@@ -35,6 +35,11 @@
         "</interface>"                                                   \
     "</node>"
 
+struct _GPasteScreensaverClient
+{
+    GDBusProxy parent_instance;
+};
+
 G_DEFINE_TYPE (GPasteScreensaverClient, g_paste_screensaver_client, G_TYPE_DBUS_PROXY)
 
 enum

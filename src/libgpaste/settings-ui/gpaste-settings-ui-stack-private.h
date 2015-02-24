@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteSettingsUiStack
-{
-    GtkStack parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_SETTINGS_UI_STACK_PRIVATE_H__*/

@@ -21,6 +21,11 @@
 
 #include <gpaste-gsettings-keys.h>
 
+struct _GPasteShowHistoryKeybinding
+{
+    GPasteKeybinding parent_instance;
+};
+
 G_DEFINE_TYPE (GPasteShowHistoryKeybinding, g_paste_show_history_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void

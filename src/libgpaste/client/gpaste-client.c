@@ -24,6 +24,11 @@
 #include <gpaste-gdbus-macros.h>
 #include <gpaste-update-enums.h>
 
+struct _GPasteClient
+{
+    GDBusProxy parent_instance;
+};
+
 G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 
 enum

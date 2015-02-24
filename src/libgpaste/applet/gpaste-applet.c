@@ -22,6 +22,11 @@
 #include <gpaste-applet-app-indicator.h>
 #include <gpaste-applet-status-icon.h>
 
+struct _GPasteApplet
+{
+    GObject parent_instance;
+};
+
 typedef struct
 {
     GPasteClient        *client;

@@ -67,6 +67,11 @@ enum
     C_LAST_SIGNAL
 };
 
+struct _GPasteDaemon
+{
+    GObject parent_instance;
+};
+
 typedef struct
 {
     GDBusConnection         *connection;

@@ -24,11 +24,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteClipboardsManager
-{
-    GObject parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_CLIPBOARDS_MANAGER_PRIVATE_H__*/

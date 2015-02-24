@@ -26,11 +26,6 @@
 
 G_BEGIN_DECLS
 
-struct _GPasteSyncClipboardToPrimaryKeybinding
-{
-    GPasteKeybinding parent_instance;
-};
-
 G_END_DECLS
 
 #endif /*__G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING_PRIVATE_H__*/
