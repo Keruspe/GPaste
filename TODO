@@ -2,16 +2,16 @@
     general:
         fix histories view in settings refresh
         confirm dialog for history deletion
-        check G_DECLARE_* => core, ui
-        g_autoptr
+        TODOs
+        FIXMEs
     applet:
         menu for app-indicator and applet right click
             - ui
             - settings
             - quit
     gpaste-ui:
+        G_DECLARE_*
         add appstream
-        TODOs
         empty history item
 
 3.18:
