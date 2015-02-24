@@ -17,7 +17,7 @@
 
 -include $(INTROSPECTION_MAKEFILE)
 
-INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h --c-include=gpaste-client.h --c-include=gpaste-daemon.h
+INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h
 INTROSPECTION_COMPILER_ARGS = $(NULL)
 INTROSPECTION_GIRS = $(NULL)
 

@@ -60,11 +60,19 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/ui/gpaste-ui-window-private.h \
 	$(NULL)
 
-lib_libgpaste_la_public_headers = \
-	src/libgpaste/gpaste.h \
+lib_libgpaste_la_config_headers = \
+	src/libgpaste/gpaste-config.h \
+	$(NULL)
+
+lib_libgpaste_la_misc_headers = \
 	src/libgpaste/gpaste-gdbus-defines.h  \
 	src/libgpaste/gpaste-gsettings-keys.h \
 	src/libgpaste/gpaste-macros.h \
+	src/libgpaste/util/gpaste-util.h \
+	$(NULL)
+
+lib_libgpaste_la_public_headers = \
+	src/libgpaste/gpaste.h \
 	src/libgpaste/applet/gpaste-applet.h \
 	src/libgpaste/applet/gpaste-applet-icon.h \
 	src/libgpaste/applet/gpaste-applet-status-icon.h \
@@ -102,12 +110,9 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/ui/gpaste-ui-settings.h \
 	src/libgpaste/ui/gpaste-ui-switch.h \
 	src/libgpaste/ui/gpaste-ui-window.h \
-	src/libgpaste/util/gpaste-util.h \
 	$(NULL)
 
-lib_libgpaste_la_SOURCES = \
-	$(lib_libgpaste_la_public_headers) \
-	$(lib_libgpaste_la_private_headers) \
+lib_libgpaste_la_source_files = \
 	src/libgpaste/applet/gpaste-applet.c \
 	src/libgpaste/applet/gpaste-applet-icon.c \
 	src/libgpaste/applet/gpaste-applet-status-icon.c \
@@ -148,10 +153,6 @@ lib_libgpaste_la_SOURCES = \
 	src/libgpaste/util/gpaste-util.c \
 	$(NULL)
 
-nodist_lib_libgpaste_la_SOURCES = \
-	src/libgpaste/gpaste-config.h \
-	$(NULL)
-
 if ENABLE_UNITY
 lib_libgpaste_la_private_headers += \
 	src/libgpaste/applet/gpaste-applet-app-indicator-private.h \
@@ -159,10 +160,21 @@ lib_libgpaste_la_private_headers += \
 lib_libgpaste_la_public_headers += \
 	src/libgpaste/applet/gpaste-applet-app-indicator.h \
 	$(NULL)
-lib_libgpaste_la_SOURCES += \
+lib_libgpaste_la_source_files += \
 	src/libgpaste/applet/gpaste-applet-app-indicator.c \
 	$(NULL)
 endif
+
+lib_libgpaste_la_SOURCES = \
+	$(lib_libgpaste_la_misc_headers) \
+	$(lib_libgpaste_la_public_headers) \
+	$(lib_libgpaste_la_private_headers) \
+	$(lib_libgpaste_la_source_files) \
+	$(NULL)
+
+nodist_lib_libgpaste_la_SOURCES = \
+	$(lib_libgpaste_la_config_headers) \
+	$(NULL)
 
 lib_libgpaste_la_CFLAGS = \
 	$(GDK_CFLAGS) \
@@ -193,11 +205,12 @@ lib_libgpaste_la_DEPENDENCIES = \
 	$(NULL)
 
 pkginclude_HEADERS += \
+	$(lib_libgpaste_la_misc_headers) \
 	$(lib_libgpaste_la_public_headers) \
 	$(NULL)
 
 nodist_pkginclude_HEADERS = \
-	src/libgpaste/gpaste-config.h \
+	$(lib_libgpaste_la_config_headers) \
 	$(NULL)
 
 lib_LTLIBRARIES += \
@@ -205,6 +218,6 @@ lib_LTLIBRARIES += \
 	$(NULL)
 
 EXTRA_DIST += \
-	src/libgpaste/gpaste-config.h.in \
+	$(lib_libgpaste_la_config_headers:.h=.h.in) \
 	$(libgpaste_symbols_file) \
 	$(NULL)
