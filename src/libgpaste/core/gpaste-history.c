@@ -688,12 +688,12 @@ g_paste_history_get_history_file (GPasteSettings *settings)
  *
  * Save the #GPasteHistory to the history file
  *
- * Returns: Whether we succesfully wrote the history file or not
+ * Returns:
  */
-G_PASTE_VISIBLE gboolean /* TODO: check return value */
+G_PASTE_VISIBLE void
 g_paste_history_save (GPasteHistory *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
@@ -707,7 +707,7 @@ g_paste_history_save (GPasteHistory *self)
                               NULL)) /* cancellable */
     {
         if (!save_history)
-            return TRUE;
+            return;
 
         g_autoptr (GError) error = NULL;
 
@@ -717,7 +717,7 @@ g_paste_history_save (GPasteHistory *self)
         if (error)
         {
             g_critical ("%s: %s", _("Could not create history dir"), error->message);
-            return FALSE;
+            return;
         }
     }
 
@@ -741,7 +741,7 @@ g_paste_history_save (GPasteHistory *self)
 
         if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
-                return FALSE;
+                return;
 
         for (GSList *history = priv->history; history; history = g_slist_next (history))
         {
@@ -769,9 +769,8 @@ g_paste_history_save (GPasteHistory *self)
 
         if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
-                return FALSE;
+                return;
     }
-    return TRUE;
 }
 
 /********************/
