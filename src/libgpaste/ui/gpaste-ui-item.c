@@ -35,6 +35,7 @@ typedef struct
 
     GtkLabel       *label;
     guint32         index;
+    gboolean        bold;
 
     gulong          size_id;
 } GPasteUiItemPrivate;
@@ -87,8 +88,15 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     G_PASTE_CLEANUP_FREE gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
     if (!txt || error)
         return;
+    G_PASTE_CLEANUP_FREE gchar *oneline = g_paste_util_replace (txt, "\n", "");
 
-    gtk_label_set_text (priv->label, g_paste_util_replace (txt, "\n", ""));
+    if (priv->bold)
+    {
+        G_PASTE_CLEANUP_FREE gchar *markup = g_markup_printf_escaped ("<b>%s</b>", oneline);
+        gtk_label_set_markup (priv->label, markup);
+    }
+    else
+        gtk_label_set_text (priv->label, oneline);
 }
 
 static void
@@ -120,9 +128,9 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
     priv->index = index;
 
     if (!index)
-    { ; } /* FIXME: bold */
+        priv->bold = TRUE;
     else if (!old_index)
-    { ; } /* FIXME: unbold */
+        priv->bold = FALSE;
 
     g_paste_ui_delete_set_index (priv->delete, index);
 
