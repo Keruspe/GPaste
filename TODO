@@ -3,17 +3,12 @@
         fix histories view in settings refresh
         confirm dialog for history deletion
         FIXMEs
-    applet:
-        menu for app-indicator and applet right click
-            - ui
-            - settings
-            - quit
+    daemon:
+        dbus errors instead of asserts in daemon
     gpaste-ui:
         add appstream
 
 3.18:
-    general:
-        dbus errors instead of asserts in daemon
     gpaste-ui:
         search bar
         history chooser
@@ -28,7 +23,3 @@ future:
         specify errors types when possible in g-i
     tests:
         split test, add interactive wrapper
-
-upstream:
-    const in *_get_private
-    const in G_DECLARE macros
