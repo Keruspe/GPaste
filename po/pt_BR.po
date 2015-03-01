@@ -1,5 +1,5 @@
 # Brazilian Portuguese translation for GPaste package.
-# Copyright (C) 2012 Listed translators
+# Copyright (C) 2012-2015 Listed translators
 # This file is distributed under the same license as the GPaste package.
 # Elder Marco <eldermarco@gmail.com>, 2012.
 #

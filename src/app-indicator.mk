@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2014 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2014-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

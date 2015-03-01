@@ -1,5 +1,5 @@
 # Spanish translations for GPaste package.
-# Copyright (C) 2011 Listed translators
+# Copyright (C) 2011-2015 Listed translators
 # This file is distributed under the same license as the GPaste package.
 # Antonio Trujillo <lunatc@gmail.com>, 2011.
 #
