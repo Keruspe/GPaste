@@ -2,9 +2,6 @@
     general:
         fix histories view in settings refresh
         confirm dialog for history deletion
-        FIXMEs
-    daemon:
-        dbus errors instead of asserts in daemon
     gpaste-ui:
         add appstream
 

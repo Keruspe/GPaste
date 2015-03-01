@@ -1323,6 +1323,8 @@ g_paste_history_list (GError **error)
                                                                        G_FILE_QUERY_INFO_NONE,
                                                                        NULL, /* cancellable */
                                                                        error);
+    if (error)
+        return NULL;
     G_PASTE_CLEANUP_ARRAY_FREE GArray *history_names = g_array_new (TRUE, /* zero-terminated */
                                                                     TRUE, /* clear */
                                                                     sizeof (gchar *));

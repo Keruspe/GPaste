@@ -54,6 +54,19 @@
                   G_TYPE_NONE,                   \
                   0)
 
+#define G_PASTE_DBUS_ASSERT_FULL(cond, _msg, ret)            \
+    do {                                                     \
+        if (!(cond))                                         \
+        {                                                    \
+            *err = g_malloc (sizeof (GPasteDBusError));      \
+            (*err)->name = G_PASTE_DAEMON_BUS_NAME ".Error"; \
+            (*err)->msg = _msg;                              \
+            return ret;                                      \
+        }                                                    \
+    } while (FALSE)
+
+#define G_PASTE_DBUS_ASSERT(cond, _msg) G_PASTE_DBUS_ASSERT_FULL (cond, _msg, ;)
+
 enum
 {
     C_UPDATE,
@@ -98,6 +111,21 @@ enum
 };
 
 static guint signals[LAST_SIGNAL] = { 0 };
+
+typedef struct {
+    const gchar *name;
+    const gchar *msg;
+} GPasteDBusError;
+
+static inline GPasteDBusError *
+_err (const gchar *name,
+      const gchar *msg)
+{
+    GPasteDBusError *err = g_malloc (sizeof (GPasteDBusError));
+    err->name = name;
+    err->msg = msg;
+    return err;
+}
 
 static gchar *
 g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
@@ -222,9 +250,10 @@ g_paste_daemon_private_do_add_item (GPasteDaemonPrivate *priv,
 static void
 g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
                                const gchar         *text,
-                               gsize                length)
+                               gsize                length,
+                               GPasteDBusError    **err)
 {
-    g_return_if_fail (text);
+    G_PASTE_DBUS_ASSERT (text && length, "no content to add");
 
     GPasteSettings *settings = priv->settings;
     G_PASTE_CLEANUP_FREE gchar *stripped = g_strstrip (g_strdup (text));
@@ -240,46 +269,47 @@ g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_add (GPasteDaemonPrivate *priv,
-                            GVariant            *parameters)
+                            GVariant            *parameters,
+                            GPasteDBusError    **err)
 {
     gsize length;
     G_PASTE_CLEANUP_FREE gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
-    g_paste_daemon_private_do_add (priv, text, length);
+    g_paste_daemon_private_do_add (priv, text, length, err);
 }
 
 static void
 g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
                                  GVariant            *parameters,
-                                 GError             **error)
+                                 GError             **error,
+                                 GPasteDBusError    **err)
 {
     gsize length;
     G_PASTE_CLEANUP_FREE gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
-
-    g_return_if_fail (file);
-
     G_PASTE_CLEANUP_FREE gchar *content = NULL;
+
+    G_PASTE_DBUS_ASSERT (file, "no file to add");
 
     if (g_file_get_contents (file,
                              &content,
                              &length,
                              error))
     {
-        g_paste_daemon_private_do_add (priv, content, length);
+        g_paste_daemon_private_do_add (priv, content, length, err);
     }
 }
 
 static void
 g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
-                                     GVariant            *parameters)
+                                     GVariant            *parameters,
+                                     GPasteDBusError    **err)
 {
     G_PASTE_CLEANUP_FREE gchar *name = NULL;
     G_PASTE_CLEANUP_FREE gchar *password = NULL;
 
     g_paste_daemon_get_dbus_strings_parameter (parameters, &name, &password);
 
-    if (!name || !password)
-        return;
+    G_PASTE_DBUS_ASSERT (name && password, "no password to add");
 
     g_paste_daemon_private_do_add_item (priv,
                                         g_paste_password_item_new (name, password));
@@ -287,11 +317,12 @@ g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters)
+                                       GVariant            *parameters,
+                                       GPasteDBusError    **err)
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name);
+    G_PASTE_DBUS_ASSERT (name, "no history to backup");
 
     GPasteSettings *settings = priv->settings;
 
@@ -312,11 +343,12 @@ g_paste_daemon_private_delete (GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters)
+                                       GVariant            *parameters,
+                                       GPasteDBusError    **err)
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name);
+    G_PASTE_DBUS_ASSERT (name, "no history to delete");
 
     GPasteHistory *history = priv->history;
 
@@ -331,11 +363,12 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_delete_password (GPasteDaemonPrivate *priv,
-                                        GVariant            *parameters)
+                                        GVariant            *parameters,
+                                        GPasteDBusError    **err)
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name);
+    G_PASTE_DBUS_ASSERT (name, "no password to delete");
 
     g_paste_history_delete_password (priv->history, name);
 }
@@ -348,12 +381,16 @@ g_paste_daemon_private_empty (GPasteDaemonPrivate *priv)
 
 static GVariant *
 g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
-                                    GVariant            *parameters)
+                                    GVariant            *parameters,
+                                    GPasteDBusError    **err)
 {
+    /* TODO: validate index */
     const gchar *value = g_paste_history_get_display_string (priv->history,
                                                              g_paste_daemon_get_dbus_uint32_parameter (parameters));
-    // FIXME: error on NULL
-    GVariant *variant = g_variant_new_string ((value) ? value : "");
+
+    G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
+
+    GVariant *variant = g_variant_new_string (value);
 
     return g_variant_new_tuple (&variant, 1);
 }
@@ -383,11 +420,15 @@ g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv)
 
 static GVariant *
 g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
-                                        GVariant            *parameters)
+                                        GVariant            *parameters,
+                                        GPasteDBusError    **err)
 {
+    /* TODO: validate index */
     const gchar *value = g_paste_history_get_value (priv->history,
                                                     g_paste_daemon_get_dbus_uint32_parameter (parameters));
-    // FIXME: error on NULL
+
+    G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
+
     GVariant *variant = g_variant_new_string ((value) ? value : "");
 
     return g_variant_new_tuple (&variant, 1);
@@ -410,9 +451,13 @@ g_paste_daemon_private_get_raw_history (GPasteDaemonPrivate *priv)
 }
 
 static GVariant *
-g_paste_daemon_list_histories (void)
+g_paste_daemon_list_histories (GError **error)
 {
-    G_PASTE_CLEANUP_STRFREEV GStrv history_names = g_paste_history_list (NULL);
+    G_PASTE_CLEANUP_STRFREEV GStrv history_names = g_paste_history_list (error);
+    
+    if (!history_names)
+        return NULL;
+
     GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
 
     return g_variant_new_tuple (&variant, 1);
@@ -456,15 +501,15 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
 
 static void
 g_paste_daemon_private_rename_password (GPasteDaemonPrivate *priv,
-                                        GVariant            *parameters)
+                                        GVariant            *parameters,
+                                        GPasteDBusError    **err)
 {
     G_PASTE_CLEANUP_FREE gchar *old_name = NULL;
     G_PASTE_CLEANUP_FREE gchar *new_name = NULL;
 
     g_paste_daemon_get_dbus_strings_parameter (parameters, &old_name, &new_name);
 
-    if (!old_name)
-        return;
+    G_PASTE_DBUS_ASSERT (old_name, "no password to rename");
 
     g_paste_history_rename_password (priv->history, old_name, new_name);
 }
@@ -490,7 +535,8 @@ g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
-                                     GVariant            *parameters)
+                                     GVariant            *parameters,
+                                     GPasteDBusError    **err)
 {
     GVariantIter parameters_iter;
     gsize length;
@@ -502,18 +548,19 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     G_PASTE_CLEANUP_FREE gchar *name = g_variant_dup_string (variant2, &length);
 
-    g_return_if_fail (name);
+    G_PASTE_DBUS_ASSERT (name, "no password name given");
 
     g_paste_history_set_password (priv->history, index, name);
 }
 
 static void
 g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters)
+                                       GVariant            *parameters,
+                                       GPasteDBusError    **err)
 {
     G_PASTE_CLEANUP_FREE gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_return_if_fail (name);
+    G_PASTE_DBUS_ASSERT (name, "no history to switch to");
 
     g_paste_history_switch (priv->history, name);
 }
@@ -525,6 +572,7 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
 {
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     G_PASTE_CLEANUP_FREE gchar *url = NULL;
+    G_PASTE_CLEANUP_FREE GPasteDBusError *err = NULL;
     GPasteDaemonPrivate *priv = user_data;
 
     g_subprocess_communicate_utf8_finish (upload,
@@ -534,7 +582,7 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
                                           NULL); /* error */
 
     if (url)
-        g_paste_daemon_private_do_add (priv, url, strlen (url));
+        g_paste_daemon_private_do_add (priv, url, strlen (url), &err);
 }
 
 /**
@@ -584,53 +632,54 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GVariant *answer = NULL;
     GError *error = NULL;
+    G_PASTE_CLEANUP_FREE GPasteDBusError *err = NULL;
 
     if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ABOUT))
         g_paste_util_show_about_dialog (NULL /* top_win */);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD))
-        g_paste_daemon_private_add (priv, parameters);
+        g_paste_daemon_private_add (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_FILE))
-        g_paste_daemon_private_add_file (priv, parameters, &error);
+        g_paste_daemon_private_add_file (priv, parameters, &error, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_PASSWORD))
-        g_paste_daemon_private_add_password (priv, parameters);
+        g_paste_daemon_private_add_password (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
-        g_paste_daemon_private_backup_history (priv, parameters);
+        g_paste_daemon_private_backup_history (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE))
         g_paste_daemon_private_delete (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
-        g_paste_daemon_private_delete_history (priv, parameters);
+        g_paste_daemon_private_delete_history (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
-        g_paste_daemon_private_delete_password (priv, parameters);
+        g_paste_daemon_private_delete_password (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_EMPTY))
         g_paste_daemon_private_empty (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT))
-        answer = g_paste_daemon_private_get_element (priv, parameters);
+        answer = g_paste_daemon_private_get_element (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY))
         answer = g_paste_daemon_private_get_history (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
         answer = g_paste_daemon_private_get_history_size (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
-        answer = g_paste_daemon_private_get_raw_element (priv, parameters);
+        answer = g_paste_daemon_private_get_raw_element (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
         answer = g_paste_daemon_private_get_raw_history (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
-        answer = g_paste_daemon_list_histories ();
+        answer = g_paste_daemon_list_histories (&error);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))
         g_paste_daemon_on_extension_state_changed (self, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_REEXECUTE))
         g_paste_daemon_reexecute (self);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_RENAME_PASSWORD))
-        g_paste_daemon_private_rename_password (priv, parameters);
+        g_paste_daemon_private_rename_password (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SEARCH))
         answer = g_paste_daemon_private_search (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SELECT))
         g_paste_daemon_private_select (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SET_PASSWORD))
-        g_paste_daemon_private_set_password (priv, parameters);
+        g_paste_daemon_private_set_password (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
         g_paste_daemon_show_history (self, &error);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
-        g_paste_daemon_private_switch_history (priv, parameters);
+        g_paste_daemon_private_switch_history (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))
         g_paste_daemon_track (self, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_UPLOAD))
@@ -638,6 +687,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
 
     if (error)
         g_dbus_method_invocation_take_error (invocation, error);
+    else if (err)
+        g_dbus_method_invocation_return_dbus_error (invocation, err->name, err->msg);
     else
         g_dbus_method_invocation_return_value (invocation, answer);
 }
