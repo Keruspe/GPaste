@@ -102,7 +102,7 @@ g_paste_applet_status_icon_client_ready (GObject      *source_object G_GNUC_UNUS
     if (!g_paste_applet_new_finish (priv, res))
         return;
 
-    priv->icon = g_paste_applet_status_icon_new (priv->client);
+    priv->icon = g_paste_applet_status_icon_new (priv->client, priv->application);
 }
 
 static GPasteApplet *

@@ -108,6 +108,7 @@ g_paste_applet_app_indicator_new (GPasteClient *client,
 
     GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_APP_INDICATOR, client);
     GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private ((GPasteAppletAppIndicator *) self);
+    GtkWidget *menu = g_paste_applet_menu_new (client, app);
 
     priv->client = g_object_ref (client);
 
@@ -117,8 +118,8 @@ g_paste_applet_app_indicator_new (GPasteClient *client,
                                           priv);
 
     indicator_set_state (priv->icon, g_paste_client_is_active (client));
-
-    app_indicator_set_menu (priv->icon, GTK_MENU (g_paste_applet_menu_new (client, app)));
+    gtk_widget_show_all (menu);
+    app_indicator_set_menu (priv->icon, GTK_MENU (menu));
 
     return self;
 }

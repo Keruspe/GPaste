@@ -33,7 +33,8 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (AppletStatusIcon, applet_status_icon, APPLET_STATUS_ICON, GPasteAppletIcon)
 
-GPasteAppletIcon *g_paste_applet_status_icon_new (GPasteClient *client);
+GPasteAppletIcon *g_paste_applet_status_icon_new (GPasteClient *client,
+                                                  GApplication *app);
 
 G_END_DECLS
 
