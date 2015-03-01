@@ -184,7 +184,7 @@ _keybinding_grab_gnome_shell (_Keybinding *k)
 
     GPasteGnomeShellAccelerator accel = {
         g_paste_keybinding_get_accelerator (k->binding, k->settings),
-        G_PASTE_GNOME_SHELL_KEYBINDING_MODE_ALL
+        G_PASTE_GNOME_SHELL_ACTION_MODE_ALL
     };
 
     g_autoptr (GError) error = NULL;
