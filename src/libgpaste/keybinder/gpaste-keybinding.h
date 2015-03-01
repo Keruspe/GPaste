@@ -38,7 +38,7 @@ struct _GPasteKeybindingClass
 };
 
 typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
-typedef void         (*GPasteKeybindingFunc)   (GPasteKeybinding *self, /* FIXME: g-i */
+typedef void         (*GPasteKeybindingFunc)   (GPasteKeybinding *self,
                                                 gpointer          data);
 
 const guint    *g_paste_keybinding_get_keycodes    (const GPasteKeybinding *self);

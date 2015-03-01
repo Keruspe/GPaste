@@ -596,7 +596,6 @@ g_paste_history_delete_password (GPasteHistory *self,
  *
  * Returns:
  */
-// FIXME: return whether we did anything and handle the value
 G_PASTE_VISIBLE void
 g_paste_history_rename_password (GPasteHistory *self,
                                  const gchar   *old_name,
