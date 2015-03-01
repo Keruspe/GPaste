@@ -42,6 +42,10 @@ lib_libgpaste_la_misc_headers = \
 lib_libgpaste_la_public_headers = \
 	src/libgpaste/gpaste.h \
 	src/libgpaste/applet/gpaste-applet.h \
+	src/libgpaste/applet/gpaste-applet-about.h \
+	src/libgpaste/applet/gpaste-applet-menu.h \
+	src/libgpaste/applet/gpaste-applet-quit.h \
+	src/libgpaste/applet/gpaste-applet-settings.h \
 	src/libgpaste/applet/gpaste-applet-icon.h \
 	src/libgpaste/applet/gpaste-applet-status-icon.h \
 	src/libgpaste/client/gpaste-client.h \
@@ -83,6 +87,10 @@ lib_libgpaste_la_public_headers = \
 
 lib_libgpaste_la_source_files = \
 	src/libgpaste/applet/gpaste-applet.c \
+	src/libgpaste/applet/gpaste-applet-about.c \
+	src/libgpaste/applet/gpaste-applet-menu.c \
+	src/libgpaste/applet/gpaste-applet-quit.c \
+	src/libgpaste/applet/gpaste-applet-settings.c \
 	src/libgpaste/applet/gpaste-applet-icon.c \
 	src/libgpaste/applet/gpaste-applet-status-icon.c \
 	src/libgpaste/client/gpaste-client.c \

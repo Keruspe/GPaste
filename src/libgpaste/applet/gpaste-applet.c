@@ -88,7 +88,7 @@ g_paste_applet_app_indicator_client_ready (GObject      *source_object G_GNUC_UN
     if (!g_paste_applet_new_finish (priv, res))
         return;
 
-    priv->icon = g_paste_applet_app_indicator_new (priv->client);
+    priv->icon = g_paste_applet_app_indicator_new (priv->client, priv->application);
 }
 #endif
 

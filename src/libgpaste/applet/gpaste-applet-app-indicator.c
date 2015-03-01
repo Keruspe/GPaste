@@ -20,6 +20,7 @@
 #include "gpaste-applet-icon-private.h"
 
 #include <gpaste-applet-app-indicator.h>
+#include <gpaste-applet-menu.h>
 
 #include <libappindicator/app-indicator.h>
 
@@ -92,6 +93,7 @@ g_paste_applet_app_indicator_init (GPasteAppletAppIndicator *self)
 /**
  * g_paste_applet_app_indicator_new:
  * @client: a #GPasteClient
+ * @app: the #GApplication
  *
  * Create a new instance of #GPasteAppletAppIndicator
  *
@@ -99,9 +101,11 @@ g_paste_applet_app_indicator_init (GPasteAppletAppIndicator *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteAppletIcon *
-g_paste_applet_app_indicator_new (GPasteClient *client)
+g_paste_applet_app_indicator_new (GPasteClient *client,
+                                  GApplication *app)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (!app || G_IS_APPLICATION (app), NULL);
 
     GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_APP_INDICATOR, client);
     GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private ((GPasteAppletAppIndicator *) self);
@@ -114,6 +118,8 @@ g_paste_applet_app_indicator_new (GPasteClient *client)
                                           priv);
 
     indicator_set_state (priv->icon, g_paste_client_is_active (client));
+
+    app_indicator_set_menu (priv->icon, GTK_MENU (g_paste_applet_menu_new (client, app)));
 
     return self;
 }

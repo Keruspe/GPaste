@@ -17,21 +17,19 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __G_PASTE_APPLET_APP_INDICATOR_H__
-#define __G_PASTE_APPLET_APP_INDICATOR_H__
+#ifndef __G_PASTE_APPLET_SETTINGS_H__
+#define __G_PASTE_APPLET_SETTINGS_H__
 
-#include <gpaste-applet-icon.h>
-#include <gpaste-client.h>
+#include <gpaste-macros.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_APPLET_APP_INDICATOR (g_paste_applet_app_indicator_get_type ())
+#define G_PASTE_TYPE_APPLET_SETTINGS (g_paste_applet_settings_get_type ())
 
-G_PASTE_FINAL_TYPE (AppletAppIndicator, applet_app_indicator, APPLET_APP_INDICATOR, GPasteAppletIcon)
+G_PASTE_FINAL_TYPE (AppletSettings, applet_settings, APPLET_SETTINGS, GtkMenuItem)
 
-GPasteAppletIcon *g_paste_applet_app_indicator_new (GPasteClient *client,
-                                                    GApplication *app);
+GtkWidget *g_paste_applet_settings_new (void);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_APPLET_APP_INDICATOR_H__*/
+#endif /*__G_PASTE_APPLET_SETTINGS_H__*/
