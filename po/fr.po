@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-24 21:09+0100\n"
+"POT-Creation-Date: 2015-03-01 21:26+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Failed to register the gtk application"
 msgstr "Impossible d'inscrire l'application gtk au registre"
 
-#: ../src/libgpaste/core/gpaste-history.c:719
+#: ../src/libgpaste/core/gpaste-history.c:718
 msgid "Could not create history dir"
 msgstr "Impossible de créer le dossier d'historique"
 
@@ -172,12 +172,12 @@ msgid "Histories"
 msgstr "Historiques"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:543
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:545
 msgid "Switch to"
 msgstr "Passer à"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:548
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:550
 msgid "Delete"
 msgstr "Supprimer"
 

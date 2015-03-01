@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-02-24 21:09+0100\n"
+"POT-Creation-Date: 2015-03-01 21:26+0100\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -20,7 +20,7 @@ msgstr ""
 msgid "Failed to register the gtk application"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
 
-#: ../src/libgpaste/core/gpaste-history.c:719
+#: ../src/libgpaste/core/gpaste-history.c:718
 msgid "Could not create history dir"
 msgstr "Historiakansion luominen epäonnistui"
 
@@ -173,12 +173,12 @@ msgid "Histories"
 msgstr "Historiat"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:543
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:545
 msgid "Switch to"
 msgstr "Vaihda kohteeseen"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:548
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:550
 msgid "Delete"
 msgstr "Poista"
 
