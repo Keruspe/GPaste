@@ -250,7 +250,8 @@ g_paste_daemon_private_add (GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
-                                 GVariant            *parameters)
+                                 GVariant            *parameters,
+                                 GError             **error)
 {
     gsize length;
     G_PASTE_CLEANUP_FREE gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
@@ -262,7 +263,7 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
     if (g_file_get_contents (file,
                              &content,
                              &length,
-                             NULL)) /* error */
+                             error))
     {
         g_paste_daemon_private_do_add (priv, content, length);
     }
@@ -520,7 +521,7 @@ g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
 static void
 g_paste_daemon_private_upload_finish (GObject      *source_object,
                                       GAsyncResult *res,
-                                      gpointer      user_data G_GNUC_UNUSED)
+                                      gpointer      user_data)
 {
     g_autoptr (GSubprocess) upload = G_SUBPROCESS (source_object);
     G_PASTE_CLEANUP_FREE gchar *url = NULL;
@@ -582,13 +583,14 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     GPasteDaemon *self = user_data;
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GVariant *answer = NULL;
+    GError *error = NULL;
 
     if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ABOUT))
-        g_paste_util_show_about_dialog (NULL);
+        g_paste_util_show_about_dialog (NULL /* top_win */);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD))
         g_paste_daemon_private_add (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_FILE))
-        g_paste_daemon_private_add_file (priv, parameters);
+        g_paste_daemon_private_add_file (priv, parameters, &error);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_PASSWORD))
         g_paste_daemon_private_add_password (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
@@ -626,7 +628,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SET_PASSWORD))
         g_paste_daemon_private_set_password (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
-        g_paste_daemon_show_history (self, NULL /* FIXME: answer error */);
+        g_paste_daemon_show_history (self, &error);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
         g_paste_daemon_private_switch_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_TRACK))
@@ -634,7 +636,10 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_UPLOAD))
         _g_paste_daemon_upload (self, parameters);
 
-    g_dbus_method_invocation_return_value (invocation, answer);
+    if (error)
+        g_dbus_method_invocation_take_error (invocation, error);
+    else
+        g_dbus_method_invocation_return_value (invocation, answer);
 }
 
 static GVariant *
@@ -800,6 +805,7 @@ g_paste_daemon_own_bus_name (GPasteDaemon *self,
                              GError      **error)
 {
     g_return_val_if_fail (G_PASTE_IS_DAEMON (self), FALSE);
+    g_return_val_if_fail (error != NULL, FALSE);
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
