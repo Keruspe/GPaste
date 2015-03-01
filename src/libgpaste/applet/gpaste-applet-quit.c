@@ -19,8 +19,6 @@
 
 #include <gpaste-applet-quit.h>
 
-#include <glib/gi18n-lib.h>
-
 struct _GPasteAppletQuit
 {
     GtkMenuItem parent_instance;

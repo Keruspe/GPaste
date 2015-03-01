@@ -19,8 +19,6 @@
 
 #include <gpaste-applet-about.h>
 
-#include <glib/gi18n-lib.h>
-
 struct _GPasteAppletAbout
 {
     GtkMenuItem parent_instance;

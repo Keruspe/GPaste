@@ -20,8 +20,6 @@
 #include <gpaste-applet-settings.h>
 #include <gpaste-util.h>
 
-#include <glib/gi18n-lib.h>
-
 struct _GPasteAppletSettings
 {
     GtkMenuItem parent_instance;
