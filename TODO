@@ -1,6 +1,4 @@
 3.16:
-    general:
-        fix histories view in settings refresh
     gpaste-ui:
         add appstream
 
