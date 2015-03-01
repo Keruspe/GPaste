@@ -29,7 +29,6 @@ struct _GPasteAppletAppIndicator
     GPasteAppletIcon parent_instance;
 };
 
-/* FIXME: react to click */
 typedef struct
 {
     GPasteClient *client;
