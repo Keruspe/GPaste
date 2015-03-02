@@ -1003,12 +1003,12 @@ g_paste_settings_init (GPasteSettings *self)
 
     priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
 
-    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
-
     priv->shell_changed_signal = g_signal_connect (priv->shell_settings,
                                                   "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
                                                   G_CALLBACK (g_paste_settings_shell_settings_changed),
                                                   self);
+
+    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
 #endif
 }
 
