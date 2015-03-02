@@ -962,6 +962,11 @@ g_paste_settings_init (GPasteSettings *self)
     priv->sync_primary_to_clipboard = NULL;
     priv->upload = NULL;
 
+    priv->changed_signal = g_signal_connect (settings,
+                                             "changed",
+                                             G_CALLBACK (g_paste_settings_settings_changed),
+                                             self);
+
     g_paste_settings_private_set_element_size_from_dconf (priv);
     g_paste_settings_private_set_growing_lines_from_dconf (priv);
     g_paste_settings_private_set_history_name_from_dconf (priv);
@@ -983,11 +988,6 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_track_extension_state_from_dconf (priv);
     g_paste_settings_private_set_trim_items_from_dconf (priv);
     g_paste_settings_private_set_upload_from_dconf (priv);
-
-    priv->changed_signal = g_signal_connect (settings,
-                                             "changed",
-                                             G_CALLBACK (g_paste_settings_settings_changed),
-                                             self);
 
     priv->shell_settings = NULL;
     priv->extension_enabled = FALSE;
