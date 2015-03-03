@@ -379,7 +379,7 @@ static void
 clean_callback_data (gpointer data,
                      gpointer user_data G_GNUC_UNUSED)
 {
-    G_PASTE_CLEANUP_FREE _CallbackDataWrapper *wrap = data;
+    g_autofree _CallbackDataWrapper *wrap = data;
 
     g_signal_handler_disconnect (wrap->widget, wrap->signal);
     if (wrap->reset_widget)

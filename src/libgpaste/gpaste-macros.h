@@ -71,24 +71,19 @@ G_BEGIN_DECLS
 
 #define G_PASTE_CLEANUP(fun) __attribute__((cleanup(fun)))
 
-#define G_PASTE_CLEANUP_FREE            G_PASTE_CLEANUP (g_paste_free_ptr)
 #define G_PASTE_CLEANUP_ARRAY_FREE      G_PASTE_CLEANUP (g_paste_array_free_ptr)
 #define G_PASTE_CLEANUP_B_STRV_FREE     G_PASTE_CLEANUP (g_paste_b_strv_free_ptr)
 #define G_PASTE_CLEANUP_STRING_FREE     G_PASTE_CLEANUP (g_paste_string_free_ptr)
-#define G_PASTE_CLEANUP_STRFREEV        G_PASTE_CLEANUP (g_paste_strfreev_ptr)
 
 #define G_PASTE_CLEANUP_NODE_INFO_UNREF G_PASTE_CLEANUP (g_paste_node_info_unref_ptr)
 #define G_PASTE_CLEANUP_GSCHEMA_UNREF   G_PASTE_CLEANUP (g_paste_gschema_unref_ptr)
 
-#define G_PASTE_TRIVIAL_CLEANUP_FUN_FULL(name, type, fun, param_type) \
-    static inline void                                                \
-    g_paste_##name##_ptr (param_type ptr)                             \
-    {                                                                 \
-        g_clear_pointer ((type *) ptr, fun);                          \
-    }
-
 #define G_PASTE_TRIVIAL_CLEANUP_FUN(name, type, fun) \
-    G_PASTE_TRIVIAL_CLEANUP_FUN_FULL (name, type, fun, type *)
+    static inline void                               \
+    g_paste_##name##_ptr (type *ptr)                 \
+    {                                                \
+        g_clear_pointer (ptr, fun);                  \
+    }
 
 #define G_PASTE_CLEANUP_FUN_WITH_ARG(name, type, fun, arg) \
     static inline void                                     \
@@ -100,16 +95,12 @@ G_BEGIN_DECLS
 
 #define G_PASTE_BOXED_FREE_REV(box, type) g_boxed_free (type, box)
 
-G_PASTE_TRIVIAL_CLEANUP_FUN_FULL (free,            gpointer,           g_free,                gpointer)
+G_PASTE_CLEANUP_FUN_WITH_ARG (array_free,      GArray *,           g_array_free,           FALSE)
+G_PASTE_CLEANUP_FUN_WITH_ARG (b_strv_free,     GStrv,              G_PASTE_BOXED_FREE_REV, G_TYPE_STRV)
+G_PASTE_CLEANUP_FUN_WITH_ARG (string_free,     GString *,          g_string_free,          TRUE)
 
-G_PASTE_TRIVIAL_CLEANUP_FUN      (strfreev,        GStrv,              g_strfreev)
-
-G_PASTE_CLEANUP_FUN_WITH_ARG     (array_free,      GArray *,           g_array_free,           FALSE)
-G_PASTE_CLEANUP_FUN_WITH_ARG     (b_strv_free,     GStrv,              G_PASTE_BOXED_FREE_REV, G_TYPE_STRV)
-G_PASTE_CLEANUP_FUN_WITH_ARG     (string_free,     GString *,          g_string_free,          TRUE)
-
-G_PASTE_TRIVIAL_CLEANUP_FUN      (node_info_unref, GDBusNodeInfo *,    g_dbus_node_info_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN      (gschema_unref,   GSettingsSchema *,  g_settings_schema_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (node_info_unref, GDBusNodeInfo *,    g_dbus_node_info_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN  (gschema_unref,   GSettingsSchema *,  g_settings_schema_unref)
 
 G_END_DECLS
 

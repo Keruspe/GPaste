@@ -97,7 +97,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
                                     GAsyncResult *res,
                                     gpointer      user_data)
 {
-    G_PASTE_CLEANUP_FREE OnUpdateCallbackData *data = user_data;
+    g_autofree OnUpdateCallbackData *data = user_data;
     GPasteUiHistory *self = data->self;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 

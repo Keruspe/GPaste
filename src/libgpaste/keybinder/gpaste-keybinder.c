@@ -251,7 +251,7 @@ _keybinding_new (GPasteKeybinding       *binding,
 
     k->action = 0;
 
-    G_PASTE_CLEANUP_FREE gchar *detailed_signal = g_strdup_printf ("rebind::%s",
+    g_autofree gchar *detailed_signal = g_strdup_printf ("rebind::%s",
                                                                    g_paste_keybinding_get_dconf_key (binding));
     k->rebind_signal = g_signal_connect_swapped (settings,
                                                  detailed_signal,
@@ -343,7 +343,7 @@ grab_accelerators_cb (GObject      *source_object,
 {
     GPasteKeybinderPrivate *priv = user_data;
     g_autoptr (GError) error = NULL;
-    G_PASTE_CLEANUP_FREE guint *actions = g_paste_gnome_shell_client_grab_accelerators_finish (G_PASTE_GNOME_SHELL_CLIENT (source_object),
+    g_autofree guint *actions = g_paste_gnome_shell_client_grab_accelerators_finish (G_PASTE_GNOME_SHELL_CLIENT (source_object),
                                                                                                res,
                                                                                                &error);
 

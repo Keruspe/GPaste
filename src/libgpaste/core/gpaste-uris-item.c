@@ -112,15 +112,15 @@ g_paste_uris_item_new (const gchar *uris)
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
     GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
 
-    G_PASTE_CLEANUP_FREE gchar *display_string_with_newlines = g_paste_util_replace (uris, g_get_home_dir (), "~");
-    G_PASTE_CLEANUP_FREE gchar *display_string = g_paste_util_replace (display_string_with_newlines, "\n", " ");
+    g_autofree gchar *display_string_with_newlines = g_paste_util_replace (uris, g_get_home_dir (), "~");
+    g_autofree gchar *display_string = g_paste_util_replace (display_string_with_newlines, "\n", " ");
 
     // This is the prefix displayed in history to identify selected files
-    G_PASTE_CLEANUP_FREE gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);
+    g_autofree gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);
 
     g_paste_item_set_display_string (self, full_display_string);
 
-    G_PASTE_CLEANUP_STRFREEV GStrv paths = g_strsplit (uris, "\n", 0);
+    g_auto (GStrv) paths = g_strsplit (uris, "\n", 0);
     guint length = g_strv_length (paths);
 
     g_paste_item_add_size (self, length + 1);

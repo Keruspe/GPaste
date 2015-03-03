@@ -723,8 +723,8 @@ g_paste_settings_private_get_enabled_extensions (GPasteSettingsPrivate *priv)
 static void
 g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate *priv)
 {
-    G_PASTE_CLEANUP_STRFREEV gchar **extensions = g_paste_settings_private_get_enabled_extensions (priv);
-    for (gchar **e = extensions; *e; ++e)
+    g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (priv);
+    for (GStrv e = extensions; *e; ++e)
     {
         if (!g_strcmp0 (*e, EXTENSION_NAME))
         {
@@ -750,7 +750,7 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
 {
     g_return_if_fail (G_PASTE_IS_SETTINGS (self));
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private ((GPasteSettings *) self);
-    G_PASTE_CLEANUP_STRFREEV gchar **extensions = NULL;
+    g_auto (GStrv) extensions = NULL;
     if (!priv->shell_settings || (value == priv->extension_enabled))
         return;
 

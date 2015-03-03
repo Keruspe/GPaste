@@ -100,8 +100,8 @@ G_PASTE_VISIBLE gboolean
 g_paste_util_spawn (const gchar *app,
                     GError     **error)
 {
-    G_PASTE_CLEANUP_FREE gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    G_PASTE_CLEANUP_FREE gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
+    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                                   G_DBUS_PROXY_FLAGS_NONE,
                                                                   NULL,
@@ -137,7 +137,7 @@ g_paste_util_replace (const gchar *text,
                       const gchar *pattern,
                       const gchar *substitution)
 {
-    G_PASTE_CLEANUP_FREE gchar *regex_string = g_regex_escape_string (pattern, -1);
+    g_autofree gchar *regex_string = g_regex_escape_string (pattern, -1);
     g_autoptr (GRegex) regex = g_regex_new (regex_string,
                                             0, /* Compile options */
                                             0, /* Match options */

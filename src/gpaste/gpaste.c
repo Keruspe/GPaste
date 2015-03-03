@@ -157,7 +157,7 @@ show_history (GPasteClient *client,
               gboolean      zero,
               GError      **error)
 {
-    G_PASTE_CLEANUP_STRFREEV GStrv history = (raw) ?
+    g_auto (GStrv) history = (raw) ?
         g_paste_client_get_raw_history_sync (client, error) :
         g_paste_client_get_history_sync (client, error);
 
@@ -306,7 +306,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "dv") ||
                      !g_strcmp0 (arg1, "daemon-version"))
             {
-                G_PASTE_CLEANUP_FREE gchar *v = g_paste_client_get_version (client);
+                g_autofree gchar *v = g_paste_client_get_version (client);
                 printf ("%s\n", v);
             }
             else if (!g_strcmp0 (arg1, "e") ||
@@ -329,7 +329,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "lh") ||
                      !g_strcmp0 (arg1, "list-histories"))
             {
-                G_PASTE_CLEANUP_STRFREEV GStrv histories = g_paste_client_list_histories_sync (client, &error);
+                g_auto (GStrv) histories = g_paste_client_list_histories_sync (client, &error);
                 if (!error)
                 {
                     for (GStrv h = histories; *h; ++h)
@@ -423,7 +423,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "search"))
             {
                 gsize hits;
-                G_PASTE_CLEANUP_FREE guint32 *results = g_paste_client_search_sync (client, arg2, &hits, &error);
+                g_autofree guint32 *results = g_paste_client_search_sync (client, arg2, &hits, &error);
 
                 if (!error)
                 {

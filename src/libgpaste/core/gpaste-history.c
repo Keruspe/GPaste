@@ -642,14 +642,14 @@ g_paste_history_empty (GPasteHistory *self)
 static gchar *
 g_paste_history_encode (const gchar *text)
 {
-    G_PASTE_CLEANUP_FREE gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
+    g_autofree gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
     return g_paste_util_replace (_encoded_text, ">", "&gt;");
 }
 
 static gchar *
 g_paste_history_decode (const gchar *text)
 {
-    G_PASTE_CLEANUP_FREE gchar *_decoded_text = g_paste_util_replace (text, "&gt;", ">");
+    g_autofree gchar *_decoded_text = g_paste_util_replace (text, "&gt;", ">");
     return g_paste_util_replace (_decoded_text, "&amp;", "&");
 }
 
@@ -662,22 +662,22 @@ g_paste_history_get_history_dir_path (void)
 static GFile *
 g_paste_history_get_history_dir (void)
 {
-    G_PASTE_CLEANUP_FREE gchar *history_dir_path = g_paste_history_get_history_dir_path ();
+    g_autofree gchar *history_dir_path = g_paste_history_get_history_dir_path ();
     return g_file_new_for_path (history_dir_path);
 }
 
 static gchar *
 g_paste_history_get_history_file_path (GPasteSettings *settings)
 {
-    G_PASTE_CLEANUP_FREE gchar *history_dir_path = g_paste_history_get_history_dir_path ();
-    G_PASTE_CLEANUP_FREE gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
+    g_autofree gchar *history_dir_path = g_paste_history_get_history_dir_path ();
+    g_autofree gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
     return g_build_filename (history_dir_path, history_file_name, NULL);
 }
 
 static GFile *
 g_paste_history_get_history_file (GPasteSettings *settings)
 {
-    G_PASTE_CLEANUP_FREE gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings);
     return g_file_new_for_path (history_file_path);
 }
 
@@ -699,7 +699,7 @@ g_paste_history_save (GPasteHistory *self)
     GPasteSettings *settings = priv->settings;
     gboolean save_history = g_paste_settings_get_save_history (settings);
     g_autoptr (GFile) history_dir = g_paste_history_get_history_dir ();
-    G_PASTE_CLEANUP_FREE gchar *history_file_path = NULL;
+    g_autofree gchar *history_file_path = NULL;
     g_autoptr (GFile) history_file = NULL;
 
     if (!g_file_query_exists (history_dir,
@@ -750,7 +750,7 @@ g_paste_history_save (GPasteHistory *self)
             if (!g_strcmp0 (kind, "Password"))
                 continue;
 
-            G_PASTE_CLEANUP_FREE gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
+            g_autofree gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
 
             if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
                 !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
@@ -905,7 +905,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
 {
     Data *data = user_data;
 
-    G_PASTE_CLEANUP_FREE gchar *txt = g_strndup (text, text_len);
+    g_autofree gchar *txt = g_strndup (text, text_len);
     switch (data->state)
     {
     case IN_HISTORY:
@@ -918,7 +918,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         break;
     case IN_ITEM:
     {
-        G_PASTE_CLEANUP_FREE gchar *value = g_paste_history_decode (txt);
+        g_autofree gchar *value = g_paste_history_decode (txt);
         if (*g_strstrip (txt))
         {
             if (data->current_size < data->max_size)
@@ -1008,7 +1008,7 @@ g_paste_history_load (GPasteHistory *self)
                        g_object_unref);
     priv->history = NULL;
 
-    G_PASTE_CLEANUP_FREE gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,

@@ -128,7 +128,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
                                  const gchar  *text,
                                  gpointer      user_data)
 {
-    G_PASTE_CLEANUP_FREE GPasteClipboardTextCallbackData *data = user_data;
+    g_autofree GPasteClipboardTextCallbackData *data = user_data;
     GPasteClipboard *self = data->self;
 
     if (!text)
@@ -140,7 +140,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
-    G_PASTE_CLEANUP_FREE gchar *stripped = g_strstrip (g_strdup (text));
+    g_autofree gchar *stripped = g_strstrip (g_strdup (text));
     gboolean trim_items = g_paste_settings_get_trim_items (settings);
     const gchar *to_add = trim_items ? stripped : text;
     gsize length = strlen (to_add);
@@ -272,7 +272,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
 
             gchar *str = copy_string->str;
             length = copy_string->len + 1;
-            G_PASTE_CLEANUP_FREE guchar *copy_files_data = g_new (guchar, length);
+            g_autofree guchar *copy_files_data = g_new (guchar, length);
             for (guint i = 0; i < length; ++i)
                 copy_files_data[i] = (guchar) str[i];
             gtk_selection_data_set (selection_data, g_paste_clipboard_copy_files_target, 8, copy_files_data, length);
@@ -367,7 +367,7 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
                                   GdkPixbuf    *image,
                                   gpointer      user_data)
 {
-    G_PASTE_CLEANUP_FREE GPasteClipboardImageCallbackData *data = user_data;
+    g_autofree GPasteClipboardImageCallbackData *data = user_data;
     GPasteClipboard *self = data->self;
 
     if (!image)
@@ -379,7 +379,7 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
-    G_PASTE_CLEANUP_FREE gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
+    g_autofree gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
                                                                         (guchar *) gdk_pixbuf_get_pixels (image),
                                                                         -1);
 
@@ -508,7 +508,7 @@ g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED
 {
     GPasteClipboard *self = user_data;
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
-    G_PASTE_CLEANUP_FREE gchar *checksum = g_paste_util_compute_checksum (image);
+    g_autofree gchar *checksum = g_paste_util_compute_checksum (image);
 
     if (g_strcmp0 (checksum, priv->image_checksum))
         g_paste_clipboard_owner_change (NULL, NULL, self);

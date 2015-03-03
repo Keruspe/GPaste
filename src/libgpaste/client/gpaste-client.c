@@ -211,11 +211,11 @@ g_paste_client_add_file_sync (GPasteClient *self,
                               const gchar  *file,
                               GError      **error)
 {
-    G_PASTE_CLEANUP_FREE gchar *absolute_path = NULL;
+    g_autofree gchar *absolute_path = NULL;
 
     if (!g_path_is_absolute (file))
     {
-        G_PASTE_CLEANUP_FREE gchar *current_dir = g_get_current_dir ();
+        g_autofree gchar *current_dir = g_get_current_dir ();
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 
@@ -688,11 +688,11 @@ g_paste_client_add_file (GPasteClient       *self,
                          GAsyncReadyCallback callback,
                          gpointer            user_data)
 {
-    G_PASTE_CLEANUP_FREE gchar *absolute_path = NULL;
+    g_autofree gchar *absolute_path = NULL;
 
     if (!g_path_is_absolute (file))
     {
-        G_PASTE_CLEANUP_FREE gchar *current_dir = g_get_current_dir ();
+        g_autofree gchar *current_dir = g_get_current_dir ();
         absolute_path = g_build_filename (current_dir, file, NULL);
     }
 

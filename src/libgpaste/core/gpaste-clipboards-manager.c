@@ -199,7 +199,7 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
                                        const gchar     *text,
                                        gpointer         user_data)
 {
-    G_PASTE_CLEANUP_FREE GPasteClipboardsManagerCallbackData *data = user_data;
+    g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
     GPasteClipboardsManagerPrivate *priv = data->priv;
     GPasteItem *item = NULL;
     const gchar *synchronized_text = NULL;
@@ -230,7 +230,7 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
                                         GdkPixbuf       *image,
                                         gpointer         user_data)
 {
-    G_PASTE_CLEANUP_FREE GPasteClipboardsManagerCallbackData *data = user_data;
+    g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
     GPasteClipboardsManagerPrivate *priv = data->priv;
     GPasteItem *item = NULL;
 
@@ -253,7 +253,7 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
                                           GtkSelectionData *targets,
                                           gpointer          user_data)
 {
-    G_PASTE_CLEANUP_FREE GPasteClipboardsManagerCallbackData *data = user_data;
+    g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
 
     if (gtk_selection_data_get_length (targets) >= 0)
     {

@@ -85,14 +85,14 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!G_PASTE_IS_CLIENT (priv->client))
         return;
     g_autoptr (GError) error = NULL;
-    G_PASTE_CLEANUP_FREE gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
+    g_autofree gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
     if (!txt || error)
         return;
-    G_PASTE_CLEANUP_FREE gchar *oneline = g_paste_util_replace (txt, "\n", "");
+    g_autofree gchar *oneline = g_paste_util_replace (txt, "\n", "");
 
     if (priv->bold)
     {
-        G_PASTE_CLEANUP_FREE gchar *markup = g_markup_printf_escaped ("<b>%s</b>", oneline);
+        g_autofree gchar *markup = g_markup_printf_escaped ("<b>%s</b>", oneline);
         gtk_label_set_markup (priv->label, markup);
     }
     else

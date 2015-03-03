@@ -228,9 +228,9 @@ _g_paste_image_item_new (const gchar *path,
         g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
 
     /* This is the date format "month/day/year time" */
-    G_PASTE_CLEANUP_FREE gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
+    g_autofree gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
     /* This gets displayed in history when selecting an image */
-    G_PASTE_CLEANUP_FREE gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
+    g_autofree gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
                                                                   gdk_pixbuf_get_width (priv->image),
                                                                   gdk_pixbuf_get_height (priv->image),
                                                                   formatted_date);
@@ -259,14 +259,14 @@ g_paste_image_item_new (GdkPixbuf *img)
     g_return_val_if_fail (GDK_IS_PIXBUF (img), NULL);
 
     gchar *checksum = g_paste_util_compute_checksum (img);
-    G_PASTE_CLEANUP_FREE gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
+    g_autofree gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
 
     if (!g_file_query_exists (images_dir, NULL))
         mkdir (images_dir_path, (mode_t) 0700);
 
-    G_PASTE_CLEANUP_FREE gchar *filename = g_strconcat (checksum, ".png", NULL);
-    G_PASTE_CLEANUP_FREE gchar *path = g_build_filename (images_dir_path, filename, NULL);
+    g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
+    g_autofree gchar *path = g_build_filename (images_dir_path, filename, NULL);
     GPasteItem *self = _g_paste_image_item_new (path,
                                                 g_date_time_new_now_local (),
                                                 g_object_ref (img),
