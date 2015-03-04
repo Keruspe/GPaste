@@ -43,11 +43,10 @@
 G_PASTE_VISIBLE void
 g_paste_util_show_about_dialog (GtkWindow *parent)
 {
-    const gchar *_authors[] = {
+    const gchar *authors[] = {
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
     };
-    G_PASTE_CLEANUP_B_STRV_FREE GStrv authors = g_boxed_copy (G_TYPE_STRV, _authors);
     gtk_show_about_dialog (parent,
                            "program-name",   PACKAGE_NAME,
                            "version",        PACKAGE_VERSION,
