@@ -94,11 +94,10 @@ G_BEGIN_DECLS
 
 #define G_PASTE_BOXED_FREE_REV(box, type) g_boxed_free (type, box)
 
-G_PASTE_CLEANUP_FUN_WITH_ARG (array_free,      GArray *,           g_array_free,           FALSE)
-G_PASTE_CLEANUP_FUN_WITH_ARG (string_free,     GString *,          g_string_free,          TRUE)
+G_PASTE_CLEANUP_FUN_WITH_ARG (string_free, GString *, g_string_free, TRUE)
 
-G_PASTE_TRIVIAL_CLEANUP_FUN  (node_info_unref, GDBusNodeInfo *,    g_dbus_node_info_unref)
-G_PASTE_TRIVIAL_CLEANUP_FUN  (gschema_unref,   GSettingsSchema *,  g_settings_schema_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (node_info_unref, GDBusNodeInfo *,   g_dbus_node_info_unref)
+G_PASTE_TRIVIAL_CLEANUP_FUN (gschema_unref,   GSettingsSchema *, g_settings_schema_unref)
 
 G_END_DECLS
 

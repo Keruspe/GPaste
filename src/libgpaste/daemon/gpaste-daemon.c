@@ -453,12 +453,12 @@ g_paste_daemon_private_get_raw_history (GPasteDaemonPrivate *priv)
 static GVariant *
 g_paste_daemon_list_histories (GError **error)
 {
-    g_auto (GStrv) history_names = g_paste_history_list (error);
+    g_autoptr (GArray) history_names = g_paste_history_list (error);
     
     if (!history_names)
         return NULL;
 
-    GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names->data, -1);
 
     return g_variant_new_tuple (&variant, 1);
 }
@@ -518,8 +518,8 @@ static GVariant *
 g_paste_daemon_private_search (GPasteDaemonPrivate *priv,
                                GVariant            *parameters)
 {
-    G_PASTE_CLEANUP_ARRAY_FREE GArray *results = g_paste_history_search (priv->history,
-                                                                         g_paste_daemon_get_dbus_string_parameter (parameters, NULL));
+    g_autoptr (GArray) results = g_paste_history_search (priv->history,
+                                                         g_paste_daemon_get_dbus_string_parameter (parameters, NULL));
     GVariant *variant = g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, results->data, results->len, sizeof (guint32));
 
     return g_variant_new_tuple (&variant, 1);

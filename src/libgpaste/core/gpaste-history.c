@@ -1309,10 +1309,10 @@ g_paste_history_new (GPasteSettings *settings)
  *
  * Get the list of available histories
  *
- * Returns: (transfer full): The list of history names
- *                           free it with g_strfreev
+ * Returns: (element-type utf8) (transfer full): The list of history names
+ *                           free it with g_array_unref
  */
-G_PASTE_VISIBLE GStrv
+G_PASTE_VISIBLE GArray *
 g_paste_history_list (GError **error)
 {
     g_return_val_if_fail (!error || !(*error), NULL);
@@ -1325,19 +1325,24 @@ g_paste_history_list (GError **error)
                                                                        error);
     if (*error)
         return NULL;
-    G_PASTE_CLEANUP_ARRAY_FREE GArray *history_names = g_array_new (TRUE, /* zero-terminated */
-                                                                    TRUE, /* clear */
-                                                                    sizeof (gchar *));
+    GArray *history_names = g_array_new (TRUE, /* zero-terminated */
+                                         TRUE, /* clear */
+                                         sizeof (gchar *));
     GFileInfo *history;
 
     while ((history = g_file_enumerator_next_file (histories,
                                                    NULL, /* cancellable */
                                                    error))) /* error */
     {
-        if (error && *error)
-            return NULL;
+        g_autoptr (GFileInfo) h = history;
 
-        const gchar *raw_name = g_file_info_get_display_name (history);
+        if (error && *error)
+        {
+            g_array_unref (history_names);
+            return NULL;
+        }
+
+        const gchar *raw_name = g_file_info_get_display_name (h);
 
         if (g_str_has_suffix (raw_name, ".xml"))
         {
@@ -1345,9 +1350,8 @@ g_paste_history_list (GError **error)
 
             name[strlen (name) - 4] = '\0';
             g_array_append_val (history_names, name);
-            g_object_unref (history);
         }
     }
 
-    return (GStrv) (gpointer) history_names->data;
+    return history_names;
 }

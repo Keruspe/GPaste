@@ -72,7 +72,7 @@ GArray *g_paste_history_search (const GPasteHistory *self,
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 
-GStrv g_paste_history_list (GError **error);
+GArray *g_paste_history_list (GError **error);
 
 G_END_DECLS
 
