@@ -1033,7 +1033,8 @@ g_paste_settings_init (GPasteSettings *self)
     if (!source)
         return;
 
-    G_PASTE_CLEANUP_GSCHEMA_UNREF GSettingsSchema *schema = g_settings_schema_source_lookup (source, G_PASTE_SHELL_SETTINGS_NAME, TRUE);
+    g_autoptr (GSettingsSchema) schema = g_settings_schema_source_lookup (source, G_PASTE_SHELL_SETTINGS_NAME, TRUE);
+
     if (!schema)
         return;
 

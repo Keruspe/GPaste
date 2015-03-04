@@ -93,9 +93,9 @@ static void
 g_paste_screensaver_client_init (GPasteScreensaverClient *self)
 {
     GDBusProxy *proxy = G_DBUS_PROXY (self);
+    g_autoptr (GDBusNodeInfo) screensaver_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_SCREENSAVER_INTERFACE,
+                                                                                    NULL); /* Error */
 
-    G_PASTE_CLEANUP_NODE_INFO_UNREF GDBusNodeInfo *screensaver_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_SCREENSAVER_INTERFACE,
-                                                                                                         NULL); /* Error */
     g_dbus_proxy_set_interface_info (proxy, screensaver_dbus_info->interfaces[0]);
 }
 

@@ -1806,9 +1806,9 @@ static void
 g_paste_client_init (GPasteClient *self)
 {
     GDBusProxy *proxy = G_DBUS_PROXY (self);
+    g_autoptr (GDBusNodeInfo) g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE,
+                                                                                       NULL); /* Error */
 
-    G_PASTE_CLEANUP_NODE_INFO_UNREF GDBusNodeInfo *g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE,
-                                                                                                            NULL); /* Error */
     g_dbus_proxy_set_interface_info (proxy, g_paste_daemon_dbus_info->interfaces[0]);
 }
 
