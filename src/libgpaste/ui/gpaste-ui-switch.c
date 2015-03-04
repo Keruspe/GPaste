@@ -50,7 +50,7 @@ static gboolean
 g_paste_ui_button_press_event (GtkWidget      *widget,
                                GdkEventButton *event G_GNUC_UNUSED)
 {
-    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) widget);
+    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private (G_PASTE_UI_SWITCH (widget));
     GtkSwitch *sw = GTK_SWITCH (widget);
     gboolean track = !gtk_switch_get_active (sw);
     gboolean changed = TRUE;
@@ -70,7 +70,7 @@ g_paste_ui_button_press_event (GtkWidget      *widget,
 static void
 g_paste_ui_switch_dispose (GObject *object)
 {
-    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) object);
+    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private (G_PASTE_UI_SWITCH (object));
 
     if (priv->tracking_id)
     {
@@ -114,7 +114,7 @@ g_paste_ui_switch_new (GtkWindow    *topwin,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_SWITCH, NULL);
-    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private ((GPasteUiSwitch *) self);
+    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private (G_PASTE_UI_SWITCH (self));
 
     priv->topwin = topwin;
     priv->client = g_object_ref (client);

@@ -49,7 +49,7 @@ g_paste_applet_icon_show_history (GPasteClient *client G_GNUC_UNUSED,
 static void
 g_paste_applet_icon_dispose (GObject *object)
 {
-    GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private ((GPasteAppletIcon *) object);
+    GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private (G_PASTE_APPLET_ICON (object));
 
     if (priv->client)
     {

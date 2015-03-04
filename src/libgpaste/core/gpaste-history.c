@@ -1209,7 +1209,7 @@ g_paste_history_get_history (const GPasteHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     return priv->history;
 }
@@ -1227,7 +1227,7 @@ g_paste_history_get_length (const GPasteHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     return g_slist_length (priv->history);
 }
@@ -1248,7 +1248,7 @@ g_paste_history_search (const GPasteHistory *self,
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private ((GPasteHistory *) self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GRegex) regex = g_regex_new (pattern,
                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,

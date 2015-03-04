@@ -34,7 +34,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletQuit, g_paste_applet_quit, GTK_TYPE_MENU
 static void
 g_paste_applet_quit_activate (GtkMenuItem *menu_item)
 {
-    GPasteAppletQuitPrivate *priv = g_paste_applet_quit_get_instance_private ((GPasteAppletQuit *) menu_item);
+    GPasteAppletQuitPrivate *priv = g_paste_applet_quit_get_instance_private (G_PASTE_APPLET_QUIT (menu_item));
 
     g_application_quit (priv->app);
 
@@ -69,7 +69,7 @@ g_paste_applet_quit_new (GApplication *app)
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_APPLET_QUIT,
                                       "label", _("Quit"),
                                       NULL);
-    GPasteAppletQuitPrivate *priv = g_paste_applet_quit_get_instance_private ((GPasteAppletQuit *) self);
+    GPasteAppletQuitPrivate *priv = g_paste_applet_quit_get_instance_private (G_PASTE_APPLET_QUIT (self));
 
     priv->app = app;
 

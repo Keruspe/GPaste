@@ -158,7 +158,7 @@ g_paste_ui_item_set_text_size (GPasteSettings *settings,
 static void
 g_paste_ui_item_dispose (GObject *object)
 {
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private ((GPasteUiItem *) object);
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (object));
 
     g_clear_object (&priv->client);
     if (priv->settings)
@@ -211,7 +211,7 @@ g_paste_ui_item_new (GPasteClient   *client,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ITEM, "selectable", FALSE, NULL);
-    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private ((GPasteUiItem *) self);
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
     GtkWidget *delete = g_paste_ui_delete_new (client, index);
 
     priv->client = g_object_ref (client);

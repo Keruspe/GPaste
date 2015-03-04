@@ -54,7 +54,7 @@ g_paste_image_item_get_checksum (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private ((GPasteImageItem *) self);
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (self);
 
     return priv->checksum;
 }
@@ -72,7 +72,7 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private ((GPasteImageItem *) self);
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (self);
 
     return priv->date;
 }
@@ -90,7 +90,7 @@ g_paste_image_item_get_image (const GPasteImageItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private ((GPasteImageItem *) self);
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (self);
 
     return priv->image;
 }

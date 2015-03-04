@@ -47,7 +47,7 @@ g_paste_uris_item_get_uris (const GPasteUrisItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
 
-    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private ((GPasteUrisItem *) self);
+    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (self);
 
     return (const gchar * const *) priv->uris;
 }

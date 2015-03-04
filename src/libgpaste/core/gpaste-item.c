@@ -60,7 +60,7 @@ g_paste_item_get_real_value (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     return priv->value;
 }
@@ -78,7 +78,7 @@ g_paste_item_get_display_string (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), NULL);
 
-    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
     const gchar *display_string = priv->display_string;
 
     return (display_string) ? display_string : priv->value;
@@ -140,7 +140,7 @@ g_paste_item_get_size (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), 0);
 
-    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     return priv->size;
 }
@@ -251,8 +251,8 @@ g_paste_item_default_equals (const GPasteItem *self,
     if (self == other)
         return TRUE;
 
-    GPasteItemPrivate *priv = g_paste_item_get_instance_private ((GPasteItem *) self);
-    GPasteItemPrivate *_priv = g_paste_item_get_instance_private ((GPasteItem *) other);
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+    GPasteItemPrivate *_priv = g_paste_item_get_instance_private (other);
 
     return !g_strcmp0 (priv->value, _priv->value);
 }

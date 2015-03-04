@@ -65,7 +65,7 @@ g_paste_clipboard_get_target (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     return priv->target;
 }
@@ -83,7 +83,7 @@ g_paste_clipboard_get_real (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     return priv->real;
 }
@@ -101,7 +101,7 @@ g_paste_clipboard_get_text (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     return priv->text;
 }
@@ -326,7 +326,7 @@ g_paste_clipboard_get_image_checksum (const GPasteClipboard *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD (self), NULL);
 
-    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private ((GPasteClipboard *) self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     return priv->image_checksum;
 }

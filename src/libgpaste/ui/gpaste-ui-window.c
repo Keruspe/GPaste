@@ -69,7 +69,7 @@ g_paste_ui_window_new (GtkApplication *app,
                                       "height-request",  600,
                                       NULL);
     GtkWindow *win = GTK_WINDOW (self);
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private ((GPasteUiWindow *) self);
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (self));
 
     priv->app = app;
 

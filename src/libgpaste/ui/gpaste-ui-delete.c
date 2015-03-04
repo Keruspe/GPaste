@@ -56,7 +56,7 @@ static gboolean
 g_paste_ui_delete_button_press_event (GtkWidget      *widget,
                                       GdkEventButton *event G_GNUC_UNUSED)
 {
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private ((GPasteUiDelete *) widget);
+    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (widget));
 
     g_paste_client_delete (priv->client, priv->index, NULL, NULL);
 
@@ -66,7 +66,7 @@ g_paste_ui_delete_button_press_event (GtkWidget      *widget,
 static void
 g_paste_ui_delete_dispose (GObject *object)
 {
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private ((GPasteUiDelete *) object);
+    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (object));
 
     g_clear_object (&priv->client);
 
@@ -103,7 +103,7 @@ g_paste_ui_delete_new (GPasteClient *client,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_DELETE, NULL);
-    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private ((GPasteUiDelete *) self);
+    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (self));
 
     priv->client = g_object_ref (client);
     priv->index = index;

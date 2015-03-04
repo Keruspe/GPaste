@@ -48,7 +48,7 @@ g_paste_password_item_get_name (const GPastePasswordItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), NULL);
 
-    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private ((GPastePasswordItem *) self);
+    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (self);
 
     return priv->name;
 }

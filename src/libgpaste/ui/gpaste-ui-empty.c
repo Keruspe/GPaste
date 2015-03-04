@@ -36,7 +36,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEmpty, g_paste_ui_empty, GTK_TYPE_BUTTON)
 static void
 g_paste_ui_empty_clicked (GtkButton *button)
 {
-    GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private ((GPasteUiEmpty *) button);
+    GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private (G_PASTE_UI_EMPTY (button));
 
     if (g_paste_util_confirm_dialog (priv->topwin, _("Do you really want to empty the history?")))
         g_paste_client_empty (priv->client, NULL, NULL);
@@ -45,7 +45,7 @@ g_paste_ui_empty_clicked (GtkButton *button)
 static void
 g_paste_ui_empty_dispose (GObject *object)
 {
-    GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private ((GPasteUiEmpty *) object);
+    GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private (G_PASTE_UI_EMPTY (object));
 
     g_clear_object (&priv->client);
 
@@ -85,7 +85,7 @@ g_paste_ui_empty_new (GtkWindow    *topwin,
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_EMPTY,
                                       "image", gtk_image_new_from_icon_name ("edit-clear-all-symbolic", GTK_ICON_SIZE_BUTTON),
                                       NULL);
-    GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private ((GPasteUiEmpty *) self);
+    GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private (G_PASTE_UI_EMPTY (self));
 
     priv->topwin = topwin;
     priv->client = g_object_ref (client);

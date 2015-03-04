@@ -60,7 +60,7 @@ on_tracking_changed (GPasteClient *client G_GNUC_UNUSED,
 static void
 g_paste_applet_app_indicator_dispose (GObject *object)
 {
-    GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private ((GPasteAppletAppIndicator *) object);
+    GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private (G_PASTE_APPLET_APP_INDICATOR (object));
 
     if (priv->tracking_id)
     {
@@ -107,7 +107,7 @@ g_paste_applet_app_indicator_new (GPasteClient *client,
     g_return_val_if_fail (!app || G_IS_APPLICATION (app), NULL);
 
     GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_APP_INDICATOR, client);
-    GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private ((GPasteAppletAppIndicator *) self);
+    GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private (G_PASTE_APPLET_APP_INDICATOR (self));
     GtkWidget *menu = g_paste_applet_menu_new (client, app);
 
     priv->client = g_object_ref (client);

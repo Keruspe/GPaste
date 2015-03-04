@@ -59,7 +59,7 @@ g_paste_applet_status_icon_popup (GtkStatusIcon  *icon,
 static void
 g_paste_applet_status_icon_dispose (GObject *object)
 {
-    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private ((GPasteAppletStatusIcon *) object);
+    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private (G_PASTE_APPLET_STATUS_ICON (object));
 
     if (priv->icon)
     {

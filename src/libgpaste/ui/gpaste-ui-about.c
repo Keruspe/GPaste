@@ -35,7 +35,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiAbout, g_paste_ui_about, GTK_TYPE_BUTTON)
 static void
 g_paste_ui_about_clicked (GtkButton *button)
 {
-    GPasteUiAboutPrivate *priv = g_paste_ui_about_get_instance_private ((GPasteUiAbout *) button);
+    GPasteUiAboutPrivate *priv = g_paste_ui_about_get_instance_private (G_PASTE_UI_ABOUT (button));
 
     g_paste_util_show_about_dialog (priv->topwin);
 }
@@ -69,7 +69,7 @@ g_paste_ui_about_new (GtkWindow *topwin)
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ABOUT,
                                       "image", gtk_image_new_from_icon_name ("dialog-information-symbolic", GTK_ICON_SIZE_BUTTON),
                                       NULL);
-    GPasteUiAboutPrivate *priv = g_paste_ui_about_get_instance_private ((GPasteUiAbout *) self);
+    GPasteUiAboutPrivate *priv = g_paste_ui_about_get_instance_private (G_PASTE_UI_ABOUT (self));
 
     priv->topwin = topwin;
 

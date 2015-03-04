@@ -34,7 +34,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletAbout, g_paste_applet_about, GTK_TYPE_ME
 static void
 g_paste_applet_about_activate (GtkMenuItem *menu_item)
 {
-    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private ((GPasteAppletAbout *) menu_item);
+    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private (G_PASTE_APPLET_ABOUT (menu_item));
 
     g_paste_client_about (priv->client, NULL, NULL);
 
@@ -44,7 +44,7 @@ g_paste_applet_about_activate (GtkMenuItem *menu_item)
 static void
 g_paste_applet_about_dispose (GObject *object)
 {
-    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private ((GPasteAppletAbout *) object);
+    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private (G_PASTE_APPLET_ABOUT (object));
 
     g_clear_object (&priv->client);
 
@@ -80,7 +80,7 @@ g_paste_applet_about_new (GPasteClient *client)
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_APPLET_ABOUT,
                                       "label", _("About"),
                                       NULL);
-    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private ((GPasteAppletAbout *) self);
+    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private (G_PASTE_APPLET_ABOUT (self));
 
     priv->client = g_object_ref (client);
 
