@@ -86,8 +86,9 @@ const GPasteIndicator = new Lang.Class({
             this._dummyHistoryItem.update();
             this._prefsItem = new PrefsItem.GPastePrefsItem(this.menu);
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
+            this._switch = new StateSwitch.GPasteStateSwitch(this._client);
 
-            this._addToHeader(new StateSwitch.GPasteStateSwitch(this._client));
+            this._addToHeader(this._switch);
             this._addToHeader(this._searchItem);
             this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
@@ -98,6 +99,7 @@ const GPasteIndicator = new Lang.Class({
 
             this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
             this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
+            this._clientTrackingId = this._client.connect('tracking', Lang.bind(this, this._toggle));
 
             this._onStateChanged (true);
 
@@ -250,6 +252,10 @@ const GPasteIndicator = new Lang.Class({
         this._selectSearch(true);
     },
 
+    _toggle: function(c, state) {
+        this._switch.toggle(state);
+    },
+
     _selectSearch: function(active) {
         if (this._history.length > 0) {
             this._searchItem.setActive(active);
@@ -287,6 +293,7 @@ const GPasteIndicator = new Lang.Class({
     _onDestroy: function() {
         this._client.disconnect(this._clientUpdateId);
         this._client.disconnect(this._clientShowId);
+        this._client.disconnect(this._clientTrackingId);
         this._settings.disconnect(this._settingsMaxSizeChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
     }
