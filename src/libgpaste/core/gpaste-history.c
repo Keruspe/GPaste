@@ -194,31 +194,15 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
                                          GPasteItem           *old,
                                          GPasteItem           *new)
 {
-    if (!g_paste_settings_get_growing_lines (priv->settings))
-        return FALSE;
-
-    if (!G_PASTE_IS_TEXT_ITEM (old))
-        return FALSE;
-
-    if (!G_PASTE_IS_TEXT_ITEM (new))
-        return FALSE;
-
-    if (G_PASTE_IS_PASSWORD_ITEM (old))
-        return FALSE;
-
-    if (G_PASTE_IS_PASSWORD_ITEM (new))
-        return FALSE;
+    if (!(g_paste_settings_get_growing_lines (priv->settings) &&
+        G_PASTE_IS_TEXT_ITEM (old) && G_PASTE_IS_TEXT_ITEM (new) &&
+        G_PASTE_IS_PASSWORD_ITEM (old) && G_PASTE_IS_PASSWORD_ITEM (new)))
+            return FALSE;
 
     const gchar *n = g_paste_item_get_value (new);
     const gchar *o = g_paste_item_get_value (old);
 
-    if (g_str_has_prefix (n, o))
-        return TRUE;
-
-    if (g_str_has_suffix (n, o))
-        return TRUE;
-
-    return FALSE;
+    return (g_str_has_prefix (n, o) || g_str_has_suffix (n, o));
 }
 
 /**
