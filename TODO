@@ -1,11 +1,18 @@
 3.16:
+    general:
+        merge
+
     gpaste-ui:
         add appstream
+        keybinding
 
 3.18:
     gpaste-ui:
         search bar
         history chooser
+        merge
+    general:
+        add a gnome-shell search provider
 
 future:
     general:
