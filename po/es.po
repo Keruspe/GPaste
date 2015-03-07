@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-07 11:56+0100\n"
+"POT-Creation-Date: 2015-03-07 11:57+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -35,9 +35,10 @@ msgstr "Salir"
 msgid "GPaste daemon settings"
 msgstr "Ajustes del servicio GPaste"
 
-#: ../src/libgpaste/applet/gpaste-applet-ui.c:61
+#. Translators: help for gpaste ui
+#: ../src/libgpaste/applet/gpaste-applet-ui.c:61 ../src/gpaste/gpaste.c:89
 #, fuzzy
-msgid "Launch the graphical tool"
+msgid "launch the graphical tool"
 msgstr "iniciar la herramienta de configuración"
 
 #: ../src/libgpaste/core/gpaste-history.c:702
@@ -395,12 +396,6 @@ msgstr "vuelva a ejecutar el servicio (después de actualizar...)"
 #. Translators: help for gpaste settings
 #: ../src/gpaste/gpaste.c:87
 msgid "launch the configuration tool"
-msgstr "iniciar la herramienta de configuración"
-
-#. Translators: help for gpaste ui
-#: ../src/gpaste/gpaste.c:89
-#, fuzzy
-msgid "launch the graphical tool"
 msgstr "iniciar la herramienta de configuración"
 
 #. Translators: help for gpaste applet
@@ -768,6 +763,10 @@ msgid ""
 msgstr ""
 "Recortar quiere decir eliminar los espacios antes del inicio y después del "
 "final. Por omision se dejan como están"
+
+#, fuzzy
+#~ msgid "Launch the graphical tool"
+#~ msgstr "iniciar la herramienta de configuración"
 
 #, fuzzy
 #~ msgid "Stop tracking changes"

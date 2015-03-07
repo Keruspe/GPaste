@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-07 11:56+0100\n"
+"POT-Creation-Date: 2015-03-07 11:57+0100\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -34,9 +34,10 @@ msgstr "Lopeta"
 msgid "GPaste daemon settings"
 msgstr "GPaste palvelun asetukset"
 
-#: ../src/libgpaste/applet/gpaste-applet-ui.c:61
+#. Translators: help for gpaste ui
+#: ../src/libgpaste/applet/gpaste-applet-ui.c:61 ../src/gpaste/gpaste.c:89
 #, fuzzy
-msgid "Launch the graphical tool"
+msgid "launch the graphical tool"
 msgstr "käynnistää asetusten hallinan"
 
 #: ../src/libgpaste/core/gpaste-history.c:702
@@ -392,12 +393,6 @@ msgstr "käynnistää palvelun uudelleen (päivittämisen jälkeen...)"
 #. Translators: help for gpaste settings
 #: ../src/gpaste/gpaste.c:87
 msgid "launch the configuration tool"
-msgstr "käynnistää asetusten hallinan"
-
-#. Translators: help for gpaste ui
-#: ../src/gpaste/gpaste.c:89
-#, fuzzy
-msgid "launch the graphical tool"
 msgstr "käynnistää asetusten hallinan"
 
 #. Translators: help for gpaste applet
@@ -760,6 +755,10 @@ msgid ""
 msgstr ""
 "Trimmaaminen tarkoittaa leikkeen lopussa olevien välilyöntien poistamista. "
 "Oletuksena niiden annetaan olla rauhassa."
+
+#, fuzzy
+#~ msgid "Launch the graphical tool"
+#~ msgstr "käynnistää asetusten hallinan"
 
 #, fuzzy
 #~ msgid "Stop tracking changes"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-07 11:56+0100\n"
+"POT-Creation-Date: 2015-03-07 11:57+0100\n"
 "PO-Revision-Date: 2014-07-09 18:47-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -35,9 +35,10 @@ msgstr "Sair"
 msgid "GPaste daemon settings"
 msgstr "Configurações do daemon GPaste"
 
-#: ../src/libgpaste/applet/gpaste-applet-ui.c:61
+#. Translators: help for gpaste ui
+#: ../src/libgpaste/applet/gpaste-applet-ui.c:61 ../src/gpaste/gpaste.c:89
 #, fuzzy
-msgid "Launch the graphical tool"
+msgid "launch the graphical tool"
 msgstr "inicia a ferramenta de configuração"
 
 #: ../src/libgpaste/core/gpaste-history.c:702
@@ -391,12 +392,6 @@ msgstr "reinicia o daemon (depois de uma atualização...)"
 #. Translators: help for gpaste settings
 #: ../src/gpaste/gpaste.c:87
 msgid "launch the configuration tool"
-msgstr "inicia a ferramenta de configuração"
-
-#. Translators: help for gpaste ui
-#: ../src/gpaste/gpaste.c:89
-#, fuzzy
-msgid "launch the graphical tool"
 msgstr "inicia a ferramenta de configuração"
 
 #. Translators: help for gpaste applet
@@ -778,6 +773,10 @@ msgid ""
 msgstr ""
 "Aparar significa que espaços em branco antes e depois do texto serão "
 "removidos. Por padrão, é deixado como está."
+
+#, fuzzy
+#~ msgid "Launch the graphical tool"
+#~ msgstr "inicia a ferramenta de configuração"
 
 #~ msgid "Stop tracking changes"
 #~ msgstr "Parar o monitoramento"

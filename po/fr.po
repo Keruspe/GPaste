@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-07 11:56+0100\n"
+"POT-Creation-Date: 2015-03-07 11:57+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -28,16 +28,16 @@ msgstr "À propos"
 
 #: ../src/libgpaste/applet/gpaste-applet-quit.c:70
 msgid "Quit"
-msgstr ""
+msgstr "Quitter"
 
 #: ../src/libgpaste/applet/gpaste-applet-settings.c:61
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Préférences du démon GPaste"
 
-#: ../src/libgpaste/applet/gpaste-applet-ui.c:61
-#, fuzzy
-msgid "Launch the graphical tool"
+#. Translators: help for gpaste ui
+#: ../src/libgpaste/applet/gpaste-applet-ui.c:61 ../src/gpaste/gpaste.c:89
+msgid "launch the graphical tool"
 msgstr "lance l'interface graphique"
 
 #: ../src/libgpaste/core/gpaste-history.c:702
@@ -388,11 +388,6 @@ msgstr "reexecuter le démon (après une mise à jour...)"
 #: ../src/gpaste/gpaste.c:87
 msgid "launch the configuration tool"
 msgstr "lance l'outil de configuration"
-
-#. Translators: help for gpaste ui
-#: ../src/gpaste/gpaste.c:89
-msgid "launch the graphical tool"
-msgstr "lance l'interface graphique"
 
 #. Translators: help for gpaste applet
 #: ../src/gpaste/gpaste.c:93

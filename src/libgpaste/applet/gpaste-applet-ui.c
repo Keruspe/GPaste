@@ -58,6 +58,6 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_applet_ui_new (void)
 {
     return gtk_widget_new (G_PASTE_TYPE_APPLET_UI,
-                           "label", _("Launch the graphical tool"),
+                           "label", _("launch the graphical tool"),
                            NULL);
 }
