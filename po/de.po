@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-01 21:26+0100\n"
+"POT-Creation-Date: 2015-03-07 11:56+0100\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -22,7 +22,26 @@ msgstr ""
 msgid "Failed to register the gtk application"
 msgstr "Initialisierung der Gtk-Anwendung fehlgeschlagen"
 
-#: ../src/libgpaste/core/gpaste-history.c:718
+#: ../src/libgpaste/applet/gpaste-applet-about.c:81
+#: ../src/libgpaste/ui/gpaste-ui-about.c:52
+msgid "About"
+msgstr "Über"
+
+#: ../src/libgpaste/applet/gpaste-applet-quit.c:70
+msgid "Quit"
+msgstr "Beenden"
+
+#: ../src/libgpaste/applet/gpaste-applet-settings.c:61
+#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
+msgid "GPaste daemon settings"
+msgstr "GPaste-Daemon-Einstellungen"
+
+#: ../src/libgpaste/applet/gpaste-applet-ui.c:61
+#, fuzzy
+msgid "Launch the graphical tool"
+msgstr "Konfigurationswerkzeug starten"
+
+#: ../src/libgpaste/core/gpaste-history.c:702
 msgid "Could not create history dir"
 msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
@@ -175,18 +194,14 @@ msgid "Histories"
 msgstr "Chroniken"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:545
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:543
 msgid "Switch to"
 msgstr "Wechseln zu"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:550
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:548
 msgid "Delete"
 msgstr "Löschen"
-
-#: ../src/libgpaste/ui/gpaste-ui-about.c:52
-msgid "About"
-msgstr "Über"
 
 #: ../src/libgpaste/ui/gpaste-ui-empty.c:41
 msgid "Do you really want to empty the history?"
@@ -529,10 +544,6 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr ""
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
-msgid "GPaste daemon settings"
-msgstr "GPaste-Daemon-Einstellungen"
-
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
 msgid "Manage the GPaste daemon settings"
 msgstr "GPaste-Daemon-Einstellungen"
@@ -768,9 +779,6 @@ msgid ""
 msgstr ""
 "Trimmen bedeutet das Entfernen von Leerzeichen am Anfang und Ende. "
 "Standardmäßig werden sie so belassen wie sie sind."
-
-#~ msgid "Quit"
-#~ msgstr "Beenden"
 
 #, fuzzy
 #~ msgid "Stop tracking changes"
