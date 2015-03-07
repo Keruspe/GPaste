@@ -28,10 +28,6 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/keybinder/gpaste-keybinding-private.h \
 	$(NULL)
 
-lib_libgpaste_la_config_headers = \
-	src/libgpaste/gpaste-config.h \
-	$(NULL)
-
 lib_libgpaste_la_misc_headers = \
 	src/libgpaste/gpaste-gdbus-defines.h  \
 	src/libgpaste/gpaste-gsettings-keys.h \
@@ -149,10 +145,6 @@ lib_libgpaste_la_SOURCES = \
 	$(lib_libgpaste_la_source_files) \
 	$(NULL)
 
-nodist_lib_libgpaste_la_SOURCES = \
-	$(lib_libgpaste_la_config_headers) \
-	$(NULL)
-
 lib_libgpaste_la_CFLAGS = \
 	$(GDK_CFLAGS) \
 	$(GDK_PIXBUF_CFLAGS) \
@@ -186,15 +178,10 @@ pkginclude_HEADERS += \
 	$(lib_libgpaste_la_public_headers) \
 	$(NULL)
 
-nodist_pkginclude_HEADERS = \
-	$(lib_libgpaste_la_config_headers) \
-	$(NULL)
-
 lib_LTLIBRARIES += \
 	$(libgpaste_la_file) \
 	$(NULL)
 
 EXTRA_DIST += \
-	$(lib_libgpaste_la_config_headers:.h=.h.in) \
 	$(libgpaste_symbols_file) \
 	$(NULL)

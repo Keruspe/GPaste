@@ -393,4 +393,6 @@ global:
     g_paste_util_spawn;
     g_paste_util_replace;
     g_paste_util_compute_checksum;
+    g_paste_util_has_applet;
+    g_paste_util_has_unity;
 } LIBGPASTE_2;

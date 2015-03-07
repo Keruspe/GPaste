@@ -39,6 +39,9 @@ gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *substitution);
 gchar   *g_paste_util_compute_checksum  (GdkPixbuf *image);
 
+gboolean g_paste_util_has_applet (void);
+gboolean g_paste_util_has_unity  (void);
+
 G_END_DECLS
 
 #endif /*__G_PASTE_UTIL_H__*/

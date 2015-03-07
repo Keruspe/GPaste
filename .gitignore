@@ -12,7 +12,6 @@
 /man/*.1
 /po/Makefile
 /po/missing
-/src/libgpaste/gpaste-config.h
 /src/gnome-shell/metadata.json
 /src/gpaste-settings/*.c
 /bindings/vapi/*.vapi

@@ -24,7 +24,6 @@
 #ifndef __G_PASTE_APPLET_H__
 #define __G_PASTE_APPLET_H__
 
-#include <gpaste-config.h>
 #include <gpaste-macros.h>
 
 G_BEGIN_DECLS
@@ -33,9 +32,7 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Applet, applet, APPLET, GObject)
 
-#if G_PASTE_CONFIG_ENABLE_UNITY
 GPasteApplet *g_paste_applet_new_app_indicator (GtkApplication *application);
-#endif
 GPasteApplet *g_paste_applet_new_status_icon   (GtkApplication *application);
 
 G_END_DECLS

@@ -23,18 +23,6 @@
 #include <getopt.h>
 #include <stdio.h>
 
-static inline gboolean
-has_applet(void)
-{
-    return g_file_test (PKGLIBEXECDIR "/gpaste-applet", G_FILE_TEST_IS_EXECUTABLE);
-}
-
-static inline gboolean
-has_unity(void)
-{
-    return g_file_test (PKGLIBEXECDIR "/gpaste-app-indicator", G_FILE_TEST_IS_EXECUTABLE);
-}
-
 static void
 show_help (void)
 {
@@ -87,12 +75,12 @@ show_help (void)
     printf ("  %s settings: %s\n", progname, _("launch the configuration tool"));
     /* Translators: help for gpaste ui */
     printf ("  %s ui: %s\n", progname, _("launch the graphical tool"));
-    if (has_applet ())
+    if (g_paste_util_has_applet ())
     {
         /* Translators: help for gpaste applet */
         printf ("  %s applet: %s\n", progname, _("launch the applet"));
     }
-    if (has_unity ())
+    if (g_paste_util_has_unity ())
     {
         /* Translators: help for gpaste app-indicator */
         printf ("  %s app-indicator: %s\n", progname, _("launch the unity application indicator"));
@@ -362,11 +350,11 @@ main (gint argc, gchar *argv[])
             {
                 status = spawn ("Ui");
             }
-            else if (has_applet () && !g_strcmp0 (arg1, "applet"))
+            else if (g_paste_util_has_applet () && !g_strcmp0 (arg1, "applet"))
             {
                 status = spawn ("Applet");
             }
-            else if (has_unity () && !g_strcmp0 (arg1, "app-indicator"))
+            else if (g_paste_util_has_unity () && !g_strcmp0 (arg1, "app-indicator"))
             {
                 status = spawn ("AppIndicator");
             }

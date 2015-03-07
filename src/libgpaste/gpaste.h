@@ -22,7 +22,6 @@
 
 #define __G_PASTE_H_INSIDE__
 
-#include <gpaste-config.h>
 #include <gpaste-macros.h>
 #include <gpaste-util.h>
 

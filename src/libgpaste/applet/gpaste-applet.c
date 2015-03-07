@@ -20,6 +20,7 @@
 #include <gpaste-applet.h>
 #include <gpaste-applet-app-indicator.h>
 #include <gpaste-applet-status-icon.h>
+#include <gpaste-util.h>
 
 struct _GPasteApplet
 {
@@ -77,7 +78,7 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
     return TRUE;
 }
 
-#if G_PASTE_CONFIG_ENABLE_UNITY
+#if ENABLE_UNITY
 static void
 g_paste_applet_app_indicator_client_ready (GObject      *source_object G_GNUC_UNUSED,
                                            GAsyncResult *res,
@@ -126,7 +127,6 @@ g_paste_applet_new (GtkApplication *application)
     return self;
 }
 
-#if G_PASTE_CONFIG_ENABLE_UNITY
 /**
  * g_paste_applet_new_app_indicator:
  * @application: the #GtkApplication running
@@ -141,14 +141,21 @@ g_paste_applet_new_app_indicator (GtkApplication *application)
 {
     g_return_val_if_fail (G_IS_APPLICATION (application), NULL);
 
-    GPasteApplet *self = g_paste_applet_new (application);
-    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
+#if ENABLE_UNITY
+    if (g_paste_util_has_unity ())
+    {
+        GPasteApplet *self = g_paste_applet_new (application);
+        GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
-    g_paste_client_new (g_paste_applet_app_indicator_client_ready, priv);
+        g_paste_client_new (g_paste_applet_app_indicator_client_ready, priv);
 
-    return self;
-}
+        return self;
+    }
 #endif
+
+    g_critical ("gpaste-app-indicator %s", _("is not installed"));
+    return NULL;
+}
 
 /**
  * g_paste_applet_new_status_icon:
@@ -164,10 +171,16 @@ g_paste_applet_new_status_icon (GtkApplication *application)
 {
     g_return_val_if_fail (G_IS_APPLICATION (application), NULL);
 
-    GPasteApplet *self = g_paste_applet_new (application);
-    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
+    if (g_paste_util_has_applet ())
+    {
+        GPasteApplet *self = g_paste_applet_new (application);
+        GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (self);
 
-    g_paste_client_new (g_paste_applet_status_icon_client_ready, priv);
+        g_paste_client_new (g_paste_applet_status_icon_client_ready, priv);
 
-    return self;
+        return self;
+    }
+
+    g_critical ("gpaste-applet %s", _("is not installed"));
+    return NULL;
 }

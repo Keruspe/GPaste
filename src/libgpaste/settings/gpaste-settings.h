@@ -24,7 +24,6 @@
 #ifndef __G_PASTE_SETTINGS_H__
 #define __G_PASTE_SETTINGS_H__
 
-#include <gpaste-config.h>
 #include <gpaste-macros.h>
 
 G_BEGIN_DECLS
@@ -120,11 +119,9 @@ void g_paste_settings_set_trim_items                 (GPasteSettings *self,
 void g_paste_settings_set_upload                     (GPasteSettings *self,
                                                       const gchar    *value);
 
-#if G_PASTE_CONFIG_ENABLE_EXTENSION
 gboolean g_paste_settings_get_extension_enabled (const GPasteSettings *self);
 void     g_paste_settings_set_extension_enabled (GPasteSettings *self,
                                                  gboolean        value);
-#endif
 
 GPasteSettings *g_paste_settings_new (void);
 
