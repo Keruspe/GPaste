@@ -1,3 +1,9 @@
+NEW in 3.14.2 (07/03/2015)
+=============
+
+- improve zsh completion
+- fix a bug causing the gnome-shell extension to randomly crash
+
 NEW in 3.14.1 (17/01/2015)
 =============
 
