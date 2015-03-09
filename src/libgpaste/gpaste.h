@@ -46,6 +46,7 @@
 #include <gpaste-show-history-keybinding.h>
 #include <gpaste-sync-clipboard-to-primary-keybinding.h>
 #include <gpaste-sync-primary-to-clipboard-keybinding.h>
+#include <gpaste-ui-keybinding.h>
 #include <gpaste-upload-keybinding.h>
 
 /* GPasteDaemon */

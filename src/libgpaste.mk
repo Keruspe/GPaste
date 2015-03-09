@@ -64,6 +64,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding.h \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.h \
 	src/libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.h \
+	src/libgpaste/keybinder/gpaste-ui-keybinding.h \
 	src/libgpaste/keybinder/gpaste-upload-keybinding.h \
 	src/libgpaste/screensaver-client/gpaste-screensaver-client.h \
 	src/libgpaste/settings/gpaste-settings.h \
@@ -110,6 +111,7 @@ lib_libgpaste_la_source_files = \
 	src/libgpaste/keybinder/gpaste-show-history-keybinding.c \
 	src/libgpaste/keybinder/gpaste-sync-clipboard-to-primary-keybinding.c \
 	src/libgpaste/keybinder/gpaste-sync-primary-to-clipboard-keybinding.c \
+	src/libgpaste/keybinder/gpaste-ui-keybinding.c \
 	src/libgpaste/keybinder/gpaste-upload-keybinding.c \
 	src/libgpaste/screensaver-client/gpaste-screensaver-client.c \
 	src/libgpaste/settings/gpaste-settings.c \
