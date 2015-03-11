@@ -78,7 +78,7 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
     return TRUE;
 }
 
-#if ENABLE_UNITY
+#ifdef ENABLE_UNITY
 static void
 g_paste_applet_app_indicator_client_ready (GObject      *source_object G_GNUC_UNUSED,
                                            GAsyncResult *res,
@@ -141,7 +141,7 @@ g_paste_applet_new_app_indicator (GtkApplication *application)
 {
     g_return_val_if_fail (G_IS_APPLICATION (application), NULL);
 
-#if ENABLE_UNITY
+#ifdef ENABLE_UNITY
     if (g_paste_util_has_unity ())
     {
         GPasteApplet *self = g_paste_applet_new (application);
