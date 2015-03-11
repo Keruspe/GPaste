@@ -4,7 +4,6 @@
 
     gpaste-ui:
         add appstream
-        keybinding
 
 3.18:
     gpaste-ui:

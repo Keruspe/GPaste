@@ -22,6 +22,7 @@
 #include <gpaste-show-history-keybinding.h>
 #include <gpaste-sync-clipboard-to-primary-keybinding.h>
 #include <gpaste-sync-primary-to-clipboard-keybinding.h>
+#include <gpaste-ui-keybinding.h>
 #include <gpaste-upload-keybinding.h>
 
 static GApplication *_app;
@@ -85,6 +86,7 @@ main (gint argc, gchar *argv[])
         g_paste_show_history_keybinding_new (g_paste_daemon),
         g_paste_sync_clipboard_to_primary_keybinding_new (clipboards_manager),
         g_paste_sync_primary_to_clipboard_keybinding_new (clipboards_manager),
+        g_paste_ui_keybinding_new (),
         g_paste_upload_keybinding_new (g_paste_daemon)
     };
 
