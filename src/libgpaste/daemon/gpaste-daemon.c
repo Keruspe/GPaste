@@ -54,15 +54,13 @@
                   G_TYPE_NONE,                   \
                   0)
 
-#define G_PASTE_DBUS_ASSERT_FULL(cond, _msg, ret)            \
-    do {                                                     \
-        if (!(cond))                                         \
-        {                                                    \
-            *err = g_malloc (sizeof (GPasteDBusError));      \
-            (*err)->name = G_PASTE_DAEMON_BUS_NAME ".Error"; \
-            (*err)->msg = _msg;                              \
-            return ret;                                      \
-        }                                                    \
+#define G_PASTE_DBUS_ASSERT_FULL(cond, _msg, ret)                 \
+    do {                                                          \
+        if (!(cond))                                              \
+        {                                                         \
+            *err = _err (G_PASTE_DAEMON_BUS_NAME ".Error", _msg); \
+            return ret;                                           \
+        }                                                         \
     } while (FALSE)
 
 #define G_PASTE_DBUS_ASSERT(cond, _msg) G_PASTE_DBUS_ASSERT_FULL (cond, _msg, ;)
@@ -458,7 +456,7 @@ g_paste_daemon_list_histories (GError **error)
     if (!history_names)
         return NULL;
 
-    GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names->data, -1);
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) (gpointer) history_names->data, -1);
 
     return g_variant_new_tuple (&variant, 1);
 }

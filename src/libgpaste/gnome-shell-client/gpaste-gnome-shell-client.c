@@ -343,7 +343,8 @@ g_paste_gnome_shell_client_g_signal (GDBusProxy  *proxy,
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);
         g_autoptr (GVariant) action = g_variant_iter_next_value (&params_iter);
-        g_autoptr (GVariant) params = g_variant_iter_next_value (&params_iter);
+        /* consume the params but don't use them */
+        G_GNUC_UNUSED g_autoptr (GVariant) params = g_variant_iter_next_value (&params_iter);
         g_signal_emit (self,
                        signals[ACCELERATOR_ACTIVATED],
                        0, /* detail */
