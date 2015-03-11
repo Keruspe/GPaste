@@ -6,7 +6,7 @@ A library is available for development purposes:
 
 * `libgpaste` contains all the basic objects used by GPaste and allows you to manage preferences and the GPaste daemon.
 
-A default daemon named `gpaste-daemon` is provided, with five keybindings:
+A default daemon named `gpaste-daemon` is provided, with seven keybindings:
 
 * show history
 * pop the item from the history
@@ -14,6 +14,7 @@ A default daemon named `gpaste-daemon` is provided, with five keybindings:
 * sync clipboard with primary selection
 * mark the active item as being a password
 * upload the active item to a pastebin service (using wgetpaste)
+* launch the graphical tool
 
 A simple CLI interface is provided: `gpaste`, with two subcommands: `gpaste settings` which makes the preferences
 utility pop, `gpaste applet` which starts the status icon in your notification area and `gpaste app-indicator` which

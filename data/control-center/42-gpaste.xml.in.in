@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <KeyListEntries schema="org.gnome.GPaste" group="system" name="GPaste">
 
+	<KeyListEntry name="launch-ui" _description="Launch the graphical tool: "></KeyListEntry>
+
 	<KeyListEntry name="make-password" _description="Mark the active item as being a password: "></KeyListEntry>
 
 	<KeyListEntry name="pop" _description="Delete the active item from history: "></KeyListEntry>

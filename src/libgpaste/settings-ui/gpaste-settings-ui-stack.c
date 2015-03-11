@@ -48,6 +48,7 @@ typedef struct
     GtkSpinButton   *max_text_item_size_button;
     GtkSpinButton   *min_text_item_size_button;
     GtkEntry        *backup_entry;
+    GtkEntry        *launch_ui_entry;
     GtkEntry        *make_password_entry;
     GtkEntry        *pop_entry;
     GtkEntry        *show_history_entry;
@@ -245,6 +246,7 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     return panel;
 }
 
+STRING_CALLBACK (launch_ui)
 STRING_CALLBACK (make_password)
 STRING_CALLBACK (pop)
 STRING_CALLBACK (show_history)
@@ -265,6 +267,13 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
                                                                   pop_callback,
                                                                   (GPasteResetCallback) g_paste_settings_reset_pop,
                                                                   settings);
+    /* translators: Keyboard shortcut to launch the graphical tool */
+    priv->launch_ui_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+                                                                        _("Launch the graphical tool: "),
+                                                                        g_paste_settings_get_launch_ui (settings),
+                                                                        launch_ui_callback,
+                                                                        (GPasteResetCallback) g_paste_settings_reset_launch_ui,
+                                                                        settings);
     /* translators: Keyboard shortcut to mark the active item as being a password */
     priv->make_password_entry = g_paste_settings_ui_panel_add_text_setting (panel,
                                                                             _("Mark the active item as being a password: "),
@@ -444,6 +453,8 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_switch), g_paste_settings_get_images_support (settings));
+    else if (!g_strcmp0 (key, G_PASTE_LAUNCH_UI_SETTING))
+        gtk_entry_set_text (priv->launch_ui_entry, g_paste_settings_get_launch_ui (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAKE_PASSWORD_SETTING))
         gtk_entry_set_text (priv->make_password_entry, g_paste_settings_get_make_password (settings));
     else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
