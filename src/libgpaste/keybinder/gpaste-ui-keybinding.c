@@ -44,7 +44,7 @@ static void
 launch_ui (GPasteKeybinding *self G_GNUC_UNUSED,
            gpointer          data G_GNUC_UNUSED)
 {
-    g_paste_util_spawn ("Ui", NULL);
+    g_paste_util_spawn ("Ui");
 }
 
 /**

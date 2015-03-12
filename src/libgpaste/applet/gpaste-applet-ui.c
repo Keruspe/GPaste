@@ -30,7 +30,7 @@ G_DEFINE_TYPE (GPasteAppletUi, g_paste_applet_ui, GTK_TYPE_MENU_ITEM)
 static void
 g_paste_applet_ui_activate (GtkMenuItem *menu_item G_GNUC_UNUSED)
 {
-    g_paste_util_spawn ("Ui", NULL);
+    g_paste_util_spawn ("Ui");
 
     GTK_MENU_ITEM_CLASS (g_paste_applet_ui_parent_class)->activate (menu_item);
 }

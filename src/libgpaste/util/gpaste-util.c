@@ -86,8 +86,50 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
     return ret;
 }
 
+static void
+g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
+                                   GAsyncResult *res,
+                                   gpointer      user_data)
+{
+    g_autofree gchar *cmd = user_data;
+    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
+
+    if (proxy)
+    {
+        GVariant *param = g_variant_new ("a{sv}", NULL);
+        GVariant *params = g_variant_new_tuple (&param, 1);
+
+        g_dbus_proxy_call (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+    }
+}
+
 /**
  * g_paste_util_spawn:
+ * @app: the GPaste app to spawn
+ *
+ * spawn a GPaste app
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_util_spawn (const gchar *app)
+{
+    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
+
+    g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+                              G_DBUS_PROXY_FLAGS_NONE,
+                              NULL,
+                              name,
+                              object,
+                              "org.freedesktop.Application",
+                              NULL,
+                              g_paste_util_spawn_on_proxy_ready,
+                              g_strdup (app));
+}
+
+/**
+ * g_paste_util_spawn_sync:
  * @app: the GPaste app to spawn
  * @error: a #GError or %NULL
  *
@@ -96,8 +138,8 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
  * Returns: whether the spawn was successful
  */
 G_PASTE_VISIBLE gboolean
-g_paste_util_spawn (const gchar *app,
-                    GError     **error)
+g_paste_util_spawn_sync (const gchar *app,
+                         GError     **error)
 {
     g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
     g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
@@ -116,7 +158,8 @@ g_paste_util_spawn (const gchar *app,
     GVariant *param = g_variant_new ("a{sv}", NULL);
     GVariant *params = g_variant_new_tuple (&param, 1);
 
-    g_dbus_proxy_call_sync (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
+    /* We only consume it */
+    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
 
     return TRUE;
 }

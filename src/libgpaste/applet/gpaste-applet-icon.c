@@ -36,7 +36,7 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TY
 void
 g_paste_applet_icon_activate (void)
 {
-    g_paste_util_spawn ("Ui", NULL);
+    g_paste_util_spawn ("Ui");
 }
 
 static void

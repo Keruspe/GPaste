@@ -177,7 +177,7 @@ spawn (const gchar *app)
 {
     g_autoptr (GError) error = NULL;
 
-    if (!g_paste_util_spawn (app, &error))
+    if (!g_paste_util_spawn_sync (app, &error))
     {
         g_critical ("%s %s: %s", _("Couldn't spawn"), app, error->message);
         return EXIT_FAILURE;

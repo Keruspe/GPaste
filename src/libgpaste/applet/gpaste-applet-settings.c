@@ -30,7 +30,7 @@ G_DEFINE_TYPE (GPasteAppletSettings, g_paste_applet_settings, GTK_TYPE_MENU_ITEM
 static void
 g_paste_applet_settings_activate (GtkMenuItem *menu_item G_GNUC_UNUSED)
 {
-    g_paste_util_spawn ("Settings", NULL);
+    g_paste_util_spawn ("Settings");
 
     GTK_MENU_ITEM_CLASS (g_paste_applet_settings_parent_class)->activate (menu_item);
 }
