@@ -63,7 +63,6 @@ const GPasteIndicator = new Lang.Class({
         this._searchResults = [];
 
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
-        this._uiItem = new UiItem.GPasteUiItem();
 
         this._searchItem = new SearchItem.GPasteSearchItem();
         this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
@@ -87,6 +86,7 @@ const GPasteIndicator = new Lang.Class({
 
             this._dummyHistoryItem.update();
             this._prefsItem = new PrefsItem.GPastePrefsItem(this.menu);
+            this._uiItem = new UiItem.GPasteUiItem(this.menu);
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
             this._switch = new StateSwitch.GPasteStateSwitch(this._client);
 
