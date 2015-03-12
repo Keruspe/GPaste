@@ -41,6 +41,7 @@ const PrefsItem = Me.imports.prefsItem;
 const SearchItem = Me.imports.searchItem;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
+const UiItem = Me.imports.uiItem;
 
 const GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
@@ -62,6 +63,7 @@ const GPasteIndicator = new Lang.Class({
         this._searchResults = [];
 
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
+        this._uiItem = new UiItem.GPasteUiItem();
 
         this._searchItem = new SearchItem.GPasteSearchItem();
         this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
@@ -90,6 +92,7 @@ const GPasteIndicator = new Lang.Class({
 
             this._addToHeader(this._switch);
             this._addToHeader(this._searchItem);
+            this._actions.actor.add(this._uiItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
             this._actions.actor.add(new AboutItem.GPasteAboutItem(this._client, this.menu), { expand: true, x_fill: false });
