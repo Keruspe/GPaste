@@ -47,6 +47,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_GET_RAW_ELEMENT            "GetRawElement"
 #define G_PASTE_DAEMON_GET_RAW_HISTORY            "GetRawHistory"
 #define G_PASTE_DAEMON_LIST_HISTORIES             "ListHistories"
+#define G_PASTE_DAEMON_MERGE                      "Merge"
 #define G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "OnExtensionStateChanged"
 #define G_PASTE_DAEMON_REEXECUTE                  "Reexecute"
 #define G_PASTE_DAEMON_RENAME_PASSWORD            "RenamePassword"
@@ -113,6 +114,11 @@ G_BEGIN_DECLS
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_LIST_HISTORIES "'>"             \
         "           <arg type='as' direction='out' />"                         \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_MERGE "'>"                      \
+        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='au' direction='in' />"                          \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "'>" \
         "           <arg type='b' direction='in' />"                           \

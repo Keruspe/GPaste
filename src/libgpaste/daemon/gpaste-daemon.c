@@ -462,6 +462,46 @@ g_paste_daemon_list_histories (GError **error)
 }
 
 static void
+g_paste_daemon_private_merge (GPasteDaemonPrivate *priv,
+                              GVariant            *parameters,
+                              GPasteDBusError    **err)
+{
+    GPasteHistory *history = priv->history;
+    gsize history_length = g_paste_history_get_length (history);
+    GVariantIter parameters_iter;
+    gsize length;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    g_autoptr (GVariant) v_decoration = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) v_separator  = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) v_indexes    = g_variant_iter_next_value (&parameters_iter);
+
+    g_autofree gchar *decoration = g_variant_dup_string (v_decoration, &length);
+    g_autofree gchar *separator  = g_variant_dup_string (v_separator,  &length);
+    const guint32 *indexes = g_variant_get_fixed_array (v_indexes, &length, sizeof (guint32));
+
+    G_PASTE_CLEANUP_STRING_FREE GString *str = g_string_new (NULL);
+
+    G_PASTE_DBUS_ASSERT (length, "nothing to merge");
+    for (gsize i = 0; i < length; ++i)
+    {
+        G_PASTE_DBUS_ASSERT (indexes[i] < history_length, "invalid index received");
+    }
+
+    for (gsize i = 0; i < length; ++i)
+    {
+        g_string_append_printf (str, "%s%s%s%s",
+                                (i) ? separator : "",
+                                decoration,
+                                g_paste_history_get_value (history, indexes[i]),
+                                decoration);
+    }
+
+    g_paste_daemon_private_do_add (priv, str->str, str->len, err);
+}
+
+static void
 g_paste_daemon_track (GPasteDaemon *self,
                       GVariant     *parameters)
 {
@@ -662,6 +702,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         answer = g_paste_daemon_private_get_raw_history (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
         answer = g_paste_daemon_list_histories (&error);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_MERGE))
+        g_paste_daemon_private_merge (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))
         g_paste_daemon_on_extension_state_changed (self, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_REEXECUTE))
