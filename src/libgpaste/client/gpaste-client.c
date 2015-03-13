@@ -56,6 +56,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_TWO_PARAMS_ASYNC(method, params) \
     DBUS_CALL_TWO_PARAMS_ASYNC_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
 
+#define DBUS_CALL_THREE_PARAMS_ASYNC(method, params) \
+    DBUS_CALL_THREE_PARAMS_ASYNC_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
+
 /****************************/
 /* Methods / Async - Finish */
 /****************************/
@@ -99,6 +102,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_TWO_PARAMS_NO_RETURN(method, params) \
     DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
+
+#define DBUS_CALL_THREE_PARAMS_NO_RETURN(method, params) \
+    DBUS_CALL_THREE_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
 
 /**************/
 /* Properties */
@@ -433,6 +439,39 @@ g_paste_client_list_histories_sync (GPasteClient *self,
                                     GError      **error)
 {
     DBUS_CALL_NO_PARAM_RET_STRV (LIST_HISTORIES);
+}
+
+/**
+ * g_paste_client_merge_sync:
+ * @self: a #GPasteClient instance
+ * @decoration: (nullable): the decoration to apply to each entry
+ * @separator: (nullable): the separator to add between each entry
+ * @indexes: (array length=n_indexes): the indexes of the entries to merge
+ * @n_indexes: the length of @indexes
+ * @error: a #GError
+ *
+ * Merge some history entries
+ *
+ * If decoration is " and separator is , and entries are foo bar baz
+ * result will be "foo","bar","baz"
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_merge_sync (GPasteClient  *self,
+                           const gchar   *decoration,
+                           const gchar   *separator,
+                           const guint32 *indexes,
+                           gsize          n_indexes,
+                           GError       **error)
+{
+    GVariant *params[] = {
+        g_variant_new_string (decoration ? decoration : ""),
+        g_variant_new_string (separator  ? separator  : ""),
+        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, indexes, n_indexes, sizeof (guint32))
+    };
+
+    DBUS_CALL_THREE_PARAMS_NO_RETURN (MERGE, params);
 }
 
 /**
@@ -950,6 +989,42 @@ g_paste_client_list_histories (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_merge:
+ * @self: a #GPasteClient instance
+ * @decoration: (nullable): the decoration to apply to each entry
+ * @separator: (nullable): the separator to add between each entry
+ * @indexes: (array length=n_indexes): the indexes of the entries to merge
+ * @n_indexes: the length of @indexes
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Merge some history entries
+ *
+ * If decoration is " and separator is , and entries are foo bar baz
+ * result will be "foo","bar","baz"
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_merge (GPasteClient       *self,
+                      const gchar        *decoration,
+                      const gchar        *separator,
+                      const guint32      *indexes,
+                      gsize               n_indexes,
+                      GAsyncReadyCallback callback,
+                      gpointer            user_data)
+{
+    GVariant *params[] = {
+        g_variant_new_string (decoration ? decoration : ""),
+        g_variant_new_string (separator  ? separator  : ""),
+        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, indexes, n_indexes, sizeof (guint32))
+    };
+
+    DBUS_CALL_THREE_PARAMS_ASYNC (MERGE, params);
+}
+
+/**
  * g_paste_client_on_extension_state_changed:
  * @self: a #GPasteClient instance
  * @state: the new state of the extension
@@ -1441,6 +1516,24 @@ g_paste_client_list_histories_finish (GPasteClient *self,
                                       GError      **error)
 {
     DBUS_ASYNC_FINISH_RET_STRV;
+}
+
+/**
+ * g_paste_client_merge_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Merge some history entries
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_merge_finish (GPasteClient *self,
+                             GAsyncResult *result,
+                             GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
 }
 
 /**

@@ -132,6 +132,9 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_CALL_TWO_PARAMS_ASYNC_BASE(TYPE_CHECKER, params, method) \
     DBUS_CALL_ASYNC_FULL (TYPE_CHECKER, {}, method, params, 2)
 
+#define DBUS_CALL_THREE_PARAMS_ASYNC_BASE(TYPE_CHECKER, params, method) \
+    DBUS_CALL_ASYNC_FULL (TYPE_CHECKER, {}, method, params, 3)
+
 /**************************************/
 /* Methods / Async / General - Finish */
 /**************************************/
@@ -228,6 +231,9 @@ g_paste_dbus_get_au_result (GVariant *variant,
 
 #define DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE(TYPE_CHECKER, params, method) \
     DBUS_CALL_NO_RETURN_BASE (TYPE_CHECKER, {}, method, params, 2)
+
+#define DBUS_CALL_THREE_PARAMS_NO_RETURN_BASE(TYPE_CHECKER, params, method) \
+    DBUS_CALL_NO_RETURN_BASE (TYPE_CHECKER, {}, method, params, 3)
 
 /**************************************************/
 /* Methods / Sync / Impl - With return - No param */
