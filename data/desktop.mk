@@ -47,6 +47,7 @@ endif
 
 nodist_applications_DATA = \
 	$(gpaste_settings_desktop_file) \
+	$(gpaste_ui_desktop_file) \
 	$(nodist_autostart_DATA) \
 	$(NULL)
 
