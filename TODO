@@ -6,12 +6,14 @@
         add appstream
 
 3.18:
+    general:
+        add a gnome-shell search provider
+        replace
     gpaste-ui:
         search bar
         history chooser
         merge
-    general:
-        add a gnome-shell search provider
+        edit
 
 future:
     general:
