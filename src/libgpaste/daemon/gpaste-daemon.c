@@ -17,10 +17,16 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-daemon.h>
 #include <gpaste-gdbus-defines.h>
+#include <gpaste-make-password-keybinding.h>
+#include <gpaste-pop-keybinding.h>
 #include <gpaste-screensaver-client.h>
+#include <gpaste-show-history-keybinding.h>
+#include <gpaste-sync-clipboard-to-primary-keybinding.h>
+#include <gpaste-sync-primary-to-clipboard-keybinding.h>
+#include <gpaste-ui-keybinding.h>
 #include <gpaste-update-enums.h>
+#include <gpaste-upload-keybinding.h>
 #include <gpaste-util.h>
 
 #include <string.h>
@@ -656,6 +662,29 @@ _g_paste_daemon_upload (GPasteDaemon *self,
     g_paste_daemon_upload(self, g_paste_daemon_get_dbus_uint32_parameter (parameters));
 }
 
+G_PASTE_VISIBLE void
+g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    GPasteKeybinder *keybinder = priv->keybinder;
+    GPasteHistory *history = priv->history;
+    GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager;
+    GPasteKeybinding *keybindings[] = {
+        g_paste_make_password_keybinding_new (history),
+        g_paste_pop_keybinding_new (history),
+        g_paste_show_history_keybinding_new (self),
+        g_paste_sync_clipboard_to_primary_keybinding_new (clipboards_manager),
+        g_paste_sync_primary_to_clipboard_keybinding_new (clipboards_manager),
+        g_paste_ui_keybinding_new (),
+        g_paste_upload_keybinding_new (self)
+    };
+
+    for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
+        g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
+
+    g_paste_keybinder_activate_all (keybinder);
+}
+
 static void
 g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UNUSED,
                                  const gchar           *sender         G_GNUC_UNUSED,
@@ -971,15 +1000,27 @@ g_paste_daemon_init (GPasteDaemon *self)
     vtable->get_property = g_paste_daemon_dbus_get_property;
     vtable->set_property = NULL;
 
+    g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_sync (NULL);
+
+    GPasteSettings *settings = priv->settings = g_paste_settings_new ();
+    GPasteHistory *history = priv->history = g_paste_history_new (settings);
+    GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager = g_paste_clipboards_manager_new (history, settings);
+
+    priv->keybinder = g_paste_keybinder_new (settings, shell_client);
     priv->screensaver = g_paste_screensaver_client_new_sync (NULL);
+
+    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
+    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
+
+    g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
+    g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
+    g_paste_clipboards_manager_activate (clipboards_manager);
+
+    g_paste_history_load (history);
 }
 
 /**
  * g_paste_daemon_new:
- * @history: (transfer none): a #GPasteHistory
- * @settings: (transfer none): a #GPasteSettings
- * @clipboards_manager: (transfer none): a #GPasteClipboardsManager
- * @keybinder: (transfer none): a #GPasteKeybinder
  *
  * Create a new instance of #GPasteDaemon
  *
@@ -987,23 +1028,7 @@ g_paste_daemon_init (GPasteDaemon *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteDaemon *
-g_paste_daemon_new (GPasteHistory           *history,
-                    GPasteSettings          *settings,
-                    GPasteClipboardsManager *clipboards_manager,
-                    GPasteKeybinder         *keybinder)
+g_paste_daemon_new (void)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (clipboards_manager), NULL);
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDER (keybinder), NULL);
-
-    GPasteDaemon *self = g_object_new (G_PASTE_TYPE_DAEMON, NULL);
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-
-    priv->history = g_object_ref (history);
-    priv->settings = g_object_ref (settings);
-    priv->clipboards_manager = g_object_ref (clipboards_manager);
-    priv->keybinder = g_object_ref (keybinder);
-
-    return self;
+    return G_PASTE_DAEMON (g_object_new (G_PASTE_TYPE_DAEMON, NULL));
 }

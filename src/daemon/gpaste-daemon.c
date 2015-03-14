@@ -17,13 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-make-password-keybinding.h>
-#include <gpaste-pop-keybinding.h>
-#include <gpaste-show-history-keybinding.h>
-#include <gpaste-sync-clipboard-to-primary-keybinding.h>
-#include <gpaste-sync-primary-to-clipboard-keybinding.h>
-#include <gpaste-ui-keybinding.h>
-#include <gpaste-upload-keybinding.h>
+#include <gpaste-daemon.h>
 
 static GApplication *_app;
 
@@ -71,24 +65,7 @@ main (gint argc, gchar *argv[])
     gtk_widget_hide (gtk_application_window_new (app));
     _app = gapp;
 
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
-    g_autoptr (GPasteClipboardsManager) clipboards_manager = g_paste_clipboards_manager_new (history, settings);
-    g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_sync (NULL);
-    g_autoptr (GPasteKeybinder) keybinder = g_paste_keybinder_new (settings, shell_client);
-    g_autoptr (GPasteDaemon) g_paste_daemon = g_paste_daemon_new (history, settings, clipboards_manager, keybinder);
-    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
-    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
-
-    GPasteKeybinding *keybindings[] = {
-        g_paste_make_password_keybinding_new (history),
-        g_paste_pop_keybinding_new (history),
-        g_paste_show_history_keybinding_new (g_paste_daemon),
-        g_paste_sync_clipboard_to_primary_keybinding_new (clipboards_manager),
-        g_paste_sync_primary_to_clipboard_keybinding_new (clipboards_manager),
-        g_paste_ui_keybinding_new (),
-        g_paste_upload_keybinding_new (g_paste_daemon)
-    };
+    g_autoptr (GPasteDaemon) g_paste_daemon = g_paste_daemon_new ();
 
     gulong c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (g_paste_daemon,
@@ -101,14 +78,7 @@ main (gint argc, gchar *argv[])
                                                gapp)
     };
 
-    for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
-        g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
-
-    g_paste_history_load (history);
-    g_paste_keybinder_activate_all (keybinder);
-    g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
-    g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
-    g_paste_clipboards_manager_activate (clipboards_manager);
+    g_paste_daemon_activate_default_keybindings (g_paste_daemon);
 
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
