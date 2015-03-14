@@ -289,8 +289,8 @@ main (gint argc, gchar *argv[])
         g_paste_client_add_sync (client, data->str, &error);
     }
     else if (argc > 0 &&
-            (g_strcmp0 (argv[0], "merge") ||
-             g_strcmp0 (argv[0], "m")))
+            (!g_strcmp0 (argv[0], "merge") ||
+             !g_strcmp0 (argv[0], "m")))
     {
         --argc;
         ++argv;
