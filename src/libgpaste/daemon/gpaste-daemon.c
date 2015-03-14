@@ -92,6 +92,7 @@ typedef struct
     GDBusConnection         *connection;
     gchar                   *object_path;
     guint                    id_on_bus;
+    gboolean                 registered;
     GError                  *inner_error;
     GPasteHistory           *history;
     GPasteSettings          *settings;
@@ -827,6 +828,15 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
 }
 
 static void
+connect_screensaver_signal (GPasteDaemonPrivate *priv)
+{
+    priv->c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
+                                                                  "active-changed",
+                                                                  G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
+                                                                  priv);
+}
+
+static void
 g_paste_daemon_register_object (GPasteDaemon    *self,
                                 GDBusConnection *connection,
                                 const gchar     *path)
@@ -867,13 +877,10 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                                     G_CALLBACK (g_paste_daemon_on_history_update),
                                                     self);
 
+    priv->registered = TRUE;
+
     if (priv->screensaver)
-    {
-        c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
-                                                                "active-changed",
-                                                                G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
-                                                                priv);
-    }
+        connect_screensaver_signal (priv);
 }
 
 static gboolean
@@ -987,6 +994,31 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
 }
 
 static void
+on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
+                             GAsyncResult *res,
+                             gpointer      user_data)
+{
+    GPasteDaemonPrivate *priv = user_data;
+    GPasteScreensaverClient *screensaver = priv->screensaver = g_paste_screensaver_client_new_finish (res, NULL);
+
+    if (priv->registered && screensaver) /* object was registered before client was ready */
+        connect_screensaver_signal (priv);
+}
+
+static void
+on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
+                       GAsyncResult *res,
+                       gpointer      user_data)
+{
+    GPasteDaemonPrivate *priv = user_data;
+    g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_finish (res, NULL);
+
+    priv->keybinder = g_paste_keybinder_new (priv->settings, shell_client);
+
+    g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
+}
+
+static void
 g_paste_daemon_init (GPasteDaemon *self)
 {
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
@@ -1000,14 +1032,9 @@ g_paste_daemon_init (GPasteDaemon *self)
     vtable->get_property = g_paste_daemon_dbus_get_property;
     vtable->set_property = NULL;
 
-    g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_sync (NULL);
-
     GPasteSettings *settings = priv->settings = g_paste_settings_new ();
     GPasteHistory *history = priv->history = g_paste_history_new (settings);
     GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager = g_paste_clipboards_manager_new (history, settings);
-
-    priv->keybinder = g_paste_keybinder_new (settings, shell_client);
-    priv->screensaver = g_paste_screensaver_client_new_sync (NULL);
 
     g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
@@ -1017,6 +1044,8 @@ g_paste_daemon_init (GPasteDaemon *self)
     g_paste_clipboards_manager_activate (clipboards_manager);
 
     g_paste_history_load (history);
+
+    g_paste_gnome_shell_client_new (on_shell_client_ready, priv);
 }
 
 /**
