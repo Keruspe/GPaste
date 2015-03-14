@@ -67,6 +67,8 @@ g_paste_dbus_get_au_result (GVariant *variant,
                                 NULL)
 
 #define CUSTOM_PROXY_NEW_FINISH(TYPE)                                       \
+    g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);                \
+    g_return_val_if_fail (!error || !(*error), NULL);                       \
     g_autoptr (GObject) source = g_async_result_get_source_object (result); \
     g_assert (source);                                                      \
     GObject *self = g_async_initable_new_finish (G_ASYNC_INITABLE (source), \

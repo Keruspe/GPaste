@@ -33,7 +33,7 @@
 
 /**
  * g_paste_util_show_about_dialog:
- * @parent: the parent #GtkWindow
+ * @parent: (nullable): the parent #GtkWindow
  *
  * Show GPaste about dialog
  *
@@ -42,6 +42,8 @@
 G_PASTE_VISIBLE void
 g_paste_util_show_about_dialog (GtkWindow *parent)
 {
+    g_return_if_fail (!parent || GTK_IS_WINDOW (parent));
+
     const gchar *authors[] = {
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
@@ -62,7 +64,7 @@ g_paste_util_show_about_dialog (GtkWindow *parent)
 
 /**
  * g_paste_util_confirm_dialog:
- * @parent: the parent #GtkWindow
+ * @parent: (nullable): the parent #GtkWindow
  * @msg: the message to display
  *
  * Show GPaste about dialog
@@ -73,6 +75,9 @@ G_PASTE_VISIBLE gboolean
 g_paste_util_confirm_dialog (GtkWindow   *parent,
                              const gchar *msg)
 {
+    g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), FALSE);
+    g_return_val_if_fail (g_utf8_validate (msg, -1, NULL), FALSE);
+
     GtkWidget *dialog = gtk_message_dialog_new (parent,
                                                 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
                                                 GTK_MESSAGE_QUESTION,
@@ -113,6 +118,8 @@ g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
 G_PASTE_VISIBLE void
 g_paste_util_spawn (const gchar *app)
 {
+    g_return_if_fail (g_utf8_validate (app, -1, NULL));
+
     g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
     g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
 
@@ -140,6 +147,9 @@ G_PASTE_VISIBLE gboolean
 g_paste_util_spawn_sync (const gchar *app,
                          GError     **error)
 {
+    g_return_val_if_fail (g_utf8_validate (app, -1, NULL), FALSE);
+    g_return_val_if_fail (!error || !(*error), FALSE);
+
     g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
     g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
@@ -178,6 +188,10 @@ g_paste_util_replace (const gchar *text,
                       const gchar *pattern,
                       const gchar *substitution)
 {
+    g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
+    g_return_val_if_fail (g_utf8_validate (pattern, -1, NULL), NULL);
+    g_return_val_if_fail (g_utf8_validate (substitution, -1, NULL), NULL);
+
     g_autofree gchar *regex_string = g_regex_escape_string (pattern, -1);
     g_autoptr (GRegex) regex = g_regex_new (regex_string,
                                             0, /* Compile options */
@@ -251,6 +265,8 @@ g_paste_util_has_unity (void)
 G_PASTE_VISIBLE void
 g_paste_util_show_win (GApplication *application)
 {
+    g_return_if_fail (GTK_IS_APPLICATION (application));
+
     for (GList *wins = gtk_application_get_windows (GTK_APPLICATION (application)); wins; wins = g_list_next (wins))
     {
         if (gtk_widget_get_realized (wins->data))
