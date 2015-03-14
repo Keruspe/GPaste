@@ -1206,7 +1206,7 @@ g_paste_history_get_history (const GPasteHistory *self)
  *
  * Returns: The length of the inner history
  */
-G_PASTE_VISIBLE guint32
+G_PASTE_VISIBLE gsize
 g_paste_history_get_length (const GPasteHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);

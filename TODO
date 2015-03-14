@@ -1,7 +1,6 @@
 3.16:
     general:
         cleanup internal ctors
-        guint* vs gsize
         rework libtool versioning
 
     gpaste-ui:
