@@ -47,14 +47,6 @@ gint
 main (gint argc, gchar *argv[])
 {
     G_PASTE_INIT_APPLICATION_FULL ("Ui", show_win);
-    g_autoptr (GError) e = NULL;
-    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&e);
-
-    if (!client)
-    {
-        g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (e) ? e->message : "unknown error");
-        exit (EXIT_FAILURE);
-    }
 
     GActionEntry app_entries[] = {
         { "about", about_activated, NULL, NULL, NULL, { 0 } },
@@ -67,12 +59,10 @@ main (gint argc, gchar *argv[])
     g_menu_append (menu, "Quit", "app.quit");
     gtk_application_set_app_menu (app, G_MENU_MODEL (menu));
 
-    GtkWidget *window = g_paste_ui_window_new (app, client);
+    GtkWidget *window = g_paste_ui_window_new (app);
 
     if (!window)
         exit (EXIT_FAILURE);
-
-    gtk_widget_show_all (window);
 
     return g_application_run (gapp, argc, argv);
 }

@@ -26,12 +26,7 @@ struct _GPasteUiWindow
     GtkApplicationWindow parent_instance;
 };
 
-typedef struct
-{
-    GtkApplication *app;
-} GPasteUiWindowPrivate;
-
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
+G_DEFINE_TYPE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
 
 static void
 g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
@@ -43,10 +38,29 @@ g_paste_ui_window_init (GPasteUiWindow *self G_GNUC_UNUSED)
 {
 }
 
+static void
+on_client_ready (GObject      *source_object G_GNUC_UNUSED,
+                 GAsyncResult *res,
+                 gpointer      user_data)
+{
+    GtkWindow *win = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
+
+    if (error)
+    {
+        g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
+        gtk_window_close (win); /* will exit the application */
+    }
+
+    gtk_window_set_titlebar (win, g_paste_ui_header_new (win, client));
+    gtk_container_add (GTK_CONTAINER (win), g_paste_ui_history_new (client));
+    gtk_widget_show_all (GTK_WIDGET (win));
+}
+
 /**
  * g_paste_ui_window_new:
  * @app: the #GtkApplication
- * @client: a #GPasteClient instance
  *
  * Create a new instance of #GPasteUiWindow
  *
@@ -54,11 +68,9 @@ g_paste_ui_window_init (GPasteUiWindow *self G_GNUC_UNUSED)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_window_new (GtkApplication *app,
-                       GPasteClient   *client)
+g_paste_ui_window_new (GtkApplication *app)
 {
     g_return_val_if_fail (GTK_IS_APPLICATION (app), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_WINDOW,
                                       "application",     app,
@@ -68,13 +80,8 @@ g_paste_ui_window_new (GtkApplication *app,
                                       "width-request",   800,
                                       "height-request",  600,
                                       NULL);
-    GtkWindow *win = GTK_WINDOW (self);
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (self));
 
-    priv->app = app;
-
-    gtk_window_set_titlebar (win, g_paste_ui_header_new (win, client));
-    gtk_container_add (GTK_CONTAINER (self), g_paste_ui_history_new (client));
+    g_paste_client_new (on_client_ready, self);
 
     return self;
 }

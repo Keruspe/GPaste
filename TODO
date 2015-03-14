@@ -1,7 +1,6 @@
 3.16:
     gpaste-ui:
         add appstream
-        create client from within ctor
 
 3.18:
     general:
