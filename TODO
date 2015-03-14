@@ -1,6 +1,8 @@
 3.16:
     general:
-        merge
+        cleanup internal ctors
+        rework libgpaste.sym
+        guint* vs gsize
 
     gpaste-ui:
         add appstream
