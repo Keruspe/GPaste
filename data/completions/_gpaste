@@ -23,6 +23,11 @@ _gpaste_complete_arguments() {
         '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]'
     )
 
+    merge_arguments=(
+        '(-d --decoration)'{-d,--decoration}'[Add the decoration at the beginning and end of each item before merging.]'
+        '(-s --separator)'{-s,--separator}'[Add a separator between each item when merging.]'
+    )
+
     case "${1}" in
         base)
             _arguments -s : \
@@ -39,6 +44,10 @@ _gpaste_complete_arguments() {
         history|h)
             _arguments -s : \
                 ${history_arguments}
+            ;;
+        merge|m)
+            _arguments -s : \
+                ${merge_arguments}
             ;;
     esac
 }
@@ -63,6 +72,7 @@ _gpaste_complete_subcommands() {
         {history,h}:"Display the history with indexes"
         {history-size,hs}:"Display the size of the history"
         {list-histories,lh}:"List available histories"
+        {merge,m}:"Merge various elements from history"
         {rename-password,rp}:"Rename a password"
         {select,set,s}:"Select an element of the history"
         {set-password,sp}:"Mark an item as being a password"

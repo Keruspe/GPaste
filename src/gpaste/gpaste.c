@@ -51,6 +51,8 @@ show_help (void)
     printf ("  %s get <%s>: %s\n", progname, _("number"), _("get the <number>th item from the history"));
     /* Translators: help for gpaste select <number> */
     printf ("  %s select <%s>: %s\n", progname, _("number"), _("set the <number>th item from the history to the clipboard"));
+    /* Translators: help for gpaste merge <number> … <number> */
+    printf ("  %s merge <%s> … <%s>: %s\n", progname, _("number"), _("number"), _("merge the <number>th items from the history and add put the result in the clipboard"));
     /* Translators: help for gpaste set-password <number> <name> */
     printf ("  %s set-password <%s> <%s>: %s\n", progname, _("number"), _("name"), _("set the <number>th item from the history as a password named <name>"));
     /* Translators: help for gpaste delete <number> */
@@ -107,6 +109,14 @@ show_help (void)
     printf("  --raw: %s\n", _("display each item raw (without line numbers)"));
     /* Translators: help for --oneline */
     printf("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
+
+    printf("\n");
+    printf(_("Merge options:"));
+    printf("\n");
+    /* Translators: help for --decoration <string> */
+    printf("  --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
+    /* Translators: help for --separator <string> */
+    printf("  --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
 }
 
 static void
@@ -199,22 +209,28 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     struct option long_options[] = {
-        {"help",    no_argument, NULL,  'h' },
-        {"oneline", no_argument, NULL,  'o' },
-        {"raw"    , no_argument, NULL,  'r' },
-        {"version", no_argument, NULL,  'v' },
-        {"zero",    no_argument, NULL,  'z' },
-        {0,         no_argument, NULL,  0 }
+        { "decoration", required_argument, NULL,  'd'  },
+        { "help",       no_argument,       NULL,  'h'  },
+        { "oneline",    no_argument,       NULL,  'o'  },
+        { "raw"    ,    no_argument,       NULL,  'r'  },
+        { "separator" , required_argument, NULL,  's'  },
+        { "version",    no_argument,       NULL,  'v'  },
+        { "zero",       no_argument,       NULL,  'z'  },
+        { NULL,         no_argument,       NULL,  '\0' }
     };
 
     gboolean help = FALSE, version = FALSE;
     gboolean oneline = FALSE, raw = FALSE, zero = FALSE;
+    const gchar *decoration = NULL, *separator = NULL;
     gint c;
 
-    while ((c = getopt_long(argc, argv, "horvz", long_options, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "d:hors:vz", long_options, NULL)) != -1)
     {
         switch (c)
         {
+        case 'd':
+            decoration = optarg;
+            break;
         case 'h':
             help = TRUE;
             break;
@@ -223,6 +239,9 @@ main (gint argc, gchar *argv[])
             break;
         case 'r':
             raw = TRUE;
+            break;
+        case 's':
+            separator = optarg;
             break;
         case 'v':
             version = TRUE;
@@ -268,6 +287,20 @@ main (gint argc, gchar *argv[])
         data->str[data->len - 1] = '\0';
 
         g_paste_client_add_sync (client, data->str, &error);
+    }
+    else if (argc > 0 &&
+            (g_strcmp0 (argv[0], "merge") ||
+             g_strcmp0 (argv[0], "m")))
+    {
+        --argc;
+        ++argv;
+
+        guint32 *indexes = alloca (argc * sizeof (guint32));
+
+        for (gint i = 0; i < argc; ++i)
+            indexes[i] = _strtoull (argv[i]);
+
+        g_paste_client_merge_sync (client, decoration, separator, indexes, argc, &error);
     }
     else
     {
