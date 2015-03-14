@@ -20,47 +20,10 @@
 #include <gpaste-ui-window.h>
 #include <gpaste-util.h>
 
-static void
-about_activated (GSimpleAction *action    G_GNUC_UNUSED,
-                 GVariant      *parameter G_GNUC_UNUSED,
-                 gpointer       user_data)
-{
-    g_paste_util_show_about_dialog (GTK_WINDOW (gtk_application_get_windows (GTK_APPLICATION (user_data))->data));
-}
-
-static void
-quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
-                GVariant      *parameter G_GNUC_UNUSED,
-                gpointer       user_data)
-{
-    g_application_quit (G_APPLICATION (user_data));
-}
-
-static void
-show_win (GApplication *application)
-{
-    for (GList *wins = gtk_application_get_windows (GTK_APPLICATION (application)); wins; wins = g_list_next (wins))
-    {
-        if (gtk_widget_get_realized (wins->data))
-            gtk_window_present (wins->data);
-    }
-}
-
 gint
 main (gint argc, gchar *argv[])
 {
-    G_PASTE_INIT_APPLICATION_FULL ("Ui", show_win);
-
-    GActionEntry app_entries[] = {
-        { "about", about_activated, NULL, NULL, NULL, { 0 } },
-        { "quit",  quit_activated,  NULL, NULL, NULL, { 0 } }
-    };
-    g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
-
-    GMenu *menu = g_menu_new ();
-    g_menu_append (menu, "About GPaste", "app.about");
-    g_menu_append (menu, "Quit", "app.quit");
-    gtk_application_set_app_menu (app, G_MENU_MODEL (menu));
+    G_PASTE_INIT_APPLICATION_WITH_WIN ("Ui");
 
     G_GNUC_UNUSED GtkWidget *window = g_paste_ui_window_new (app);
 

@@ -1,4 +1,6 @@
 3.16:
+    general:
+        add asserts to util and async
     gpaste-ui:
         add appstream
 

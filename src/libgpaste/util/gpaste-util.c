@@ -241,3 +241,21 @@ g_paste_util_has_unity (void)
     return g_file_test (PKGLIBEXECDIR "/gpaste-app-indicator", G_FILE_TEST_IS_EXECUTABLE);
 }
 
+/**
+ * g_paste_util_show_win:
+ * @application: a #GtkApplication
+ *
+ * Present the application's window to user
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_util_show_win (GApplication *application)
+{
+    for (GList *wins = gtk_application_get_windows (GTK_APPLICATION (application)); wins; wins = g_list_next (wins))
+    {
+        if (gtk_widget_get_realized (wins->data))
+            gtk_window_present (wins->data);
+    }
+}
+
