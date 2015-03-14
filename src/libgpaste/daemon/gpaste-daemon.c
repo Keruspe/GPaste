@@ -663,9 +663,19 @@ _g_paste_daemon_upload (GPasteDaemon *self,
     g_paste_daemon_upload(self, g_paste_daemon_get_dbus_uint32_parameter (parameters));
 }
 
+/**
+ * g_paste_daemon_activate_default_keybindings:
+ * @self: (transfer none): the #GPasteDaemon
+ *
+ * Activate the default keybindings
+ *
+ * Returns:
+ */
 G_PASTE_VISIBLE void
 g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
 {
+    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GPasteKeybinder *keybinder = priv->keybinder;
     GPasteHistory *history = priv->history;
