@@ -40,7 +40,10 @@ static void
 show_win (GApplication *application)
 {
     for (GList *wins = gtk_application_get_windows (GTK_APPLICATION (application)); wins; wins = g_list_next (wins))
-        gtk_window_present (wins->data);
+    {
+        if (gtk_widget_get_realized (wins->data))
+            gtk_window_present (wins->data);
+    }
 }
 
 gint
@@ -59,10 +62,7 @@ main (gint argc, gchar *argv[])
     g_menu_append (menu, "Quit", "app.quit");
     gtk_application_set_app_menu (app, G_MENU_MODEL (menu));
 
-    GtkWidget *window = g_paste_ui_window_new (app);
-
-    if (!window)
-        exit (EXIT_FAILURE);
+    G_GNUC_UNUSED GtkWidget *window = g_paste_ui_window_new (app);
 
     return g_application_run (gapp, argc, argv);
 }
