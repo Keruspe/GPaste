@@ -1293,14 +1293,17 @@ g_paste_history_new (GPasteSettings *settings)
  *
  * Get the list of available histories
  *
- * Returns: (element-type utf8) (transfer full): The list of history names
+ * Returns: (transfer full): The list of history names
  *                           free it with g_array_unref
  */
-G_PASTE_VISIBLE GArray *
+G_PASTE_VISIBLE GStrv
 g_paste_history_list (GError **error)
 {
     g_return_val_if_fail (!error || !(*error), NULL);
 
+    g_autoptr (GArray) history_names = g_array_new (TRUE, /* zero-terminated */
+                                                    TRUE, /* clear */
+                                                    sizeof (gchar *));
     g_autoptr (GFile) history_dir = g_paste_history_get_history_dir ();
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
@@ -1309,9 +1312,7 @@ g_paste_history_list (GError **error)
                                                                        error);
     if (*error)
         return NULL;
-    GArray *history_names = g_array_new (TRUE, /* zero-terminated */
-                                         TRUE, /* clear */
-                                         sizeof (gchar *));
+
     GFileInfo *history;
 
     while ((history = g_file_enumerator_next_file (histories,
@@ -1337,5 +1338,5 @@ g_paste_history_list (GError **error)
         }
     }
 
-    return history_names;
+    return g_strdupv ((GStrv) history_names->data);
 }

@@ -2,7 +2,6 @@
     general:
         cleanup internal ctors
         guint* vs gsize
-        g_paste_history_list
         rework libtool versioning
 
     gpaste-ui:

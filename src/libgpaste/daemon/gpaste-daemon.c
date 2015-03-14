@@ -451,12 +451,12 @@ g_paste_daemon_private_get_raw_history (GPasteDaemonPrivate *priv)
 static GVariant *
 g_paste_daemon_list_histories (GError **error)
 {
-    g_autoptr (GArray) history_names = g_paste_history_list (error);
+    g_auto (GStrv) history_names = g_paste_history_list (error);
     
     if (!history_names)
         return NULL;
 
-    GVariant *variant = g_variant_new_strv ((const gchar * const *) (gpointer) history_names->data, -1);
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) history_names, -1);
 
     return g_variant_new_tuple (&variant, 1);
 }
