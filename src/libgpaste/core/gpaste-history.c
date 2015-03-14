@@ -1337,5 +1337,5 @@ g_paste_history_list (GError **error)
         }
     }
 
-    return g_strdupv ((GStrv) history_names->data);
+    return g_strdupv ((GStrv) (gpointer) history_names->data);
 }

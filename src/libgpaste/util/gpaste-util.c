@@ -93,9 +93,8 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
 static void
 g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
                                    GAsyncResult *res,
-                                   gpointer      user_data)
+                                   gpointer      user_data G_GNUC_UNUSED)
 {
-    g_autofree gchar *cmd = user_data;
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
 
     if (proxy)
@@ -131,7 +130,7 @@ g_paste_util_spawn (const gchar *app)
                               "org.freedesktop.Application",
                               NULL,
                               g_paste_util_spawn_on_proxy_ready,
-                              g_strdup (app));
+                              NULL);
 }
 
 /**
