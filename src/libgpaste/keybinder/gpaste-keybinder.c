@@ -177,6 +177,20 @@ _keybinding_deactivate (_Keybinding *k)
 }
 
 static void
+on_key_grabbed (GObject      *source_object,
+                GAsyncResult *res,
+                gpointer      user_data)
+{
+    _Keybinding *k = user_data;
+    g_autoptr (GError) error = NULL;
+
+    k->action = g_paste_gnome_shell_client_grab_accelerator_finish (G_PASTE_GNOME_SHELL_CLIENT (source_object), res, &error);
+
+    if (error)
+        g_warning ("Couldn't grab keybinding: %s", error->message);
+}
+
+static void
 _keybinding_grab_gnome_shell (_Keybinding *k)
 {
     if (k->action || !k->shell_client)
@@ -187,11 +201,7 @@ _keybinding_grab_gnome_shell (_Keybinding *k)
         G_PASTE_GNOME_SHELL_ACTION_MODE_ALL
     };
 
-    g_autoptr (GError) error = NULL;
-    k->action = g_paste_gnome_shell_client_grab_accelerator_sync (k->shell_client, accel, &error);
-
-    if (error)
-        g_warning ("Couldn't grab keybinding: %s", error->message);
+    g_paste_gnome_shell_client_grab_accelerator (k->shell_client, accel, on_key_grabbed, k);
 }
 
 static void
@@ -205,17 +215,26 @@ _keybinding_grab (_Keybinding *k)
 }
 
 static void
-_keybinding_ungrab_gnome_shell (_Keybinding *k)
+on_key_ungrabbed (GObject      *source_object,
+                  GAsyncResult *res,
+                  gpointer      user_data G_GNUC_UNUSED)
 {
     g_autoptr (GError) error = NULL;
-    if (k->action)
-    {
-        g_paste_gnome_shell_client_ungrab_accelerator_sync (k->shell_client, k->action, &error);
-        k->action = 0;
-    }
+
+    g_paste_gnome_shell_client_ungrab_accelerator_finish (G_PASTE_GNOME_SHELL_CLIENT (source_object), res, &error);
 
     if (error)
         g_warning ("Couldn't ungrab keybinding: %s", error->message);
+}
+
+static void
+_keybinding_ungrab_gnome_shell (_Keybinding *k)
+{
+    if (k->action)
+    {
+        g_paste_gnome_shell_client_ungrab_accelerator (k->shell_client, k->action, on_key_ungrabbed, NULL);
+        k->action = 0;
+    }
 }
 
 static void
