@@ -14,11 +14,9 @@ src/libgpaste/ui/gpaste-ui-empty.c
 src/libgpaste/ui/gpaste-ui-empty-item.c
 src/libgpaste/ui/gpaste-ui-settings.c
 src/libgpaste/ui/gpaste-ui-switch.c
+src/libgpaste/ui/gpaste-ui-window.c
 src/gnome-shell/extension.js
-src/applet/gpaste-applet.c
 src/daemon/gpaste-daemon.c
-src/settings/gpaste-settings.c
-src/ui/gpaste-ui.c
 src/gpaste/gpaste.c
 data/appstream/org.gnome.GPaste.Applet.appdata.xml.in
 data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in
