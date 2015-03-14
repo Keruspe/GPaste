@@ -17,10 +17,6 @@
 
 libgpaste_la_file = lib/libgpaste.la
 
-LIBGPASTE_CURRENT=3
-LIBGPASTE_REVISION=0
-LIBGPASTE_AGE=0
-
 lib_libgpaste_la_private_headers = \
 	src/libgpaste/gpaste-gdbus-macros.h \
 	src/libgpaste/applet/gpaste-applet-icon-private.h \
@@ -167,7 +163,7 @@ lib_libgpaste_la_LIBADD = \
 libgpaste_symbols_file = $(srcdir)/src/libgpaste/libgpaste.sym
 
 lib_libgpaste_la_LDFLAGS = \
-	-version-info $(LIBGPASTE_CURRENT):$(LIBGPASTE_REVISION):$(LIBGPASTE_AGE) \
+	-version-info $(LIBGPASTE_LT_VERSION) \
 	-Wl,--version-script=$(libgpaste_symbols_file) \
 	$(NULL)
 

@@ -1,7 +1,6 @@
 3.16:
     general:
         cleanup internal ctors
-        rework libtool versioning
 
     gpaste-ui:
         add appstream
