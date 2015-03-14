@@ -40,8 +40,6 @@ void     g_paste_daemon_show_history (GPasteDaemon *self,
 void     g_paste_daemon_upload       (GPasteDaemon *self,
                                       guint32       index);
 
-void     g_paste_daemon_activate_default_keybindings (GPasteDaemon *self);
-
 GPasteDaemon *g_paste_daemon_new (void);
 
 G_END_DECLS

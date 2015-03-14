@@ -663,19 +663,9 @@ _g_paste_daemon_upload (GPasteDaemon *self,
     g_paste_daemon_upload(self, g_paste_daemon_get_dbus_uint32_parameter (parameters));
 }
 
-/**
- * g_paste_daemon_activate_default_keybindings:
- * @self: (transfer none): the #GPasteDaemon
- *
- * Activate the default keybindings
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
+static void
 g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
 {
-    g_return_if_fail (G_PASTE_IS_DAEMON (self));
-
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GPasteKeybinder *keybinder = priv->keybinder;
     GPasteHistory *history = priv->history;
@@ -806,6 +796,8 @@ g_paste_daemon_unregister_object (gpointer user_data)
 
     if (priv->screensaver)
         g_signal_handler_disconnect (priv->screensaver,  c_signals[C_ACTIVE_CHANGED]);
+
+    priv->registered = FALSE;
 }
 
 static void
@@ -823,6 +815,9 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
                                               gboolean             active,
                                               gpointer             user_data G_GNUC_UNUSED)
 {
+    if (!priv->registered)
+        return;
+
     if (active)
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("");
@@ -835,15 +830,6 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
         if (item)
             g_paste_clipboards_manager_select (priv->clipboards_manager, item);
     }
-}
-
-static void
-connect_screensaver_signal (GPasteDaemonPrivate *priv)
-{
-    priv->c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
-                                                                  "active-changed",
-                                                                  G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
-                                                                  priv);
 }
 
 static void
@@ -886,11 +872,7 @@ g_paste_daemon_register_object (GPasteDaemon    *self,
                                                     "update",
                                                     G_CALLBACK (g_paste_daemon_on_history_update),
                                                     self);
-
     priv->registered = TRUE;
-
-    if (priv->screensaver)
-        connect_screensaver_signal (priv);
 }
 
 static gboolean
@@ -1011,8 +993,13 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
     GPasteDaemonPrivate *priv = user_data;
     GPasteScreensaverClient *screensaver = priv->screensaver = g_paste_screensaver_client_new_finish (res, NULL);
 
-    if (priv->registered && screensaver) /* object was registered before client was ready */
-        connect_screensaver_signal (priv);
+    if (screensaver) /* object was registered before client was ready */
+    {
+        priv->c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
+                                                                      "active-changed",
+                                                                      G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
+                                                                      priv);
+    }
 }
 
 static void
@@ -1020,12 +1007,14 @@ on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
                        GAsyncResult *res,
                        gpointer      user_data)
 {
-    GPasteDaemonPrivate *priv = user_data;
+    GPasteDaemon *self = user_data;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_finish (res, NULL);
 
-    priv->keybinder = g_paste_keybinder_new (priv->settings, shell_client);
-
     g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
+
+    priv->keybinder = g_paste_keybinder_new (priv->settings, shell_client);
+    g_paste_daemon_activate_default_keybindings (self);
 }
 
 static void
@@ -1055,7 +1044,7 @@ g_paste_daemon_init (GPasteDaemon *self)
 
     g_paste_history_load (history);
 
-    g_paste_gnome_shell_client_new (on_shell_client_ready, priv);
+    g_paste_gnome_shell_client_new (on_shell_client_ready, self);
 }
 
 /**

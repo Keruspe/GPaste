@@ -78,8 +78,6 @@ main (gint argc, gchar *argv[])
                                                gapp)
     };
 
-    g_paste_daemon_activate_default_keybindings (g_paste_daemon);
-
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
 
