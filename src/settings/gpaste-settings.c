@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-settings-ui-stack.h>
-#include <gpaste-util.h>
 
 gint
 main (gint argc, gchar *argv[])

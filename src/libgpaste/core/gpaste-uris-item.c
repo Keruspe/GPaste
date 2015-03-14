@@ -20,7 +20,6 @@
 #include "gpaste-item-private.h"
 
 #include <gpaste-uris-item.h>
-#include <gpaste-util.h>
 
 struct _GPasteUrisItem
 {

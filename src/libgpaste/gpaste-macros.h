@@ -28,7 +28,6 @@
 
 #include <gio/gio.h>
 #include <glib/gi18n-lib.h>
-#include <gtk/gtk.h>
 
 #include <stdlib.h>
 

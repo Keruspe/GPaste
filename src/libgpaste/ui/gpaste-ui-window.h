@@ -24,7 +24,7 @@
 #ifndef __G_PASTE_UI_WINDOW_H__
 #define __G_PASTE_UI_WINDOW_H__
 
-#include <gpaste-client.h>
+#include <gpaste-macros.h>
 
 G_BEGIN_DECLS
 

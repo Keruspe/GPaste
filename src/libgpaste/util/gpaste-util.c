@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-macros.h>
-#include <gpaste-util.h>
 
 #define LICENSE                                                            \
     "GPaste is free software: you can redistribute it and/or modify"       \

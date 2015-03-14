@@ -26,8 +26,6 @@
 
 #include <gpaste-item.h>
 
-#include <gdk-pixbuf/gdk-pixbuf.h>
-
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_IMAGE_ITEM (g_paste_image_item_get_type ())

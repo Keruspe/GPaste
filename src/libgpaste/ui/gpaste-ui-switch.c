@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-ui-switch.h>
-#include <gpaste-util.h>
 
 struct _GPasteUiSwitch
 {

@@ -20,7 +20,6 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-delete.h>
 #include <gpaste-ui-item.h>
-#include <gpaste-util.h>
 
 struct _GPasteUiItem
 {

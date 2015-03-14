@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-client.h>
-#include <gpaste-util.h>
 
 #include <getopt.h>
 #include <stdio.h>

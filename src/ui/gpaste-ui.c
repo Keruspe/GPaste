@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-ui-window.h>
-#include <gpaste-util.h>
 
 gint
 main (gint argc, gchar *argv[])

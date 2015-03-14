@@ -18,6 +18,7 @@
  */
 
 #include <gpaste-gdbus-defines.h>
+#include <gpaste-keybinder.h>
 #include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>
 #include <gpaste-screensaver-client.h>
@@ -27,7 +28,6 @@
 #include <gpaste-ui-keybinding.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-upload-keybinding.h>
-#include <gpaste-util.h>
 
 #include <string.h>
 

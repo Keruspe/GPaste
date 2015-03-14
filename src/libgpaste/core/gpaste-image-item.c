@@ -20,7 +20,6 @@
 #include "gpaste-item-private.h"
 
 #include <gpaste-image-item.h>
-#include <gpaste-util.h>
 
 #include <string.h>
 #include <sys/stat.h>

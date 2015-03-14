@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-ui-about.h>
-#include <gpaste-util.h>
 
 struct _GPasteUiAbout
 {
