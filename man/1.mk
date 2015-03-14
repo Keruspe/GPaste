@@ -18,11 +18,3 @@
 dist_man_MANS = \
 	man/1/gpaste.1 \
 	$(NULL)
-
-if ENABLE_APPLET
-dist_man_MANS += man/1/gpaste-applet.1
-endif
-
-if ENABLE_UNITY
-dist_man_MANS += man/1/gpaste-app-indicator.1
-endif
