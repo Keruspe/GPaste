@@ -76,7 +76,6 @@ const GPasteIndicator = new Lang.Class({
             can_focus: false
         });
 
-        this._addToPostHeader(new PopupMenu.PopupSeparatorMenuItem());
         this._addToPostHeader(this._dummyHistoryItem);
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
         this._addToFooter(this._actions);
