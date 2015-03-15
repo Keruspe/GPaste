@@ -121,7 +121,7 @@ G_BEGIN_DECLS
         "           <arg type='au' direction='in' name='indexes'    />"        \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "'>" \
-        "           <arg type='b' direction='in' />"                           \
+        "           <arg type='b' direction='in' name='extension-state' />"    \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_REEXECUTE "' />"                \
         "       <method name='" G_PASTE_DAEMON_RENAME_PASSWORD "'>"            \
