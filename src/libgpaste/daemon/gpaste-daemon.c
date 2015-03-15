@@ -145,19 +145,27 @@ g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
 }
 
 static void
+_variant_iter_read_strings_parameter (GVariantIter *parameters_iter,
+                                      gchar       **str1,
+                                      gchar       **str2)
+{
+    gsize length;
+
+    g_autoptr (GVariant) variant1 = g_variant_iter_next_value (parameters_iter);
+    *str1 = g_variant_dup_string (variant1, &length);
+    g_autoptr (GVariant) variant2 = g_variant_iter_next_value (parameters_iter);
+    *str2 = g_variant_dup_string (variant2, &length);
+}
+
+static void
 g_paste_daemon_get_dbus_strings_parameter (GVariant *parameters,
                                            gchar   **str1,
                                            gchar   **str2)
 {
     GVariantIter parameters_iter;
-    gsize length;
 
     g_variant_iter_init (&parameters_iter, parameters);
-
-    g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
-    *str1 = g_variant_dup_string (variant1, &length);
-    g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
-    *str2 = g_variant_dup_string (variant2, &length);
+    _variant_iter_read_strings_parameter (&parameters_iter, str1, str2);
 }
 
 static guint32
@@ -473,28 +481,29 @@ g_paste_daemon_private_merge (GPasteDaemonPrivate *priv,
                               GVariant            *parameters,
                               GPasteDBusError    **err)
 {
-    GPasteHistory *history = priv->history;
-    gsize history_length = g_paste_history_get_length (history);
     GVariantIter parameters_iter;
-    gsize length;
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    g_autoptr (GVariant) v_decoration = g_variant_iter_next_value (&parameters_iter);
-    g_autoptr (GVariant) v_separator  = g_variant_iter_next_value (&parameters_iter);
-    g_autoptr (GVariant) v_indexes    = g_variant_iter_next_value (&parameters_iter);
+    g_autofree gchar *decoration = NULL;
+    g_autofree gchar *separator  = NULL;
 
-    g_autofree gchar *decoration = g_variant_dup_string (v_decoration, &length);
-    g_autofree gchar *separator  = g_variant_dup_string (v_separator,  &length);
+    _variant_iter_read_strings_parameter (&parameters_iter, &decoration, &separator);
+
+    g_autoptr (GVariant) v_indexes = g_variant_iter_next_value (&parameters_iter);
+    gsize length;
     const guint32 *indexes = g_variant_get_fixed_array (v_indexes, &length, sizeof (guint32));
 
-    G_PASTE_CLEANUP_STRING_FREE GString *str = g_string_new (NULL);
+    GPasteHistory *history = priv->history;
+    gsize history_length = g_paste_history_get_length (history);
 
     G_PASTE_DBUS_ASSERT (length, "nothing to merge");
     for (gsize i = 0; i < length; ++i)
     {
         G_PASTE_DBUS_ASSERT (indexes[i] < history_length, "invalid index received");
     }
+
+    G_PASTE_CLEANUP_STRING_FREE GString *str = g_string_new (NULL);
 
     for (gsize i = 0; i < length; ++i)
     {
