@@ -30,7 +30,11 @@ const GPasteSearchItem = new Lang.Class({
     Extends: PopupMenu.PopupBaseMenuItem,
 
     _init: function () {
-        this.parent({activate: false, reactive: true});
+        this.parent({
+            activate: false,
+            reactive: true,
+            can_focus: false
+        });
 
         this._entry = new St.Entry({
             name: 'GPasteSearchEntry',
@@ -39,7 +43,7 @@ const GPasteSearchItem = new Lang.Class({
             reactive: true,
             can_focus: true
         });
-        this.actor.add(new St.Bin({child: this._entry, x_align: St.Align.MIDDLE}), { expand: true });
+        this.actor.add(this._entry, { expand: true });
 
         this._entry.set_primary_icon(new St.Icon({
             style_class:'search-entry-icon',
