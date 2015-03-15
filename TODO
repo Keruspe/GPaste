@@ -15,7 +15,6 @@
 future:
     general:
         wayland support
-        add class methods for signals
         gpg support
         properties all the way (when GProperty stuff lands)
     libgpaste-client:
