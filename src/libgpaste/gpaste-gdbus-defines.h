@@ -73,92 +73,92 @@ G_BEGIN_DECLS
         "   <interface name='" G_PASTE_DAEMON_INTERFACE_NAME "'>"              \
         "       <method name='" G_PASTE_DAEMON_ABOUT "' />"                    \
         "       <method name='" G_PASTE_DAEMON_ADD "'>"                        \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='text' />"               \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ADD_FILE "'>"                   \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='file' />"               \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ADD_PASSWORD "'>"               \
-        "           <arg type='s' direction='in' />"                           \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='name'     />"           \
+        "           <arg type='s' direction='in' name='password' />"           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_BACKUP_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='name' />"               \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_DELETE "'>"                     \
-        "           <arg type='u' direction='in' />"                           \
+        "           <arg type='u' direction='in' name='index' />"              \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_DELETE_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='name' />"               \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_DELETE_PASSWORD "'>"            \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='name' />"               \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_EMPTY "' />"                    \
         "       <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
-        "           <arg type='u' direction='in' />"                           \
-        "           <arg type='s' direction='out' />"                          \
+        "           <arg type='u' direction='in'  name='index' />"             \
+        "           <arg type='s' direction='out' name='value' />"             \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_GET_HISTORY "'>"                \
-        "           <arg type='as' direction='out' />"                         \
+        "           <arg type='as' direction='out' name='history' />"          \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_GET_HISTORY_SIZE "'>"           \
-        "           <arg type='u' direction='out' />"                          \
+        "           <arg type='u' direction='out' name='size' />"              \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_GET_RAW_ELEMENT "'>"            \
-        "           <arg type='u' direction='in' />"                           \
-        "           <arg type='s' direction='out' />"                          \
+        "           <arg type='u' direction='in'  name='index' />"             \
+        "           <arg type='s' direction='out' name='value' />"             \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_GET_RAW_HISTORY "'>"            \
-        "           <arg type='as' direction='out' />"                         \
+        "           <arg type='as' direction='out' name='history' />"          \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_LIST_HISTORIES "'>"             \
-        "           <arg type='as' direction='out' />"                         \
+        "           <arg type='as' direction='out' name='histories' />"        \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_MERGE "'>"                      \
-        "           <arg type='s' direction='in' />"                           \
-        "           <arg type='s' direction='in' />"                           \
-        "           <arg type='au' direction='in' />"                          \
+        "           <arg type='s' direction='in'  name='decoration' />"        \
+        "           <arg type='s' direction='in'  name='separator'  />"        \
+        "           <arg type='au' direction='in' name='indexes'    />"        \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "'>" \
         "           <arg type='b' direction='in' />"                           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_REEXECUTE "' />"                \
         "       <method name='" G_PASTE_DAEMON_RENAME_PASSWORD "'>"            \
-        "           <arg type='s' direction='in' />"                           \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='old-name' />"           \
+        "           <arg type='s' direction='in' name='new-name' />"           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_SEARCH "'>"                     \
-        "           <arg type='s' direction='in' />"                           \
-        "           <arg type='au' direction='out' />"                         \
+        "           <arg type='s' direction='in'   name='query'   />"          \
+        "           <arg type='au' direction='out' name='results' />"          \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_SELECT "'>"                     \
-        "           <arg type='u' direction='in' />"                           \
+        "           <arg type='u' direction='in' name='index' />"              \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_SET_PASSWORD "'>"               \
-        "           <arg type='u' direction='in' />"                           \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='u' direction='in' name='index' />"              \
+        "           <arg type='s' direction='in' name='name'  />"              \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_SHOW_HISTORY "' />"             \
         "       <method name='" G_PASTE_DAEMON_SWITCH_HISTORY "'>"             \
-        "           <arg type='s' direction='in' />"                           \
+        "           <arg type='s' direction='in' name='name' />"               \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_TRACK "'>"                      \
-        "           <arg type='b' direction='in' />"                           \
+        "           <arg type='b' direction='in' name='tracking-state' />"     \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_UPLOAD "'>"                     \
-        "           <arg type='u' direction='in' />"                           \
+        "           <arg type='u' direction='in' name='index' />"              \
         "       </method>"                                                     \
         "       <signal name='" G_PASTE_DAEMON_SIG_NAME_LOST "' />"            \
         "       <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \
         "       <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "       <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
-        "           <arg type='b' direction='out' />"                          \
+        "           <arg type='b' direction='out' name='tracking-state' />"    \
         "       </signal>"                                                     \
         "       <signal name='" G_PASTE_DAEMON_SIG_UPDATE "'>"                 \
-        "           <arg type='s' direction='out' />"                          \
-        "           <arg type='s' direction='out' />"                          \
-        "           <arg type='u' direction='out' />"                          \
+        "           <arg type='s' direction='out' name='action' />"            \
+        "           <arg type='s' direction='out' name='target' />"            \
+        "           <arg type='u' direction='out' name='index'  />"            \
         "       </signal>"                                                     \
         "       <property name='" G_PASTE_DAEMON_PROP_ACTIVE "'"               \
         "                 type='b' access='read' />"                           \
