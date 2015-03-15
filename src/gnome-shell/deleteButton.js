@@ -32,8 +32,7 @@ const GPasteDeleteButton = new Lang.Class({
 
         this.child = new St.Icon({
             icon_name: 'edit-delete-symbolic',
-            style_class: 'system-status-icon',
-            icon_size: 16
+            style_class: 'popup-menu-icon'
         });
 
         this._client = client;
