@@ -435,10 +435,12 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "g") ||
                      !g_strcmp0 (arg1, "get"))
             {
-                if (!raw)
-                    printf ("%s", g_paste_client_get_element_sync (client, _strtoull (arg2), &error));
-                else
-                    printf ("%s", g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error));
+                const gchar *value = (!raw) ?
+                    g_paste_client_get_element_sync (client, _strtoull (arg2), &error) :
+                    g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error);
+
+                if (!error)
+                    printf ("%s", value);
             }
             else if (!g_strcmp0 (arg1, "search"))
             {
