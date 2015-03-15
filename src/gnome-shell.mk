@@ -31,7 +31,6 @@ gnomeshell_extension_files = \
 	src/gnome-shell/searchItem.js \
 	src/gnome-shell/stateSwitch.js \
 	src/gnome-shell/statusIcon.js \
-	src/gnome-shell/stylesheet.css \
 	src/gnome-shell/uiItem.js \
 	$(NULL)
 
