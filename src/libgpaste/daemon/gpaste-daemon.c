@@ -397,9 +397,12 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
                                     GVariant            *parameters,
                                     GPasteDBusError    **err)
 {
-    /* TODO: validate index */
-    const gchar *value = g_paste_history_get_display_string (priv->history,
-                                                             g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    GPasteHistory *history = priv->history;
+    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
+
+    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+
+    const gchar *value = g_paste_history_get_display_string (history, index);
 
     G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
 
@@ -436,9 +439,12 @@ g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
                                         GVariant            *parameters,
                                         GPasteDBusError    **err)
 {
-    /* TODO: validate index */
-    const gchar *value = g_paste_history_get_value (priv->history,
-                                                    g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    GPasteHistory *history = priv->history;
+    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
+
+    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+
+    const gchar *value = g_paste_history_get_value (priv->history, index);
 
     G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
 
