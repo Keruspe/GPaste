@@ -252,16 +252,16 @@ const GPasteIndicator = new Lang.Class({
 
     _popup: function() {
         this.menu.open(true);
-        this._selectSearch(true);
+        this._selectSearch();
     },
 
     _toggle: function(c, state) {
         this._switch.toggle(state);
     },
 
-    _selectSearch: function(active) {
+    _selectSearch: function() {
         if (this._history.length > 0) {
-            this._searchItem.setActive(active);
+            this._searchItem.grabFocus();
         }
     },
 

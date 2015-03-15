@@ -52,8 +52,6 @@ const GPasteSearchItem = new Lang.Class({
             icon_name: 'edit-clear-symbolic'
         });
         this._iconClickedId = 0;
-
-        this.actor.connect('key-focus-in', Lang.bind(this, this._onKeyFocusIn));
     },
 
     get text() {
@@ -71,6 +69,10 @@ const GPasteSearchItem = new Lang.Class({
         text.set_selection(0, 0);
     },
 
+    grabFocus: function() {
+        this._entry.grab_key_focus();
+    },
+
     _onTextChanged: function(se, prop) {
         let dummy = (this.text.length == 0);
         this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
@@ -78,9 +80,5 @@ const GPasteSearchItem = new Lang.Class({
             this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this.reset));
         }
         this.emit('text-changed');
-    },
-
-    _onKeyFocusIn: function() {
-        this._entry.grab_key_focus();
     }
 });
