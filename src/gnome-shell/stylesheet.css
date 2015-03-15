@@ -17,6 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#GPasteSearchEntry {
+#GPasteSearchEntry, #GPasteSearchEntry:focus {
 	padding: 0.2em 1em;
+        border-width: 2px;
 }
