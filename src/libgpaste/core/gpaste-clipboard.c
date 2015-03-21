@@ -391,7 +391,8 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     {
         if (data->callback)
             data->callback (self, NULL, data->user_data);
-        g_object_unref (image);
+        // FIXME: double
+        // g_object_unref (image);
     }
 }
 

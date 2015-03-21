@@ -239,7 +239,8 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
     {
         if (data->track)
             item = G_PASTE_ITEM (g_paste_image_item_new (image));
-        g_object_unref (image);
+        // FIXME: too early because of async gtk stuff
+        // g_object_unref (image);
     }
 
     g_paste_clipboards_manager_notify_finish (priv, clipboard, item, NULL, something_in_clipboard);
