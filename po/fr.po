@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-15 00:23+0100\n"
+"POT-Creation-Date: 2015-03-21 17:19+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -167,7 +167,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "Téléverser l'élément actif vers un sevice type pastebin : "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
-#: ../src/gpaste/gpaste.c:180
+#: ../src/libgpaste/ui/gpaste-ui-window.c:52 ../src/gpaste/gpaste.c:180
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 

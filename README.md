@@ -42,6 +42,6 @@ You can see everything I'll post about GPaste [there](http://www.imagination-lan
 
 This is the development branch for GNOME 3.16
 
-Latest release for GNOME 3.14 is: [GPaste 3.14.2](http://www.imagination-land.org/posts/2015-03-07-gpaste-3.14.2-released.html).
+Latest release for GNOME 3.14 is: [GPaste 3.14.3](http://www.imagination-land.org/posts/2015-03-21-gpaste-3.14.3-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.14.2.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.14.3.tar.xz>
