@@ -1,8 +1,6 @@
 3.16:
     gpaste-ui:
         add appstream
-    general:
-        cleanup GString
 
 3.18:
     general:

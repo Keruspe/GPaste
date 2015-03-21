@@ -326,11 +326,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
             guint length = g_strv_length ((GStrv) uris);
 
             for (guint i = 0; i < length; ++i)
-            {
-                g_string_append (g_string_append (copy_string,
-                                                  "\n"),
-                                 uris[i]);
-            }
+                g_string_append_printf (copy_string, "\n%s", uris[i]);
 
             gchar *str = copy_string->str;
             length = copy_string->len + 1;
