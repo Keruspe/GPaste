@@ -284,7 +284,6 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 
     /* Let the clipboards manager handle our internal text */
     gtk_clipboard_set_text (real, text, -1);
-    gtk_clipboard_store (real);
 }
 
 static void
@@ -367,8 +366,6 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
                                   g_paste_clipboard_get_clipboard_data,
                                   g_paste_clipboard_clear_clipboard_data,
                                   g_object_ref (item));
-    gtk_clipboard_store (real);
-
     gtk_target_table_free (targets, n_targets);
 }
 
@@ -412,7 +409,6 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
 
     g_paste_clipboard_private_set_image_checksum (priv, checksum);
     gtk_clipboard_set_image (real, image);
-    gtk_clipboard_store (real);
 }
 
 typedef struct {
