@@ -24,8 +24,7 @@
 #ifndef __G_PASTE_CLIPBOARD_H__
 #define __G_PASTE_CLIPBOARD_H__
 
-#include <gpaste-item.h>
-#include <gpaste-settings.h>
+#include <gpaste-history.h>
 
 G_BEGIN_DECLS
 
@@ -52,6 +51,8 @@ typedef void (*GPasteClipboardImageCallback) (GPasteClipboard *self,
 G_PASTE_VISIBLE
 GType g_paste_clipboard_get_type (void);
 
+void          g_paste_clipboard_bootstrap   (GPasteClipboard *self,
+                                             GPasteHistory   *history);
 GdkAtom       g_paste_clipboard_get_target  (const GPasteClipboard *self);
 GtkClipboard *g_paste_clipboard_get_real    (const GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_text    (const GPasteClipboard *self);

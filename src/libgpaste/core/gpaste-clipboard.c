@@ -47,6 +47,71 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+static void
+g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
+                                    GPasteHistory   *history)
+{
+    GPasteClipboardPrivate  *priv = g_paste_clipboard_get_instance_private (self);
+
+    if (!priv->text && !priv->image_checksum)
+    {
+        const GSList *h = g_paste_history_get_history (history);
+        if (h)
+            g_paste_clipboard_select_item (self, h->data);
+    }
+}
+
+static void
+g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
+                                         const gchar     *text G_GNUC_UNUSED,
+                                         gpointer         user_data)
+{
+    g_paste_clipboard_bootstrap_finish (self, user_data);
+}
+
+static void
+g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
+                                          GdkPixbuf       *image,
+                                          gpointer         user_data)
+{
+    g_clear_object (&image);
+    g_paste_clipboard_bootstrap_finish (self, user_data);
+}
+
+/**
+ * g_paste_clipboard_bootstrap:
+ * @self: a #GPasteClipboard instance
+ * @history: a #GPasteHistory instance
+ *
+ * Bootstrap a #GPasteClipboard with an initial value
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_bootstrap (GPasteClipboard *self,
+                             GPasteHistory   *history)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (history));
+
+    GPasteClipboardPrivate  *priv = g_paste_clipboard_get_instance_private (self);
+    GtkClipboard *real = priv->real;
+
+    if (gtk_clipboard_wait_is_uris_available (real) ||
+        gtk_clipboard_wait_is_text_available (real))
+    {
+        g_paste_clipboard_set_text (self,
+                                    g_paste_clipboard_bootstrap_finish_text,
+                                    history);
+    }
+    else if (gtk_clipboard_wait_is_image_available (real))
+    {
+        g_paste_clipboard_set_image (self,
+                                     g_paste_clipboard_bootstrap_finish_image,
+                                     history);
+    }
+}
+
 /**
  * g_paste_clipboard_get_target:
  * @self: a #GPasteClipboard instance

@@ -367,6 +367,8 @@ global:
     g_paste_client_show_history_finish;
     g_paste_client_show_history_sync;
 
+    g_paste_clipboard_bootstrap;
+
     g_paste_history_search;
 
     g_paste_screensaver_client_get_type;
