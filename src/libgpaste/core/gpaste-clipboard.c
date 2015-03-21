@@ -448,17 +448,14 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
         g_paste_clipboard_private_select_image (priv,
                                                 image,
                                                 checksum);
-
-        if (data->callback)
-            data->callback (self, image, data->user_data);
     }
     else
     {
-        if (data->callback)
-            data->callback (self, NULL, data->user_data);
-        // FIXME: double
-        // g_object_unref (image);
+        g_clear_object (&image);
     }
+
+    if (data->callback)
+        data->callback (self, image, data->user_data);
 }
 
 /**
