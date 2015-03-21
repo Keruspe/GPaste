@@ -1,6 +1,8 @@
 3.16:
     gpaste-ui:
         add appstream
+    general:
+        cleanup GString
 
 3.18:
     general:
@@ -14,6 +16,7 @@
 
 future:
     general:
+        redo gtk_clipboard_store?
         wayland support
         gpg support
         properties all the way (when GProperty stuff lands)
