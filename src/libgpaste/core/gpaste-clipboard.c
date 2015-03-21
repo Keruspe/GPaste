@@ -407,7 +407,7 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
                                         GdkPixbuf              *image,
                                         const gchar            *checksum)
 {
-    g_return_if_fail (image);
+    g_return_if_fail (GDK_IS_PIXBUF (image));
 
     GtkClipboard *real = priv->real;
 
