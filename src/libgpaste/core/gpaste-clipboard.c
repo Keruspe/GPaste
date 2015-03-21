@@ -71,10 +71,9 @@ g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
 
 static void
 g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
-                                          GdkPixbuf       *image,
+                                          GdkPixbuf       *image G_GNUC_UNUSED,
                                           gpointer         user_data)
 {
-    g_clear_object (&image);
     g_paste_clipboard_bootstrap_finish (self, user_data);
 }
 
@@ -451,7 +450,7 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     }
     else
     {
-        g_clear_object (&image);
+        image = NULL;
     }
 
     if (data->callback)
