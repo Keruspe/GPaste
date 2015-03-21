@@ -51,6 +51,70 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
+static void
+g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
+                                    GPasteHistory   *history)
+{
+    GPasteClipboardPrivate  *priv = g_paste_clipboard_get_instance_private (self);
+
+    if (!priv->text && !priv->image_checksum)
+    {
+        const GSList *h = g_paste_history_get_history (history);
+        if (h)
+            g_paste_clipboard_select_item (self, h->data);
+    }
+}
+
+static void
+g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
+                                         const gchar     *text G_GNUC_UNUSED,
+                                         gpointer         user_data)
+{
+    g_paste_clipboard_bootstrap_finish (self, user_data);
+}
+
+static void
+g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
+                                          GdkPixbuf       *image G_GNUC_UNUSED,
+                                          gpointer         user_data)
+{
+    g_paste_clipboard_bootstrap_finish (self, user_data);
+}
+
+/**
+ * g_paste_clipboard_bootstrap:
+ * @self: a #GPasteClipboard instance
+ * @history: a #GPasteHistory instance
+ *
+ * Bootstrap a #GPasteClipboard with an initial value
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_bootstrap (GPasteClipboard *self,
+                             GPasteHistory   *history)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (history));
+
+    GPasteClipboardPrivate  *priv = g_paste_clipboard_get_instance_private (self);
+    GtkClipboard *real = priv->real;
+
+    if (gtk_clipboard_wait_is_uris_available (real) ||
+        gtk_clipboard_wait_is_text_available (real))
+    {
+        g_paste_clipboard_set_text (self,
+                                    g_paste_clipboard_bootstrap_finish_text,
+                                    history);
+    }
+    else if (gtk_clipboard_wait_is_image_available (real))
+    {
+        g_paste_clipboard_set_image (self,
+                                     g_paste_clipboard_bootstrap_finish_image,
+                                     history);
+    }
+}
+
 /**
  * g_paste_clipboard_get_target:
  * @self: a #GPasteClipboard instance
@@ -224,7 +288,6 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 
     /* Let the clipboards manager handle our internal text */
     gtk_clipboard_set_text (real, text, -1);
-    gtk_clipboard_store (real);
 }
 
 static void
@@ -307,8 +370,6 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
                                   g_paste_clipboard_get_clipboard_data,
                                   g_paste_clipboard_clear_clipboard_data,
                                   g_object_ref (item));
-    gtk_clipboard_store (real);
-
     gtk_target_table_free (targets, n_targets);
 }
 
@@ -346,13 +407,12 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
                                         GdkPixbuf              *image,
                                         const gchar            *checksum)
 {
-    g_return_if_fail (image);
+    g_return_if_fail (GDK_IS_PIXBUF (image));
 
     GtkClipboard *real = priv->real;
 
     g_paste_clipboard_private_set_image_checksum (priv, checksum);
     gtk_clipboard_set_image (real, image);
-    gtk_clipboard_store (real);
 }
 
 typedef struct {
@@ -387,16 +447,14 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
         g_paste_clipboard_private_select_image (priv,
                                                 image,
                                                 checksum);
-
-        if (data->callback)
-            data->callback (self, image, data->user_data);
     }
     else
     {
-        if (data->callback)
-            data->callback (self, NULL, data->user_data);
-        g_object_unref (image);
+        image = NULL;
     }
+
+    if (data->callback)
+        data->callback (self, image, data->user_data);
 }
 
 /**

@@ -37,36 +37,6 @@ typedef struct
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)
 
-static void
-g_paste_clipboards_manager_add_clipboard_finish (GPasteClipboardsManagerPrivate *priv,
-                                                 GPasteClipboard                *clipboard)
-{
-    if (!g_paste_clipboard_get_text (clipboard) &&
-        !g_paste_clipboard_get_image_checksum (clipboard))
-    {
-        const GSList *history = g_paste_history_get_history (priv->history);
-        if (history)
-            g_paste_clipboard_select_item (clipboard, history->data);
-    }
-}
-
-static void
-g_paste_clipboards_manager_on_text_ready (GPasteClipboard *clipboard,
-                                          const gchar     *text G_GNUC_UNUSED,
-                                          gpointer         user_data)
-{
-    g_paste_clipboards_manager_add_clipboard_finish (user_data, clipboard);
-}
-
-static void
-g_paste_clipboards_manager_on_image_ready (GPasteClipboard *clipboard,
-                                           GdkPixbuf       *image,
-                                           gpointer         user_data)
-{
-    g_clear_object (&image);
-    g_paste_clipboards_manager_add_clipboard_finish (user_data, clipboard);
-}
-
 /**
  * g_paste_clipboards_manager_add_clipboard:
  * @self: a #GPasteClipboardsManager instance
@@ -84,23 +54,9 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (clipboard));
 
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
-    GtkClipboard *real = g_paste_clipboard_get_real (clipboard);
 
     priv->clipboards = g_slist_prepend (priv->clipboards, g_object_ref (clipboard));
-
-    if (gtk_clipboard_wait_is_uris_available (real) ||
-        gtk_clipboard_wait_is_text_available (real))
-    {
-        g_paste_clipboard_set_text (clipboard,
-                                    g_paste_clipboards_manager_on_text_ready,
-                                    priv);
-    }
-    else if (gtk_clipboard_wait_is_image_available (real))
-    {
-        g_paste_clipboard_set_image (clipboard,
-                                     g_paste_clipboards_manager_on_image_ready,
-                                     priv);
-    }
+    g_paste_clipboard_bootstrap (clipboard, priv->history);
 }
 
 static void
@@ -238,12 +194,8 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
     gboolean something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clipboard);
 
     /* If our contents got updated */
-    if (image)
-    {
-        if (data->track)
-            item = G_PASTE_ITEM (g_paste_image_item_new (image));
-        g_object_unref (image);
-    }
+    if (image && data->track)
+        item = G_PASTE_ITEM (g_paste_image_item_new (image));
 
     g_paste_clipboards_manager_notify_finish (priv, clipboard, item, NULL, something_in_clipboard);
 }

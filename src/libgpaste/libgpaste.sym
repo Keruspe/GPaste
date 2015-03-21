@@ -106,6 +106,7 @@ global:
     g_paste_client_upload_finish;
     g_paste_client_upload_sync;
 
+    g_paste_clipboard_bootstrap;
     g_paste_clipboard_get_image_checksum;
     g_paste_clipboard_get_real;
     g_paste_clipboard_get_target;

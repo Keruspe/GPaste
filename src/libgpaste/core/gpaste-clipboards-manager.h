@@ -25,7 +25,6 @@
 #define __G_PASTE_CLIPBOARDS_MANAGER_H__
 
 #include <gpaste-clipboard.h>
-#include <gpaste-history.h>
 
 G_BEGIN_DECLS
 
