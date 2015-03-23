@@ -1,12 +1,11 @@
 /Makefile
 /bin/*
 /tests/bin/*
+/data/appstream/*.appdata.xml
 /data/control-center/*.xml
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
 /data/dbus/*.service
-/data/appdata/*.appdata.xml
-/data/appdata/*.appdata.valid
 /bindings/gi
 /data/pkg-config/*.pc
 /man/*.1
