@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application>
+  <id type="desktop">org.gnome.GPaste.Ui.desktop</id>
+  <licence>CC-BY-SA</licence>
+  <_name>GPaste Ui</_name>
+  <_summary>GPaste graphical interface</_summary>
+  <description>
+    <_p>
+      GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
+    </_p>
+    <_p>
+      GPaste provides you with a graphical tool allowing you to manage everything easily.
+    </_p>
+  </description>
+  <url type="homepage">http://www.imagination-land.org/tags/GPaste.html</url>
+  <screenshots>
+    <screenshot width="748" height="548" type="default">http://www.imagination-land.org/images/GPaste/2/Ui-1.png</screenshot>
+    <screenshot width="748" height="548">http://www.imagination-land.org/images/GPaste/2/Ui-2.png</screenshot>
+    <screenshot width="748" height="548">http://www.imagination-land.org/images/GPaste/2/Ui-3.png</screenshot>
+    <screenshot width="748" height="548">http://www.imagination-land.org/images/GPaste/2/Ui-4.png</screenshot>
+    <screenshot width="748" height="548">http://www.imagination-land.org/images/GPaste/2/Ui-5.png</screenshot>
+  </screenshots>
+  <updatecontact>Marc-Antoine@Perennou.com</updatecontact>
+</application>
