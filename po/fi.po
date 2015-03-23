@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-23 20:16+0100\n"
+"POT-Creation-Date: 2015-03-23 21:51+0100\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -523,6 +523,7 @@ msgstr "Tehtäväpalkin kuvake"
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:3
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -563,6 +564,21 @@ msgid ""
 "behaviour as expected."
 msgstr ""
 
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
+msgid "GPaste user interface"
+msgstr ""
+
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:2
+msgid "GPaste graphical interface"
+msgstr ""
+
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:4
+msgid ""
+"GPaste provides you with a graphical tool allowing you to manage everything "
+"easily."
+msgstr ""
+
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:3
 #: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:3
 msgid "Clipboard;Manager;"
@@ -575,10 +591,6 @@ msgstr "Hallitse GPaste palvelun asetuksia"
 #: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:3
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
-
-#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
-msgid "GPaste user interface"
 msgstr ""
 
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2

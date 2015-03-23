@@ -473,7 +473,7 @@ static GVariant *
 g_paste_daemon_list_histories (GError **error)
 {
     g_auto (GStrv) history_names = g_paste_history_list (error);
-    
+
     if (!history_names)
         return NULL;
 

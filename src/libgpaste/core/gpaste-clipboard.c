@@ -19,7 +19,6 @@
 
 #include <gpaste-clipboard.h>
 #include <gpaste-image-item.h>
-#include <gpaste-password-item.h>
 #include <gpaste-uris-item.h>
 
 #include <string.h>
