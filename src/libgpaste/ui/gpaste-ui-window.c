@@ -36,7 +36,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
 static void
 _sleep_hack (GtkWidget *w) /* wait for window to be ok before spawning prefs */
 {
-    while (!gtk_widget_get_visible (priv->settings));
+    while (!gtk_widget_get_visible (w));
     g_usleep (10000);
 }
 
