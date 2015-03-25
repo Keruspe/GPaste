@@ -177,6 +177,36 @@ g_paste_util_spawn_sync (const gchar *app,
     g_return_val_if_fail (g_utf8_validate (app, -1, NULL), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 
+    g_autoptr (GDBusProxy) proxy = _bus_proxy_new_sync (app, error);
+
+    if (!proxy)
+        return FALSE;
+
+    /* We only consume it */
+    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()), G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
+
+    return TRUE;
+}
+
+/**
+ * g_paste_util_activate_sync:
+ * @app: the GPaste app to spawn
+ * @action: the action to activate
+ * @error: a #GError or %NULL
+ *
+ * activate an action from a GPaste app
+ *
+ * Returns: whether the action was successful
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_activate_sync (const gchar *app,
+                            const gchar *action,
+                            GError     **error)
+{
+    g_return_val_if_fail (g_utf8_validate (app, -1, NULL), FALSE);
+    g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
+    g_return_val_if_fail (!error || !(*error), FALSE);
+
     g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
     g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
@@ -191,11 +221,17 @@ g_paste_util_spawn_sync (const gchar *app,
     if (!proxy)
         return FALSE;
 
-    GVariant *param = g_variant_new ("a{sv}", NULL);
-    GVariant *params = g_variant_new_tuple (&param, 1);
-
     /* We only consume it */
-    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
+    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
+                                                                     "ActivateAction",
+                                                                     g_variant_new ("(sav@a{sv})",
+                                                                                    action,
+                                                                                    g_variant_new_fixed_array (G_VARIANT_TYPE_VARIANT, NULL, 0, sizeof (GVariant *)),
+                                                                                    app_get_platform_data ()),
+                                                                     G_DBUS_CALL_FLAGS_NONE,
+                                                                     -1,
+                                                                     NULL, /* cancellable */
+                                                                     error);
 
     return TRUE;
 }
