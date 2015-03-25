@@ -361,7 +361,11 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "p")        ||
                      !g_strcmp0 (arg1, "preferences"))
             {
-                status = spawn ("Settings");
+                if (!g_paste_util_activate_sync ("Ui", "prefs", &error))
+                {
+                    g_critical ("%s Ui: %s", _("Couldn't spawn"), error->message);
+                    return EXIT_FAILURE;
+                }
             }
             else if (!g_strcmp0 (arg1, "show-history"))
             {
