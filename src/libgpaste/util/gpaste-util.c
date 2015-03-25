@@ -221,12 +221,16 @@ g_paste_util_activate_sync (const gchar *app,
     if (!proxy)
         return FALSE;
 
+    GVariantBuilder params;
+
+    g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
+
     /* We only consume it */
     G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
                                                                      "ActivateAction",
                                                                      g_variant_new ("(sav@a{sv})",
                                                                                     action,
-                                                                                    g_variant_new_array (G_VARIANT_TYPE_VARIANT, NULL, 0),
+                                                                                    &params,
                                                                                     app_get_platform_data ()),
                                                                      G_DBUS_CALL_FLAGS_NONE,
                                                                      -1,
