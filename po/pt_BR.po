@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-23 21:51+0100\n"
+"POT-Creation-Date: 2015-03-25 09:57+0100\n"
 "PO-Revision-Date: 2014-07-09 18:47-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -36,7 +36,6 @@ msgid "Quit"
 msgstr "Sair"
 
 #: ../src/libgpaste/applet/gpaste-applet-settings.c:60
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Configurações do daemon GPaste"
 
@@ -227,7 +226,6 @@ msgid "(Empty)"
 msgstr "(Vazio)"
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:42
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
 msgid "GPaste Settings"
 msgstr "Configurações do GPaste"
 
@@ -518,7 +516,6 @@ msgstr "Ícone da bandeja para gerenciar o GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
@@ -553,18 +550,6 @@ msgstr ""
 "O GPaste fornece um aplicativo indicador para o unity que dá acesso ao seu "
 "histórico a partir da área de indicações."
 
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:2
-msgid "Manage GPaste settings"
-msgstr "Gerenciar as configurações do GPaste"
-
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:4
-msgid ""
-"GPaste provides you with a settings utility allowing you to customize its "
-"behaviour as expected."
-msgstr ""
-"O GPaste fornece um utilitário de configurações que permite personalizar o "
-"comportamento da maneira como você espera."
-
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
 msgid "GPaste user interface"
@@ -588,19 +573,14 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr ""
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
-msgid "Manage the GPaste daemon settings"
-msgstr "Gerenciar as configurações do daemon GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:3
-#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
-msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
-
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
 #, fuzzy
 msgid "Manage GPaste"
 msgstr "Gerenciar as configurações do GPaste"
+
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"
@@ -842,6 +822,19 @@ msgid ""
 msgstr ""
 "Por padrão,  a combinação de teclas ctrl + alt + v faz isso (\"&lt;Ctrl&gt;"
 "&lt;Alt&gt;V\"). Deixar vazio aqui desabilita essa funcionalidade."
+
+#~ msgid "Manage GPaste settings"
+#~ msgstr "Gerenciar as configurações do GPaste"
+
+#~ msgid ""
+#~ "GPaste provides you with a settings utility allowing you to customize its "
+#~ "behaviour as expected."
+#~ msgstr ""
+#~ "O GPaste fornece um utilitário de configurações que permite personalizar "
+#~ "o comportamento da maneira como você espera."
+
+#~ msgid "Manage the GPaste daemon settings"
+#~ msgstr "Gerenciar as configurações do daemon GPaste"
 
 #~ msgid "Stop tracking changes"
 #~ msgstr "Parar o monitoramento"

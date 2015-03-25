@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-23 21:51+0100\n"
+"POT-Creation-Date: 2015-03-25 09:57+0100\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -35,7 +35,6 @@ msgid "Quit"
 msgstr "Lopeta"
 
 #: ../src/libgpaste/applet/gpaste-applet-settings.c:60
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "GPaste palvelun asetukset"
 
@@ -226,7 +225,6 @@ msgid "(Empty)"
 msgstr "(Tyhjä)"
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:42
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
 #, fuzzy
 msgid "GPaste Settings"
 msgstr "GPaste palvelun asetukset"
@@ -522,7 +520,6 @@ msgstr "Tehtäväpalkin kuvake"
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
@@ -553,17 +550,6 @@ msgid ""
 "you access to your history in your indicator area."
 msgstr ""
 
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:2
-#, fuzzy
-msgid "Manage GPaste settings"
-msgstr "Hallitse GPaste palvelun asetuksia"
-
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:4
-msgid ""
-"GPaste provides you with a settings utility allowing you to customize its "
-"behaviour as expected."
-msgstr ""
-
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
 msgid "GPaste user interface"
@@ -584,19 +570,14 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr ""
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
-msgid "Manage the GPaste daemon settings"
-msgstr "Hallitse GPaste palvelun asetuksia"
-
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:3
-#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
-msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
-
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
 #, fuzzy
 msgid "Manage GPaste"
 msgstr "Hallitse GPaste palvelun asetuksia"
+
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"
@@ -821,6 +802,13 @@ msgid ""
 msgstr ""
 "Oletuksena näppäinyhdistelmä ctrl + alt + v tekee tämän(\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
+
+#, fuzzy
+#~ msgid "Manage GPaste settings"
+#~ msgstr "Hallitse GPaste palvelun asetuksia"
+
+#~ msgid "Manage the GPaste daemon settings"
+#~ msgstr "Hallitse GPaste palvelun asetuksia"
 
 #, fuzzy
 #~ msgid "Stop tracking changes"

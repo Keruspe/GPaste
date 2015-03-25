@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-23 21:51+0100\n"
+"POT-Creation-Date: 2015-03-25 09:57+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -36,7 +36,6 @@ msgid "Quit"
 msgstr "Salir"
 
 #: ../src/libgpaste/applet/gpaste-applet-settings.c:60
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Ajustes del servicio GPaste"
 
@@ -227,7 +226,6 @@ msgid "(Empty)"
 msgstr "(Vacío)"
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:42
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
 #, fuzzy
 msgid "GPaste Settings"
 msgstr "Ajustes del servicio GPaste"
@@ -525,7 +523,6 @@ msgstr "Icono de notificación para GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
@@ -556,17 +553,6 @@ msgid ""
 "you access to your history in your indicator area."
 msgstr ""
 
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:2
-#, fuzzy
-msgid "Manage GPaste settings"
-msgstr "Gestionar los ajustes del servicio GPaste"
-
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:4
-msgid ""
-"GPaste provides you with a settings utility allowing you to customize its "
-"behaviour as expected."
-msgstr ""
-
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
 msgid "GPaste user interface"
@@ -587,19 +573,14 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr ""
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
-msgid "Manage the GPaste daemon settings"
-msgstr "Gestionar los ajustes del servicio GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:3
-#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
-msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
-
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
 #, fuzzy
 msgid "Manage GPaste"
 msgstr "Gestionar los ajustes del servicio GPaste"
+
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"
@@ -829,6 +810,13 @@ msgid ""
 msgstr ""
 "Por omisión, pulsando ctrl + alt + v (\"&lt;Ctrl&gt;&lt;Alt&gt;v\"). Una "
 "cadena vacía desactivaría esta funcionalidad."
+
+#, fuzzy
+#~ msgid "Manage GPaste settings"
+#~ msgstr "Gestionar los ajustes del servicio GPaste"
+
+#~ msgid "Manage the GPaste daemon settings"
+#~ msgstr "Gestionar los ajustes del servicio GPaste"
 
 #, fuzzy
 #~ msgid "Stop tracking changes"

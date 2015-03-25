@@ -19,7 +19,6 @@
 @INTLTOOL_XML_RULE@
 
 appstream_in_files = \
-	data/appstream/org.gnome.GPaste.Settings.appdata.xml.in \
 	data/appstream/org.gnome.GPaste.Ui.appdata.xml.in \
 	$(NULL)
 

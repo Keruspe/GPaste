@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-23 21:51+0100\n"
+"POT-Creation-Date: 2015-03-25 09:57+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -36,7 +36,6 @@ msgid "Quit"
 msgstr "Quitter"
 
 #: ../src/libgpaste/applet/gpaste-applet-settings.c:60
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:1
 msgid "GPaste daemon settings"
 msgstr "Préférences du démon GPaste"
 
@@ -223,7 +222,6 @@ msgid "(Empty)"
 msgstr "(Vide)"
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:42
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:1
 msgid "GPaste Settings"
 msgstr "Préférences du démon GPaste"
 
@@ -514,7 +512,6 @@ msgstr "Icone de notification pour gérer GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
@@ -549,18 +546,6 @@ msgstr ""
 "GPaste vous fournit un indicateur d'appliation pour unity qui voud donnera "
 "accès à votre historique dans votre zone d'indicateurs."
 
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:2
-msgid "Manage GPaste settings"
-msgstr "Gérer les préférences du démon GPaste"
-
-#: ../data/appstream/org.gnome.GPaste.Settings.appdata.xml.in.h:4
-msgid ""
-"GPaste provides you with a settings utility allowing you to customize its "
-"behaviour as expected."
-msgstr ""
-"GPaste vous fournit un outil de préférences vous permettant de configurer "
-"son fonctionnement."
-
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
 msgid "GPaste user interface"
@@ -583,18 +568,13 @@ msgstr ""
 msgid "Clipboard;Manager;"
 msgstr "Presse-Papier;Gestionnaire;"
 
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:2
-msgid "Manage the GPaste daemon settings"
-msgstr "Gérer les préférences du démon GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.Settings.desktop.in.in.h:3
-#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
-msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr "Presse-Papier;Gestionnaire;Réglages;Préférences;Configuration;"
-
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
 msgid "Manage GPaste"
 msgstr "Gérer GPaste"
+
+#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr "Presse-Papier;Gestionnaire;Réglages;Préférences;Configuration;"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"

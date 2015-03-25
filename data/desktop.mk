@@ -20,13 +20,11 @@ applicationsdir = $(datadir)/applications
 
 gpaste_applet_desktop_file = data/desktop/org.gnome.GPaste.Applet.desktop
 gpaste_app_indicator_desktop_file = data/desktop/org.gnome.GPaste.AppIndicator.desktop
-gpaste_settings_desktop_file = data/desktop/org.gnome.GPaste.Settings.desktop
 gpaste_ui_desktop_file = data/desktop/org.gnome.GPaste.Ui.desktop
 
 all_desktop_files = \
 	$(gpaste_applet_desktop_file) \
 	$(gpaste_app_indicator_desktop_file) \
-	$(gpaste_settings_desktop_file) \
 	$(gpaste_ui_desktop_file) \
 	$(NULL)
 
@@ -46,7 +44,6 @@ nodist_autostart_DATA += \
 endif
 
 nodist_applications_DATA = \
-	$(gpaste_settings_desktop_file) \
 	$(gpaste_ui_desktop_file) \
 	$(nodist_autostart_DATA) \
 	$(NULL)
