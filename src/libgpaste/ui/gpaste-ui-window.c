@@ -33,6 +33,13 @@ typedef struct
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
 
+static void
+_sleep_hack (GtkWidget *w) /* wait for window to be ok before spawning prefs */
+{
+    while (!gtk_widget_get_visible (priv->settings));
+    g_usleep (10000);
+}
+
 /**
  * g_paste_ui_window_show_prefs:
  * @self: the #GPasteUiWindow
@@ -48,6 +55,7 @@ g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
 
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     
+    _sleep_hack (GTK_WIDGET (priv->header));
     g_paste_ui_header_show_prefs (priv->header);
 }
 
