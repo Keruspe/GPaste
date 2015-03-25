@@ -63,7 +63,7 @@ g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
 
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     
-    g_idle_add (_show_prefs, priv);
+    g_source_set_name_by_id (g_idle_add (_show_prefs, priv), "[GPaste] show_prefs");
 }
 
 static void
@@ -88,6 +88,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (error)
     {
+        priv->initialized = TRUE;
         g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
         gtk_window_close (win); /* will exit the application */
     }
