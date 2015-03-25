@@ -19,6 +19,8 @@
 
 #include "gpaste-applet-icon-private.h"
 
+#include <gpaste-util.h>
+
 typedef struct
 {
     GPasteClient *client;

@@ -22,6 +22,7 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-uris-item.h>
+#include <gpaste-util.h>
 
 struct _GPasteHistory
 {

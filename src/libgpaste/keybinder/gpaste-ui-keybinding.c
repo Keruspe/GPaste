@@ -21,6 +21,7 @@
 
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-keybinding.h>
+#include <gpaste-util.h>
 
 struct _GPasteUiKeybinding
 {

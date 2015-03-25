@@ -18,6 +18,7 @@
  */
 
 #include <gpaste-applet-settings.h>
+#include <gpaste-util.h>
 
 struct _GPasteAppletSettings
 {

@@ -20,6 +20,7 @@
 #include <gpaste-applet.h>
 #include <gpaste-applet-app-indicator.h>
 #include <gpaste-applet-status-icon.h>
+#include <gpaste-util.h>
 
 struct _GPasteApplet
 {

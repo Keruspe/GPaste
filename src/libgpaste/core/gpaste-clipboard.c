@@ -20,6 +20,7 @@
 #include <gpaste-clipboard.h>
 #include <gpaste-image-item.h>
 #include <gpaste-uris-item.h>
+#include <gpaste-util.h>
 
 #include <string.h>
 

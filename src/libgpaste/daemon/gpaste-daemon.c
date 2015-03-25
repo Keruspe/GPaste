@@ -28,6 +28,7 @@
 #include <gpaste-ui-keybinding.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-upload-keybinding.h>
+#include <gpaste-util.h>
 
 #include <string.h>
 
