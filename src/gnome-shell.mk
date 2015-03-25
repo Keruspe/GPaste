@@ -27,7 +27,6 @@ gnomeshell_extension_files = \
 	src/gnome-shell/indicator.js \
 	src/gnome-shell/item.js \
 	src/gnome-shell/prefs.js \
-	src/gnome-shell/prefsItem.js \
 	src/gnome-shell/searchItem.js \
 	src/gnome-shell/stateSwitch.js \
 	src/gnome-shell/statusIcon.js \

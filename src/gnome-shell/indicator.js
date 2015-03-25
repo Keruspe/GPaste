@@ -37,7 +37,6 @@ const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
 const Item = Me.imports.item;
-const PrefsItem = Me.imports.prefsItem;
 const SearchItem = Me.imports.searchItem;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
@@ -84,7 +83,6 @@ const GPasteIndicator = new Lang.Class({
             this._client = GPaste.Client.new_finish(result);
 
             this._dummyHistoryItem.update();
-            this._prefsItem = new PrefsItem.GPastePrefsItem(this.menu);
             this._uiItem = new UiItem.GPasteUiItem(this.menu);
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
             this._switch = new StateSwitch.GPasteStateSwitch(this._client);
@@ -92,7 +90,6 @@ const GPasteIndicator = new Lang.Class({
             this._addToHeader(this._switch);
             this._addToHeader(this._searchItem);
             this._actions.actor.add(this._uiItem, { expand: true, x_fill: false });
-            this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
             this._actions.actor.add(new AboutItem.GPasteAboutItem(this._client, this.menu), { expand: true, x_fill: false });
 
