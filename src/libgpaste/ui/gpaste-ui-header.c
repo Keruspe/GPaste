@@ -30,7 +30,7 @@ struct _GPasteUiHeader
 
 typedef struct
 {
-    GtkButton *settings;
+    GtkWidget *settings;
 } GPasteUiHeaderPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_BAR)
@@ -50,7 +50,8 @@ g_paste_ui_header_show_prefs (const GPasteUiHeader *self)
 
     GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
     
-    gtk_button_clicked (priv->settings);
+    while (!gtk_widget_get_visible (priv->settings));
+    gtk_button_clicked (GTK_BUTTON (priv->settings));
 }
 
 static void
@@ -63,9 +64,7 @@ g_paste_ui_header_init (GPasteUiHeader *self)
 {
     GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
     GtkHeaderBar *header_bar = GTK_HEADER_BAR (self);
-    GtkWidget *settings = g_paste_ui_settings_new ();
-
-    priv->settings = GTK_BUTTON (settings);
+    GtkWidget *settings = priv->settings = g_paste_ui_settings_new ();
 
     gtk_header_bar_set_title(header_bar, PACKAGE_STRING);
     gtk_header_bar_set_show_close_button (header_bar, TRUE);
