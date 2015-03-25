@@ -29,9 +29,24 @@ struct _GPasteUiWindow
 typedef struct
 {
     GPasteUiHeader *header;
+
+    gboolean        initialized;
 } GPasteUiWindowPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
+
+static gboolean
+_show_prefs (gpointer user_data)
+{
+    GPasteUiWindowPrivate *priv = user_data;
+
+    if (!priv->initialized)
+        return G_SOURCE_CONTINUE;
+
+    g_paste_ui_header_show_prefs (priv->header);
+
+    return G_SOURCE_REMOVE;
+}
 
 /**
  * g_paste_ui_window_show_prefs:
@@ -48,7 +63,7 @@ g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
 
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     
-    g_paste_ui_header_show_prefs (priv->header);
+    g_idle_add (_show_prefs, priv);
 }
 
 static void
@@ -84,6 +99,8 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     gtk_window_set_titlebar (win, header);
     gtk_container_add (GTK_CONTAINER (win), g_paste_ui_history_new (client));
     gtk_widget_show_all (GTK_WIDGET (win));
+
+    priv->initialized = TRUE;
 }
 
 /**
