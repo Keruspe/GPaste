@@ -161,6 +161,22 @@ _bus_proxy_new_sync (const gchar *app,
                                           error);
 }
 
+static gboolean
+_spawn_sync (GDBusProxy *proxy,
+             GError    **error)
+{
+    /* We only consume it */
+    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
+                                                                     "Activate",
+                                                                     g_variant_new ("(@a{sv})", app_get_platform_data ()),
+                                                                     G_DBUS_CALL_FLAGS_NONE,
+                                                                     -1,
+                                                                     NULL,
+                                                                     error);
+
+    return !error || !(*error);
+}
+
 /**
  * g_paste_util_spawn_sync:
  * @app: the GPaste app to spawn
@@ -182,10 +198,7 @@ g_paste_util_spawn_sync (const gchar *app,
     if (!proxy)
         return FALSE;
 
-    /* We only consume it */
-    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()), G_DBUS_CALL_FLAGS_NONE, -1, NULL, error);
-
-    return TRUE;
+    return _spawn_sync (proxy, error);
 }
 
 /**
@@ -218,10 +231,10 @@ g_paste_util_activate_sync (const gchar *app,
                                                                   NULL,
                                                                   error);
 
-    if (!proxy)
+    if (!proxy || !_spawn_sync (proxy, error))
         return FALSE;
 
-    GVariantBuilder params;
+    g_auto (GVariantBuilder) params;
 
     g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
 
