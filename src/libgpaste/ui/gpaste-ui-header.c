@@ -28,7 +28,30 @@ struct _GPasteUiHeader
     GtkHeaderBar parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_BAR)
+typedef struct
+{
+    GtkButton *settings;
+} GPasteUiHeaderPrivate;
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_BAR)
+
+/**
+ * g_paste_ui_header_show_prefs:
+ * @self: the #GPasteUiHeader
+ *
+ * Show the prefs pane
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_header_show_prefs (const GPasteUiHeader *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_HEADER (self));
+
+    GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
+    
+    gtk_button_clicked (priv->settings);
+}
 
 static void
 g_paste_ui_header_class_init (GPasteUiHeaderClass *klass G_GNUC_UNUSED)
@@ -38,11 +61,15 @@ g_paste_ui_header_class_init (GPasteUiHeaderClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_header_init (GPasteUiHeader *self)
 {
+    GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
     GtkHeaderBar *header_bar = GTK_HEADER_BAR (self);
+    GtkWidget *settings = g_paste_ui_settings_new ();
+
+    priv->settings = GTK_BUTTON (settings);
 
     gtk_header_bar_set_title(header_bar, PACKAGE_STRING);
     gtk_header_bar_set_show_close_button (header_bar, TRUE);
-    gtk_header_bar_pack_end (header_bar, g_paste_ui_settings_new ());
+    gtk_header_bar_pack_end (header_bar, settings);
 }
 
 /**

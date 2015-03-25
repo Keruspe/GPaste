@@ -32,6 +32,8 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiHeader, ui_header, UI_HEADER, GtkHeaderBar)
 
+void g_paste_ui_header_show_prefs (const GPasteUiHeader *self);
+
 GtkWidget *g_paste_ui_header_new (GtkWindow    *topwin,
                                   GPasteClient *client);
 

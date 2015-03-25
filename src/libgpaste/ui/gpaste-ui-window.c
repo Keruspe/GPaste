@@ -26,7 +26,30 @@ struct _GPasteUiWindow
     GtkApplicationWindow parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
+typedef struct
+{
+    GPasteUiHeader *header;
+} GPasteUiWindowPrivate;
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
+
+/**
+ * g_paste_ui_window_show_prefs:
+ * @self: the #GPasteUiWindow
+ *
+ * Show the prefs pane
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
+
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    
+    g_paste_ui_header_show_prefs (priv->header);
+}
 
 static void
 g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
@@ -43,6 +66,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                  GAsyncResult *res,
                  gpointer      user_data)
 {
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (user_data);
     GtkWindow *win = user_data;
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
@@ -53,7 +77,11 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         gtk_window_close (win); /* will exit the application */
     }
 
-    gtk_window_set_titlebar (win, g_paste_ui_header_new (win, client));
+    GtkWidget *header = g_paste_ui_header_new (win, client);
+
+    priv->header = G_PASTE_UI_HEADER (header);
+
+    gtk_window_set_titlebar (win, header);
     gtk_container_add (GTK_CONTAINER (win), g_paste_ui_history_new (client));
     gtk_widget_show_all (GTK_WIDGET (win));
 }

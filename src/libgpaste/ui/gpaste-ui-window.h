@@ -32,6 +32,8 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiWindow, ui_window, UI_WINDOW, GtkApplicationWindow)
 
+void g_paste_ui_window_show_prefs (const GPasteUiWindow *self);
+
 GtkWidget *g_paste_ui_window_new (GtkApplication *app);
 
 G_END_DECLS

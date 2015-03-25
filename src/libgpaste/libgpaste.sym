@@ -359,3 +359,9 @@ global:
 local:
     *;
 };
+
+LIBGPASTE_3_18_0 {
+global:
+    g_paste_ui_header_show_prefs;
+    g_paste_ui_window_show_prefs;
+} LIBGPASTE_3_16_0;
