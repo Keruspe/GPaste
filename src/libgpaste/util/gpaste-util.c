@@ -91,6 +91,21 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
     return ret;
 }
 
+/* Copied from glib's gio/gapplication-tool.c */
+static GVariant *
+app_get_platform_data (void)
+{
+    g_auto (GVariantBuilder) builder;
+    const gchar *startup_id;
+
+    g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
+
+    if ((startup_id = g_getenv ("DESKTOP_STARTUP_ID")))
+        g_variant_builder_add (&builder, "{sv}", "desktop-startup-id", g_variant_new_string (startup_id));
+
+    return g_variant_builder_end (&builder);
+}
+
 static void
 g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
                                    GAsyncResult *res,
@@ -99,12 +114,7 @@ g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
 
     if (proxy)
-    {
-        GVariant *param = g_variant_new ("a{sv}", NULL);
-        GVariant *params = g_variant_new_tuple (&param, 1);
-
-        g_dbus_proxy_call (proxy, "Activate", params, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-    }
+        g_dbus_proxy_call (proxy, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()), G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
 
 /**
@@ -132,6 +142,23 @@ g_paste_util_spawn (const gchar *app)
                               NULL,
                               g_paste_util_spawn_on_proxy_ready,
                               NULL);
+}
+
+static GDBusProxy *
+_bus_proxy_new_sync (const gchar *app,
+                     GError     **error)
+{
+    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
+
+    return g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                          G_DBUS_PROXY_FLAGS_NONE,
+                                          NULL,
+                                          name,
+                                          object,
+                                          "org.freedesktop.Application",
+                                          NULL,
+                                          error);
 }
 
 /**
