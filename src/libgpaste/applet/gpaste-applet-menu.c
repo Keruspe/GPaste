@@ -20,7 +20,6 @@
 #include <gpaste-applet-about.h>
 #include <gpaste-applet-menu.h>
 #include <gpaste-applet-quit.h>
-#include <gpaste-applet-settings.h>
 #include <gpaste-applet-ui.h>
 
 struct _GPasteAppletMenu
@@ -41,7 +40,6 @@ g_paste_applet_menu_init (GPasteAppletMenu *self)
     GtkMenuShell *shell = GTK_MENU_SHELL (self);
 
     gtk_menu_shell_append (shell, g_paste_applet_ui_new ());
-    gtk_menu_shell_append (shell, g_paste_applet_settings_new ());
 }
 
 /**

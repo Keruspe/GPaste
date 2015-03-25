@@ -77,7 +77,6 @@
 #include <gpaste-applet-icon.h>
 #include <gpaste-applet-menu.h>
 #include <gpaste-applet-quit.h>
-#include <gpaste-applet-settings.h>
 #include <gpaste-applet-status-icon.h>
 #include <gpaste-applet-ui.h>
 #include <gpaste-applet.h>
