@@ -32,7 +32,7 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiAbout, ui_about, UI_ABOUT, GtkButton)
 
-GtkWidget *g_paste_ui_about_new (GtkWindow *topwin);
+GtkWidget *g_paste_ui_about_new (GtkApplication *app);
 
 G_END_DECLS
 

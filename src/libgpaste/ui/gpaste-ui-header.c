@@ -94,7 +94,7 @@ g_paste_ui_header_new (GtkWindow    *topwin,
 
     gtk_header_bar_pack_start (bar, g_paste_ui_switch_new (topwin, client));
 
-    gtk_header_bar_pack_end (bar, g_paste_ui_about_new (topwin));
+    gtk_header_bar_pack_end (bar, g_paste_ui_about_new (gtk_window_get_application (topwin)));
     gtk_header_bar_pack_end (bar, g_paste_ui_empty_new (topwin, client));
 
     return self;
