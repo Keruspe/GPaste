@@ -114,7 +114,16 @@ g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
 
     if (proxy)
-        g_dbus_proxy_call (proxy, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()), G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+    {
+        g_dbus_proxy_call (proxy,
+                           "Activate",
+                           g_variant_new ("(@a{sv})", app_get_platform_data ()),
+                           G_DBUS_CALL_FLAGS_NONE,
+                           -1,
+                           NULL, /* cancellable */
+                           NULL, /* callback */
+                           NULL); /* user_data */
+    }
 }
 
 /**
@@ -202,36 +211,31 @@ g_paste_util_spawn_sync (const gchar *app,
 }
 
 /**
- * g_paste_util_activate_sync:
- * @app: the GPaste app to spawn
+ * g_paste_util_activate_ui_sync:
  * @action: the action to activate
  * @error: a #GError or %NULL
  *
- * activate an action from a GPaste app
+ * activate an action from GPaste Ui
  *
  * Returns: whether the action was successful
  */
 G_PASTE_VISIBLE gboolean
-g_paste_util_activate_sync (const gchar *app,
-                            const gchar *action,
-                            GError     **error)
+g_paste_util_activate_ui_sync (const gchar *action,
+                               GError     **error)
 {
-    g_return_val_if_fail (g_utf8_validate (app, -1, NULL), FALSE);
     g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 
-    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                                   G_DBUS_PROXY_FLAGS_NONE,
                                                                   NULL,
-                                                                  name,
-                                                                  object,
+                                                                  "org.gnome.GPaste.Ui",
+                                                                  "/org/gnome/GPaste/Ui",
                                                                   "org.freedesktop.Application",
                                                                   NULL,
                                                                   error);
 
-    if (!proxy || !_spawn_sync (proxy, error))
+    if (!proxy)
         return FALSE;
 
     g_auto (GVariantBuilder) params;

@@ -361,7 +361,7 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "p")        ||
                      !g_strcmp0 (arg1, "preferences"))
             {
-                if (!g_paste_util_activate_sync ("Ui", "prefs", &error))
+                if (!g_paste_util_activate_ui_sync ("prefs", &error))
                 {
                     g_critical ("%s Ui: %s", _("Couldn't spawn"), error->message);
                     return EXIT_FAILURE;
