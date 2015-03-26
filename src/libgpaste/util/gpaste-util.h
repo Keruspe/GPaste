@@ -29,7 +29,6 @@
 
 G_BEGIN_DECLS
 
-void     g_paste_util_show_about_dialog (GtkWindow *parent);
 gboolean g_paste_util_confirm_dialog    (GtkWindow   *parent,
                                          const gchar *msg);
 void     g_paste_util_spawn             (const gchar *app);

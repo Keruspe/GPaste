@@ -350,7 +350,6 @@ global:
     g_paste_util_has_applet;
     g_paste_util_has_unity;
     g_paste_util_replace;
-    g_paste_util_show_about_dialog;
     g_paste_util_show_win;
     g_paste_util_spawn;
     g_paste_util_spawn_sync;

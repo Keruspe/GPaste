@@ -20,49 +20,6 @@
 #include <gpaste-macros.h>
 #include <gpaste-util.h>
 
-#define LICENSE                                                            \
-    "GPaste is free software: you can redistribute it and/or modify"       \
-    "it under the terms of the GNU General Public License as published by" \
-    "the Free Software Foundation, either version 3 of the License, or"    \
-    "(at your option) any later version.\n\n"                              \
-    "GPaste is distributed in the hope that it will be useful,"            \
-    "but WITHOUT ANY WARRANTY; without even the implied warranty of"       \
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"        \
-    "GNU General Public License for more details.\n\n"                     \
-    "You should have received a copy of the GNU General Public License"    \
-    "along with GPaste.  If not, see <http://www.gnu.org/licenses/>."
-
-/**
- * g_paste_util_show_about_dialog:
- * @parent: (nullable): the parent #GtkWindow
- *
- * Show GPaste about dialog
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_util_show_about_dialog (GtkWindow *parent)
-{
-    g_return_if_fail (!parent || GTK_IS_WINDOW (parent));
-
-    const gchar *authors[] = {
-        "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
-        NULL
-    };
-    gtk_show_about_dialog (parent,
-                           "program-name",   PACKAGE_NAME,
-                           "version",        PACKAGE_VERSION,
-                           "logo-icon-name", "gtk-paste",
-                           "license",        LICENSE,
-                           "authors",        authors,
-                           "copyright",      "Copyright © 2010-2015 Marc-Antoine Perennou",
-                           "comments",       "Clipboard management system",
-                           "website",        "http://www.imagination-land.org/tags/GPaste.html",
-                           "website-label",  "Follow GPaste news",
-                           "wrap-license",   TRUE,
-                           NULL);
-}
-
 /**
  * g_paste_util_confirm_dialog:
  * @parent: (nullable): the parent #GtkWindow
