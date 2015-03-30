@@ -2,7 +2,6 @@ src/libgpaste/gpaste-macros.h
 src/libgpaste/applet/gpaste-applet.c
 src/libgpaste/applet/gpaste-applet-about.c
 src/libgpaste/applet/gpaste-applet-quit.c
-src/libgpaste/applet/gpaste-applet-settings.c
 src/libgpaste/applet/gpaste-applet-ui.c
 src/libgpaste/core/gpaste-history.c
 src/libgpaste/core/gpaste-image-item.c

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-25 09:57+0100\n"
+"POT-Creation-Date: 2015-03-30 10:48+0200\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -16,17 +16,17 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/libgpaste/gpaste-macros.h:61
+#: ../src/libgpaste/gpaste-macros.h:60
 msgid "Failed to register the gtk application"
 msgstr "Gtk-ohjelman rekisteröiminen epäonnistui"
 
-#: ../src/libgpaste/applet/gpaste-applet.c:155
-#: ../src/libgpaste/applet/gpaste-applet.c:183
+#: ../src/libgpaste/applet/gpaste-applet.c:156
+#: ../src/libgpaste/applet/gpaste-applet.c:184
 msgid "is not installed"
 msgstr ""
 
 #: ../src/libgpaste/applet/gpaste-applet-about.c:81
-#: ../src/libgpaste/ui/gpaste-ui-about.c:51
+#: ../src/libgpaste/ui/gpaste-ui-about.c:52
 msgid "About"
 msgstr ""
 
@@ -34,27 +34,23 @@ msgstr ""
 msgid "Quit"
 msgstr "Lopeta"
 
-#: ../src/libgpaste/applet/gpaste-applet-settings.c:60
-msgid "GPaste daemon settings"
-msgstr "GPaste palvelun asetukset"
-
 #. Translators: help for gpaste ui
-#: ../src/libgpaste/applet/gpaste-applet-ui.c:60 ../src/gpaste/gpaste.c:78
+#: ../src/libgpaste/applet/gpaste-applet-ui.c:61 ../src/gpaste/gpaste.c:79
 #, fuzzy
 msgid "launch the graphical tool"
 msgstr "käynnistää asetusten hallinan"
 
-#: ../src/libgpaste/core/gpaste-history.c:701
+#: ../src/libgpaste/core/gpaste-history.c:702
 msgid "Could not create history dir"
 msgstr "Historiakansion luominen epäonnistui"
 
 #. This is the date format "month/day/year time"
-#: ../src/libgpaste/core/gpaste-image-item.c:230
+#: ../src/libgpaste/core/gpaste-image-item.c:231
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: ../src/libgpaste/core/gpaste-image-item.c:232
+#: ../src/libgpaste/core/gpaste-image-item.c:233
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Kuva, %d x %d (%s)]"
@@ -65,12 +61,12 @@ msgid "Password"
 msgstr ""
 
 #. This is the prefix displayed in history to identify selected files
-#: ../src/libgpaste/core/gpaste-uris-item.c:118
+#: ../src/libgpaste/core/gpaste-uris-item.c:119
 msgid "[Files] "
 msgstr "[Tiedostot]"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:128
-#: ../src/libgpaste/ui/gpaste-ui-switch.c:95
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:96
 msgid "Track clipboard changes"
 msgstr "Pidä kirjaa leikepöydän tapahtumista"
 
@@ -169,7 +165,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "noutaa määritellyn leikkeen historiasta"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
-#: ../src/libgpaste/ui/gpaste-ui-window.c:52 ../src/gpaste/gpaste.c:180
+#: ../src/libgpaste/ui/gpaste-ui-window.c:92 ../src/gpaste/gpaste.c:181
 msgid "Couldn't connect to GPaste daemon"
 msgstr "GPaste-palveluun ei saatu yhteyttä"
 
@@ -212,11 +208,11 @@ msgstr "Vaihda kohteeseen"
 msgid "Delete"
 msgstr "Poista"
 
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:40
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:41
 msgid "Do you really want to empty the history?"
 msgstr ""
 
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:64
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:65
 msgid "Empty history"
 msgstr "Tyhjennä historia"
 
@@ -229,7 +225,7 @@ msgstr "(Tyhjä)"
 msgid "GPaste Settings"
 msgstr "GPaste palvelun asetukset"
 
-#: ../src/libgpaste/ui/gpaste-ui-switch.c:59
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:60
 #, fuzzy
 msgid "Do you really want to stop tracking clipboard changes?"
 msgstr "lopettaa leikepöydän muutosten seuraamisen"
@@ -247,18 +243,18 @@ msgstr "DBus-nimen selvitys epäonnistui."
 msgid "Could not register DBus service."
 msgstr "DBus-palvelun rekisteröinti epäonnistui."
 
-#: ../src/gpaste/gpaste.c:30
+#: ../src/gpaste/gpaste.c:31
 #, c-format
 msgid "Usage:\n"
 msgstr "Käyttö:\n"
 
 #. Translators: help for gpaste history
-#: ../src/gpaste/gpaste.c:32
+#: ../src/gpaste/gpaste.c:33
 msgid "print the history with indexes"
 msgstr "listaa historian indeksöitynä"
 
 #. Translators: help for gpaste history-size
-#: ../src/gpaste/gpaste.c:34
+#: ../src/gpaste/gpaste.c:35
 #, fuzzy
 msgid "print the size of the history"
 msgstr "poistaa määritellyn leikkeen historiasta"
@@ -268,58 +264,58 @@ msgstr "poistaa määritellyn leikkeen historiasta"
 #. Translators: help for gpaste delete-history <name>
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste delete-passworf <name>
-#: ../src/gpaste/gpaste.c:36 ../src/gpaste/gpaste.c:38
-#: ../src/gpaste/gpaste.c:40 ../src/gpaste/gpaste.c:46
-#: ../src/gpaste/gpaste.c:56 ../src/gpaste/gpaste.c:60
+#: ../src/gpaste/gpaste.c:37 ../src/gpaste/gpaste.c:39
+#: ../src/gpaste/gpaste.c:41 ../src/gpaste/gpaste.c:47
+#: ../src/gpaste/gpaste.c:57 ../src/gpaste/gpaste.c:61
 msgid "name"
 msgstr "nimi"
 
-#: ../src/gpaste/gpaste.c:36
+#: ../src/gpaste/gpaste.c:37
 msgid "backup current history"
 msgstr "varmuuskopioi nykyinen historia"
 
-#: ../src/gpaste/gpaste.c:38
+#: ../src/gpaste/gpaste.c:39
 msgid "switch to another history"
 msgstr "vaihda toiseen historiaan"
 
-#: ../src/gpaste/gpaste.c:40
+#: ../src/gpaste/gpaste.c:41
 msgid "delete a history"
 msgstr "poistaa määritellyn historian"
 
 #. Translators: help for gpaste list-histories
-#: ../src/gpaste/gpaste.c:42
+#: ../src/gpaste/gpaste.c:43
 msgid "list available histories"
 msgstr "antaa listan saatavilla olevista historioista"
 
 #. Translators: help for gpaste add <text>
-#: ../src/gpaste/gpaste.c:44
+#: ../src/gpaste/gpaste.c:45
 msgid "text"
 msgstr "teskti"
 
-#: ../src/gpaste/gpaste.c:44
+#: ../src/gpaste/gpaste.c:45
 msgid "set text to clipboard"
 msgstr "asettaa leikkeen sisällön"
 
-#: ../src/gpaste/gpaste.c:46
+#: ../src/gpaste/gpaste.c:47
 msgid "password"
 msgstr ""
 
-#: ../src/gpaste/gpaste.c:46
+#: ../src/gpaste/gpaste.c:47
 msgid "add the name - password couple to the clipboard"
 msgstr ""
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: ../src/gpaste/gpaste.c:48
+#: ../src/gpaste/gpaste.c:49
 #, fuzzy
 msgid "old name"
 msgstr "nimi"
 
-#: ../src/gpaste/gpaste.c:48
+#: ../src/gpaste/gpaste.c:49
 #, fuzzy
 msgid "new name"
 msgstr "nimi"
 
-#: ../src/gpaste/gpaste.c:48
+#: ../src/gpaste/gpaste.c:49
 msgid "rename the password"
 msgstr ""
 
@@ -329,181 +325,181 @@ msgstr ""
 #. Translators: help for gpaste set-password <number> <name>
 #. Translators: help for gpaste delete <number>
 #. Translators: help for gpaste upload
-#: ../src/gpaste/gpaste.c:50 ../src/gpaste/gpaste.c:52
-#: ../src/gpaste/gpaste.c:54 ../src/gpaste/gpaste.c:56
-#: ../src/gpaste/gpaste.c:58 ../src/gpaste/gpaste.c:92
+#: ../src/gpaste/gpaste.c:51 ../src/gpaste/gpaste.c:53
+#: ../src/gpaste/gpaste.c:55 ../src/gpaste/gpaste.c:57
+#: ../src/gpaste/gpaste.c:59 ../src/gpaste/gpaste.c:93
 msgid "number"
 msgstr "luku"
 
-#: ../src/gpaste/gpaste.c:50
+#: ../src/gpaste/gpaste.c:51
 msgid "get the <number>th item from the history"
 msgstr "noutaa määritellyn leikkeen historiasta"
 
-#: ../src/gpaste/gpaste.c:52
+#: ../src/gpaste/gpaste.c:53
 msgid "set the <number>th item from the history to the clipboard"
 msgstr "kopioi määrritellyn <luku> kohteen historiasta leikepöydälle"
 
-#: ../src/gpaste/gpaste.c:54
+#: ../src/gpaste/gpaste.c:55
 #, fuzzy
 msgid ""
 "merge the <number>th items from the history and add put the result in the "
 "clipboard"
 msgstr "kopioi määrritellyn <luku> kohteen historiasta leikepöydälle"
 
-#: ../src/gpaste/gpaste.c:56
+#: ../src/gpaste/gpaste.c:57
 #, fuzzy
 msgid "set the <number>th item from the history as a password named <name>"
 msgstr "kopioi määrritellyn <luku> kohteen historiasta leikepöydälle"
 
-#: ../src/gpaste/gpaste.c:58
+#: ../src/gpaste/gpaste.c:59
 msgid "delete <number>th item of the history"
 msgstr "poistaa määritellyn leikkeen historiasta"
 
-#: ../src/gpaste/gpaste.c:60
+#: ../src/gpaste/gpaste.c:61
 #, fuzzy
 msgid "delete the password <name> from the history"
 msgstr "noutaa määritellyn leikkeen historiasta"
 
 #. Translators: help for gpaste file <path>
-#: ../src/gpaste/gpaste.c:62
+#: ../src/gpaste/gpaste.c:63
 msgid "path"
 msgstr "tiedosto"
 
-#: ../src/gpaste/gpaste.c:62
+#: ../src/gpaste/gpaste.c:63
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "kopioi tiedoston sisällön leikepöydälle"
 
 #. Translators: help for whatever | gpaste
-#: ../src/gpaste/gpaste.c:64
+#: ../src/gpaste/gpaste.c:65
 msgid "whatever"
 msgstr "mitävaan"
 
-#: ../src/gpaste/gpaste.c:64
+#: ../src/gpaste/gpaste.c:65
 msgid "set the output of whatever to clipboard"
 msgstr "asettaa putkitetun sisälllön leikepöydälle"
 
 #. Translators: help for gpaste empty
-#: ../src/gpaste/gpaste.c:66
+#: ../src/gpaste/gpaste.c:67
 msgid "empty the history"
 msgstr "tyhjentää historian"
 
 #. Translators: help for gpaste start
-#: ../src/gpaste/gpaste.c:68
+#: ../src/gpaste/gpaste.c:69
 msgid "start tracking clipboard changes"
 msgstr "aloittaa leikepöydän muutosten seuraamisen"
 
 #. Translators: help for gpaste stop
-#: ../src/gpaste/gpaste.c:70
+#: ../src/gpaste/gpaste.c:71
 msgid "stop tracking clipboard changes"
 msgstr "lopettaa leikepöydän muutosten seuraamisen"
 
 #. Translators: help for gpaste quit
-#: ../src/gpaste/gpaste.c:72
+#: ../src/gpaste/gpaste.c:73
 msgid "alias for stop"
 msgstr "sama kuin stop"
 
 #. Translators: help for gpaste daemon-reexec
-#: ../src/gpaste/gpaste.c:74
+#: ../src/gpaste/gpaste.c:75
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "käynnistää palvelun uudelleen (päivittämisen jälkeen...)"
 
 #. Translators: help for gpaste settings
-#: ../src/gpaste/gpaste.c:76
+#: ../src/gpaste/gpaste.c:77
 msgid "launch the configuration tool"
 msgstr "käynnistää asetusten hallinan"
 
 #. Translators: help for gpaste applet
-#: ../src/gpaste/gpaste.c:82
+#: ../src/gpaste/gpaste.c:83
 msgid "launch the applet"
 msgstr "käynnistää härpäkkeen"
 
 #. Translators: help for gpaste app-indicator
-#: ../src/gpaste/gpaste.c:87
+#: ../src/gpaste/gpaste.c:88
 #, fuzzy
 msgid "launch the unity application indicator"
 msgstr "käynnistää asetusten hallinan"
 
 #. Translators: help for gpaste show-history
-#: ../src/gpaste/gpaste.c:90
+#: ../src/gpaste/gpaste.c:91
 #, fuzzy
 msgid "make the applet or extension display the history"
 msgstr "Suurin määrä historiassa näkyviä leikkeitä"
 
-#: ../src/gpaste/gpaste.c:92
+#: ../src/gpaste/gpaste.c:93
 #, fuzzy
 msgid "upload the <number>th item to a pastebin service"
 msgstr "noutaa määritellyn leikkeen historiasta"
 
 #. Translators: help for gpaste version
-#: ../src/gpaste/gpaste.c:94
+#: ../src/gpaste/gpaste.c:95
 msgid "display the version"
 msgstr "tulostaa ohjelman version"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:96
+#: ../src/gpaste/gpaste.c:97
 #, fuzzy
 msgid "display the daemon version"
 msgstr "tulostaa ohjelman version"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:98
+#: ../src/gpaste/gpaste.c:99
 msgid "display this help"
 msgstr "tulostaa tämän ohjeen"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:100
+#: ../src/gpaste/gpaste.c:101
 #, fuzzy
 msgid "display the about dialog"
 msgstr "tulostaa ohjelman version"
 
-#: ../src/gpaste/gpaste.c:103
+#: ../src/gpaste/gpaste.c:104
 #, fuzzy, c-format
 msgid "Display options:"
 msgstr "Näytä historia:"
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:106
+#: ../src/gpaste/gpaste.c:107
 #, fuzzy
 msgid "display each item on only one line"
 msgstr "tulostaa ohjelman version"
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:108
+#: ../src/gpaste/gpaste.c:109
 msgid "display each item raw (without line numbers)"
 msgstr ""
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:110
+#: ../src/gpaste/gpaste.c:111
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
 
-#: ../src/gpaste/gpaste.c:113
+#: ../src/gpaste/gpaste.c:114
 #, fuzzy, c-format
 msgid "Merge options:"
 msgstr "Näytä historia:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: ../src/gpaste/gpaste.c:116 ../src/gpaste/gpaste.c:118
+#: ../src/gpaste/gpaste.c:117 ../src/gpaste/gpaste.c:119
 msgid "string"
 msgstr ""
 
-#: ../src/gpaste/gpaste.c:116
+#: ../src/gpaste/gpaste.c:117
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
 
-#: ../src/gpaste/gpaste.c:118
+#: ../src/gpaste/gpaste.c:119
 msgid "add the given separator between each item when merging"
 msgstr ""
 
-#: ../src/gpaste/gpaste.c:191
+#: ../src/gpaste/gpaste.c:192 ../src/gpaste/gpaste.c:366
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "GPaste-härpäkkeen esiintaikominen epäonnistui.\n"
 
-#: ../src/gpaste/gpaste.c:322
+#: ../src/gpaste/gpaste.c:323
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Palvelun uudelleenkäynnistäminen onnistui\n"
@@ -802,6 +798,9 @@ msgid ""
 msgstr ""
 "Oletuksena näppäinyhdistelmä ctrl + alt + v tekee tämän(\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
+
+#~ msgid "GPaste daemon settings"
+#~ msgstr "GPaste palvelun asetukset"
 
 #, fuzzy
 #~ msgid "Manage GPaste settings"
