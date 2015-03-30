@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2015-03-25 09:57+0100\n"
-"PO-Revision-Date: 2014-07-09 18:47-0300\n"
+"PO-Revision-Date: 2015-03-29 11:59-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 1.5.4\n"
+"X-Generator: Poedit 1.7.5\n"
 
 #: ../src/libgpaste/gpaste-macros.h:61
 msgid "Failed to register the gtk application"
@@ -24,7 +24,7 @@ msgstr "Falha ao registrar a aplicação gtk"
 #: ../src/libgpaste/applet/gpaste-applet.c:155
 #: ../src/libgpaste/applet/gpaste-applet.c:183
 msgid "is not installed"
-msgstr ""
+msgstr "não está instalado"
 
 #: ../src/libgpaste/applet/gpaste-applet-about.c:81
 #: ../src/libgpaste/ui/gpaste-ui-about.c:51
@@ -41,9 +41,8 @@ msgstr "Configurações do daemon GPaste"
 
 #. Translators: help for gpaste ui
 #: ../src/libgpaste/applet/gpaste-applet-ui.c:60 ../src/gpaste/gpaste.c:78
-#, fuzzy
 msgid "launch the graphical tool"
-msgstr "inicia a ferramenta de configuração"
+msgstr "inicia a ferramenta gráfica"
 
 #: ../src/libgpaste/core/gpaste-history.c:701
 msgid "Could not create history dir"
@@ -133,20 +132,18 @@ msgstr "Tamanho mínimo do item de texto:"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:265
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
-#, fuzzy
 msgid "Delete the active item from history: "
-msgstr "Apagar o primeiro item do histórico: "
+msgstr "Apagar o item ativo do histórico: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:272
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
-#, fuzzy
 msgid "Launch the graphical tool: "
-msgstr "inicia a ferramenta de configuração"
+msgstr "Iniciar a ferramenta gráfica: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:279
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
 msgid "Mark the active item as being a password: "
-msgstr ""
+msgstr "Marcar o item ativo como sendo uma senha: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:286
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
@@ -165,9 +162,8 @@ msgstr "Sincronizar a seleção primária com a área de transferência: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:307
 #: ../data/control-center/42-gpaste.xml.in.in.h:7
-#, fuzzy
 msgid "Upload the active item to a pastebin service: "
-msgstr "Apagar o primeiro item do histórico: "
+msgstr "Carregar o item ativo para um serviço de pastebin: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
 #: ../src/libgpaste/ui/gpaste-ui-window.c:52 ../src/gpaste/gpaste.c:180
@@ -215,7 +211,7 @@ msgstr "Apagar"
 
 #: ../src/libgpaste/ui/gpaste-ui-empty.c:40
 msgid "Do you really want to empty the history?"
-msgstr ""
+msgstr "Você quer mesmo esvaziar o histórico?"
 
 #: ../src/libgpaste/ui/gpaste-ui-empty.c:64
 msgid "Empty history"
@@ -230,9 +226,9 @@ msgid "GPaste Settings"
 msgstr "Configurações do GPaste"
 
 #: ../src/libgpaste/ui/gpaste-ui-switch.c:59
-#, fuzzy
 msgid "Do you really want to stop tracking clipboard changes?"
-msgstr "pára o monitoramento de alterações na área de transferência"
+msgstr ""
+"Você quer mesmo parar o monitoramento de alterações na área de transferência?"
 
 #: ../src/daemon/gpaste-daemon.c:35
 #, c-format
@@ -309,18 +305,16 @@ msgstr "adiciona o par nome - senha para a área de transferência"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: ../src/gpaste/gpaste.c:48
-#, fuzzy
 msgid "old name"
-msgstr "nome"
+msgstr "nome anterior"
 
 #: ../src/gpaste/gpaste.c:48
-#, fuzzy
 msgid "new name"
-msgstr "nome"
+msgstr "novo nome"
 
 #: ../src/gpaste/gpaste.c:48
 msgid "rename the password"
-msgstr ""
+msgstr "define um novo nome para a senha"
 
 #. Translators: help for gpaste get <number>
 #. Translators: help for gpaste select <number>
@@ -332,36 +326,36 @@ msgstr ""
 #: ../src/gpaste/gpaste.c:54 ../src/gpaste/gpaste.c:56
 #: ../src/gpaste/gpaste.c:58 ../src/gpaste/gpaste.c:92
 msgid "number"
-msgstr "n"
+msgstr "número"
 
 #: ../src/gpaste/gpaste.c:50
 msgid "get the <number>th item from the history"
-msgstr "obtém o n-ésimo item do histórico"
+msgstr "obtém o <número>-ésimo item do histórico"
 
 #: ../src/gpaste/gpaste.c:52
 msgid "set the <number>th item from the history to the clipboard"
-msgstr "copia o n-ésimo item do histórico para a área de transferência"
+msgstr "copia o <número>-ésimo item do histórico para a área de transferência"
 
 #: ../src/gpaste/gpaste.c:54
-#, fuzzy
 msgid ""
 "merge the <number>th items from the history and add put the result in the "
 "clipboard"
-msgstr "copia o n-ésimo item do histórico para a área de transferência"
+msgstr ""
+"faz um merge do <número>-ésimo item do histórico e coloca o resultado na "
+"área de transferência"
 
 #: ../src/gpaste/gpaste.c:56
-#, fuzzy
 msgid "set the <number>th item from the history as a password named <name>"
-msgstr "copia o n-ésimo item do histórico para a área de transferência"
+msgstr ""
+"define o <número>-ésimo item do histórico como uma senha chamada <nome>"
 
 #: ../src/gpaste/gpaste.c:58
 msgid "delete <number>th item of the history"
-msgstr "apaga o n-ésimo item do histórico"
+msgstr "apaga o <número>-ésimo item do histórico"
 
 #: ../src/gpaste/gpaste.c:60
-#, fuzzy
 msgid "delete the password <name> from the history"
-msgstr "obtém o n-ésimo item do histórico"
+msgstr "apaga a senha <nome> do histórico"
 
 #. Translators: help for gpaste file <path>
 #: ../src/gpaste/gpaste.c:62
@@ -423,14 +417,14 @@ msgstr "inicia o aplicativo indicador do unity"
 
 #. Translators: help for gpaste show-history
 #: ../src/gpaste/gpaste.c:90
-#, fuzzy
 msgid "make the applet or extension display the history"
-msgstr "Número máximo de itens exibidos no histórico"
+msgstr "faz o applet ou a extensão exibir o histórico"
 
 #: ../src/gpaste/gpaste.c:92
-#, fuzzy
 msgid "upload the <number>th item to a pastebin service"
-msgstr "Apagar o primeiro item do histórico: "
+msgstr ""
+"Apagar o primeiro item do histórico: carrega o <número>-ésimo  item para um "
+"serviço de pastebin"
 
 #. Translators: help for gpaste version
 #: ../src/gpaste/gpaste.c:94
@@ -453,51 +447,53 @@ msgid "display the about dialog"
 msgstr "mostra o diálogo Sobre"
 
 #: ../src/gpaste/gpaste.c:103
-#, fuzzy, c-format
+#, c-format
 msgid "Display options:"
-msgstr "Mostrar histórico: "
+msgstr "Opções de exibição:"
 
 #. Translators: help for --oneline
 #: ../src/gpaste/gpaste.c:106
-#, fuzzy
 msgid "display each item on only one line"
-msgstr "mostra a versão do daemon"
+msgstr "Mostra cada item em uma única linha"
 
 #. Translators: help for --oneline
 #: ../src/gpaste/gpaste.c:108
 msgid "display each item raw (without line numbers)"
-msgstr ""
+msgstr "exibe cada item bruto (sem números nas linhas) "
 
 #. Translators: help for --oneline
 #: ../src/gpaste/gpaste.c:110
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
+"utiliza um caractere NUL no lugar de um caractere de nova linha entre cada "
+"item"
 
 #: ../src/gpaste/gpaste.c:113
-#, fuzzy, c-format
+#, c-format
 msgid "Merge options:"
-msgstr "Mostrar histórico: "
+msgstr "Opções de merge:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
 #: ../src/gpaste/gpaste.c:116 ../src/gpaste/gpaste.c:118
 msgid "string"
-msgstr ""
+msgstr "string"
 
 #: ../src/gpaste/gpaste.c:116
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
+"adiciona a decoração dada ao início e ao fim de cada item antes de fazer o "
+"merge"
 
 #: ../src/gpaste/gpaste.c:118
 msgid "add the given separator between each item when merging"
-msgstr ""
+msgstr "adiciona o separador dado entre cada item durante o merge"
 
 #: ../src/gpaste/gpaste.c:191
-#, fuzzy
 msgid "Couldn't spawn"
-msgstr "Não foi possível abrir o gpaste-applet.\n"
+msgstr "Não foi possível executar"
 
 #: ../src/gpaste/gpaste.c:322
 #, c-format
@@ -553,34 +549,31 @@ msgstr ""
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
 msgid "GPaste user interface"
-msgstr ""
+msgstr "Interface de usuário do GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:2
 msgid "GPaste graphical interface"
-msgstr ""
+msgstr "Interface gráfica do GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:4
-#, fuzzy
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
-"O GPaste fornece um utilitário de configurações que permite personalizar o "
-"comportamento da maneira como você espera."
+"O GPaste fornece uma ferramenta gráfica que permite gerenciar tudo facilmente"
 
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:3
 #: ../data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in.h:3
 msgid "Clipboard;Manager;"
-msgstr ""
+msgstr "Clipboard;Manager;"
 
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
-#, fuzzy
 msgid "Manage GPaste"
-msgstr "Gerenciar as configurações do GPaste"
+msgstr "Gerenciar o GPaste"
 
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
+msgstr "Clipboard;Manager;Settings;Preferences;Configuration;"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:1
 msgid "Max size of an element when displaying it"
@@ -625,33 +618,29 @@ msgid "By default, we're saving both"
 msgstr "Por padrão, ambos são salvos"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:9
-#, fuzzy
 msgid "The keyboard shortcut to launch the graphical interface"
-msgstr "O atalho do teclado para exibir o menu"
+msgstr "O atalho do teclado para executar a interface gráfica"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:10
-#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"&lt;Ctrl&gt;&lt;Alt&gt;G\"). "
 "An empty string here disables this functionnality."
 msgstr ""
-"Por padrão,  a combinação de teclas ctrl + alt + v faz isso (\"&lt;Ctrl&gt;"
-"&lt;Alt&gt;V\"). Deixar vazio aqui desabilita essa funcionalidade."
+"Por padrão, a combinação de teclas ctrl + alt + g faz isso (\"&lt;Ctrl&gt;"
+"&lt;Alt&gt;G\"). Deixar vazio aqui desabilita essa funcionalidade."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:11
-#, fuzzy
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr "O atalho do teclado para apagar o primeiro elemento no histórico"
+msgstr "O atalho do teclado para marcar o item ativo como sendo uma senha"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:12
-#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + s will mark the active item as being a "
 "password (\"&lt;Ctrl&gt;&lt;Alt&gt;S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
-"Por padrão, a combinação de teclas ctrl + alt + h exibe o menu (\"&lt;"
-"Ctrl&gt;&lt;Alt&gt;H\"). Deixar vazio aqui desabilita essa funcionalidade."
+"Por padrão, a combinação de teclas ctrl + alt + s exibe o menu (\"&lt;"
+"Ctrl&gt;&lt;Alt&gt;S\"). Deixar vazio aqui desabilita essa funcionalidade."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:13
 msgid "Max displayed history size"
@@ -808,20 +797,20 @@ msgstr ""
 "removidos. Por padrão, é deixado como está."
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:43
-#, fuzzy
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
-msgstr "O atalho do teclado para apagar o primeiro elemento no histórico"
+msgstr ""
+"O atalho do teclado para carregar o primeiro elemento do histórico para um "
+"serviço de pastebin"
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:44
-#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"&lt;Ctrl&gt;&lt;Alt&gt;U\"). "
 "An empty string here disables this functionnality."
 msgstr ""
-"Por padrão,  a combinação de teclas ctrl + alt + v faz isso (\"&lt;Ctrl&gt;"
-"&lt;Alt&gt;V\"). Deixar vazio aqui desabilita essa funcionalidade."
+"Por padrão, a combinação de teclas ctrl + alt + u faz isso (\"&lt;Ctrl&gt;"
+"&lt;Alt&gt;U\"). Deixar vazio aqui desabilita essa funcionalidade."
 
 #~ msgid "Manage GPaste settings"
 #~ msgstr "Gerenciar as configurações do GPaste"
