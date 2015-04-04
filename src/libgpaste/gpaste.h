@@ -89,6 +89,7 @@
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-item.h>
+#include <gpaste-ui-search.h>
 #include <gpaste-ui-settings.h>
 #include <gpaste-ui-switch.h>
 #include <gpaste-ui-window.h>
