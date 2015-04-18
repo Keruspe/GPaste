@@ -34,6 +34,8 @@ G_PASTE_FINAL_TYPE (UiHeader, ui_header, UI_HEADER, GtkHeaderBar)
 
 void g_paste_ui_header_show_prefs (const GPasteUiHeader *self);
 
+GtkButton *g_paste_ui_header_get_search_button (const GPasteUiHeader *self);
+
 GtkWidget *g_paste_ui_header_new (GtkWindow    *topwin,
                                   GPasteClient *client);
 

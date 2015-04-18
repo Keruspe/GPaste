@@ -55,6 +55,24 @@ g_paste_ui_header_show_prefs (const GPasteUiHeader *self)
     gtk_button_clicked (priv->settings);
 }
 
+/**
+ * g_paste_ui_header_get_search_button:
+ * @self: the #GPasteUiHeader
+ *
+ * Get the search button
+ *
+ * Returns: (transfer none): the #GPasteUISearch instance
+ */
+G_PASTE_VISIBLE GtkButton *
+g_paste_ui_header_get_search_button (const GPasteUiHeader *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_UI_HEADER (self), NULL);
+
+    GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
+
+    return priv->search;
+}
+
 static void
 g_paste_ui_header_class_init (GPasteUiHeaderClass *klass G_GNUC_UNUSED)
 {
