@@ -19,6 +19,7 @@
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
+#include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-window.h>
 
 struct _GPasteUiWindow
@@ -83,6 +84,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (user_data);
     GtkWindow *win = user_data;
+    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
 
@@ -94,12 +96,20 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     }
 
     GtkWidget *header = g_paste_ui_header_new (win, client);
+    GtkWidget *search_bar = g_paste_ui_search_bar_new ();
+    GtkContainer *box = GTK_CONTAINER (vbox);
 
     priv->header = G_PASTE_UI_HEADER (header);
 
     gtk_window_set_titlebar (win, header);
-    gtk_container_add (GTK_CONTAINER (win), g_paste_ui_history_new (client));
+    gtk_container_add (GTK_CONTAINER (win), vbox);
+    gtk_container_add (box, search_bar);
+    gtk_container_add (box, g_paste_ui_history_new (client));
     gtk_widget_show_all (GTK_WIDGET (win));
+
+    g_object_bind_property (g_paste_ui_header_get_search_button (priv->header), "active",
+                            search_bar,                                         "search-mode-enabled",
+                            G_BINDING_BIDIRECTIONAL);
 
     priv->initialized = TRUE;
 }
