@@ -32,6 +32,8 @@ typedef struct
     GPasteUiHeader *header;
 
     gboolean        initialized;
+
+    gulong          key_press_signal;
 } GPasteUiWindowPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
@@ -67,14 +69,54 @@ g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
     g_source_set_name_by_id (g_idle_add (_show_prefs, priv), "[GPaste] show_prefs");
 }
 
-static void
-g_paste_ui_window_class_init (GPasteUiWindowClass *klass G_GNUC_UNUSED)
+static gboolean
+on_key_press_event (GtkWidget *widget G_GNUC_UNUSED,
+                    GdkEvent  *event,
+                    gpointer   user_data)
 {
+    GtkSearchBar *bar = user_data;
+
+    return gtk_search_bar_handle_event (bar, event);
 }
 
 static void
-g_paste_ui_window_init (GPasteUiWindow *self G_GNUC_UNUSED)
+g_paste_ui_window_dispose (GObject *object)
 {
+    GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    if (priv->key_press_signal)
+    {
+        g_signal_handler_disconnect (self, priv->key_press_signal);
+        priv->key_press_signal = 0;
+    }
+
+    G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
+}
+
+static void
+g_paste_ui_window_class_init (GPasteUiWindowClass *klass)
+{
+    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_window_dispose;
+}
+
+static void
+g_paste_ui_window_init (GPasteUiWindow *self)
+{
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    GtkWindow *win = GTK_WINDOW (self);
+    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
+
+    GtkWidget *search_bar = g_paste_ui_search_bar_new ();
+    GtkContainer *box = GTK_CONTAINER (vbox);
+
+    gtk_container_add (GTK_CONTAINER (win), vbox);
+    gtk_container_add (box, search_bar);
+
+    priv->key_press_signal = g_signal_connect (win,
+                                               "key-press-event",
+                                               G_CALLBACK (on_key_press_event),
+                                               search_bar);
 }
 
 static void
@@ -83,8 +125,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                  gpointer      user_data)
 {
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (user_data);
-    GtkWindow *win = user_data;
-    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
+    GtkWindow *win = GTK_WINDOW (user_data);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_finish (res, &error);
 
@@ -96,21 +137,17 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     }
 
     GtkWidget *header = g_paste_ui_header_new (win, client);
-    GtkWidget *search_bar = g_paste_ui_search_bar_new ();
-    GtkContainer *box = GTK_CONTAINER (vbox);
-
-    priv->header = G_PASTE_UI_HEADER (header);
+    GtkContainer *box = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (win)));
+    GPasteUiHeader *h = priv->header = G_PASTE_UI_HEADER (header);
 
     gtk_window_set_titlebar (win, header);
-    gtk_container_add (GTK_CONTAINER (win), vbox);
-    gtk_container_add (box, search_bar);
     gtk_container_add (box, g_paste_ui_history_new (client));
-    gtk_widget_show_all (GTK_WIDGET (win));
 
-    g_object_bind_property (g_paste_ui_header_get_search_button (priv->header), "active",
-                            search_bar,                                         "search-mode-enabled",
+    g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
+                            gtk_container_get_children (box)->data,  "search-mode-enabled",
                             G_BINDING_BIDIRECTIONAL);
 
+    gtk_widget_show_all (GTK_WIDGET (win));
     priv->initialized = TRUE;
 }
 
