@@ -32,6 +32,8 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiSearchBar, ui_search_bar, UI_SEARCH_BAR, GtkSearchBar)
 
+GtkSearchEntry *g_paste_ui_search_bar_get_entry (const GPasteUiSearchBar *self);
+
 GtkWidget *g_paste_ui_search_bar_new (void);
 
 G_END_DECLS

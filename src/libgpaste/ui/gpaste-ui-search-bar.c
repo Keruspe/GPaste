@@ -24,7 +24,28 @@ struct _GPasteUiSearchBar
     GtkSearchBar parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiSearchBar, g_paste_ui_search_bar, GTK_TYPE_SEARCH_BAR)
+typedef struct
+{
+    GtkSearchEntry *entry;
+} GPasteUiSearchBarPrivate;
+
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSearchBar, g_paste_ui_search_bar, GTK_TYPE_SEARCH_BAR)
+
+/**
+ * g_paste_ui_search_bar_get_entry:
+ *
+ * Get the #GtkSearchEntry
+ *
+ * Returns: the #GtkSearchEntry
+ */
+G_PASTE_VISIBLE GtkSearchEntry *
+g_paste_ui_search_bar_get_entry (const GPasteUiSearchBar *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_UI_SEARCH_BAR (self), NULL);
+    GPasteUiSearchBarPrivate *priv = g_paste_ui_search_bar_get_instance_private (self);
+
+    return priv->entry;
+}
 
 static void
 g_paste_ui_search_bar_class_init (GPasteUiSearchBarClass *klass G_GNUC_UNUSED)
@@ -34,7 +55,12 @@ g_paste_ui_search_bar_class_init (GPasteUiSearchBarClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_search_bar_init (GPasteUiSearchBar *self)
 {
-    gtk_container_add (GTK_CONTAINER (self), gtk_search_entry_new ());
+    GPasteUiSearchBarPrivate *priv = g_paste_ui_search_bar_get_instance_private (self);
+    GtkWidget *entry = gtk_search_entry_new ();
+
+    priv->entry = GTK_SEARCH_ENTRY (entry);
+
+    gtk_container_add (GTK_CONTAINER (self), entry);
 }
 
 /**
