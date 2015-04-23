@@ -100,9 +100,10 @@ g_paste_ui_window_dispose (GObject *object)
     {
         GtkContainer *box = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (self)));
         GPasteUiSearchBar *search_bar = G_PASTE_UI_SEARCH_BAR (gtk_container_get_children (box)->data);
+        GtkSearchEntry *entry = g_paste_ui_search_bar_get_entry (search_bar);
 
         g_signal_handler_disconnect (self, priv->key_press_signal);
-        g_signal_handler_disconnect (g_paste_ui_search_bar_get_entry (search_bar), priv->search_signal);
+        g_signal_handler_disconnect (entry, priv->search_signal);
         priv->key_press_signal = 0;
     }
 

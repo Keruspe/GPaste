@@ -36,6 +36,10 @@ typedef struct
     GSList         *items;
     gsize           size;
 
+    gchar          *search;
+    guint32        *search_results;
+    gsize           search_results_size;
+
     gulong          activated_id;
     gulong          update_id;
 } GPasteUiHistoryPrivate;
@@ -109,6 +113,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
         gtk_widget_hide (priv->dummy_item);
     else
         gtk_widget_show (priv->dummy_item);
+
     if (old_size < priv->size)
     {
         for (gsize i = old_size; i < priv->size; ++i)
@@ -137,10 +142,11 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     }
 
     GSList *item = priv->items;
-    for (guint i = 0; i < data->from_index; ++i)
+
+    for (gsize i = 0; i < data->from_index; ++i)
         item = g_slist_next (item);
-    for (guint i = data->from_index; item && i < refreshTextBound; ++i, item = g_slist_next (item))
-        g_paste_ui_item_refresh (item->data);
+    for (gsize i = data->from_index; i < refreshTextBound; ++i, item = g_slist_next (item))
+        g_paste_ui_item_set_index (item->data, i);
 }
 
 static void
@@ -149,11 +155,41 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    OnUpdateCallbackData *data = g_new (OnUpdateCallbackData, 1);
-    data->self = self;
-    data->from_index = from_index;
+    if (priv->search)
+    {
+        g_paste_ui_history_search (self, priv->search);
+    }
+    else
+    {
+        OnUpdateCallbackData *data = g_new (OnUpdateCallbackData, 1);
+        data->self = self;
+        data->from_index = from_index;
 
-    g_paste_client_get_history_size (priv->client, g_paste_ui_history_refresh_history, data);
+        g_paste_client_get_history_size (priv->client, g_paste_ui_history_refresh_history, data);
+    }
+}
+
+static void
+on_search_ready (GObject      *source_object G_GNUC_UNUSED,
+                 GAsyncResult *res,
+                 gpointer      user_data)
+{
+    GPasteUiHistory *self = user_data;
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    priv->search_results = g_paste_client_search_finish (priv->client, res, &priv->search_results_size, NULL /* error */);
+
+    if (!priv->search_results)
+        priv->search_results_size = 0;
+    else if (priv->search_results_size > priv->size)
+        priv->search_results_size = priv->size;
+
+    GSList *item = priv->items;
+
+    for (gsize i = 0; i < priv->search_results_size; ++i, item = g_slist_next (item))
+        g_paste_ui_item_set_index (item->data, priv->search_results[i]);
+    for (gsize i = priv->search_results_size; i < priv->size; ++i, item = g_slist_next (item))
+        g_paste_ui_item_set_index (item->data, -1);
 }
 
 G_PASTE_VISIBLE void
@@ -165,7 +201,18 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
     if (!g_strcmp0 (search, ""))
+    {
+        g_clear_pointer (&priv->search, g_free);
+        g_clear_pointer (&priv->search_results, g_free);
+        priv->search_results_size = 0;
         g_paste_ui_history_refresh (self, 0);
+    }
+    else
+    {
+        g_free (priv->search);
+        priv->search = g_strdup (search);
+        g_paste_client_search (priv->client, search, on_search_ready, self);
+    }
 }
 
 static void
@@ -229,9 +276,23 @@ g_paste_ui_history_dispose (GObject *object)
 }
 
 static void
+g_paste_ui_history_finalize (GObject *object)
+{
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
+
+    g_free (priv->search);
+    g_free (priv->search_results);
+
+    G_OBJECT_CLASS (g_paste_ui_history_parent_class)->finalize (object);
+}
+
+static void
 g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_history_dispose;
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = g_paste_ui_history_dispose;
+    object_class->finalize = g_paste_ui_history_finalize;
 }
 
 static void
