@@ -29,11 +29,13 @@ struct _GPasteUiWindow
 
 typedef struct
 {
-    GPasteUiHeader *header;
+    GPasteUiHeader  *header;
+    GPasteUiHistory *history;
 
-    gboolean        initialized;
+    gboolean         initialized;
 
-    gulong          key_press_signal;
+    gulong           key_press_signal;
+    gulong           search_signal;
 } GPasteUiWindowPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
@@ -80,6 +82,15 @@ on_key_press_event (GtkWidget *widget G_GNUC_UNUSED,
 }
 
 static void
+on_search (GtkSearchEntry *entry,
+           gpointer        user_data)
+{
+    GPasteUiWindowPrivate *priv = user_data;
+
+    g_paste_ui_history_search (priv->history, gtk_entry_get_text (GTK_ENTRY (entry)));
+}
+
+static void
 g_paste_ui_window_dispose (GObject *object)
 {
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
@@ -87,7 +98,11 @@ g_paste_ui_window_dispose (GObject *object)
 
     if (priv->key_press_signal)
     {
+        GtkContainer *box = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (self)));
+        GPasteUiSearchBar *search_bar = G_PASTE_UI_SEARCH_BAR (gtk_container_get_children (box)->data);
+
         g_signal_handler_disconnect (self, priv->key_press_signal);
+        g_signal_handler_disconnect (g_paste_ui_search_bar_get_entry (search_bar), priv->search_signal);
         priv->key_press_signal = 0;
     }
 
@@ -113,10 +128,14 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     gtk_container_add (GTK_CONTAINER (win), vbox);
     gtk_container_add (box, search_bar);
 
-    priv->key_press_signal = g_signal_connect (win,
+    priv->key_press_signal = g_signal_connect (self,
                                                "key-press-event",
                                                G_CALLBACK (on_key_press_event),
                                                search_bar);
+    priv->search_signal = g_signal_connect (g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar)),
+                                            "search-changed",
+                                            G_CALLBACK (on_search),
+                                            priv);
 }
 
 static void
@@ -137,11 +156,14 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     }
 
     GtkWidget *header = g_paste_ui_header_new (win, client);
+    GtkWidget *history = g_paste_ui_history_new (client);
     GtkContainer *box = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (win)));
     GPasteUiHeader *h = priv->header = G_PASTE_UI_HEADER (header);
 
+    priv->history = G_PASTE_UI_HISTORY (history);
+
     gtk_window_set_titlebar (win, header);
-    gtk_container_add (box, g_paste_ui_history_new (client));
+    gtk_container_add (box, history);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
                             gtk_container_get_children (box)->data,  "search-mode-enabled",

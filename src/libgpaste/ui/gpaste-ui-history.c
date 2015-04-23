@@ -89,7 +89,7 @@ g_paste_applet_history_drop_list (GtkContainer *self,
 
 typedef struct {
     GPasteUiHistory *self;
-    guint            refreshFrom;
+    guint            from_index;
 } OnUpdateCallbackData;
 
 static void
@@ -137,14 +137,39 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     }
 
     GSList *item = priv->items;
-    for (guint i = 0; i < data->refreshFrom; ++i)
+    for (guint i = 0; i < data->from_index; ++i)
         item = g_slist_next (item);
-    for (guint i = data->refreshFrom; item && i < refreshTextBound; ++i, item = g_slist_next (item))
+    for (guint i = data->from_index; item && i < refreshTextBound; ++i, item = g_slist_next (item))
         g_paste_ui_item_refresh (item->data);
 }
 
 static void
-g_paste_ui_history_on_update (GPasteClient      *client,
+g_paste_ui_history_refresh (GPasteUiHistory *self,
+                            guint            from_index)
+{
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    OnUpdateCallbackData *data = g_new (OnUpdateCallbackData, 1);
+    data->self = self;
+    data->from_index = from_index;
+
+    g_paste_client_get_history_size (priv->client, g_paste_ui_history_refresh_history, data);
+}
+
+G_PASTE_VISIBLE void
+g_paste_ui_history_search (GPasteUiHistory *self,
+                           const gchar     *search)
+{
+    g_return_if_fail (G_PASTE_IS_UI_HISTORY (self));
+
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    if (!g_strcmp0 (search, ""))
+        g_paste_ui_history_refresh (self, 0);
+}
+
+static void
+g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
                               GPasteUpdateAction action,
                               GPasteUpdateTarget target,
                               guint              position,
@@ -177,12 +202,7 @@ g_paste_ui_history_on_update (GPasteClient      *client,
     }
 
     if (refresh)
-    {
-        OnUpdateCallbackData *data = g_new (OnUpdateCallbackData, 1);
-        data->self = self;
-        data->refreshFrom = position;
-        g_paste_client_get_history_size (client, g_paste_ui_history_refresh_history, data);
-    }
+        g_paste_ui_history_refresh (self, position);
 }
 
 static void
