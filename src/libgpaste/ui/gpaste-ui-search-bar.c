@@ -36,7 +36,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSearchBar, g_paste_ui_search_bar, GTK_TYPE_S
  *
  * Get the #GtkSearchEntry
  *
- * Returns: the #GtkSearchEntry
+ * Returns: (transfer none): the #GtkSearchEntry
  */
 G_PASTE_VISIBLE GtkSearchEntry *
 g_paste_ui_search_bar_get_entry (const GPasteUiSearchBar *self)
