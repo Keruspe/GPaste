@@ -217,7 +217,7 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     priv->max_history_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                  _("Max history size: "),
                                                                                  (gdouble) g_paste_settings_get_max_history_size (settings),
-                                                                                 5, 255, 5,
+                                                                                 100, 65535, 5,
                                                                                  max_history_size_callback,
                                                                                  (GPasteResetCallback) g_paste_settings_reset_max_history_size,
                                                                                  settings);

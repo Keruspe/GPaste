@@ -834,12 +834,14 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
     if (!priv->registered)
         return;
 
-    if (active)
+    /* The deactivate signal is always sent, but not the activate oue */
+    /* We always do the activate action, so that the deactivate one works anyways */
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("");
         g_paste_clipboards_manager_select (priv->clipboards_manager, item);
     }
-    else
+
+    if (!active)
     {
         const GPasteItem *item = g_paste_history_get (priv->history, 0);
 

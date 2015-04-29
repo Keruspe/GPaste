@@ -63,8 +63,8 @@
     </key>
 
     <key name="max-history-size" type="u">
-      <range min="5" max="255"/>
-      <default>30</default>
+      <range min="5" max="65535"/>
+      <default>100</default>
       <summary>Max history size</summary>
       <description>
         Maximum number of items in history
