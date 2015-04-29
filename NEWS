@@ -1,3 +1,9 @@
+NEW in 3.16.1 (29/04/2012)
+=============
+
+- bump max history size
+- fix weird behaviour wrt screensaver
+
 NEW in 3.16 (23/03/2015)
 =============
 
