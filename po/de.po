@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-30 10:48+0200\n"
+"POT-Creation-Date: 2015-04-29 09:18+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -167,7 +167,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
-#: ../src/libgpaste/ui/gpaste-ui-window.c:92 ../src/gpaste/gpaste.c:181
+#: ../src/libgpaste/ui/gpaste-ui-window.c:155 ../src/gpaste/gpaste.c:181
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
@@ -221,6 +221,10 @@ msgstr "Chronik leeren"
 #: ../src/libgpaste/ui/gpaste-ui-empty-item.c:37
 msgid "(Empty)"
 msgstr "(Leer)"
+
+#: ../src/libgpaste/ui/gpaste-ui-search.c:37
+msgid "Search"
+msgstr ""
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:42
 msgid "GPaste Settings"

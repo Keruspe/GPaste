@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-30 10:48+0200\n"
+"POT-Creation-Date: 2015-04-29 09:18+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -166,7 +166,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "Eliminar el primer elemento del historial"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
-#: ../src/libgpaste/ui/gpaste-ui-window.c:92 ../src/gpaste/gpaste.c:181
+#: ../src/libgpaste/ui/gpaste-ui-window.c:155 ../src/gpaste/gpaste.c:181
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
@@ -220,6 +220,10 @@ msgstr "Vaciar historial"
 #: ../src/libgpaste/ui/gpaste-ui-empty-item.c:37
 msgid "(Empty)"
 msgstr "(Vacío)"
+
+#: ../src/libgpaste/ui/gpaste-ui-search.c:37
+msgid "Search"
+msgstr ""
 
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:42
 #, fuzzy

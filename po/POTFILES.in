@@ -11,6 +11,7 @@ src/libgpaste/settings-ui/gpaste-settings-ui-stack.c
 src/libgpaste/ui/gpaste-ui-about.c
 src/libgpaste/ui/gpaste-ui-empty.c
 src/libgpaste/ui/gpaste-ui-empty-item.c
+src/libgpaste/ui/gpaste-ui-search.c
 src/libgpaste/ui/gpaste-ui-settings.c
 src/libgpaste/ui/gpaste-ui-switch.c
 src/libgpaste/ui/gpaste-ui-window.c
