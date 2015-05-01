@@ -49,9 +49,12 @@
 #include <gpaste-ui-keybinding.h>
 #include <gpaste-upload-keybinding.h>
 
+/* GPasteBus */
+#include <gpaste-bus.h>
+#include <gpaste-gdbus-defines.h>
+
 /* GPasteDaemon */
 #include <gpaste-daemon.h>
-#include <gpaste-gdbus-defines.h>
 #include <gpaste-update-enums.h>
 
 /* GPasteClient */

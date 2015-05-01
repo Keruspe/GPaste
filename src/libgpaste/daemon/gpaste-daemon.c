@@ -38,7 +38,7 @@
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
                                    priv->object_path,               \
-                                   G_PASTE_DAEMON_BUS_NAME,         \
+                                   G_PASTE_BUS_NAME,                \
                                    G_PASTE_DAEMON_SIG_##sig,        \
                                    data,                            \
                                    error)
@@ -61,13 +61,13 @@
                   G_TYPE_NONE,                   \
                   0)
 
-#define G_PASTE_DBUS_ASSERT_FULL(cond, _msg, ret)                 \
-    do {                                                          \
-        if (!(cond))                                              \
-        {                                                         \
-            *err = _err (G_PASTE_DAEMON_BUS_NAME ".Error", _msg); \
-            return ret;                                           \
-        }                                                         \
+#define G_PASTE_DBUS_ASSERT_FULL(cond, _msg, ret)          \
+    do {                                                   \
+        if (!(cond))                                       \
+        {                                                  \
+            *err = _err (G_PASTE_BUS_NAME ".Error", _msg); \
+            return ret;                                    \
+        }                                                  \
     } while (FALSE)
 
 #define G_PASTE_DBUS_ASSERT(cond, _msg) G_PASTE_DBUS_ASSERT_FULL (cond, _msg, ;)
@@ -950,7 +950,7 @@ g_paste_daemon_own_bus_name (GPasteDaemon *self,
 
     priv->inner_error = *error;
     priv->id_on_bus = g_bus_own_name (G_BUS_TYPE_SESSION,
-                                      G_PASTE_DAEMON_BUS_NAME,
+                                      G_PASTE_BUS_NAME,
                                       G_BUS_NAME_OWNER_FLAGS_NONE,
                                       g_paste_daemon_on_bus_acquired,
                                       NULL, /* on_name_acquired */

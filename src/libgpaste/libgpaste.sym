@@ -359,6 +359,10 @@ local:
 
 LIBGPASTE_3_18_0 {
 global:
+    g_paste_bus_get_type;
+    g_paste_bus_new;
+    g_paste_bus_own_name;
+
     g_paste_ui_header_get_search_button;
     g_paste_ui_header_show_prefs;
     g_paste_ui_history_search;

@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-client.h>
-#include <gpaste-gdbus-defines.h>
 #define __G_PASTE_NEEDS_AU__
 #include <gpaste-gdbus-macros.h>
 #include <gpaste-update-enums.h>

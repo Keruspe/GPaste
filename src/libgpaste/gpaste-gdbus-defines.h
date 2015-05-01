@@ -28,7 +28,8 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_DAEMON_BUS_NAME       "org.gnome.GPaste"
+#define G_PASTE_BUS_NAME "org.gnome.GPaste"
+
 #define G_PASTE_DAEMON_OBJECT_PATH    "/org/gnome/GPaste"
 #define G_PASTE_DAEMON_INTERFACE_NAME "org.gnome.GPaste"
 
@@ -167,7 +168,6 @@ G_BEGIN_DECLS
         "   </interface>"                                                      \
         "</node>"
 
-#define G_PASTE_SEARCH_PROVIDER_BUS_NAME       G_PASTE_DAEMON_BUS_NAME
 #define G_PASTE_SEARCH_PROVIDER_OBJECT_PATH    "/org/gnome/GPaste/SearchProvider"
 #define G_PASTE_SEARCH_PROVIDER_INTERFACE_NAME "org.gnome.Shell.SearchProvider2"
 

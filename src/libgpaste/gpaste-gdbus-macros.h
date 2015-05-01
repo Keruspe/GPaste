@@ -24,7 +24,8 @@
 #ifndef __G_PASTE_GDBUS_MACROS_H__
 #define __G_PASTE_GDBUS_MACROS_H__
 
-#include <glib.h>
+#include <gpaste-gdbus-defines.h>
+
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
@@ -61,7 +62,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
                                 user_data,                                             \
                                 "g-bus-type",       G_BUS_TYPE_SESSION,                \
                                 "g-flags",          G_DBUS_PROXY_FLAGS_NONE,           \
-                                "g-name",           G_PASTE_##BUS_ID##_BUS_NAME,       \
+                                "g-name",           G_PASTE_BUS_NAME,                  \
                                 "g-object-path",    G_PASTE_##BUS_ID##_OBJECT_PATH,    \
                                 "g-interface-name", G_PASTE_##BUS_ID##_INTERFACE_NAME, \
                                 NULL)
@@ -82,7 +83,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
                                       error,                                                 \
                                       "g-bus-type",       G_BUS_TYPE_SESSION,                \
                                       "g-flags",          G_DBUS_PROXY_FLAGS_NONE,           \
-                                      "g-name",           G_PASTE_##BUS_ID##_BUS_NAME,       \
+                                      "g-name",           G_PASTE_BUS_NAME,                  \
                                       "g-object-path",    G_PASTE_##BUS_ID##_OBJECT_PATH,    \
                                       "g-interface-name", G_PASTE_##BUS_ID##_INTERFACE_NAME, \
                                       NULL);                                                 \

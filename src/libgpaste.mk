@@ -50,6 +50,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/core/gpaste-text-item.h \
 	src/libgpaste/core/gpaste-update-enums.h \
 	src/libgpaste/core/gpaste-uris-item.h \
+	src/libgpaste/daemon/gpaste-bus.h \
 	src/libgpaste/daemon/gpaste-daemon.h \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.h \
 	src/libgpaste/keybinder/gpaste-keybinder.h \
@@ -98,6 +99,7 @@ lib_libgpaste_la_source_files = \
 	src/libgpaste/core/gpaste-text-item.c \
 	src/libgpaste/core/gpaste-update-enums.c \
 	src/libgpaste/core/gpaste-uris-item.c \
+	src/libgpaste/daemon/gpaste-bus.c \
 	src/libgpaste/daemon/gpaste-daemon.c \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c \
 	src/libgpaste/keybinder/gpaste-keybinder.c \
