@@ -52,10 +52,13 @@
 /* GPasteBus */
 #include <gpaste-bus.h>
 #include <gpaste-gdbus-defines.h>
+#include <gpaste-update-enums.h>
+
+/* GPasteBusObject */
+#include <gpaste-bus-object.h>
 
 /* GPasteDaemon */
 #include <gpaste-daemon.h>
-#include <gpaste-update-enums.h>
 
 /* GPasteClient */
 #include <gpaste-client.h>
