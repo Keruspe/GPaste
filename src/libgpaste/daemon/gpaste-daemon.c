@@ -834,7 +834,7 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
     if (!priv->registered)
         return;
 
-    /* The deactivate signal is always sent, but not the activate oue */
+    /* The deactivate signal is always sent, but not the activate one */
     /* We always do the activate action, so that the deactivate one works anyways */
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("");

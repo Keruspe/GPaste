@@ -919,7 +919,6 @@ g_paste_client_get_history (GPasteClient       *self,
  *
  * Returns:
  */
-
 G_PASTE_VISIBLE void
 g_paste_client_get_history_size (GPasteClient       *self,
                                  GAsyncReadyCallback callback,
