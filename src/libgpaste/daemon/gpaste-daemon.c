@@ -85,14 +85,15 @@ enum
 
 struct _GPasteDaemon
 {
-    GObject parent_instance;
+    GPasteBusObject parent_instance;
 };
 
 typedef struct
 {
+    guint                    id_on_bus;
+
     GDBusConnection         *connection;
     gchar                   *object_path;
-    guint                    id_on_bus;
     gboolean                 registered;
     GError                  *inner_error;
     GPasteHistory           *history;
@@ -106,7 +107,7 @@ typedef struct
     gulong                   c_signals[C_LAST_SIGNAL];
 } GPasteDaemonPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteDaemon, g_paste_daemon, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteDaemon, g_paste_daemon, G_PASTE_TYPE_BUS_OBJECT)
 
 enum
 {
@@ -991,6 +992,50 @@ g_paste_daemon_finalize (GObject *object)
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->finalize (object);
 }
 
+static gboolean
+g_paste_daemon_register_on_connection (GPasteBusObject *self,
+                                       GDBusConnection *connection,
+                                       GError         **error)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (self));
+
+    g_clear_object (&priv->connection);
+    priv->connection = g_object_ref (connection);
+
+    priv->id_on_bus = g_dbus_connection_register_object (connection,
+                                                         G_PASTE_DAEMON_OBJECT_PATH,
+                                                         priv->g_paste_daemon_dbus_info->interfaces[0],
+                                                         &priv->g_paste_daemon_dbus_vtable,
+                                                         g_object_ref (self),
+                                                         g_paste_daemon_unregister_object,
+                                                         error);
+
+    if (!priv->id_on_bus)
+        return FALSE;
+
+    gulong *c_signals = priv->c_signals;
+
+    c_signals[C_NAME_LOST] = g_signal_connect (self,
+                                              "name-lost",
+                                               G_CALLBACK (g_paste_daemon_name_lost),
+                                               NULL);
+    c_signals[C_REEXECUTE_SELF] = g_signal_connect (self,
+                                                    "reexecute-self",
+                                                    G_CALLBACK (g_paste_daemon_reexecute_self),
+                                                    NULL);
+    c_signals[C_TRACK] = g_signal_connect_swapped (priv->settings,
+                                                   "track",
+                                                   G_CALLBACK (g_paste_daemon_tracking),
+                                                   self);
+    c_signals[C_UPDATE] = g_signal_connect_swapped (priv->history,
+                                                    "update",
+                                                    G_CALLBACK (g_paste_daemon_on_history_update),
+                                                    self);
+    priv->registered = TRUE;
+
+    return TRUE;
+}
+
 static void
 g_paste_daemon_class_init (GPasteDaemonClass *klass)
 {
@@ -998,6 +1043,8 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
 
     object_class->dispose = g_paste_daemon_dispose;
     object_class->finalize = g_paste_daemon_finalize;
+
+    G_PASTE_BUS_OBJECT_CLASS (klass)->register_on_connection = g_paste_daemon_register_on_connection;
 
     signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");

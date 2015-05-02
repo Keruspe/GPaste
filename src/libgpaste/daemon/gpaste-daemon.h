@@ -24,13 +24,13 @@
 #ifndef __G_PASTE_DAEMON_H__
 #define __G_PASTE_DAEMON_H__
 
-#include <gpaste-macros.h>
+#include <gpaste-bus-object.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_DAEMON (g_paste_daemon_get_type ())
 
-G_PASTE_FINAL_TYPE (Daemon, daemon, DAEMON, GObject)
+G_PASTE_FINAL_TYPE (Daemon, daemon, DAEMON, GPasteBusObject)
 
 gboolean g_paste_daemon_own_bus_name (GPasteDaemon *self,
                                       GError      **error);

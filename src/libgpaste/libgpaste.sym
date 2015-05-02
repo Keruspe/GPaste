@@ -365,6 +365,7 @@ global:
 
     g_paste_bus_object_get_type;
     g_paste_bus_object_new;
+    g_paste_bus_object_register_on_connection;
 
     g_paste_ui_header_get_search_button;
     g_paste_ui_header_show_prefs;
