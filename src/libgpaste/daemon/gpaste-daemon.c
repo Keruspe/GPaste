@@ -90,17 +90,16 @@ struct _GPasteDaemon
 
 typedef struct
 {
-    guint                    id_on_bus;
-
     GDBusConnection         *connection;
-    gchar                   *object_path;
+    guint                    id_on_bus;
     gboolean                 registered;
-    GError                  *inner_error;
+
     GPasteHistory           *history;
     GPasteSettings          *settings;
     GPasteClipboardsManager *clipboards_manager;
     GPasteKeybinder         *keybinder;
     GPasteScreensaverClient *screensaver;
+
     GDBusNodeInfo           *g_paste_daemon_dbus_info;
     GDBusInterfaceVTable     g_paste_daemon_dbus_vtable;
 
@@ -851,49 +850,6 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
     }
 }
 
-static void
-g_paste_daemon_register_object (GPasteDaemon    *self,
-                                GDBusConnection *connection,
-                                const gchar     *path)
-{
-    g_return_if_fail (G_PASTE_IS_DAEMON (self));
-
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-
-    priv->connection = g_object_ref (connection);
-    priv->object_path = g_strdup (path);
-
-    if (!g_dbus_connection_register_object (connection,
-                                            path,
-                                            priv->g_paste_daemon_dbus_info->interfaces[0],
-                                            &priv->g_paste_daemon_dbus_vtable,
-                                            g_object_ref (self),
-                                            g_paste_daemon_unregister_object,
-                                            &priv->inner_error))
-    {
-        return;
-    }
-
-    gulong *c_signals = priv->c_signals;
-    c_signals[C_NAME_LOST] = g_signal_connect (self,
-                                              "name-lost",
-                                               G_CALLBACK (g_paste_daemon_name_lost),
-                                               NULL);
-    c_signals[C_REEXECUTE_SELF] = g_signal_connect (self,
-                                                    "reexecute-self",
-                                                    G_CALLBACK (g_paste_daemon_reexecute_self),
-                                                    NULL);
-    c_signals[C_TRACK] = g_signal_connect_swapped (priv->settings,
-                                                   "track",
-                                                   G_CALLBACK (g_paste_daemon_tracking),
-                                                   self);
-    c_signals[C_UPDATE] = g_signal_connect_swapped (priv->history,
-                                                    "update",
-                                                    G_CALLBACK (g_paste_daemon_on_history_update),
-                                                    self);
-    priv->registered = TRUE;
-}
-
 static gboolean
 _g_paste_daemon_changed (gpointer data)
 {
@@ -923,43 +879,11 @@ g_paste_daemon_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
                              const char      *name G_GNUC_UNUSED,
                              gpointer         user_data)
 {
+    /* FIXME: move me to bus */
     g_signal_emit (G_PASTE_DAEMON (user_data),
                    signals[NAME_LOST],
                    0, /* detail */
                    NULL);
-}
-
-/**
- * g_paste_daemon_own_bus_name:
- * @self: (transfer none): the #GPasteDaemon
- * @error: a #GError
- *
- * Own the bus name
- *
- * Returns:
- */
-G_PASTE_VISIBLE gboolean
-g_paste_daemon_own_bus_name (GPasteDaemon *self,
-                             GError      **error)
-{
-    g_return_val_if_fail (G_PASTE_IS_DAEMON (self), FALSE);
-    g_return_val_if_fail (error != NULL, FALSE);
-
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-
-    g_return_val_if_fail (!priv->id_on_bus, FALSE);
-
-    priv->inner_error = *error;
-    priv->id_on_bus = g_bus_own_name (G_BUS_TYPE_SESSION,
-                                      G_PASTE_BUS_NAME,
-                                      G_BUS_NAME_OWNER_FLAGS_NONE,
-                                      g_paste_daemon_on_bus_acquired,
-                                      NULL, /* on_name_acquired */
-                                      g_paste_daemon_on_name_lost,
-                                      g_object_ref (self),
-                                      g_object_unref);
-
-    return (!priv->inner_error);
 }
 
 static void
@@ -980,16 +904,6 @@ g_paste_daemon_dispose (GObject *object)
     }
 
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->dispose (object);
-}
-
-static void
-g_paste_daemon_finalize (GObject *object)
-{
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
-
-    g_free (priv->object_path);
-
-    G_OBJECT_CLASS (g_paste_daemon_parent_class)->finalize (object);
 }
 
 static gboolean
@@ -1039,11 +953,7 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
 static void
 g_paste_daemon_class_init (GPasteDaemonClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_daemon_dispose;
-    object_class->finalize = g_paste_daemon_finalize;
-
+    G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
     G_PASTE_BUS_OBJECT_CLASS (klass)->register_on_connection = g_paste_daemon_register_on_connection;
 
     signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
@@ -1058,7 +968,7 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
     GPasteDaemonPrivate *priv = user_data;
     GPasteScreensaverClient *screensaver = priv->screensaver = g_paste_screensaver_client_new_finish (res, NULL);
 
-    if (screensaver) /* object was registered before client was ready */
+    if (screensaver)
     {
         priv->c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
                                                                       "active-changed",
