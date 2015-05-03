@@ -37,7 +37,7 @@
 #define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,error)               \
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
-                                   priv->object_path,               \
+                                   G_PASTE_DAEMON_OBJECT_PATH,      \
                                    G_PASTE_BUS_NAME,                \
                                    G_PASTE_DAEMON_SIG_##sig,        \
                                    data,                            \

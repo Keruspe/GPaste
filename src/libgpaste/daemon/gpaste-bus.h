@@ -35,7 +35,7 @@ G_PASTE_FINAL_TYPE (Bus, bus, BUS, GObject)
 typedef void (*GPasteBusAcquiredCallback) (GPasteBus *bus,
                                            gpointer   user_data);
 
-void g_paste_bus_own_bus_name (GPasteBus *self);
+void g_paste_bus_own_name (GPasteBus *self);
 
 GDBusConnection *g_paste_bus_get_connection (const GPasteBus *self);
 

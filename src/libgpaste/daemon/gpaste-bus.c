@@ -53,7 +53,7 @@ g_paste_bus_on_bus_acquired (GDBusConnection *connection,
 }
 
 /**
- * g_paste_bus_own_bus_name:
+ * g_paste_bus_own_name:
  * @self: the #GPasteBus
  *
  * Own the bus name
@@ -61,7 +61,7 @@ g_paste_bus_on_bus_acquired (GDBusConnection *connection,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_bus_own_bus_name (GPasteBus *self)
+g_paste_bus_own_name (GPasteBus *self)
 {
     g_return_if_fail (G_PASTE_IS_BUS (self));
 
