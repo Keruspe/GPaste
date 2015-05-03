@@ -75,7 +75,6 @@
 enum
 {
     C_UPDATE,
-    C_NAME_LOST,
     C_REEXECUTE_SELF,
     C_TRACK,
     C_ACTIVE_CHANGED,
@@ -198,15 +197,6 @@ g_paste_daemon_update (GPasteDaemon      *self,
         g_variant_new_uint32 (position)
     };
     G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
-}
-
-static void
-g_paste_daemon_name_lost (GPasteDaemon *self,
-                          gpointer      user_data G_GNUC_UNUSED)
-{
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-
-    G_PASTE_SEND_DBUS_SIGNAL (NAME_LOST);
 }
 
 static void
@@ -805,7 +795,6 @@ g_paste_daemon_unregister_object (gpointer user_data)
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     gulong *c_signals = priv->c_signals;
 
-    g_signal_handler_disconnect (self, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (self, c_signals[C_REEXECUTE_SELF]);
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_UPDATE]);
@@ -929,10 +918,6 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
 
     gulong *c_signals = priv->c_signals;
 
-    c_signals[C_NAME_LOST] = g_signal_connect (self,
-                                              "name-lost",
-                                               G_CALLBACK (g_paste_daemon_name_lost),
-                                               NULL);
     c_signals[C_REEXECUTE_SELF] = g_signal_connect (self,
                                                     "reexecute-self",
                                                     G_CALLBACK (g_paste_daemon_reexecute_self),
