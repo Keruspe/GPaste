@@ -78,9 +78,9 @@ main (gint argc, gchar *argv[])
     /* Keep the gapplication around */
     gtk_widget_hide (gtk_application_window_new (app));
 
-    g_autoptr (GPasteDaemon) g_paste_daemon = g_paste_daemon_new ();
     g_autofree gpointer *data = g_new0 (gpointer, 2);
-    g_autoptr (GPasteBus) bus = data[0] = g_paste_bus_new (on_bus_acquired, data);
+    g_autoptr (GPasteDaemon) g_paste_daemon = data[0] = g_paste_daemon_new ();
+    g_autoptr (GPasteBus) bus = g_paste_bus_new (on_bus_acquired, data);
 
     _app = data[1] = gapp;
 
@@ -102,7 +102,7 @@ main (gint argc, gchar *argv[])
 
     gint exit_status = g_application_run (gapp, argc, argv);
 
-    g_signal_handler_disconnect (g_paste_daemon, c_signals[C_NAME_LOST]);
+    g_signal_handler_disconnect (bus, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
 
     return exit_status;
