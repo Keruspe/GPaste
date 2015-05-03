@@ -1819,7 +1819,7 @@ g_paste_client_init (GPasteClient *self)
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (CLIENT, DAEMON);
+    CUSTOM_PROXY_NEW (CLIENT, DAEMON, G_PASTE_BUS_NAME);
 }
 
 /**
@@ -1835,7 +1835,7 @@ G_PASTE_VISIBLE void
 g_paste_client_new (GAsyncReadyCallback callback,
                     gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (CLIENT, DAEMON);
+    CUSTOM_PROXY_NEW_ASYNC (CLIENT, DAEMON, G_PASTE_BUS_NAME);
 }
 
 /**

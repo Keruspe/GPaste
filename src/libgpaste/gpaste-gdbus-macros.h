@@ -54,7 +54,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
 /* Constructor */
 /***************/
 
-#define CUSTOM_PROXY_NEW_ASYNC(TYPE, BUS_ID)                                           \
+#define CUSTOM_PROXY_NEW_ASYNC(TYPE, BUS_ID, BUS_NAME)                                 \
     g_async_initable_new_async (G_PASTE_TYPE_##TYPE,                                   \
                                 G_PRIORITY_DEFAULT,                                    \
                                 NULL, /* cancellable */                                \
@@ -62,7 +62,7 @@ g_paste_dbus_get_au_result (GVariant *variant,
                                 user_data,                                             \
                                 "g-bus-type",       G_BUS_TYPE_SESSION,                \
                                 "g-flags",          G_DBUS_PROXY_FLAGS_NONE,           \
-                                "g-name",           G_PASTE_BUS_NAME,                  \
+                                "g-name",           BUS_NAME,                          \
                                 "g-object-path",    G_PASTE_##BUS_ID##_OBJECT_PATH,    \
                                 "g-interface-name", G_PASTE_##BUS_ID##_INTERFACE_NAME, \
                                 NULL)
@@ -77,13 +77,13 @@ g_paste_dbus_get_au_result (GVariant *variant,
                                                  error);                    \
     return (self) ? G_PASTE_##TYPE (self) : NULL;
 
-#define CUSTOM_PROXY_NEW(TYPE, BUS_ID)                                                       \
+#define CUSTOM_PROXY_NEW(TYPE, BUS_ID, BUS_NAME)                                             \
     GInitable *self = g_initable_new (G_PASTE_TYPE_##TYPE,                                   \
                                       NULL, /* cancellable */                                \
                                       error,                                                 \
                                       "g-bus-type",       G_BUS_TYPE_SESSION,                \
                                       "g-flags",          G_DBUS_PROXY_FLAGS_NONE,           \
-                                      "g-name",           G_PASTE_BUS_NAME,                  \
+                                      "g-name",           BUS_NAME,                          \
                                       "g-object-path",    G_PASTE_##BUS_ID##_OBJECT_PATH,    \
                                       "g-interface-name", G_PASTE_##BUS_ID##_INTERFACE_NAME, \
                                       NULL);                                                 \
