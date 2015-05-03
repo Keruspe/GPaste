@@ -34,6 +34,8 @@ G_PASTE_FINAL_TYPE (Bus, bus, BUS, GObject)
 
 void g_paste_bus_own_bus_name (GPasteBus *self);
 
+GDBusConnection *g_paste_bus_get_connection (const GPasteBus *self);
+
 GPasteBus *g_paste_bus_new (void);
 
 G_END_DECLS

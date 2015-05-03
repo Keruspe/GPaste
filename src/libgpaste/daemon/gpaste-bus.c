@@ -72,6 +72,24 @@ g_paste_bus_own_bus_name (GPasteBus *self)
                                       g_object_unref);
 }
 
+/**
+ * g_paste_bus_get_connection:
+ * @self: the #GPasteBus
+ *
+ * returns the #GDBusConnection
+ *
+ * Returns: (transfer none) (nullable): the connection
+ */
+G_PASTE_VISIBLE GDBusConnection *
+g_paste_bus_get_connection (const GPasteBus *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_BUS (self), NULL);
+
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
+
+    return priv->connection;
+}
+
 static void
 g_paste_bus_dispose (GObject *object)
 {
