@@ -50,17 +50,6 @@
 #define G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR(sig)  G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __NODATA,  error)
 #define G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA(sig,d) G_PASTE_SEND_DBUS_SIGNAL_FULL(sig, __DATA(d), NULL)
 
-#define NEW_SIGNAL(name) \
-    g_signal_new (name, \
-                  G_PASTE_TYPE_DAEMON,           \
-                  G_SIGNAL_RUN_LAST,             \
-                  0, /* class offset */          \
-                  NULL, /* accumulator */        \
-                  NULL, /* accumulator data */   \
-                  g_cclosure_marshal_VOID__VOID, \
-                  G_TYPE_NONE,                   \
-                  0)
-
 #define G_PASTE_DBUS_ASSERT_FULL(cond, _msg, ret)          \
     do {                                                   \
         if (!(cond))                                       \
@@ -109,7 +98,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteDaemon, g_paste_daemon, G_PASTE_TYPE_BUS_OBJEC
 
 enum
 {
-    NAME_LOST,
     REEXECUTE_SELF,
 
     LAST_SIGNAL
@@ -850,32 +838,6 @@ _g_paste_daemon_changed (gpointer data)
 }
 
 static void
-g_paste_daemon_on_bus_acquired (GDBusConnection *connection,
-                                const char      *name G_GNUC_UNUSED,
-                                gpointer         user_data)
-{
-    GPasteDaemon *self = G_PASTE_DAEMON (user_data);
-
-    g_paste_daemon_register_object (self,
-                                    connection,
-                                    G_PASTE_DAEMON_OBJECT_PATH);
-
-    g_source_set_name_by_id (g_timeout_add_seconds (1, _g_paste_daemon_changed, user_data), "[GPaste] Startup - changed");
-}
-
-static void
-g_paste_daemon_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
-                             const char      *name G_GNUC_UNUSED,
-                             gpointer         user_data)
-{
-    /* FIXME: move me to bus */
-    g_signal_emit (G_PASTE_DAEMON (user_data),
-                   signals[NAME_LOST],
-                   0, /* detail */
-                   NULL);
-}
-
-static void
 g_paste_daemon_dispose (GObject *object)
 {
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
@@ -932,6 +894,8 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
                                                     self);
     priv->registered = TRUE;
 
+    g_source_set_name_by_id (g_timeout_add_seconds (1, _g_paste_daemon_changed, self), "[GPaste] Startup - changed");
+
     return TRUE;
 }
 
@@ -941,8 +905,15 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
     G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
     G_PASTE_BUS_OBJECT_CLASS (klass)->register_on_connection = g_paste_daemon_register_on_connection;
 
-    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
-    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
+    signals[REEXECUTE_SELF] = g_signal_new ("reexecute-self",
+                                            G_PASTE_TYPE_DAEMON,
+                                            G_SIGNAL_RUN_LAST,
+                                            0, /* class offset */
+                                            NULL, /* accumulator */
+                                            NULL, /* accumulator data */
+                                            g_cclosure_marshal_VOID__VOID,
+                                            G_TYPE_NONE,
+                                            0);
 }
 
 static void

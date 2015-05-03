@@ -38,8 +38,8 @@ signal_handler (int signum)
 }
 
 G_PASTE_NORETURN static void
-on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-              gpointer      user_data)
+on_name_lost (GPasteBus *bus G_GNUC_UNUSED,
+              gpointer   user_data)
 {
     GApplication *app = user_data;
 
@@ -58,7 +58,7 @@ on_bus_acquired (GPasteBus *bus,
     g_autoptr (GError) error = NULL;
 
     if (!g_paste_bus_object_register_on_connection (daemon, connection, &error))
-        on_name_lost (G_PASTE_DAEMON (daemon), data[1]);
+        on_name_lost (bus, data[1]);
 }
 
 static void
@@ -85,7 +85,7 @@ main (gint argc, gchar *argv[])
     _app = data[1] = gapp;
 
     gulong c_signals[C_LAST_SIGNAL] = {
-        [C_NAME_LOST] = g_signal_connect (g_paste_daemon,
+        [C_NAME_LOST] = g_signal_connect (bus,
                                           "name-lost",
                                           G_CALLBACK (on_name_lost),
                                           gapp),
