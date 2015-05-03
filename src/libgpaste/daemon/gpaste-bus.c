@@ -29,8 +29,11 @@ struct _GPasteBus
 
 typedef struct
 {
-    GDBusConnection         *connection;
-    guint                    id_on_bus;
+    GDBusConnection          *connection;
+    guint                     id_on_bus;
+
+    GPasteBusAcquiredCallback on_bus_acquired;
+    gpointer                  user_data;
 } GPasteBusPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteBus, g_paste_bus, G_TYPE_OBJECT)
@@ -40,9 +43,13 @@ g_paste_bus_on_bus_acquired (GDBusConnection *connection,
                              const char      *name G_GNUC_UNUSED,
                              gpointer         user_data)
 {
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (user_data);
+    GPasteBus *self = user_data;
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
 
     priv->connection = g_object_ref (connection);
+
+    if (priv->on_bus_acquired)
+        priv->on_bus_acquired (self, priv->user_data);
 }
 
 /**
@@ -120,6 +127,7 @@ g_paste_bus_init (GPasteBus *self)
 
 /**
  * g_paste_bus_new:
+ * @on_bus_acquired: (closure user_data) (scope notified) (allow-none): handler to invoke when name is acquired or %NULL
  *
  * Create a new instance of #GPasteBus
  *
@@ -127,7 +135,14 @@ g_paste_bus_init (GPasteBus *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteBus *
-g_paste_bus_new (void)
+g_paste_bus_new (GPasteBusAcquiredCallback on_bus_acquired,
+                 gpointer                  user_data)
 {
-    return G_PASTE_BUS (g_object_new (G_PASTE_TYPE_BUS, NULL));
+    GPasteBus *self = G_PASTE_BUS (g_object_new (G_PASTE_TYPE_BUS, NULL));
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
+
+    priv->on_bus_acquired = on_bus_acquired;
+    priv->user_data = user_data;
+
+    return self;
 }
