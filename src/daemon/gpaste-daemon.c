@@ -19,6 +19,7 @@
 
 #include <gpaste-bus.h>
 #include <gpaste-daemon.h>
+#include <gpaste-search-provider.h>
 
 static GApplication *_app;
 
@@ -54,11 +55,13 @@ on_bus_acquired (GPasteBus *bus,
 {
     gpointer *data = (gpointer *) user_data;
     GPasteBusObject *daemon = data[0];
+    GPasteBusObject *search_provider = data[1];
     GDBusConnection *connection = g_paste_bus_get_connection (bus);
     g_autoptr (GError) error = NULL;
 
-    if (!g_paste_bus_object_register_on_connection (daemon, connection, &error))
-        on_name_lost (bus, data[1]);
+    if (!g_paste_bus_object_register_on_connection (daemon, connection, &error) ||
+        !g_paste_bus_object_register_on_connection (search_provider, connection, &error))
+            on_name_lost (bus, data[2]);
 }
 
 static void
@@ -78,11 +81,12 @@ main (gint argc, gchar *argv[])
     /* Keep the gapplication around */
     gtk_widget_hide (gtk_application_window_new (app));
 
-    g_autofree gpointer *data = g_new0 (gpointer, 2);
+    g_autofree gpointer *data = g_new0 (gpointer, 3);
     g_autoptr (GPasteDaemon) g_paste_daemon = data[0] = g_paste_daemon_new ();
+    g_autoptr (GPasteBusObject) g_paste_search_provider = data[1] = g_paste_search_provider_new ();
     g_autoptr (GPasteBus) bus = g_paste_bus_new (on_bus_acquired, data);
 
-    _app = data[1] = gapp;
+    _app = data[2] = gapp;
 
     gulong c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (bus,
