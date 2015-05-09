@@ -371,6 +371,9 @@ global:
     g_paste_client_get_elements_finish;
     g_paste_client_get_elements_sync;
 
+    g_paste_search_provider_get_type;
+    g_paste_search_provider_new;
+
     g_paste_ui_header_get_search_button;
     g_paste_ui_header_show_prefs;
     g_paste_ui_history_search;
@@ -381,5 +384,6 @@ global:
     g_paste_ui_search_new;
     g_paste_ui_window_show_prefs;
 
+    g_paste_util_activate_ui;
     g_paste_util_activate_ui_sync;
 } LIBGPASTE_3_16_0;

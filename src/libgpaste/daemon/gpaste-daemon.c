@@ -729,7 +729,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     g_autofree GPasteDBusError *err = NULL;
 
     if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ABOUT))
-        g_paste_util_activate_ui_sync ("about", &error);
+        g_paste_util_activate_ui ("about", NULL);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD))
         g_paste_daemon_private_add (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_ADD_FILE))

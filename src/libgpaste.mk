@@ -53,6 +53,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/daemon/gpaste-bus.h \
 	src/libgpaste/daemon/gpaste-bus-object.h \
 	src/libgpaste/daemon/gpaste-daemon.h \
+	src/libgpaste/daemon/gpaste-search-provider.h \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.h \
 	src/libgpaste/keybinder/gpaste-keybinder.h \
 	src/libgpaste/keybinder/gpaste-keybinding.h \
@@ -103,6 +104,7 @@ lib_libgpaste_la_source_files = \
 	src/libgpaste/daemon/gpaste-bus.c \
 	src/libgpaste/daemon/gpaste-bus-object.c \
 	src/libgpaste/daemon/gpaste-daemon.c \
+	src/libgpaste/daemon/gpaste-search-provider.c \
 	src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c \
 	src/libgpaste/keybinder/gpaste-keybinder.c \
 	src/libgpaste/keybinder/gpaste-keybinding.c \

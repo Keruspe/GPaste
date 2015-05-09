@@ -60,6 +60,9 @@
 /* GPasteDaemon */
 #include <gpaste-daemon.h>
 
+/* GPasteSearchProvider */
+#include <gpaste-search-provider.h>
+
 /* GPasteClient */
 #include <gpaste-client.h>
 

@@ -34,7 +34,10 @@ gboolean g_paste_util_confirm_dialog    (GtkWindow   *parent,
 void     g_paste_util_spawn             (const gchar *app);
 gboolean g_paste_util_spawn_sync        (const gchar *app,
                                          GError     **error);
+void     g_paste_util_activate_ui       (const gchar *action,
+                                         GVariant    *arg);
 gboolean g_paste_util_activate_ui_sync  (const gchar *action,
+                                         GVariant    *arg,
                                          GError     **error);
 gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *pattern,
