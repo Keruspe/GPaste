@@ -17,6 +17,8 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define __G_PASTE_NEEDS_AU__
+#include <gpaste-gdbus-macros.h>
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-make-password-keybinding.h>
@@ -391,6 +393,36 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
+g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
+                                     GVariant            *parameters,
+                                     GPasteDBusError    **err)
+{
+    GPasteHistory *history = priv->history;
+    /* TODO: g_auto ? */
+    GVariantIter parameters_iter;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
+    gsize len;
+    g_autofree guint32 *indexes = g_paste_dbus_get_au_result (variant, &len);
+    g_auto (GStrv) ans = g_new0 (gchar *, len + 1);
+    gsize history_length = g_paste_history_get_length (history);
+
+    for (gsize i = 0; i < len; ++i)
+    {
+        G_PASTE_DBUS_ASSERT_FULL (indexes[i] < history_length, "invalid index received", NULL);
+        const gchar *value = g_paste_history_get_display_string (history, indexes[i]);
+        G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
+        ans[i] = g_strdup (value);
+    }
+
+    GVariant *answer = g_variant_new_strv ((const gchar * const *) ans, len);
+
+    return g_variant_new_tuple (&answer, 1);
+}
+
+static GVariant *
 g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
     const GSList *history = g_paste_history_get_history (priv->history);
@@ -716,6 +748,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_empty (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT))
         answer = g_paste_daemon_private_get_element (priv, parameters, &err);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENTS))
+        answer = g_paste_daemon_private_get_elements (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY))
         answer = g_paste_daemon_private_get_history (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
