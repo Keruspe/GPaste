@@ -254,6 +254,9 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_CALL_ONE_PARAMV_RET_AU_BASE(TYPE_CHECKER, method, paramv, len) \
     DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, NULL, return g_paste_dbus_get_au_result (variant, len))
 
+#define DBUS_CALL_ONE_PARAMV_RET_STRV_BASE(TYPE_CHECKER, method, paramv) \
+    DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, NULL, return g_variant_dup_strv (variant, NULL))
+
 /******************************************************/
 /* Methods / Sync / General - With return - One param */
 /******************************************************/

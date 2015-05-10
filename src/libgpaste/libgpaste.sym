@@ -367,6 +367,10 @@ global:
     g_paste_bus_object_new;
     g_paste_bus_object_register_on_connection;
 
+    g_paste_client_get_elements;
+    g_paste_client_get_elements_finish;
+    g_paste_client_get_elements_sync;
+
     g_paste_ui_header_get_search_button;
     g_paste_ui_header_show_prefs;
     g_paste_ui_history_search;
