@@ -1,3 +1,8 @@
+NEW in 3.16.2.1 (11/05/2015)
+=============
+
+- gpaste; fix error in pipe detection
+
 NEW in 3.16.2 (11/05/2015)
 =============
 
@@ -38,6 +43,11 @@ NEW in 3.16 (23/03/2015)
 - drop legacy gpaste subcommands (raw, oneline, zero, favor --raw, --oneline and --raw)
 - various bugfixes
 - some progress regarding wayland support
+
+NEW in 3.14.4.1 (11/05/2015)
+=============
+
+- gpaste; fix error in pipe detection
 
 NEW in 3.14.4 (11/05/2015)
 =============
