@@ -16,14 +16,14 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([GPaste], [3.16.1], [Marc-Antoine@Perennou.com], [gpaste])
+AC_INIT([GPaste], [3.16.2], [Marc-Antoine@Perennou.com], [gpaste])
 
 # Update LIBGPASTE_LT_VERSION before each release (and only then)
 # The format is C:R:A (current revision age)
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-LIBGPASTE_LT_VERSION=3:1:0
+LIBGPASTE_LT_VERSION=3:2:0
 AC_SUBST(LIBGPASTE_LT_VERSION)
 
 INTLTOOL_REQUIRED="0.50.0"

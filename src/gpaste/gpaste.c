@@ -275,7 +275,7 @@ main (gint argc, gchar *argv[])
     if (!client)
         failure_exit (error);
 
-    if (!isatty (fileno (stdin)) && !argc)
+    if (!isatty (fileno (stdin)))
     {
         /* We are being piped */
         G_PASTE_CLEANUP_STRING_FREE GString *data = g_string_new (NULL);
@@ -285,7 +285,31 @@ main (gint argc, gchar *argv[])
 
         data->str[data->len - 1] = '\0';
 
-        g_paste_client_add_sync (client, data->str, &error);
+        if (!argc)
+        {
+            g_paste_client_add_sync (client, data->str, &error);
+        }
+        else if (argc == 2)
+        {
+            const gchar *arg1 = argv[0];
+            const gchar *arg2 = argv[1];
+
+            if (!g_strcmp0 (arg1, "ap") ||
+                !g_strcmp0 (arg1, "add-password"))
+            {
+                g_paste_client_add_password_sync (client, arg2, data->str, &error);
+            }
+            else
+            {
+                show_help ();
+                status = EXIT_FAILURE;
+            }
+        }
+        else
+        {
+            show_help ();
+            status = EXIT_FAILURE;
+        }
     }
     else if (argc > 0 &&
             (!g_strcmp0 (argv[0], "merge") ||
