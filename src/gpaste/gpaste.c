@@ -295,6 +295,8 @@ main (gint argc, gchar *argv[])
     if (!client)
         failure_exit (error);
 
+    gboolean was_valid_pipe = FALSE;
+
     if (!isatty (fileno (stdin)))
     {
         /* We are being piped */
@@ -308,6 +310,7 @@ main (gint argc, gchar *argv[])
         if (!argc)
         {
             g_paste_client_add_sync (client, data->str, &error);
+            was_valid_pipe = TRUE;
         }
         else if (argc == 2)
         {
@@ -318,20 +321,12 @@ main (gint argc, gchar *argv[])
                 !g_strcmp0 (arg1, "add-password"))
             {
                 g_paste_client_add_password_sync (client, arg2, data->str, &error);
+                was_valid_pipe = TRUE;
             }
-            else
-            {
-                show_help ();
-                status = EXIT_FAILURE;
-            }
-        }
-        else
-        {
-            show_help ();
-            status = EXIT_FAILURE;
         }
     }
-    else
+
+    if (!was_valid_pipe)
     {
         const gchar *arg1, *arg2, *arg3;
         switch (argc)
