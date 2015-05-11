@@ -1,3 +1,8 @@
+NEW in 3.14.4 (11/05/2015)
+=============
+
+- gpaste; allow taking password from stdin
+
 NEW in 3.14.3 (21/03/2015)
 =============
 

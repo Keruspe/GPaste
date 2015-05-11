@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-03-21 17:09+0100\n"
+"POT-Creation-Date: 2015-05-11 14:56+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -469,7 +469,7 @@ msgstr ""
 msgid "Couldn't spawn"
 msgstr "gpaste-applet konnte nicht gestartet werden.\n"
 
-#: ../src/gpaste/gpaste.c:328
+#: ../src/gpaste/gpaste.c:352
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Daemon wurde erfolgreich neu gestartet\n"
