@@ -1,3 +1,8 @@
+NEW in 3.16.2 (11/05/2015)
+=============
+
+- gpaste; allow taking password from stdin
+
 NEW in 3.16.1 (29/04/2012)
 =============
 
@@ -33,6 +38,11 @@ NEW in 3.16 (23/03/2015)
 - drop legacy gpaste subcommands (raw, oneline, zero, favor --raw, --oneline and --raw)
 - various bugfixes
 - some progress regarding wayland support
+
+NEW in 3.14.4 (11/05/2015)
+=============
+
+- gpaste; allow taking password from stdin
 
 NEW in 3.14.3 (21/03/2015)
 =============
