@@ -1,9 +1,7 @@
 3.18:
     general:
-        add a gnome-shell search provider
         replace
     gpaste-ui:
-        search bar
         history chooser
         merge
         edit
