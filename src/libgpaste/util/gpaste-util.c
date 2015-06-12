@@ -131,14 +131,13 @@ static gboolean
 _spawn_sync (GDBusProxy *proxy,
              GError    **error)
 {
-    /* We only consume it */
-    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
-                                                                     "Activate",
-                                                                     g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                                                                     G_DBUS_CALL_FLAGS_NONE,
-                                                                     -1,
-                                                                     NULL,
-                                                                     error);
+    g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
+                                                      "Activate",
+                                                      g_variant_new ("(@a{sv})", app_get_platform_data ()),
+                                                      G_DBUS_CALL_FLAGS_NONE,
+                                                      -1,
+                                                      NULL,
+                                                      error);
 
     return !error || !(*error);
 }
@@ -167,9 +166,68 @@ g_paste_util_spawn_sync (const gchar *app,
     return _spawn_sync (proxy, error);
 }
 
+static void
+g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
+                                         GAsyncResult *res,
+                                         gpointer      user_data)
+{
+    g_autofree gpointer *data = (gpointer *) user_data;
+    g_autofree gchar *action = data[0];
+    GVariant *arg = data[1];
+    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
+
+    if (proxy)
+    {
+        g_auto (GVariantBuilder) params;
+
+        g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
+
+        if (arg)
+            g_variant_builder_add (&params, "v", arg);
+
+        g_dbus_proxy_call (proxy,
+                           "ActivateAction",
+                           g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ()),
+                           G_DBUS_CALL_FLAGS_NONE,
+                           -1,
+                           NULL, /* cancellable */
+                           NULL, /* callback */
+                           NULL); /* user_data */
+    }
+}
+
+/**
+ * g_paste_util_activate_ui:
+ * @action: the action to activate
+ * @arg: (nullable): the action argument
+ *
+ * Activate an action on a GPaste app
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_util_activate_ui (const gchar *action,
+                          GVariant    *arg)
+{
+    gpointer *data = g_new (gpointer, 2);
+    data[0] = g_strdup (action);
+    data[1] = arg;
+
+    g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+                              G_DBUS_PROXY_FLAGS_NONE,
+                              NULL,
+                              "org.gnome.GPaste.Ui",
+                              "/org/gnome/GPaste/Ui",
+                              "org.freedesktop.Application",
+                              NULL,
+                              g_paste_util_activate_ui_on_proxy_ready,
+                              data);
+}
+
 /**
  * g_paste_util_activate_ui_sync:
  * @action: the action to activate
+ * @arg: (nullable): the action argument
  * @error: a #GError or %NULL
  *
  * activate an action from GPaste Ui
@@ -178,6 +236,7 @@ g_paste_util_spawn_sync (const gchar *app,
  */
 G_PASTE_VISIBLE gboolean
 g_paste_util_activate_ui_sync (const gchar *action,
+                               GVariant    *arg,
                                GError     **error)
 {
     g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
@@ -198,6 +257,9 @@ g_paste_util_activate_ui_sync (const gchar *action,
     g_auto (GVariantBuilder) params;
 
     g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
+
+    if (arg)
+        g_variant_builder_add (&params, "v", arg);
 
     /* We only consume it */
     G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,

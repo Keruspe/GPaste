@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -21,24 +21,27 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_DAEMON_H__
-#define __G_PASTE_DAEMON_H__
+#ifndef __G_PASTE_BUS_H__
+#define __G_PASTE_BUS_H__
 
-#include <gpaste-bus-object.h>
+#include <gpaste-macros.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_DAEMON (g_paste_daemon_get_type ())
+#define G_PASTE_TYPE_BUS (g_paste_bus_get_type ())
 
-G_PASTE_FINAL_TYPE (Daemon, daemon, DAEMON, GPasteBusObject)
+G_PASTE_FINAL_TYPE (Bus, bus, BUS, GObject)
 
-void g_paste_daemon_show_history (GPasteDaemon *self,
-                                  GError      **error);
-void g_paste_daemon_upload       (GPasteDaemon *self,
-                                  guint32       index);
+typedef void (*GPasteBusAcquiredCallback) (GPasteBus *bus,
+                                           gpointer   user_data);
 
-GPasteDaemon *g_paste_daemon_new (void);
+void g_paste_bus_own_name (GPasteBus *self);
+
+GDBusConnection *g_paste_bus_get_connection (const GPasteBus *self);
+
+GPasteBus *g_paste_bus_new (GPasteBusAcquiredCallback on_bus_acquired,
+                            gpointer                  user_data);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_DAEMON_H__*/
+#endif /*__G_PASTE_BUS_H__*/

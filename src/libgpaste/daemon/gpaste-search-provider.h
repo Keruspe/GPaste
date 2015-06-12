@@ -1,7 +1,7 @@
 /*
  *      This file is part of GPaste.
  *
- *      Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ *      Copyright 2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  *
  *      GPaste is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -21,24 +21,19 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_DAEMON_H__
-#define __G_PASTE_DAEMON_H__
+#ifndef __G_PASTE_SEARCH_PROVIDER_H__
+#define __G_PASTE_SEARCH_PROVIDER_H__
 
 #include <gpaste-bus-object.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_DAEMON (g_paste_daemon_get_type ())
+#define G_PASTE_TYPE_SEARCH_PROVIDER (g_paste_search_provider_get_type ())
 
-G_PASTE_FINAL_TYPE (Daemon, daemon, DAEMON, GPasteBusObject)
+G_PASTE_FINAL_TYPE (SearchProvider, search_provider, SEARCH_PROVIDER, GPasteBusObject)
 
-void g_paste_daemon_show_history (GPasteDaemon *self,
-                                  GError      **error);
-void g_paste_daemon_upload       (GPasteDaemon *self,
-                                  guint32       index);
-
-GPasteDaemon *g_paste_daemon_new (void);
+GPasteBusObject *g_paste_search_provider_new (void);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_DAEMON_H__*/
+#endif /*__G_PASTE_SEARCH_PROVIDER_H__*/

@@ -17,7 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gpaste-bus.h>
 #include <gpaste-daemon.h>
+#include <gpaste-search-provider.h>
 
 static GApplication *_app;
 
@@ -37,14 +39,29 @@ signal_handler (int signum)
 }
 
 G_PASTE_NORETURN static void
-on_name_lost (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-              gpointer      user_data)
+on_name_lost (GPasteBus *bus G_GNUC_UNUSED,
+              gpointer   user_data)
 {
     GApplication *app = user_data;
 
     fprintf (stderr, "%s\n", _("Could not acquire DBus name."));
     g_application_quit (app);
     exit (EXIT_FAILURE);
+}
+
+static void
+on_bus_acquired (GPasteBus *bus,
+                 gpointer   user_data)
+{
+    gpointer *data = (gpointer *) user_data;
+    GPasteBusObject *daemon = data[0];
+    GPasteBusObject *search_provider = data[1];
+    GDBusConnection *connection = g_paste_bus_get_connection (bus);
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_bus_object_register_on_connection (daemon, connection, &error) ||
+        !g_paste_bus_object_register_on_connection (search_provider, connection, &error))
+            on_name_lost (bus, data[2]);
 }
 
 static void
@@ -63,12 +80,16 @@ main (gint argc, gchar *argv[])
     G_PASTE_INIT_APPLICATION ("Daemon");
     /* Keep the gapplication around */
     gtk_widget_hide (gtk_application_window_new (app));
-    _app = gapp;
 
-    g_autoptr (GPasteDaemon) g_paste_daemon = g_paste_daemon_new ();
+    g_autofree gpointer *data = g_new0 (gpointer, 3);
+    g_autoptr (GPasteDaemon) g_paste_daemon = data[0] = g_paste_daemon_new ();
+    g_autoptr (GPasteBusObject) g_paste_search_provider = data[1] = g_paste_search_provider_new ();
+    g_autoptr (GPasteBus) bus = g_paste_bus_new (on_bus_acquired, data);
+
+    _app = data[2] = gapp;
 
     gulong c_signals[C_LAST_SIGNAL] = {
-        [C_NAME_LOST] = g_signal_connect (g_paste_daemon,
+        [C_NAME_LOST] = g_signal_connect (bus,
                                           "name-lost",
                                           G_CALLBACK (on_name_lost),
                                           gapp),
@@ -81,16 +102,11 @@ main (gint argc, gchar *argv[])
     signal (SIGTERM, &signal_handler);
     signal (SIGINT, &signal_handler);
 
-    gint exit_status;
-    if (g_paste_daemon_own_bus_name (g_paste_daemon, &error))
-        exit_status = g_application_run (gapp, argc, argv);
-    else
-    {
-        g_critical ("%s: %s\n", _("Could not register DBus service."), error->message);
-        exit_status = EXIT_FAILURE;
-    }
+    g_paste_bus_own_name (bus);
 
-    g_signal_handler_disconnect (g_paste_daemon, c_signals[C_NAME_LOST]);
+    gint exit_status = g_application_run (gapp, argc, argv);
+
+    g_signal_handler_disconnect (bus, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
 
     return exit_status;

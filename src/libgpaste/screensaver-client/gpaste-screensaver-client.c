@@ -111,7 +111,7 @@ g_paste_screensaver_client_init (GPasteScreensaverClient *self)
 G_PASTE_VISIBLE GPasteScreensaverClient *
 g_paste_screensaver_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (SCREENSAVER_CLIENT, SCREENSAVER);
+    CUSTOM_PROXY_NEW (SCREENSAVER_CLIENT, SCREENSAVER, G_PASTE_SCREENSAVER_BUS_NAME);
 }
 
 /**
@@ -127,7 +127,7 @@ G_PASTE_VISIBLE void
 g_paste_screensaver_client_new (GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (SCREENSAVER_CLIENT, SCREENSAVER);
+    CUSTOM_PROXY_NEW_ASYNC (SCREENSAVER_CLIENT, SCREENSAVER, G_PASTE_SCREENSAVER_BUS_NAME);
 }
 
 /**

@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-client.h>
-#include <gpaste-gdbus-defines.h>
 #define __G_PASTE_NEEDS_AU__
 #include <gpaste-gdbus-macros.h>
 #include <gpaste-update-enums.h>
@@ -32,7 +31,6 @@ G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 
 enum
 {
-    NAME_LOST,
     REEXECUTE_SELF,
     SHOW_HISTORY,
     TRACKING,
@@ -52,6 +50,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_ONE_PARAM_ASYNC(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_ASYNC_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+
+#define DBUS_CALL_ONE_PARAMV_ASYNC(method, paramv) \
+    DBUS_CALL_ONE_PARAMV_ASYNC_BASE (CLIENT, paramv, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_TWO_PARAMS_ASYNC(method, params) \
     DBUS_CALL_TWO_PARAMS_ASYNC_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
@@ -99,6 +100,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_ONE_PARAM_RET_AU(method, param_type, param_name, len) \
     DBUS_CALL_ONE_PARAM_RET_AU_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
+
+#define DBUS_CALL_ONE_PARAMV_RET_STRV(method, paramv) \
+    DBUS_CALL_ONE_PARAMV_RET_STRV_BASE (CLIENT, G_PASTE_DAEMON_##method, paramv)
 
 #define DBUS_CALL_TWO_PARAMS_NO_RETURN(method, params) \
     DBUS_CALL_TWO_PARAMS_NO_RETURN_BASE (CLIENT, params, G_PASTE_DAEMON_##method)
@@ -163,6 +167,13 @@ static guint signals[LAST_SIGNAL] = { 0 };
                   G_TYPE_NONE,                     \
                   1,                               \
                   G_TYPE_##type)
+
+static GVariant *
+compute_au_param (const guint32 *indexes,
+                  gsize          n_indexes)
+{
+    return g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, indexes, n_indexes, sizeof (guint32));
+}
 
 /******************/
 /* Methods / Sync */
@@ -357,6 +368,27 @@ g_paste_client_get_element_sync (GPasteClient *self,
                                  GError      **error)
 {
     DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, uint32, index);
+}
+
+/**
+ * g_paste_client_get_elements_sync:
+ * @self: a #GPasteClient instance
+ * @indexes: (array length=n_indexes): the indexes of the elements we want to get
+ * @n_indexes: the number of indexes
+ * @error: a #GError
+ *
+ * Get some items from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_client_get_elements_sync (GPasteClient  *self,
+                                  const guint32 *indexes,
+                                  gsize          n_indexes,
+                                  GError       **error)
+{
+    GVariant *param = compute_au_param (indexes, n_indexes);
+    DBUS_CALL_ONE_PARAMV_RET_STRV (GET_ELEMENTS, param);
 }
 
 /**
@@ -891,6 +923,30 @@ g_paste_client_get_element (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_get_elements:
+ * @self: a #GPasteClient instance
+ * @indexes: (array length=n_indexes): the indexes of the elements we want to get
+ * @n_indexes: the number of indexes
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get some items from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_elements (GPasteClient       *self,
+                             const guint32      *indexes,
+                             gsize               n_indexes,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
+{
+    GVariant *param = compute_au_param (indexes, n_indexes);
+    DBUS_CALL_ONE_PARAMV_ASYNC (GET_ELEMENTS, param);
+}
+
+/**
  * g_paste_client_get_history:
  * @self: a #GPasteClient instance
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
@@ -920,7 +976,6 @@ g_paste_client_get_history (GPasteClient       *self,
  *
  * Returns:
  */
-
 G_PASTE_VISIBLE void
 g_paste_client_get_history_size (GPasteClient       *self,
                                  GAsyncReadyCallback callback,
@@ -1429,6 +1484,24 @@ g_paste_client_get_element_finish (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_get_elements_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Get some items from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_client_get_elements_finish (GPasteClient *self,
+                                    GAsyncResult *result,
+                                    GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRV;
+}
+
+/**
  * g_paste_client_get_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
@@ -1758,8 +1831,7 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
 {
     GPasteClient *self = G_PASTE_CLIENT (proxy);
 
-    HANDLE_SIGNAL (NAME_LOST)
-    else HANDLE_SIGNAL (REEXECUTE_SELF)
+    HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
     else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, boolean)
     else if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
@@ -1784,7 +1856,6 @@ g_paste_client_class_init (GPasteClientClass *klass)
 {
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_client_g_signal;
 
-    signals[NAME_LOST]      = NEW_SIGNAL ("name-lost");
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
     signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history");
     signals[TRACKING]       = NEW_SIGNAL_WITH_DATA ("tracking", BOOLEAN);
@@ -1824,7 +1895,7 @@ g_paste_client_init (GPasteClient *self)
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (CLIENT, DAEMON);
+    CUSTOM_PROXY_NEW (CLIENT, DAEMON, G_PASTE_BUS_NAME);
 }
 
 /**
@@ -1840,7 +1911,7 @@ G_PASTE_VISIBLE void
 g_paste_client_new (GAsyncReadyCallback callback,
                     gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (CLIENT, DAEMON);
+    CUSTOM_PROXY_NEW_ASYNC (CLIENT, DAEMON, G_PASTE_BUS_NAME);
 }
 
 /**

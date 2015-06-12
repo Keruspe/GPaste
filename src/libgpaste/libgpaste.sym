@@ -124,7 +124,6 @@ global:
 
     g_paste_daemon_get_type;
     g_paste_daemon_new;
-    g_paste_daemon_own_bus_name;
     g_paste_daemon_show_history;
     g_paste_daemon_upload;
 
@@ -359,6 +358,22 @@ local:
 
 LIBGPASTE_3_18_0 {
 global:
+    g_paste_bus_get_connection;
+    g_paste_bus_get_type;
+    g_paste_bus_new;
+    g_paste_bus_own_name;
+
+    g_paste_bus_object_get_type;
+    g_paste_bus_object_new;
+    g_paste_bus_object_register_on_connection;
+
+    g_paste_client_get_elements;
+    g_paste_client_get_elements_finish;
+    g_paste_client_get_elements_sync;
+
+    g_paste_search_provider_get_type;
+    g_paste_search_provider_new;
+
     g_paste_ui_header_get_search_button;
     g_paste_ui_header_show_prefs;
     g_paste_ui_history_search;
@@ -367,7 +382,9 @@ global:
     g_paste_ui_search_bar_new;
     g_paste_ui_search_get_type;
     g_paste_ui_search_new;
+    g_paste_ui_window_search;
     g_paste_ui_window_show_prefs;
 
+    g_paste_util_activate_ui;
     g_paste_util_activate_ui_sync;
 } LIBGPASTE_3_16_0;

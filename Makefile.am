@@ -118,6 +118,7 @@ include data/dbus.mk
 include data/desktop.mk
 include data/gsettings.mk
 include data/pkg-config.mk
+include data/search-provider.mk
 
 # Man pages
 

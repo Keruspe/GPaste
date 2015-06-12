@@ -392,7 +392,7 @@ g_paste_gnome_shell_client_init (GPasteGnomeShellClient *self)
 G_PASTE_VISIBLE GPasteGnomeShellClient *
 g_paste_gnome_shell_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (GNOME_SHELL_CLIENT, GNOME_SHELL);
+    CUSTOM_PROXY_NEW (GNOME_SHELL_CLIENT, GNOME_SHELL, G_PASTE_GNOME_SHELL_BUS_NAME);
 }
 
 /**
@@ -408,7 +408,7 @@ G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_new (GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (GNOME_SHELL_CLIENT, GNOME_SHELL);
+    CUSTOM_PROXY_NEW_ASYNC (GNOME_SHELL_CLIENT, GNOME_SHELL, G_PASTE_GNOME_SHELL_BUS_NAME);
 }
 
 /**

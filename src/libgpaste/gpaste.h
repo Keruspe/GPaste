@@ -49,10 +49,19 @@
 #include <gpaste-ui-keybinding.h>
 #include <gpaste-upload-keybinding.h>
 
-/* GPasteDaemon */
-#include <gpaste-daemon.h>
+/* GPasteBus */
+#include <gpaste-bus.h>
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-update-enums.h>
+
+/* GPasteBusObject */
+#include <gpaste-bus-object.h>
+
+/* GPasteDaemon */
+#include <gpaste-daemon.h>
+
+/* GPasteSearchProvider */
+#include <gpaste-search-provider.h>
 
 /* GPasteClient */
 #include <gpaste-client.h>

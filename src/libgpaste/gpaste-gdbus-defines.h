@@ -28,7 +28,8 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_DAEMON_BUS_NAME       "org.gnome.GPaste"
+#define G_PASTE_BUS_NAME "org.gnome.GPaste"
+
 #define G_PASTE_DAEMON_OBJECT_PATH    "/org/gnome/GPaste"
 #define G_PASTE_DAEMON_INTERFACE_NAME "org.gnome.GPaste"
 
@@ -42,6 +43,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_DELETE_PASSWORD            "DeletePassword"
 #define G_PASTE_DAEMON_EMPTY                      "Empty"
 #define G_PASTE_DAEMON_GET_ELEMENT                "GetElement"
+#define G_PASTE_DAEMON_GET_ELEMENTS               "GetElements"
 #define G_PASTE_DAEMON_GET_HISTORY                "GetHistory"
 #define G_PASTE_DAEMON_GET_HISTORY_SIZE           "GetHistorySize"
 #define G_PASTE_DAEMON_GET_RAW_ELEMENT            "GetRawElement"
@@ -59,7 +61,6 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_TRACK                      "Track"
 #define G_PASTE_DAEMON_UPLOAD                     "Upload"
 
-#define G_PASTE_DAEMON_SIG_NAME_LOST      "NameLost"
 #define G_PASTE_DAEMON_SIG_REEXECUTE_SELF "ReexecuteSelf"
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
 #define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
@@ -98,6 +99,10 @@ G_BEGIN_DECLS
         "       <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
         "           <arg type='u' direction='in'  name='index' />"             \
         "           <arg type='s' direction='out' name='value' />"             \
+        "       </method>"                                                     \
+        "       <method name='" G_PASTE_DAEMON_GET_ELEMENTS "'>"               \
+        "           <arg type='au' direction='in'  name='index' />"            \
+        "           <arg type='as' direction='out' name='value' />"            \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_GET_HISTORY "'>"                \
         "           <arg type='as' direction='out' name='history' />"          \
@@ -149,7 +154,6 @@ G_BEGIN_DECLS
         "       <method name='" G_PASTE_DAEMON_UPLOAD "'>"                     \
         "           <arg type='u' direction='in' name='index' />"              \
         "       </method>"                                                     \
-        "       <signal name='" G_PASTE_DAEMON_SIG_NAME_LOST "' />"            \
         "       <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \
         "       <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "       <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
@@ -165,6 +169,43 @@ G_BEGIN_DECLS
         "       <property name='" G_PASTE_DAEMON_PROP_VERSION "'"              \
         "                 type='s' access='read' />"                           \
         "   </interface>"                                                      \
+        "</node>"
+
+#define G_PASTE_SEARCH_PROVIDER_OBJECT_PATH    "/org/gnome/GPaste/SearchProvider"
+#define G_PASTE_SEARCH_PROVIDER_INTERFACE_NAME "org.gnome.Shell.SearchProvider2"
+
+#define G_PASTE_SEARCH_PROVIDER_GET_INITIAL_RESULT_SET   "GetInitialResultSet"
+#define G_PASTE_SEARCH_PROVIDER_GET_SUBSEARCH_RESULT_SET "GetSubsearchResultSet"
+#define G_PASTE_SEARCH_PROVIDER_GET_RESULT_METAS         "GetResultMetas"
+#define G_PASTE_SEARCH_PROVIDER_ACTIVATE_RESULT          "ActivateResult"
+#define G_PASTE_SEARCH_PROVIDER_LAUNCH_SEARCH            "LaunchSearch"
+
+#define G_PASTE_SEARCH_PROVIDER_INTERFACE                                              \
+        "<node>"                                                                       \
+        "    <interface name='" G_PASTE_SEARCH_PROVIDER_INTERFACE_NAME "'>"            \
+        "        <method name='" G_PASTE_SEARCH_PROVIDER_GET_INITIAL_RESULT_SET "'>"   \
+        "            <arg type='as' name='terms' direction='in'    />"                 \
+        "            <arg type='as' name='results' direction='out' />"                 \
+        "        </method>"                                                            \
+        "        <method name='" G_PASTE_SEARCH_PROVIDER_GET_SUBSEARCH_RESULT_SET "'>" \
+        "            <arg type='as' name='previous_results' direction='in' />"         \
+        "            <arg type='as' name='terms' direction='in'            />"         \
+        "            <arg type='as' name='results' direction='out'         />"         \
+        "        </method>"                                                            \
+        "        <method name='" G_PASTE_SEARCH_PROVIDER_GET_RESULT_METAS "'>"         \
+        "            <arg type='as' name='identifiers' direction='in' />"              \
+        "            <arg type='aa{sv}' name='metas' direction='out'  />"              \
+        "        </method>"                                                            \
+        "        <method name='" G_PASTE_SEARCH_PROVIDER_ACTIVATE_RESULT "'>"          \
+        "            <arg type='s' name='identifier' direction='in' />"                \
+        "            <arg type='as' name='terms' direction='in'     />"                \
+        "            <arg type='u' name='timestamp' direction='in'  />"                \
+        "        </method>"                                                            \
+        "        <method name='" G_PASTE_SEARCH_PROVIDER_LAUNCH_SEARCH "'>"            \
+        "            <arg type='as' name='terms' direction='in'    />"                 \
+        "            <arg type='u' name='timestamp' direction='in' />"                 \
+        "        </method>"                                                            \
+        "    </interface>"                                                             \
         "</node>"
 
 G_END_DECLS
