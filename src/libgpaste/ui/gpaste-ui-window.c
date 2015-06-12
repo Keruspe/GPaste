@@ -32,6 +32,8 @@ typedef struct
     GPasteUiHeader  *header;
     GPasteUiHistory *history;
 
+    GtkSearchEntry  *search_entry;
+
     gboolean         initialized;
 
     gulong           key_press_signal;
@@ -39,6 +41,49 @@ typedef struct
 } GPasteUiWindowPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
+
+static gboolean
+_search (gpointer user_data)
+{
+    gpointer *data = (gpointer *) user_data;
+    GPasteUiWindowPrivate *priv = data[0];
+
+    if (!priv->initialized)
+        return G_SOURCE_CONTINUE;
+
+    g_autofree gchar *search = data[1];
+    g_free (data);
+
+    gtk_button_clicked (g_paste_ui_header_get_search_button (priv->header));
+    gtk_entry_set_text (GTK_ENTRY (priv->search_entry), search);
+
+    return G_SOURCE_REMOVE;
+}
+
+/**
+ * g_paste_ui_window_search:
+ * @self: the #GPasteUiWindow
+ * @search: the text to search
+ *
+ * Do a search
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_window_search (const GPasteUiWindow *self,
+                          const gchar          *search)
+{
+    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
+    g_return_if_fail (g_utf8_validate (search, -1, NULL));
+
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    gpointer *data = g_new (gpointer, 2);
+    data[0] = priv;
+    data[1] = g_strdup (search);
+
+    g_source_set_name_by_id (g_idle_add (_search, data), "[GPaste] search");
+}
 
 static gboolean
 _show_prefs (gpointer user_data)
@@ -129,11 +174,12 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     gtk_container_add (GTK_CONTAINER (win), vbox);
     gtk_container_add (box, search_bar);
 
+    GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar));
     priv->key_press_signal = g_signal_connect (self,
                                                "key-press-event",
                                                G_CALLBACK (on_key_press_event),
                                                search_bar);
-    priv->search_signal = g_signal_connect (g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar)),
+    priv->search_signal = g_signal_connect (entry,
                                             "search-changed",
                                             G_CALLBACK (on_search),
                                             priv);
