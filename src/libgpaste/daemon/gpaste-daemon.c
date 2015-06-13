@@ -398,7 +398,6 @@ g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
                                      GPasteDBusError    **err)
 {
     GPasteHistory *history = priv->history;
-    /* TODO: g_auto ? */
     GVariantIter parameters_iter;
 
     g_variant_iter_init (&parameters_iter, parameters);
