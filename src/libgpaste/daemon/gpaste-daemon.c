@@ -878,7 +878,7 @@ g_paste_daemon_dispose (GObject *object)
 
     if (priv->settings)
     {
-        g_bus_unown_name (priv->id_on_bus);
+        g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
         g_clear_object (&priv->connection);
         g_clear_object (&priv->history);
         g_clear_object (&priv->settings);

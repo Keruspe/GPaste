@@ -345,8 +345,7 @@ g_paste_search_provider_dispose (GObject *object)
 
     if (priv->connection)
     {
-        /* FIXME */
-        g_bus_unown_name (priv->id_on_bus);
+        g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
         g_clear_object (&priv->connection);
         g_dbus_node_info_unref (priv->g_paste_search_provider_dbus_info);
         g_clear_object (&priv->client);
