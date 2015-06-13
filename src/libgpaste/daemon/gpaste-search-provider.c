@@ -20,7 +20,6 @@
 #include <gpaste-client.h>
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-search-provider.h>
-#include <gpaste-settings.h>
 #include <gpaste-util.h>
 
 #include <string.h>
@@ -48,7 +47,6 @@ typedef struct
     gboolean             registered;
 
     GPasteClient        *client;
-    GPasteSettings      *settings;
 
     GDBusNodeInfo       *g_paste_search_provider_dbus_info;
     GDBusInterfaceVTable g_paste_search_provider_dbus_vtable;
@@ -203,7 +201,6 @@ append_dict_entry (GVariantBuilder *dict,
 typedef struct
 {
     GPasteClient          *client;
-    GPasteSettings        *settings;
     GDBusMethodInvocation *invocation;
     guint32               *indexes;
 } GetResultMetasData;
@@ -224,16 +221,11 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
                                                                  res,
                                                                  NULL); /* Error */
 
-    gsize element_size = g_paste_settings_get_element_size (data->settings);
-
     for (gsize i = 0; results[i]; ++i)
     {
         g_auto (GVariantBuilder) dict;
         g_autofree gchar *index = g_strdup_printf ("%u", indexes[i]);
         g_autofree gchar *result = g_paste_util_replace (results[i], "\n", "");
-
-        if (strlen (result) > element_size)
-            result[element_size] = '\0';
 
         g_variant_builder_init (&dict, G_VARIANT_TYPE_VARDICT);
 
@@ -265,7 +257,6 @@ g_paste_search_provider_private_get_result_metas (GPasteSearchProviderPrivate *p
     GetResultMetasData *data = g_new (GetResultMetasData, 1);
 
     data->client = priv->client;
-    data->settings = priv->settings;
     data->invocation = invocation;
     data->indexes = indexes;
 
@@ -416,9 +407,6 @@ g_paste_search_provider_init (GPasteSearchProvider *self)
     vtable->method_call = g_paste_search_provider_dbus_method_call;
     vtable->get_property = NULL;
     vtable->set_property = NULL;
-
-    /* TODO: use the same as daemon */
-    priv->settings = g_paste_settings_new ();
 
     g_paste_client_new (on_client_ready, priv);
 }
