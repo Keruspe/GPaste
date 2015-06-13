@@ -24,17 +24,6 @@
 
 #include <string.h>
 
-#define G_PASTE_DBUS_ASSERT_FULL(cond, _msg, ret)          \
-    do {                                                   \
-        if (!(cond))                                       \
-        {                                                  \
-            *err = _err (G_PASTE_BUS_NAME ".Error", _msg); \
-            return ret;                                    \
-        }                                                  \
-    } while (FALSE)
-
-#define G_PASTE_DBUS_ASSERT(cond, _msg) G_PASTE_DBUS_ASSERT_FULL (cond, _msg, ;)
-
 struct _GPasteSearchProvider
 {
     GPasteBusObject parent_instance;
@@ -53,22 +42,6 @@ typedef struct
 } GPasteSearchProviderPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSearchProvider, g_paste_search_provider, G_PASTE_TYPE_BUS_OBJECT)
-
-/* TODO: dedup me */
-typedef struct {
-    const gchar *name;
-    const gchar *msg;
-} GPasteDBusError;
-
-static inline GPasteDBusError *
-_err (const gchar *name,
-      const gchar *msg)
-{
-    GPasteDBusError *err = g_malloc (sizeof (GPasteDBusError));
-    err->name = name;
-    err->msg = msg;
-    return err;
-}
 
 static char *
 g_paste_dbus_get_as_result (GVariant *variant)
