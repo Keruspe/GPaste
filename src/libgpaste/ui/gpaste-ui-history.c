@@ -145,7 +145,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     for (gsize i = 0; i < data->from_index; ++i)
         item = g_slist_next (item);
-    for (gsize i = data->from_index; i < refreshTextBound; ++i, item = g_slist_next (item))
+    for (gsize i = data->from_index; i < refreshTextBound && item; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, i);
 }
 
