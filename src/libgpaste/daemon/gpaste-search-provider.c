@@ -155,7 +155,7 @@ g_paste_search_provider_private_get_subsearch_result_set (GPasteSearchProviderPr
 
     g_variant_iter_init (&parameters_iter, parameters);
 
-    g_autoptr (GVariant) old_results = g_variant_iter_next_value (&parameters_iter);
+    G_GNUC_UNUSED g_autoptr (GVariant) old_results = g_variant_iter_next_value (&parameters_iter);
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *search = g_paste_dbus_get_as_result (variant);
 
@@ -247,8 +247,8 @@ g_paste_search_provider_private_activate_result (GPasteSearchProviderPrivate *pr
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) indexv = g_variant_iter_next_value (&parameters_iter);
-    g_autoptr (GVariant) terms = g_variant_iter_next_value (&parameters_iter);
-    g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
+    G_GNUC_UNUSED g_autoptr (GVariant) terms = g_variant_iter_next_value (&parameters_iter);
+    G_GNUC_UNUSED g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
     guint32 index = (guint32) g_ascii_strtoull (g_variant_get_string (indexv, NULL), NULL, 0);
 
     g_paste_client_select (priv->client, index, NULL, NULL);
@@ -265,7 +265,7 @@ g_paste_search_provider_private_launch_search (GPasteSearchProviderPrivate *priv
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) searchv = g_variant_iter_next_value (&parameters_iter);
-    g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
+    G_GNUC_UNUSED g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *search = g_paste_dbus_get_as_result (searchv);
 
     g_paste_util_activate_ui ("search", g_variant_new_string (search));

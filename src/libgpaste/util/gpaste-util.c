@@ -131,13 +131,13 @@ static gboolean
 _spawn_sync (GDBusProxy *proxy,
              GError    **error)
 {
-    g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
-                                                      "Activate",
-                                                      g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                                                      G_DBUS_CALL_FLAGS_NONE,
-                                                      -1,
-                                                      NULL,
-                                                      error);
+    G_GNUC_UNUSED g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
+                                                                     "Activate",
+                                                                     g_variant_new ("(@a{sv})", app_get_platform_data ()),
+                                                                     G_DBUS_CALL_FLAGS_NONE,
+                                                                     -1,
+                                                                     NULL,
+                                                                     error);
 
     return !error || !(*error);
 }

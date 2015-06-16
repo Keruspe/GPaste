@@ -83,7 +83,7 @@ main (gint argc, gchar *argv[])
 
     g_autofree gpointer *data = g_new0 (gpointer, 3);
     g_autoptr (GPasteDaemon) g_paste_daemon = data[0] = g_paste_daemon_new ();
-    g_autoptr (GPasteBusObject) g_paste_search_provider = data[1] = g_paste_search_provider_new ();
+    G_GNUC_UNUSED g_autoptr (GPasteBusObject) g_paste_search_provider = data[1] = g_paste_search_provider_new ();
     g_autoptr (GPasteBus) bus = g_paste_bus_new (on_bus_acquired, data);
 
     _app = data[2] = gapp;
