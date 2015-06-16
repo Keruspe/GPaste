@@ -36,9 +36,9 @@ g_paste_bus_object_register_on_connection (GPasteBusObject *self,
                                            GDBusConnection *connection,
                                            GError         **error)
 {
-    g_return_if_fail (G_PASTE_IS_BUS_OBJECT (self));
-    g_return_if_fail (G_IS_DBUS_CONNECTION (connection));
-    g_return_if_fail (!error || !(*error));
+    g_return_val_if_fail (G_PASTE_IS_BUS_OBJECT (self), FALSE);
+    g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), FALSE);
+    g_return_val_if_fail (!error || !(*error), FALSE);
 
     return G_PASTE_BUS_OBJECT_GET_CLASS (self)->register_on_connection (self, connection, error);
 }
