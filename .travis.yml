@@ -1,8 +1,0 @@
-language: c
-before_install:
-    - sudo apt-get update -qq
-    - sudo apt-get install -qq appstream-util build-essential git-core gnome-control-center-dev intltool libappindicator3-dev libclutter-1.0-dev libdbus-1-dev libgirepository1.0-dev libgtk-3-dev pkg-config ui-auto valac
-compiler:
-    - clang
-    - gcc
-script: ./autogen.sh configure-full && make && make test
