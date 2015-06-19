@@ -33,10 +33,11 @@ const GPasteDeleteItemPart = new Lang.Class({
 
     _init: function(client, index) {
         this.parent({ x_align: St.Align.END });
-        this.child = new DeleteButton.GPasteDeleteButton(client, index);
+        this._deleteButton = new DeleteButton.GPasteDeleteButton(client, index);
+        this.child = this._deleteButton.actor;
     },
 
     setIndex: function(index) {
-        this.child.setIndex(index);
+        this._deleteButton.setIndex(index);
     }
 });

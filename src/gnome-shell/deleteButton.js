@@ -25,12 +25,11 @@ const St = imports.gi.St;
 
 const GPasteDeleteButton = new Lang.Class({
     Name: 'GPasteDeleteButton',
-    Extends: St.Button,
 
     _init: function(client, index) {
-        this.parent();
+        this.actor = new St.Button();
 
-        this.child = new St.Icon({
+        this.actor.child = new St.Icon({
             icon_name: 'edit-delete-symbolic',
             style_class: 'popup-menu-icon'
         });
@@ -38,7 +37,7 @@ const GPasteDeleteButton = new Lang.Class({
         this._client = client;
         this.setIndex(index);
 
-        this.connect('clicked', Lang.bind(this, this._onClick));
+        this.actor.connect('clicked', Lang.bind(this, this._onClick));
     },
 
     setIndex: function(index) {
