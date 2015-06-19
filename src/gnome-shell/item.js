@@ -54,7 +54,7 @@ const GPasteItem = new Lang.Class({
         this.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressed));
 
         this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, index);
-        this.actor.add(this._deleteItem, { expand: true, x_align: St.Align.END });
+        this.actor.add(this._deleteItem.actor, { expand: true, x_align: St.Align.END });
 
         this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
