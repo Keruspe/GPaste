@@ -24,19 +24,18 @@ const St = imports.gi.St;
 
 const GPasteEmptyHistoryItem = new Lang.Class({
     Name: 'GPasteEmptyHistoryItem',
-    Extends: St.Button,
 
     _init: function(client) {
-        this.parent({
+        this.actor = new St.Button({
             reactive: true,
             can_focus: true,
             track_hover: true,
             style_class: 'system-menu-action'
         });
 
-        this.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
+        this.actor.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
 
-        this.connect('clicked', function() {
+        this.actor.connect('clicked', function() {
             client.empty(null);
         });
     }

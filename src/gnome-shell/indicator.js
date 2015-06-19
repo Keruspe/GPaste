@@ -94,7 +94,7 @@ const GPasteIndicator = new Lang.Class({
             this._addToHeader(this._searchItem);
             this._actions.actor.add(this._uiItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
-            this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
+            this._actions.actor.add(this._emptyHistoryItem.actor, { expand: true, x_fill: false });
             this._actions.actor.add(this._aboutItem.actor, { expand: true, x_fill: false });
 
             this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
@@ -241,11 +241,11 @@ const GPasteIndicator = new Lang.Class({
     _updateVisibility: function(empty) {
         if (empty) {
             this._dummyHistoryItem.actor.show();
-            this._emptyHistoryItem.hide();
+            this._emptyHistoryItem.actor.hide();
             this._searchItem.actor.hide();
         } else {
             this._dummyHistoryItem.actor.hide();
-            this._emptyHistoryItem.show();
+            this._emptyHistoryItem.actor.show();
             this._searchItem.actor.show();
         }
     },
