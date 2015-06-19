@@ -50,7 +50,8 @@ const GPasteIndicator = new Lang.Class({
     _init: function() {
         this.parent(0.0, "GPaste");
 
-        this.actor.add_child(new StatusIcon.GPasteStatusIcon());
+        this._statusIcon = new StatusIcon.GPasteStatusIcon();
+        this.actor.add_child(this._statusIcon.actor);
 
         this._settings = new GPaste.Settings();
 

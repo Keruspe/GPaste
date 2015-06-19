@@ -25,17 +25,16 @@ const St = imports.gi.St;
 
 const GPasteStatusIcon = new Lang.Class({
     Name: 'GPasteStatusIcon',
-    Extends: St.BoxLayout,
 
     _init: function() {
-        this.parent({ style_class: 'panel-status-menu-box' });
+        this.actor = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
 
-        this.add_child(new St.Icon({
+        this.actor.add_child(new St.Icon({
             icon_name: 'edit-paste-symbolic',
             style_class: 'system-status-icon'
         }));
 
-        this.add_child(new St.Icon({
+        this.actor.add_child(new St.Icon({
             style_class: 'popup-menu-arrow',
             icon_name: 'pan-down-symbolic',
             y_expand: true,
