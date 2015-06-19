@@ -87,6 +87,7 @@ const GPasteIndicator = new Lang.Class({
             this._prefsItem = new PrefsItem.GPastePrefsItem(this.menu);
             this._uiItem = new UiItem.GPasteUiItem(this.menu);
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
+            this._aboutItem = new AboutItem.GPasteAboutItem(this._client, this.menu);
             this._switch = new StateSwitch.GPasteStateSwitch(this._client);
 
             this._addToHeader(this._switch);
@@ -94,7 +95,7 @@ const GPasteIndicator = new Lang.Class({
             this._actions.actor.add(this._uiItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
             this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
-            this._actions.actor.add(new AboutItem.GPasteAboutItem(this._client, this.menu), { expand: true, x_fill: false });
+            this._actions.actor.add(this._aboutItem.actor, { expand: true, x_fill: false });
 
             this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
             this._resetMaxDisplayedSize();

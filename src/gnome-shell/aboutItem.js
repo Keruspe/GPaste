@@ -24,19 +24,18 @@ const St = imports.gi.St;
 
 const GPasteAboutItem = new Lang.Class({
     Name: 'GPasteAboutItem',
-    Extends: St.Button,
 
     _init: function(client, menu) {
-        this.parent({
+        this.actor = new St.Button({
             reactive: true,
             can_focus: true,
             track_hover: true,
             style_class: 'system-menu-action'
         });
 
-        this.child = new St.Icon({ icon_name: 'dialog-information-symbolic' });
+        this.actor.child = new St.Icon({ icon_name: 'dialog-information-symbolic' });
 
-        this.connect('clicked', function() {
+        this.actor.connect('clicked', function() {
             menu.itemActivated();
             client.about(null);
         });
