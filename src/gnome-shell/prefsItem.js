@@ -26,19 +26,18 @@ const St = imports.gi.St;
 
 const GPastePrefsItem = new Lang.Class({
     Name: 'GPastePrefsItem',
-    Extends: St.Button,
 
     _init: function(menu) {
-        this.parent({
+        this.actor = new St.Button({
             reactive: true,
             can_focus: true,
             track_hover: true,
             style_class: 'system-menu-action'
         });
 
-        this.child = new St.Icon({ icon_name: 'preferences-system-symbolic' });
+        this.actor.child = new St.Icon({ icon_name: 'preferences-system-symbolic' });
 
-        this.connect('clicked', function() {
+        this.actor.connect('clicked', function() {
             menu.itemActivated();
             GPaste.util_spawn('Settings');
         });

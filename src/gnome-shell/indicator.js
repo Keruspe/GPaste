@@ -93,7 +93,7 @@ const GPasteIndicator = new Lang.Class({
             this._addToHeader(this._switch);
             this._addToHeader(this._searchItem);
             this._actions.actor.add(this._uiItem, { expand: true, x_fill: false });
-            this._actions.actor.add(this._prefsItem, { expand: true, x_fill: false });
+            this._actions.actor.add(this._prefsItem.actor, { expand: true, x_fill: false });
             this._actions.actor.add(this._emptyHistoryItem.actor, { expand: true, x_fill: false });
             this._actions.actor.add(this._aboutItem.actor, { expand: true, x_fill: false });
 
