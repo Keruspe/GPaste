@@ -49,7 +49,8 @@ const GPasteIndicator = new Lang.Class({
     _init: function() {
         this.parent(0.0, "GPaste");
 
-        this.actor.add_child(new StatusIcon.GPasteStatusIcon());
+        this._statusIcon = new StatusIcon.GPasteStatusIcon();
+        this.actor.add_child(this._statusIcon.actor);
 
         this._settings = new GPaste.Settings();
 
@@ -85,13 +86,15 @@ const GPasteIndicator = new Lang.Class({
             this._dummyHistoryItem.update();
             this._uiItem = new UiItem.GPasteUiItem(this.menu);
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
+            this._aboutItem = new AboutItem.GPasteAboutItem(this._client, this.menu);
             this._switch = new StateSwitch.GPasteStateSwitch(this._client);
 
             this._addToHeader(this._switch);
             this._addToHeader(this._searchItem);
-            this._actions.actor.add(this._uiItem, { expand: true, x_fill: false });
-            this._actions.actor.add(this._emptyHistoryItem, { expand: true, x_fill: false });
-            this._actions.actor.add(new AboutItem.GPasteAboutItem(this._client, this.menu), { expand: true, x_fill: false });
+
+            this._actions.actor.add(this._uiItem.actor, { expand: true, x_fill: false });
+            this._actions.actor.add(this._emptyHistoryItem.actor, { expand: true, x_fill: false });
+            this._actions.actor.add(this._aboutItem.actor, { expand: true, x_fill: false });
 
             this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
             this._resetMaxDisplayedSize();
@@ -237,11 +240,11 @@ const GPasteIndicator = new Lang.Class({
     _updateVisibility: function(empty) {
         if (empty) {
             this._dummyHistoryItem.actor.show();
-            this._emptyHistoryItem.hide();
+            this._emptyHistoryItem.actor.hide();
             this._searchItem.actor.hide();
         } else {
             this._dummyHistoryItem.actor.hide();
-            this._emptyHistoryItem.show();
+            this._emptyHistoryItem.actor.show();
             this._searchItem.actor.show();
         }
     },

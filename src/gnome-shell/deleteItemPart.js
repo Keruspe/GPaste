@@ -29,14 +29,14 @@ const DeleteButton = Me.imports.deleteButton;
 
 const GPasteDeleteItemPart = new Lang.Class({
     Name: 'GPasteDeleteItemPart',
-    Extends: St.Bin,
 
     _init: function(client, index) {
-        this.parent({ x_align: St.Align.END });
-        this.child = new DeleteButton.GPasteDeleteButton(client, index);
+        this.actor = new St.Bin({ x_align: St.Align.END });
+        this._deleteButton = new DeleteButton.GPasteDeleteButton(client, index);
+        this.actor.child = this._deleteButton.actor;
     },
 
     setIndex: function(index) {
-        this.child.setIndex(index);
+        this._deleteButton.setIndex(index);
     }
 });
