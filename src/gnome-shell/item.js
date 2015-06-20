@@ -59,9 +59,6 @@ const GPasteItem = new Lang.Class({
         this._resetTextSize();
 
         this.setIndex(index);
-
-        this._destroyed = false;
-        this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
     },
 
     showIndex: function(state) {
@@ -94,7 +91,7 @@ const GPasteItem = new Lang.Class({
         if (index != -1) {
             this._client.get_element(index, Lang.bind(this, function(client, result) {
                 let text = client.get_element_finish(result).replace(/[\t\n\r]/g, '');
-                if (this._destroyed || text == this.label.get_text()) {
+                if (text == this.label.get_text()) {
                     return;
                 }
                 this.label.clutter_text.set_text(text);
@@ -123,12 +120,5 @@ const GPasteItem = new Lang.Class({
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
-    },
-
-    _onDestroy: function() {
-        if (this._destroyed) {
-            return;
-        }
-        this._destroyed = true;
     }
 });
