@@ -67,8 +67,8 @@ const GPasteIndicator = new Lang.Class({
         this._searchItem = new SearchItem.GPasteSearchItem();
         this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
 
-        this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetEntrySize));
-        this._resetEntrySize();
+        this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetElementSize));
+        this._resetElementSize();
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
 
         this._actions = new PopupMenu.PopupBaseMenuItem({
@@ -108,12 +108,14 @@ const GPasteIndicator = new Lang.Class({
             this.menu.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressEvent));
             this.menu.actor.connect('key-release-event', Lang.bind(this, this._onKeyReleaseEvent));
 
+            this._destroyed = false;
             this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
         }));
     },
 
     shutdown: function() {
         this._onStateChanged (false);
+        this._onDestroy();
         this.destroy();
     },
 
@@ -170,11 +172,12 @@ const GPasteIndicator = new Lang.Class({
         }
     },
 
-    _resetEntrySize: function() {
-        this._searchItem.resetSize(this._settings.get_element_size()/2 + 3);
-    },
-
-    _setMaxDisplayedSize: function() {
+    _resetElementSize: function() {
+        let size = this._settings.get_element_size();
+        this._searchItem.resetSize(size/2 + 3);
+        this._history.map(function(i) {
+            i.setTextSize(size);
+        });
     },
 
     _resetMaxDisplayedSize: function() {
@@ -293,6 +296,10 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onDestroy: function() {
+        if (this._destroyed) {
+            return;
+        }
+        this._destroyed = true;
         this._client.disconnect(this._clientUpdateId);
         this._client.disconnect(this._clientShowId);
         this._client.disconnect(this._clientTrackingId);

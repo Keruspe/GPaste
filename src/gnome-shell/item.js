@@ -37,11 +37,10 @@ const GPasteItem = new Lang.Class({
     Name: 'GPasteItem',
     Extends: PopupMenu.PopupMenuItem,
 
-    _init: function(client, settings, index) {
+    _init: function(client, index) {
         this.parent("");
 
         this._client = client;
-        this._settings = settings;
 
         if (index <= 10) {
             this._indexLabel = new St.Label({
@@ -56,7 +55,6 @@ const GPasteItem = new Lang.Class({
         this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, index);
         this.actor.add(this._deleteItem.actor, { expand: true, x_align: St.Align.END });
 
-        this._settingsChangedId = settings.connect('changed::element-size', Lang.bind(this, this._resetTextSize));
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._resetTextSize();
 
@@ -110,8 +108,8 @@ const GPasteItem = new Lang.Class({
         }
     },
 
-    _resetTextSize: function() {
-        this.label.clutter_text.max_length = this._settings.get_element_size();
+    setTextSize: function(size) {
+        this.label.clutter_text.max_length = size;
     },
 
     _onActivate: function(actor, event) {
@@ -132,6 +130,5 @@ const GPasteItem = new Lang.Class({
             return;
         }
         this._destroyed = true;
-        this._settings.disconnect(this._settingsChangedId);
     }
 });
