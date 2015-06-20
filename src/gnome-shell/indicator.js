@@ -185,10 +185,11 @@ const GPasteIndicator = new Lang.Class({
     _resetMaxDisplayedSize: function() {
         let oldSize = this._history.length;
         let newSize = this._settings.get_max_displayed_history_size();
+        let elementSize = this._settings.get_element_size();
 
         if (newSize > oldSize) {
             for (let index = oldSize; index < newSize; ++index) {
-                let item = new Item.GPasteItem(this._client, this._settings, index);
+                let item = new Item.GPasteItem(this._client, elementSize, index);
                 this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
                 this._history[index] = item;
             }

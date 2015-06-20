@@ -37,7 +37,7 @@ const GPasteItem = new Lang.Class({
     Name: 'GPasteItem',
     Extends: PopupMenu.PopupMenuItem,
 
-    _init: function(client, index) {
+    _init: function(client, size, index) {
         this.parent("");
 
         this._client = client;
@@ -56,7 +56,7 @@ const GPasteItem = new Lang.Class({
         this.actor.add(this._deleteItem.actor, { expand: true, x_align: St.Align.END });
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        this._resetTextSize();
+        this.setTextSize(size);
 
         this.setIndex(index);
     },
