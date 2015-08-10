@@ -77,6 +77,9 @@ reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
 gint
 main (gint argc, gchar *argv[])
 {
+    /* FIXME: remove this once gtk supports clipboard correctly on wayland */
+    g_setenv ("GDK_BACKEND", "x11", TRUE);
+
     G_PASTE_INIT_APPLICATION ("Daemon");
     /* Keep the gapplication around */
     gtk_widget_hide (gtk_application_window_new (app));
