@@ -28,6 +28,7 @@ struct _GPasteUiPanel
 typedef struct
 {
     GPasteClient   *client;
+    GPasteSettings *settings;
 
     gulong          activated_id;
 } GPasteUiPanelPrivate;
@@ -79,6 +80,7 @@ g_paste_ui_panel_dispose (GObject *object)
     }
 
     g_clear_object (&priv->client);
+    g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_ui_panel_parent_class)->dispose (object);
 }
@@ -107,6 +109,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
 /**
  * g_paste_ui_panel_new:
  * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
  *
  * Create a new instance of #GPasteUiPanel
  *
@@ -114,14 +117,17 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_panel_new (GPasteClient *client)
+g_paste_ui_panel_new (GPasteClient   *client,
+                      GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL, NULL);
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (self));
 
     priv->client = g_object_ref (client);
+    priv->settings = g_object_ref (settings);
 
     g_paste_client_list_histories (client, on_histories_ready, self);
 
