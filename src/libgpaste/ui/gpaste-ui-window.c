@@ -207,9 +207,10 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         gtk_window_close (win); /* will exit the application */
     }
 
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     GtkWidget *header = g_paste_ui_header_new (win, client);
     GtkWidget *panel = g_paste_ui_panel_new (client);
-    GtkWidget *history = g_paste_ui_history_new (client);
+    GtkWidget *history = g_paste_ui_history_new (client, settings);
     GPasteUiHeader *h = priv->header = G_PASTE_UI_HEADER (header);
 
     priv->history = G_PASTE_UI_HISTORY (history);

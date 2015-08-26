@@ -310,7 +310,6 @@ g_paste_ui_history_init (GPasteUiHistory *self)
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    priv->settings = g_paste_settings_new ();
     priv->dummy_item = g_paste_ui_empty_item_new ();
 
     gtk_container_add (GTK_CONTAINER (self), priv->dummy_item);
@@ -324,6 +323,7 @@ g_paste_ui_history_init (GPasteUiHistory *self)
 /**
  * g_paste_ui_history_new:
  * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
  *
  * Create a new instance of #GPasteUiHistory
  *
@@ -331,14 +331,17 @@ g_paste_ui_history_init (GPasteUiHistory *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_history_new (GPasteClient *client)
+g_paste_ui_history_new (GPasteClient   *client,
+                        GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY, NULL);
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (self));
 
     priv->client = g_object_ref (client);
+    priv->settings = g_object_ref (settings);
 
     priv->update_id = g_signal_connect (client,
                                         "update",
