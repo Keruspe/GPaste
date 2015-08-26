@@ -60,6 +60,7 @@ g_paste_ui_history_add_item (gpointer data,
 {
     GtkContainer *self = user_data;
     GtkWidget *item = data;
+
     g_object_ref (item);
     gtk_container_add (self, item);
     gtk_widget_show_all (item);
@@ -79,8 +80,8 @@ g_paste_ui_history_remove (gpointer data,
     GtkWidget *item = data;
     GtkContainer *self = user_data;
 
-    g_object_unref (item);
     gtk_container_remove (self, item);
+    g_object_unref (item);
 }
 
 static void
