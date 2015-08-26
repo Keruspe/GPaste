@@ -45,7 +45,8 @@ on_row_activated (GtkListBox    *panel     G_GNUC_UNUSED,
 
 static void
 g_paste_ui_panel_add_history (GPasteUiPanel *self,
-                              const gchar   *history)
+                              const gchar   *history,
+                              const gchar   *current)
 {
     GtkContainer *c = GTK_CONTAINER (self);
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
@@ -54,6 +55,9 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
     g_object_ref (h);
     gtk_container_add (c, h);
     gtk_widget_show_all (h);
+
+    if (!g_strcmp0 (history, current))
+        gtk_list_box_select_row (GTK_LIST_BOX (self), GTK_LIST_BOX_ROW (h));
 }
 
 static void
@@ -62,10 +66,12 @@ on_histories_ready (GObject      *source_object,
                     gpointer      user_data)
 {
     GPasteUiPanel *self = user_data;
+    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
     g_auto(GStrv) histories = g_paste_client_list_histories_finish (G_PASTE_CLIENT (source_object), res, NULL);
+    g_autofree gchar *current = g_strdup (g_paste_settings_get_history_name (priv->settings));
 
     for (GStrv h = histories; *h; ++h)
-        g_paste_ui_panel_add_history (self, *h);
+        g_paste_ui_panel_add_history (self, *h, current);
 }
 
 static void
