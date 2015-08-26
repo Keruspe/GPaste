@@ -167,7 +167,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 {
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     GtkWindow *win = GTK_WINDOW (self);
-    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
+    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
     GtkWidget *search_bar = g_paste_ui_search_bar_new ();
     GtkContainer *box = GTK_CONTAINER (vbox);
@@ -213,11 +213,12 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     gtk_window_set_titlebar (win, header);
 
     GtkContainer *vbox = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (win)));
-    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
-    GtkContainer *box = GTK_CONTAINER (hbox);
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkBox *box = GTK_BOX (hbox);
 
-    gtk_container_add (box, panel);
-    gtk_container_add (box, history);
+    gtk_box_pack_start (box, panel, FALSE, FALSE, 0);
+    gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 0);
+    gtk_box_pack_start (box, history, TRUE, TRUE, 0);
     gtk_container_add (vbox, hbox);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",

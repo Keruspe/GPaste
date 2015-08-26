@@ -95,9 +95,8 @@ static void
 g_paste_ui_panel_init (GPasteUiPanel *self)
 {
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
-    GtkStyleContext *context = gtk_widget_get_style_context (GTK_WIDGET (self));
 
-    gtk_style_context_add_class (context, "sidebar");
+    gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (self)), GTK_STYLE_CLASS_SIDEBAR);
 
     priv->activated_id = g_signal_connect (G_OBJECT (self),
                                            "row-activated",
