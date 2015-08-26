@@ -169,6 +169,10 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     GtkWindow *win = GTK_WINDOW (self);
     GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
+    gtk_widget_set_margin_start (vbox, 5);
+    gtk_widget_set_margin_end (vbox, 5);
+    gtk_widget_set_margin_bottom (vbox, 5);
+
     GtkWidget *search_bar = g_paste_ui_search_bar_new ();
     GtkContainer *box = GTK_CONTAINER (vbox);
 
@@ -217,7 +221,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     GtkBox *box = GTK_BOX (hbox);
 
     gtk_box_pack_start (box, panel, FALSE, FALSE, 0);
-    gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 0);
+    gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 2);
     gtk_box_pack_start (box, history, TRUE, TRUE, 0);
     gtk_container_add (vbox, hbox);
 

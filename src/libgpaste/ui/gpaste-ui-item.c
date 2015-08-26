@@ -186,6 +186,9 @@ g_paste_ui_item_init (GPasteUiItem *self)
     priv->index = (guint32)-1;
 
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
+    gtk_widget_set_margin_start (label, 10);
+    gtk_widget_set_margin_top (label, 5);
+    gtk_widget_set_margin_bottom (label, 5);
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);

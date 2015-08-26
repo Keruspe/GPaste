@@ -96,7 +96,10 @@ g_paste_ui_panel_history_new (GPasteClient *client,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_if_fail (g_utf8_validate (history, -1, NULL));
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL_HISTORY, NULL);
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL_HISTORY,
+                                      "width-request",  100,
+                                      "height-request", 50,
+                                      NULL);
     GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (self));
 
     priv->client = g_object_ref (client);
