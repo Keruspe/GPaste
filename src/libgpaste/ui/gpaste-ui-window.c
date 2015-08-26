@@ -19,6 +19,7 @@
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
+#include <gpaste-ui-panel.h>
 #include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-window.h>
 
@@ -203,17 +204,24 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     }
 
     GtkWidget *header = g_paste_ui_header_new (win, client);
+    GtkWidget *panel = g_paste_ui_panel_new (client);
     GtkWidget *history = g_paste_ui_history_new (client);
-    GtkContainer *box = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (win)));
     GPasteUiHeader *h = priv->header = G_PASTE_UI_HEADER (header);
 
     priv->history = G_PASTE_UI_HISTORY (history);
 
     gtk_window_set_titlebar (win, header);
+
+    GtkContainer *vbox = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (win)));
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
+    GtkContainer *box = GTK_CONTAINER (hbox);
+
+    gtk_container_add (box, panel);
     gtk_container_add (box, history);
+    gtk_container_add (vbox, hbox);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
-                            gtk_container_get_children (box)->data,  "search-mode-enabled",
+                            gtk_container_get_children (vbox)->data, "search-mode-enabled",
                             G_BINDING_BIDIRECTIONAL);
 
     gtk_widget_show_all (GTK_WIDGET (win));
