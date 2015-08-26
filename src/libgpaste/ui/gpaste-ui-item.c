@@ -185,6 +185,8 @@ g_paste_ui_item_init (GPasteUiItem *self)
     priv->label = GTK_LABEL (label);
     priv->index = (guint32)-1;
 
+    gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
+
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
 
@@ -218,7 +220,6 @@ g_paste_ui_item_new (GPasteClient   *client,
     priv->settings = g_object_ref (settings);
     priv->delete = G_PASTE_UI_DELETE (delete);
 
-    gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), delete, FALSE, TRUE, 0);
 
     priv->size_id = g_signal_connect (settings,
