@@ -108,8 +108,9 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     gsize old_size = priv->size;
     guint refreshTextBound = old_size;
-    priv->size = MIN (g_paste_client_get_history_size_finish (priv->client, res, NULL),
-                      g_paste_settings_get_max_displayed_history_size (priv->settings));
+    guint32 new_size = g_paste_client_get_history_size_finish (priv->client, res, NULL);
+    guint32 max_size = g_paste_settings_get_max_displayed_history_size (priv->settings);
+    priv->size = MIN (new_size, max_size);
     if (priv->size)
         gtk_widget_hide (priv->dummy_item);
     else
