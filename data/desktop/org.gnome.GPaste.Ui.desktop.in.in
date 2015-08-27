@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-_Name=GPaste user interface
-_Comment=Manage GPaste
+Name=GPaste
+_Comment=Manage your clipboard history
 _Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
 Icon=gtk-paste
 Exec=@pkglibexecdir@/gpaste-ui

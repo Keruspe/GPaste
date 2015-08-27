@@ -2,8 +2,8 @@
 <!-- Copyright 2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
 <component type="desktop">
   <id>org.gnome.GPaste.Ui.desktop</id>
-  <_name>GPaste user interface</_name>
-  <_summary>GPaste graphical interface</_summary>
+  <name>GPaste</name>
+  <_summary>Manage your clipboard history</_summary>
   <developer_name>Marc-Antoine Perennou</developer_name>
   <project_license>GPL-3.0</project_license>
   <metadata_license>CC-BY-SA-3.0</metadata_license>
