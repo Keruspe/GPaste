@@ -39,7 +39,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanelHistory, g_paste_ui_panel_history, GTK_
  * g_paste_ui_panel_history_activate:
  * @self: a #GPasteUiPanelHistory instance
  *
- * Refresh the panel_history
+ * Switch to this history
  *
  * Returns:
  */
@@ -50,6 +50,24 @@ g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
     GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
 
     g_paste_client_switch_history (priv->client, priv->history, NULL, NULL);
+}
+
+/**
+ * g_paste_ui_panel_history_get_history:
+ * @self: a #GPasteUiPanelHistory instance
+ *
+ * Get the underlying history name
+ *
+ * Returns: the name of the history
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
+
+    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private ((GPasteUiPanelHistory *) self);
+
+    return priv->history;
 }
 
 static void

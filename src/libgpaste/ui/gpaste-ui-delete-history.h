@@ -21,24 +21,22 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_PANEL_HISTORY_H__
-#define __G_PASTE_UI_PANEL_HISTORY_H__
+#ifndef __G_PASTE_UI_DELETE_HISTORY_H__
+#define __G_PASTE_UI_DELETE_HISTORY_H__
 
 #include <gpaste-client.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_PANEL_HISTORY (g_paste_ui_panel_history_get_type ())
+#define G_PASTE_TYPE_UI_DELETE_HISTORY (g_paste_ui_delete_history_get_type ())
 
-G_PASTE_FINAL_TYPE (UiPanelHistory, ui_panel_history, UI_PANEL_HISTORY, GtkListBoxRow)
+G_PASTE_FINAL_TYPE (UiDeleteHistory, ui_delete_history, UI_DELETE_HISTORY, GtkButton)
 
-void g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self);
+void g_paste_ui_delete_history_set_history (GPasteUiDeleteHistory *self,
+                                            const gchar           *history);
 
-const gchar *g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self);
-
-GtkWidget *g_paste_ui_panel_history_new (GPasteClient *client,
-                                         const gchar  *history);
+GtkWidget *g_paste_ui_delete_history_new (GPasteClient *client);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_PANEL_HISTORY_H__*/
+#endif /*__G_PASTE_UI_DELETE_HISTORY_H__*/

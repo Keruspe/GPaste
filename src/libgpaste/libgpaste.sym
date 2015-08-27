@@ -374,6 +374,9 @@ global:
     g_paste_search_provider_get_type;
     g_paste_search_provider_new;
 
+    g_paste_ui_delete_history_get_type;
+    g_paste_ui_delete_history_new;
+    g_paste_ui_delete_history_set_history;
     g_paste_ui_header_get_search_button;
     g_paste_ui_header_show_prefs;
     g_paste_ui_history_search;
