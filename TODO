@@ -1,15 +1,14 @@
-3.18:
+3.20:
     general:
         replace
+        wayland support
     gpaste-ui:
-        history chooser
         merge
         edit
 
 future:
     general:
         redo gtk_clipboard_store?
-        wayland support
         gpg support
         properties all the way (when GProperty stuff lands)
     libgpaste-client:
