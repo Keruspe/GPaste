@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-04-29 09:18+0200\n"
+"POT-Creation-Date: 2015-08-27 20:05+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -162,7 +162,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "Téléverser l'élément actif vers un sevice type pastebin : "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
-#: ../src/libgpaste/ui/gpaste-ui-window.c:155 ../src/gpaste/gpaste.c:181
+#: ../src/libgpaste/ui/gpaste-ui-window.c:206 ../src/gpaste/gpaste.c:181
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 
@@ -230,18 +230,14 @@ msgid "Do you really want to stop tracking clipboard changes?"
 msgstr ""
 "Voulez-vous vraiment arrêter de suivre les changements du presse-papier"
 
-#: ../src/daemon/gpaste-daemon.c:35
+#: ../src/daemon/gpaste-daemon.c:37
 #, c-format
 msgid "Signal %d received, exiting\n"
 msgstr "Signal %d reçu, arrêt.\n"
 
-#: ../src/daemon/gpaste-daemon.c:45
+#: ../src/daemon/gpaste-daemon.c:47
 msgid "Could not acquire DBus name."
 msgstr "Impossible d'acquérir le nom DBus."
-
-#: ../src/daemon/gpaste-daemon.c:89
-msgid "Could not register DBus service."
-msgstr "Impossible d'inscrire le service DBus au registre."
 
 #: ../src/gpaste/gpaste.c:31
 #, c-format
@@ -491,11 +487,11 @@ msgstr ""
 msgid "add the given separator between each item when merging"
 msgstr "ajoute le séparateur entre chaque élément à la fusion"
 
-#: ../src/gpaste/gpaste.c:192 ../src/gpaste/gpaste.c:366
+#: ../src/gpaste/gpaste.c:192 ../src/gpaste/gpaste.c:387
 msgid "Couldn't spawn"
 msgstr "Impossible de lancer"
 
-#: ../src/gpaste/gpaste.c:323
+#: ../src/gpaste/gpaste.c:344
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Démon redémarré avec succès\n"
@@ -512,7 +508,7 @@ msgstr "Icone de notification pour gérer GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
-#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:2
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -548,14 +544,10 @@ msgstr ""
 
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
-msgid "GPaste user interface"
-msgstr "Interface utilisateur de GPaste"
+msgid "Manage your clipboard history"
+msgstr "Gérez l'historique de votre presse-papier"
 
-#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:2
-msgid "GPaste graphical interface"
-msgstr "Interface graphique de GPaste"
-
-#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:4
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
@@ -569,10 +561,6 @@ msgid "Clipboard;Manager;"
 msgstr "Presse-Papier;Gestionnaire;"
 
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
-msgid "Manage GPaste"
-msgstr "Gérer GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr "Presse-Papier;Gestionnaire;Réglages;Préférences;Configuration;"
 
@@ -820,6 +808,3 @@ msgid ""
 msgstr ""
 "Par défaut, appuyer sur ctrl + alt + u le fait (\"&lt;Ctrl&gt;&lt;Alt&gt;U"
 "\"). Une chaîne vide désactive cette fonctionnalité."
-
-#~ msgid "GPaste daemon settings"
-#~ msgstr "Préférences du démon GPaste"

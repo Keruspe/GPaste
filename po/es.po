@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-04-29 09:18+0200\n"
+"POT-Creation-Date: 2015-08-27 20:05+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -166,7 +166,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "Eliminar el primer elemento del historial"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
-#: ../src/libgpaste/ui/gpaste-ui-window.c:155 ../src/gpaste/gpaste.c:181
+#: ../src/libgpaste/ui/gpaste-ui-window.c:206 ../src/gpaste/gpaste.c:181
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
@@ -235,18 +235,14 @@ msgstr "Ajustes del servicio GPaste"
 msgid "Do you really want to stop tracking clipboard changes?"
 msgstr "detener seguimiento de cambios en el portapapeles"
 
-#: ../src/daemon/gpaste-daemon.c:35
+#: ../src/daemon/gpaste-daemon.c:37
 #, c-format
 msgid "Signal %d received, exiting\n"
 msgstr "Recibida señal %d, saliendo\n"
 
-#: ../src/daemon/gpaste-daemon.c:45
+#: ../src/daemon/gpaste-daemon.c:47
 msgid "Could not acquire DBus name."
 msgstr "No se pudo obtener nombre en DBus"
-
-#: ../src/daemon/gpaste-daemon.c:89
-msgid "Could not register DBus service."
-msgstr "No se pudo registrar el servicio DBus"
 
 #: ../src/gpaste/gpaste.c:31
 #, c-format
@@ -501,12 +497,12 @@ msgstr ""
 msgid "add the given separator between each item when merging"
 msgstr ""
 
-#: ../src/gpaste/gpaste.c:192 ../src/gpaste/gpaste.c:366
+#: ../src/gpaste/gpaste.c:192 ../src/gpaste/gpaste.c:387
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "No se pudo iniciar el applet de gpaste.\n"
 
-#: ../src/gpaste/gpaste.c:323
+#: ../src/gpaste/gpaste.c:344
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Servicio reiniciado con éxito\n"
@@ -523,7 +519,7 @@ msgstr "Icono de notificación para GPaste"
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:3
 #: ../data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in.h:3
-#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:2
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -555,14 +551,10 @@ msgstr ""
 
 #: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:1
-msgid "GPaste user interface"
+msgid "Manage your clipboard history"
 msgstr ""
 
-#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:2
-msgid "GPaste graphical interface"
-msgstr ""
-
-#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:4
+#: ../data/appstream/org.gnome.GPaste.Ui.appdata.xml.in.h:3
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
@@ -574,11 +566,6 @@ msgid "Clipboard;Manager;"
 msgstr ""
 
 #: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:2
-#, fuzzy
-msgid "Manage GPaste"
-msgstr "Gestionar los ajustes del servicio GPaste"
-
-#: ../data/desktop/org.gnome.GPaste.Ui.desktop.in.in.h:3
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr ""
 
@@ -810,6 +797,13 @@ msgid ""
 msgstr ""
 "Por omisión, pulsando ctrl + alt + v (\"&lt;Ctrl&gt;&lt;Alt&gt;v\"). Una "
 "cadena vacía desactivaría esta funcionalidad."
+
+#~ msgid "Could not register DBus service."
+#~ msgstr "No se pudo registrar el servicio DBus"
+
+#, fuzzy
+#~ msgid "Manage GPaste"
+#~ msgstr "Gestionar los ajustes del servicio GPaste"
 
 #~ msgid "GPaste daemon settings"
 #~ msgstr "Ajustes del servicio GPaste"
