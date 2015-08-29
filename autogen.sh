@@ -21,10 +21,10 @@ run_action() {
     )
 
     case "${action}" in
-        configure-full)
+        configure-full|cf)
             ./configure "${configure_args[@]}" "${@}"
             ;;
-        scan-build)
+        scan-build|sb)
             scan_build ./configure "${configure_args[@]}" "${@}"
             scan_build make
             ;;
