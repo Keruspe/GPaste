@@ -237,7 +237,7 @@ AC_CONFIG_FILES([
 AC_OUTPUT
 AC_MSG_RESULT([
     $PACKAGE_NAME $VERSION
-    ========
+    ===========
 
     prefix:                 ${prefix}
     exec_prefix:            ${exec_prefix}
