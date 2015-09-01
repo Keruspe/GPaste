@@ -1,3 +1,10 @@
+3.18:
+    ui:
+        update histories on delete
+        confirm dialog for delete
+        backup/switch in panel
+        display history actions on right click, set relative_to to null on delete
+
 3.20:
     general:
         replace
