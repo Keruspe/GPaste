@@ -78,7 +78,7 @@ gint
 main (gint argc, gchar *argv[])
 {
     /* FIXME: remove this once gtk supports clipboard correctly on wayland */
-    g_setenv ("GDK_BACKEND", "x11", TRUE);
+    gdk_set_allowed_backends ("x11");
 
     G_PASTE_INIT_APPLICATION ("Daemon");
     /* Keep the gapplication around */
