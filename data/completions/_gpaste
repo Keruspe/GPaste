@@ -68,6 +68,7 @@ _gpaste_complete_subcommands() {
         {empty,e}:"Empty the history"
         {file,f}:"Put content of file into clipboard"
         {get,g}:"Display an element of the history"
+        {get-history,gh}:"Get the name of the current history"
         "help:Display the help"
         {history,h}:"Display the history with indexes"
         {history-size,hs}:"Display the size of the history"
