@@ -26,11 +26,11 @@ struct _GPasteUiPanelHistory
 
 typedef struct
 {
-    GPasteClient *client;
+    GPasteClient           *client;
 
-    GtkLabel     *label;
+    GtkLabel               *label;
 
-    gchar        *history;
+    gchar                  *history;
 } GPasteUiPanelHistoryPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanelHistory, g_paste_ui_panel_history, GTK_TYPE_LIST_BOX_ROW)
@@ -108,8 +108,8 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_panel_history_new (GPasteClient *client,
-                              const gchar  *history)
+g_paste_ui_panel_history_new (GPasteClient           *client,
+                              const gchar            *history)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);

@@ -36,8 +36,8 @@ void g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self);
 
 const gchar *g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self);
 
-GtkWidget *g_paste_ui_panel_history_new (GPasteClient *client,
-                                         const gchar  *history);
+GtkWidget *g_paste_ui_panel_history_new (GPasteClient           *client,
+                                         const gchar            *history);
 
 G_END_DECLS
 

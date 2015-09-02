@@ -76,6 +76,21 @@ on_histories_ready (GObject      *source_object,
         g_paste_ui_panel_add_history (self, *h, current);
 }
 
+static gboolean
+g_paste_ui_panel_button_press_event (GtkWidget      *widget,
+                                     GdkEventButton *event)
+{
+    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (widget));
+
+    if (gdk_event_triggers_context_menu ((GdkEvent *) event))
+    {
+        g_paste_ui_history_actions_set_relative_to (priv->actions, G_PASTE_UI_PANEL_HISTORY (gtk_list_box_get_row_at_y (GTK_LIST_BOX (widget), event->y)));
+        gtk_widget_show_all (GTK_WIDGET (priv->actions));
+    }
+
+    return GDK_FILTER_CONTINUE;
+}
+
 static void
 g_paste_ui_panel_dispose (GObject *object)
 {
@@ -96,9 +111,8 @@ g_paste_ui_panel_dispose (GObject *object)
 static void
 g_paste_ui_panel_class_init (GPasteUiPanelClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_ui_panel_dispose;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_panel_dispose;
+    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_panel_button_press_event;
 }
 
 static void

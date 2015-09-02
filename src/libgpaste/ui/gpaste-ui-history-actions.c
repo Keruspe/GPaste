@@ -61,7 +61,7 @@ g_paste_ui_history_actions_set_relative_to (GPasteUiHistoryActions *self,
     g_return_if_fail (!history || G_PASTE_IS_UI_PANEL_HISTORY (history));
 
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (self);
-    const gchar *h = (history) ? g_paste_ui_panel_history_get_history (history) : NULL;
+    const gchar *h = (history) ? g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (history)) : NULL;
 
     gtk_popover_set_relative_to (GTK_POPOVER (self), GTK_WIDGET (history));
     g_slist_foreach (priv->actions, action_set_history, (gpointer) h);
