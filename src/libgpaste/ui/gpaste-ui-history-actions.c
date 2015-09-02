@@ -27,13 +27,22 @@ struct _GPasteUiHistoryActions
 
 typedef struct
 {
-    GPasteClient          *client;
+    GPasteClient *client;
 
-    /* TODO: make a GPasteUiHistoryAction */
-    GPasteUiDeleteHistory *delete;
+    GSList       *actions;
 } GPasteUiHistoryActionsPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistoryActions, g_paste_ui_history_actions, GTK_TYPE_POPOVER)
+
+static void
+action_set_history (gpointer data,
+                    gpointer user_data)
+{
+    GPasteUiHistoryAction *action = data;
+    const gchar *history = user_data;
+
+    g_paste_ui_history_action_set_history (action, history);
+}
 
 /**
  * g_paste_ui_history_actions_set_relative_to:
@@ -55,7 +64,17 @@ g_paste_ui_history_actions_set_relative_to (GPasteUiHistoryActions *self,
     const gchar *h = (history) ? g_paste_ui_panel_history_get_history (history) : NULL;
 
     gtk_popover_set_relative_to (GTK_POPOVER (self), GTK_WIDGET (history));
-    g_paste_ui_delete_history_set_history (priv->delete, h);
+    g_slist_foreach (priv->actions, action_set_history, (gpointer) h);
+}
+
+static void
+add_action_to_box (gpointer data,
+                   gpointer user_data)
+{
+    GtkContainer *box = user_data;
+    GtkWidget *action = data;
+
+    gtk_container_add (box, action);
 }
 
 static void
@@ -103,15 +122,13 @@ g_paste_ui_history_actions_new (GPasteClient *client,
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (self));
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 5);
     GtkWidget *delete = g_paste_ui_delete_history_new (client, rootwin);
-    GtkContainer *b = GTK_CONTAINER (box);
 
     priv->client = g_object_ref (client);
-
-    priv->delete = G_PASTE_UI_DELETE_HISTORY (delete);
+    priv->actions = g_slist_append (priv->actions, delete);
 
     gtk_popover_set_position (GTK_POPOVER (self), GTK_POS_RIGHT);
 
-    gtk_container_add (b, delete);
+    g_slist_foreach (priv->actions, add_action_to_box, box);
     gtk_widget_show_all (box);
 
     gtk_container_add (GTK_CONTAINER (self), box);
