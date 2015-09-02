@@ -1309,7 +1309,7 @@ g_paste_history_list (GError **error)
                                                                        G_FILE_QUERY_INFO_NONE,
                                                                        NULL, /* cancellable */
                                                                        error);
-    if (*error)
+    if (error && *error)
         return NULL;
 
     GFileInfo *history;
