@@ -26,7 +26,7 @@ struct _GPasteUiDeleteHistory
     GPasteUiHistoryAction parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiDeleteHistory, g_paste_ui_delete_history, GTK_TYPE_BUTTON)
+G_DEFINE_TYPE (GPasteUiDeleteHistory, g_paste_ui_delete_history, G_PASTE_TYPE_UI_HISTORY_ACTION)
 
 static gboolean
 g_paste_ui_delete_history_button_press_event (GtkWidget      *widget,
