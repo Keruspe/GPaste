@@ -85,7 +85,8 @@ G_BEGIN_DECLS
         "           <arg type='s' direction='in' name='password' />"           \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_BACKUP_HISTORY "'>"             \
-        "           <arg type='s' direction='in' name='name' />"               \
+        "           <arg type='s' direction='in' name='history' />"            \
+        "           <arg type='s' direction='in' name='backup'  />"            \
         "       </method>"                                                     \
         "       <method name='" G_PASTE_DAEMON_DELETE "'>"                     \
         "           <arg type='u' direction='in' name='index' />"              \
