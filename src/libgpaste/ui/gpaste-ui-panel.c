@@ -90,7 +90,7 @@ g_paste_ui_panel_button_press_event (GtkWidget      *widget,
         gtk_widget_show_all (GTK_WIDGET (priv->actions));
     }
 
-    return FALSE;
+    return GTK_WIDGET_CLASS (g_paste_ui_panel_parent_class)->button_press_event (widget, event);
 }
 
 static void
