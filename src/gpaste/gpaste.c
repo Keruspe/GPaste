@@ -361,7 +361,8 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "gh") ||
                      !g_strcmp0 (arg1, "get-history"))
             {
-                g_paste_client_get_history_name_sync (client, &error);
+                g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
+                printf("%s\n", name);
             }
             else if (!g_strcmp0 (arg1, "h") ||
                      !g_strcmp0 (arg1, "history"))
