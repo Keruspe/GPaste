@@ -112,7 +112,7 @@ g_paste_ui_panel_history_new (GPasteClient *client,
                               const gchar  *history)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_if_fail (g_utf8_validate (history, -1, NULL));
+    g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL_HISTORY,
                                       "width-request",  100,
