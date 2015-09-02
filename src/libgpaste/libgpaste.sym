@@ -382,9 +382,11 @@ global:
     g_paste_ui_history_search;
     g_paste_ui_history_actions_get_type;
     g_paste_ui_history_actions_new;
+    g_paste_ui_history_actions_set_relative_to;
     g_paste_ui_panel_get_type;
     g_paste_ui_panel_new;
     g_paste_ui_panel_history_activate;
+    g_paste_ui_panel_history_get_history;
     g_paste_ui_panel_history_get_type;
     g_paste_ui_panel_history_new;
     g_paste_ui_search_bar_get_entry;
