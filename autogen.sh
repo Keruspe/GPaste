@@ -1,7 +1,37 @@
 #!/bin/bash
 
-scan_build() {
+set -euo pipefail
+
+autotools() {
+    autoreconf -i -Wall
+    intltoolize --force --automake
+}
+
+clean() {
+    git clean -fdx
+    autotools
+}
+
+scan_build_run() {
     scan-build --use-analyzer=/usr/bin/clang "${@}"
+}
+
+scan_build() {
+    scan_build_run ./configure "${@}"
+    scan_build_run make
+}
+
+static_analysis() {
+    coverity-submit
+    clean
+    scan_build "${@}"
+}
+
+full() {
+    static_analysis "${@}"
+    clean
+    ./configure "${@}"
+    make
 }
 
 run_action() {
@@ -24,18 +54,25 @@ run_action() {
         configure-full|cf)
             ./configure "${configure_args[@]}" "${@}"
             ;;
+        coverity|cov)
+            coverity-submit
+            ;;
         scan-build|sb)
-            scan_build ./configure "${configure_args[@]}" "${@}"
-            scan_build make
+            scan_build "${configure_args[@]}" "${@}"
+            ;;
+        static-analysis|sa)
+            static_analysis "${configure_args[@]}" "${@}"
+            ;;
+        full)
+            full "${configure_args[@]}" "${@}"
             ;;
     esac
 }
 
 main() {
-    autoreconf -i -Wall
-    intltoolize --force --automake
+    autotools
 
-    [[ "#{#}" != 0 ]] && run_action "${@}"
+    [[ "${#}" != 0 ]] && run_action "${@}"
 }
 
 main "${@}"
