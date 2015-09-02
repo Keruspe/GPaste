@@ -117,7 +117,7 @@ g_paste_ui_history_actions_new (GPasteClient *client,
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY_ACTIONS,
                                       "width-request",  200,
-                                      "height-request", 150,
+                                      "height-request", 40,
                                       NULL);
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (self));
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 5);

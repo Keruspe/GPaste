@@ -103,7 +103,12 @@ g_paste_ui_history_action_new (GType         type,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = gtk_widget_new (type, NULL);
+    GtkWidget *self = gtk_widget_new (type,
+                                      "width-request",  200,
+                                      "height-request", 30,
+                                      "margin-top",     5,
+                                      "margin-bottom",  5,
+                                      NULL);
     GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (self));
 
     priv->client = g_object_ref (client);

@@ -47,9 +47,8 @@ g_paste_ui_delete_history_class_init (GPasteUiDeleteHistoryClass *klass)
 }
 
 static void
-g_paste_ui_delete_history_init (GPasteUiDeleteHistory *self)
+g_paste_ui_delete_history_init (GPasteUiDeleteHistory *self G_GNUC_UNUSED)
 {
-    gtk_button_set_label (GTK_BUTTON (self), _("Delete"));
 }
 
 /**
@@ -69,5 +68,9 @@ g_paste_ui_delete_history_new (GPasteClient *client,
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    return g_paste_ui_history_action_new (G_PASTE_TYPE_UI_DELETE_HISTORY, client, rootwin);
+    GtkWidget *self = g_paste_ui_history_action_new (G_PASTE_TYPE_UI_DELETE_HISTORY, client, rootwin);
+
+    gtk_button_set_label (GTK_BUTTON (self), _("Delete"));
+
+    return self;
 }
