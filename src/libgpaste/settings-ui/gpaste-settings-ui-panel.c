@@ -32,26 +32,15 @@ typedef struct
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)
 
-#define CALLBACK_DATA_FULL(cb, rcb, w, d, d2)                                                         \
+#define CALLBACK_DATA(w)                                                                              \
     GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);       \
     _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc0 (sizeof (_CallbackDataWrapper)); \
     CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                        \
     priv->callback_data = g_slist_prepend (priv->callback_data, _data);                               \
     _data->widget = GTK_WIDGET (w);                                                                   \
-    data->callback = G_CALLBACK (cb);                                                                 \
-    data->reset_cb = rcb;                                                                             \
-    data->custom_data = user_data;                                                                    \
-    data->user_data = (d) ? GTK_WIDGET (d) : NULL;                                                    \
-    data->user_data2 = (d2) ? GTK_WIDGET (d2) : NULL
-
-#define CALLBACK_DATA_DEFAULT(w) \
-    CALLBACK_DATA_FULL (on_value_changed, on_reset, w, NULL, NULL)
-
-#define CALLBACK_DATA_CONFIRM2(w, d, d2) \
-    CALLBACK_DATA_FULL (confirm_action, NULL, w, d, d2)
-
-#define CALLBACK_DATA_CONFIRM(w, d) \
-    CALLBACK_DATA_CONFIRM2 (w, d, NULL)
+    data->callback = G_CALLBACK (on_value_changed);                                                   \
+    data->reset_cb = on_reset;                                                                        \
+    data->custom_data = user_data;
 
 #define G_PASTE_CALLBACK(cb_type)                                  \
     CallbackDataWrapper *data = (CallbackDataWrapper *) user_data; \
@@ -66,8 +55,6 @@ typedef struct
     GCallback           callback;
     GPasteResetCallback reset_cb;
     gpointer            custom_data;
-    GtkWidget          *user_data;
-    GtkWidget          *user_data2;
 } CallbackDataWrapper;
 
 typedef struct
@@ -150,7 +137,7 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
     GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *widget = gtk_switch_new ();
     GtkSwitch *sw = GTK_SWITCH (widget);
-    CALLBACK_DATA_DEFAULT (widget);
+    CALLBACK_DATA (widget);
 
     gtk_switch_set_active (sw, value);
     _data->signal = g_signal_connect (widget, "notify::active", G_CALLBACK (boolean_wrapper), data);
@@ -213,7 +200,7 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
     GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *button = gtk_spin_button_new_with_range (min, max, step);
     GtkSpinButton *b = GTK_SPIN_BUTTON (button);
-    CALLBACK_DATA_DEFAULT (button);
+    CALLBACK_DATA (button);
 
     gtk_widget_set_hexpand (button, TRUE);
     gtk_spin_button_set_value (b, value);
@@ -255,7 +242,7 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
     GtkLabel *entry_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *entry = gtk_entry_new ();
     GtkEntry *e = GTK_ENTRY (entry);
-    CALLBACK_DATA_DEFAULT (entry);
+    CALLBACK_DATA (entry);
 
     gtk_widget_set_hexpand (entry, TRUE);
     gtk_entry_set_text (e, value);
@@ -265,114 +252,6 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
         gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), entry, GTK_POS_RIGHT, 1, 1);
 
     return e;
-}
-
-static GtkButton *
-g_paste_settings_ui_panel_add_confirm_button (GPasteSettingsUiPanel *self,
-                                              GtkWidget             *button,
-                                              GtkWidget             *attach_to)
-{
-    gtk_widget_set_hexpand (button, TRUE);
-    gtk_grid_attach_next_to (GTK_GRID (self), button, GTK_WIDGET (attach_to), GTK_POS_RIGHT, 1, 1);
-
-    return GTK_BUTTON (button);
-}
-
-static gboolean
-text_confirm_wrapper (GtkWidget      *widget G_GNUC_UNUSED,
-                      GdkEventButton *event G_GNUC_UNUSED,
-                      gpointer        user_data)
-{
-    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (data->user_data)), data->custom_data);
-    return GDK_EVENT_PROPAGATE;
-}
-
-/**
- * g_paste_settings_ui_panel_add_text_confirm_setting:
- * @self: a #GPasteSettingsUiPanel instance
- * @label: the label to display
- * @value: the deafault value
- * @on_value_changed: (closure user_data1) (scope notified): the callback to call when the value changes
- * @confirm_label: the label of the confirmation button
- * @confirm_action: (closure user_data) (scope notified): the action to perform when the button is pressed
- *
- * Add a new text settings with confirmation to the current pane
- *
- * Returns: (transfer none): the #GtkEntry we just added
- */
-G_PASTE_VISIBLE GtkEntry *
-g_paste_settings_ui_panel_add_text_confirm_setting (GPasteSettingsUiPanel *self,
-                                                    const gchar           *label,
-                                                    const gchar           *value,
-                                                    GPasteTextCallback     on_value_changed,
-                                                    gpointer               user_data1,
-                                                    const gchar           *confirm_label,
-                                                    GPasteTextCallback     confirm_action,
-                                                    gpointer               user_data)
-{
-    GtkEntry *entry = g_paste_settings_ui_panel_add_text_setting (self, label, value, on_value_changed, NULL, user_data1);
-    GtkButton *button = g_paste_settings_ui_panel_add_confirm_button (self, gtk_button_new_with_label (confirm_label), GTK_WIDGET (entry));
-    CALLBACK_DATA_CONFIRM (button, entry);
-
-    _data->signal = g_signal_connect (button, "button-press-event", G_CALLBACK (text_confirm_wrapper), data);
-
-    return entry;
-}
-
-static GtkWidget *
-g_paste_settings_ui_panel_make_combo_box_text (const GStrv *labels)
-{
-    GtkWidget *combo_box = gtk_combo_box_text_new ();
-
-    for (unsigned int i = 0; labels[i]; ++i)
-        gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (combo_box), labels[i][0], labels[i][1]);
-    gtk_combo_box_set_active (GTK_COMBO_BOX (combo_box), 0);
-
-    return combo_box;
-}
-
-static gboolean
-multi_action_wrapper (GtkWidget       *widget G_GNUC_UNUSED,
-                      GdkEventButton  *event G_GNUC_UNUSED,
-                      gpointer         user_data)
-{
-    G_PASTE_CALLBACK (GPasteMultiActionCallback) (gtk_combo_box_get_active_id (GTK_COMBO_BOX (data->user_data)),
-                                                  gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (data->user_data2)),
-                                                  data->custom_data);
-    return GDK_EVENT_PROPAGATE;
-}
-
-/**
- * g_paste_settings_ui_panel_add_multi_action_setting:
- * @self: a #GPasteSettingsUiPanel instance
- * @action_labels: the labels to display as the available actions
- * @confirm_label: the label of the confirmation button
- * @confirm_action: (closure user_data) (scope notified): the action to perform when the button is pressed
- *
- * Add a new multi action settings to the current pane
- *
- * Returns: (transfer none): the #GtkComboBoxText we just added as the targets
- */
-G_PASTE_VISIBLE GtkComboBoxText *
-g_paste_settings_ui_panel_add_multi_action_setting (GPasteSettingsUiPanel    *self,
-                                                    gchar ** const           *action_labels,
-                                                    const gchar              *confirm_label,
-                                                    GPasteMultiActionCallback confirm_action,
-                                                    gpointer                  user_data)
-{
-    GtkWidget *actions = g_paste_settings_ui_panel_make_combo_box_text (action_labels);
-    GtkWidget *targets = gtk_combo_box_text_new_with_entry ();
-    GtkWidget *_button = gtk_button_new_with_label (confirm_label);
-    CALLBACK_DATA_CONFIRM2 (_button, actions, targets);
-
-    gtk_grid_attach (GTK_GRID (self), actions, 0, priv->current_line++, 1, 1);
-    gtk_grid_attach_next_to (GTK_GRID (self), targets, actions, GTK_POS_RIGHT, 1, 1);
-
-    GtkButton *button = g_paste_settings_ui_panel_add_confirm_button (self, _button, targets);
-
-    _data->signal = g_signal_connect (button, "button-press-event", G_CALLBACK (multi_action_wrapper), data);
-
-    return GTK_COMBO_BOX_TEXT (targets);
 }
 
 static void

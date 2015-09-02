@@ -47,7 +47,6 @@ typedef struct
     GtkSpinButton   *max_memory_usage_button;
     GtkSpinButton   *max_text_item_size_button;
     GtkSpinButton   *min_text_item_size_button;
-    GtkEntry        *backup_entry;
     GtkEntry        *launch_ui_entry;
     GtkEntry        *make_password_entry;
     GtkEntry        *pop_entry;
@@ -55,7 +54,6 @@ typedef struct
     GtkEntry        *sync_clipboard_to_primary_entry;
     GtkEntry        *sync_primary_to_clipboard_entry;
     GtkEntry        *upload_entry;
-    GtkComboBoxText *targets;
     gchar         ***actions;
 
     GtkSwitch       *extension_enabled_switch;
@@ -323,98 +321,6 @@ g_paste_settings_ui_check_connection_error (GError *error)
     return TRUE;
 }
 
-static void
-g_paste_settings_ui_stack_private_refill_histories (GPasteSettingsUiStackPrivate *priv)
-{
-    g_autoptr (GError) error = NULL;
-    GStrv histories = g_paste_client_list_histories_sync (priv->client, &error);
-
-    if (g_paste_settings_ui_check_connection_error (error))
-        return;
-
-    GtkComboBoxText *targets = priv->targets;
-
-    gtk_combo_box_text_remove_all (targets);
-
-    for (guint i = 0; histories[i]; ++i)
-        gtk_combo_box_text_append (targets, histories[i], histories[i]);
-
-    gtk_combo_box_set_active_id (GTK_COMBO_BOX (targets),
-                                 g_paste_settings_get_history_name (priv->settings));
-}
-
-static void
-dummy_callback (const gchar *value G_GNUC_UNUSED,
-                gpointer     user_data G_GNUC_UNUSED)
-{
-}
-
-static void
-backup_callback (const gchar *value,
-                 gpointer     user_data)
-{
-    GPasteSettingsUiStackPrivate *priv = user_data;
-    g_autoptr (GError) error = NULL;
-
-    g_paste_client_backup_history_sync (priv->client, value, &error);
-
-    if (g_paste_settings_ui_check_connection_error (error))
-        return;
-
-    g_paste_settings_ui_stack_private_refill_histories (priv);
-}
-
-static void
-targets_callback (const gchar *action,
-                  const gchar *target,
-                  gpointer     user_data)
-{
-    GPasteSettingsUiStackPrivate *priv = user_data;
-    GPasteClient *client = priv->client;
-    g_autoptr (GError) error = NULL;
-
-    if (!g_strcmp0 (action, "switch"))
-        g_paste_client_switch_history_sync (client, target, &error);
-    else if (!g_strcmp0 (action, "delete"))
-        g_paste_client_delete_history_sync (client, target, &error);
-    else
-        fprintf (stderr, "unknown action: %s\n", action);
-
-    if (g_paste_settings_ui_check_connection_error (error))
-        return;
-
-    g_paste_settings_ui_stack_private_refill_histories (priv);
-}
-
-static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_private_make_histories_panel (GPasteSettingsUiStackPrivate *priv)
-{
-    GPasteSettings *settings = priv->settings;
-    GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
-
-    g_autofree gchar *backup_name = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
-    priv->backup_entry = g_paste_settings_ui_panel_add_text_confirm_setting (panel,
-                                                                             _("Backup history as: "),
-                                                                             backup_name,
-                                                                             dummy_callback,
-                                                                             NULL,
-                                                                             /* translators: This is the name of a multi-history management action */
-                                                                             _("Backup"),
-                                                                             backup_callback,
-                                                                             priv);
-
-    /* translators: This is the text displayed on the button used to perform a multi-history management action */
-    priv->targets = g_paste_settings_ui_panel_add_multi_action_setting (panel,
-                                                                        (GStrv const *) priv->actions,
-                                                                        _("Ok"),
-                                                                        targets_callback,
-                                                                        priv);
-
-    g_paste_settings_ui_stack_private_refill_histories (priv);
-
-    return panel;
-}
-
 /**
  * g_paste_settings_ui_stack_fill:
  * @self: a #GPasteSettingsUiStack instance
@@ -431,7 +337,6 @@ g_paste_settings_ui_stack_fill (GPasteSettingsUiStack *self)
     g_paste_settings_ui_stack_add_panel (self, "general",   _("General behaviour"),  g_paste_settings_ui_stack_private_make_behaviour_panel (priv));
     g_paste_settings_ui_stack_add_panel (self, "history",   _("History settings"),   g_paste_settings_ui_stack_private_make_history_settings_panel (priv));
     g_paste_settings_ui_stack_add_panel (self, "keyboard",  _("Keyboard shortcuts"), g_paste_settings_ui_stack_private_make_keybindings_panel (priv));
-    g_paste_settings_ui_stack_add_panel (self, "histories", _("Histories"),          g_paste_settings_ui_stack_private_make_histories_panel (priv));
 }
 
 static void
@@ -445,12 +350,6 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
     else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->growing_lines_switch), g_paste_settings_get_growing_lines (settings));
-    else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
-    {
-        g_autofree gchar *text = g_strconcat (g_paste_settings_get_history_name (settings), "_backup", NULL);
-        gtk_entry_set_text (priv->backup_entry, text);
-        g_paste_settings_ui_stack_private_refill_histories (priv);
-    }
     else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_switch), g_paste_settings_get_images_support (settings));
     else if (!g_strcmp0 (key, G_PASTE_LAUNCH_UI_SETTING))

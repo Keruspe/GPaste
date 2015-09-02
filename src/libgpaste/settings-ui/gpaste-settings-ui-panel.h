@@ -38,9 +38,6 @@ typedef void (*GPasteRangeCallback)       (gdouble  data,
                                            gpointer user_data);
 typedef void (*GPasteTextCallback)        (const gchar *data,
                                            gpointer     user_data);
-typedef void (*GPasteMultiActionCallback) (const gchar *action,
-                                           const gchar *target,
-                                           gpointer     user_data);
 typedef void (*GPasteResetCallback)       (gpointer user_data);
 
 GtkSwitch *g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
@@ -65,19 +62,6 @@ GtkEntry *g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *sel
                                                       GPasteTextCallback     on_value_changed,
                                                       GPasteResetCallback    on_reset,
                                                       gpointer               user_data);
-GtkEntry *g_paste_settings_ui_panel_add_text_confirm_setting (GPasteSettingsUiPanel *self,
-                                                              const gchar           *label,
-                                                              const gchar           *value,
-                                                              GPasteTextCallback     on_value_changed,
-                                                              gpointer               user_data1,
-                                                              const gchar           *confirm_label,
-                                                              GPasteTextCallback     confirm_action,
-                                                              gpointer               user_data);
-GtkComboBoxText *g_paste_settings_ui_panel_add_multi_action_setting (GPasteSettingsUiPanel    *self,
-                                                                     gchar ** const           *action_labels,
-                                                                     const gchar              *confirm_label,
-                                                                     GPasteMultiActionCallback confirm_action,
-                                                                     gpointer                  user_data);
 
 GPasteSettingsUiPanel *g_paste_settings_ui_panel_new (void);
 
