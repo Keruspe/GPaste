@@ -245,6 +245,9 @@ g_paste_dbus_get_au_result (GVariant *variant,
 #define DBUS_CALL_NO_PARAM_BASE(TYPE_CHECKER, method, if_fail, variant_extract) \
     DBUS_CALL_WITH_RETURN_BASE (TYPE_CHECKER, {}, method, NULL, 0, if_fail, variant_extract)
 
+#define DBUS_CALL_NO_PARAM_RET_STRING_BASE(TYPE_CHECKER, method) \
+    DBUS_CALL_NO_PARAM_BASE(TYPE_CHECKER, method, NULL, return g_variant_dup_string (variant, NULL)) \
+
 #define DBUS_CALL_NO_PARAM_RET_STRV_BASE(TYPE_CHECKER, method) \
     DBUS_CALL_NO_PARAM_BASE(TYPE_CHECKER, method, NULL, return g_variant_dup_strv (variant, NULL)) \
 

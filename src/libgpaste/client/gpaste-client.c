@@ -86,6 +86,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_NO_PARAM_NO_RETURN(method) \
     DBUS_CALL_NO_PARAM_NO_RETURN_BASE (CLIENT, G_PASTE_DAEMON_##method)
 
+#define DBUS_CALL_NO_PARAM_RET_STRING(method) \
+    DBUS_CALL_NO_PARAM_RET_STRING_BASE (CLIENT, G_PASTE_DAEMON_##method)
+
 #define DBUS_CALL_NO_PARAM_RET_STRV(method) \
     DBUS_CALL_NO_PARAM_RET_STRV_BASE (CLIENT, G_PASTE_DAEMON_##method)
 
@@ -360,7 +363,7 @@ g_paste_client_empty_sync (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: a newly allocated string
+ * Returns: (transfer full): a newly allocated string
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_element_sync (GPasteClient *self,
@@ -408,6 +411,22 @@ g_paste_client_get_history_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_get_history_name_sync:
+ * @self: a #GPasteClient instance
+ * @error: a #GError
+ *
+ * Get the name of the history from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_history_name_sync (GPasteClient *self,
+                                      GError      **error)
+{
+    DBUS_CALL_NO_PARAM_RET_STRING (GET_HISTORY_NAME);
+}
+
+/**
  * g_paste_client_get_history_size_sync:
  * @self: a #GPasteClient instance
  * @error: a #GError
@@ -431,7 +450,7 @@ g_paste_client_get_history_size_sync (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: a newly allocated string
+ * Returns: (transfer full): a newly allocated string
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_raw_element_sync (GPasteClient *self,
@@ -966,6 +985,25 @@ g_paste_client_get_history (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_get_history_name:
+ * @self: a #GPasteClient instance
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the name of the history from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_history_name (GPasteClient       *self,
+                                 GAsyncReadyCallback callback,
+                                 gpointer            user_data)
+{
+    DBUS_CALL_NO_PARAM_ASYNC (GET_HISTORY_NAME);
+}
+
+/**
  * g_paste_client_get_history_size:
  * @self: a #GPasteClient instance
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
@@ -1473,7 +1511,7 @@ g_paste_client_empty_finish (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: a newly allocated string
+ * Returns: (transfer full): a newly allocated string
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_element_finish (GPasteClient *self,
@@ -1520,6 +1558,24 @@ g_paste_client_get_history_finish (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_get_history_name_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Get the name of the history from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated array of string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_history_name_finish (GPasteClient *self,
+                                        GAsyncResult *result,
+                                        GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRING;
+}
+
+/**
  * g_paste_client_get_history_size_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
@@ -1545,7 +1601,7 @@ g_paste_client_get_history_size_finish (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: a newly allocated string
+ * Returns: (transfer full): a newly allocated string
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_raw_element_finish (GPasteClient *self,
@@ -1889,8 +1945,8 @@ g_paste_client_init (GPasteClient *self)
  *
  * Create a new instance of #GPasteClient
  *
- * Returns: a newly allocated #GPasteClient
- *          free it with g_object_unref
+ * Returns: (transfer full): a newly allocated #GPasteClient
+ *                           free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new_sync (GError **error)
@@ -1921,8 +1977,8 @@ g_paste_client_new (GAsyncReadyCallback callback,
  *
  * Create a new instance of #GPasteClient
  *
- * Returns: a newly allocated #GPasteClient
- *          free it with g_object_unref
+ * Returns: (transfer full): a newly allocated #GPasteClient
+ *                           free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteClient *
 g_paste_client_new_finish (GAsyncResult *result,
