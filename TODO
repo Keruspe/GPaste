@@ -1,9 +1,8 @@
 3.18:
     ui:
         update histories on delete
-        confirm dialog for delete
         backup/switch in panel
-        display history actions on right click, set relative_to to null on delete
+        hide actions when confirmed/cancelled + set relative_to to null
 
 3.20:
     general:
