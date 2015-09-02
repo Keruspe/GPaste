@@ -17,6 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gpaste-ui-history-actions.h>
 #include <gpaste-ui-panel.h>
 #include <gpaste-ui-panel-history.h>
 
@@ -27,10 +28,11 @@ struct _GPasteUiPanel
 
 typedef struct
 {
-    GPasteClient   *client;
-    GPasteSettings *settings;
+    GPasteClient           *client;
+    GPasteSettings         *settings;
+    GPasteUiHistoryActions *actions;
 
-    gulong          activated_id;
+    gulong                  activated_id;
 } GPasteUiPanelPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanel, g_paste_ui_panel, GTK_TYPE_LIST_BOX)
@@ -87,6 +89,7 @@ g_paste_ui_panel_dispose (GObject *object)
 
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);
+    g_clear_object (&priv->actions);
 
     G_OBJECT_CLASS (g_paste_ui_panel_parent_class)->dispose (object);
 }
@@ -116,6 +119,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
  * g_paste_ui_panel_new:
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
+ * @rootwin: the root #GtkWindow
  *
  * Create a new instance of #GPasteUiPanel
  *
@@ -124,16 +128,19 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
  */
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_panel_new (GPasteClient   *client,
-                      GPasteSettings *settings)
+                      GPasteSettings *settings,
+                      GtkWindow      *rootwin)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL, NULL);
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (self));
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
+    priv->actions = G_PASTE_UI_HISTORY_ACTIONS (g_paste_ui_history_actions_new (client, rootwin));
 
     g_paste_client_list_histories (client, on_histories_ready, self);
 
