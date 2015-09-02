@@ -44,7 +44,7 @@ g_paste_applet_status_icon_popup (GtkStatusIcon  *icon,
 {
     GPasteAppletStatusIconPrivate *priv = user_data;
 
-    if (event->button == GDK_BUTTON_SECONDARY)
+    if (gdk_event_triggers_context_menu ((GdkEvent *) event))
     {
         G_GNUC_BEGIN_IGNORE_DEPRECATIONS
         gtk_menu_popup (priv->menu, NULL, NULL, gtk_status_icon_position_menu, icon, event->button, event->time);
