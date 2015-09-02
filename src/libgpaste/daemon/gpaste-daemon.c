@@ -458,7 +458,7 @@ g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
 
     G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
 
-    GVariant *variant = g_variant_new_string ((value) ? value : "");
+    GVariant *variant = g_variant_new_string (value);
 
     return g_variant_new_tuple (&variant, 1);
 }
