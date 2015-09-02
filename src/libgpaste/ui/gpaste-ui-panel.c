@@ -89,7 +89,6 @@ g_paste_ui_panel_dispose (GObject *object)
 
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);
-    g_clear_object (&priv->actions);
 
     G_OBJECT_CLASS (g_paste_ui_panel_parent_class)->dispose (object);
 }
