@@ -22,6 +22,7 @@ lib_libgpaste_la_private_headers = \
 	src/libgpaste/applet/gpaste-applet-icon-private.h \
 	src/libgpaste/core/gpaste-item-private.h \
 	src/libgpaste/keybinder/gpaste-keybinding-private.h \
+	src/libgpaste/ui/gpaste-ui-history-action-private.h \
 	$(NULL)
 
 lib_libgpaste_la_misc_headers = \
@@ -76,6 +77,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/ui/gpaste-ui-empty-item.h \
 	src/libgpaste/ui/gpaste-ui-header.h \
 	src/libgpaste/ui/gpaste-ui-history.h \
+	src/libgpaste/ui/gpaste-ui-history-action.h \
 	src/libgpaste/ui/gpaste-ui-history-actions.h \
 	src/libgpaste/ui/gpaste-ui-item.h \
 	src/libgpaste/ui/gpaste-ui-panel.h \
@@ -131,6 +133,7 @@ lib_libgpaste_la_source_files = \
 	src/libgpaste/ui/gpaste-ui-empty-item.c \
 	src/libgpaste/ui/gpaste-ui-header.c \
 	src/libgpaste/ui/gpaste-ui-history.c \
+	src/libgpaste/ui/gpaste-ui-history-action.c \
 	src/libgpaste/ui/gpaste-ui-history-actions.c \
 	src/libgpaste/ui/gpaste-ui-item.c \
 	src/libgpaste/ui/gpaste-ui-panel.c \

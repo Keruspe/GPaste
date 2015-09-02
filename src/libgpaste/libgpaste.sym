@@ -380,6 +380,8 @@ global:
     g_paste_ui_header_get_search_button;
     g_paste_ui_header_show_prefs;
     g_paste_ui_history_search;
+    g_paste_ui_history_action_get_type;
+    g_paste_ui_history_action_set_history;
     g_paste_ui_history_actions_get_type;
     g_paste_ui_history_actions_new;
     g_paste_ui_history_actions_set_relative_to;
