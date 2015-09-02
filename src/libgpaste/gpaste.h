@@ -98,6 +98,7 @@
 #include <gpaste-ui-empty-item.h>
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
+#include <gpaste-ui-history-action.h>
 #include <gpaste-ui-history-actions.h>
 #include <gpaste-ui-item.h>
 #include <gpaste-ui-panel.h>

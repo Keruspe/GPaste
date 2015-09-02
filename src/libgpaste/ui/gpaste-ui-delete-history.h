@@ -25,15 +25,13 @@
 #define __G_PASTE_UI_DELETE_HISTORY_H__
 
 #include <gpaste-client.h>
+#include <gpaste-ui-history-action.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_DELETE_HISTORY (g_paste_ui_delete_history_get_type ())
 
-G_PASTE_FINAL_TYPE (UiDeleteHistory, ui_delete_history, UI_DELETE_HISTORY, GtkButton)
-
-void g_paste_ui_delete_history_set_history (GPasteUiDeleteHistory *self,
-                                            const gchar           *history);
+G_PASTE_FINAL_TYPE (UiDeleteHistory, ui_delete_history, UI_DELETE_HISTORY, GPasteUiHistoryAction)
 
 GtkWidget *g_paste_ui_delete_history_new (GPasteClient *client,
                                           GtkWindow    *rootwin);
