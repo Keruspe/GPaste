@@ -18,7 +18,7 @@
 searchproviderdir= $(datadir)/gnome-shell/search-providers/
 
 if ENABLE_EXTENSION
-searchprovider_DATA = \
+dist_searchprovider_DATA = \
 	data/search-provider/org.gnome.GPaste.search-provider.ini \
 	$(NULL)
 endif
