@@ -60,7 +60,7 @@ g_paste_ui_delete_button_press_event (GtkWidget      *widget,
 
     g_paste_client_delete (priv->client, priv->index, NULL, NULL);
 
-    return GDK_FILTER_CONTINUE;
+    return TRUE;
 }
 
 static void
