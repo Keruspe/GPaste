@@ -66,7 +66,7 @@ g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
     {
         guint32 index = 1;
 
-        for (history = g_slist_next (history); history; history = g_slist_next (history), ++index)
+        for (history = history->next; history; history = history->next, ++index)
         {
             GPasteItem *item = history->data;
             gsize size = g_paste_item_get_size (item);
@@ -260,7 +260,7 @@ g_paste_history_add (GPasteHistory *self,
 
             GSList *prev = history;
             guint32 index = 1;
-            for (history = g_slist_next (history); history; prev = history, history = g_slist_next (history), ++index)
+            for (history = history->next; history; prev = history, history = history->next, ++index)
             {
                 if (g_paste_item_equals (history->data, item) || g_paste_history_private_is_growing_line (priv, history->data, item))
                 {
