@@ -18,6 +18,7 @@
  */
 
 #include <gpaste-ui-delete-history.h>
+#include <gpaste-util.h>
 
 struct _GPasteUiDeleteHistory
 {
@@ -27,6 +28,8 @@ struct _GPasteUiDeleteHistory
 typedef struct
 {
     GPasteClient *client;
+
+    GtkWindow    *rootwin;
 
     gchar        *history;
 } GPasteUiDeleteHistoryPrivate;
@@ -60,7 +63,7 @@ g_paste_ui_delete_history_button_press_event (GtkWidget      *widget,
 {
     GPasteUiDeleteHistoryPrivate *priv = g_paste_ui_delete_history_get_instance_private (G_PASTE_UI_DELETE_HISTORY (widget));
 
-    if (priv->history)
+    if (priv->history && g_paste_util_confirm_dialog (priv->rootwin, _("Are you sure you want to delete this history?")))
         g_paste_client_delete_history (priv->client, priv->history, NULL, NULL);
 
     return TRUE;
@@ -110,6 +113,7 @@ g_paste_ui_delete_history_init (GPasteUiDeleteHistory *self)
 /**
  * g_paste_ui_delete_history_new:
  * @client: a #GPasteClient
+ * @rootwin: the root #GtkWindow
  *
  * Create a new instance of #GPasteUiDeleteHistory
  *
@@ -117,14 +121,17 @@ g_paste_ui_delete_history_init (GPasteUiDeleteHistory *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_delete_history_new (GPasteClient *client)
+g_paste_ui_delete_history_new (GPasteClient *client,
+                               GtkWindow    *rootwin)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_DELETE_HISTORY, NULL);
     GPasteUiDeleteHistoryPrivate *priv = g_paste_ui_delete_history_get_instance_private (G_PASTE_UI_DELETE_HISTORY (self));
 
     priv->client = g_object_ref (client);
+    priv->rootwin = rootwin;
 
     return self;
 }

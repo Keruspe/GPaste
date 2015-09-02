@@ -35,7 +35,8 @@ G_PASTE_FINAL_TYPE (UiHistoryActions, ui_history_actions, UI_HISTORY_ACTIONS, Gt
 void g_paste_ui_history_actions_set_relative_to (GPasteUiHistoryActions *self,
                                                  GPasteUiPanelHistory   *history);
 
-GtkWidget *g_paste_ui_history_actions_new (GPasteClient *client);
+GtkWidget *g_paste_ui_history_actions_new (GPasteClient *client,
+                                           GtkWindow    *rootwin);
 
 G_END_DECLS
 
