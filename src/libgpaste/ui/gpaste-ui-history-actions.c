@@ -121,7 +121,7 @@ g_paste_ui_history_actions_new (GPasteClient *client,
                                       "height-request", 40,
                                       NULL);
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (self));
-    GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
     GtkWidget *backup = g_paste_ui_backup_history_new (client, rootwin);
     GtkWidget *delete = g_paste_ui_delete_history_new (client, rootwin);
 
@@ -132,6 +132,8 @@ g_paste_ui_history_actions_new (GPasteClient *client,
     gtk_popover_set_position (GTK_POPOVER (self), GTK_POS_RIGHT);
 
     g_slist_foreach (priv->actions, add_action_to_box, box);
+    gtk_widget_set_margin_top (box, 5);
+    gtk_widget_set_margin_bottom (box, 5);
     gtk_widget_show_all (box);
 
     gtk_container_add (GTK_CONTAINER (self), box);

@@ -106,8 +106,6 @@ g_paste_ui_history_action_new (GType         type,
     GtkWidget *self = gtk_widget_new (type,
                                       "width-request",  200,
                                       "height-request", 30,
-                                      "margin-top",     5,
-                                      "margin-bottom",  5,
                                       NULL);
     GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (self));
 
