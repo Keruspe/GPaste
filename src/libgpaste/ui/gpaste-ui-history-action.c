@@ -19,6 +19,15 @@
 
 #include <gpaste-ui-history-action-private.h>
 
+typedef struct
+{
+    GPasteClient *client;
+
+    GtkWindow    *rootwin;
+
+    gchar        *history;
+} GPasteUiHistoryActionPrivate;
+
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistoryAction, g_paste_ui_history_action, GTK_TYPE_BUTTON)
 
 /**
@@ -40,17 +49,6 @@ g_paste_ui_history_action_set_history (GPasteUiHistoryAction *self,
 
     g_free (priv->history);
     priv->history = g_strdup (history);
-}
-
-/**
- * g_paste_ui_history_action_get_private: (skip)
- */
-GPasteUiHistoryActionPrivate *
-g_paste_ui_history_action_get_private (GPasteUiHistoryAction *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ACTION (self), NULL);
-
-    return g_paste_ui_history_action_get_instance_private (self);
 }
 
 static gboolean

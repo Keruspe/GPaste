@@ -25,17 +25,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct
-{
-    GPasteClient *client;
-
-    GtkWindow    *rootwin;
-
-    gchar        *history;
-} GPasteUiHistoryActionPrivate;
-
-GPasteUiHistoryActionPrivate *g_paste_ui_history_action_get_private (GPasteUiHistoryAction *self);
-
 GtkWidget *g_paste_ui_history_action_new (GType         type,
                                           GPasteClient *client,
                                           GtkWindow    *rootwin);
