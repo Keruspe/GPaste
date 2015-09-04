@@ -19,7 +19,6 @@
 
 #define __G_PASTE_NEEDS_AU__
 #include <gpaste-gdbus-macros.h>
-#include <gpaste-gdbus-defines.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>

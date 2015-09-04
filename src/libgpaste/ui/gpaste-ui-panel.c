@@ -19,7 +19,6 @@
 
 #include <gpaste-ui-history-actions.h>
 #include <gpaste-ui-panel.h>
-#include <gpaste-ui-panel-history.h>
 
 struct _GPasteUiPanel
 {
