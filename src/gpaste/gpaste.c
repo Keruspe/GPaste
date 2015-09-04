@@ -441,7 +441,9 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "bh") ||
                      !g_strcmp0 (arg1, "backup-history"))
             {
-                g_paste_client_backup_history_sync (client, arg2, &error);
+                g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
+                if (!error)
+                    g_paste_client_backup_history_sync (client, name, arg2, &error);
             }
             else if (!g_strcmp0 (arg1, "d")      ||
                      !g_strcmp0 (arg1, "del")    ||

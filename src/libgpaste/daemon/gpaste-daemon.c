@@ -19,7 +19,6 @@
 
 #define __G_PASTE_NEEDS_AU__
 #include <gpaste-gdbus-macros.h>
-#include <gpaste-gdbus-defines.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>
@@ -314,17 +313,24 @@ g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
                                        GVariant            *parameters,
                                        GPasteDBusError    **err)
 {
-    g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    g_autofree gchar *history = NULL;
+    g_autofree gchar *backup = NULL;
 
-    G_PASTE_DBUS_ASSERT (name, "no history to backup");
+    g_paste_daemon_get_dbus_strings_parameter (parameters, &history, &backup);
+
+    G_PASTE_DBUS_ASSERT (history && backup, "no history to backup");
 
     GPasteSettings *settings = priv->settings;
 
     g_autofree gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
 
-    g_paste_settings_set_history_name (settings, name);
+    /* FIXME: simplify things */
+    g_paste_settings_set_history_name (settings, history);
+    g_paste_history_load (priv->history);
+    g_paste_settings_set_history_name (settings, backup);
     g_paste_history_save (priv->history);
     g_paste_settings_set_history_name (settings, old_name);
+    g_paste_history_load (priv->history);
 }
 
 static void
