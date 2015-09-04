@@ -62,8 +62,10 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_TRACK                      "Track"
 #define G_PASTE_DAEMON_UPLOAD                     "Upload"
 
+#define G_PASTE_DAEMON_SIG_DELETE_HISTORY "DeleteHistory"
 #define G_PASTE_DAEMON_SIG_REEXECUTE_SELF "ReexecuteSelf"
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
+#define G_PASTE_DAEMON_SIG_SWITCH_HISTORY "SwitchHistory"
 #define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
 #define G_PASTE_DAEMON_SIG_UPDATE         "Update"
 
@@ -159,8 +161,14 @@ G_BEGIN_DECLS
         "       <method name='" G_PASTE_DAEMON_UPLOAD "'>"                     \
         "           <arg type='u' direction='in' name='index' />"              \
         "       </method>"                                                     \
+        "       <signal name='" G_PASTE_DAEMON_SIG_DELETE_HISTORY "'>"         \
+        "           <arg type='s' direction='out' name='history' />"           \
+        "       </signal>"                                                     \
         "       <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \
         "       <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
+        "       <signal name='" G_PASTE_DAEMON_SIG_SWITCH_HISTORY "'>"         \
+        "           <arg type='s' direction='out' name='history' />"           \
+        "       </signal>"                                                     \
         "       <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
         "           <arg type='b' direction='out' name='tracking-state' />"    \
         "       </signal>"                                                     \
