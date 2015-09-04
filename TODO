@@ -1,6 +1,6 @@
 3.18:
     ui:
-        update histories on delete/switch
+        update histories on delete
         switch in panel
 
 3.20:
