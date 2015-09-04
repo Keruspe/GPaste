@@ -29,14 +29,15 @@ struct _GPasteUiBackupHistory
 G_DEFINE_TYPE (GPasteUiBackupHistory, g_paste_ui_backup_history, G_PASTE_TYPE_UI_HISTORY_ACTION)
 
 static gboolean
-g_paste_ui_backup_history_button_press_event (GtkWidget      *widget,
-                                              GdkEventButton *event G_GNUC_UNUSED)
+g_paste_ui_backup_history_activate (GPasteUiHistoryAction *self G_GNUC_UNUSED,
+                                    GPasteClient          *client,
+                                    GtkWindow             *rootwin,
+                                    const gchar           *history)
 {
-    GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_private (G_PASTE_UI_HISTORY_ACTION (widget));
-    g_autofree gchar *backup = g_strdup_printf ("%s_backup", priv->history);
+    g_autofree gchar *backup = g_strdup_printf ("%s_backup", history);
 
-    if (priv->history && g_paste_util_confirm_dialog (priv->rootwin, _("Are you sure you want to backup this history?")))
-        g_paste_client_backup_history (priv->client, priv->history, backup, NULL, NULL);
+    if (g_paste_util_confirm_dialog (rootwin, _("Are you sure you want to backup this history?")))
+        g_paste_client_backup_history (client, history, backup, NULL, NULL);
 
     return TRUE;
 }
@@ -44,7 +45,7 @@ g_paste_ui_backup_history_button_press_event (GtkWidget      *widget,
 static void
 g_paste_ui_backup_history_class_init (GPasteUiBackupHistoryClass *klass)
 {
-    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_backup_history_button_press_event;
+    G_PASTE_UI_HISTORY_ACTION_CLASS (klass)->activate = g_paste_ui_backup_history_activate;
 }
 
 static void
