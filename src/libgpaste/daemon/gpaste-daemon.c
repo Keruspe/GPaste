@@ -309,6 +309,24 @@ g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_private_delete_history_signal (GPasteDaemonPrivate *priv,
+                                              const gchar         *history)
+{
+    GVariant *variant = g_variant_new_string (history);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (DELETE_HISTORY, variant);
+}
+
+static void
+g_paste_daemon_private_switch_history_signal (GPasteDaemonPrivate *priv,
+                                              const gchar         *history)
+{
+    GVariant *variant = g_variant_new_string (history);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SWITCH_HISTORY, variant);
+}
+
+static void
 g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
                                        GVariant            *parameters,
                                        GPasteDBusError    **err)
@@ -327,10 +345,13 @@ g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
     /* FIXME: simplify things */
     g_paste_settings_set_history_name (settings, history);
     g_paste_history_load (priv->history);
+    g_paste_daemon_private_switch_history_signal (priv, history);
     g_paste_settings_set_history_name (settings, backup);
     g_paste_history_save (priv->history);
+    g_paste_daemon_private_switch_history_signal (priv, backup);
     g_paste_settings_set_history_name (settings, old_name);
     g_paste_history_load (priv->history);
+    g_paste_daemon_private_switch_history_signal (priv, old_name);
 }
 
 static void
@@ -339,24 +360,6 @@ g_paste_daemon_private_delete (GPasteDaemonPrivate *priv,
 {
     g_paste_history_remove (priv->history,
                             g_paste_daemon_get_dbus_uint32_parameter (parameters));
-}
-
-static void
-g_paste_daemon_private_delete_history_signal (GPasteDaemonPrivate *priv,
-                                              const gchar         *history)
-{
-    GVariant *variant = g_variant_new_string (history);
-
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (DELETE_HISTORY, variant);
-}
-
-static void
-g_paste_daemon_private_switch_history_signal (GPasteDaemonPrivate *priv,
-                                              const gchar         *history)
-{
-    GVariant *variant = g_variant_new_string (history);
-
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SWITCH_HISTORY, variant);
 }
 
 static void
