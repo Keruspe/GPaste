@@ -270,7 +270,8 @@ g_paste_client_add_password_sync (GPasteClient *self,
 /**
  * g_paste_client_backup_history_sync:
  * @self: a #GPasteClient instance
- * @name: the name of the backup
+ * @history: the name of the history
+ * @backup: the name of the backup
  * @error: a #GError
  *
  * Backup the current history
@@ -279,10 +280,16 @@ g_paste_client_add_password_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_backup_history_sync (GPasteClient *self,
-                                    const gchar  *name,
+                                    const gchar  *history,
+                                    const gchar  *backup,
                                     GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (BACKUP_HISTORY, string, name);
+    GVariant *params[] = {
+        g_variant_new_string (history),
+        g_variant_new_string (backup)
+    };
+
+    DBUS_CALL_TWO_PARAMS_NO_RETURN (BACKUP_HISTORY, params);
 }
 
 /**
@@ -820,7 +827,8 @@ g_paste_client_add_password (GPasteClient       *self,
 /**
  * g_paste_client_backup_history:
  * @self: a #GPasteClient instance
- * @name: the name of the backup
+ * @history: the name of the history
+ * @backup: the name of the backup
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -831,11 +839,17 @@ g_paste_client_add_password (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_backup_history (GPasteClient       *self,
-                               const gchar        *name,
+                               const gchar        *history,
+                               const gchar        *backup,
                                GAsyncReadyCallback callback,
                                gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (BACKUP_HISTORY, string, name);
+    GVariant *params[] = {
+        g_variant_new_string (history),
+        g_variant_new_string (backup)
+    };
+
+    DBUS_CALL_TWO_PARAMS_ASYNC (BACKUP_HISTORY, params);
 }
 
 /**

@@ -49,7 +49,8 @@ void     g_paste_client_add_password_sync               (GPasteClient  *self,
                                                          const gchar   *password,
                                                          GError       **error);
 void     g_paste_client_backup_history_sync             (GPasteClient  *self,
-                                                         const gchar   *name,
+                                                         const gchar   *history,
+                                                         const gchar   *backup,
                                                          GError       **error);
 void     g_paste_client_delete_sync                     (GPasteClient  *self,
                                                          guint32        index,
@@ -141,7 +142,8 @@ void g_paste_client_add_password               (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_backup_history             (GPasteClient       *self,
-                                                const gchar        *name,
+                                                const gchar        *history,
+                                                const gchar        *backup,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_delete                     (GPasteClient       *self,
