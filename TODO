@@ -1,8 +1,7 @@
 3.18:
     ui:
-        update histories on delete
-        backup/switch in panel
-        hide actions when confirmed/cancelled + set relative_to to null
+        update histories on delete/switch
+        switch in panel
 
 3.20:
     general:
