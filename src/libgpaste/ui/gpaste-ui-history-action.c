@@ -18,14 +18,16 @@
  */
 
 #include <gpaste-ui-history-action-private.h>
+#include <gpaste-ui-history-actions.h>
 
 typedef struct
 {
-    GPasteClient *client;
+    GPasteClient           *client;
+    GPasteUiHistoryActions *actions;
 
-    GtkWindow    *rootwin;
+    GtkWindow              *rootwin;
 
-    gchar        *history;
+    gchar                  *history;
 } GPasteUiHistoryActionPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistoryAction, g_paste_ui_history_action, GTK_TYPE_BUTTON)
@@ -58,11 +60,16 @@ g_paste_ui_history_action_button_press_event (GtkWidget      *widget,
     GPasteUiHistoryAction *self = G_PASTE_UI_HISTORY_ACTION (widget);
     GPasteUiHistoryActionClass *klass = G_PASTE_UI_HISTORY_ACTION_GET_CLASS (self);
     GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (self);
+    gboolean ret;
 
     if (priv->history && klass->activate)
-        return klass->activate (self, priv->client, priv->rootwin, priv->history);
+        ret = klass->activate (self, priv->client, priv->rootwin, priv->history);
     else
-        return GTK_WIDGET_CLASS (g_paste_ui_history_action_parent_class)->button_press_event (widget, event);
+        ret = GTK_WIDGET_CLASS (g_paste_ui_history_action_parent_class)->button_press_event (widget, event);
+
+    g_paste_ui_history_actions_set_relative_to (priv->actions, NULL);
+
+    return ret;
 }
 
 static void
@@ -111,10 +118,12 @@ g_paste_ui_history_action_init (GPasteUiHistoryAction *self)
 GtkWidget *
 g_paste_ui_history_action_new (GType         type,
                                GPasteClient *client,
+                               GtkWidget    *actions,
                                GtkWindow    *rootwin)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_HISTORY_ACTION), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (type,
@@ -124,6 +133,7 @@ g_paste_ui_history_action_new (GType         type,
     GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (self));
 
     priv->client = g_object_ref (client);
+    priv->actions = G_PASTE_UI_HISTORY_ACTIONS (actions);
     priv->rootwin = rootwin;
 
     return self;

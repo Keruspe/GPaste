@@ -19,6 +19,7 @@
 
 #include <gpaste-ui-delete-history.h>
 #include <gpaste-ui-history-action-private.h>
+#include <gpaste-ui-history-actions.h>
 #include <gpaste-util.h>
 
 struct _GPasteUiDeleteHistory
@@ -54,6 +55,7 @@ g_paste_ui_delete_history_init (GPasteUiDeleteHistory *self G_GNUC_UNUSED)
 /**
  * g_paste_ui_delete_history_new:
  * @client: a #GPasteClient
+ * @actions: the #GPasteUiHistoryActions
  * @rootwin: the root #GtkWindow
  *
  * Create a new instance of #GPasteUiDeleteHistory
@@ -63,12 +65,14 @@ g_paste_ui_delete_history_init (GPasteUiDeleteHistory *self G_GNUC_UNUSED)
  */
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_delete_history_new (GPasteClient *client,
+                               GtkWidget    *actions,
                                GtkWindow    *rootwin)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = g_paste_ui_history_action_new (G_PASTE_TYPE_UI_DELETE_HISTORY, client, rootwin);
+    GtkWidget *self = g_paste_ui_history_action_new (G_PASTE_TYPE_UI_DELETE_HISTORY, client, actions, rootwin);
 
     gtk_button_set_label (GTK_BUTTON (self), _("Delete"));
 

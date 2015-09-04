@@ -27,6 +27,7 @@ G_BEGIN_DECLS
 
 GtkWidget *g_paste_ui_history_action_new (GType         type,
                                           GPasteClient *client,
+                                          GtkWidget    *actions,
                                           GtkWindow    *rootwin);
 
 G_END_DECLS

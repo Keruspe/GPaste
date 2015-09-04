@@ -34,6 +34,7 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (UiDeleteHistory, ui_delete_history, UI_DELETE_HISTORY, GPasteUiHistoryAction)
 
 GtkWidget *g_paste_ui_delete_history_new (GPasteClient *client,
+                                          GtkWidget    *actions,
                                           GtkWindow    *rootwin);
 
 G_END_DECLS

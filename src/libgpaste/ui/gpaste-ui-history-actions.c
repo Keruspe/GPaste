@@ -62,10 +62,14 @@ g_paste_ui_history_actions_set_relative_to (GPasteUiHistoryActions *self,
     g_return_if_fail (!history || G_PASTE_IS_UI_PANEL_HISTORY (history));
 
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (self);
-    const gchar *h = (history) ? g_paste_ui_panel_history_get_history (G_PASTE_UI_PANEL_HISTORY (history)) : NULL;
+    const gchar *h = (history) ? g_paste_ui_panel_history_get_history (history) : NULL;
 
-    gtk_popover_set_relative_to (GTK_POPOVER (self), GTK_WIDGET (history));
     g_slist_foreach (priv->actions, action_set_history, (gpointer) h);
+
+    if (history)
+        gtk_popover_set_relative_to (GTK_POPOVER (self), (history) ? GTK_WIDGET (history) : NULL);
+    else
+        gtk_widget_hide (GTK_WIDGET (self));
 }
 
 static void
@@ -122,8 +126,8 @@ g_paste_ui_history_actions_new (GPasteClient *client,
                                       NULL);
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (self));
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
-    GtkWidget *backup = g_paste_ui_backup_history_new (client, rootwin);
-    GtkWidget *delete = g_paste_ui_delete_history_new (client, rootwin);
+    GtkWidget *backup = g_paste_ui_backup_history_new (client, self, rootwin);
+    GtkWidget *delete = g_paste_ui_delete_history_new (client, self, rootwin);
 
     priv->client = g_object_ref (client);
     priv->actions = g_slist_append (priv->actions, backup);

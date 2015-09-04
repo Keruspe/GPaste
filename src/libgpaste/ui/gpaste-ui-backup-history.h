@@ -34,6 +34,7 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (UiBackupHistory, ui_backup_history, UI_BACKUP_HISTORY, GPasteUiHistoryAction)
 
 GtkWidget *g_paste_ui_backup_history_new (GPasteClient *client,
+                                          GtkWidget    *actions,
                                           GtkWindow    *rootwin);
 
 G_END_DECLS
