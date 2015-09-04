@@ -17,8 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-ui-history-actions.h>
+#include <gpaste-ui-backup-history.h>
 #include <gpaste-ui-delete-history.h>
+#include <gpaste-ui-history-actions.h>
 
 struct _GPasteUiHistoryActions
 {
@@ -121,9 +122,11 @@ g_paste_ui_history_actions_new (GPasteClient *client,
                                       NULL);
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (self));
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 5);
+    GtkWidget *backup = g_paste_ui_backup_history_new (client, rootwin);
     GtkWidget *delete = g_paste_ui_delete_history_new (client, rootwin);
 
     priv->client = g_object_ref (client);
+    priv->actions = g_slist_append (priv->actions, backup);
     priv->actions = g_slist_append (priv->actions, delete);
 
     gtk_popover_set_position (GTK_POPOVER (self), GTK_POS_RIGHT);
