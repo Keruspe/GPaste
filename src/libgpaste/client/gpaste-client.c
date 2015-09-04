@@ -31,8 +31,10 @@ G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 
 enum
 {
+    DELETE_HISTORY,
     REEXECUTE_SELF,
     SHOW_HISTORY,
+    SWITCH_HISTORY,
     TRACKING,
     UPDATE,
 
@@ -135,13 +137,13 @@ static guint signals[LAST_SIGNAL] = { 0 };
                        0, /* detail */                      \
                        NULL);                               \
     }
-#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, variant_type)                     \
+#define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, get_data)                         \
     if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_##sig))                      \
     {                                                                            \
         GVariantIter params_iter;                                                \
         g_variant_iter_init (&params_iter, parameters);                          \
         g_autoptr (GVariant) variant = g_variant_iter_next_value (&params_iter); \
-        ans_type answer = g_variant_get_##variant_type (variant);                \
+        ans_type answer = get_data;                                              \
         g_signal_emit (self,                                                     \
                        signals[sig],                                             \
                        0, /* detail */                                           \
@@ -1901,9 +1903,11 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
 {
     GPasteClient *self = G_PASTE_CLIENT (proxy);
 
-    HANDLE_SIGNAL (REEXECUTE_SELF)
+    HANDLE_SIGNAL_WITH_DATA (DELETE_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
+    else HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
-    else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, boolean)
+    else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
+    else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, g_variant_get_boolean (variant))
     else if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
     {
         GVariantIter params_iter;
@@ -1926,8 +1930,10 @@ g_paste_client_class_init (GPasteClientClass *klass)
 {
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_client_g_signal;
 
+    signals[DELETE_HISTORY] = NEW_SIGNAL_WITH_DATA ("delete-history", STRING);
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
     signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history");
+    signals[SWITCH_HISTORY] = NEW_SIGNAL_WITH_DATA ("switch-history", STRING);
     signals[TRACKING]       = NEW_SIGNAL_WITH_DATA ("tracking", BOOLEAN);
     signals[UPDATE]         = g_signal_new ("update",
                                             G_PASTE_TYPE_CLIENT,
