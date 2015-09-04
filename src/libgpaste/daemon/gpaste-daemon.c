@@ -39,7 +39,7 @@
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
                                    G_PASTE_DAEMON_OBJECT_PATH,      \
-                                   G_PASTE_BUS_NAME,                \
+                                   G_PASTE_DAEMON_INTERFACE_NAME,   \
                                    G_PASTE_DAEMON_SIG_##sig,        \
                                    data,                            \
                                    error)
