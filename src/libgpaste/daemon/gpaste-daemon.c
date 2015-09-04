@@ -342,6 +342,24 @@ g_paste_daemon_private_delete (GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_private_delete_history_signal (GPasteDaemonPrivate *priv,
+                                              const gchar         *history)
+{
+    GVariant *variant = g_variant_new_string (history);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (DELETE_HISTORY, variant);
+}
+
+static void
+g_paste_daemon_private_switch_history_signal (GPasteDaemonPrivate *priv,
+                                              const gchar         *history)
+{
+    GVariant *variant = g_variant_new_string (history);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (SWITCH_HISTORY, variant);
+}
+
+static void
 g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
                                        GVariant            *parameters,
                                        GPasteDBusError    **err)
@@ -358,7 +376,9 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
     if (!delete_current)
         g_paste_history_switch (history, name);
     g_paste_history_delete (history, NULL);
+    g_paste_daemon_private_delete_history_signal (priv, name);
     g_paste_history_switch (history, (delete_current) ? DEFAULT_HISTORY : old_history);
+    g_paste_daemon_private_switch_history_signal (priv, name);
 }
 
 static void
@@ -646,6 +666,7 @@ g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
     G_PASTE_DBUS_ASSERT (name, "no history to switch to");
 
     g_paste_history_switch (priv->history, name);
+    g_paste_daemon_private_switch_history_signal (priv, name);
 }
 
 static void
