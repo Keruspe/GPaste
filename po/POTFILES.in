@@ -9,6 +9,7 @@ src/libgpaste/core/gpaste-password-item.c
 src/libgpaste/core/gpaste-uris-item.c
 src/libgpaste/settings-ui/gpaste-settings-ui-stack.c
 src/libgpaste/ui/gpaste-ui-about.c
+src/libgpaste/ui/gpaste-ui-backup-history.c
 src/libgpaste/ui/gpaste-ui-delete-history.c
 src/libgpaste/ui/gpaste-ui-empty.c
 src/libgpaste/ui/gpaste-ui-empty-item.c
