@@ -53,6 +53,20 @@ g_paste_ui_history_action_get_private (GPasteUiHistoryAction *self)
     return g_paste_ui_history_action_get_instance_private (self);
 }
 
+static gboolean
+g_paste_ui_history_action_button_press_event (GtkWidget      *widget,
+                                              GdkEventButton *event G_GNUC_UNUSED)
+{
+    GPasteUiHistoryAction *self = G_PASTE_UI_HISTORY_ACTION (widget);
+    GPasteUiHistoryActionClass *klass = G_PASTE_UI_HISTORY_ACTION_GET_CLASS (self);
+    GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (self);
+
+    if (priv->history && klass->activate)
+        return klass->activate (self, priv->client, priv->rootwin, priv->history);
+    else
+        return GTK_WIDGET_CLASS (g_paste_ui_history_action_parent_class)->button_press_event (widget, event);
+}
+
 static void
 g_paste_ui_history_action_dispose (GObject *object)
 {
@@ -80,6 +94,8 @@ g_paste_ui_history_action_class_init (GPasteUiHistoryActionClass *klass)
 
     object_class->dispose = g_paste_ui_history_action_dispose;
     object_class->finalize = g_paste_ui_history_action_finalize;
+
+    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_history_action_button_press_event;
 }
 
 static void

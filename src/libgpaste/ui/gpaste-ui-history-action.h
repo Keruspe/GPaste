@@ -35,6 +35,12 @@ G_PASTE_DERIVABLE_TYPE (UiHistoryAction, ui_history_action, UI_HISTORY_ACTION, G
 struct _GPasteUiHistoryActionClass
 {
     GtkButtonClass parent_class;
+
+    /*< pure virtual >*/
+    gboolean     (*activate) (GPasteUiHistoryAction *self,
+                              GPasteClient          *client,
+                              GtkWindow             *rootwin,
+                              const gchar           *history);
 };
 
 void g_paste_ui_history_action_set_history (GPasteUiHistoryAction *self,
