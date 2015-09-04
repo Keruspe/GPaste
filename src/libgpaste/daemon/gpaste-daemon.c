@@ -377,8 +377,11 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
         g_paste_history_switch (history, name);
     g_paste_history_delete (history, NULL);
     g_paste_daemon_private_delete_history_signal (priv, name);
-    g_paste_history_switch (history, (delete_current) ? DEFAULT_HISTORY : old_history);
-    g_paste_daemon_private_switch_history_signal (priv, name);
+
+    const gchar *new_history = (delete_current) ? DEFAULT_HISTORY : old_history;
+
+    g_paste_history_switch (history, new_history);
+    g_paste_daemon_private_switch_history_signal (priv, new_history);
 }
 
 static void
