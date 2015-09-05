@@ -35,6 +35,7 @@ typedef struct
     GSList                 *histories;
 
     gulong                  activated_id;
+    gulong                  button_pressed_id;
     gulong                  delete_history_id;
     gulong                  switch_history_id;
 } GPasteUiPanelPrivate;
@@ -143,20 +144,20 @@ on_histories_ready (GObject      *source_object,
 }
 
 static gboolean
-g_paste_ui_panel_button_press_event (GtkWidget      *widget,
-                                     GdkEventButton *event)
+g_paste_ui_panel_button_press_event (GtkWidget      *widget G_GNUC_UNUSED,
+                                     GdkEventButton *event,
+                                     gpointer        user_data)
 {
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (widget));
+    GPasteUiPanelPrivate *priv = user_data;
 
     if (gdk_event_triggers_context_menu ((GdkEvent *) event))
     {
         g_paste_ui_history_actions_set_relative_to (priv->actions,
-                                                    G_PASTE_UI_PANEL_HISTORY (gtk_list_box_get_row_at_y (GTK_LIST_BOX (widget),
-                                                                                                         event->y)));
+                                                    G_PASTE_UI_PANEL_HISTORY (gtk_list_box_get_row_at_y (priv->list_box, event->y)));
         gtk_widget_show_all (GTK_WIDGET (priv->actions));
     }
 
-    return GTK_WIDGET_CLASS (g_paste_ui_panel_parent_class)->button_press_event (widget, event);
+    return FALSE;
 }
 
 static void
@@ -167,6 +168,7 @@ g_paste_ui_panel_dispose (GObject *object)
     if (priv->activated_id)
     {
         g_signal_handler_disconnect (priv->list_box, priv->activated_id);
+        g_signal_handler_disconnect (priv->list_box, priv->button_pressed_id);
         priv->activated_id = 0;
     }
 
@@ -186,7 +188,6 @@ static void
 g_paste_ui_panel_class_init (GPasteUiPanelClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_panel_dispose;
-    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_panel_button_press_event;
 }
 
 static void
@@ -201,6 +202,10 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                            "row-activated",
                                            G_CALLBACK (on_row_activated),
                                            NULL);
+    priv->button_pressed_id = g_signal_connect (G_OBJECT (priv->list_box),
+                                                "button-press-event",
+                                                G_CALLBACK (g_paste_ui_panel_button_press_event),
+                                                priv);
 
     gtk_box_pack_start (GTK_BOX (self), GTK_WIDGET (priv->list_box), TRUE, TRUE, 0);
 }
