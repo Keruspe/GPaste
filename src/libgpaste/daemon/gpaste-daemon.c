@@ -641,6 +641,27 @@ g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
+                                GVariant            *parameters,
+                                GPasteDBusError    **err)
+{
+    GVariantIter parameters_iter;
+    gsize length;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
+    guint32 index = g_variant_get_uint32 (variant1);
+    g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
+    g_autofree gchar *contents = g_variant_dup_string (variant2, &length);
+
+    G_PASTE_DBUS_ASSERT (contents, "no contents given");
+
+    /* FIXME: check item type first */
+    g_paste_history_replace (priv->history, index, contents);
+}
+
+static void
 g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
                                      GVariant            *parameters,
                                      GPasteDBusError    **err)
@@ -657,6 +678,7 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
 
     G_PASTE_DBUS_ASSERT (name, "no password name given");
 
+    /* FIXME: check item type first */
     g_paste_history_set_password (priv->history, index, name);
 }
 
@@ -807,6 +829,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_reexecute (self);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_RENAME_PASSWORD))
         g_paste_daemon_private_rename_password (priv, parameters, &err);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_REPLACE))
+        g_paste_daemon_private_replace (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SEARCH))
         answer = g_paste_daemon_private_search (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_SELECT))
