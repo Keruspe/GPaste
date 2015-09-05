@@ -53,6 +53,8 @@ show_help (void)
     printf ("  %s get <%s>: %s\n", progname, _("number"), _("get the <number>th item from the history"));
     /* Translators: help for gpaste select <number> */
     printf ("  %s select <%s>: %s\n", progname, _("number"), _("set the <number>th item from the history to the clipboard"));
+    /* Translators: help for gpaste replace <number> <contents> */
+    printf ("  %s replace <%s>  <%s>: %s\n", progname, _("number"), _("contents"), _("replace the contents of the <number>th item from the history with the provided one"));
     /* Translators: help for gpaste merge <number> … <number> */
     printf ("  %s merge <%s> … <%s>: %s\n", progname, _("number"), _("number"), _("merge the <number>th items from the history and add put the result in the clipboard"));
     /* Translators: help for gpaste set-password <number> <name> */
@@ -306,6 +308,11 @@ main (gint argc, gchar *argv[])
                 g_paste_client_add_password_sync (client, arg2, data->str, &error);
                 was_valid_pipe = TRUE;
             }
+            else if (!g_strcmp0 (arg1, "replace"))
+            {
+                g_paste_client_replace_sync (client, _strtoull (arg2), data->str, &error);
+                was_valid_pipe = TRUE;
+            }
         }
     }
 
@@ -336,7 +343,9 @@ main (gint argc, gchar *argv[])
         case 1:
             arg1 = argv[0];
             if (!g_strcmp0 (arg1, "about"))
+            {
                 g_paste_client_about_sync (client, &error);
+            }
             else if (!g_strcmp0 (arg1, "dr") ||
                      !g_strcmp0 (arg1, "daemon-reexec"))
             {
@@ -535,6 +544,10 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "rename-password"))
             {
                 g_paste_client_rename_password_sync (client, arg2, arg3, &error);
+            }
+            else if (!g_strcmp0 (arg1, "replace"))
+            {
+                g_paste_client_replace_sync (client, _strtoull (arg2), arg3, &error);
             }
             else if (!g_strcmp0 (arg1, "sp")   ||
                      !g_strcmp0 (arg1, "set-password"))

@@ -75,6 +75,7 @@ _gpaste_complete_subcommands() {
         {list-histories,lh}:"List available histories"
         {merge,m}:"Merge various elements from history"
         {rename-password,rp}:"Rename a password"
+        "replace:Replace the contents of an item"
         {select,set,s}:"Select an element of the history"
         {set-password,sp}:"Mark an item as being a password"
         {settings,preferences,p}:"Launch the configuration tool"
