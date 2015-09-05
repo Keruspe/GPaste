@@ -1,3 +1,9 @@
+NEW in 3.16.3 (05/09/2015)
+=============
+
+- various gnome-shell extension fixes
+- prevent potential crash from external library users
+
 NEW in 3.16.2.1 (11/05/2015)
 =============
 
