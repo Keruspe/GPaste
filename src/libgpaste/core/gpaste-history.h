@@ -47,6 +47,9 @@ const gchar      *g_paste_history_get_value          (GPasteHistory *self,
                                                       guint32        index);
 void              g_paste_history_select             (GPasteHistory *self,
                                                       guint32        index);
+void              g_paste_history_replace            (GPasteHistory *self,
+                                                      guint32        index,
+                                                      const gchar   *contents);
 void                      g_paste_history_set_password    (GPasteHistory *self,
                                                            guint32        index,
                                                            const gchar   *name);

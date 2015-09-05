@@ -449,6 +449,59 @@ g_paste_history_select (GPasteHistory *self,
 }
 
 /**
+ * g_paste_history_replace:
+ * @self: a #GPasteHistory instance
+ * @index: the index of the #GPasteTextItem to replace
+ * @contents: the new contents
+ *
+ * Replace the contents of text item at index @index
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_replace (GPasteHistory *self,
+                         guint32        index,
+                         const gchar   *contents)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (!contents || g_utf8_validate (contents, -1, NULL));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    GSList *history = priv->history;
+
+    g_return_if_fail (index < g_slist_length (history));
+
+    GSList *prev = (index) ? g_slist_nth (history, index - 1) : NULL;
+
+    g_return_if_fail (!index || prev);
+
+    GSList *todel = (index) ? g_slist_next (prev) : history;
+
+    g_return_if_fail (todel);
+
+    GPasteItem *item = todel->data;
+
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
+
+    GPasteItem *new = g_paste_text_item_new (contents);
+
+    priv->size -= g_paste_item_get_size (item);
+    priv->size += g_paste_item_get_size (new);
+
+    GSList *next = g_slist_prepend (g_slist_delete_link (todel, todel), new);
+
+    if (prev)
+        prev->next = next;
+    else
+        priv->history = next;
+
+    if (index == priv->biggest_index)
+        g_paste_history_private_elect_new_biggest (priv);
+
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
+}
+
+/**
  * g_paste_history_set_password:
  * @self: a #GPasteHistory instance
  * @index: the index of the #GPasteTextItem to change as password
