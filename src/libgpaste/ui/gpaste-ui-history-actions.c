@@ -67,7 +67,7 @@ g_paste_ui_history_actions_set_relative_to (GPasteUiHistoryActions *self,
     g_slist_foreach (priv->actions, action_set_history, (gpointer) h);
 
     if (history)
-        gtk_popover_set_relative_to (GTK_POPOVER (self), (history) ? GTK_WIDGET (history) : NULL);
+        gtk_popover_set_relative_to (GTK_POPOVER (self), GTK_WIDGET (history));
     else
         gtk_widget_hide (GTK_WIDGET (self));
 }
