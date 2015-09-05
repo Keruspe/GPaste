@@ -192,6 +192,8 @@ g_paste_ui_window_init (GPasteUiWindow *self)
                                             "search-changed",
                                             G_CALLBACK (on_search),
                                             priv);
+
+    gtk_window_set_focus (win, GTK_WIDGET (entry));
 }
 
 static void
