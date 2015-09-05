@@ -32,11 +32,13 @@ typedef struct
     GPasteUiHistoryActions *actions;
 
     GtkListBox             *list_box;
+    GtkEntry               *switch_entry;
     GSList                 *histories;
 
     gulong                  activated_id;
     gulong                  button_pressed_id;
     gulong                  delete_history_id;
+    gulong                  switch_clicked_id;
     gulong                  switch_history_id;
 } GPasteUiPanelPrivate;
 
@@ -161,6 +163,19 @@ g_paste_ui_panel_button_press_event (GtkWidget      *widget G_GNUC_UNUSED,
 }
 
 static void
+g_paste_ui_panel_switch_clicked (GtkEntry            *entry,
+                                 GtkEntryIconPosition icon_pos G_GNUC_UNUSED,
+                                 GdkEvent            *event G_GNUC_UNUSED,
+                                 gpointer             user_data)
+{
+    GPasteUiPanelPrivate *priv = user_data;
+    const gchar *text = gtk_entry_get_text (entry);
+
+    g_paste_client_switch_history (priv->client, (text && *text) ? text : DEFAULT_HISTORY, NULL, NULL);
+    gtk_entry_set_text (entry, "");
+}
+
+static void
 g_paste_ui_panel_dispose (GObject *object)
 {
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (object));
@@ -169,6 +184,7 @@ g_paste_ui_panel_dispose (GObject *object)
     {
         g_signal_handler_disconnect (priv->list_box, priv->activated_id);
         g_signal_handler_disconnect (priv->list_box, priv->button_pressed_id);
+        g_signal_handler_disconnect (priv->switch_entry, priv->switch_clicked_id);
         priv->activated_id = 0;
     }
 
@@ -194,20 +210,33 @@ static void
 g_paste_ui_panel_init (GPasteUiPanel *self)
 {
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+    GtkWidget *list_box = gtk_list_box_new ();
+    GtkWidget *switch_entry = gtk_entry_new ();
+    GtkBox *box = GTK_BOX (self);
+
+    priv->list_box = GTK_LIST_BOX (list_box);
+    priv->switch_entry = GTK_ENTRY (switch_entry);
 
     gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (self)), GTK_STYLE_CLASS_SIDEBAR);
+    gtk_entry_set_icon_from_icon_name (priv->switch_entry, GTK_ENTRY_ICON_SECONDARY, "go-jump");
+    gtk_widget_set_tooltip_text (switch_entry, _("Switch to"));
+    gtk_entry_set_placeholder_text (priv->switch_entry, DEFAULT_HISTORY);
 
-    priv->list_box = GTK_LIST_BOX (gtk_list_box_new ());
     priv->activated_id = g_signal_connect (G_OBJECT (priv->list_box),
                                            "row-activated",
                                            G_CALLBACK (on_row_activated),
                                            NULL);
-    priv->button_pressed_id = g_signal_connect (G_OBJECT (priv->list_box),
+    priv->button_pressed_id = g_signal_connect (G_OBJECT (list_box),
                                                 "button-press-event",
                                                 G_CALLBACK (g_paste_ui_panel_button_press_event),
                                                 priv);
+    priv->switch_clicked_id = g_signal_connect (G_OBJECT (switch_entry),
+                                                "icon-press",
+                                                G_CALLBACK (g_paste_ui_panel_switch_clicked),
+                                                priv);
 
-    gtk_box_pack_start (GTK_BOX (self), GTK_WIDGET (priv->list_box), TRUE, TRUE, 0);
+    gtk_box_pack_start (box, list_box, TRUE, TRUE, 0);
+    gtk_box_pack_start (box, switch_entry, FALSE, FALSE, 0);
 }
 
 /**
