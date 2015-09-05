@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-05 18:24+0200\n"
+"POT-Creation-Date: 2015-09-05 18:36+0200\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -183,6 +183,7 @@ msgstr "Pikanäppäimet"
 
 #. translators: This is the name of a multi-history management action
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
+#: ../src/libgpaste/ui/gpaste-ui-panel.c:235
 msgid "Switch to"
 msgstr "Vaihda kohteeseen"
 
