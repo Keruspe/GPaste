@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-08-27 20:05+0200\n"
+"POT-Creation-Date: 2015-09-05 18:24+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -36,7 +36,7 @@ msgid "Quit"
 msgstr "Quitter"
 
 #. Translators: help for gpaste ui
-#: ../src/libgpaste/applet/gpaste-applet-ui.c:61 ../src/gpaste/gpaste.c:79
+#: ../src/libgpaste/applet/gpaste-applet-ui.c:61 ../src/gpaste/gpaste.c:81
 msgid "launch the graphical tool"
 msgstr "lance l'interface graphique"
 
@@ -65,145 +65,141 @@ msgstr "Mot de passe"
 msgid "[Files] "
 msgstr "[Fichiers] "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:128
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:126
 #: ../src/libgpaste/ui/gpaste-ui-switch.c:96
 msgid "Track clipboard changes"
 msgstr "Suivre les changements du presse-papier"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:135
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:133
 msgid "Enable the gnome-shell extension"
 msgstr "Activer l'extension gnome-shell"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:141
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:139
 msgid "Sync the daemon state with the extension's one"
 msgstr "Synchroniser l'état du démon avec celui de l'extension"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:149
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:147
 msgid "Primary selection affects history"
 msgstr "La sélection primaire affecte l'historique"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:155
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:153
 msgid "Synchronize clipboard with primary selection"
 msgstr "Synchroniser le presse-papier avec la sélection primaire"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:162
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:160
 msgid "Images support"
 msgstr "Support des images"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:168
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:166
 msgid "Trim items"
 msgstr "Tronquer les éléments (éliminer les espaces au début et à la fin)"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:174
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:172
 msgid "Detect growing lines"
 msgstr "Détecter les lignes grandissantes"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:181
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:179
 msgid "Save history"
 msgstr "Sauvegarder l'historique"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:204
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:202
 msgid "Max element size when displaying: "
 msgstr "Taille maximale d'un élément quand on l'affiche : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:211
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:209
 msgid "Max displayed history size: "
 msgstr "Taille maximale de l'historique affiché : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:218
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:216
 msgid "Max history size: "
 msgstr "Taille maximale de l'historique : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:225
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:223
 msgid "Max memory usage (MB): "
 msgstr "Utilisation mémoire maximale (MO): "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:232
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:230
 msgid "Max text item length: "
 msgstr "Taille maximale d'un élément textuel"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:239
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:237
 msgid "Min text item length: "
 msgstr "Taille minimale d'un élément textuel"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:265
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:263
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
 msgid "Delete the active item from history: "
 msgstr "Supprimer l'élément actif de l'historique : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:272
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:270
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
 msgid "Launch the graphical tool: "
 msgstr "Lancer l'interface graphique: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:279
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:277
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
 msgid "Mark the active item as being a password: "
 msgstr "Marquer l'élément actif comme étant un mot de passe : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:286
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:284
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
 msgid "Display the history: "
 msgstr "Afficher l'historique : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:293
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:291
 #: ../data/control-center/42-gpaste.xml.in.in.h:5
 msgid "Sync the clipboard to the primary selection: "
 msgstr "Synchroniser le presse-papier avec la sélection primaire: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:300
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:298
 #: ../data/control-center/42-gpaste.xml.in.in.h:6
 msgid "Sync the primary selection to the clipboard: "
 msgstr "Synchroniser la sélection primaire avec le presse-papier: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:307
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:305
 #: ../data/control-center/42-gpaste.xml.in.in.h:7
 msgid "Upload the active item to a pastebin service: "
 msgstr "Téléverser l'élément actif vers un sevice type pastebin : "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:322
-#: ../src/libgpaste/ui/gpaste-ui-window.c:206 ../src/gpaste/gpaste.c:181
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
+#: ../src/libgpaste/ui/gpaste-ui-window.c:212 ../src/gpaste/gpaste.c:183
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:397
-msgid "Backup history as: "
-msgstr "Copier l'historique en tant que : "
-
-#. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:402
-msgid "Backup"
-msgstr "Copier"
-
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:409
-msgid "Ok"
-msgstr "Ok"
-
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:431
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:337
 msgid "General behaviour"
 msgstr "Comportement général"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:432
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:338
 msgid "History settings"
 msgstr "Préférences de l'historique"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:433
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:339
 msgid "Keyboard shortcuts"
 msgstr "Raccourcis clavier"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:434
-msgid "Histories"
-msgstr "Historiques"
-
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:554
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
 msgid "Switch to"
 msgstr "Passer à"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:559
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
+#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:77
 msgid "Delete"
 msgstr "Supprimer"
+
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:51
+msgid "Under which name do you want to backup this history?"
+msgstr "Sous quel nom voulez-vous backuper cet historique ?"
+
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:128
+msgid "Backup"
+msgstr "Copier"
+
+#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:38
+msgid "Are you sure you want to delete this history?"
+msgstr "Voulez-vous vraiment supprimer cet historique ?"
 
 #: ../src/libgpaste/ui/gpaste-ui-empty.c:41
 msgid "Do you really want to empty the history?"
@@ -254,61 +250,66 @@ msgstr "affiche l'historique avec les indices"
 msgid "print the size of the history"
 msgstr "affiche la taille de l'historique"
 
+#. Translators: help for gpaste get-history
+#: ../src/gpaste/gpaste.c:37
+msgid "get the name of the current history"
+msgstr "afficher le nom de l'historique courant"
+
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
 #. Translators: help for gpaste delete-history <name>
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste delete-passworf <name>
-#: ../src/gpaste/gpaste.c:37 ../src/gpaste/gpaste.c:39
-#: ../src/gpaste/gpaste.c:41 ../src/gpaste/gpaste.c:47
-#: ../src/gpaste/gpaste.c:57 ../src/gpaste/gpaste.c:61
+#: ../src/gpaste/gpaste.c:39 ../src/gpaste/gpaste.c:41
+#: ../src/gpaste/gpaste.c:43 ../src/gpaste/gpaste.c:49
+#: ../src/gpaste/gpaste.c:59 ../src/gpaste/gpaste.c:63
 msgid "name"
 msgstr "nom"
 
-#: ../src/gpaste/gpaste.c:37
+#: ../src/gpaste/gpaste.c:39
 msgid "backup current history"
 msgstr "sauvegarde l'historique actuel"
 
-#: ../src/gpaste/gpaste.c:39
+#: ../src/gpaste/gpaste.c:41
 msgid "switch to another history"
 msgstr "passer à un autre historique"
 
-#: ../src/gpaste/gpaste.c:41
+#: ../src/gpaste/gpaste.c:43
 msgid "delete a history"
 msgstr "supprime un historique"
 
 #. Translators: help for gpaste list-histories
-#: ../src/gpaste/gpaste.c:43
+#: ../src/gpaste/gpaste.c:45
 msgid "list available histories"
 msgstr "liste les historiques disponibles"
 
 #. Translators: help for gpaste add <text>
-#: ../src/gpaste/gpaste.c:45
+#: ../src/gpaste/gpaste.c:47
 msgid "text"
 msgstr "texte"
 
-#: ../src/gpaste/gpaste.c:45
+#: ../src/gpaste/gpaste.c:47
 msgid "set text to clipboard"
 msgstr "met le texte dans le presse-papier"
 
-#: ../src/gpaste/gpaste.c:47
+#: ../src/gpaste/gpaste.c:49
 msgid "password"
 msgstr "mot de passe"
 
-#: ../src/gpaste/gpaste.c:47
+#: ../src/gpaste/gpaste.c:49
 msgid "add the name - password couple to the clipboard"
 msgstr "ajouter le couple nom - mot de passe au presse-papier"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: ../src/gpaste/gpaste.c:49
+#: ../src/gpaste/gpaste.c:51
 msgid "old name"
 msgstr "ancien nom"
 
-#: ../src/gpaste/gpaste.c:49
+#: ../src/gpaste/gpaste.c:51
 msgid "new name"
 msgstr "nouveau nom"
 
-#: ../src/gpaste/gpaste.c:49
+#: ../src/gpaste/gpaste.c:51
 msgid "rename the password"
 msgstr "renommer le mot de passe"
 
@@ -318,21 +319,21 @@ msgstr "renommer le mot de passe"
 #. Translators: help for gpaste set-password <number> <name>
 #. Translators: help for gpaste delete <number>
 #. Translators: help for gpaste upload
-#: ../src/gpaste/gpaste.c:51 ../src/gpaste/gpaste.c:53
-#: ../src/gpaste/gpaste.c:55 ../src/gpaste/gpaste.c:57
-#: ../src/gpaste/gpaste.c:59 ../src/gpaste/gpaste.c:93
+#: ../src/gpaste/gpaste.c:53 ../src/gpaste/gpaste.c:55
+#: ../src/gpaste/gpaste.c:57 ../src/gpaste/gpaste.c:59
+#: ../src/gpaste/gpaste.c:61 ../src/gpaste/gpaste.c:95
 msgid "number"
 msgstr "nombre"
 
-#: ../src/gpaste/gpaste.c:51
+#: ../src/gpaste/gpaste.c:53
 msgid "get the <number>th item from the history"
 msgstr "renvoie le <nombre>e élément de l'historique"
 
-#: ../src/gpaste/gpaste.c:53
+#: ../src/gpaste/gpaste.c:55
 msgid "set the <number>th item from the history to the clipboard"
 msgstr "met le <nombre>e élément de l'historique dans le presse-papier"
 
-#: ../src/gpaste/gpaste.c:55
+#: ../src/gpaste/gpaste.c:57
 msgid ""
 "merge the <number>th items from the history and add put the result in the "
 "clipboard"
@@ -340,142 +341,142 @@ msgstr ""
 "fusionne les <nombre>e éléments de l'historique et met le résultat dans le "
 "presse-papier"
 
-#: ../src/gpaste/gpaste.c:57
+#: ../src/gpaste/gpaste.c:59
 msgid "set the <number>th item from the history as a password named <name>"
 msgstr ""
 "marque le <nombre>e élément de l'historique comme étant un mot de passe "
 "nommé <nom>"
 
-#: ../src/gpaste/gpaste.c:59
+#: ../src/gpaste/gpaste.c:61
 msgid "delete <number>th item of the history"
 msgstr "supprime le <nombre>e élément de l'historique"
 
-#: ../src/gpaste/gpaste.c:61
+#: ../src/gpaste/gpaste.c:63
 msgid "delete the password <name> from the history"
 msgstr "supprime le mot de passe nommé <nom> de l'historique"
 
 #. Translators: help for gpaste file <path>
-#: ../src/gpaste/gpaste.c:63
+#: ../src/gpaste/gpaste.c:65
 msgid "path"
 msgstr "chemin"
 
-#: ../src/gpaste/gpaste.c:63
+#: ../src/gpaste/gpaste.c:65
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "place le contenu du fichier situé à ce chemin dans le presse-papier"
 
 #. Translators: help for whatever | gpaste
-#: ../src/gpaste/gpaste.c:65
+#: ../src/gpaste/gpaste.c:67
 msgid "whatever"
 msgstr "quelquechose"
 
-#: ../src/gpaste/gpaste.c:65
+#: ../src/gpaste/gpaste.c:67
 msgid "set the output of whatever to clipboard"
 msgstr "met la sortie de quelquechose dans le presse-papier"
 
 #. Translators: help for gpaste empty
-#: ../src/gpaste/gpaste.c:67
+#: ../src/gpaste/gpaste.c:69
 msgid "empty the history"
 msgstr "vide l'historique"
 
 #. Translators: help for gpaste start
-#: ../src/gpaste/gpaste.c:69
+#: ../src/gpaste/gpaste.c:71
 msgid "start tracking clipboard changes"
 msgstr "suivre les changements du presse-papier"
 
 #. Translators: help for gpaste stop
-#: ../src/gpaste/gpaste.c:71
+#: ../src/gpaste/gpaste.c:73
 msgid "stop tracking clipboard changes"
 msgstr "arrêter de suivre les changements du presse-papier"
 
 #. Translators: help for gpaste quit
-#: ../src/gpaste/gpaste.c:73
+#: ../src/gpaste/gpaste.c:75
 msgid "alias for stop"
 msgstr "alias pour stop"
 
 #. Translators: help for gpaste daemon-reexec
-#: ../src/gpaste/gpaste.c:75
+#: ../src/gpaste/gpaste.c:77
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "reexecuter le démon (après une mise à jour...)"
 
 #. Translators: help for gpaste settings
-#: ../src/gpaste/gpaste.c:77
+#: ../src/gpaste/gpaste.c:79
 msgid "launch the configuration tool"
 msgstr "lance l'outil de configuration"
 
 #. Translators: help for gpaste applet
-#: ../src/gpaste/gpaste.c:83
+#: ../src/gpaste/gpaste.c:85
 msgid "launch the applet"
 msgstr "lance l'applet GPaste"
 
 #. Translators: help for gpaste app-indicator
-#: ../src/gpaste/gpaste.c:88
+#: ../src/gpaste/gpaste.c:90
 msgid "launch the unity application indicator"
 msgstr "lance l'indicateur d'application pour unity"
 
 #. Translators: help for gpaste show-history
-#: ../src/gpaste/gpaste.c:91
+#: ../src/gpaste/gpaste.c:93
 msgid "make the applet or extension display the history"
 msgstr "forcer l'applet ou l'extension à afficher l'historique"
 
-#: ../src/gpaste/gpaste.c:93
+#: ../src/gpaste/gpaste.c:95
 msgid "upload the <number>th item to a pastebin service"
 msgstr ""
 "téléverser le <nombre>e élément de l'historique vers un service de type "
 "pastebin"
 
 #. Translators: help for gpaste version
-#: ../src/gpaste/gpaste.c:95
+#: ../src/gpaste/gpaste.c:97
 msgid "display the version"
 msgstr "affiche la version"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste/gpaste.c:97
+#: ../src/gpaste/gpaste.c:99
 msgid "display the daemon version"
 msgstr "affiche la version du démon"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste/gpaste.c:99
+#: ../src/gpaste/gpaste.c:101
 msgid "display this help"
 msgstr "affiche cette aide"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste/gpaste.c:101
+#: ../src/gpaste/gpaste.c:103
 msgid "display the about dialog"
 msgstr "affiche le dialogue d'à propos"
 
-#: ../src/gpaste/gpaste.c:104
+#: ../src/gpaste/gpaste.c:106
 #, c-format
 msgid "Display options:"
 msgstr "Options d'affichage : "
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:107
+#: ../src/gpaste/gpaste.c:109
 msgid "display each item on only one line"
 msgstr "affiche chaque élément sur seulement une ligne"
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:109
+#: ../src/gpaste/gpaste.c:111
 msgid "display each item raw (without line numbers)"
 msgstr "affiche chaque élément brut (sans numéro de ligne)"
 
 #. Translators: help for --oneline
-#: ../src/gpaste/gpaste.c:111
+#: ../src/gpaste/gpaste.c:113
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
 "utilise un caractère NUL au lieu des sauts de ligne entre chaque élément"
 
-#: ../src/gpaste/gpaste.c:114
+#: ../src/gpaste/gpaste.c:116
 #, c-format
 msgid "Merge options:"
 msgstr "Options de fusion : "
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: ../src/gpaste/gpaste.c:117 ../src/gpaste/gpaste.c:119
+#: ../src/gpaste/gpaste.c:119 ../src/gpaste/gpaste.c:121
 msgid "string"
 msgstr "chaîne"
 
-#: ../src/gpaste/gpaste.c:117
+#: ../src/gpaste/gpaste.c:119
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
@@ -483,15 +484,15 @@ msgstr ""
 "ajoute la décoration au début et à la fin de chaque élément avant de les "
 "fusionner"
 
-#: ../src/gpaste/gpaste.c:119
+#: ../src/gpaste/gpaste.c:121
 msgid "add the given separator between each item when merging"
 msgstr "ajoute le séparateur entre chaque élément à la fusion"
 
-#: ../src/gpaste/gpaste.c:192 ../src/gpaste/gpaste.c:387
+#: ../src/gpaste/gpaste.c:194 ../src/gpaste/gpaste.c:395
 msgid "Couldn't spawn"
 msgstr "Impossible de lancer"
 
-#: ../src/gpaste/gpaste.c:344
+#: ../src/gpaste/gpaste.c:346
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Démon redémarré avec succès\n"
@@ -808,3 +809,12 @@ msgid ""
 msgstr ""
 "Par défaut, appuyer sur ctrl + alt + u le fait (\"&lt;Ctrl&gt;&lt;Alt&gt;U"
 "\"). Une chaîne vide désactive cette fonctionnalité."
+
+#~ msgid "Backup history as: "
+#~ msgstr "Copier l'historique en tant que : "
+
+#~ msgid "Ok"
+#~ msgstr "Ok"
+
+#~ msgid "Histories"
+#~ msgstr "Historiques"
