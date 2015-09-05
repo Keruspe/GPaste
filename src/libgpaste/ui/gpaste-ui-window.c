@@ -118,11 +118,15 @@ g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
 }
 
 static gboolean
-on_key_press_event (GtkWidget *widget G_GNUC_UNUSED,
+on_key_press_event (GtkWidget *widget,
                     GdkEvent  *event,
                     gpointer   user_data)
 {
     GtkSearchBar *bar = user_data;
+    GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (widget));
+
+    if (GTK_IS_ENTRY (focus) && !GTK_IS_SEARCH_ENTRY (focus))
+        return FALSE;
 
     return gtk_search_bar_handle_event (bar, event);
 }
