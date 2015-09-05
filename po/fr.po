@@ -191,7 +191,7 @@ msgstr "Supprimer"
 
 #: ../src/libgpaste/ui/gpaste-ui-backup-history.c:51
 msgid "Under which name do you want to backup this history?"
-msgstr "Sous quel nom voulez-vous backuper cet historique ?"
+msgstr "Sous quel nom voulez-vous copier cet historique ?"
 
 #: ../src/libgpaste/ui/gpaste-ui-backup-history.c:128
 msgid "Backup"
@@ -809,12 +809,3 @@ msgid ""
 msgstr ""
 "Par défaut, appuyer sur ctrl + alt + u le fait (\"&lt;Ctrl&gt;&lt;Alt&gt;U"
 "\"). Une chaîne vide désactive cette fonctionnalité."
-
-#~ msgid "Backup history as: "
-#~ msgstr "Copier l'historique en tant que : "
-
-#~ msgid "Ok"
-#~ msgstr "Ok"
-
-#~ msgid "Histories"
-#~ msgstr "Historiques"
