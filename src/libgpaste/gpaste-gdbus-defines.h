@@ -54,6 +54,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "OnExtensionStateChanged"
 #define G_PASTE_DAEMON_REEXECUTE                  "Reexecute"
 #define G_PASTE_DAEMON_RENAME_PASSWORD            "RenamePassword"
+#define G_PASTE_DAEMON_REPLACE                    "Replace"
 #define G_PASTE_DAEMON_SEARCH                     "Search"
 #define G_PASTE_DAEMON_SELECT                     "Select"
 #define G_PASTE_DAEMON_SET_PASSWORD               "SetPassword"
@@ -139,6 +140,10 @@ G_BEGIN_DECLS
         "    <method name='" G_PASTE_DAEMON_RENAME_PASSWORD "'>"            \
         "      <arg type='s' direction='in' name='old-name' />"             \
         "      <arg type='s' direction='in' name='new-name' />"             \
+        "    </method>"                                                     \
+        "    <method name='" G_PASTE_DAEMON_REPLACE "'>"                    \
+        "      <arg type='u' direction='in' name='index' />"                \
+        "      <arg type='s' direction='in' name='contents' />"             \
         "    </method>"                                                     \
         "    <method name='" G_PASTE_DAEMON_SEARCH "'>"                     \
         "      <arg type='s' direction='in'   name='query'   />"            \
