@@ -448,6 +448,32 @@ g_paste_history_select (GPasteHistory *self,
     g_paste_history_selected (self, item);
 }
 
+static void
+_g_paste_history_replace (GPasteHistory *self,
+                          guint32        index,
+                          GPasteItem    *item,
+                          GPasteItem    *new,
+                          GSList        *prev,
+                          GSList        *todel)
+{
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+
+    priv->size -= g_paste_item_get_size (item);
+    priv->size += g_paste_item_get_size (new);
+
+    GSList *next = g_slist_prepend (g_slist_delete_link (todel, todel), new);
+
+    if (prev)
+        prev->next = next;
+    else
+        priv->history = next;
+
+    if (index == priv->biggest_index)
+        g_paste_history_private_elect_new_biggest (priv);
+
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
+}
+
 /**
  * g_paste_history_replace:
  * @self: a #GPasteHistory instance
@@ -485,20 +511,7 @@ g_paste_history_replace (GPasteHistory *self,
 
     GPasteItem *new = g_paste_text_item_new (contents);
 
-    priv->size -= g_paste_item_get_size (item);
-    priv->size += g_paste_item_get_size (new);
-
-    GSList *next = g_slist_prepend (g_slist_delete_link (todel, todel), new);
-
-    if (prev)
-        prev->next = next;
-    else
-        priv->history = next;
-
-    if (index == priv->biggest_index)
-        g_paste_history_private_elect_new_biggest (priv);
-
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
+    _g_paste_history_replace (self, index, item, new, prev, todel);
 }
 
 /**
@@ -534,24 +547,11 @@ g_paste_history_set_password (GPasteHistory *self,
 
     GPasteItem *item = todel->data;
 
-    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
 
-    priv->size -= g_paste_item_get_size (item);
-    priv->size += g_paste_item_get_size (password);
-
-    GSList *next = g_slist_prepend (g_slist_delete_link (todel, todel), password);
-
-    if (prev)
-        prev->next = next;
-    else
-        priv->history = next;
-
-    if (index == priv->biggest_index)
-        g_paste_history_private_elect_new_biggest (priv);
-
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
+    _g_paste_history_replace (self, index, item, password, prev, todel);
 }
 
 static GPasteItem *
