@@ -62,8 +62,7 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
 {
     GPasteUiPanelPrivate *priv = user_data;
 
-    /* FIXME: un hardcode */
-    if (!g_strcmp0 (history, "history"))
+    if (!g_strcmp0 (history, DEFAULT_HISTORY))
         return;
 
     GSList *h = history_find (priv->histories, history);
@@ -138,8 +137,7 @@ on_histories_ready (GObject      *source_object,
     g_auto(GStrv) histories = g_paste_client_list_histories_finish (G_PASTE_CLIENT (source_object), res, NULL);
     g_autofree gchar *current = g_strdup (g_paste_settings_get_history_name (priv->settings));
 
-    /* FIXME: un hardcode */
-    g_paste_ui_panel_add_history (priv, "history", !g_strcmp0 ("history", current));
+    g_paste_ui_panel_add_history (priv, DEFAULT_HISTORY, !g_strcmp0 (DEFAULT_HISTORY, current));
     for (GStrv h = histories; *h; ++h)
         g_paste_ui_panel_add_history (priv, *h, !g_strcmp0 (*h, current));
 }

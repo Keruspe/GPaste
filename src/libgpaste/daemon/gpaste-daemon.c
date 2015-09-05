@@ -33,8 +33,6 @@
 
 #include <string.h>
 
-#define DEFAULT_HISTORY "history"
-
 #define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,error)               \
     g_dbus_connection_emit_signal (priv->connection,                \
                                    NULL, /* destination_bus_name */ \
