@@ -177,7 +177,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     GtkContainer *box = GTK_CONTAINER (vbox);
 
     gtk_container_add (GTK_CONTAINER (win), vbox);
-    gtk_container_add (box, search_bar);
+    gtk_box_pack_start (GTK_BOX (box), search_bar, FALSE, FALSE, 0);
 
     GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar));
     priv->key_press_signal = g_signal_connect (self,
@@ -224,7 +224,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     gtk_box_pack_start (box, panel, FALSE, FALSE, 0);
     gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 2);
     gtk_box_pack_start (box, history, TRUE, TRUE, 0);
-    gtk_container_add (vbox, hbox);
+    gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
                             gtk_container_get_children (vbox)->data, "search-mode-enabled",
