@@ -38,6 +38,7 @@ typedef struct
     gulong                  activated_id;
     gulong                  button_pressed_id;
     gulong                  delete_history_id;
+    gulong                  switch_activated_id;
     gulong                  switch_clicked_id;
     gulong                  switch_history_id;
 } GPasteUiPanelPrivate;
@@ -163,16 +164,23 @@ g_paste_ui_panel_button_press_event (GtkWidget      *widget G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_switch_clicked (GtkEntry            *entry,
-                                 GtkEntryIconPosition icon_pos G_GNUC_UNUSED,
-                                 GdkEvent            *event G_GNUC_UNUSED,
-                                 gpointer             user_data)
+g_paste_ui_panel_switch_activated (GtkEntry            *entry,
+                                   gpointer             user_data)
 {
     GPasteUiPanelPrivate *priv = user_data;
     const gchar *text = gtk_entry_get_text (entry);
 
     g_paste_client_switch_history (priv->client, (text && *text) ? text : DEFAULT_HISTORY, NULL, NULL);
     gtk_entry_set_text (entry, "");
+}
+
+static void
+g_paste_ui_panel_switch_clicked (GtkEntry            *entry,
+                                 GtkEntryIconPosition icon_pos G_GNUC_UNUSED,
+                                 GdkEvent            *event G_GNUC_UNUSED,
+                                 gpointer             user_data)
+{
+    g_paste_ui_panel_switch_activated (entry, user_data);
 }
 
 static void
@@ -184,6 +192,7 @@ g_paste_ui_panel_dispose (GObject *object)
     {
         g_signal_handler_disconnect (priv->list_box, priv->activated_id);
         g_signal_handler_disconnect (priv->list_box, priv->button_pressed_id);
+        g_signal_handler_disconnect (priv->switch_entry, priv->switch_activated_id);
         g_signal_handler_disconnect (priv->switch_entry, priv->switch_clicked_id);
         priv->activated_id = 0;
     }
@@ -230,6 +239,10 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                 "button-press-event",
                                                 G_CALLBACK (g_paste_ui_panel_button_press_event),
                                                 priv);
+    priv->switch_activated_id = g_signal_connect (G_OBJECT (switch_entry),
+                                                  "activate",
+                                                  G_CALLBACK (g_paste_ui_panel_switch_activated),
+                                                  priv);
     priv->switch_clicked_id = g_signal_connect (G_OBJECT (switch_entry),
                                                 "icon-press",
                                                 G_CALLBACK (g_paste_ui_panel_switch_clicked),
