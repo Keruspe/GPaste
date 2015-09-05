@@ -215,7 +215,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     GtkWidget *header = g_paste_ui_header_new (win, client);
-    GtkWidget *panel = g_paste_ui_panel_new (client, settings, win);
+    GtkWidget *panel = g_paste_ui_panel_new (client, settings, win, priv->search_entry);
     GtkWidget *history = g_paste_ui_history_new (client, settings);
     GPasteUiHeader *h = priv->header = G_PASTE_UI_HEADER (header);
 

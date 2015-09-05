@@ -35,7 +35,8 @@ G_PASTE_FINAL_TYPE (UiPanel, ui_panel, UI_PANEL, GtkBox)
 
 GtkWidget *g_paste_ui_panel_new (GPasteClient   *client,
                                  GPasteSettings *settings,
-                                 GtkWindow      *rootwin);
+                                 GtkWindow      *rootwin,
+                                 GtkSearchEntry *search_entry);
 
 G_END_DECLS
 

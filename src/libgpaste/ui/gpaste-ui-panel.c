@@ -35,6 +35,8 @@ typedef struct
     GtkEntry               *switch_entry;
     GSList                 *histories;
 
+    GtkWidget              *search_entry;
+
     gulong                  activated_id;
     gulong                  button_pressed_id;
     gulong                  delete_history_id;
@@ -164,14 +166,16 @@ g_paste_ui_panel_button_press_event (GtkWidget      *widget G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_switch_activated (GtkEntry            *entry,
-                                   gpointer             user_data)
+g_paste_ui_panel_switch_activated (GtkEntry *entry,
+                                   gpointer  user_data)
 {
     GPasteUiPanelPrivate *priv = user_data;
     const gchar *text = gtk_entry_get_text (entry);
 
     g_paste_client_switch_history (priv->client, (text && *text) ? text : DEFAULT_HISTORY, NULL, NULL);
     gtk_entry_set_text (entry, "");
+
+    gtk_widget_grab_focus (priv->search_entry);
 }
 
 static void
@@ -257,6 +261,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
  * @rootwin: the root #GtkWindow
+ * @search_entry: the #GtkSearchEntry
  *
  * Create a new instance of #GPasteUiPanel
  *
@@ -266,11 +271,13 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_panel_new (GPasteClient   *client,
                       GPasteSettings *settings,
-                      GtkWindow      *rootwin)
+                      GtkWindow      *rootwin,
+                      GtkSearchEntry *search_entry)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
+    g_return_val_if_fail (GTK_IS_SEARCH_ENTRY (search_entry), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL,
                                       "orientation", GTK_ORIENTATION_VERTICAL,
@@ -280,6 +287,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
     priv->actions = G_PASTE_UI_HISTORY_ACTIONS (g_paste_ui_history_actions_new (client, rootwin));
+    priv->search_entry = GTK_WIDGET (search_entry);
 
     priv->delete_history_id = g_signal_connect (priv->client,
                                                 "delete-history",
