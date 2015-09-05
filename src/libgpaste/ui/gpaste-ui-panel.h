@@ -31,7 +31,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_PANEL (g_paste_ui_panel_get_type ())
 
-G_PASTE_FINAL_TYPE (UiPanel, ui_panel, UI_PANEL, GtkListBox)
+G_PASTE_FINAL_TYPE (UiPanel, ui_panel, UI_PANEL, GtkBox)
 
 GtkWidget *g_paste_ui_panel_new (GPasteClient   *client,
                                  GPasteSettings *settings,

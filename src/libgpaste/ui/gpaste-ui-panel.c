@@ -22,7 +22,7 @@
 
 struct _GPasteUiPanel
 {
-    GtkListBox parent_instance;
+    GtkBox parent_instance;
 };
 
 typedef struct
@@ -31,6 +31,7 @@ typedef struct
     GPasteSettings         *settings;
     GPasteUiHistoryActions *actions;
 
+    GtkListBox             *list_box;
     GSList                 *histories;
 
     gulong                  activated_id;
@@ -38,7 +39,7 @@ typedef struct
     gulong                  switch_history_id;
 } GPasteUiPanelPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanel, g_paste_ui_panel, GTK_TYPE_LIST_BOX)
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanel, g_paste_ui_panel, GTK_TYPE_BOX)
 
 static int
 history_equals (gconstpointer a,
@@ -59,8 +60,7 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
                     const gchar  *history,
                     gpointer      user_data)
 {
-    GPasteUiPanel *self = user_data;
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+    GPasteUiPanelPrivate *priv = user_data;
 
     /* FIXME: un hardcode */
     if (!g_strcmp0 (history, "history"))
@@ -72,22 +72,22 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
         return;
 
     priv->histories = g_slist_remove_link (priv->histories, h);
-    gtk_container_remove (GTK_CONTAINER (self), h->data);
+    gtk_container_remove (GTK_CONTAINER (priv->list_box), h->data);
 }
 
 static void
-g_paste_ui_panel_add_history (GPasteUiPanel *self,
-                              const gchar   *history,
-                              gboolean       select);
+g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
+                              const gchar          *history,
+                              gboolean              select);
 
 static void
 on_history_switched (GPasteClient *client G_GNUC_UNUSED,
                      const gchar  *history,
                      gpointer      user_data)
 {
-    GPasteUiPanel *self = user_data;
+    GPasteUiPanelPrivate *priv = user_data;
 
-    g_paste_ui_panel_add_history (self, history, TRUE);
+    g_paste_ui_panel_add_history (priv, history, TRUE);
 }
 
 static void
@@ -99,12 +99,11 @@ on_row_activated (GtkListBox    *panel     G_GNUC_UNUSED,
 }
 
 static void
-g_paste_ui_panel_add_history (GPasteUiPanel *self,
-                              const gchar   *history,
-                              gboolean       select)
+g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
+                              const gchar          *history,
+                              gboolean              select)
 {
-    GtkContainer *c = GTK_CONTAINER (self);
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+    GtkContainer *c = GTK_CONTAINER (priv->list_box);
 
     GSList *concurrent = history_find (priv->histories, history);
     GtkListBoxRow *row;
@@ -127,7 +126,7 @@ g_paste_ui_panel_add_history (GPasteUiPanel *self,
     }
 
     if (select)
-        gtk_list_box_select_row (GTK_LIST_BOX (self), row);
+        gtk_list_box_select_row (priv->list_box, row);
 }
 
 static void
@@ -135,15 +134,14 @@ on_histories_ready (GObject      *source_object,
                     GAsyncResult *res,
                     gpointer      user_data)
 {
-    GPasteUiPanel *self = user_data;
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+    GPasteUiPanelPrivate *priv = user_data;
     g_auto(GStrv) histories = g_paste_client_list_histories_finish (G_PASTE_CLIENT (source_object), res, NULL);
     g_autofree gchar *current = g_strdup (g_paste_settings_get_history_name (priv->settings));
 
     /* FIXME: un hardcode */
-    g_paste_ui_panel_add_history (self, "history", !g_strcmp0 ("history", current));
+    g_paste_ui_panel_add_history (priv, "history", !g_strcmp0 ("history", current));
     for (GStrv h = histories; *h; ++h)
-        g_paste_ui_panel_add_history (self, *h, !g_strcmp0 (*h, current));
+        g_paste_ui_panel_add_history (priv, *h, !g_strcmp0 (*h, current));
 }
 
 static gboolean
@@ -170,7 +168,7 @@ g_paste_ui_panel_dispose (GObject *object)
 
     if (priv->activated_id)
     {
-        g_signal_handler_disconnect (object, priv->activated_id);
+        g_signal_handler_disconnect (priv->list_box, priv->activated_id);
         priv->activated_id = 0;
     }
 
@@ -200,10 +198,13 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
 
     gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (self)), GTK_STYLE_CLASS_SIDEBAR);
 
-    priv->activated_id = g_signal_connect (G_OBJECT (self),
+    priv->list_box = GTK_LIST_BOX (gtk_list_box_new ());
+    priv->activated_id = g_signal_connect (G_OBJECT (priv->list_box),
                                            "row-activated",
                                            G_CALLBACK (on_row_activated),
                                            NULL);
+
+    gtk_box_pack_start (GTK_BOX (self), GTK_WIDGET (priv->list_box), TRUE, TRUE, 0);
 }
 
 /**
@@ -226,7 +227,9 @@ g_paste_ui_panel_new (GPasteClient   *client,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL, NULL);
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL,
+                                      "orientation", GTK_ORIENTATION_VERTICAL,
+                                      NULL);
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (self));
 
     priv->client = g_object_ref (client);
@@ -236,13 +239,13 @@ g_paste_ui_panel_new (GPasteClient   *client,
     priv->delete_history_id = g_signal_connect (priv->client,
                                                 "delete-history",
                                                 G_CALLBACK (on_history_deleted),
-                                                self);
+                                                priv);
     priv->switch_history_id = g_signal_connect (priv->client,
                                                 "switch-history",
                                                 G_CALLBACK (on_history_switched),
-                                                self);
+                                                priv);
 
-    g_paste_client_list_histories (client, on_histories_ready, self);
+    g_paste_client_list_histories (client, on_histories_ready, priv);
 
     return self;
 }
