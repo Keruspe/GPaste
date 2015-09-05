@@ -98,6 +98,10 @@ void     g_paste_client_rename_password_sync            (GPasteClient  *self,
                                                          const gchar   *old_name,
                                                          const gchar   *new_name,
                                                          GError       **error);
+void     g_paste_client_replace_sync                    (GPasteClient  *self,
+                                                         guint32        index,
+                                                         const gchar   *contents,
+                                                         GError       **error);
 guint32 *g_paste_client_search_sync                     (GPasteClient  *self,
                                                          const gchar   *pattern,
                                                          gsize         *hits,
@@ -208,6 +212,11 @@ void g_paste_client_rename_password            (GPasteClient       *self,
                                                 const gchar        *new_name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
+void g_paste_client_replace                    (GPasteClient       *self,
+                                                guint32             index,
+                                                const gchar        *contents,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
 void g_paste_client_search                     (GPasteClient       *self,
                                                 const gchar        *pattern,
                                                 GAsyncReadyCallback callback,
@@ -302,6 +311,9 @@ void     g_paste_client_reexecute_finish                  (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 void     g_paste_client_rename_password_finish            (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+void     g_paste_client_replace_finish                    (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 guint32 *g_paste_client_search_finish                     (GPasteClient *self,

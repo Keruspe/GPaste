@@ -594,6 +594,31 @@ g_paste_client_rename_password_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_replace_sync:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to replace
+ * @contents: the replacement contents
+ * @error: a #GError
+ *
+ * Replace the contents of an item
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_replace_sync (GPasteClient *self,
+                             guint32       index,
+                             const gchar  *contents,
+                             GError      **error)
+{
+    GVariant *params[] = {
+        g_variant_new_uint32 (index),
+        g_variant_new_string (contents)
+    };
+
+    DBUS_CALL_TWO_PARAMS_NO_RETURN (REPLACE, params);
+}
+
+/**
  * g_paste_client_search_sync:
  * @self: a #GPasteClient instance
  * @pattern: the pattern to look for in history
@@ -1202,6 +1227,34 @@ g_paste_client_rename_password (GPasteClient       *self,
 }
 
 /**
+ * g_paste_client_replace:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to replace
+ * @contents: the replacement contents
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: The data to pass to @callback.
+ *
+ * Replace the contents of an item
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_replace (GPasteClient       *self,
+                        guint32             index,
+                        const gchar        *contents,
+                        GAsyncReadyCallback callback,
+                        gpointer            user_data)
+{
+    GVariant *params[] = {
+        g_variant_new_uint32 (index),
+        g_variant_new_string (contents)
+    };
+
+    DBUS_CALL_TWO_PARAMS_ASYNC (REPLACE, params);
+}
+
+/**
  * g_paste_client_search:
  * @self: a #GPasteClient instance
  * @pattern: the pattern to look for in history
@@ -1731,6 +1784,24 @@ G_PASTE_VISIBLE void
 g_paste_client_rename_password_finish (GPasteClient *self,
                                        GAsyncResult *result,
                                        GError      **error)
+{
+    DBUS_ASYNC_FINISH_NO_RETURN;
+}
+
+/**
+ * g_paste_client_replace_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Replace the contents of an item
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_replace_finish (GPasteClient *self,
+                               GAsyncResult *result,
+                               GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

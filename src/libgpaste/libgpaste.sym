@@ -371,6 +371,9 @@ global:
     g_paste_client_get_elements;
     g_paste_client_get_elements_finish;
     g_paste_client_get_elements_sync;
+    g_paste_client_replace;
+    g_paste_client_replace_finish;
+    g_paste_client_replace_sync;
 
     g_paste_history_replace;
 
