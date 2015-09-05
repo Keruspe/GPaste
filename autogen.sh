@@ -72,7 +72,7 @@ run_action() {
 main() {
     autotools
 
-    [[ "${#}" != 0 ]] && run_action "${@}"
+    [[ "${#}" == 0 ]] || run_action "${@}"
 }
 
 main "${@}"
