@@ -29,15 +29,64 @@ struct _GPasteUiBackupHistory
 
 G_DEFINE_TYPE (GPasteUiBackupHistory, g_paste_ui_backup_history, G_PASTE_TYPE_UI_HISTORY_ACTION)
 
+static void
+on_entry_activated (GtkEntry *entry G_GNUC_UNUSED,
+                    gpointer  user_data)
+{
+    GtkDialog *dialog = user_data;
+
+    gtk_dialog_response (dialog, GTK_RESPONSE_OK);
+}
+
+static gchar *
+g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
+                                          const gchar *history)
+{
+    g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), FALSE);
+
+    GtkWidget *dialog = gtk_message_dialog_new (parent,
+                                                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+                                                GTK_MESSAGE_QUESTION,
+                                                GTK_BUTTONS_OK_CANCEL,
+                                                _("Under which name do you want to backup this history?"));
+    GtkWidget *entry = gtk_entry_new ();
+    GtkEntry *e = GTK_ENTRY (entry);
+    g_autofree gchar *default_name = g_strdup_printf ("%s_backup", history);
+
+    gtk_entry_set_text (e, default_name);
+    gtk_container_add (GTK_CONTAINER (gtk_message_dialog_get_message_area (GTK_MESSAGE_DIALOG (dialog))), entry);
+    gtk_widget_show (entry);
+
+    gulong activated_id = g_signal_connect (G_OBJECT (entry),
+                                            "activate",
+                                            G_CALLBACK (on_entry_activated),
+                                            dialog);
+
+    gchar *backup = NULL;
+
+    if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK)
+    {
+        const gchar *text = gtk_entry_get_text (e);
+
+        if (text && *text)
+            backup = g_strdup (text);
+    }
+
+    g_signal_handler_disconnect (entry, activated_id);
+    gtk_widget_destroy (dialog);
+
+    return backup;
+}
+
 static gboolean
 g_paste_ui_backup_history_activate (GPasteUiHistoryAction *self G_GNUC_UNUSED,
                                     GPasteClient          *client,
                                     GtkWindow             *rootwin,
                                     const gchar           *history)
 {
-    g_autofree gchar *backup = g_strdup_printf ("%s_backup", history);
+    g_autofree gchar *backup = g_paste_ui_backup_history_confirm_dialog (rootwin, history);
 
-    if (g_paste_util_confirm_dialog (rootwin, _("Are you sure you want to backup this history?")))
+    if (backup)
         g_paste_client_backup_history (client, history, backup, NULL, NULL);
 
     return TRUE;
