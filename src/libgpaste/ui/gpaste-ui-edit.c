@@ -83,11 +83,8 @@ g_paste_ui_edit_class_init (GPasteUiEditClass *klass)
 static void
 g_paste_ui_edit_init (GPasteUiEdit *self)
 {
-    GtkWidget *button = GTK_WIDGET (self);
     GtkWidget *icon = gtk_image_new_from_icon_name ("insert-text-symbolic", GTK_ICON_SIZE_MENU);
 
-    gtk_widget_set_margin_start (button, 5);
-    gtk_widget_set_margin_end (button, 5);
     gtk_widget_set_margin_start (icon, 5);
     gtk_widget_set_margin_end (icon, 5);
 

@@ -19,6 +19,7 @@
 
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-delete.h>
+#include <gpaste-ui-edit.h>
 #include <gpaste-ui-item.h>
 #include <gpaste-util.h>
 
@@ -185,12 +186,15 @@ g_paste_ui_item_init (GPasteUiItem *self)
     priv->label = GTK_LABEL (label);
     priv->index = (guint32)-1;
 
+    gtk_widget_set_margin_start (label, 5);
+    gtk_widget_set_margin_end (label, 5);
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
-    gtk_widget_set_margin_start (label, 10);
     gtk_widget_set_margin_top (label, 5);
     gtk_widget_set_margin_bottom (label, 5);
 
-    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+    gtk_widget_set_margin_start (hbox, 5);
+    gtk_widget_set_margin_end (hbox, 5);
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
@@ -217,6 +221,7 @@ g_paste_ui_item_new (GPasteClient   *client,
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ITEM, "selectable", FALSE, NULL);
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
+    GtkWidget *edit = g_paste_ui_edit_new (client, index);
     GtkWidget *delete = g_paste_ui_delete_new (client, index);
 
     priv->client = g_object_ref (client);
@@ -224,6 +229,7 @@ g_paste_ui_item_new (GPasteClient   *client,
     priv->delete = G_PASTE_UI_DELETE (delete);
 
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), delete, FALSE, TRUE, 0);
+    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), edit, FALSE, TRUE, 0);
 
     priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
