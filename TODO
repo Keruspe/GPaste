@@ -3,7 +3,6 @@
         wayland support
     gpaste-ui:
         merge
-        edit
 
 future:
     general:

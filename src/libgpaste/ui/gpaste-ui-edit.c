@@ -19,6 +19,8 @@
 
 #include <gpaste-ui-edit.h>
 
+/* FIXME: it would be great to mark inactive when we're not dealing with a text item */
+
 struct _GPasteUiEdit
 {
     GtkButton parent_instance;
@@ -47,7 +49,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEdit, g_paste_ui_edit, GTK_TYPE_BUTTON)
  */
 G_PASTE_VISIBLE void
 g_paste_ui_edit_set_index (GPasteUiEdit *self,
-                           guint32         index)
+                           guint32       index)
 {
     g_return_if_fail (G_PASTE_IS_UI_EDIT (self));
     GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (self);
@@ -61,7 +63,37 @@ g_paste_ui_edit_button_press_event (GtkWidget      *widget,
 {
     GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (widget));
 
-    //TODO g_paste_client_edit (priv->client, priv->index, contents, NULL, NULL);
+    GtkWidget *dialog = gtk_dialog_new_with_buttons (_("Edit"), priv->rootwin,
+                                                     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+                                                     _("Edit"),   GTK_RESPONSE_OK,
+                                                     _("Cancel"), GTK_RESPONSE_CANCEL,
+                                                     NULL);
+    GtkDialog *d = GTK_DIALOG (dialog);
+    GtkWidget *text = gtk_text_view_new ();
+    GtkTextView *tv = GTK_TEXT_VIEW (text);
+    GtkTextBuffer *buf = gtk_text_view_get_buffer  (tv);
+    GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
+    GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
+
+    gtk_text_view_set_wrap_mode (tv, GTK_WRAP_WORD);
+    gtk_text_buffer_set_text (buf, g_paste_ui_item_get_text (priv->item), -1);
+    gtk_scrolled_window_set_min_content_height (sw, 300);
+    gtk_scrolled_window_set_min_content_width (sw, 600);
+    gtk_container_add (GTK_CONTAINER (sw), text);
+    gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (d)), scroll);
+    gtk_widget_show_all (scroll);
+
+    if (gtk_dialog_run (d) == GTK_RESPONSE_OK)
+    {
+        /* FIXME: check memory */
+        GtkTextIter start, end;
+
+        gtk_text_buffer_get_bounds (buf, &start, &end);
+        /* FIXME: contents validation */
+        g_paste_client_replace (priv->client, priv->index, gtk_text_buffer_get_text (buf, &start, &end, TRUE), NULL, NULL);
+    }
+
+    gtk_widget_destroy (dialog);
 
     return TRUE;
 }
@@ -114,7 +146,7 @@ g_paste_ui_edit_new (GPasteUiItem *item,
 {
     g_return_val_if_fail (G_PASTE_IS_UI_ITEM (item), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (GTK_IS_WINDOW (rootwin));
+    g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_EDIT, NULL);
     GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (self));
