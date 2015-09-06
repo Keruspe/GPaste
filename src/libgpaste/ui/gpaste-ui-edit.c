@@ -85,12 +85,11 @@ g_paste_ui_edit_button_press_event (GtkWidget      *widget,
 
     if (gtk_dialog_run (d) == GTK_RESPONSE_OK)
     {
-        /* FIXME: check memory */
-        GtkTextIter start, end;
+        const gchar *txt;
 
-        gtk_text_buffer_get_bounds (buf, &start, &end);
+        g_object_get (G_OBJECT (buf), "text", &txt, NULL);
         /* FIXME: contents validation */
-        g_paste_client_replace (priv->client, priv->index, gtk_text_buffer_get_text (buf, &start, &end, TRUE), NULL, NULL);
+        g_paste_client_replace (priv->client, priv->index, txt, NULL, NULL);
     }
 
     gtk_widget_destroy (dialog);
