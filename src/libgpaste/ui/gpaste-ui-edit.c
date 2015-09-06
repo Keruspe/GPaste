@@ -57,11 +57,16 @@ g_paste_ui_edit_set_index (GPasteUiEdit *self,
     priv->index = index;
 }
 
-static gboolean
-g_paste_ui_edit_button_press_event (GtkWidget      *widget,
-                                    GdkEventButton *event G_GNUC_UNUSED)
+static void
+on_item_ready (GObject      *source_object G_GNUC_UNUSED,
+               GAsyncResult *res,
+               gpointer      user_data)
 {
-    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (widget));
+    GPasteUiEditPrivate *priv = user_data;
+    g_autofree gchar *old_txt = g_paste_client_get_raw_element_finish (priv->client, res, NULL);
+
+    if (!old_txt)
+        return;
 
     GtkWidget *dialog = gtk_dialog_new_with_buttons (_("Edit"), priv->rootwin,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
@@ -76,7 +81,7 @@ g_paste_ui_edit_button_press_event (GtkWidget      *widget,
     GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
 
     gtk_text_view_set_wrap_mode (tv, GTK_WRAP_WORD);
-    gtk_text_buffer_set_text (buf, g_paste_ui_item_get_text (priv->item), -1);
+    gtk_text_buffer_set_text (buf, old_txt, -1);
     gtk_scrolled_window_set_min_content_height (sw, 300);
     gtk_scrolled_window_set_min_content_width (sw, 600);
     gtk_container_add (GTK_CONTAINER (sw), text);
@@ -93,6 +98,15 @@ g_paste_ui_edit_button_press_event (GtkWidget      *widget,
     }
 
     gtk_widget_destroy (dialog);
+}
+
+static gboolean
+g_paste_ui_edit_button_press_event (GtkWidget      *widget,
+                                    GdkEventButton *event G_GNUC_UNUSED)
+{
+    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (widget));
+
+    g_paste_client_get_raw_element (priv->client, priv->index, on_item_ready, priv);
 
     return TRUE;
 }
