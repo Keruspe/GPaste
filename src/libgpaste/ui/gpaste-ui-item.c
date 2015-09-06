@@ -20,7 +20,6 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-delete.h>
 #include <gpaste-ui-edit.h>
-#include <gpaste-ui-item.h>
 #include <gpaste-util.h>
 
 struct _GPasteUiItem
@@ -238,7 +237,7 @@ g_paste_ui_item_new (GPasteClient   *client,
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ITEM, "selectable", FALSE, NULL);
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
-    GtkWidget *edit = g_paste_ui_edit_new (client, index);
+    GtkWidget *edit = g_paste_ui_edit_new (G_PASTE_UI_ITEM (self), client, index);
     GtkWidget *delete = g_paste_ui_delete_new (client, index);
 
     priv->client = g_object_ref (client);
