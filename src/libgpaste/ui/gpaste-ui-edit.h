@@ -24,7 +24,7 @@
 #ifndef __G_PASTE_UI_EDIT_H__
 #define __G_PASTE_UI_EDIT_H__
 
-#include <gpaste-ui-item.h>
+#include <gpaste-client.h>
 
 G_BEGIN_DECLS
 
@@ -35,8 +35,7 @@ G_PASTE_FINAL_TYPE (UiEdit, ui_edit, UI_EDIT, GtkButton)
 void g_paste_ui_edit_set_index (GPasteUiEdit *self,
                                 guint32         index);
 
-GtkWidget *g_paste_ui_edit_new (GPasteUiItem *item,
-                                GPasteClient *client,
+GtkWidget *g_paste_ui_edit_new (GPasteClient *client,
                                 GtkWindow    *rootwin,
                                 guint32       index);
 

@@ -38,8 +38,6 @@ void g_paste_ui_item_refresh   (GPasteUiItem *self);
 void g_paste_ui_item_set_index (GPasteUiItem *self,
                                 guint32       index);
 
-const gchar *g_paste_ui_item_get_text (const GPasteUiItem *self);
-
 GtkWidget *g_paste_ui_item_new (GPasteClient   *client,
                                 GPasteSettings *settings,
                                 GtkWindow      *rootwin,
