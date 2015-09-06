@@ -198,7 +198,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
     {
         g_auto (GVariantBuilder) dict;
         g_autofree gchar *index = g_strdup_printf ("%u", indexes[i]);
-        g_autofree gchar *result = g_paste_util_replace (results[i], "\n", "");
+        g_autofree gchar *result = g_paste_util_replace (results[i], "\n", " ");
 
         g_variant_builder_init (&dict, G_VARIANT_TYPE_VARDICT);
 

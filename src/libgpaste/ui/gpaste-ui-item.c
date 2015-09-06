@@ -88,7 +88,7 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autofree gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
     if (!txt || error)
         return;
-    g_autofree gchar *oneline = g_paste_util_replace (txt, "\n", "");
+    g_autofree gchar *oneline = g_paste_util_replace (txt, "\n", " ");
 
     if (priv->bold)
     {
