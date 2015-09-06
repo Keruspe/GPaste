@@ -119,6 +119,7 @@ g_paste_ui_edit_init (GPasteUiEdit *self)
 {
     GtkWidget *icon = gtk_image_new_from_icon_name ("insert-text-symbolic", GTK_ICON_SIZE_MENU);
 
+    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Edit"));
     gtk_widget_set_margin_start (icon, 5);
     gtk_widget_set_margin_end (icon, 5);
 
