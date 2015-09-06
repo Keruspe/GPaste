@@ -6,7 +6,6 @@
 
 future:
     general:
-        redo gtk_clipboard_store?
         gpg support
         properties all the way (when GProperty stuff lands)
     libgpaste-client:
