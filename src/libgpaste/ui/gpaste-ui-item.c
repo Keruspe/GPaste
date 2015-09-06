@@ -147,6 +147,23 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
     }
 }
 
+/**
+ * g_paste_ui_item_get_text:
+ * @self: a #GPasteUiItem instance
+ *
+ * Get the currently displayed text
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_ui_item_get_text (const GPasteUiItem *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
+
+    return gtk_label_get_text (priv->label);
+}
+
 static void
 g_paste_ui_item_set_text_size (GPasteSettings *settings,
                                const gchar    *key G_GNUC_UNUSED,
