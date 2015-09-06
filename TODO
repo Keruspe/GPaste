@@ -1,6 +1,5 @@
 3.20:
     general:
-        replace
         wayland support
     gpaste-ui:
         merge

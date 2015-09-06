@@ -512,6 +512,9 @@ g_paste_history_replace (GPasteHistory *self,
     GPasteItem *new = g_paste_text_item_new (contents);
 
     _g_paste_history_replace (self, index, item, new, prev, todel);
+
+    if (!index)
+        g_paste_history_selected (self, new);
 }
 
 /**
