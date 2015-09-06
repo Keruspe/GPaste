@@ -37,6 +37,7 @@ void g_paste_ui_edit_set_index (GPasteUiEdit *self,
 
 GtkWidget *g_paste_ui_edit_new (GPasteUiItem *item,
                                 GPasteClient *client,
+                                GtkWindow    *rootwin,
                                 guint32       index);
 
 G_END_DECLS

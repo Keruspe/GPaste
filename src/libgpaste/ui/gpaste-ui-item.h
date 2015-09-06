@@ -42,6 +42,7 @@ const gchar *g_paste_ui_item_get_text (const GPasteUiItem *self);
 
 GtkWidget *g_paste_ui_item_new (GPasteClient   *client,
                                 GPasteSettings *settings,
+                                GtkWindow      *rootwin,
                                 guint32         index);
 
 G_END_DECLS

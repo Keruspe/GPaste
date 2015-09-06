@@ -37,7 +37,8 @@ void g_paste_ui_history_search (GPasteUiHistory *self,
                                 const gchar     *search);
 
 GtkWidget *g_paste_ui_history_new (GPasteClient   *client,
-                                   GPasteSettings *settings);
+                                   GPasteSettings *settings,
+                                   GtkWindow      *rootwin);
 
 G_END_DECLS
 

@@ -29,6 +29,8 @@ typedef struct
     GPasteUiItem *item;
     GPasteClient *client;
 
+    GtkWindow    *rootwin;
+
     guint32       index;
 } GPasteUiEditPrivate;
 
@@ -96,6 +98,7 @@ g_paste_ui_edit_init (GPasteUiEdit *self)
  * g_paste_ui_edit_new:
  * @item: the #GPasteUiItem we're linked to
  * @client: a #GPasteClient
+ * @rootwin: the root #GtkWindow
  * @index: the index of the corresponding item
  *
  * Create a new instance of #GPasteUiEdit
@@ -106,15 +109,19 @@ g_paste_ui_edit_init (GPasteUiEdit *self)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_edit_new (GPasteUiItem *item,
                      GPasteClient *client,
+                     GtkWindow    *rootwin,
                      guint32       index)
 {
+    g_return_val_if_fail (G_PASTE_IS_UI_ITEM (item), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (GTK_IS_WINDOW (rootwin));
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_EDIT, NULL);
     GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (self));
 
     priv->item = item;
     priv->client = g_object_ref (client);
+    priv->rootwin = rootwin;
     priv->index = index;
 
     return self;

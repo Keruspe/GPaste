@@ -220,6 +220,7 @@ g_paste_ui_item_init (GPasteUiItem *self)
  * g_paste_ui_item_new:
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
+ * @rootwin: the root #GtkWindow
  * @index: the index of the corresponding item
  *
  * Create a new instance of #GPasteUiItem
@@ -230,14 +231,16 @@ g_paste_ui_item_init (GPasteUiItem *self)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_item_new (GPasteClient   *client,
                      GPasteSettings *settings,
+                     GtkWindow      *rootwin,
                      guint32         index)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (GTK_IS_WINDOW (rootwin));
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ITEM, "selectable", FALSE, NULL);
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
-    GtkWidget *edit = g_paste_ui_edit_new (G_PASTE_UI_ITEM (self), client, index);
+    GtkWidget *edit = g_paste_ui_edit_new (G_PASTE_UI_ITEM (self), client, rootwin, index);
     GtkWidget *delete = g_paste_ui_delete_new (client, index);
 
     priv->client = g_object_ref (client);
