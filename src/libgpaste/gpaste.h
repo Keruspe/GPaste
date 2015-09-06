@@ -95,6 +95,7 @@
 #include <gpaste-ui-backup-history.h>
 #include <gpaste-ui-delete.h>
 #include <gpaste-ui-delete-history.h>
+#include <gpaste-ui-edit.h>
 #include <gpaste-ui-empty.h>
 #include <gpaste-ui-empty-item.h>
 #include <gpaste-ui-header.h>
