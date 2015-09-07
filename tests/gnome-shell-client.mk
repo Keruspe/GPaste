@@ -23,7 +23,7 @@ tests_bin_test_gnome_shell_client_SOURCES = \
 	tests/gnome-shell-client/test-gnome-shell-client.c \
 	$(NULL)
 
-tests_bin_test_gnome_shell_client_CFLAGSS = \
+tests_bin_test_gnome_shell_client_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
 
