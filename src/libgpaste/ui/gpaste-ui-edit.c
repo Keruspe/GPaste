@@ -67,7 +67,7 @@ on_item_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!old_txt)
         return;
 
-    GtkWidget *dialog = gtk_dialog_new_with_buttons (_("Edit"), priv->rootwin,
+    GtkWidget *dialog = gtk_dialog_new_with_buttons ("GPaste", priv->rootwin,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
                                                      _("Edit"),   GTK_RESPONSE_OK,
                                                      _("Cancel"), GTK_RESPONSE_CANCEL,
@@ -75,7 +75,7 @@ on_item_ready (GObject      *source_object G_GNUC_UNUSED,
     GtkDialog *d = GTK_DIALOG (dialog);
     GtkWidget *text = gtk_text_view_new ();
     GtkTextView *tv = GTK_TEXT_VIEW (text);
-    GtkTextBuffer *buf = gtk_text_view_get_buffer  (tv);
+    GtkTextBuffer *buf = gtk_text_view_get_buffer (tv);
     GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
     GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
 

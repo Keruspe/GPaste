@@ -57,7 +57,7 @@ g_paste_ui_button_press_event (GtkWidget      *widget,
 
     if (!track)
     {
-        changed = g_paste_util_confirm_dialog (priv->topwin, _("Do you really want to stop tracking clipboard changes?"));
+        changed = g_paste_util_confirm_dialog (priv->topwin, _("Stop"), _("Do you really want to stop tracking clipboard changes?"));
         track = !changed;
     }
 

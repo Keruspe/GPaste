@@ -42,19 +42,27 @@ static gchar *
 g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
                                           const gchar *history)
 {
-    g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), FALSE);
-
-    GtkWidget *dialog = gtk_message_dialog_new (parent,
-                                                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
-                                                GTK_MESSAGE_QUESTION,
-                                                GTK_BUTTONS_OK_CANCEL,
-                                                _("Under which name do you want to backup this history?"));
+    g_autofree gchar *default_name = g_strdup_printf ("%s_backup", history);
+    GtkWidget *dialog = gtk_dialog_new_with_buttons ("GPaste", parent,
+                                                     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+                                                     _("Backup"), GTK_RESPONSE_OK,
+                                                     _("Cancel"), GTK_RESPONSE_CANCEL,
+                                                     NULL);
+    GtkDialog *d = GTK_DIALOG (dialog);
+    GtkWidget *label = gtk_label_new (_("Under which name do you want to backup this history?"));
     GtkWidget *entry = gtk_entry_new ();
     GtkEntry *e = GTK_ENTRY (entry);
-    g_autofree gchar *default_name = g_strdup_printf ("%s_backup", history);
+    GtkWidget *vbox = gtk_dialog_get_content_area (d);
+    GtkBox *box = GTK_BOX (vbox);
 
+    gtk_widget_set_margin_start (vbox, 10);
+    gtk_widget_set_margin_end (vbox, 10);
+
+    gtk_box_pack_start (box, label, TRUE, TRUE, 5);
+    gtk_widget_show (label);
+
+    gtk_box_pack_start (box, entry, TRUE, TRUE, 5);
     gtk_entry_set_text (e, default_name);
-    gtk_container_add (GTK_CONTAINER (gtk_message_dialog_get_message_area (GTK_MESSAGE_DIALOG (dialog))), entry);
     gtk_widget_show (entry);
 
     gulong activated_id = g_signal_connect (G_OBJECT (entry),

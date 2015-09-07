@@ -30,6 +30,7 @@
 G_BEGIN_DECLS
 
 gboolean g_paste_util_confirm_dialog    (GtkWindow   *parent,
+                                         const gchar *action,
                                          const gchar *msg);
 void     g_paste_util_spawn             (const gchar *app);
 gboolean g_paste_util_spawn_sync        (const gchar *app,

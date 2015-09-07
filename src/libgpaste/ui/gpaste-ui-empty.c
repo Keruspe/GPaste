@@ -38,7 +38,8 @@ g_paste_ui_empty_clicked (GtkButton *button)
 {
     GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private (G_PASTE_UI_EMPTY (button));
 
-    if (g_paste_util_confirm_dialog (priv->topwin, _("Do you really want to empty the history?")))
+    /* Translators: this is the translation for emptying the history */
+    if (g_paste_util_confirm_dialog (priv->topwin, _("Empty"), _("Do you really want to empty the history?")))
         g_paste_client_empty (priv->client, NULL, NULL);
 }
 

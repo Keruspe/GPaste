@@ -20,6 +20,7 @@ src/libgpaste/ui/gpaste-ui-search.c
 src/libgpaste/ui/gpaste-ui-settings.c
 src/libgpaste/ui/gpaste-ui-switch.c
 src/libgpaste/ui/gpaste-ui-window.c
+src/libgpaste/util/gpaste-util.c
 src/gnome-shell/extension.js
 src/daemon/gpaste-daemon.c
 src/gpaste/gpaste.c

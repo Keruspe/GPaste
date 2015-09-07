@@ -31,17 +31,28 @@
  */
 G_PASTE_VISIBLE gboolean
 g_paste_util_confirm_dialog (GtkWindow   *parent,
+                             const gchar *action,
                              const gchar *msg)
 {
     g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), FALSE);
     g_return_val_if_fail (g_utf8_validate (msg, -1, NULL), FALSE);
 
-    GtkWidget *dialog = gtk_message_dialog_new (parent,
-                                                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
-                                                GTK_MESSAGE_QUESTION,
-                                                GTK_BUTTONS_OK_CANCEL,
-                                                "%s", msg);
-    gboolean ret = gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK;
+    GtkWidget *dialog = gtk_dialog_new_with_buttons ("GPaste", parent,
+                                                     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+                                                     action,      GTK_RESPONSE_OK,
+                                                     _("Cancel"), GTK_RESPONSE_CANCEL,
+                                                     NULL);
+    GtkWidget *label = gtk_label_new (msg);
+    GtkDialog *d = GTK_DIALOG (dialog);
+
+    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), label, TRUE, TRUE, 0);
+    gtk_widget_set_margin_start (label, 10);
+    gtk_widget_set_margin_end (label, 10);
+    gtk_widget_set_margin_top (label, 10);
+    gtk_widget_set_margin_bottom (label, 10);
+    gtk_widget_show (label);
+
+    gboolean ret = gtk_dialog_run (d) == GTK_RESPONSE_OK;
 
     gtk_widget_destroy (dialog);
 

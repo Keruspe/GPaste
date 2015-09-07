@@ -35,7 +35,7 @@ g_paste_ui_delete_history_activate (GPasteUiHistoryAction *self G_GNUC_UNUSED,
                                     GtkWindow             *rootwin,
                                     const gchar           *history)
 {
-    if (g_paste_util_confirm_dialog (rootwin, _("Are you sure you want to delete this history?")))
+    if (g_paste_util_confirm_dialog (rootwin, _("Delete"), _("Are you sure you want to delete this history?")))
         g_paste_client_delete_history (client, history, NULL, NULL);
 
     return TRUE;

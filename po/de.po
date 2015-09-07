@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-06 21:24+0200\n"
+"POT-Creation-Date: 2015-09-07 22:53+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -192,38 +192,46 @@ msgstr "Wechseln zu"
 #. translators: This is the name of a multi-history management action
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
 #: ../src/libgpaste/ui/gpaste-ui-delete.c:88
+#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:38
 #: ../src/libgpaste/ui/gpaste-ui-delete-history.c:77
 msgid "Delete"
 msgstr "Löschen"
 
-#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:51
-msgid "Under which name do you want to backup this history?"
-msgstr ""
-
-#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:128
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:48
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:136
 msgid "Backup"
 msgstr "Backup"
+
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:49
+#: ../src/libgpaste/ui/gpaste-ui-edit.c:73
+msgid "Cancel"
+msgstr ""
+
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:52
+msgid "Under which name do you want to backup this history?"
+msgstr ""
 
 #: ../src/libgpaste/ui/gpaste-ui-delete-history.c:38
 #, fuzzy
 msgid "Are you sure you want to delete this history?"
 msgstr "Tastenkürzel um den ersten Eintrag in der Chronik zu löschen"
 
-#: ../src/libgpaste/ui/gpaste-ui-edit.c:70
 #: ../src/libgpaste/ui/gpaste-ui-edit.c:72
 #: ../src/libgpaste/ui/gpaste-ui-edit.c:135
 msgid "Edit"
 msgstr ""
 
-#: ../src/libgpaste/ui/gpaste-ui-edit.c:73
-msgid "Cancel"
-msgstr ""
+#. Translators: this is the translation for emptying the history
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:42
+#, fuzzy
+msgid "Empty"
+msgstr "(Leer)"
 
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:41
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:42
 msgid "Do you really want to empty the history?"
 msgstr ""
 
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:65
+#: ../src/libgpaste/ui/gpaste-ui-empty.c:66
 msgid "Empty history"
 msgstr "Chronik leeren"
 
@@ -238,6 +246,10 @@ msgstr ""
 #: ../src/libgpaste/ui/gpaste-ui-settings.c:42
 msgid "GPaste Settings"
 msgstr "GPaste-Daemon-Einstellungen"
+
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:60
+msgid "Stop"
+msgstr ""
 
 #: ../src/libgpaste/ui/gpaste-ui-switch.c:60
 #, fuzzy
