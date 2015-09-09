@@ -90,7 +90,7 @@ const GPasteItem = new Lang.Class({
 
         if (index != -1) {
             this._client.get_element(index, Lang.bind(this, function(client, result) {
-                let text = client.get_element_finish(result).replace(/[\t\n\r]/g, '');
+                let text = client.get_element_finish(result).replace(/[\t\n\r]/g, ' ');
                 if (text == this.label.get_text()) {
                     return;
                 }
