@@ -196,8 +196,9 @@ g_paste_ui_item_init (GPasteUiItem *self)
     gtk_widget_set_margin_end (index_label, 5);
     gtk_widget_set_margin_top (index_label, 5);
     gtk_widget_set_margin_bottom (index_label, 5);
+    gtk_widget_set_sensitive (index_label, FALSE);
     gtk_label_set_justify (priv->index_label, GTK_JUSTIFY_RIGHT);
-    gtk_label_set_width_chars (priv->index_label, 2);
+    gtk_label_set_width_chars (priv->index_label, 3);
     gtk_label_set_selectable (priv->index_label, FALSE);
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
 
