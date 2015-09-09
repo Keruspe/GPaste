@@ -233,6 +233,8 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
     gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (self)), GTK_STYLE_CLASS_SIDEBAR);
     gtk_entry_set_icon_from_icon_name (priv->switch_entry, GTK_ENTRY_ICON_SECONDARY, "go-jump-symbolic");
     gtk_widget_set_tooltip_text (switch_entry, _("Switch to"));
+    gtk_widget_set_margin_top (switch_entry, 5);
+    gtk_widget_set_margin_bottom (switch_entry, 5);
     gtk_entry_set_placeholder_text (priv->switch_entry, DEFAULT_HISTORY);
 
     priv->activated_id = g_signal_connect (G_OBJECT (priv->list_box),
@@ -252,7 +254,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                 G_CALLBACK (g_paste_ui_panel_switch_clicked),
                                                 priv);
 
-    gtk_box_pack_start (box, list_box, TRUE, TRUE, 0);
+    gtk_box_pack_start (box, list_box, FALSE, TRUE, 0);
     gtk_box_pack_start (box, switch_entry, FALSE, FALSE, 0);
 }
 
