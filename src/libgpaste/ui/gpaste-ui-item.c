@@ -34,6 +34,7 @@ typedef struct
     GPasteSettings *settings;
     GPasteUiDelete *delete;
 
+    GtkLabel       *index_label;
     GtkLabel       *label;
     guint32         index;
     gboolean        bold;
@@ -125,6 +126,9 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
 
+    g_autofree gchar *_index = g_strdup_printf("%u", index);
+    gtk_label_set_text (priv->index_label, _index);
+
     guint32 old_index = priv->index;
     priv->index = index;
 
@@ -182,19 +186,25 @@ g_paste_ui_item_init (GPasteUiItem *self)
 {
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
 
+    GtkWidget *index_label = gtk_label_new ("");
     GtkWidget *label = gtk_label_new ("");
+    priv->index_label = GTK_LABEL (index_label);
     priv->label = GTK_LABEL (label);
     priv->index = (guint32)-1;
 
-    gtk_widget_set_margin_start (label, 5);
-    gtk_widget_set_margin_end (label, 5);
+    gtk_widget_set_margin_start (index_label, 5);
+    gtk_widget_set_margin_end (index_label, 5);
+    gtk_widget_set_margin_top (index_label, 5);
+    gtk_widget_set_margin_bottom (index_label, 5);
+    gtk_label_set_justify (priv->index_label, GTK_JUSTIFY_RIGHT);
+    gtk_label_set_width_chars (priv->index_label, 2);
+    gtk_label_set_selectable (priv->index_label, FALSE);
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
-    gtk_widget_set_margin_top (label, 5);
-    gtk_widget_set_margin_bottom (label, 5);
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_widget_set_margin_start (hbox, 5);
     gtk_widget_set_margin_end (hbox, 5);
+    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
