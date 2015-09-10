@@ -24,7 +24,7 @@
 #ifndef __G_PASTE_UPDATE_ENUMS_H__
 #define __G_PASTE_UPDATE_ENUMS_H__
 
-#include <glib.h>
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 

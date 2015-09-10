@@ -382,6 +382,14 @@ g_paste_client_get_element_sync (GPasteClient *self,
     DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, uint32, index);
 }
 
+static gchar *
+_g_paste_client_get_element_kind_sync (GPasteClient *self,
+                                       guint32       index,
+                                       GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, uint32, index);
+}
+
 /**
  * g_paste_client_get_element_kind_sync:
  * @self: a #GPasteClient instance
@@ -390,14 +398,16 @@ g_paste_client_get_element_sync (GPasteClient *self,
  *
  * Get the kind of an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated string
+ * Returns: The #GPasteItemKind
  */
-G_PASTE_VISIBLE gchar *
+G_PASTE_VISIBLE GPasteItemKind
 g_paste_client_get_element_kind_sync (GPasteClient *self,
                                       guint32       index,
                                       GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, uint32, index);
+    g_autofree gchar *kind = _g_paste_client_get_element_kind_sync (self, index, error);
+
+    return (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind)->value : G_PASTE_ITEM_KIND_INVALID;
 }
 
 /**
@@ -1629,6 +1639,14 @@ g_paste_client_get_element_finish (GPasteClient *self,
     DBUS_ASYNC_FINISH_RET_STRING;
 }
 
+static gchar *
+_g_paste_client_get_element_kind_finish (GPasteClient *self,
+                                         GAsyncResult *result,
+                                         GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRING;
+}
+
 /**
  * g_paste_client_get_element_kind_finish:
  * @self: a #GPasteClient instance
@@ -1637,14 +1655,16 @@ g_paste_client_get_element_finish (GPasteClient *self,
  *
  * Get this kind of an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated string
+ * Returns: The #GPasteItemKind
  */
-G_PASTE_VISIBLE gchar *
+G_PASTE_VISIBLE GPasteItemKind
 g_paste_client_get_element_kind_finish (GPasteClient *self,
                                         GAsyncResult *result,
                                         GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRING;
+    g_autofree gchar *kind = _g_paste_client_get_element_kind_finish (self, result, error);
+
+    return (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind)->value : G_PASTE_ITEM_KIND_INVALID;
 }
 
 /**

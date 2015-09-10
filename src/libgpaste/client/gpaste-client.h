@@ -24,6 +24,7 @@
 #ifndef __G_PASTE_CLIENT_H__
 #define __G_PASTE_CLIENT_H__
 
+#include <gpaste-item-enums.h>
 #include <gpaste-macros.h>
 
 G_BEGIN_DECLS
@@ -64,9 +65,6 @@ void     g_paste_client_delete_password_sync            (GPasteClient  *self,
 void     g_paste_client_empty_sync                      (GPasteClient  *self,
                                                          GError       **error);
 gchar   *g_paste_client_get_element_sync                (GPasteClient  *self,
-                                                         guint32        index,
-                                                         GError       **error);
-gchar   *g_paste_client_get_element_kind_sync           (GPasteClient  *self,
                                                          guint32        index,
                                                          GError       **error);
 GStrv    g_paste_client_get_elements_sync               (GPasteClient  *self,
@@ -128,6 +126,9 @@ void     g_paste_client_upload_sync                     (GPasteClient  *self,
                                                          guint32        index,
                                                          GError       **error);
 
+GPasteItemKind g_paste_client_get_element_kind_sync (GPasteClient  *self,
+                                                     guint32        index,
+                                                     GError       **error);
 /*******************/
 /* Methods / Async */
 /*******************/
@@ -287,9 +288,6 @@ void     g_paste_client_empty_finish                      (GPasteClient *self,
 gchar   *g_paste_client_get_element_finish                (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-gchar   *g_paste_client_get_element_kind_finish           (GPasteClient *self,
-                                                           GAsyncResult *result,
-                                                           GError      **error);
 GStrv    g_paste_client_get_elements_finish               (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
@@ -348,6 +346,10 @@ void     g_paste_client_track_finish                      (GPasteClient *self,
 void     g_paste_client_upload_finish                     (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
+
+GPasteItemKind g_paste_client_get_element_kind_finish (GPasteClient *self,
+                                                       GAsyncResult *result,
+                                                       GError      **error);
 
 /**************/
 /* Properties */
