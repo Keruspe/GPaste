@@ -423,6 +423,25 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
+g_paste_daemon_private_get_element_kind (GPasteDaemonPrivate *priv,
+                                         GVariant            *parameters,
+                                         GPasteDBusError    **err)
+{
+    GPasteHistory *history = priv->history;
+    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
+
+    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+
+    const GPasteItem *item = g_paste_history_get (history, index);
+
+    G_PASTE_DBUS_ASSERT_FULL (item, "received no item for this index", NULL);
+
+    GVariant *variant = g_variant_new_string (g_paste_item_get_kind (item));
+
+    return g_variant_new_tuple (&variant, 1);
+}
+
+static GVariant *
 g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
                                      GVariant            *parameters,
                                      GPasteDBusError    **err)
@@ -807,6 +826,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_empty (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT))
         answer = g_paste_daemon_private_get_element (priv, parameters, &err);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT_KIND))
+        answer = g_paste_daemon_private_get_element_kind (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENTS))
         answer = g_paste_daemon_private_get_elements (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY))
