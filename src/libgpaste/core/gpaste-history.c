@@ -1303,6 +1303,31 @@ g_paste_history_search (const GPasteHistory *self,
     if (!regex)
         return NULL;
 
+    /* Check whether we include the index in the search too */
+    gboolean include_idx = FALSE;
+    guint32 idx = 0;
+    gsize len = strlen (pattern);
+
+    if (len < 5)
+    {
+        for (gsize i = 0; i < len; ++i)
+        {
+            char c = pattern[i];
+
+            if (c >= '0' && c <= '9')
+            {
+                include_idx = TRUE;
+                idx *= 10;
+                idx += (c - '0');
+            }
+            else
+            {
+                include_idx = FALSE;
+                break;
+            }
+        }
+    }
+
     GArray *results = g_array_new (FALSE, /* zero-terminated */
                                    TRUE,  /* clear */
                                    sizeof (guint32));
@@ -1310,7 +1335,9 @@ g_paste_history_search (const GPasteHistory *self,
 
     for (GSList *history = priv->history; history; history = g_slist_next (history), ++index)
     {
-        if (g_regex_match (regex, g_paste_item_get_value (history->data), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
+        if (include_idx && idx == index)
+            g_array_append_val (results, index);
+        else if (g_regex_match (regex, g_paste_item_get_value (history->data), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
             g_array_append_val (results, index);
     }
 
