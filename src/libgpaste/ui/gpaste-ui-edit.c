@@ -19,8 +19,6 @@
 
 #include <gpaste-ui-edit.h>
 
-/* FIXME: it would be great to mark inactive when we're not dealing with a text item */
-
 struct _GPasteUiEdit
 {
     GtkButton parent_instance;
@@ -92,8 +90,8 @@ on_item_ready (GObject      *source_object G_GNUC_UNUSED,
         const gchar *txt;
 
         g_object_get (G_OBJECT (buf), "text", &txt, NULL);
-        /* FIXME: contents validation */
-        g_paste_client_replace (priv->client, priv->index, txt, NULL, NULL);
+        if (txt && *txt)
+            g_paste_client_replace (priv->client, priv->index, txt, NULL, NULL);
     }
 
     gtk_widget_destroy (dialog);
