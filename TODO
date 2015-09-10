@@ -1,7 +1,3 @@
-3.18:
-    GetElementKind
-    Don't activate edit for all
-
 3.20:
     general:
         wayland support
