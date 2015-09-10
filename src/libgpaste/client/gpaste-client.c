@@ -383,6 +383,24 @@ g_paste_client_get_element_sync (GPasteClient *self,
 }
 
 /**
+ * g_paste_client_get_element_kind_sync:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to get
+ * @error: a #GError
+ *
+ * Get the kind of an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_element_kind_sync (GPasteClient *self,
+                                      guint32       index,
+                                      GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, uint32, index);
+}
+
+/**
  * g_paste_client_get_elements_sync:
  * @self: a #GPasteClient instance
  * @indexes: (array length=n_indexes): the indexes of the elements we want to get
@@ -980,6 +998,27 @@ g_paste_client_get_element (GPasteClient       *self,
                             gpointer            user_data)
 {
     DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT, uint32, index);
+}
+
+/**
+ * g_paste_client_get_element_kind:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get the kind of an item from the #GPasteDaemon
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_element_kind (GPasteClient       *self,
+                                 guint32             index,
+                                 GAsyncReadyCallback callback,
+                                 gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_KIND, uint32, index);
 }
 
 /**
@@ -1586,6 +1625,24 @@ G_PASTE_VISIBLE gchar *
 g_paste_client_get_element_finish (GPasteClient *self,
                                    GAsyncResult *result,
                                    GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRING;
+}
+
+/**
+ * g_paste_client_get_element_kind_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Get this kind of an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_element_kind_finish (GPasteClient *self,
+                                        GAsyncResult *result,
+                                        GError      **error)
 {
     DBUS_ASYNC_FINISH_RET_STRING;
 }

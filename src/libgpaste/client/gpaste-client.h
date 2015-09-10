@@ -66,6 +66,9 @@ void     g_paste_client_empty_sync                      (GPasteClient  *self,
 gchar   *g_paste_client_get_element_sync                (GPasteClient  *self,
                                                          guint32        index,
                                                          GError       **error);
+gchar   *g_paste_client_get_element_kind_sync           (GPasteClient  *self,
+                                                         guint32        index,
+                                                         GError       **error);
 GStrv    g_paste_client_get_elements_sync               (GPasteClient  *self,
                                                          const guint32 *indexes,
                                                          gsize          n_indexes,
@@ -166,6 +169,10 @@ void g_paste_client_empty                      (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_element                (GPasteClient       *self,
+                                                guint32             index,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+void g_paste_client_get_element_kind           (GPasteClient       *self,
                                                 guint32             index,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
@@ -278,6 +285,9 @@ void     g_paste_client_empty_finish                      (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 gchar   *g_paste_client_get_element_finish                (GPasteClient *self,
+                                                           GAsyncResult *result,
+                                                           GError      **error);
+gchar   *g_paste_client_get_element_kind_finish           (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 GStrv    g_paste_client_get_elements_finish               (GPasteClient *self,

@@ -368,6 +368,9 @@ global:
     g_paste_client_get_history_name;
     g_paste_client_get_history_name_finish;
     g_paste_client_get_history_name_sync;
+    g_paste_client_get_element_kind;
+    g_paste_client_get_element_kind_finish;
+    g_paste_client_get_element_kind_sync;
     g_paste_client_get_elements;
     g_paste_client_get_elements_finish;
     g_paste_client_get_elements_sync;
