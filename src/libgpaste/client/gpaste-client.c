@@ -406,8 +406,9 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
                                       GError      **error)
 {
     g_autofree gchar *kind = _g_paste_client_get_element_kind_sync (self, index, error);
+    GEnumValue *k = (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind) : NULL;
 
-    return (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind)->value : G_PASTE_ITEM_KIND_INVALID;
+    return (k) ? k->value : G_PASTE_ITEM_KIND_INVALID;
 }
 
 /**
@@ -1663,8 +1664,9 @@ g_paste_client_get_element_kind_finish (GPasteClient *self,
                                         GError      **error)
 {
     g_autofree gchar *kind = _g_paste_client_get_element_kind_finish (self, result, error);
+    GEnumValue *k = (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind) : NULL;
 
-    return (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind)->value : G_PASTE_ITEM_KIND_INVALID;
+    return (k) ? k->value : G_PASTE_ITEM_KIND_INVALID;
 }
 
 /**
