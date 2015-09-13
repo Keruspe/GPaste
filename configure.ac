@@ -61,6 +61,7 @@ LT_PREREQ([2.2.6])
 LT_INIT([disable-static pic-only])
 
 AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
+AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
 
 AC_PROG_AWK
