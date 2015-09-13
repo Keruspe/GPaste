@@ -26,7 +26,7 @@ dist_vapi_DATA = \
 	$(libgpaste_vapi_file:.vapi=.deps) \
 	$(NULL)
 
-if ENABLE_VALA
+if ENABLE_VAPIGEN
 nodist_vapi_DATA = \
 	$(libgpaste_vapi_file) \
 	$(NULL)

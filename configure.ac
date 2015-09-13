@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([GPaste], [3.17], [Marc-Antoine@Perennou.com], [gpaste])
+AC_INIT([GPaste],[3.17],[Marc-Antoine@Perennou.com],[gpaste])
 
 # Update LIBGPASTE_LT_VERSION before each release (and only then)
 # The format is C:R:A (current revision age)
@@ -159,16 +159,12 @@ m4_ifdef([GOBJECT_INTROSPECTION_CHECK],
              enable_introspection=no
          ])
 
-AC_ARG_ENABLE(vala, AS_HELP_STRING([--enable-vala], [Build vala bindings]), enable_vala=$enableval, enable_vala=no)
-if test x$enable_vala = xyes; then
-    if test x$enable_introspection != xyes; then
-        AC_MSG_ERROR([*** Introspection support is required to build vala bindings])
-    fi
-    AM_PROG_VALAC([$VALA_REQUIRED])
-    AC_PATH_PROG(VAPIGEN, vapigen, vapigen)
-    AC_SUBST(VAPIGEN)
-fi
-AM_CONDITIONAL(ENABLE_VALA, test x$enable_vala = xyes)
+m4_ifdef([VAPIGEN_CHECK],
+         [VAPIGEN_CHECK([$VALA_REQUIRED])],
+         [
+             AM_CONDITIONAL([ENABLE_VAPIGEN], [false])
+             enable_vala=no
+         ])
 
 PKG_CHECK_MODULES(GTK, [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED])
 GTK_VALAFLAGS="--pkg=gtk+-3.0"
@@ -250,7 +246,6 @@ AC_MSG_RESULT([
     cflags:                 ${CFLAGS}
     ldflags:                ${LDFLAGS}
 
-    vala compiler:          ${VALAC}
     vapi generator:         ${VAPIGEN}
 
     GObject Introspection:  ${enable_introspection}
