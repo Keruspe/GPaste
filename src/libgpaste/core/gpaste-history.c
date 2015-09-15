@@ -1201,6 +1201,14 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
     object_class->dispose = g_paste_history_dispose;
     object_class->finalize = g_paste_history_finalize;
 
+    /**
+     * GPasteHistory::selected:
+     * @history: the object on which the signal was emitted
+     * @item: the new selected item
+     *
+     * The "selected" signal is emitted when the user has just
+     * selected a new item form the history.
+     */
     signals[SELECTED] = g_signal_new ("selected",
                                       G_PASTE_TYPE_HISTORY,
                                       G_SIGNAL_RUN_LAST,
@@ -1211,6 +1219,17 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                       G_TYPE_NONE,
                                       1, /* number of params */
                                       G_PASTE_TYPE_ITEM);
+
+    /**
+     * GPasteHistory::update:
+     * @history: the object on which the signal was emitted
+     * @action: the kind of update
+     * @target: the items which need updating
+     * @index: the index of the item, when the target is POSITION
+     *
+     * The "update" signal is emitted whenever anything changed
+     * in the history (something was added, removed, selected, replaced...).
+     */
     signals[UPDATE] = g_signal_new ("update",
                                     G_PASTE_TYPE_HISTORY,
                                     G_SIGNAL_RUN_LAST,
