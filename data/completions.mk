@@ -16,8 +16,8 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 noinst_DATA = \
-	data/completions/_gpaste \
-	data/completions/gpaste \
+	data/completions/_gpastectl \
+	data/completions/gpastectl \
 	$(NULL)
 
 EXTRA_DIST += \

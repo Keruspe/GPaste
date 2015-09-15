@@ -100,7 +100,7 @@ include bindings/vapi.mk
 # Core utilities
 
 include src/daemon.mk
-include src/gpaste.mk
+include src/gpastectl.mk
 include src/ui.mk
 
 # Applets

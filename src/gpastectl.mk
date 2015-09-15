@@ -16,18 +16,18 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 bin_PROGRAMS += \
-	bin/gpaste \
+	bin/gpastectl \
 	$(NULL)
 
-bin_gpaste_SOURCES = \
-	src/gpaste/gpaste.c \
+bin_gpastectl_SOURCES = \
+	src/gpastectl/gpastectl.c \
 	$(NULL)
 
-bin_gpaste_CFLAGS = \
+bin_gpastectl_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
 
-bin_gpaste_LDADD = \
+bin_gpastectl_LDADD = \
 	$(builddir)/$(libgpaste_la_file) \
 	$(AM_LIBS) \
 	$(NULL)
