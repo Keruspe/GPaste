@@ -27,7 +27,7 @@ main (int   argc __attribute__((unused)),
 {
     const char *gpastectl = BINDIR "/gpastectl";
 
-    fprintf (stderr, "The \"gpaste\" command is deprecated and will soon be removed, please use \"gpastectl\" instead.\n");
+    fprintf (stderr, "\nThe \"gpaste\" command is deprecated and will soon be removed, please use \"gpastectl\" instead.\n\n");
 
     argv[0] = (char *) gpastectl;
     execv (gpastectl, argv);
