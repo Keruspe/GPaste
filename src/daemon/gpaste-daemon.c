@@ -81,8 +81,9 @@ main (gint argc, gchar *argv[])
     gdk_set_allowed_backends ("x11");
 
     G_PASTE_INIT_APPLICATION ("Daemon");
+
     /* Keep the gapplication around */
-    gtk_widget_hide (gtk_application_window_new (app));
+    g_application_hold (gapp);
 
     g_autofree gpointer *data = g_new0 (gpointer, 3);
     g_autoptr (GPasteDaemon) g_paste_daemon = data[0] = g_paste_daemon_new ();
