@@ -621,6 +621,15 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
     object_class->dispose = g_paste_clipboard_dispose;
     object_class->finalize = g_paste_clipboard_finalize;
 
+    /**
+     * GPasteClipboard::owner-change:
+     * @clipboard: the object on which the signal was emitted
+     * @event: (type Gdk.EventOwnerChange): the @GdkEventOwnerChange event
+     *
+     * The "owner-change" signal is emitted when GPaste receives an
+     * event that indicates that the ownership of the selection
+     * associated with @clipboard has changed.
+     */
     signals[OWNER_CHANGE] = g_signal_new ("owner-change",
                                           G_PASTE_TYPE_CLIPBOARD,
                                           G_SIGNAL_RUN_FIRST,
