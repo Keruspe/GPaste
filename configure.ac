@@ -178,44 +178,32 @@ AC_ARG_WITH([dbusservicesdir],
             [with_dbusservicesdir=`$PKG_CONFIG --variable=session_bus_services_dir dbus-1`])
 AC_SUBST([dbusservicesdir], [$with_dbusservicesdir])
 
-ENABLE_APPLET=0
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
-if test x$enable_applet = xyes; then
-    AC_DEFINE([ENABLE_APPLET], [1], [Whether the applet is built])
-    ENABLE_APPLET=1
-fi
-AC_SUBST(ENABLE_APPLET)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
 
-ENABLE_UNITY=0
 AC_ARG_ENABLE(unity, AS_HELP_STRING([--enable-unity], [Enable gpaste-app-indicator]), enable_unity=$enableval, enable_unity=no)
+AM_CONDITIONAL(ENABLE_UNITY, test x$enable_unity = xyes)
 if test x$enable_unity = xyes; then
     PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
     AC_DEFINE([ENABLE_UNITY], [1], [Whether the app-indicator is built])
-    ENABLE_UNITY=1
 fi
-AC_SUBST(ENABLE_UNITY)
-AM_CONDITIONAL(ENABLE_UNITY, test x$enable_unity = xyes)
 
-ENABLE_EXTENSION=0
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
+AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 if test x$enable_extension = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
     fi
     PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0 pango])
     AC_DEFINE([ENABLE_EXTENSION], [1], [Whether the extension is enabled])
-    ENABLE_EXTENSION=1
 fi
-AC_SUBST(ENABLE_EXTENSION)
-AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
 
 AC_ARG_ENABLE(x-keybinder, AS_HELP_STRING([--disable-x-keybinder], [Disable the X keybinder]), enable_x_keybinder=$enableval, enable_x_keybinder=yes)
+AM_CONDITIONAL(ENABLE_X_KEYBINDER, test x$enable_x_keybinder = xyes)
 if test x$enable_x_keybinder = xyes; then
     PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= $GTK_REQUIRED])
     AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
 fi
-AM_CONDITIONAL(ENABLE_X_KEYBINDER, test x$enable_x_keybinder = xyes)
 
 AC_CONFIG_FILES([
     Makefile
