@@ -153,19 +153,8 @@ GLIB_GSETTINGS
 
 APPSTREAM_XML
 
-m4_ifdef([GOBJECT_INTROSPECTION_CHECK],
-         [GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])],
-         [
-             AM_CONDITIONAL([HAVE_INTROSPECTION], [false])
-             enable_introspection=no
-         ])
-
-m4_ifdef([VAPIGEN_CHECK],
-         [VAPIGEN_CHECK([$VALA_REQUIRED])],
-         [
-             AM_CONDITIONAL([ENABLE_VAPIGEN], [false])
-             enable_vala=no
-         ])
+GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])
+VAPIGEN_CHECK([$VALA_REQUIRED])
 
 PKG_CHECK_MODULES(GTK, [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED])
 GTK_VALAFLAGS="--pkg=gtk+-3.0"
