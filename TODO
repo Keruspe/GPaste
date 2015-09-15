@@ -1,7 +1,3 @@
-3.18:
-    introspection:
-        signals
-
 3.20:
     general:
         class methods for signals

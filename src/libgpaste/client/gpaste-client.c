@@ -2080,23 +2080,68 @@ g_paste_client_class_init (GPasteClientClass *klass)
 {
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_client_g_signal;
 
+    /**
+     * GPasteClient::delete-history:
+     * @client: the object on which the signal was emitted
+     * @history: the name of the history we deleted
+     *
+     * The "delete-history" signal is emitted when we delete
+     * an history.
+     */
     signals[DELETE_HISTORY] = NEW_SIGNAL_WITH_DATA ("delete-history", STRING);
     signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
-    signals[SHOW_HISTORY]   = NEW_SIGNAL ("show-history");
+
+    /**
+     * GPasteClient::show-history:
+     * @client: the object on which the signal was emitted
+     *
+     * The "show-history" signal is emitted when we switch
+     * from an history to another.
+     */
+    signals[SHOW_HISTORY] = NEW_SIGNAL ("show-history");
+
+    /**
+     * GPasteClient::switch-history:
+     * @client: the object on which the signal was emitted
+     * @history: the name of the history we switch to
+     *
+     * The "switch-history" signal is emitted when we switch
+     * from an history to another.
+     */
     signals[SWITCH_HISTORY] = NEW_SIGNAL_WITH_DATA ("switch-history", STRING);
-    signals[TRACKING]       = NEW_SIGNAL_WITH_DATA ("tracking", BOOLEAN);
-    signals[UPDATE]         = g_signal_new ("update",
-                                            G_PASTE_TYPE_CLIENT,
-                                            G_SIGNAL_RUN_LAST,
-                                            0, /* class offset */
-                                            NULL, /* accumulator */
-                                            NULL, /* accumulator data */
-                                            g_cclosure_marshal_generic,
-                                            G_TYPE_NONE,
-                                            3, /* number of params */
-                                            G_PASTE_TYPE_UPDATE_ACTION,
-                                            G_PASTE_TYPE_UPDATE_TARGET,
-                                            G_TYPE_UINT);
+
+    /**
+     * GPasteClient::track:
+     * @client: the object on which the signal was emitted
+     * @tracking_state: whether we're now tracking or not
+     *
+     * The "track" signal is emitted when the daemon starts or stops tracking
+     * clipboard changes.
+     */
+    signals[TRACKING] = NEW_SIGNAL_WITH_DATA ("tracking", BOOLEAN);
+
+    /**
+     * GPasteClient::update:
+     * @client: the object on which the signal was emitted
+     * @action: the kind of update
+     * @target: the items which need updating
+     * @index: the index of the item, when the target is POSITION
+     *
+     * The "update" signal is emitted whenever anything changed
+     * in the history (something was added, removed, selected, replaced...).
+     */
+    signals[UPDATE] = g_signal_new ("update",
+                                    G_PASTE_TYPE_CLIENT,
+                                    G_SIGNAL_RUN_LAST,
+                                    0, /* class offset */
+                                    NULL, /* accumulator */
+                                    NULL, /* accumulator data */
+                                    g_cclosure_marshal_generic,
+                                    G_TYPE_NONE,
+                                    3, /* number of params */
+                                    G_PASTE_TYPE_UPDATE_ACTION,
+                                    G_PASTE_TYPE_UPDATE_TARGET,
+                                    G_TYPE_UINT);
 }
 
 static void
