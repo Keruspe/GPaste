@@ -19,12 +19,12 @@
 .\" License along with this manual; if not, write to the Free
 .\" Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 .\" Boston, MA  02111-1301  USA.
-.TH GPASTE 1
+.TH GPASTECTL 1
 .SH NAME
 GPaste \- A lightweight clipboard manager for the Gnome desktop
 
 .SH "SYNOPSIS"
-.B [command |] gpaste [options...]
+.B [command |] gpastectl [options...]
 
 .SH "DESCRIPTION"
 GPaste is a modular clipboard management system with a fully
@@ -33,133 +33,133 @@ DBus-based daemon, a \s-1CLI\s0 client and a gtk+ tray icon.
 .SH "COMMANDS"
 
 .TP
-.B gpaste [history]
+.B gpastectl [history]
 Display the history with indexes
 .br
 .TP
-.B gpaste history-size
+.B gpastectl history-size
 Display this size of the history
 .br
 .TP
-.B gpaste get-history
+.B gpastectl get-history
 Get the name of the current history
 .br
 .TP
-.B gpaste backup-history
+.B gpastectl backup-history
 Backup the current history
 .br
 .TP
-.B gpaste switch-history
+.B gpastectl switch-history
 Switch to another history
 .br
 .TP
-.B gpaste delete-history
+.B gpastectl delete-history
 Delete a history
 .br
 .TP
-.B gpaste list-histories
+.B gpastectl list-histories
 List available histories
 .br
 .TP
-.B gpaste add <text>
+.B gpastectl add <text>
 Add the text into the history
 .br
 .TP
-.B gpaste add-password <name> <password>
+.B gpastectl add-password <name> <password>
 Add the name \- password couple to the history
 .br
 .TP
-.B gpaste delete-password <name>
+.B gpastectl delete-password <name>
 Delete the password <name>
 .br
 .TP
-.B gpaste set-password <number> <name>
+.B gpastectl set-password <number> <name>
 Mark the <number>th item of the history as being a password named <name>
 .br
 .TP
-.B gpaste rename-password <old name> <new name>
+.B gpastectl rename-password <old name> <new name>
 Rename the password
 .br
 .TP
-.B gpaste get <number>
+.B gpastectl get <number>
 Get the <number>th item from the history
 .br
 .TP
-.B gpaste select <number>
+.B gpastectl select <number>
 Put the <number>th item of the history into the clipboard
 .br
 .TP
-.B gpaste replace <number> <contents>
+.B gpastectl replace <number> <contents>
 Replace the contents of the <number>th item of the history with the provided one
 .br
 .TP
-.B gpaste merge [--decoration|-d <string>] [--separator|-s <string>] <number> … <number>
+.B gpastectl merge [--decoration|-d <string>] [--separator|-s <string>] <number> … <number>
 Merge the <number>th items of the history and put the result in the clipboard
 .br
 If foo bar and baz are respectively index 1 3 and 4 in history and you run
 .br
-gpaste merge \-d '"' \-s ',' 1 3 4
+gpastectl merge \-d '"' \-s ',' 1 3 4
 .br
 You will end up with "foo","bar","baz" in your clipboard
 .br
 .TP
-.B gpaste delete <number>
+.B gpastectl delete <number>
 Delete the <number>th item of the history
 .br
 .TP
-.B gpaste file <path>
+.B gpastectl file <path>
 Put the content of the file at <path> into the clipboard
 .br
 .TP
-.B command | gpaste
+.B command | gpastectl
 Put the output of the command into the history
 .br
 .TP
-.B gpaste empty
+.B gpastectl empty
 Empty the history
 .br
 .TP
-.B gpaste start
+.B gpastectl start
 Start tracking clipboard changes
 .br
 .TP
-.B gpaste stop
+.B gpastectl stop
 Stop tracking clipboard changes
 .br
 .TP
-.B gpaste upload <number>
+.B gpastectl upload <number>
 Upload the <number>th item to a pastebin service
 .br
 .TP
-.B gpaste ui
+.B gpastectl ui
 Launch the graphical tool
 .br
 .TP
-.B gpaste daemon-reexec
+.B gpastectl daemon-reexec
 Reexecute the daemon, for example after upgrading GPaste
 .br
 .TP
-.B gpaste settings
+.B gpastectl settings
 Launch the configuration tool
 .br
 .TP
-.B gpaste version
+.B gpastectl version
 Display the version
 .br
 .TP
-.B gpaste daemon-version
+.B gpastectl daemon-version
 Display the daemon version
 .br
 .TP
-.B gpaste help
+.B gpastectl help
 Display the help
 .br
 .TP
-.B gpaste about
+.B gpastectl about
 Display the about dialog
 .br
 .TP
-.B gpaste show-history
+.B gpastectl show-history
 Make the applet or extension display the history
 .br
 
