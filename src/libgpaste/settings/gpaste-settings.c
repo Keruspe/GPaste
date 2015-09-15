@@ -977,8 +977,44 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     object_class->dispose = g_paste_settings_dispose;
     object_class->finalize = g_paste_settings_finalize;
 
+    /**
+     * GPasteSettings::changed:
+     * @settings: the object on which the signal was emitted
+     * @key: the name of the key that changed
+     *
+     * The "changed" signal is emitted when a key has potentially changed.
+     * You should call one of the g_paste_settings_get() calls to check the new
+     * value.
+     *
+     * This signal supports detailed connections.  You can connect to the
+     * detailed signal "changed::x" in order to only receive callbacks
+     * when key "x" changes.
+     */
     signals[CHANGED] = NEW_SIGNAL_DETAILED_STATIC ("changed", STRING);
+
+    /**
+     * GPasteSettings::rebind:
+     * @settings: the object on which the signal was emitted
+     * @key: the name of the key that changed
+     *
+     * The "rebind" signal is emitted when a key has potentially changed.
+     * You should call one of the g_paste_settings_get() calls to check the new
+     * value.
+     *
+     * This signal supports detailed connections.  You can connect to the
+     * detailed signal "rebind::x" in order to only receive callbacks
+     * when key "x" changes.
+     */
     signals[REBIND]  = NEW_SIGNAL_DETAILED        ("rebind" , STRING);
+
+    /**
+     * GPasteSettings::track:
+     * @settings: the object on which the signal was emitted
+     * @tracking_state: whether we're now tracking or not
+     *
+     * The "track" signal is emitted when the daemon starts or stops tracking
+     * clipboard changes
+     */
     signals[TRACK]   = NEW_SIGNAL                 ("track"  , BOOLEAN);
 }
 
