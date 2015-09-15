@@ -358,6 +358,14 @@ g_paste_gnome_shell_client_class_init (GPasteGnomeShellClientClass *klass G_GNUC
 {
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_gnome_shell_client_g_signal;
 
+    /**
+     * GPasteGnomeShellClient::accelerator-activated:
+     * @gnome_shell: the object on which the signal was emitted
+     * @id: the id of the activated accelerator
+     *
+     * The "accelerator-activated" signal is emitted when gnome-shell notifies us
+     * that an accelerator has been pressed.
+     */
     signals[ACCELERATOR_ACTIVATED] = g_signal_new ("accelerator-activated",
                                                    G_PASTE_TYPE_GNOME_SHELL_CLIENT,
                                                    G_SIGNAL_RUN_LAST,
