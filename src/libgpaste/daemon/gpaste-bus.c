@@ -136,6 +136,7 @@ g_paste_bus_class_init (GPasteBusClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_bus_dispose;
 
+    /* HERE */
     signals[NAME_LOST] = g_signal_new ("name-lost",
                                        G_PASTE_TYPE_BUS,
                                        G_SIGNAL_RUN_LAST,

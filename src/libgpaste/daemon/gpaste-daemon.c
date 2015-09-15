@@ -1023,6 +1023,13 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
     G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
     G_PASTE_BUS_OBJECT_CLASS (klass)->register_on_connection = g_paste_daemon_register_on_connection;
 
+    /**
+     * GPasteDaemon::reexecute-self:
+     * @gpaste_daemon: the object on which the signal was emitted
+     *
+     * The "reexecute-self" signal is emitted when the daemon is about
+     * to reexecute itself into a new freshly spawned daemon
+     */
     signals[REEXECUTE_SELF] = g_signal_new ("reexecute-self",
                                             G_PASTE_TYPE_DAEMON,
                                             G_SIGNAL_RUN_LAST,
