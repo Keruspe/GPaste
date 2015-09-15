@@ -4,6 +4,7 @@
 
 3.20:
     general:
+        class methods for signals
         wayland support
     gpaste-ui:
         merge
