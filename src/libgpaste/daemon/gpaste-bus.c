@@ -136,7 +136,13 @@ g_paste_bus_class_init (GPasteBusClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_bus_dispose;
 
-    /* HERE */
+    /**
+     * GPasteDaemon::name-lost:
+     * @gpaste_daemon: the object on which the signal was emitted
+     *
+     * The "name-lost" signal is emitted when the daemon has lost
+     * its name on the bus.
+     */
     signals[NAME_LOST] = g_signal_new ("name-lost",
                                        G_PASTE_TYPE_BUS,
                                        G_SIGNAL_RUN_LAST,
