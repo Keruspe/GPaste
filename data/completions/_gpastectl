@@ -1,7 +1,7 @@
-#compdef gpaste
+#compdef gpastectl
 
-(( $+functions[_gpaste_complete_arguments] )) ||
-_gpaste_complete_arguments() {
+(( $+functions[_gpastectl_complete_arguments] )) ||
+_gpastectl_complete_arguments() {
     local -a base_arguments file_arguments get_arguments history_arguments
 
     base_arguments=(
@@ -52,8 +52,8 @@ _gpaste_complete_arguments() {
     esac
 }
 
-(( $+functions[_gpaste_complete_subcommands] )) ||
-_gpaste_complete_subcommands() {
+(( $+functions[_gpastectl_complete_subcommands] )) ||
+_gpastectl_complete_subcommands() {
     local -a subcommands
     subcommands=(
         {add,a}:"Set text to clipboard"
@@ -89,24 +89,24 @@ _gpaste_complete_subcommands() {
         {zero-history,zh}:"Display the history with NUL as separator"
     )
 
-    _describe -t commands 'gpaste subcommand' subcommands
-    _gpaste_complete_arguments "base"
+    _describe -t commands 'gpastectl subcommand' subcommands
+    _gpastectl_complete_arguments "base"
 }
 
-_gpaste() {
+_gpastectl() {
     if (( CURRENT > 2 )); then
         local cmd="${words[2]}"
-        local ctx="gpaste"
+        local ctx="gpastectl"
         while (( CURRENT > 2 )); do
             ctx="${ctx}-${words[2]}"
             (( CURRENT-- ))
             shift words
         done
         curcontext="${curcontext%:*:*}:${ctx}"
-        _gpaste_complete_arguments "${cmd}"
+        _gpastectl_complete_arguments "${cmd}"
     else
-        _gpaste_complete_subcommands
+        _gpastectl_complete_subcommands
     fi
 }
 
-_gpaste "${@}"
+_gpastectl "${@}"
