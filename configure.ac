@@ -205,6 +205,9 @@ if test x$enable_x_keybinder = xyes; then
     AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
 fi
 
+AC_ARG_ENABLE(legacy-cli, AS_HELP_STRING([--disable-legacy-cli], [Disable the legacy cli wrapper (gpaste)]), enable_legacy_cli=$enableval, enable_legacy_cli=yes)
+AM_CONDITIONAL(ENABLE_LEGACY_CLI, test x$enable_legacy_cli = xyes)
+
 AC_CONFIG_FILES([
     Makefile
     po/Makefile.in

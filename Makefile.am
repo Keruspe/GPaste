@@ -103,6 +103,10 @@ include src/daemon.mk
 include src/gpastectl.mk
 include src/ui.mk
 
+# Legacy compatibility
+
+include legacy/gpaste.mk
+
 # Applets
 
 include src/applet.mk
