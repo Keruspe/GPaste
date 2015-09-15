@@ -77,6 +77,13 @@ g_paste_screensaver_client_class_init (GPasteScreensaverClientClass *klass G_GNU
 {
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_screensaver_client_g_signal;
 
+    /**
+     * GPasteScreensaverClient::active-changed:
+     * @screensaver: the object on which the signal was emitted
+     * @active: whether the screensaver is now active or not
+     *
+     * The "active-changed" signal is emitted when the screensaver appears or vanishes
+     */
     signals[ACTIVE_CHANGED] = g_signal_new ("active-changed",
                                              G_PASTE_TYPE_SCREENSAVER_CLIENT,
                                              G_SIGNAL_RUN_LAST,
