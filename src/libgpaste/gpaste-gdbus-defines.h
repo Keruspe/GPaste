@@ -65,7 +65,6 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_UPLOAD                     "Upload"
 
 #define G_PASTE_DAEMON_SIG_DELETE_HISTORY "DeleteHistory"
-#define G_PASTE_DAEMON_SIG_REEXECUTE_SELF "ReexecuteSelf"
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
 #define G_PASTE_DAEMON_SIG_SWITCH_HISTORY "SwitchHistory"
 #define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
@@ -174,7 +173,6 @@ G_BEGIN_DECLS
         "    <signal name='" G_PASTE_DAEMON_SIG_DELETE_HISTORY "'>"         \
         "      <arg type='s' direction='out' name='history' />"             \
         "    </signal>"                                                     \
-        "    <signal name='" G_PASTE_DAEMON_SIG_REEXECUTE_SELF "' />"       \
         "    <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "    <signal name='" G_PASTE_DAEMON_SIG_SWITCH_HISTORY "'>"         \
         "      <arg type='s' direction='out' name='history' />"             \

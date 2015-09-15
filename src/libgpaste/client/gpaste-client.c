@@ -32,7 +32,6 @@ G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 enum
 {
     DELETE_HISTORY,
-    REEXECUTE_SELF,
     SHOW_HISTORY,
     SWITCH_HISTORY,
     TRACKING,
@@ -2054,7 +2053,6 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
     GPasteClient *self = G_PASTE_CLIENT (proxy);
 
     HANDLE_SIGNAL_WITH_DATA (DELETE_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
-    else HANDLE_SIGNAL (REEXECUTE_SELF)
     else HANDLE_SIGNAL (SHOW_HISTORY)
     else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, g_variant_get_boolean (variant))
@@ -2089,7 +2087,6 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * an history.
      */
     signals[DELETE_HISTORY] = NEW_SIGNAL_WITH_DATA ("delete-history", STRING);
-    signals[REEXECUTE_SELF] = NEW_SIGNAL ("reexecute-self");
 
     /**
      * GPasteClient::show-history:
