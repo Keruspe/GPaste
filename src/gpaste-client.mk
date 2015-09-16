@@ -19,15 +19,15 @@ bin_PROGRAMS += \
 	bin/gpaste-client \
 	$(NULL)
 
-bin_gpaste-client_SOURCES = \
+bin_gpaste_client_SOURCES = \
 	src/gpaste-client/gpaste-client.c \
 	$(NULL)
 
-bin_gpaste-client_CFLAGS = \
+bin_gpaste_client_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
 
-bin_gpaste-client_LDADD = \
+bin_gpaste_client_LDADD = \
 	$(builddir)/$(libgpaste_la_file) \
 	$(AM_LIBS) \
 	$(NULL)
