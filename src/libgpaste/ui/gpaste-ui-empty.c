@@ -27,8 +27,9 @@ struct _GPasteUiEmpty
 
 typedef struct
 {
-    GtkWindow    *topwin;
     GPasteClient *client;
+
+    GtkWindow    *topwin;
 } GPasteUiEmptyPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEmpty, g_paste_ui_empty, GTK_TYPE_BUTTON)

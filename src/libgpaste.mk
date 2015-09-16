@@ -85,6 +85,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/ui/gpaste-ui-item.h \
 	src/libgpaste/ui/gpaste-ui-panel.h \
 	src/libgpaste/ui/gpaste-ui-panel-history.h \
+	src/libgpaste/ui/gpaste-ui-reexec.h \
 	src/libgpaste/ui/gpaste-ui-search.h \
 	src/libgpaste/ui/gpaste-ui-search-bar.h \
 	src/libgpaste/ui/gpaste-ui-settings.h \
@@ -144,6 +145,7 @@ lib_libgpaste_la_source_files = \
 	src/libgpaste/ui/gpaste-ui-item.c \
 	src/libgpaste/ui/gpaste-ui-panel.c \
 	src/libgpaste/ui/gpaste-ui-panel-history.c \
+	src/libgpaste/ui/gpaste-ui-reexec.c \
 	src/libgpaste/ui/gpaste-ui-search.c \
 	src/libgpaste/ui/gpaste-ui-search-bar.c \
 	src/libgpaste/ui/gpaste-ui-settings.c \

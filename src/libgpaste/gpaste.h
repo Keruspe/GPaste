@@ -105,6 +105,7 @@
 #include <gpaste-ui-item.h>
 #include <gpaste-ui-panel.h>
 #include <gpaste-ui-panel-history.h>
+#include <gpaste-ui-reexec.h>
 #include <gpaste-ui-search.h>
 #include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-settings.h>
