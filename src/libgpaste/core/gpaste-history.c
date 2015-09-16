@@ -720,9 +720,10 @@ g_paste_history_get_history_file_path (GPasteSettings *settings,
 }
 
 static GFile *
-g_paste_history_get_history_file (GPasteSettings *settings)
+g_paste_history_get_history_file (GPasteSettings *settings,
+                                  const gchar    *name)
 {
-    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings, NULL);
+    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings, name);
     return g_file_new_for_path (history_file_path);
 }
 
@@ -755,7 +756,7 @@ ensure_history_dir_exists (gboolean save_history)
 /**
  * g_paste_history_save:
  * @self: a #GPasteHistory instance
- * @name: (nullable): the name to save the history to
+ * @name: (nullable): the name to save the history to (defaults to the configured one)
  *
  * Save the #GPasteHistory to the history file
  *
@@ -1148,6 +1149,7 @@ g_paste_history_switch (GPasteHistory *self,
 /**
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
+ * @name: (nullable): the history to delete (defaults to the configured one)
  * @error: a #GError
  *
  * Delete the current #GPasteHistory
@@ -1156,13 +1158,14 @@ g_paste_history_switch (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_delete (GPasteHistory *self,
+                        const gchar   *name,
                         GError       **error)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    g_autoptr (GFile) history_file = g_paste_history_get_history_file (priv->settings);
+    g_autoptr (GFile) history_file = g_paste_history_get_history_file (priv->settings, name);
 
     g_paste_history_empty (self);
     if (g_file_query_exists (history_file,

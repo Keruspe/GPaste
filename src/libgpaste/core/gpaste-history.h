@@ -68,6 +68,7 @@ void          g_paste_history_load        (GPasteHistory *self,
 void          g_paste_history_switch      (GPasteHistory *self,
                                            const gchar   *name);
 void          g_paste_history_delete      (GPasteHistory *self,
+                                           const gchar   *name,
                                            GError       **error);
 const GSList *g_paste_history_get_history (const GPasteHistory *self);
 gsize         g_paste_history_get_length  (const GPasteHistory *self);

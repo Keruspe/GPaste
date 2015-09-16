@@ -142,7 +142,6 @@ global:
     g_paste_gnome_shell_client_ungrab_accelerator_sync;
 
     g_paste_history_add;
-    g_paste_history_delete;
     g_paste_history_delete_password;
     g_paste_history_dup;
     g_paste_history_empty;
@@ -376,6 +375,7 @@ global:
     g_paste_client_replace_finish;
     g_paste_client_replace_sync;
 
+    g_paste_history_delete;
     g_paste_history_load;
     g_paste_history_replace;
     g_paste_history_save;

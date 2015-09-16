@@ -359,18 +359,14 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
 
     GPasteHistory *history = priv->history;
 
-    g_autofree gchar *old_history = g_strdup (g_paste_settings_get_history_name (priv->settings));
-    gboolean delete_current = !g_strcmp0 (name, old_history);
-
-    if (!delete_current)
-        g_paste_history_switch (history, name);
-    g_paste_history_delete (history, NULL);
+    g_paste_history_delete (history, name, NULL);
     g_paste_daemon_private_delete_history_signal (priv, name);
 
-    const gchar *new_history = (delete_current) ? DEFAULT_HISTORY : old_history;
-
-    g_paste_history_switch (history, new_history);
-    g_paste_daemon_private_switch_history_signal (priv, new_history);
+    if (!g_strcmp0 (name, g_paste_settings_get_history_name (priv->settings)))
+    {
+        g_paste_history_switch (history, DEFAULT_HISTORY);
+        g_paste_daemon_private_switch_history_signal (priv, DEFAULT_HISTORY);
+    }
 }
 
 static void
