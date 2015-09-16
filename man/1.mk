@@ -16,5 +16,5 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 dist_man_MANS = \
-	man/1/gpastectl.1 \
+	man/1/gpaste-client.1 \
 	$(NULL)

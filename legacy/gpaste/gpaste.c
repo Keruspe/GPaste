@@ -25,12 +25,12 @@ int
 main (int   argc __attribute__((unused)),
       char *argv[])
 {
-    const char *gpastectl = BINDIR "/gpastectl";
+    const char *gpaste_client = BINDIR "/gpaste-client";
 
-    fprintf (stderr, "\nThe \"gpaste\" command is deprecated and will soon be removed, please use \"gpastectl\" instead.\n\n");
+    fprintf (stderr, "\nThe \"gpaste\" command is deprecated and will soon be removed, please use \"gpaste-client\" instead.\n\n");
 
-    argv[0] = (char *) gpastectl;
-    execv (gpastectl, argv);
+    argv[0] = (char *) gpaste_client;
+    execv (gpaste_client, argv);
 
     return EXIT_SUCCESS;
 }

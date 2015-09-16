@@ -1,4 +1,4 @@
-_gpastectl()
+_gpaste-client()
 {
     local cur
 
@@ -32,4 +32,4 @@ _gpastectl()
     fi
 }
 
-complete -F _gpastectl gpastectl
+complete -F _gpaste-client gpaste-client

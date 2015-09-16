@@ -23,7 +23,7 @@ src/libgpaste/ui/gpaste-ui-window.c
 src/libgpaste/util/gpaste-util.c
 src/gnome-shell/extension.js
 src/daemon/gpaste-daemon.c
-src/gpastectl/gpastectl.c
+src/gpaste-client/gpaste-client.c
 data/appstream/org.gnome.GPaste.Applet.appdata.xml.in
 data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in
 data/appstream/org.gnome.GPaste.Ui.appdata.xml.in
