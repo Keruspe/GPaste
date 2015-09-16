@@ -157,7 +157,6 @@ global:
     g_paste_history_new;
     g_paste_history_remove;
     g_paste_history_rename_password;
-    g_paste_history_save;
     g_paste_history_search;
     g_paste_history_select;
     g_paste_history_set_password;
@@ -379,6 +378,7 @@ global:
 
     g_paste_history_load;
     g_paste_history_replace;
+    g_paste_history_save;
 
     g_paste_item_kind_get_type;
 

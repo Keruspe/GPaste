@@ -328,16 +328,15 @@ g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
 
     GPasteSettings *settings = priv->settings;
 
-    g_autofree gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
+    /* create a new history to do the backup without polluting the current one */
+    g_autoptr (GPasteHistory) _history = g_paste_history_new (settings);
+    const gchar *old_name = g_paste_settings_get_history_name (settings);
 
-    /* FIXME: simplify things */
-    g_paste_history_load (priv->history, history);
+    /* We emit all those signals to be sure that all the guis have their histories list updated */
+    g_paste_history_load (_history, history);
     g_paste_daemon_private_switch_history_signal (priv, history);
-    g_paste_settings_set_history_name (settings, backup);
-    g_paste_history_save (priv->history);
+    g_paste_history_save (_history, backup);
     g_paste_daemon_private_switch_history_signal (priv, backup);
-    g_paste_settings_set_history_name (settings, old_name);
-    g_paste_history_load (priv->history, old_name);
     g_paste_daemon_private_switch_history_signal (priv, old_name);
 }
 

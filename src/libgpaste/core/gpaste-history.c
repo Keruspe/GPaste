@@ -123,7 +123,7 @@ g_paste_history_update (GPasteHistory     *self,
                         GPasteUpdateTarget target,
                         guint              position)
 {
-    g_paste_history_save (self);
+    g_paste_history_save (self, NULL);
 
     g_signal_emit (self,
                    signals[UPDATE],
@@ -726,32 +726,16 @@ g_paste_history_get_history_file (GPasteSettings *settings)
     return g_file_new_for_path (history_file_path);
 }
 
-/**
- * g_paste_history_save:
- * @self: a #GPasteHistory instance
- *
- * Save the #GPasteHistory to the history file
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_history_save (GPasteHistory *self)
+static gboolean
+ensure_history_dir_exists (gboolean save_history)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-
-    GPasteSettings *settings = priv->settings;
-    gboolean save_history = g_paste_settings_get_save_history (settings);
     g_autoptr (GFile) history_dir = g_paste_history_get_history_dir ();
-    g_autofree gchar *history_file_path = NULL;
-    g_autoptr (GFile) history_file = NULL;
 
     if (!g_file_query_exists (history_dir,
                               NULL)) /* cancellable */
     {
         if (!save_history)
-            return;
+            return TRUE;
 
         g_autoptr (GError) error = NULL;
 
@@ -761,11 +745,39 @@ g_paste_history_save (GPasteHistory *self)
         if (error)
         {
             g_critical ("%s: %s", _("Could not create history dir"), error->message);
-            return;
+            return FALSE;
         }
     }
 
-    history_file_path = g_paste_history_get_history_file_path (settings, NULL);
+    return TRUE;
+}
+
+/**
+ * g_paste_history_save:
+ * @self: a #GPasteHistory instance
+ * @name: (nullable): the name to save the history to
+ *
+ * Save the #GPasteHistory to the history file
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_history_save (GPasteHistory *self,
+                      const gchar   *name)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+
+    GPasteSettings *settings = priv->settings;
+    gboolean save_history = g_paste_settings_get_save_history (settings);
+    g_autofree gchar *history_file_path = NULL;
+    g_autoptr (GFile) history_file = NULL;
+
+    if (!ensure_history_dir_exists (save_history))
+        return;
+
+    history_file_path = g_paste_history_get_history_file_path (settings, name);
     history_file = g_file_new_for_path (history_file_path);
 
     if (!save_history)
@@ -1098,7 +1110,8 @@ g_paste_history_load (GPasteHistory *self,
     else
     {
         /* Create the empty file to be listed as an available history */
-        g_paste_history_save (self);
+        if (ensure_history_dir_exists (g_paste_settings_get_save_history (settings)))
+            g_object_unref (g_file_create (history_file, G_FILE_CREATE_NONE, NULL, NULL));
     }
 
     if (priv->history)

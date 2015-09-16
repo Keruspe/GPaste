@@ -61,7 +61,8 @@ void                      g_paste_history_rename_password (GPasteHistory *self,
                                                            const gchar   *old_name,
                                                            const gchar   *new_name);
 void          g_paste_history_empty       (GPasteHistory *self);
-void          g_paste_history_save        (GPasteHistory *self);
+void          g_paste_history_save        (GPasteHistory *self,
+                                           const gchar   *name);
 void          g_paste_history_load        (GPasteHistory *self,
                                            const gchar   *name);
 void          g_paste_history_switch      (GPasteHistory *self,
