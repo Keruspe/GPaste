@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 int
@@ -26,11 +27,20 @@ main (int   argc __attribute__((unused)),
       char *argv[])
 {
     const char *gpaste_client = BINDIR "/gpaste-client";
+    char **_argv = alloca (argc + 1);
 
     fprintf (stderr, "\nThe \"gpaste\" command is deprecated and will soon be removed, please use \"gpaste-client\" instead.\n\n");
 
-    argv[0] = (char *) gpaste_client;
-    execv (gpaste_client, argv);
+    for (int i = 1; i < argc; ++i)
+        _argv[i] = strdup (argv[i]);
+
+    _argv[0] = (char *) gpaste_client;
+    _argv[argc] = NULL;
+
+    execv (gpaste_client, _argv);
+
+    for (int i = 1; i < argc; ++i)
+        free (_argv[i]);
 
     return EXIT_SUCCESS;
 }
