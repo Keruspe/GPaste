@@ -657,7 +657,7 @@ g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     guint32 index = g_variant_get_uint32 (variant1);
 
-    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+    G_PASTE_DBUS_ASSERT (index < g_paste_history_get_length (history), "invalid index received");
 
     const GPasteItem *item = g_paste_history_get (history, index);
 
@@ -686,7 +686,7 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     guint32 index = g_variant_get_uint32 (variant1);
 
-    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+    G_PASTE_DBUS_ASSERT (index < g_paste_history_get_length (history), "invalid index received");
 
     const GPasteItem *item = g_paste_history_get (history, index);
 
