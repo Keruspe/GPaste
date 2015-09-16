@@ -331,14 +331,13 @@ g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
     g_autofree gchar *old_name = g_strdup (g_paste_settings_get_history_name (settings));
 
     /* FIXME: simplify things */
-    g_paste_settings_set_history_name (settings, history);
-    g_paste_history_load (priv->history);
+    g_paste_history_load (priv->history, history);
     g_paste_daemon_private_switch_history_signal (priv, history);
     g_paste_settings_set_history_name (settings, backup);
     g_paste_history_save (priv->history);
     g_paste_daemon_private_switch_history_signal (priv, backup);
     g_paste_settings_set_history_name (settings, old_name);
-    g_paste_history_load (priv->history);
+    g_paste_history_load (priv->history, old_name);
     g_paste_daemon_private_switch_history_signal (priv, old_name);
 }
 
@@ -1099,7 +1098,7 @@ g_paste_daemon_init (GPasteDaemon *self)
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
-    g_paste_history_load (history);
+    g_paste_history_load (history, NULL);
 
     g_paste_gnome_shell_client_new (on_shell_client_ready, self);
 }

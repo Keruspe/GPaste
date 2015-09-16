@@ -707,17 +707,22 @@ g_paste_history_get_history_dir (void)
 }
 
 static gchar *
-g_paste_history_get_history_file_path (GPasteSettings *settings)
+g_paste_history_get_history_file_path (GPasteSettings *settings,
+                                       const gchar    *name)
 {
+    if (!name)
+        name = g_paste_settings_get_history_name (settings);
+
     g_autofree gchar *history_dir_path = g_paste_history_get_history_dir_path ();
-    g_autofree gchar *history_file_name = g_strconcat (g_paste_settings_get_history_name (settings), ".xml", NULL);
+    g_autofree gchar *history_file_name = g_strconcat (name, ".xml", NULL);
+
     return g_build_filename (history_dir_path, history_file_name, NULL);
 }
 
 static GFile *
 g_paste_history_get_history_file (GPasteSettings *settings)
 {
-    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings, NULL);
     return g_file_new_for_path (history_file_path);
 }
 
@@ -760,7 +765,7 @@ g_paste_history_save (GPasteHistory *self)
         }
     }
 
-    history_file_path = g_paste_history_get_history_file_path (settings);
+    history_file_path = g_paste_history_get_history_file_path (settings, NULL);
     history_file = g_file_new_for_path (history_file_path);
 
     if (!save_history)
@@ -1031,15 +1036,18 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
 /**
  * g_paste_history_load:
  * @self: a #GPasteHistory instance
+ * @name: (nullable): the name of the history to load, defaults to the configured one
  *
  * Load the #GPasteHistory from the history file
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_history_load (GPasteHistory *self)
+g_paste_history_load (GPasteHistory *self,
+                      const gchar   *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
@@ -1048,7 +1056,7 @@ g_paste_history_load (GPasteHistory *self)
                        g_object_unref);
     priv->history = NULL;
 
-    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings);
+    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings, name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
@@ -1120,7 +1128,7 @@ g_paste_history_switch (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     g_paste_settings_set_history_name (priv->settings, name);
-    g_paste_history_load (self);
+    g_paste_history_load (self, name);
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
