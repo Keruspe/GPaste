@@ -16,6 +16,7 @@ src/libgpaste/ui/gpaste-ui-edit.c
 src/libgpaste/ui/gpaste-ui-empty.c
 src/libgpaste/ui/gpaste-ui-empty-item.c
 src/libgpaste/ui/gpaste-ui-panel.c
+src/libgpaste/ui/gpaste-ui-reexec.c
 src/libgpaste/ui/gpaste-ui-search.c
 src/libgpaste/ui/gpaste-ui-settings.c
 src/libgpaste/ui/gpaste-ui-switch.c
