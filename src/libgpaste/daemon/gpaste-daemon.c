@@ -654,6 +654,7 @@ g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
                                 GVariant            *parameters,
                                 GPasteDBusError    **err)
 {
+    GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
     gsize length;
 
@@ -661,12 +662,19 @@ g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
 
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     guint32 index = g_variant_get_uint32 (variant1);
+
+    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+
+    const GPasteItem *item = g_paste_history_get (history, index);
+
+    G_PASTE_DBUS_ASSERT (item, "received no item for this index");
+    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
+
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *contents = g_variant_dup_string (variant2, &length);
 
     G_PASTE_DBUS_ASSERT (contents, "no contents given");
 
-    /* FIXME: check item type first */
     g_paste_history_replace (priv->history, index, contents);
 }
 
@@ -675,6 +683,7 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
                                      GVariant            *parameters,
                                      GPasteDBusError    **err)
 {
+    GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
     gsize length;
 
@@ -682,12 +691,19 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
 
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
     guint32 index = g_variant_get_uint32 (variant1);
+
+    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+
+    const GPasteItem *item = g_paste_history_get (history, index);
+
+    G_PASTE_DBUS_ASSERT (item, "received no item for this index");
+    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
+
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *name = g_variant_dup_string (variant2, &length);
 
     G_PASTE_DBUS_ASSERT (name, "no password name given");
 
-    /* FIXME: check item type first */
     g_paste_history_set_password (priv->history, index, name);
 }
 
