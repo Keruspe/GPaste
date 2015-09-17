@@ -1321,6 +1321,24 @@ g_paste_history_get_length (const GPasteHistory *self)
 }
 
 /**
+ * g_paste_history_get_current:
+ * @self: a #GPasteHistory instance
+ *
+ * Get the name of the current history
+ *
+ * Returns: The name of the current history
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_history_get_current (const GPasteHistory *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+
+    return priv->name;
+}
+
+/**
  * g_paste_history_search:
  * @self: a #GPasteHistory instance
  * @pattern: the pattern to match

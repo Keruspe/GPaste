@@ -72,6 +72,7 @@ void          g_paste_history_delete      (GPasteHistory *self,
                                            GError       **error);
 const GSList *g_paste_history_get_history (const GPasteHistory *self);
 gsize         g_paste_history_get_length  (const GPasteHistory *self);
+const gchar  *g_paste_history_get_current (const GPasteHistory *self);
 
 GArray *g_paste_history_search (const GPasteHistory *self,
                                 const gchar         *pattern);

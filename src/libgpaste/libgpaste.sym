@@ -375,6 +375,7 @@ global:
     g_paste_client_replace_sync;
 
     g_paste_history_delete;
+    g_paste_history_get_current;
     g_paste_history_load;
     g_paste_history_replace;
     g_paste_history_save;
