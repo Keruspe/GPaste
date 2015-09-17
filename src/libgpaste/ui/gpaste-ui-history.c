@@ -97,6 +97,7 @@ g_paste_applet_history_drop_list (GtkContainer *self,
 
 typedef struct {
     GPasteUiHistory *self;
+    gchar           *name;
     guint            from_index;
 } OnUpdateCallbackData;
 
@@ -106,6 +107,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
                                     gpointer      user_data)
 {
     g_autofree OnUpdateCallbackData *data = user_data;
+    g_autofree gchar *name = data->name;
     GPasteUiHistory *self = data->self;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
@@ -119,7 +121,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     else
         gtk_widget_show (priv->dummy_item);
 
-    g_paste_ui_panel_update_history_length (priv->panel, g_paste_settings_get_history_name (priv->settings), new_size);
+    g_paste_ui_panel_update_history_length (priv->panel, name, new_size);
 
     if (old_size < priv->size)
     {
@@ -163,9 +165,10 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     OnUpdateCallbackData *data = user_data;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (data->self);
-    g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
 
-    g_paste_client_get_history_size (priv->client, name, g_paste_ui_history_refresh_history, data);
+    data->name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+
+    g_paste_client_get_history_size (priv->client, data->name, g_paste_ui_history_refresh_history, data);
 }
 
 static void

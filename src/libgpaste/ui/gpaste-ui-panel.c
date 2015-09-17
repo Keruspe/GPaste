@@ -162,18 +162,40 @@ g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
         gtk_list_box_select_row (priv->list_box, row);
 }
 
+typedef struct
+{
+    GPasteUiPanelPrivate *priv;
+    gchar                *name;
+} HistoriesData;
+
 static void
-on_histories_ready (GObject      *source_object,
+on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
                     GAsyncResult *res,
                     gpointer      user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
-    g_auto(GStrv) histories = g_paste_client_list_histories_finish (G_PASTE_CLIENT (source_object), res, NULL);
-    g_autofree gchar *current = g_strdup (g_paste_settings_get_history_name (priv->settings));
+    g_autofree HistoriesData *data = user_data;
+    GPasteUiPanelPrivate *priv = data->priv;
+    g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, NULL);
+    g_autofree gchar *current = data->name;
 
     g_paste_ui_panel_add_history (priv, DEFAULT_HISTORY, !g_strcmp0 (DEFAULT_HISTORY, current));
     for (GStrv h = histories; *h; ++h)
         g_paste_ui_panel_add_history (priv, *h, !g_strcmp0 (*h, current));
+}
+
+static void
+on_name_ready (GObject      *source_object G_GNUC_UNUSED,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+    GPasteUiPanelPrivate *priv = user_data;
+    gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+    HistoriesData *data = g_malloc (sizeof (HistoriesData));
+
+    data->priv = priv;
+    data->name = name;
+
+    g_paste_client_list_histories (priv->client, on_histories_ready, data);
 }
 
 static gboolean
@@ -328,7 +350,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
                                                 G_CALLBACK (on_history_switched),
                                                 priv);
 
-    g_paste_client_list_histories (client, on_histories_ready, priv);
+    g_paste_client_get_history_name (client, on_name_ready, priv);
 
     return self;
 }
