@@ -35,6 +35,8 @@ typedef struct
     GSList         *history;
     gsize           size;
 
+    gchar          *name;
+
     /* Note: we never track the first (active) item here */
     guint32         biggest_index;
     gsize           biggest_size;
@@ -707,11 +709,9 @@ g_paste_history_get_history_dir (void)
 }
 
 static gchar *
-g_paste_history_get_history_file_path (GPasteSettings *settings,
-                                       const gchar    *name)
+g_paste_history_get_history_file_path (const gchar *name)
 {
-    if (!name)
-        name = g_paste_settings_get_history_name (settings);
+    g_return_val_if_fail (name, NULL);
 
     g_autofree gchar *history_dir_path = g_paste_history_get_history_dir_path ();
     g_autofree gchar *history_file_name = g_strconcat (name, ".xml", NULL);
@@ -720,10 +720,9 @@ g_paste_history_get_history_file_path (GPasteSettings *settings,
 }
 
 static GFile *
-g_paste_history_get_history_file (GPasteSettings *settings,
-                                  const gchar    *name)
+g_paste_history_get_history_file (const gchar *name)
 {
-    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings, name);
+    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (name);
     return g_file_new_for_path (history_file_path);
 }
 
@@ -778,7 +777,7 @@ g_paste_history_save (GPasteHistory *self,
     if (!ensure_history_dir_exists (save_history))
         return;
 
-    history_file_path = g_paste_history_get_history_file_path (settings, name);
+    history_file_path = g_paste_history_get_history_file_path ((name) ? name : priv->name);
     history_file = g_file_new_for_path (history_file_path);
 
     if (!save_history)
@@ -1069,7 +1068,10 @@ g_paste_history_load (GPasteHistory *self,
                        g_object_unref);
     priv->history = NULL;
 
-    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (settings, name);
+    g_free (priv->name);
+    priv->name = g_strdup ((name) ? name : g_paste_settings_get_history_name (priv->settings));
+
+    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (priv->name);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
@@ -1165,9 +1167,9 @@ g_paste_history_delete (GPasteHistory *self,
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    g_autoptr (GFile) history_file = g_paste_history_get_history_file (priv->settings, name);
+    g_autoptr (GFile) history_file = g_paste_history_get_history_file ((name) ? name : priv->name);
 
-    if (!g_strcmp0 (name, g_paste_settings_get_history_name (priv->settings)))
+    if (!g_strcmp0 (name, priv->name))
         g_paste_history_empty (self);
 
     if (g_file_query_exists (history_file,
@@ -1213,6 +1215,7 @@ g_paste_history_finalize (GObject *object)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (G_PASTE_HISTORY (object));
 
+    g_free (priv->name);
     g_slist_free_full (priv->history,
                        g_object_unref);
 
