@@ -31,6 +31,7 @@ typedef struct
 {
     GPasteClient   *client;
     GPasteSettings *settings;
+    GPasteUiPanel  *panel;
     GtkWidget      *dummy_item;
 
     GtkWindow      *rootwin;
@@ -117,6 +118,8 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
         gtk_widget_hide (priv->dummy_item);
     else
         gtk_widget_show (priv->dummy_item);
+
+    g_paste_ui_panel_update_history_length (priv->panel, g_paste_settings_get_history_name (priv->settings), new_size);
 
     if (old_size < priv->size)
     {
@@ -327,6 +330,7 @@ g_paste_ui_history_init (GPasteUiHistory *self)
  * g_paste_ui_history_new:
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
+ * @panel: the #GPasteSettingsUiPanel
  * @rootwin: the root #GtkWindow
  *
  * Create a new instance of #GPasteUiHistory
@@ -337,10 +341,12 @@ g_paste_ui_history_init (GPasteUiHistory *self)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_history_new (GPasteClient   *client,
                         GPasteSettings *settings,
+                        GPasteUiPanel  *panel,
                         GtkWindow      *rootwin)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_UI_PANEL (panel), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY, NULL);
@@ -348,6 +354,7 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
+    priv->panel = panel;
     priv->rootwin = rootwin;
 
     priv->update_id = g_signal_connect (client,

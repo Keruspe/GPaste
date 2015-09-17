@@ -74,7 +74,7 @@ history_find (GSList      *histories,
 G_PASTE_VISIBLE void
 g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
                                         const gchar   *history,
-                                        guint32        length)
+                                        gsize          length)
 {
     g_return_if_fail (G_PASTE_IS_UI_PANEL (self));
 

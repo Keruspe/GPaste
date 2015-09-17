@@ -24,8 +24,7 @@
 #ifndef __G_PASTE_UI_HISTORY_H__
 #define __G_PASTE_UI_HISTORY_H__
 
-#include <gpaste-client.h>
-#include <gpaste-settings.h>
+#include <gpaste-ui-panel.h>
 
 G_BEGIN_DECLS
 
@@ -38,6 +37,7 @@ void g_paste_ui_history_search (GPasteUiHistory *self,
 
 GtkWidget *g_paste_ui_history_new (GPasteClient   *client,
                                    GPasteSettings *settings,
+                                   GPasteUiPanel  *panel,
                                    GtkWindow      *rootwin);
 
 G_END_DECLS
