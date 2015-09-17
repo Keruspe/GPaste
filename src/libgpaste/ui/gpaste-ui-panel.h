@@ -33,6 +33,10 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiPanel, ui_panel, UI_PANEL, GtkBox)
 
+void g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
+                                             const gchar   *history,
+                                             guint32        length);
+
 GtkWidget *g_paste_ui_panel_new (GPasteClient   *client,
                                  GPasteSettings *settings,
                                  GtkWindow      *rootwin,

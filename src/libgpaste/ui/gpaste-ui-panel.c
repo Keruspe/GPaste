@@ -61,6 +61,34 @@ history_find (GSList      *histories,
     return g_slist_find_custom (histories, history, history_equals);
 }
 
+/**
+ * g_paste_ui_panel_update_history_length:
+ * @self: a #GPasteUiPanel instance
+ * @history: the history to update
+ * @length: the new length
+ *
+ * Update the displayed length of the specified history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
+                                        const gchar   *history,
+                                        guint32        length)
+{
+    g_return_if_fail (G_PASTE_IS_UI_PANEL (self));
+
+    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+    GSList *h = history_find (priv->histories, history);
+
+    if (h)
+    {
+        GPasteUiPanelHistory *hh = h->data;
+
+        g_paste_ui_panel_history_set_length (hh, length);
+    }
+}
+
 static void
 on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
                     const gchar  *history,
