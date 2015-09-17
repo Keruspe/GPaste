@@ -26,11 +26,12 @@ struct _GPasteUiPanelHistory
 
 typedef struct
 {
-    GPasteClient           *client;
+    GPasteClient *client;
 
-    GtkLabel               *label;
+    GtkLabel     *index_label;
+    GtkLabel     *label;
 
-    gchar                  *history;
+    gchar        *history;
 } GPasteUiPanelHistoryPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanelHistory, g_paste_ui_panel_history, GTK_TYPE_LIST_BOX_ROW)
@@ -47,9 +48,31 @@ G_PASTE_VISIBLE void
 g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
+
     GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
 
     g_paste_client_switch_history (priv->client, priv->history, NULL, NULL);
+}
+
+/**
+ * g_paste_ui_panel_history_set_length:
+ * @self: a #GPasteUiPanelHistory instance
+ * @length: the length of the #GPasteHistory
+ *
+ * Update the index label of this history
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
+                                     guint32               length)
+{
+    g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
+
+    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
+    g_autofree gchar *_length = g_strdup_printf("%u", length);
+
+    gtk_label_set_text (priv->index_label, _length);
 }
 
 /**
@@ -90,11 +113,25 @@ static void
 g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
 {
     GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkBox *box = GTK_BOX (hbox);
     GtkWidget *l = gtk_label_new ("");
     GtkLabel *label = priv->label = GTK_LABEL (l);
+    GtkWidget *il = gtk_label_new ("");
+    GtkLabel *index_label = priv->index_label = GTK_LABEL (il);
+
+    gtk_widget_set_sensitive (il, FALSE);
+    gtk_label_set_justify (index_label, GTK_JUSTIFY_RIGHT);
+    gtk_label_set_width_chars (index_label, 3);
+    gtk_label_set_selectable (index_label, FALSE);
+
+    gtk_widget_set_margin_start (hbox, 5);
+    gtk_widget_set_margin_end (hbox, 5);
 
     gtk_label_set_ellipsize (label, PANGO_ELLIPSIZE_END);
-    gtk_container_add (GTK_CONTAINER (self), l);
+    gtk_box_pack_start (box, il, FALSE, FALSE, 0);
+    gtk_box_pack_start (box, l, TRUE, TRUE, 0);
+    gtk_container_add (GTK_CONTAINER (self), hbox);
 }
 
 /**
@@ -108,8 +145,8 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_panel_history_new (GPasteClient           *client,
-                              const gchar            *history)
+g_paste_ui_panel_history_new (GPasteClient *client,
+                              const gchar  *history)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);

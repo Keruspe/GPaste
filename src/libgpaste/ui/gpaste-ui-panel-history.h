@@ -32,12 +32,14 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiPanelHistory, ui_panel_history, UI_PANEL_HISTORY, GtkListBoxRow)
 
-void g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self);
+void g_paste_ui_panel_history_activate  (GPasteUiPanelHistory *self);
+void g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
+                                          guint32               length);
 
 const gchar *g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self);
 
-GtkWidget *g_paste_ui_panel_history_new (GPasteClient           *client,
-                                         const gchar            *history);
+GtkWidget *g_paste_ui_panel_history_new (GPasteClient *client,
+                                         const gchar  *history);
 
 G_END_DECLS
 
