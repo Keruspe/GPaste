@@ -41,7 +41,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_DELETE                     "Delete"
 #define G_PASTE_DAEMON_DELETE_HISTORY             "DeleteHistory"
 #define G_PASTE_DAEMON_DELETE_PASSWORD            "DeletePassword"
-#define G_PASTE_DAEMON_EMPTY                      "Empty"
+#define G_PASTE_DAEMON_EMPTY_HISTORY              "EmptyHistory"
 #define G_PASTE_DAEMON_GET_ELEMENT                "GetElement"
 #define G_PASTE_DAEMON_GET_ELEMENT_KIND           "GetElementKind"
 #define G_PASTE_DAEMON_GET_ELEMENTS               "GetElements"
@@ -100,7 +100,9 @@ G_BEGIN_DECLS
         "    <method name='" G_PASTE_DAEMON_DELETE_PASSWORD "'>"            \
         "      <arg type='s' direction='in' name='name' />"                 \
         "    </method>"                                                     \
-        "    <method name='" G_PASTE_DAEMON_EMPTY "' />"                    \
+        "    <method name='" G_PASTE_DAEMON_EMPTY_HISTORY "'>"              \
+        "      <arg type='s' direction='in' name='name' />"                 \
+        "    </method>"                                                     \
         "    <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
         "      <arg type='u' direction='in'  name='index' />"               \
         "      <arg type='s' direction='out' name='value' />"               \
@@ -120,6 +122,7 @@ G_BEGIN_DECLS
         "      <arg type='s' direction='out' name='name' />"                \
         "    </method>"                                                     \
         "    <method name='" G_PASTE_DAEMON_GET_HISTORY_SIZE "'>"           \
+        "      <arg type='s' direction='in' name='name'  />"                \
         "      <arg type='u' direction='out' name='size' />"                \
         "    </method>"                                                     \
         "    <method name='" G_PASTE_DAEMON_GET_RAW_ELEMENT "'>"            \
