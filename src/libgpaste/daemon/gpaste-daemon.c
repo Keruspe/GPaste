@@ -330,7 +330,7 @@ g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
 
     /* create a new history to do the backup without polluting the current one */
     g_autoptr (GPasteHistory) _history = g_paste_history_new (settings);
-    const gchar *old_name = g_paste_settings_get_history_name (settings);
+    const gchar *old_name = g_paste_history_get_current (priv->history);
 
     /* We emit all those signals to be sure that all the guis have their histories list updated */
     g_paste_history_load (_history, history);
@@ -362,7 +362,7 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
     g_paste_history_delete (history, name, NULL);
     g_paste_daemon_private_delete_history_signal (priv, name);
 
-    if (!g_strcmp0 (name, g_paste_settings_get_history_name (priv->settings)))
+    if (!g_strcmp0 (name, g_paste_history_get_current (priv->history)))
     {
         g_paste_history_switch (history, DEFAULT_HISTORY);
         g_paste_daemon_private_switch_history_signal (priv, DEFAULT_HISTORY);
@@ -476,7 +476,7 @@ g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 static GVariant *
 g_paste_daemon_private_get_history_name (GPasteDaemonPrivate *priv)
 {
-    GVariant *variant = g_variant_new_string (g_paste_settings_get_history_name (priv->settings));
+    GVariant *variant = g_variant_new_string (g_paste_history_get_current (priv->history));
     return g_variant_new_tuple (&variant, 1);
 }
 
