@@ -382,9 +382,12 @@ g_paste_daemon_private_delete_password (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_empty (GPasteDaemonPrivate *priv)
+g_paste_daemon_private_empty_history (GPasteDaemonPrivate *priv,
+                                      GVariant            *parameters)
 {
-    g_paste_history_empty (priv->history);
+    g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
+
+    g_paste_history_save (history, g_paste_daemon_get_dbus_string_parameter (parameters, NULL));
 }
 
 static GVariant *
@@ -478,9 +481,14 @@ g_paste_daemon_private_get_history_name (GPasteDaemonPrivate *priv)
 }
 
 static GVariant *
-g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv)
+g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv,
+                                         GVariant            *parameters)
 {
-    GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (priv->history));
+    g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
+
+    g_paste_history_load (history, g_paste_daemon_get_dbus_string_parameter (parameters, NULL));
+
+    GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (history));
     return g_variant_new_tuple (&variant, 1);
 }
 
@@ -822,8 +830,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_delete_history (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
         g_paste_daemon_private_delete_password (priv, parameters, &err);
-    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_EMPTY))
-        g_paste_daemon_private_empty (priv);
+    else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_EMPTY_HISTORY))
+        g_paste_daemon_private_empty_history (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT))
         answer = g_paste_daemon_private_get_element (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_ELEMENT_KIND))
@@ -835,7 +843,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_NAME))
         answer = g_paste_daemon_private_get_history_name (priv);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
-        answer = g_paste_daemon_private_get_history_size (priv);
+        answer = g_paste_daemon_private_get_history_size (priv, parameters);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
         answer = g_paste_daemon_private_get_raw_element (priv, parameters, &err);
     else if (!g_strcmp0 (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
