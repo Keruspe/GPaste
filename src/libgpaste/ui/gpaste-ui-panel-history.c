@@ -94,6 +94,16 @@ g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self)
 }
 
 static void
+on_size_ready (GObject      *source_object,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+    GPasteUiPanelHistory *self = user_data;
+
+    g_paste_ui_panel_history_set_length (self, g_paste_client_get_history_size_finish (G_PASTE_CLIENT (source_object), res, NULL));
+}
+
+static void
 g_paste_ui_panel_history_dispose (GObject *object)
 {
     GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
@@ -161,6 +171,8 @@ g_paste_ui_panel_history_new (GPasteClient *client,
     priv->history = g_strdup (history);
 
     gtk_label_set_text (priv->label, history);
+
+    g_paste_client_get_history_size (client, history, on_size_ready, self);
 
     return self;
 }
