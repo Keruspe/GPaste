@@ -1,6 +1,5 @@
 3.18:
     allow specifying history name in gpaste-client for some commands
-    use get history name from daemon
     do not allow ui to get resized down automatically
 
 3.20:
