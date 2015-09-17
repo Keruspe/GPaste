@@ -93,11 +93,11 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_NO_PARAM_RET_STRV(method) \
     DBUS_CALL_NO_PARAM_RET_STRV_BASE (CLIENT, G_PASTE_DAEMON_##method)
 
-#define DBUS_CALL_NO_PARAM_RET_UINT32(method) \
-    DBUS_CALL_NO_PARAM_RET_UINT32_BASE (CLIENT, G_PASTE_DAEMON_##method)
-
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+
+#define DBUS_CALL_ONE_PARAM_RET_UINT32(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_UINT32_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
@@ -348,8 +348,9 @@ g_paste_client_delete_password_sync (GPasteClient *self,
 }
 
 /**
- * g_paste_client_empty_sync:
+ * g_paste_client_empty_history_sync:
  * @self: a #GPasteClient instance
+ * @name: the name of the history to empty
  * @error: a #GError
  *
  * Empty the history from the #GPasteDaemon
@@ -357,10 +358,11 @@ g_paste_client_delete_password_sync (GPasteClient *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_client_empty_sync (GPasteClient *self,
-                           GError      **error)
+g_paste_client_empty_history_sync (GPasteClient *self,
+                                   const gchar  *name,
+                                   GError      **error)
 {
-    DBUS_CALL_NO_PARAM_NO_RETURN (EMPTY);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (EMPTY_HISTORY, string, name);
 }
 
 /**
@@ -466,6 +468,7 @@ g_paste_client_get_history_name_sync (GPasteClient *self,
 /**
  * g_paste_client_get_history_size_sync:
  * @self: a #GPasteClient instance
+ * @name: the name of the history
  * @error: a #GError
  *
  * Get the history size from the #GPasteDaemon
@@ -474,9 +477,10 @@ g_paste_client_get_history_name_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE guint32
 g_paste_client_get_history_size_sync (GPasteClient *self,
+                                      const gchar  *name,
                                       GError      **error)
 {
-    DBUS_CALL_NO_PARAM_RET_UINT32 (GET_HISTORY_SIZE);
+    DBUS_CALL_ONE_PARAM_RET_UINT32 (GET_HISTORY_SIZE, string, name);
 }
 
 /**
@@ -971,8 +975,9 @@ g_paste_client_delete_password (GPasteClient       *self,
 }
 
 /**
- * g_paste_client_empty:
+ * g_paste_client_empty_history:
  * @self: a #GPasteClient instance
+ * @name: the name of the history to empty
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -982,11 +987,12 @@ g_paste_client_delete_password (GPasteClient       *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_client_empty (GPasteClient       *self,
-                      GAsyncReadyCallback callback,
-                      gpointer            user_data)
+g_paste_client_empty_history (GPasteClient       *self,
+                              const gchar        *name,
+                              GAsyncReadyCallback callback,
+                              gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (EMPTY);
+    DBUS_CALL_ONE_PARAM_ASYNC (EMPTY_HISTORY, string, name);
 }
 
 /**
@@ -1096,6 +1102,7 @@ g_paste_client_get_history_name (GPasteClient       *self,
 /**
  * g_paste_client_get_history_size:
  * @self: a #GPasteClient instance
+ * @name: the name of the history
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -1106,10 +1113,11 @@ g_paste_client_get_history_name (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_history_size (GPasteClient       *self,
+                                 const gchar        *name,
                                  GAsyncReadyCallback callback,
                                  gpointer            user_data)
 {
-    DBUS_CALL_NO_PARAM_ASYNC (GET_HISTORY_SIZE);
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_HISTORY_SIZE, string, name);
 }
 
 /**
@@ -1604,7 +1612,7 @@ g_paste_client_delete_password_finish (GPasteClient *self,
 }
 
 /**
- * g_paste_client_empty_finish:
+ * g_paste_client_empty_history_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
  * @error: a #GError
@@ -1614,9 +1622,9 @@ g_paste_client_delete_password_finish (GPasteClient *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_client_empty_finish (GPasteClient *self,
-                             GAsyncResult *result,
-                             GError      **error)
+g_paste_client_empty_history_finish (GPasteClient *self,
+                                     GAsyncResult *result,
+                                     GError      **error)
 {
     DBUS_ASYNC_FINISH_NO_RETURN;
 }

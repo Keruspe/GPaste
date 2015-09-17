@@ -62,7 +62,8 @@ void     g_paste_client_delete_history_sync             (GPasteClient  *self,
 void     g_paste_client_delete_password_sync            (GPasteClient  *self,
                                                          const gchar   *name,
                                                          GError       **error);
-void     g_paste_client_empty_sync                      (GPasteClient  *self,
+void     g_paste_client_empty_history_sync              (GPasteClient  *self,
+                                                         const gchar   *name,
                                                          GError       **error);
 gchar   *g_paste_client_get_element_sync                (GPasteClient  *self,
                                                          guint32        index,
@@ -76,6 +77,7 @@ GStrv    g_paste_client_get_history_sync                (GPasteClient  *self,
 gchar   *g_paste_client_get_history_name_sync           (GPasteClient  *self,
                                                          GError       **error);
 guint32  g_paste_client_get_history_size_sync           (GPasteClient  *self,
+                                                         const gchar   *name,
                                                          GError       **error);
 gchar   *g_paste_client_get_raw_element_sync            (GPasteClient  *self,
                                                          guint32        index,
@@ -166,7 +168,8 @@ void g_paste_client_delete_password            (GPasteClient       *self,
                                                 const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
-void g_paste_client_empty                      (GPasteClient       *self,
+void g_paste_client_empty_history              (GPasteClient       *self,
+                                                const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_element                (GPasteClient       *self,
@@ -189,6 +192,7 @@ void g_paste_client_get_history_name           (GPasteClient       *self,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_history_size           (GPasteClient       *self,
+                                                const gchar        *name,
                                                 GAsyncReadyCallback callback,
                                                 gpointer            user_data);
 void g_paste_client_get_raw_element            (GPasteClient       *self,
@@ -282,7 +286,7 @@ void     g_paste_client_delete_history_finish             (GPasteClient *self,
 void     g_paste_client_delete_password_finish            (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-void     g_paste_client_empty_finish                      (GPasteClient *self,
+void     g_paste_client_empty_history_finish              (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 gchar   *g_paste_client_get_element_finish                (GPasteClient *self,
