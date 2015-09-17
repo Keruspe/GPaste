@@ -1,6 +1,7 @@
 3.18:
     allow specifying history name in gpaste-client for some commands
     do not allow ui to get resized down automatically
+    emit switch history when we load an history
 
 3.20:
     general:

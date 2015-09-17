@@ -1186,12 +1186,15 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
                                   const gchar    *key,
                                   gpointer        user_data)
 {
-    GPasteHistoryPrivate *priv = user_data;
+    GPasteHistory *self = user_data;
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     if (!g_strcmp0(key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         g_paste_history_private_check_size (priv);
     else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_history_private_check_memory_usage (priv);
+    else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
+        g_paste_history_load (self, NULL);
 }
 
 static void
@@ -1431,7 +1434,7 @@ g_paste_history_new (GPasteSettings *settings)
     priv->changed_signal = g_signal_connect (settings,
                                              "changed",
                                              G_CALLBACK (g_paste_history_settings_changed),
-                                             priv);
+                                             self);
 
     return self;
 }
