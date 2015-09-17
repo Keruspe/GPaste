@@ -35,13 +35,24 @@ typedef struct
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEmpty, g_paste_ui_empty, GTK_TYPE_BUTTON)
 
 static void
+on_name_ready (GObject      *source_object G_GNUC_UNUSED,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+    GPasteUiEmptyPrivate *priv = user_data;
+    g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+
+    /* Translators: this is the translation for emptying the history */
+    if (g_paste_util_confirm_dialog (priv->topwin, _("Empty"), _("Do you really want to empty the history?")))
+        g_paste_client_empty_history (priv->client, name, NULL, NULL);
+}
+
+static void
 g_paste_ui_empty_clicked (GtkButton *button)
 {
     GPasteUiEmptyPrivate *priv = g_paste_ui_empty_get_instance_private (G_PASTE_UI_EMPTY (button));
 
-    /* Translators: this is the translation for emptying the history */
-    if (g_paste_util_confirm_dialog (priv->topwin, _("Empty"), _("Do you really want to empty the history?")))
-        g_paste_client_empty (priv->client, NULL, NULL);
+    g_paste_client_get_history_name (priv->client, on_name_ready, priv);
 }
 
 static void

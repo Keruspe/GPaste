@@ -365,7 +365,9 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "e") ||
                      !g_strcmp0 (arg1, "empty"))
             {
-                g_paste_client_empty_sync (client, &error);
+                g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
+                if (!error)
+                    g_paste_client_empty_history_sync (client, name, &error);
             }
             else if (!g_strcmp0 (arg1, "gh") ||
                      !g_strcmp0 (arg1, "get-history"))
@@ -381,9 +383,13 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "hs") ||
                      !g_strcmp0 (arg1, "history-size"))
             {
-                guint32 size = g_paste_client_get_history_size_sync (client, &error);
+                g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
                 if (!error)
-                    printf ("%u\n", size);
+                {
+                    guint32 size = g_paste_client_get_history_size_sync (client, name, &error);
+                    if (!error)
+                        printf ("%u\n", size);
+                }
             }
             else if (!g_strcmp0 (arg1, "lh") ||
                      !g_strcmp0 (arg1, "list-histories"))

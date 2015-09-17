@@ -157,6 +157,18 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
+on_name_ready (GObject      *source_object G_GNUC_UNUSED,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+    OnUpdateCallbackData *data = user_data;
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (data->self);
+    g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+
+    g_paste_client_get_history_size (priv->client, name, g_paste_ui_history_refresh_history, data);
+}
+
+static void
 g_paste_ui_history_refresh (GPasteUiHistory *self,
                             guint            from_index)
 {
@@ -172,7 +184,7 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         data->self = self;
         data->from_index = from_index;
 
-        g_paste_client_get_history_size (priv->client, g_paste_ui_history_refresh_history, data);
+        g_paste_client_get_history_name (priv->client, on_name_ready, data);
     }
 }
 
