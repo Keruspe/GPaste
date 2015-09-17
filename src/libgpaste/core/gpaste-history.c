@@ -1167,7 +1167,9 @@ g_paste_history_delete (GPasteHistory *self,
 
     g_autoptr (GFile) history_file = g_paste_history_get_history_file (priv->settings, name);
 
-    g_paste_history_empty (self);
+    if (!g_strcmp0 (name, g_paste_settings_get_history_name (priv->settings)))
+        g_paste_history_empty (self);
+
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
     {
