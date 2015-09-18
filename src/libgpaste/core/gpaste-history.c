@@ -1366,7 +1366,7 @@ g_paste_history_search (const GPasteHistory *self,
 
     if (error)
     {
-        g_debug ("error while creating regex: %s", error->message);
+        g_warning ("error while creating regex: %s", error->message);
         return NULL;
     }
     if (!regex)
