@@ -1147,8 +1147,6 @@ g_paste_history_switch (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     g_paste_settings_set_history_name (priv->settings, name);
-    g_paste_history_load (self, name);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
 /**
