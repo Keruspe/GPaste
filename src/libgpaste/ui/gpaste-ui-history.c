@@ -38,6 +38,7 @@ typedef struct
 
     GSList         *items;
     gsize           size;
+    gint            item_height;
 
     gchar          *search;
     guint32        *search_results;
@@ -88,11 +89,19 @@ g_paste_ui_history_remove (gpointer data,
 }
 
 static void
-g_paste_applet_history_drop_list (GtkContainer *self,
-                                  GSList       *list)
+g_paste_ui_history_drop_list (GtkContainer *self,
+                              GSList       *list)
 {
     g_slist_foreach (list, g_paste_ui_history_remove, self);
     g_slist_free (list);
+}
+
+static void
+g_paste_ui_history_update_height_request (GPasteUiHistory *self)
+{
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    g_object_set (G_OBJECT (self), "height-request", g_paste_settings_get_max_displayed_history_size (priv->settings) * priv->item_height, NULL);
 }
 
 typedef struct {
@@ -139,12 +148,12 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
         {
             GSList *last = g_slist_nth (priv->items, priv->size - 1);
             g_return_if_fail (last);
-            g_paste_applet_history_drop_list (GTK_CONTAINER (self), g_slist_next (last));
+            g_paste_ui_history_drop_list (GTK_CONTAINER (self), g_slist_next (last));
             last->next = NULL;
         }
         else
         {
-            g_paste_applet_history_drop_list (GTK_CONTAINER (self), priv->items);
+            g_paste_ui_history_drop_list (GTK_CONTAINER (self), priv->items);
             priv->items = NULL;
         }
         refreshTextBound = priv->size;
@@ -156,6 +165,12 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
         item = g_slist_next (item);
     for (gsize i = data->from_index; i < refreshTextBound && item; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, i);
+
+    if (!priv->item_height)
+    {
+        gtk_widget_get_preferred_height ((priv->items) ? GTK_WIDGET (priv->items->data) : priv->dummy_item, NULL, &priv->item_height);
+        g_paste_ui_history_update_height_request (self);
+    }
 }
 
 static void

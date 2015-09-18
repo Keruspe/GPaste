@@ -1,6 +1,5 @@
 3.18:
     allow specifying history name in gpaste-client for some commands
-    less agressive vertical resize
 
 3.20:
     general:
