@@ -1,6 +1,6 @@
 3.18:
     allow specifying history name in gpaste-client for some commands
-    do not allow ui to get resized down automatically
+    less agressive vertical resize
 
 3.20:
     general:
