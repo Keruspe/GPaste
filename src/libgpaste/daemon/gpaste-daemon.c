@@ -63,6 +63,7 @@
 enum
 {
     C_UPDATE,
+    C_SWITCH,
     C_TRACK,
     C_ACTIVE_CHANGED,
 
@@ -363,10 +364,7 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
     g_paste_daemon_private_delete_history_signal (priv, name);
 
     if (!g_strcmp0 (name, g_paste_history_get_current (priv->history)))
-    {
         g_paste_history_switch (history, DEFAULT_HISTORY);
-        g_paste_daemon_private_switch_history_signal (priv, DEFAULT_HISTORY);
-    }
 }
 
 static void
@@ -719,7 +717,6 @@ g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
     G_PASTE_DBUS_ASSERT (name, "no history to switch to");
 
     g_paste_history_switch (priv->history, name);
-    g_paste_daemon_private_switch_history_signal (priv, name);
 }
 
 static void
@@ -911,6 +908,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
 
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_UPDATE]);
+    g_signal_handler_disconnect (priv->history,  c_signals[C_SWITCH]);
 
     if (priv->screensaver)
         g_signal_handler_disconnect (priv->screensaver,  c_signals[C_ACTIVE_CHANGED]);
@@ -926,6 +924,14 @@ g_paste_daemon_on_history_update (GPasteDaemon      *self,
                                   gpointer           user_data G_GNUC_UNUSED)
 {
     g_paste_daemon_update (self, action, target, position);
+}
+
+static void
+g_paste_daemon_on_history_switch (GPasteDaemonPrivate *priv,
+                                  const gchar         *name,
+                                  gpointer             user_data G_GNUC_UNUSED)
+{
+    g_paste_daemon_private_switch_history_signal (priv, name);
 }
 
 static void
@@ -1013,6 +1019,10 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
                                                     "update",
                                                     G_CALLBACK (g_paste_daemon_on_history_update),
                                                     self);
+    c_signals[C_SWITCH] = g_signal_connect_swapped (priv->history,
+                                                    "switch",
+                                                    G_CALLBACK (g_paste_daemon_on_history_switch),
+                                                    priv);
     priv->registered = TRUE;
 
     g_source_set_name_by_id (g_timeout_add_seconds (1, _g_paste_daemon_changed, self), "[GPaste] Startup - changed");
