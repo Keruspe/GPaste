@@ -222,7 +222,7 @@ const GPasteIndicator = new Lang.Class({
         if (this._searchResults.length > 0) {
             this._onSearch();
         } else {
-            this._client.get_hsitory_name(Lang.bind(this, function(client, result) {
+            this._client.get_history_name(Lang.bind(this, function(client, result) {
                 let name = client.get_history_name_finish(client);
 
                 this._client.get_history_size(name, Lang.bind(this, function(client, result) {
