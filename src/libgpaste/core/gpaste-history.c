@@ -49,6 +49,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
 enum
 {
     SELECTED,
+    SWITCH,
     UPDATE,
 
     LAST_SIGNAL
@@ -116,6 +117,17 @@ g_paste_history_selected (GPasteHistory *self,
                    signals[SELECTED],
                    0, /* detail */
                    item,
+                   NULL);
+}
+
+static void
+g_paste_history_emit_switch (GPasteHistory *self,
+                             const gchar   *name)
+{
+    g_signal_emit (self,
+                   signals[SWITCH],
+                   0, /* detail */
+                   name,
                    NULL);
 }
 
@@ -1185,7 +1197,10 @@ g_paste_history_delete (GPasteHistory *self,
 static void
 g_paste_history_history_name_changed (GPasteHistory *self)
 {
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+
     g_paste_history_load (self, NULL);
+    g_paste_history_emit_switch (self, priv->name);
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
@@ -1202,7 +1217,7 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
     else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_history_private_check_memory_usage (priv);
     else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
-        g_paste_history_history_name_changed (self, NULL);
+        g_paste_history_history_name_changed (self);
 }
 
 static void
@@ -1259,6 +1274,25 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                       G_TYPE_NONE,
                                       1, /* number of params */
                                       G_PASTE_TYPE_ITEM);
+
+    /**
+     * GPasteHistory::switch:
+     * @history: the object on which the signal was emitted
+     * @name: the new history name
+     *
+     * The "switch" signal is emitted when the user has just
+     * switched to a new history
+     */
+    signals[SWITCH] = g_signal_new ("switch",
+                                    G_PASTE_TYPE_HISTORY,
+                                    G_SIGNAL_RUN_LAST,
+                                    0, /* class offset */
+                                    NULL, /* accumulator */
+                                    NULL, /* accumulator data */
+                                    g_cclosure_marshal_VOID__STRING,
+                                    G_TYPE_NONE,
+                                    1, /* number of params */
+                                    G_TYPE_STRING);
 
     /**
      * GPasteHistory::update:
