@@ -222,21 +222,25 @@ const GPasteIndicator = new Lang.Class({
         if (this._searchResults.length > 0) {
             this._onSearch();
         } else {
-            this._client.get_history_size(Lang.bind(this, function(client, result) {
-                let size = client.get_history_size_finish(result);
-                let maxSize = this._history.length;
+            this._client.get_hsitory_name(Lang.bind(this, function(client, result) {
+                let name = client.get_history_name_finish(client);
 
-                if (size > maxSize)
-                    size = maxSize;
+                this._client.get_history_size(name, Lang.bind(this, function(client, result) {
+                    let size = client.get_history_size_finish(result);
+                    let maxSize = this._history.length;
 
-                for (let i = resetTextFrom; i < size; ++i) {
-                    this._history[i].setIndex(i);
-                }
-                for (let i = size ; i < maxSize; ++i) {
-                    this._history[i].setIndex(-1);
-                }
+                    if (size > maxSize)
+                        size = maxSize;
 
-                this._updateVisibility(size == 0);
+                    for (let i = resetTextFrom; i < size; ++i) {
+                        this._history[i].setIndex(i);
+                    }
+                    for (let i = size ; i < maxSize; ++i) {
+                        this._history[i].setIndex(-1);
+                    }
+
+                    this._updateVisibility(size == 0);
+                }));
             }));
         }
     },

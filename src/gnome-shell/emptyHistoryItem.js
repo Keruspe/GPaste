@@ -36,7 +36,7 @@ const GPasteEmptyHistoryItem = new Lang.Class({
         this.actor.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
 
         this.actor.connect('clicked', function() {
-            client.empty(null);
+            client.empty_history(null);
         });
     }
 });
