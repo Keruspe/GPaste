@@ -164,8 +164,6 @@ lib_libgpaste_la_source_files += \
 endif
 
 lib_libgpaste_la_SOURCES = \
-	$(lib_libgpaste_la_misc_headers) \
-	$(lib_libgpaste_la_public_headers) \
 	$(lib_libgpaste_la_private_headers) \
 	$(lib_libgpaste_la_source_files) \
 	$(NULL)
