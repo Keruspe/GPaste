@@ -123,7 +123,7 @@ static void
 g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
 {
     GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
-    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
     GtkBox *box = GTK_BOX (hbox);
     GtkWidget *l = gtk_label_new ("");
     GtkLabel *label = priv->label = GTK_LABEL (l);
@@ -131,7 +131,7 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
     GtkLabel *index_label = priv->index_label = GTK_LABEL (il);
 
     gtk_widget_set_sensitive (il, FALSE);
-    gtk_label_set_justify (index_label, GTK_JUSTIFY_RIGHT);
+    gtk_label_set_xalign (index_label, 1.0);
     gtk_label_set_width_chars (index_label, 3);
     gtk_label_set_selectable (index_label, FALSE);
 
