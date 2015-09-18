@@ -176,7 +176,10 @@ g_paste_ui_item_set_text_size (GPasteSettings *settings,
                                gpointer        user_data)
 {
     GPasteUiItemPrivate *priv = user_data;
-    gtk_label_set_max_width_chars (priv->label, g_paste_settings_get_element_size (settings));
+    guint32 size = g_paste_settings_get_element_size (settings);
+
+    gtk_label_set_width_chars (priv->label, size);
+    gtk_label_set_max_width_chars (priv->label, size);
 }
 
 static void
@@ -216,16 +219,17 @@ g_paste_ui_item_init (GPasteUiItem *self)
     gtk_widget_set_margin_top (index_label, 5);
     gtk_widget_set_margin_bottom (index_label, 5);
     gtk_widget_set_sensitive (index_label, FALSE);
-    gtk_label_set_justify (priv->index_label, GTK_JUSTIFY_RIGHT);
+    gtk_label_set_xalign (priv->index_label, 1.0);
     gtk_label_set_width_chars (priv->index_label, 3);
     gtk_label_set_selectable (priv->index_label, FALSE);
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
+    gtk_label_set_xalign (priv->label, 0.0);
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_widget_set_margin_start (hbox, 5);
     gtk_widget_set_margin_end (hbox, 5);
-    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
 }
