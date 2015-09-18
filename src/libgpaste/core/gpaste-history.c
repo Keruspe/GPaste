@@ -1182,6 +1182,13 @@ g_paste_history_delete (GPasteHistory *self,
 }
 
 static void
+g_paste_history_history_name_changed (GPasteHistory *self)
+{
+    g_paste_history_load (self, NULL);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
+}
+
+static void
 g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
                                   const gchar    *key,
                                   gpointer        user_data)
@@ -1194,7 +1201,7 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
     else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_history_private_check_memory_usage (priv);
     else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
-        g_paste_history_load (self, NULL);
+        g_paste_history_history_name_changed (self, NULL);
 }
 
 static void
