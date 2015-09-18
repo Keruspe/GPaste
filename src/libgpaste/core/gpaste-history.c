@@ -1064,6 +1064,9 @@ g_paste_history_load (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
 
+    if (!g_strcmp0(name, priv->name))
+        return;
+
     g_slist_free_full (priv->history,
                        g_object_unref);
     priv->history = NULL;
