@@ -90,7 +90,7 @@ g_paste_screensaver_client_class_init (GPasteScreensaverClientClass *klass G_GNU
                                              0, /* class offset */
                                              NULL, /* accumulator */
                                              NULL, /* accumulator data */
-                                             g_cclosure_marshal_generic,
+                                             g_cclosure_marshal_VOID__BOOLEAN,
                                              G_TYPE_NONE,
                                              1,
                                              G_TYPE_BOOLEAN);
