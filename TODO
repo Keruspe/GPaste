@@ -1,7 +1,3 @@
-3.18:
-    change types to uint64 in schema
-    check max values in schema and settings-ui
-
 3.20:
     general:
         autoconf cleanup w/ AX_* + custom macros
