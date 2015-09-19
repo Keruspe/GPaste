@@ -24,6 +24,7 @@ typedef struct
 {
     GPasteSettings *settings;
 
+    GtkLabel       *index_label;
     GtkLabel       *label;
 
     gulong          size_id;
@@ -57,10 +58,32 @@ g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
                                    const gchar          *text)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     gtk_label_set_text (priv->label, text);
+}
+
+/**
+ * g_paste_ui_item_skeleton_set_index:
+ * @self: the #GPasteUiItemSkeleton instance
+ * @index: the new index to display
+ *
+ * Changes the displayed index
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
+                                    guint32               index)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
+
+    GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
+    g_autofree gchar *_index = g_strdup_printf("%u", index);
+
+    gtk_label_set_text (priv->index_label, _index);
 }
 
 /**
@@ -106,11 +129,30 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
 {
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
+    GtkWidget *index_label = gtk_label_new ("");
     GtkWidget *label = gtk_label_new ("");
+    priv->index_label = GTK_LABEL (index_label);
     priv->label = GTK_LABEL (label);
 
+    gtk_widget_set_margin_start (index_label, 5);
+    gtk_widget_set_margin_end (index_label, 5);
+    gtk_widget_set_margin_top (index_label, 5);
+    gtk_widget_set_margin_bottom (index_label, 5);
+    gtk_widget_set_sensitive (index_label, FALSE);
+    gtk_label_set_xalign (priv->index_label, 1.0);
+    gtk_label_set_width_chars (priv->index_label, 3);
+    gtk_label_set_max_width_chars (priv->index_label, 3);
+    gtk_label_set_selectable (priv->index_label, FALSE);
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_label_set_xalign (priv->label, 0.0);
+
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+    gtk_widget_set_margin_start (hbox, 5);
+    gtk_widget_set_margin_end (hbox, 5);
+    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
+
+    gtk_container_add (GTK_CONTAINER (self), hbox);
 }
 
 /**
