@@ -24,15 +24,15 @@
 #ifndef __G_PASTE_UI_EMPTY_ITEM_H__
 #define __G_PASTE_UI_EMPTY_ITEM_H__
 
-#include <gpaste-macros.h>
+#include <gpaste-ui-item-skeleton.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_EMPTY_ITEM (g_paste_ui_empty_item_get_type ())
 
-G_PASTE_FINAL_TYPE (UiEmptyItem, ui_empty_item, UI_EMPTY_ITEM, GtkListBoxRow)
+G_PASTE_FINAL_TYPE (UiEmptyItem, ui_empty_item, UI_EMPTY_ITEM, GPasteUiItemSkeleton)
 
-GtkWidget *g_paste_ui_empty_item_new (void);
+GtkWidget *g_paste_ui_empty_item_new (GPasteSettings *settings);
 
 G_END_DECLS
 

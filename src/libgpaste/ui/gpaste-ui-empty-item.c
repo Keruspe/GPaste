@@ -21,10 +21,10 @@
 
 struct _GPasteUiEmptyItem
 {
-    GtkListBoxRow parent_instance;
+    GPasteUiItemSkeleton parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiEmptyItem, g_paste_ui_empty_item, GTK_TYPE_LIST_BOX_ROW)
+G_DEFINE_TYPE (GPasteUiEmptyItem, g_paste_ui_empty_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
 
 static void
 g_paste_ui_empty_item_class_init (GPasteUiEmptyItemClass *klass G_GNUC_UNUSED)
@@ -34,11 +34,16 @@ g_paste_ui_empty_item_class_init (GPasteUiEmptyItemClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_empty_item_init (GPasteUiEmptyItem *self)
 {
-    gtk_container_add (GTK_CONTAINER (self), gtk_label_new (_("(Empty)")));
+    GPasteUiItemSkeleton *is = G_PASTE_UI_ITEM_SKELETON (self);
+
+    g_paste_ui_item_skeleton_set_text (is, _("(Empty)"));
+    gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), FALSE);
+    gtk_container_add (GTK_CONTAINER (self), GTK_WIDGET (g_paste_ui_item_skeleton_get_label (is)));
 }
 
 /**
  * g_paste_ui_empty_item_new:
+ * @settings: a #GPasteSettings instance
  *
  * Create a new instance of #GPasteUiEmptyItem
  *
@@ -46,10 +51,9 @@ g_paste_ui_empty_item_init (GPasteUiEmptyItem *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_empty_item_new (void)
+g_paste_ui_empty_item_new (GPasteSettings *settings)
 {
-    return gtk_widget_new (G_PASTE_TYPE_UI_EMPTY_ITEM,
-                           "activatable", FALSE,
-                           "selectable",  FALSE,
-                           NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
+    return g_paste_ui_item_skeleton_new (G_PASTE_TYPE_UI_EMPTY_ITEM, settings);
 }

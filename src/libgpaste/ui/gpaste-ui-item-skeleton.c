@@ -69,7 +69,7 @@ g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
  *
  * Get the inner label
  *
- * Returns: The inner #GtkLabel
+ * Returns: (transfer none): The inner #GtkLabel
  */
 G_PASTE_VISIBLE GtkLabel *
 g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self)

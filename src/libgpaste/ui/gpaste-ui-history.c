@@ -346,10 +346,6 @@ g_paste_ui_history_init (GPasteUiHistory *self)
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    priv->dummy_item = g_paste_ui_empty_item_new ();
-
-    gtk_container_add (GTK_CONTAINER (self), priv->dummy_item);
-
     priv->activated_id = g_signal_connect (G_OBJECT (self),
                                            "row-activated",
                                            G_CALLBACK (on_row_activated),
@@ -384,8 +380,11 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
+    priv->dummy_item = g_paste_ui_empty_item_new (settings);
     priv->panel = panel;
     priv->rootwin = rootwin;
+
+    gtk_container_add (GTK_CONTAINER (self), priv->dummy_item);
 
     priv->update_id = g_signal_connect (client,
                                         "update",
