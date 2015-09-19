@@ -27,6 +27,8 @@ typedef struct
     GtkLabel       *index_label;
     GtkLabel       *label;
 
+    gboolean        editable;
+
     gulong          size_id;
 } GPasteUiItemSkeletonPrivate;
 
@@ -63,6 +65,26 @@ g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
 
     gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), activatable);
     gtk_widget_set_sensitive (GTK_WIDGET (priv->label), activatable);
+}
+
+/**
+ * g_paste_ui_item_skeleton_set_editable:
+ * @self: the #GPasteUiItemSkeleton instance
+ * @editable: whether the item should now be editable or not
+ *
+ * Mark the item as being editable or not
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
+                                       gboolean              editable)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
+
+    GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
+
+    priv->editable = editable;
 }
 
 /**
@@ -173,8 +195,10 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
 
     GtkWidget *index_label = gtk_label_new ("");
     GtkWidget *label = gtk_label_new ("");
+
     priv->index_label = GTK_LABEL (index_label);
     priv->label = GTK_LABEL (label);
+    priv->editable = TRUE;
 
     gtk_widget_set_margin_start (index_label, 5);
     gtk_widget_set_margin_end (index_label, 5);
