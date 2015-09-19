@@ -19,7 +19,6 @@
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
-#include <gpaste-ui-panel.h>
 #include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-window.h>
 
