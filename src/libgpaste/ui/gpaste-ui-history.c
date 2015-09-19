@@ -98,6 +98,9 @@ g_paste_ui_history_drop_list (GtkContainer *self,
     g_slist_free (list);
 }
 
+static void g_paste_ui_history_refresh (GPasteUiHistory *self,
+                                        guint64          from_index);
+
 static void
 g_paste_ui_history_update_height_request (GPasteSettings *settings,
                                           const gchar    *key G_GNUC_UNUSED,
@@ -108,6 +111,9 @@ g_paste_ui_history_update_height_request (GPasteSettings *settings,
 
     if (priv->item_height)
         g_object_set (G_OBJECT (self), "height-request", g_paste_settings_get_max_displayed_history_size (settings) * priv->item_height, NULL);
+
+    /* in case we now can display more or less stuff */
+    g_paste_ui_history_refresh (self, 0);
 }
 
 typedef struct {
