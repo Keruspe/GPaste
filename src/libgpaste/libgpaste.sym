@@ -401,6 +401,10 @@ global:
     g_paste_ui_history_actions_new;
     g_paste_ui_history_actions_set_relative_to;
     g_paste_ui_history_new;
+    g_paste_ui_item_skeleton_get_label;
+    g_paste_ui_item_skeleton_get_type;
+    g_paste_ui_item_skeleton_new;
+    g_paste_ui_item_skeleton_set_text;
     g_paste_ui_panel_get_type;
     g_paste_ui_panel_new;
     g_paste_ui_panel_history_activate;

@@ -103,6 +103,7 @@
 #include <gpaste-ui-history-action.h>
 #include <gpaste-ui-history-actions.h>
 #include <gpaste-ui-item.h>
+#include <gpaste-ui-item-skeleton.h>
 #include <gpaste-ui-panel.h>
 #include <gpaste-ui-panel-history.h>
 #include <gpaste-ui-reexec.h>
