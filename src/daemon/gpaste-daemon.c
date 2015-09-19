@@ -49,19 +49,45 @@ on_name_lost (GPasteBus *bus G_GNUC_UNUSED,
     exit (EXIT_FAILURE);
 }
 
+typedef struct
+{
+    GPasteBus        *bus;
+    GPasteDaemon     *daemon;
+    GPasteBusObject **search_provider;
+    GApplication     *gapp;
+} CallbackData;
+
+static void
+register_bus_object (GPasteBus       *bus,
+                     GPasteBusObject *object,
+                     GApplication    *gapp)
+{
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_bus_object_register_on_connection (object, g_paste_bus_get_connection (bus), &error))
+        on_name_lost (bus, gapp);
+}
+
+static gboolean
+register_search_provider (gpointer user_data)
+{
+    CallbackData *data = user_data;
+    GPasteBusObject *search_provider = *(data->search_provider) = g_paste_search_provider_new ();
+
+    register_bus_object (data->bus, search_provider, data->gapp);
+
+    return G_SOURCE_REMOVE;
+}
+
 static void
 on_bus_acquired (GPasteBus *bus,
                  gpointer   user_data)
 {
-    gpointer *data = (gpointer *) user_data;
-    GPasteBusObject *daemon = data[0];
-    GPasteBusObject *search_provider = data[1];
-    GDBusConnection *connection = g_paste_bus_get_connection (bus);
-    g_autoptr (GError) error = NULL;
+    CallbackData *data = user_data;
 
-    if (!g_paste_bus_object_register_on_connection (daemon, connection, &error) ||
-        !g_paste_bus_object_register_on_connection (search_provider, connection, &error))
-            on_name_lost (bus, data[2]);
+    register_bus_object (bus, G_PASTE_BUS_OBJECT (data->daemon), data->gapp);
+
+    g_idle_add (register_search_provider, user_data);
 }
 
 static void
@@ -85,12 +111,14 @@ main (gint argc, gchar *argv[])
     /* Keep the gapplication around */
     g_application_hold (gapp);
 
-    g_autofree gpointer *data = g_new0 (gpointer, 3);
-    g_autoptr (GPasteDaemon) g_paste_daemon = data[0] = g_paste_daemon_new ();
-    G_GNUC_UNUSED g_autoptr (GPasteBusObject) g_paste_search_provider = data[1] = g_paste_search_provider_new ();
-    g_autoptr (GPasteBus) bus = g_paste_bus_new (on_bus_acquired, data);
+    g_autofree CallbackData *data = g_new0 (CallbackData, 1);
+    g_autoptr (GPasteDaemon) g_paste_daemon = data->daemon = g_paste_daemon_new ();
+    g_autoptr (GPasteBusObject) search_provider = NULL;
 
-    _app = data[2] = gapp;
+    data->search_provider = &search_provider;
+    _app = data->gapp = gapp;
+
+    g_autoptr (GPasteBus) bus = data->bus = g_paste_bus_new (on_bus_acquired, data);
 
     gulong c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (bus,
