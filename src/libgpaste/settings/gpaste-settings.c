@@ -134,11 +134,9 @@ static guint64
 g_settings_get_gpaste_uint64 (GSettings   *settings,
                               const gchar *key)
 {
-    guint64 ret;
+    g_autoptr (GVariant) v = g_settings_get_value (settings, key);
 
-    g_settings_get (settings, key, "t", &ret, NULL);
-
-    return ret;
+    return g_variant_get_uint64 (v);
 }
 
 static void
@@ -146,7 +144,7 @@ g_settings_set_gpaste_uint64 (GSettings   *settings,
                               const gchar *key,
                               guint64      value)
 {
-    g_settings_set (settings, key, "t", value);
+    g_settings_set_value (settings, key, g_variant_new_uint64 (value));
 }
 
 /**
