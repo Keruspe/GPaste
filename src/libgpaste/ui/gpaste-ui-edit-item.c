@@ -17,51 +17,28 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-ui-edit.h>
+#include <gpaste-ui-edit-item.h>
 
-struct _GPasteUiEdit
+struct _GPasteUiEditItem
 {
     GtkButton parent_instance;
 };
 
 typedef struct
 {
-    GPasteClient *client;
-
     GtkWindow    *rootwin;
+} GPasteUiEditItemPrivate;
 
-    guint32       index;
-} GPasteUiEditPrivate;
-
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEdit, g_paste_ui_edit, GTK_TYPE_BUTTON)
-
-/**
- * g_paste_ui_edit_set_index:
- * @self: a #GPasteUiEdit instance
- * @index: the index of the corresponding item
- *
- * Track a new index
- *
- * Returns:
- */
-G_PASTE_VISIBLE void
-g_paste_ui_edit_set_index (GPasteUiEdit *self,
-                           guint32       index)
-{
-    g_return_if_fail (G_PASTE_IS_UI_EDIT (self));
-
-    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (self);
-
-    priv->index = index;
-}
+G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEditItem, g_paste_ui_edit_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 
 static void
-on_item_ready (GObject      *source_object G_GNUC_UNUSED,
+on_item_ready (GObject      *source_object,
                GAsyncResult *res,
                gpointer      user_data)
 {
-    GPasteUiEditPrivate *priv = user_data;
-    g_autofree gchar *old_txt = g_paste_client_get_raw_element_finish (priv->client, res, NULL);
+    GPasteUiEditItemPrivate *priv = user_data;
+    GPasteClient *client = G_PASTE_CLIENT (source_object);
+    g_autofree gchar *old_txt = g_paste_client_get_raw_element_finish (client, res, NULL);
 
     if (!old_txt)
         return;
@@ -92,76 +69,53 @@ on_item_ready (GObject      *source_object G_GNUC_UNUSED,
 
         g_object_get (G_OBJECT (buf), "text", &txt, NULL);
         if (txt && *txt)
-            g_paste_client_replace (priv->client, priv->index, txt, NULL, NULL);
+            g_paste_client_replace (client, /* FIXME: index */ -1, txt, NULL, NULL);
     }
 
     gtk_widget_destroy (dialog);
 }
 
-static gboolean
-g_paste_ui_edit_button_press_event (GtkWidget      *widget,
-                                    GdkEventButton *event G_GNUC_UNUSED)
+static void
+g_paste_ui_edit_item_activate (GPasteUiItemAction *self,
+                               GPasteClient       *client,
+                               guint32             index)
 {
-    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (widget));
+    GPasteUiEditItemPrivate *priv = g_paste_ui_edit_item_get_instance_private (G_PASTE_UI_EDIT_ITEM (self));
 
-    g_paste_client_get_raw_element (priv->client, priv->index, on_item_ready, priv);
-
-    return TRUE;
+    g_paste_client_get_raw_element (client, index, on_item_ready, priv);
 }
 
 static void
-g_paste_ui_edit_dispose (GObject *object)
+g_paste_ui_edit_item_class_init (GPasteUiEditItemClass *klass)
 {
-    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (object));
-
-    g_clear_object (&priv->client);
-
-    G_OBJECT_CLASS (g_paste_ui_edit_parent_class)->dispose (object);
+    G_PASTE_UI_ITEM_ACTION_CLASS (klass)->activate = g_paste_ui_edit_item_activate;
 }
 
 static void
-g_paste_ui_edit_class_init (GPasteUiEditClass *klass)
+g_paste_ui_edit_item_init (GPasteUiEditItem *self G_GNUC_UNUSED)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_edit_dispose;
-    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_edit_button_press_event;
-}
-
-static void
-g_paste_ui_edit_init (GPasteUiEdit *self)
-{
-    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (self);
-    GtkWidget *icon = gtk_image_new_from_icon_name ("accessories-text-editor-symbolic", GTK_ICON_SIZE_MENU);
-
-    priv->index = -1;
-
-    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Edit"));
-    gtk_widget_set_margin_start (icon, 5);
-    gtk_widget_set_margin_end (icon, 5);
-
-    gtk_container_add (GTK_CONTAINER (self), icon);
 }
 
 /**
- * g_paste_ui_edit_new:
+ * g_paste_ui_edit_item_new:
  * @client: a #GPasteClient
  * @rootwin: the root #GtkWindow
  *
- * Create a new instance of #GPasteUiEdit
+ * Create a new instance of #GPasteUiEditItem
  *
- * Returns: a newly allocated #GPasteUiEdit
+ * Returns: a newly allocated #GPasteUiEditItem
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_edit_new (GPasteClient *client,
-                     GtkWindow    *rootwin)
+g_paste_ui_edit_item_new (GPasteClient *client,
+                          GtkWindow    *rootwin)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_EDIT, NULL);
-    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (G_PASTE_UI_EDIT (self));
+    GtkWidget *self = g_paste_ui_item_action_new (G_PASTE_TYPE_UI_EDIT_ITEM, client, "accessories-text-editor-symbolic", _("Edit"));
+    GPasteUiEditItemPrivate *priv = g_paste_ui_edit_item_get_instance_private (G_PASTE_UI_EDIT_ITEM (self));
 
-    priv->client = g_object_ref (client);
     priv->rootwin = rootwin;
 
     return self;

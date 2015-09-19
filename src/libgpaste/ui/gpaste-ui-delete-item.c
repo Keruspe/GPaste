@@ -49,9 +49,9 @@ g_paste_ui_delete_item_init (GPasteUiDeleteItem *self G_GNUC_UNUSED)
  * g_paste_ui_delete_item_new:
  * @client: a #GPasteClient
  *
- * Create a new instance of #GPasteUiDelete
+ * Create a new instance of #GPasteUiDeleteItem
  *
- * Returns: a newly allocated #GPasteUiDelete
+ * Returns: a newly allocated #GPasteUiDeleteItem
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
