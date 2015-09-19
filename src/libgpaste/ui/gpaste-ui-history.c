@@ -380,7 +380,7 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
-    priv->dummy_item = g_paste_ui_empty_item_new (settings);
+    priv->dummy_item = g_paste_ui_empty_item_new (client, settings, rootwin);
     priv->panel = panel;
     priv->rootwin = rootwin;
 

@@ -19,10 +19,14 @@
 
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-item-skeleton.h>
+#include <gpaste-ui-delete.h>
+#include <gpaste-ui-edit.h>
 
 typedef struct
 {
     GPasteSettings *settings;
+    GPasteUiEdit   *edit;
+    GPasteUiDelete *delete;
 
     GtkLabel       *index_label;
     GtkLabel       *label;
@@ -65,6 +69,12 @@ g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
 
     gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), activatable);
     gtk_widget_set_sensitive (GTK_WIDGET (priv->label), activatable);
+
+    if (priv->delete)
+        gtk_widget_set_sensitive (GTK_WIDGET (priv->delete), activatable);
+
+    if (priv->edit)
+        gtk_widget_set_sensitive (GTK_WIDGET (priv->edit), activatable && priv->editable);
 }
 
 /**
@@ -85,6 +95,8 @@ g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     priv->editable = editable;
+
+    gtk_widget_set_sensitive (GTK_WIDGET (priv->edit), editable);
 }
 
 /**
@@ -148,6 +160,10 @@ g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
     g_autofree gchar *_index = g_strdup_printf("%u", index);
 
     gtk_label_set_text (priv->index_label, _index);
+
+    g_paste_ui_edit_set_index (priv->edit, index);
+    g_paste_ui_delete_set_index (priv->delete, index);
+
 }
 
 /**
@@ -224,7 +240,9 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
 /**
  * g_paste_ui_item_skeleton_new:
  * @type: the type of the subclass
+ * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
+ * @rootwin: the root #GtkWindow
  *
  * Create a new instance of #GPasteUiItemSkeleton
  *
@@ -233,15 +251,26 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
  */
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_item_skeleton_new (GType           type,
-                              GPasteSettings *settings)
+                              GPasteClient   *client,
+                              GPasteSettings *settings,
+                              GtkWindow      *rootwin)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_ITEM_SKELETON), NULL);
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (type, "selectable", FALSE, NULL);
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (self));
+    GtkWidget *edit = g_paste_ui_edit_new (client, rootwin);
+    GtkWidget *delete = g_paste_ui_delete_new (client);
 
     priv->settings = g_object_ref (settings);
+    priv->edit = G_PASTE_UI_EDIT (edit);
+    priv->delete = G_PASTE_UI_DELETE (delete);
+
+    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), delete, FALSE, TRUE, 0);
+    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), edit, FALSE, TRUE, 0);
 
     priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,

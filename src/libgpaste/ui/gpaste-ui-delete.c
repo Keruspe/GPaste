@@ -47,6 +47,7 @@ g_paste_ui_delete_set_index (GPasteUiDelete *self,
                              guint32         index)
 {
     g_return_if_fail (G_PASTE_IS_UI_DELETE (self));
+
     GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (self);
 
     priv->index = index;
@@ -83,7 +84,10 @@ g_paste_ui_delete_class_init (GPasteUiDeleteClass *klass)
 static void
 g_paste_ui_delete_init (GPasteUiDelete *self)
 {
+    GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (self);
     GtkWidget *icon = gtk_image_new_from_icon_name ("edit-delete-symbolic", GTK_ICON_SIZE_MENU);
+
+    priv->index = -1;
 
     gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Delete"));
     gtk_widget_set_margin_start (icon, 5);
@@ -95,7 +99,6 @@ g_paste_ui_delete_init (GPasteUiDelete *self)
 /**
  * g_paste_ui_delete_new:
  * @client: a #GPasteClient
- * @index: the index of the corresponding item
  *
  * Create a new instance of #GPasteUiDelete
  *
@@ -103,8 +106,7 @@ g_paste_ui_delete_init (GPasteUiDelete *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_delete_new (GPasteClient *client,
-                       guint32       index)
+g_paste_ui_delete_new (GPasteClient *client)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
@@ -112,7 +114,6 @@ g_paste_ui_delete_new (GPasteClient *client,
     GPasteUiDeletePrivate *priv = g_paste_ui_delete_get_instance_private (G_PASTE_UI_DELETE (self));
 
     priv->client = g_object_ref (client);
-    priv->index = index;
 
     return self;
 }

@@ -32,7 +32,9 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiEmptyItem, ui_empty_item, UI_EMPTY_ITEM, GPasteUiItemSkeleton)
 
-GtkWidget *g_paste_ui_empty_item_new (GPasteSettings *settings);
+GtkWidget *g_paste_ui_empty_item_new (GPasteClient   *client,
+                                      GPasteSettings *settings,
+                                      GtkWindow      *rootwin);
 
 G_END_DECLS
 

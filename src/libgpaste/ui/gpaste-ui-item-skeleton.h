@@ -24,6 +24,7 @@
 #ifndef __G_PASTE_UI_ITEM_SKELETON_H__
 #define __G_PASTE_UI_ITEM_SKELETON_H__
 
+#include <gpaste-client.h>
 #include <gpaste-settings.h>
 
 G_BEGIN_DECLS
@@ -52,7 +53,9 @@ void g_paste_ui_item_skeleton_set_index  (GPasteUiItemSkeleton *self,
 GtkLabel *g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self);
 
 GtkWidget *g_paste_ui_item_skeleton_new (GType           type,
-                                         GPasteSettings *settings);
+                                         GPasteClient   *client,
+                                         GPasteSettings *settings,
+                                         GtkWindow      *rootwin);
 
 G_END_DECLS
 

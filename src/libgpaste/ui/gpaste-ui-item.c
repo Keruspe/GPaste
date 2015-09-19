@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-ui-delete.h>
-#include <gpaste-ui-edit.h>
 #include <gpaste-ui-item.h>
 #include <gpaste-util.h>
 
@@ -30,8 +28,6 @@ struct _GPasteUiItem
 typedef struct
 {
     GPasteClient   *client;
-    GPasteUiEdit   *edit;
-    GPasteUiDelete *delete;
 
     GtkLabel       *index_label;
     GtkLabel       *label;
@@ -110,14 +106,15 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-    GPasteUiItemPrivate *priv = user_data;
+    GPasteUiItem *self = user_data;
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     GPasteItemKind kind = g_paste_client_get_element_kind_finish (priv->client, res, &error);
 
     if (!kind || error)
         return;
 
-    gtk_widget_set_sensitive (GTK_WIDGET (priv->edit), kind == G_PASTE_ITEM_KIND_TEXT);
+    g_paste_ui_item_skeleton_set_editable (G_PASTE_UI_ITEM_SKELETON (self), kind == G_PASTE_ITEM_KIND_TEXT);
 }
 
 static void
@@ -128,7 +125,7 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
 
     g_paste_client_get_element (priv->client, priv->index, g_paste_ui_item_on_text_ready, self);
-    g_paste_client_get_element_kind (priv->client, priv->index, g_paste_ui_item_on_kind_ready, priv);
+    g_paste_client_get_element_kind (priv->client, priv->index, g_paste_ui_item_on_kind_ready, self);
 }
 
 /**
@@ -156,9 +153,6 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
         priv->bold = TRUE;
     else if (!old_index)
         priv->bold = FALSE;
-
-    g_paste_ui_edit_set_index (priv->edit, index);
-    g_paste_ui_delete_set_index (priv->delete, index);
 
     if (index != (guint32)-1)
     {
@@ -193,7 +187,7 @@ g_paste_ui_item_init (GPasteUiItem *self)
 {
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
 
-    priv->index = (guint32)-1;
+    priv->index = -1;
 }
 
 /**
@@ -218,17 +212,10 @@ g_paste_ui_item_new (GPasteClient   *client,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = g_paste_ui_item_skeleton_new (G_PASTE_TYPE_UI_ITEM, settings);
+    GtkWidget *self = g_paste_ui_item_skeleton_new (G_PASTE_TYPE_UI_ITEM, client, settings, rootwin);
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
-    GtkWidget *edit = g_paste_ui_edit_new (client, rootwin, index);
-    GtkWidget *delete = g_paste_ui_delete_new (client, index);
 
     priv->client = g_object_ref (client);
-    priv->edit = G_PASTE_UI_EDIT (edit);
-    priv->delete = G_PASTE_UI_DELETE (delete);
-
-    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), delete, FALSE, TRUE, 0);
-    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), edit, FALSE, TRUE, 0);
 
     g_paste_ui_item_set_index (G_PASTE_UI_ITEM (self), index);
 

@@ -49,6 +49,7 @@ g_paste_ui_edit_set_index (GPasteUiEdit *self,
                            guint32       index)
 {
     g_return_if_fail (G_PASTE_IS_UI_EDIT (self));
+
     GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (self);
 
     priv->index = index;
@@ -128,7 +129,10 @@ g_paste_ui_edit_class_init (GPasteUiEditClass *klass)
 static void
 g_paste_ui_edit_init (GPasteUiEdit *self)
 {
+    GPasteUiEditPrivate *priv = g_paste_ui_edit_get_instance_private (self);
     GtkWidget *icon = gtk_image_new_from_icon_name ("accessories-text-editor-symbolic", GTK_ICON_SIZE_MENU);
+
+    priv->index = -1;
 
     gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Edit"));
     gtk_widget_set_margin_start (icon, 5);
@@ -141,7 +145,6 @@ g_paste_ui_edit_init (GPasteUiEdit *self)
  * g_paste_ui_edit_new:
  * @client: a #GPasteClient
  * @rootwin: the root #GtkWindow
- * @index: the index of the corresponding item
  *
  * Create a new instance of #GPasteUiEdit
  *
@@ -150,8 +153,7 @@ g_paste_ui_edit_init (GPasteUiEdit *self)
  */
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_edit_new (GPasteClient *client,
-                     GtkWindow    *rootwin,
-                     guint32       index)
+                     GtkWindow    *rootwin)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
@@ -161,7 +163,6 @@ g_paste_ui_edit_new (GPasteClient *client,
 
     priv->client = g_object_ref (client);
     priv->rootwin = rootwin;
-    priv->index = index;
 
     return self;
 }

@@ -35,8 +35,7 @@ G_PASTE_FINAL_TYPE (UiDelete, ui_delete, UI_DELETE, GtkButton)
 void g_paste_ui_delete_set_index (GPasteUiDelete *self,
                                   guint32         index);
 
-GtkWidget *g_paste_ui_delete_new (GPasteClient *client,
-                                  guint32       index);
+GtkWidget *g_paste_ui_delete_new (GPasteClient *client);
 
 G_END_DECLS
 

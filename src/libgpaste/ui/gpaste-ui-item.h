@@ -24,7 +24,6 @@
 #ifndef __G_PASTE_UI_ITEM_H__
 #define __G_PASTE_UI_ITEM_H__
 
-#include <gpaste-client.h>
 #include <gpaste-ui-item-skeleton.h>
 
 G_BEGIN_DECLS
