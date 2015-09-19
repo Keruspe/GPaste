@@ -25,6 +25,7 @@ libgpaste_gir_file = bindings/gi/GPaste-1.0.gir
 
 $(libgpaste_gir_file): $(libgpaste_la_file)
 bindings_gi_GPaste_1_0_gir_FILES = \
+	$(pkginclude_HEADERS) \
 	$(lib_libgpaste_la_SOURCES) \
 	$(NULL)
 bindings_gi_GPaste_1_0_gir_CFLAGS = \
