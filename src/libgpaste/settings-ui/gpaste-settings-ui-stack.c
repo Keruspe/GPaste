@@ -201,7 +201,7 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     priv->element_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                              _("Max element size when displaying: "),
                                                                              (gdouble) g_paste_settings_get_element_size (settings),
-                                                                             0, 255, 5,
+                                                                             0, 511, 5,
                                                                              element_size_callback,
                                                                              (GPasteResetCallback) g_paste_settings_reset_element_size,
                                                                              settings);
@@ -222,7 +222,7 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     priv->max_memory_usage_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                  _("Max memory usage (MB): "),
                                                                                  (gdouble) g_paste_settings_get_max_memory_usage (settings),
-                                                                                 5, 2000, 5,
+                                                                                 5, 16383, 5,
                                                                                  max_memory_usage_callback,
                                                                                  (GPasteResetCallback) g_paste_settings_reset_max_memory_usage,
                                                                                  settings);
@@ -236,7 +236,7 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     priv->min_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Min text item length: "),
                                                                                    (gdouble) g_paste_settings_get_min_text_item_size (settings),
-                                                                                   1, G_MAXUINT64, 1,
+                                                                                   1, 65535, 1,
                                                                                    min_text_item_size_callback,
                                                                                    (GPasteResetCallback) g_paste_settings_reset_min_text_item_size,
                                                                                    settings);
