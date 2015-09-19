@@ -32,6 +32,7 @@ G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
 enum
 {
     DELETE_HISTORY,
+    EMPTY_HISTORY,
     SHOW_HISTORY,
     SWITCH_HISTORY,
     TRACKING,
@@ -2060,10 +2061,11 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
 {
     GPasteClient *self = G_PASTE_CLIENT (proxy);
 
-    HANDLE_SIGNAL_WITH_DATA (DELETE_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
-    else HANDLE_SIGNAL (SHOW_HISTORY)
+    HANDLE_SIGNAL (SHOW_HISTORY)
+    else HANDLE_SIGNAL_WITH_DATA (DELETE_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
+    else HANDLE_SIGNAL_WITH_DATA (EMPTY_HISTORY,  const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
-    else HANDLE_SIGNAL_WITH_DATA (TRACKING, gboolean, g_variant_get_boolean (variant))
+    else HANDLE_SIGNAL_WITH_DATA (TRACKING,       gboolean,      g_variant_get_boolean (variant))
     else if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
     {
         GVariantIter params_iter;
@@ -2095,6 +2097,16 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * an history.
      */
     signals[DELETE_HISTORY] = NEW_SIGNAL_WITH_DATA ("delete-history", STRING);
+
+    /**
+     * GPasteClient::empty-history:
+     * @client: the object on which the signal was emitted
+     * @history: the name of the history we emptied
+     *
+     * The "delete-history" signal is emitted when we empty
+     * an history.
+     */
+    signals[EMPTY_HISTORY] = NEW_SIGNAL_WITH_DATA ("empty-history", STRING);
 
     /**
      * GPasteClient::show-history:
