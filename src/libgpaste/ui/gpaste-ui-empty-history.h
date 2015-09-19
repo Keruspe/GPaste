@@ -21,20 +21,22 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_EMPTY_H__
-#define __G_PASTE_UI_EMPTY_H__
+#ifndef __G_PASTE_UI_EMPTY_HISTORY_H__
+#define __G_PASTE_UI_EMPTY_HISTORY_H__
 
 #include <gpaste-client.h>
+#include <gpaste-ui-history-action.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_EMPTY (g_paste_ui_empty_get_type ())
+#define G_PASTE_TYPE_UI_EMPTY_HISTORY (g_paste_ui_empty_history_get_type ())
 
-G_PASTE_FINAL_TYPE (UiEmpty, ui_empty, UI_EMPTY, GtkButton)
+G_PASTE_FINAL_TYPE (UiEmptyHistory, ui_empty_history, UI_EMPTY_HISTORY, GPasteUiHistoryAction)
 
-GtkWidget *g_paste_ui_empty_new (GtkWindow    *topwin,
-                                 GPasteClient *client);
+GtkWidget *g_paste_ui_empty_history_new (GPasteClient *client,
+                                         GtkWidget    *actions,
+                                         GtkWindow    *rootwin);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_EMPTY_H__*/
+#endif /*__G_PASTE_UI_EMPTY_HISTORY_H__*/

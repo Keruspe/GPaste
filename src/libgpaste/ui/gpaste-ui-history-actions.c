@@ -19,6 +19,7 @@
 
 #include <gpaste-ui-backup-history.h>
 #include <gpaste-ui-delete-history.h>
+#include <gpaste-ui-empty-history.h>
 #include <gpaste-ui-history-actions.h>
 
 struct _GPasteUiHistoryActions
@@ -128,9 +129,11 @@ g_paste_ui_history_actions_new (GPasteClient *client,
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
     GtkWidget *backup = g_paste_ui_backup_history_new (client, self, rootwin);
     GtkWidget *delete = g_paste_ui_delete_history_new (client, self, rootwin);
+    GtkWidget *empty = g_paste_ui_empty_history_new (client, self, rootwin);
 
     priv->client = g_object_ref (client);
     priv->actions = g_slist_append (priv->actions, backup);
+    priv->actions = g_slist_append (priv->actions, empty);
     priv->actions = g_slist_append (priv->actions, delete);
 
     gtk_popover_set_position (GTK_POPOVER (self), GTK_POS_RIGHT);
