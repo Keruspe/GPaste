@@ -21,6 +21,7 @@
 #include <gpaste-ui-delete-item.h>
 #include <gpaste-ui-edit-item.h>
 #include <gpaste-ui-item-skeleton.h>
+#include <gpaste-ui-upload-item.h>
 
 typedef struct
 {
@@ -291,12 +292,14 @@ g_paste_ui_item_skeleton_new (GType           type,
     GtkWidget *self = gtk_widget_new (type, "selectable", FALSE, NULL);
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (self));
     GtkWidget *edit = g_paste_ui_edit_item_new (client, rootwin);
+    GtkWidget *upload = g_paste_ui_upload_item_new (client);
     GtkWidget *delete = g_paste_ui_delete_item_new (client);
 
     priv->settings = g_object_ref (settings);
     priv->edit = edit;
 
     priv->actions = g_slist_append (priv->actions, edit);
+    priv->actions = g_slist_append (priv->actions, upload);
     priv->actions = g_slist_append (priv->actions, delete);
 
     g_slist_foreach (priv->actions, add_action, gtk_bin_get_child (GTK_BIN (self)));

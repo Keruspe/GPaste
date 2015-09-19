@@ -17,47 +17,47 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-ui-delete-item.h>
+#include <gpaste-ui-upload-item.h>
 
-struct _GPasteUiDeleteItem
+struct _GPasteUiUploadItem
 {
     GPasteUiItemAction parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiDeleteItem, g_paste_ui_delete_item, G_PASTE_TYPE_UI_ITEM_ACTION)
+G_DEFINE_TYPE (GPasteUiUploadItem, g_paste_ui_upload_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 
 static void
-g_paste_ui_delete_item_activate (GPasteUiItemAction *self G_GNUC_UNUSED,
+g_paste_ui_upload_item_activate (GPasteUiItemAction *self G_GNUC_UNUSED,
                                  GPasteClient       *client,
                                  guint32             index)
 {
-    g_paste_client_delete (client, index, NULL, NULL);
+    g_paste_client_upload (client, index, NULL, NULL);
 }
 
 static void
-g_paste_ui_delete_item_class_init (GPasteUiDeleteItemClass *klass)
+g_paste_ui_upload_item_class_init (GPasteUiUploadItemClass *klass)
 {
-    G_PASTE_UI_ITEM_ACTION_CLASS (klass)->activate = g_paste_ui_delete_item_activate;
+    G_PASTE_UI_ITEM_ACTION_CLASS (klass)->activate = g_paste_ui_upload_item_activate;
 }
 
 static void
-g_paste_ui_delete_item_init (GPasteUiDeleteItem *self G_GNUC_UNUSED)
+g_paste_ui_upload_item_init (GPasteUiUploadItem *self G_GNUC_UNUSED)
 {
 }
 
 /**
- * g_paste_ui_delete_item_new:
+ * g_paste_ui_upload_item_new:
  * @client: a #GPasteClient
  *
- * Create a new instance of #GPasteUiDeleteItem
+ * Create a new instance of #GPasteUiUploadItem
  *
- * Returns: a newly allocated #GPasteUiDeleteItem
+ * Returns: a newly allocated #GPasteUiUploadItem
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_delete_item_new (GPasteClient *client)
+g_paste_ui_upload_item_new (GPasteClient *client)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
 
-    return g_paste_ui_item_action_new (G_PASTE_TYPE_UI_DELETE_ITEM, client, "edit-delete-symbolic", _("Delete"));
+    return g_paste_ui_item_action_new (G_PASTE_TYPE_UI_UPLOAD_ITEM, client, "document-send-symbolic", _("Upload"));
 }

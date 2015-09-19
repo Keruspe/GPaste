@@ -436,6 +436,8 @@ global:
     g_paste_ui_search_bar_new;
     g_paste_ui_search_get_type;
     g_paste_ui_search_new;
+    g_paste_ui_upload_item_get_type;
+    g_paste_ui_upload_item_new;
     g_paste_ui_window_search;
     g_paste_ui_window_show_prefs;
 

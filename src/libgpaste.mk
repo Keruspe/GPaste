@@ -88,6 +88,7 @@ lib_libgpaste_la_public_headers = \
 	src/libgpaste/ui/gpaste-ui-search-bar.h \
 	src/libgpaste/ui/gpaste-ui-settings.h \
 	src/libgpaste/ui/gpaste-ui-switch.h \
+	src/libgpaste/ui/gpaste-ui-upload-item.h \
 	src/libgpaste/ui/gpaste-ui-window.h \
 	$(NULL)
 
@@ -150,6 +151,7 @@ lib_libgpaste_la_source_files = \
 	src/libgpaste/ui/gpaste-ui-search-bar.c \
 	src/libgpaste/ui/gpaste-ui-settings.c \
 	src/libgpaste/ui/gpaste-ui-switch.c \
+	src/libgpaste/ui/gpaste-ui-upload-item.c \
 	src/libgpaste/ui/gpaste-ui-window.c \
 	src/libgpaste/util/gpaste-util.c \
 	$(NULL)
