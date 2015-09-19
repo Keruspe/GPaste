@@ -46,7 +46,7 @@ g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
                                         gpointer        user_data)
 {
     GPasteUiItemSkeletonPrivate *priv = user_data;
-    guint32 size = g_paste_settings_get_element_size (settings);
+    guint64 size = g_paste_settings_get_element_size (settings);
 
     gtk_label_set_width_chars (priv->label, size);
     gtk_label_set_max_width_chars (priv->label, size);
@@ -157,7 +157,7 @@ action_set_index (gpointer data,
                   gpointer user_data)
 {
     GPasteUiItemAction *a = data;
-    guint32 *i = user_data;
+    guint64 *i = user_data;
 
     g_paste_ui_item_action_set_index (a, *i);
 }
@@ -173,12 +173,12 @@ action_set_index (gpointer data,
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
-                                    guint32               index)
+                                    guint64               index)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
-    g_autofree gchar *_index = g_strdup_printf("%u", index);
+    g_autofree gchar *_index = g_strdup_printf("%lu", index);
 
     gtk_label_set_text (priv->index_label, _index);
 

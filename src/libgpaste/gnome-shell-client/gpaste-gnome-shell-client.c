@@ -68,7 +68,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 /*******************/
 /* Methods / Async */
@@ -151,7 +151,7 @@ g_paste_gnome_shell_client_grab_accelerators_sync (GPasteGnomeShellClient      *
                                                    GError                     **error)
 {
     g_auto (GVariantBuilder) builder;
-    guint n_accelerators = 0;
+    guint64 n_accelerators = 0;
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE_ARRAY);
 
@@ -234,7 +234,7 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
                                               gpointer                     user_data)
 {
     g_auto (GVariantBuilder) builder;
-    guint n_accelerators = 0;
+    guint64 n_accelerators = 0;
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE_ARRAY);
 
@@ -372,7 +372,7 @@ g_paste_gnome_shell_client_class_init (GPasteGnomeShellClientClass *klass G_GNUC
                                                    0, /* class offset */
                                                    NULL, /* accumulator */
                                                    NULL, /* accumulator data */
-                                                   g_cclosure_marshal_VOID__UINT,
+                                                   g_cclosure_marshal_generic,
                                                    G_TYPE_NONE,
                                                    1,
                                                    G_TYPE_UINT);

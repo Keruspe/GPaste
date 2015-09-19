@@ -34,7 +34,7 @@ typedef struct _GPasteImageItemPrivate
     GDateTime *date;
     GdkPixbuf *image;
 
-    gsize      additional_size;
+    guint64    additional_size;
 } GPasteImageItemPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_ITEM)

@@ -334,12 +334,10 @@ g_paste_util_compute_checksum (GdkPixbuf *image)
     if (!image)
         return NULL;
 
-    guint length;
-    const guchar *data = gdk_pixbuf_get_pixels_with_length (image,
-                                                            &length);
-    return g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                        data,
-                                        length);
+    guint32 length;
+    const guchar *data = gdk_pixbuf_get_pixels_with_length (image, &length);
+
+    return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
 }
 
 /**

@@ -119,12 +119,12 @@ g_paste_uris_item_new (const gchar *uris)
     g_paste_item_set_display_string (self, full_display_string);
 
     g_auto (GStrv) paths = g_strsplit (uris, "\n", 0);
-    guint length = g_strv_length (paths);
+    guint64 length = g_strv_length (paths);
 
     g_paste_item_add_size (self, length + 1);
 
     GStrv _uris = priv->uris = g_new (gchar *, length + 1);
-    for (guint i = 0; i < length; ++i)
+    for (guint64 i = 0; i < length; ++i)
     {
         _uris[i] = g_strconcat ("file://", paths[i], NULL);
         g_paste_item_add_size (self, strlen (_uris[i]) + 1);

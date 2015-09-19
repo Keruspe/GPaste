@@ -18,7 +18,7 @@
  */
 
 #include <gpaste-client.h>
-#define __G_PASTE_NEEDS_AU__
+#define __G_PASTE_NEEDS_AT__
 #include <gpaste-gdbus-macros.h>
 #include <gpaste-update-enums.h>
 
@@ -41,7 +41,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 /*******************/
 /* Methods / Async */
@@ -75,11 +75,11 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_ASYNC_FINISH_RET_STRV \
     DBUS_ASYNC_FINISH_RET_STRV_BASE (CLIENT)
 
-#define DBUS_ASYNC_FINISH_RET_UINT32 \
-    DBUS_ASYNC_FINISH_RET_UINT32_BASE (CLIENT)
+#define DBUS_ASYNC_FINISH_RET_UINT64 \
+    DBUS_ASYNC_FINISH_RET_UINT64_BASE (CLIENT)
 
-#define DBUS_ASYNC_FINISH_RET_AU(len) \
-    DBUS_ASYNC_FINISH_RET_AU_BASE (CLIENT, len)
+#define DBUS_ASYNC_FINISH_RET_AT(len) \
+    DBUS_ASYNC_FINISH_RET_AT_BASE (CLIENT, len)
 
 /******************/
 /* Methods / Sync */
@@ -97,14 +97,14 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_NO_RETURN(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_NO_RETURN_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
-#define DBUS_CALL_ONE_PARAM_RET_UINT32(method, param_type, param_name) \
-    DBUS_CALL_ONE_PARAM_RET_UINT32_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+#define DBUS_CALL_ONE_PARAM_RET_UINT64(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_UINT64_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
-#define DBUS_CALL_ONE_PARAM_RET_AU(method, param_type, param_name, len) \
-    DBUS_CALL_ONE_PARAM_RET_AU_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
+#define DBUS_CALL_ONE_PARAM_RET_AT(method, param_type, param_name, len) \
+    DBUS_CALL_ONE_PARAM_RET_AT_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
 
 #define DBUS_CALL_ONE_PARAMV_RET_STRV(method, paramv) \
     DBUS_CALL_ONE_PARAMV_RET_STRV_BASE (CLIENT, G_PASTE_DAEMON_##method, paramv)
@@ -174,10 +174,10 @@ static guint signals[LAST_SIGNAL] = { 0 };
                   G_TYPE_##type)
 
 static GVariant *
-compute_au_param (const guint32 *indexes,
-                  gsize          n_indexes)
+compute_at_param (const guint64 *indexes,
+                  guint64        n_indexes)
 {
-    return g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, indexes, n_indexes, sizeof (guint32));
+    return g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, indexes, n_indexes, sizeof (guint64));
 }
 
 /******************/
@@ -306,10 +306,10 @@ g_paste_client_backup_history_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_sync (GPasteClient *self,
-                            guint32       index,
+                            guint64       index,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE, uint32, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE, uint64, index);
 }
 
 /**
@@ -378,18 +378,18 @@ g_paste_client_empty_history_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_element_sync (GPasteClient *self,
-                                 guint32       index,
+                                 guint64       index,
                                  GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, uint32, index);
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, uint64, index);
 }
 
 static gchar *
 _g_paste_client_get_element_kind_sync (GPasteClient *self,
-                                       guint32       index,
+                                       guint64       index,
                                        GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, uint32, index);
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, uint64, index);
 }
 
 /**
@@ -404,7 +404,7 @@ _g_paste_client_get_element_kind_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE GPasteItemKind
 g_paste_client_get_element_kind_sync (GPasteClient *self,
-                                      guint32       index,
+                                      guint64       index,
                                       GError      **error)
 {
     g_autofree gchar *kind = _g_paste_client_get_element_kind_sync (self, index, error);
@@ -426,11 +426,11 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE GStrv
 g_paste_client_get_elements_sync (GPasteClient  *self,
-                                  const guint32 *indexes,
-                                  gsize          n_indexes,
+                                  const guint64 *indexes,
+                                  guint64        n_indexes,
                                   GError       **error)
 {
-    GVariant *param = compute_au_param (indexes, n_indexes);
+    GVariant *param = compute_at_param (indexes, n_indexes);
     DBUS_CALL_ONE_PARAMV_RET_STRV (GET_ELEMENTS, param);
 }
 
@@ -476,12 +476,12 @@ g_paste_client_get_history_name_sync (GPasteClient *self,
  *
  * Returns: the size of the history
  */
-G_PASTE_VISIBLE guint32
+G_PASTE_VISIBLE guint64
 g_paste_client_get_history_size_sync (GPasteClient *self,
                                       const gchar  *name,
                                       GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_UINT32 (GET_HISTORY_SIZE, string, name);
+    DBUS_CALL_ONE_PARAM_RET_UINT64 (GET_HISTORY_SIZE, string, name);
 }
 
 /**
@@ -496,10 +496,10 @@ g_paste_client_get_history_size_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_raw_element_sync (GPasteClient *self,
-                                     guint32       index,
+                                     guint64       index,
                                      GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_RAW_ELEMENT, uint32, index);
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_RAW_ELEMENT, uint64, index);
 }
 
 /**
@@ -554,14 +554,14 @@ G_PASTE_VISIBLE void
 g_paste_client_merge_sync (GPasteClient  *self,
                            const gchar   *decoration,
                            const gchar   *separator,
-                           const guint32 *indexes,
-                           gsize          n_indexes,
+                           const guint64 *indexes,
+                           guint64        n_indexes,
                            GError       **error)
 {
     GVariant *params[] = {
         g_variant_new_string (decoration ? decoration : ""),
         g_variant_new_string (separator  ? separator  : ""),
-        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, indexes, n_indexes, sizeof (guint32))
+        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, indexes, n_indexes, sizeof (guint64))
     };
 
     DBUS_CALL_THREE_PARAMS_NO_RETURN (MERGE, params);
@@ -639,12 +639,12 @@ g_paste_client_rename_password_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_replace_sync (GPasteClient *self,
-                             guint32       index,
+                             guint64       index,
                              const gchar  *contents,
                              GError      **error)
 {
     GVariant *params[] = {
-        g_variant_new_uint32 (index),
+        g_variant_new_uint64 (index),
         g_variant_new_string (contents)
     };
 
@@ -662,13 +662,13 @@ g_paste_client_replace_sync (GPasteClient *self,
  *
  * Returns: (array length=hits): The indexes of the matching items
  */
-G_PASTE_VISIBLE guint32 *
+G_PASTE_VISIBLE guint64 *
 g_paste_client_search_sync (GPasteClient *self,
                             const gchar  *pattern,
-                            gsize        *hits,
+                            guint64      *hits,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_AU (SEARCH, string, pattern, hits);
+    DBUS_CALL_ONE_PARAM_RET_AT (SEARCH, string, pattern, hits);
 }
 
 /**
@@ -683,10 +683,10 @@ g_paste_client_search_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_select_sync (GPasteClient *self,
-                            guint32       index,
+                            guint64       index,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (SELECT, uint32, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (SELECT, uint64, index);
 }
 
 /**
@@ -702,12 +702,12 @@ g_paste_client_select_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password_sync (GPasteClient *self,
-                                  guint32       index,
+                                  guint64       index,
                                   const gchar  *name,
                                   GError      **error)
 {
     GVariant *params[] = {
-        g_variant_new_uint32 (index),
+        g_variant_new_uint64 (index),
         g_variant_new_string (name)
     };
 
@@ -777,10 +777,10 @@ g_paste_client_track_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_upload_sync (GPasteClient *self,
-                            guint32       index,
+                            guint64       index,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (UPLOAD, uint32, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (UPLOAD, uint64, index);
 }
 
 /*******************/
@@ -926,11 +926,11 @@ g_paste_client_backup_history (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete (GPasteClient       *self,
-                       guint32             index,
+                       guint64             index,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (DELETE, uint32, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (DELETE, uint64, index);
 }
 
 /**
@@ -1010,11 +1010,11 @@ g_paste_client_empty_history (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_element (GPasteClient       *self,
-                            guint32             index,
+                            guint64             index,
                             GAsyncReadyCallback callback,
                             gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT, uint32, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT, uint64, index);
 }
 
 /**
@@ -1031,11 +1031,11 @@ g_paste_client_get_element (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_element_kind (GPasteClient       *self,
-                                 guint32             index,
+                                 guint64             index,
                                  GAsyncReadyCallback callback,
                                  gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_KIND, uint32, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_KIND, uint64, index);
 }
 
 /**
@@ -1053,12 +1053,12 @@ g_paste_client_get_element_kind (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_elements (GPasteClient       *self,
-                             const guint32      *indexes,
-                             gsize               n_indexes,
+                             const guint64      *indexes,
+                             guint64             n_indexes,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
-    GVariant *param = compute_au_param (indexes, n_indexes);
+    GVariant *param = compute_at_param (indexes, n_indexes);
     DBUS_CALL_ONE_PARAMV_ASYNC (GET_ELEMENTS, param);
 }
 
@@ -1135,11 +1135,11 @@ g_paste_client_get_history_size (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_raw_element (GPasteClient       *self,
-                                guint32             index,
+                                guint64             index,
                                 GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_RAW_ELEMENT, uint32, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_RAW_ELEMENT, uint64, index);
 }
 
 /**
@@ -1202,15 +1202,15 @@ G_PASTE_VISIBLE void
 g_paste_client_merge (GPasteClient       *self,
                       const gchar        *decoration,
                       const gchar        *separator,
-                      const guint32      *indexes,
-                      gsize               n_indexes,
+                      const guint64      *indexes,
+                      guint64             n_indexes,
                       GAsyncReadyCallback callback,
                       gpointer            user_data)
 {
     GVariant *params[] = {
         g_variant_new_string (decoration ? decoration : ""),
         g_variant_new_string (separator  ? separator  : ""),
-        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, indexes, n_indexes, sizeof (guint32))
+        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, indexes, n_indexes, sizeof (guint64))
     };
 
     DBUS_CALL_THREE_PARAMS_ASYNC (MERGE, params);
@@ -1299,13 +1299,13 @@ g_paste_client_rename_password (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_replace (GPasteClient       *self,
-                        guint32             index,
+                        guint64             index,
                         const gchar        *contents,
                         GAsyncReadyCallback callback,
                         gpointer            user_data)
 {
     GVariant *params[] = {
-        g_variant_new_uint32 (index),
+        g_variant_new_uint64 (index),
         g_variant_new_string (contents)
     };
 
@@ -1347,11 +1347,11 @@ g_paste_client_search (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_select (GPasteClient       *self,
-                       guint32             index,
+                       guint64             index,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, uint32, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, uint64, index);
 }
 
 /**
@@ -1369,13 +1369,13 @@ g_paste_client_select (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password (GPasteClient       *self,
-                             guint32             index,
+                             guint64             index,
                              const gchar        *name,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
     GVariant *params[] = {
-        g_variant_new_uint32 (index),
+        g_variant_new_uint64 (index),
         g_variant_new_string (name)
     };
 
@@ -1457,11 +1457,11 @@ g_paste_client_track (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_upload (GPasteClient       *self,
-                       guint32             index,
+                       guint64             index,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (UPLOAD, uint32, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (UPLOAD, uint64, index);
 }
 
 /****************************/
@@ -1741,12 +1741,12 @@ g_paste_client_get_history_name_finish (GPasteClient *self,
  *
  * Returns: the size of the history
  */
-G_PASTE_VISIBLE guint32
+G_PASTE_VISIBLE guint64
 g_paste_client_get_history_size_finish (GPasteClient *self,
                                         GAsyncResult *result,
                                         GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_UINT32;
+    DBUS_ASYNC_FINISH_RET_UINT64;
 }
 
 /**
@@ -1904,13 +1904,13 @@ g_paste_client_replace_finish (GPasteClient *self,
  *
  * Returns: (array length=hits): The indexes of the matching items
  */
-G_PASTE_VISIBLE guint32 *
+G_PASTE_VISIBLE guint64 *
 g_paste_client_search_finish (GPasteClient *self,
                               GAsyncResult *result,
-                              gsize        *hits,
+                              guint64      *hits,
                               GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_AU (hits);
+    DBUS_ASYNC_FINISH_RET_AT (hits);
 }
 
 /**
@@ -2078,7 +2078,7 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
                        0, /* detail */
                        g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), g_variant_get_string (v1, NULL))->value,
                        g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), g_variant_get_string (v2, NULL))->value,
-                       g_variant_get_uint32 (v3),
+                       g_variant_get_uint64 (v3),
                        NULL);
     }
 }
@@ -2158,7 +2158,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
                                     3, /* number of params */
                                     G_PASTE_TYPE_UPDATE_ACTION,
                                     G_PASTE_TYPE_UPDATE_TARGET,
-                                    G_TYPE_UINT);
+                                    G_TYPE_UINT64);
 }
 
 static void

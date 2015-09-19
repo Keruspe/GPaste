@@ -35,7 +35,7 @@ G_PASTE_FINAL_TYPE (Daemon, daemon, DAEMON, GPasteBusObject)
 void g_paste_daemon_show_history (GPasteDaemon *self,
                                   GError      **error);
 void g_paste_daemon_upload       (GPasteDaemon *self,
-                                  guint32       index);
+                                  guint64       index);
 
 GPasteDaemon *g_paste_daemon_new (void);
 

@@ -33,13 +33,13 @@ typedef struct
 {
     GPasteSettings *settings;
     GSList         *history;
-    gsize           size;
+    guint64         size;
 
     gchar          *name;
 
     /* Note: we never track the first (active) item here */
-    guint32         biggest_index;
-    gsize           biggest_size;
+    guint64         biggest_index;
+    guint64         biggest_size;
 
     gulong          changed_signal;
 } GPasteHistoryPrivate;
@@ -55,7 +55,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 static void
 g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
@@ -67,12 +67,12 @@ g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
 
     if (history)
     {
-        guint32 index = 1;
+        guint64 index = 1;
 
         for (history = history->next; history; history = history->next, ++index)
         {
             GPasteItem *item = history->data;
-            gsize size = g_paste_item_get_size (item);
+            guint64 size = g_paste_item_get_size (item);
 
             if (size > priv->biggest_size)
             {
@@ -135,7 +135,7 @@ static void
 g_paste_history_update (GPasteHistory     *self,
                         GPasteUpdateAction action,
                         GPasteUpdateTarget target,
-                        guint              position)
+                        guint64            position)
 {
     g_paste_history_save (self, NULL);
 
@@ -171,7 +171,7 @@ g_paste_history_activate_first (GPasteHistory *self,
 static void
 g_paste_history_private_check_memory_usage (GPasteHistoryPrivate *priv)
 {
-    gsize max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
+    guint64 max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
 
     while (priv->size > max_memory && !priv->biggest_index)
     {
@@ -186,8 +186,8 @@ static void
 g_paste_history_private_check_size (GPasteHistoryPrivate *priv)
 {
     GSList *history = priv->history;
-    guint32 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
-    guint length = g_slist_length (history);
+    guint64 max_history_size = g_paste_settings_get_max_history_size (priv->settings);
+    guint64 length = g_slist_length (history);
 
     if (length > max_history_size)
     {
@@ -236,7 +236,7 @@ g_paste_history_add (GPasteHistory *self,
     g_return_if_fail (G_PASTE_IS_ITEM (item));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    gsize max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
+    guint64 max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
 
     g_return_if_fail (g_paste_item_get_size (item) < max_memory);
 
@@ -262,7 +262,7 @@ g_paste_history_add (GPasteHistory *self,
             priv->size -= g_paste_item_get_size (old_first);
             g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
 
-            gsize size = g_paste_item_get_size (old_first);
+            guint64 size = g_paste_item_get_size (old_first);
 
             priv->size += size;
 
@@ -273,7 +273,7 @@ g_paste_history_add (GPasteHistory *self,
             }
 
             GSList *prev = history;
-            guint32 index = 1;
+            guint64 index = 1;
             for (history = history->next; history; prev = history, history = history->next, ++index)
             {
                 if (g_paste_item_equals (history->data, item) || g_paste_history_private_is_growing_line (priv, history->data, item))
@@ -314,7 +314,7 @@ g_paste_history_add (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_remove (GPasteHistory *self,
-                        guint32        pos)
+                        guint64        pos)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
@@ -345,7 +345,7 @@ g_paste_history_remove (GPasteHistory *self,
 
 static GPasteItem *
 g_paste_history_private_get (GPasteHistoryPrivate *priv,
-                             guint32               pos)
+                             guint64               pos)
 {
     GSList *history = priv->history;
 
@@ -366,7 +366,7 @@ g_paste_history_private_get (GPasteHistoryPrivate *priv,
  */
 G_PASTE_VISIBLE const GPasteItem *
 g_paste_history_get (GPasteHistory *self,
-                     guint32        pos)
+                     guint64        pos)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
@@ -385,7 +385,7 @@ g_paste_history_get (GPasteHistory *self,
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_history_dup (GPasteHistory *self,
-                     guint32        pos)
+                     guint64        pos)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
@@ -403,7 +403,7 @@ g_paste_history_dup (GPasteHistory *self,
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_history_get_value (GPasteHistory *self,
-                           guint32        pos)
+                           guint64        pos)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
@@ -425,7 +425,7 @@ g_paste_history_get_value (GPasteHistory *self,
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_history_get_display_string (GPasteHistory *self,
-                                    guint32        pos)
+                                    guint64        pos)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
 
@@ -447,7 +447,7 @@ g_paste_history_get_display_string (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_select (GPasteHistory *self,
-                        guint32        index)
+                        guint64        index)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
 
@@ -464,7 +464,7 @@ g_paste_history_select (GPasteHistory *self,
 
 static void
 _g_paste_history_replace (GPasteHistory *self,
-                          guint32        index,
+                          guint64        index,
                           GPasteItem    *item,
                           GPasteItem    *new,
                           GSList        *prev,
@@ -500,7 +500,7 @@ _g_paste_history_replace (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_replace (GPasteHistory *self,
-                         guint32        index,
+                         guint64        index,
                          const gchar   *contents)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
@@ -543,7 +543,7 @@ g_paste_history_replace (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_set_password (GPasteHistory *self,
-                              guint32        index,
+                              guint64        index,
                               const gchar   *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
@@ -574,9 +574,9 @@ g_paste_history_set_password (GPasteHistory *self,
 static GPasteItem *
 _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
                                        const gchar                *name,
-                                       guint                      *index)
+                                       guint64                    *index)
 {
-    guint idx = 0;
+    guint64 idx = 0;
 
     for (GSList *h = priv->history; h; h = g_slist_next (h), ++idx)
     {
@@ -591,7 +591,7 @@ _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
     }
 
     if (index)
-        *index = (guint) -1;
+        *index = -1;
     return NULL;
 }
 
@@ -634,7 +634,7 @@ g_paste_history_delete_password (GPasteHistory *self,
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    guint index;
+    guint64 index;
    
     if (_g_paste_history_private_get_password (priv, name, &index))
         g_paste_history_remove (self, index);
@@ -660,7 +660,7 @@ g_paste_history_rename_password (GPasteHistory *self,
     g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    guint index = 0;
+    guint64 index = 0;
     GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, &index);
     if (item)
     {
@@ -867,8 +867,8 @@ typedef struct
     GPasteHistoryPrivate *priv;
     State                 state;
     Type                  type;
-    guint32               current_size;
-    guint32               max_size;
+    guint64               current_size;
+    guint64               max_size;
     gboolean              images_support;
     gchar                *date;
     gchar                *name;
@@ -968,7 +968,7 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
 static void
 on_text (GMarkupParseContext *context G_GNUC_UNUSED,
          const gchar         *text,
-         gsize                text_len,
+         guint64              text_len,
          gpointer             user_data,
          GError             **error G_GNUC_UNUSED)
 {
@@ -1115,7 +1115,7 @@ g_paste_history_load (GPasteHistory *self,
                                                                &data,
                                                                NULL);
         gchar *text;
-        gsize text_length;
+        guint64 text_length;
 
         g_file_get_contents (history_file_path, &text, &text_length, NULL);
         g_markup_parse_context_parse (ctx, text, text_length, NULL);
@@ -1315,7 +1315,7 @@ g_paste_history_class_init (GPasteHistoryClass *klass)
                                     3, /* number of params */
                                     G_PASTE_TYPE_UPDATE_ACTION,
                                     G_PASTE_TYPE_UPDATE_TARGET,
-                                    G_TYPE_UINT);
+                                    G_TYPE_UINT64);
 }
 
 static void
@@ -1355,7 +1355,7 @@ g_paste_history_get_history (const GPasteHistory *self)
  *
  * Returns: The length of the inner history
  */
-G_PASTE_VISIBLE gsize
+G_PASTE_VISIBLE guint64
 g_paste_history_get_length (const GPasteHistory *self)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
@@ -1390,7 +1390,7 @@ g_paste_history_get_current (const GPasteHistory *self)
  *
  * Get the elements matching @pattern in the history
  *
- * Returns: (element-type guint32) (transfer full): The indexes of the matching elements
+ * Returns: (element-type guint64) (transfer full): The indexes of the matching elements
  */
 G_PASTE_VISIBLE GArray *
 g_paste_history_search (const GPasteHistory *self,
@@ -1416,12 +1416,12 @@ g_paste_history_search (const GPasteHistory *self,
 
     /* Check whether we include the index in the search too */
     gboolean include_idx = FALSE;
-    guint32 idx = 0;
-    gsize len = strlen (pattern);
+    guint64 idx = 0;
+    guint64 len = strlen (pattern);
 
     if (len < 5)
     {
-        for (gsize i = 0; i < len; ++i)
+        for (guint64 i = 0; i < len; ++i)
         {
             char c = pattern[i];
 
@@ -1441,8 +1441,8 @@ g_paste_history_search (const GPasteHistory *self,
 
     GArray *results = g_array_new (FALSE, /* zero-terminated */
                                    TRUE,  /* clear */
-                                   sizeof (guint32));
-    guint32 index = 0;
+                                   sizeof (guint64));
+    guint64 index = 0;
 
     for (GSList *history = priv->history; history; history = g_slist_next (history), ++index)
     {

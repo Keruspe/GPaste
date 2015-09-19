@@ -27,7 +27,7 @@ typedef struct _GPasteKeybindingPrivate
     gpointer               user_data;
     gboolean               active;
     GdkModifierType        modifiers;
-    guint                 *keycodes;
+    guint32               *keycodes;
 } GPasteKeybindingPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
@@ -58,7 +58,7 @@ g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
  *
  * Returns: the keycodes
  */
-G_PASTE_VISIBLE const guint *
+G_PASTE_VISIBLE const guint32 *
 g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 {
     g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
@@ -177,11 +177,11 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 static gboolean
 g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
                                   GdkModifierType          modifiers,
-                                  guint                    keycode)
+                                  guint64                  keycode)
 {
     if (priv->keycodes && priv->modifiers == (priv->modifiers & modifiers))
     {
-        for (guint *_keycode = priv->keycodes; *_keycode; ++_keycode)
+        for (guint32 *_keycode = priv->keycodes; *_keycode; ++_keycode)
         {
             if (keycode == *_keycode)
                 return TRUE;
@@ -204,7 +204,7 @@ g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
 G_PASTE_VISIBLE void
 g_paste_keybinding_notify (GPasteKeybinding *self,
                            GdkModifierType   modifiers,
-                           guint             keycode)
+                           guint64           keycode)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 

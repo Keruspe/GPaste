@@ -30,7 +30,7 @@ struct _GPasteBus
 typedef struct
 {
     GDBusConnection          *connection;
-    guint                     id_on_bus;
+    guint64                   id_on_bus;
 
     GPasteBusAcquiredCallback on_bus_acquired;
     gpointer                  user_data;
@@ -45,7 +45,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 static void
 g_paste_bus_on_bus_acquired (GDBusConnection *connection,

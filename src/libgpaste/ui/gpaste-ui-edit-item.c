@@ -34,7 +34,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEditItem, g_paste_ui_edit_item, G_PASTE_TYPE
 typedef struct
 {
     GPasteUiEditItemPrivate *priv;
-    guint32                  index;
+    guint64                  index;
 } CallbackData;
 
 static void
@@ -85,7 +85,7 @@ on_item_ready (GObject      *source_object,
 static void
 g_paste_ui_edit_item_activate (GPasteUiItemAction *self,
                                GPasteClient       *client,
-                               guint32             index)
+                               guint64             index)
 {
     CallbackData *data = g_malloc (sizeof (CallbackData));
 

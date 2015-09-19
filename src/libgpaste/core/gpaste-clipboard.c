@@ -49,7 +49,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 static void
 g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
@@ -206,7 +206,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     g_autofree gchar *stripped = g_strstrip (g_strdup (text));
     gboolean trim_items = g_paste_settings_get_trim_items (settings);
     const gchar *to_add = trim_items ? stripped : text;
-    gsize length = strlen (to_add);
+    guint64 length = strlen (to_add);
 
     if (length < g_paste_settings_get_min_text_item_size (settings) ||
         length > g_paste_settings_get_max_text_item_size (settings) ||
@@ -294,7 +294,7 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 static void
 g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
                                       GtkSelectionData *selection_data,
-                                      guint             info G_GNUC_UNUSED,
+                                      guint32           info      G_GNUC_UNUSED,
                                       gpointer          user_data_or_owner)
 {
     g_return_if_fail (G_PASTE_IS_ITEM (user_data_or_owner));
@@ -324,15 +324,15 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
         else
         {
             G_PASTE_CLEANUP_STRING_FREE GString *copy_string = g_string_new ("copy");
-            guint length = g_strv_length ((GStrv) uris);
+            guint64 length = g_strv_length ((GStrv) uris);
 
-            for (guint i = 0; i < length; ++i)
+            for (guint64 i = 0; i < length; ++i)
                 g_string_append_printf (copy_string, "\n%s", uris[i]);
 
             gchar *str = copy_string->str;
             length = copy_string->len + 1;
             g_autofree guchar *copy_files_data = g_new (guchar, length);
-            for (guint i = 0; i < length; ++i)
+            for (guint64 i = 0; i < length; ++i)
                 copy_files_data[i] = (guchar) str[i];
             gtk_selection_data_set (selection_data, g_paste_clipboard_copy_files_target, 8, copy_files_data, length);
         }
@@ -359,7 +359,7 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
     gtk_target_list_add_uri_targets (target_list, 0);
     gtk_target_list_add (target_list, g_paste_clipboard_copy_files_target, 0, 0);
 
-    gint n_targets;
+    gint32 n_targets;
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
     gtk_clipboard_set_with_owner (real,
                                   targets,

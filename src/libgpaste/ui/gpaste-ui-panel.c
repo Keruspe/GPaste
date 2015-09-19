@@ -48,7 +48,7 @@ typedef struct
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanel, g_paste_ui_panel, GTK_TYPE_BOX)
 
-static int
+static gint32
 history_equals (gconstpointer a,
                 gconstpointer b)
 {
@@ -75,7 +75,7 @@ history_find (GSList      *histories,
 G_PASTE_VISIBLE void
 g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
                                         const gchar   *history,
-                                        gsize          length)
+                                        guint64        length)
 {
     g_return_if_fail (G_PASTE_IS_UI_PANEL (self));
 

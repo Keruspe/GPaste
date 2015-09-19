@@ -36,22 +36,22 @@ G_PASTE_FINAL_TYPE (History, history, HISTORY, GObject)
 void              g_paste_history_add                (GPasteHistory *self,
                                                       GPasteItem    *item);
 void              g_paste_history_remove             (GPasteHistory *self,
-                                                      guint32        index);
+                                                      guint64        index);
 const GPasteItem *g_paste_history_get                (GPasteHistory *self,
-                                                      guint32        index);
+                                                      guint64        index);
 GPasteItem       *g_paste_history_dup                (GPasteHistory *self,
-                                                      guint32        index);
+                                                      guint64        index);
 const gchar      *g_paste_history_get_display_string (GPasteHistory *self,
-                                                      guint32        index);
+                                                      guint64        index);
 const gchar      *g_paste_history_get_value          (GPasteHistory *self,
-                                                      guint32        index);
+                                                      guint64        index);
 void              g_paste_history_select             (GPasteHistory *self,
-                                                      guint32        index);
+                                                      guint64        index);
 void              g_paste_history_replace            (GPasteHistory *self,
-                                                      guint32        index,
+                                                      guint64        index,
                                                       const gchar   *contents);
 void                      g_paste_history_set_password    (GPasteHistory *self,
-                                                           guint32        index,
+                                                           guint64        index,
                                                            const gchar   *name);
 const GPastePasswordItem *g_paste_history_get_password    (GPasteHistory *self,
                                                            const gchar   *name);
@@ -71,7 +71,7 @@ void          g_paste_history_delete      (GPasteHistory *self,
                                            const gchar   *name,
                                            GError       **error);
 const GSList *g_paste_history_get_history (const GPasteHistory *self);
-gsize         g_paste_history_get_length  (const GPasteHistory *self);
+guint64       g_paste_history_get_length  (const GPasteHistory *self);
 const gchar  *g_paste_history_get_current (const GPasteHistory *self);
 
 GArray *g_paste_history_search (const GPasteHistory *self,

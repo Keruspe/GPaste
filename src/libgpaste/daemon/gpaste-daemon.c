@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define __G_PASTE_NEEDS_AU__
+#define __G_PASTE_NEEDS_AT__
 #include <gpaste-gdbus-macros.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-make-password-keybinding.h>
@@ -78,7 +78,7 @@ struct _GPasteDaemon
 typedef struct
 {
     GDBusConnection         *connection;
-    guint                    id_on_bus;
+    guint64                  id_on_bus;
     gboolean                 registered;
 
     GPasteHistory           *history;
@@ -102,7 +102,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 typedef struct {
     const gchar *name;
@@ -121,13 +121,14 @@ _err (const gchar *name,
 
 static gchar *
 g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
-                                          gsize    *length)
+                                          guint64  *length)
 {
     GVariantIter parameters_iter;
 
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
+
     return g_variant_dup_string (variant, length);
 }
 
@@ -136,11 +137,11 @@ _variant_iter_read_strings_parameter (GVariantIter *parameters_iter,
                                       gchar       **str1,
                                       gchar       **str2)
 {
-    gsize length;
-
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (parameters_iter);
-    *str1 = g_variant_dup_string (variant1, &length);
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (parameters_iter);
+    guint64 length;
+
+    *str1 = g_variant_dup_string (variant1, &length);
     *str2 = g_variant_dup_string (variant2, &length);
 }
 
@@ -155,15 +156,15 @@ g_paste_daemon_get_dbus_strings_parameter (GVariant *parameters,
     _variant_iter_read_strings_parameter (&parameters_iter, str1, str2);
 }
 
-static guint32
-g_paste_daemon_get_dbus_uint32_parameter (GVariant *parameters)
+static guint64
+g_paste_daemon_get_dbus_uint64_parameter (GVariant *parameters)
 {
     GVariantIter parameters_iter;
 
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
-    return g_variant_get_uint32 (variant);
+    return g_variant_get_uint64 (variant);
 }
 
 /****************/
@@ -174,14 +175,14 @@ static void
 g_paste_daemon_update (GPasteDaemon      *self,
                        GPasteUpdateAction action,
                        GPasteUpdateTarget target,
-                       guint              position)
+                       guint64            position)
 {
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
 
     GVariant *data[] = {
         g_variant_new_string (g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), action)->value_nick),
         g_variant_new_string (g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_TARGET), target)->value_nick),
-        g_variant_new_uint32 (position)
+        g_variant_new_uint64 (position)
     };
     G_PASTE_SEND_DBUS_SIGNAL_FULL (UPDATE, g_variant_new_tuple (data, 3), NULL);
 }
@@ -232,7 +233,7 @@ g_paste_daemon_private_do_add_item (GPasteDaemonPrivate *priv,
 static void
 g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
                                const gchar         *text,
-                               gsize                length,
+                               guint64              length,
                                GPasteDBusError    **err)
 {
     G_PASTE_DBUS_ASSERT (text && length, "no content to add");
@@ -254,7 +255,7 @@ g_paste_daemon_private_add (GPasteDaemonPrivate *priv,
                             GVariant            *parameters,
                             GPasteDBusError    **err)
 {
-    gsize length;
+    guint64 length;
     g_autofree gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
     g_paste_daemon_private_do_add (priv, text, length, err);
@@ -266,7 +267,7 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
                                  GError             **error,
                                  GPasteDBusError    **err)
 {
-    gsize length;
+    guint64 length;
     g_autofree gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
     g_autofree gchar *content = NULL;
 
@@ -355,7 +356,7 @@ g_paste_daemon_private_delete (GPasteDaemonPrivate *priv,
                                GVariant            *parameters)
 {
     g_paste_history_remove (priv->history,
-                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
+                            g_paste_daemon_get_dbus_uint64_parameter (parameters));
 }
 
 static void
@@ -405,7 +406,7 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
                                     GPasteDBusError    **err)
 {
     GPasteHistory *history = priv->history;
-    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
+    guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
 
     G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
 
@@ -424,7 +425,7 @@ g_paste_daemon_private_get_element_kind (GPasteDaemonPrivate *priv,
                                          GPasteDBusError    **err)
 {
     GPasteHistory *history = priv->history;
-    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
+    guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
 
     G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
 
@@ -448,12 +449,12 @@ g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
-    gsize len;
-    g_autofree guint32 *indexes = g_paste_dbus_get_au_result (variant, &len);
+    guint64 len;
+    g_autofree guint64 *indexes = g_paste_dbus_get_at_result (variant, &len);
     g_auto (GStrv) ans = g_new0 (gchar *, len + 1);
-    gsize history_length = g_paste_history_get_length (history);
+    guint64 history_length = g_paste_history_get_length (history);
 
-    for (gsize i = 0; i < len; ++i)
+    for (guint64 i = 0; i < len; ++i)
     {
         G_PASTE_DBUS_ASSERT_FULL (indexes[i] < history_length, "invalid index received", NULL);
         const gchar *value = g_paste_history_get_display_string (history, indexes[i]);
@@ -470,10 +471,10 @@ static GVariant *
 g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
     const GSList *history = g_paste_history_get_history (priv->history);
-    guint length = g_slist_length ((GSList *) history);
+    guint64 length = g_slist_length ((GSList *) history);
     g_autofree const gchar **displayed_history = g_new (const gchar *, length + 1);
 
-    for (guint i = 0; i < length; ++i, history = g_slist_next (history))
+    for (guint64 i = 0; i < length; ++i, history = g_slist_next (history))
         displayed_history[i] = g_paste_item_get_display_string (history->data);
     displayed_history[length] = NULL;
 
@@ -498,7 +499,7 @@ g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv,
 
     g_paste_history_load (history, name);
 
-    GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (history));
+    GVariant *variant = g_variant_new_uint64 (g_paste_history_get_length (history));
     return g_variant_new_tuple (&variant, 1);
 }
 
@@ -508,7 +509,7 @@ g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
                                         GPasteDBusError    **err)
 {
     GPasteHistory *history = priv->history;
-    guint32 index = g_paste_daemon_get_dbus_uint32_parameter (parameters);
+    guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
 
     G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
 
@@ -525,10 +526,10 @@ static GVariant *
 g_paste_daemon_private_get_raw_history (GPasteDaemonPrivate *priv)
 {
     const GSList *history = g_paste_history_get_history (priv->history);
-    guint length = g_slist_length ((GSList *) history);
+    guint64 length = g_slist_length ((GSList *) history);
     g_autofree const gchar **displayed_history = g_new (const gchar *, length + 1);
 
-    for (guint i = 0; i < length; ++i, history = g_slist_next (history))
+    for (guint64 i = 0; i < length; ++i, history = g_slist_next (history))
         displayed_history[i] = g_paste_item_get_value (history->data);
     displayed_history[length] = NULL;
 
@@ -565,21 +566,21 @@ g_paste_daemon_private_merge (GPasteDaemonPrivate *priv,
     _variant_iter_read_strings_parameter (&parameters_iter, &decoration, &separator);
 
     g_autoptr (GVariant) v_indexes = g_variant_iter_next_value (&parameters_iter);
-    gsize length;
-    const guint32 *indexes = g_variant_get_fixed_array (v_indexes, &length, sizeof (guint32));
+    guint64 length;
+    const guint64 *indexes = g_variant_get_fixed_array (v_indexes, &length, sizeof (guint64));
 
     GPasteHistory *history = priv->history;
-    gsize history_length = g_paste_history_get_length (history);
+    guint64 history_length = g_paste_history_get_length (history);
 
     G_PASTE_DBUS_ASSERT (length, "nothing to merge");
-    for (gsize i = 0; i < length; ++i)
+    for (guint64 i = 0; i < length; ++i)
     {
         G_PASTE_DBUS_ASSERT (indexes[i] < history_length, "invalid index received");
     }
 
     G_PASTE_CLEANUP_STRING_FREE GString *str = g_string_new (NULL);
 
-    for (gsize i = 0; i < length; ++i)
+    for (guint64 i = 0; i < length; ++i)
     {
         g_string_append_printf (str, "%s%s%s%s",
                                 (i) ? separator : "",
@@ -648,7 +649,7 @@ g_paste_daemon_private_search (GPasteDaemonPrivate *priv,
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     g_autoptr (GArray) results = g_paste_history_search (priv->history, name);
-    GVariant *variant = g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, results->data, results->len, sizeof (guint32));
+    GVariant *variant = g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, results->data, results->len, sizeof (guint64));
 
     return g_variant_new_tuple (&variant, 1);
 }
@@ -658,7 +659,7 @@ g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
                                GVariant            *parameters)
 {
     g_paste_history_select (priv->history,
-                            g_paste_daemon_get_dbus_uint32_parameter (parameters));
+                            g_paste_daemon_get_dbus_uint64_parameter (parameters));
 }
 
 static void
@@ -668,12 +669,12 @@ g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
-    gsize length;
+    guint64 length;
 
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
-    guint32 index = g_variant_get_uint32 (variant1);
+    guint64 index = g_variant_get_uint64 (variant1);
 
     G_PASTE_DBUS_ASSERT (index < g_paste_history_get_length (history), "invalid index received");
 
@@ -697,12 +698,12 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
-    gsize length;
+    guint64 length;
 
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
-    guint32 index = g_variant_get_uint32 (variant1);
+    guint64 index = g_variant_get_uint64 (variant1);
 
     G_PASTE_DBUS_ASSERT (index < g_paste_history_get_length (history), "invalid index received");
 
@@ -762,7 +763,7 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_upload (GPasteDaemon *self,
-                       guint32       index)
+                       guint64       index)
 {
     g_return_if_fail (G_PASTE_IS_DAEMON (self));
 
@@ -781,7 +782,7 @@ static void
 _g_paste_daemon_upload (GPasteDaemon *self,
                         GVariant     *parameters)
 {
-    g_paste_daemon_upload(self, g_paste_daemon_get_dbus_uint32_parameter (parameters));
+    g_paste_daemon_upload(self, g_paste_daemon_get_dbus_uint64_parameter (parameters));
 }
 
 static void
@@ -801,7 +802,7 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
         g_paste_upload_keybinding_new (self)
     };
 
-    for (guint k = 0; k < G_N_ELEMENTS (keybindings); ++k)
+    for (guint64 k = 0; k < G_N_ELEMENTS (keybindings); ++k)
         g_paste_keybinder_add_keybinding (keybinder, keybindings[k]);
 
     g_paste_keybinder_activate_all (keybinder);
@@ -932,7 +933,7 @@ static void
 g_paste_daemon_on_history_update (GPasteDaemon      *self,
                                   GPasteUpdateAction action,
                                   GPasteUpdateTarget target,
-                                  guint              position,
+                                  guint64            position,
                                   gpointer           user_data G_GNUC_UNUSED)
 {
     g_paste_daemon_update (self, action, target, position);

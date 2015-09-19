@@ -30,17 +30,17 @@ typedef struct
     GSettings *settings;
     GSettings *shell_settings;
 
-    guint32    element_size;
+    guint64    element_size;
     gboolean   growing_lines;
     gchar     *history_name;
     gboolean   images_support;
     gchar     *launch_ui;
     gchar     *make_password;
-    guint32    max_displayed_history_size;
-    guint32    max_history_size;
-    guint32    max_memory_usage;
-    guint32    max_text_item_size;
-    guint32    min_text_item_size;
+    guint64    max_displayed_history_size;
+    guint64    max_history_size;
+    guint64    max_memory_usage;
+    guint64    max_text_item_size;
+    guint64    min_text_item_size;
     gchar     *pop;
     gboolean   primary_to_history;
     gboolean   save_history;
@@ -70,7 +70,7 @@ enum
     LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 #define SETTING(name, key, type, setting_type, fail, guards, clear_func, dup_func)                     \
     G_PASTE_VISIBLE type                                                                               \
@@ -108,7 +108,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
     SETTING (name, key, type, setting_type, fail, {}, {},)
 
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
-#define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint32, uint, 0)
+#define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint64, uint, 0)
 
 #define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL,                \
                                            g_return_if_fail (value);                              \
@@ -783,7 +783,7 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
         return;
 
     extensions = g_paste_settings_private_get_enabled_extensions (priv);
-    gsize nb = g_strv_length (extensions);
+    guint64 nb = g_strv_length (extensions);
     if (value)
     {
         extensions = g_realloc (extensions, (nb + 2) * sizeof (gchar *));
@@ -793,7 +793,7 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
     else
     {
         gboolean found = FALSE;
-        for (gsize i = 0; i < nb; ++i)
+        for (guint64 i = 0; i < nb; ++i)
         {
             if (!found && !g_strcmp0 (extensions[i], EXTENSION_NAME))
             {

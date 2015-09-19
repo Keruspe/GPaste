@@ -65,7 +65,7 @@ g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
  */
 G_PASTE_VISIBLE void
 g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
-                                     gsize                 length)
+                                     guint64               length)
 {
     g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
 

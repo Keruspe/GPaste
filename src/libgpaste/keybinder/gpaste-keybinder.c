@@ -42,10 +42,10 @@ typedef struct
     GPasteGnomeShellClient *shell_client;
     gboolean                use_shell_client;
     gboolean                grabbing;
-    guint                   retries;
+    guint64                 retries;
 
     gulong                  accel_signal;
-    guint                   shell_watch;
+    guint64                 shell_watch;
 } GPasteKeybinderPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
@@ -78,7 +78,7 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
 
     gdk_error_trap_push ();
 
-    guint mod_masks [] = {
+    guint64 mod_masks [] = {
         0, /* modifier only */
         GDK_MOD2_MASK, /* NumLock */
         GDK_MOD5_MASK, /* ScrollLock */
@@ -91,11 +91,11 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
 
     Window window = GDK_ROOT_WINDOW ();
     GdkModifierType modifiers = g_paste_keybinding_get_modifiers (binding);
-    const guint *keycodes = g_paste_keybinding_get_keycodes (binding);
+    const guint32 *keycodes = g_paste_keybinding_get_keycodes (binding);
 
-    for (guint i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
+    for (guint64 i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
         XIGrabModifiers mods = { mod_masks[i] | modifiers, 0 };
-        for (const guint *keycode = keycodes; *keycode; ++keycode)
+        for (const guint32 *keycode = keycodes; *keycode; ++keycode)
         {
             if (grab)
             {
@@ -362,9 +362,7 @@ grab_accelerators_cb (GObject      *source_object,
 {
     GPasteKeybinderPrivate *priv = user_data;
     g_autoptr (GError) error = NULL;
-    g_autofree guint *actions = g_paste_gnome_shell_client_grab_accelerators_finish (G_PASTE_GNOME_SHELL_CLIENT (source_object),
-                                                                                               res,
-                                                                                               &error);
+    g_autofree guint32 *actions = g_paste_gnome_shell_client_grab_accelerators_finish (G_PASTE_GNOME_SHELL_CLIENT (source_object), res, &error);
 
     if (error)
     {
@@ -383,7 +381,7 @@ grab_accelerators_cb (GObject      *source_object,
     {
         priv->retries = 0;
 
-        guint index = 0;
+        guint64 index = 0;
         for (GSList *binding = priv->keybindings; binding; binding = g_slist_next (binding))
         {
             _Keybinding *k = binding->data;
@@ -406,7 +404,7 @@ g_paste_keybinder_private_grab_all_gnome_shell (GPasteKeybinderPrivate *priv)
     GPasteGnomeShellAccelerator accels[MAX_BINDINGS + 1];
     GPasteSettings *settings = priv->settings;
 
-    guint index = 0;
+    guint64 index = 0;
     for (GSList *binding = priv->keybindings; binding && index < MAX_BINDINGS; binding = g_slist_next (binding))
     {
         _Keybinding *k = binding->data;
@@ -492,13 +490,13 @@ g_paste_keybinder_parse_event_wayland (void)
 static gint
 g_paste_keybinder_get_xinput_opcode (Display *display)
 {
-    static gint xinput_opcode = 0;
+    static gint32 xinput_opcode = 0;
 
     if (!xinput_opcode)
     {
-        gint major = 2, minor = 3;
-        gint xinput_error_base;
-        gint xinput_event_base;
+        gint32 major = 2, minor = 3;
+        gint32 xinput_error_base;
+        gint32 xinput_event_base;
 
         if (XQueryExtension (display,
                              "XInputExtension",
@@ -517,7 +515,7 @@ g_paste_keybinder_get_xinput_opcode (Display *display)
 static void
 g_paste_keybinder_parse_event_x11 (XEvent                  *event,
                                    GdkModifierType         *modifiers,
-                                   guint                   *keycode)
+                                   guint64                 *keycode)
 {
     XGenericEventCookie cookie = event->xcookie;
 
@@ -554,7 +552,7 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 
     GdkDisplay *display = gdk_display_get_default ();
     GdkModifierType modifiers = 0;
-    guint keycode = 0;
+    guint64 keycode = 0;
 
 #ifdef GDK_WINDOWING_WAYLAND
     if (GDK_IS_WAYLAND_DISPLAY (display))

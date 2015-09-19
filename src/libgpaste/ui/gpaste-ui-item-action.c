@@ -23,7 +23,7 @@ typedef struct
 {
     GPasteClient *client;
 
-    guint32       index;
+    guint64       index;
 } GPasteUiItemActionPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiItemAction, g_paste_ui_item_action, GTK_TYPE_BUTTON)
@@ -39,7 +39,7 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiItemAction, g_paste_ui_item_action,
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_action_set_index (GPasteUiItemAction *self,
-                             guint32         index)
+                             guint64         index)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM_ACTION (self));
 

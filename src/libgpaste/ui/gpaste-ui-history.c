@@ -38,12 +38,12 @@ typedef struct
     GtkWindow      *rootwin;
 
     GSList         *items;
-    gsize           size;
-    gint            item_height;
+    guint64         size;
+    gint32          item_height;
 
     gchar          *search;
-    guint32        *search_results;
-    gsize           search_results_size;
+    guint64        *search_results;
+    guint64         search_results_size;
 
     gulong          activated_id;
     gulong          size_id;
@@ -113,7 +113,7 @@ g_paste_ui_history_update_height_request (GPasteSettings *settings,
 typedef struct {
     GPasteUiHistory *self;
     gchar           *name;
-    guint            from_index;
+    guint64          from_index;
 } OnUpdateCallbackData;
 
 static void
@@ -126,11 +126,13 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     GPasteUiHistory *self = data->self;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    gsize old_size = priv->size;
-    guint refreshTextBound = old_size;
-    guint32 new_size = g_paste_client_get_history_size_finish (priv->client, res, NULL);
-    guint32 max_size = g_paste_settings_get_max_displayed_history_size (priv->settings);
+    guint64 old_size = priv->size;
+    guint64 refreshTextBound = old_size;
+    guint64 new_size = g_paste_client_get_history_size_finish (priv->client, res, NULL);
+    guint64 max_size = g_paste_settings_get_max_displayed_history_size (priv->settings);
+
     priv->size = MIN (new_size, max_size);
+
     if (priv->size)
         gtk_widget_hide (priv->dummy_item);
     else
@@ -140,7 +142,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     if (old_size < priv->size)
     {
-        for (gsize i = old_size; i < priv->size; ++i)
+        for (guint64 i = old_size; i < priv->size; ++i)
         {
             GtkWidget *item = g_paste_ui_item_new (priv->client, priv->settings, priv->rootwin, i);
             priv->items = g_slist_append (priv->items, item);
@@ -167,9 +169,9 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     GSList *item = priv->items;
 
-    for (gsize i = 0; i < data->from_index; ++i)
+    for (guint64 i = 0; i < data->from_index; ++i)
         item = g_slist_next (item);
-    for (gsize i = data->from_index; i < refreshTextBound && item; ++i, item = g_slist_next (item))
+    for (guint64 i = data->from_index; i < refreshTextBound && item; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, i);
 
     if (!priv->item_height)
@@ -194,7 +196,7 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
 
 static void
 g_paste_ui_history_refresh (GPasteUiHistory *self,
-                            guint            from_index)
+                            guint64          from_index)
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
@@ -229,9 +231,9 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
 
     GSList *item = priv->items;
 
-    for (gsize i = 0; i < priv->search_results_size; ++i, item = g_slist_next (item))
+    for (guint64 i = 0; i < priv->search_results_size; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, priv->search_results[i]);
-    for (gsize i = priv->search_results_size; i < priv->size; ++i, item = g_slist_next (item))
+    for (guint64 i = priv->search_results_size; i < priv->size; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, -1);
 }
 
@@ -271,7 +273,7 @@ static void
 g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
                               GPasteUpdateAction action,
                               GPasteUpdateTarget target,
-                              guint              position,
+                              guint64            position,
                               gpointer           user_data)
 {
     GPasteUiHistory *self = user_data;

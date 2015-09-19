@@ -142,13 +142,13 @@ strip_newline (gchar *str)
 
 static void
 print_history_line (gchar   *line,
-                    guint32  index,
+                    guint64  index,
                     gboolean oneline,
                     gboolean raw,
                     gboolean zero)
 {
     if (!raw)
-        printf ("%d: ", index);
+        printf ("%lu: ", index);
     printf ("%s%c", (oneline) ? strip_newline (line) : line, (zero) ? '\0' : '\n');
 }
 
@@ -165,7 +165,7 @@ show_history (GPasteClient *client,
 
     if (!*error)
     {
-        guint32 i = 0;
+        guint64 i = 0;
 
         for (GStrv h = history; *h; ++h)
             print_history_line (*h, i++, oneline, raw, zero);
@@ -186,7 +186,7 @@ failure_exit (GError *error)
     exit (EXIT_FAILURE);
 }
 
-static int
+static gint64
 spawn (const gchar *app)
 {
     g_autoptr (GError) error = NULL;
@@ -226,7 +226,7 @@ main (gint argc, gchar *argv[])
     gboolean help = FALSE, version = FALSE;
     gboolean oneline = FALSE, raw = FALSE, zero = FALSE;
     const gchar *decoration = NULL, *separator = NULL;
-    gint c;
+    gint64 c;
 
     while ((c = getopt_long(argc, argv, "d:hors:vz", long_options, NULL)) != -1)
     {
@@ -272,7 +272,7 @@ main (gint argc, gchar *argv[])
         return EXIT_SUCCESS;
     }
 
-    int status = EXIT_SUCCESS;
+    gint64 status = EXIT_SUCCESS;
 
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
@@ -325,9 +325,9 @@ main (gint argc, gchar *argv[])
         --argc;
         ++argv;
 
-        guint32 *indexes = alloca (argc * sizeof (guint32));
+        guint64 *indexes = alloca (argc * sizeof (guint64));
 
-        for (gint i = 0; i < argc; ++i)
+        for (gint64 i = 0; i < argc; ++i)
             indexes[i] = _strtoull (argv[i]);
 
         g_paste_client_merge_sync (client, decoration, separator, indexes, argc, &error);
@@ -386,9 +386,9 @@ main (gint argc, gchar *argv[])
                 g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
                 if (!error)
                 {
-                    guint32 size = g_paste_client_get_history_size_sync (client, name, &error);
+                    guint64 size = g_paste_client_get_history_size_sync (client, name, &error);
                     if (!error)
-                        printf ("%u\n", size);
+                        printf ("%lu\n", size);
                 }
             }
             else if (!g_strcmp0 (arg1, "lh") ||
@@ -495,16 +495,16 @@ main (gint argc, gchar *argv[])
             }
             else if (!g_strcmp0 (arg1, "search"))
             {
-                gsize hits;
-                g_autofree guint32 *results = g_paste_client_search_sync (client, arg2, &hits, &error);
+                guint64 hits;
+                g_autofree guint64 *results = g_paste_client_search_sync (client, arg2, &hits, &error);
 
                 if (!error)
                 {
                     if (hits > 0)
                     {
-                        for (gsize i = 0; i < hits; ++i)
+                        for (guint64 i = 0; i < hits; ++i)
                         {
-                            guint32 index = results[i];
+                            guint64 index = results[i];
                             gchar *line = g_paste_client_get_element_sync (client, index, &error);
 
                             if (error)

@@ -29,7 +29,7 @@ G_DEFINE_TYPE (GPasteUiDeleteItem, g_paste_ui_delete_item, G_PASTE_TYPE_UI_ITEM_
 static void
 g_paste_ui_delete_item_activate (GPasteUiItemAction *self G_GNUC_UNUSED,
                                  GPasteClient       *client,
-                                 guint32             index)
+                                 guint64             index)
 {
     g_paste_client_delete (client, index, NULL, NULL);
 }

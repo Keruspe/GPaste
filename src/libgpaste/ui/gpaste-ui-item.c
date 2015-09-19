@@ -31,7 +31,7 @@ typedef struct
 
     GtkLabel       *index_label;
     GtkLabel       *label;
-    guint32         index;
+    guint64         index;
     gboolean        bold;
 
     gulong          size_id;
@@ -139,14 +139,14 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_set_index (GPasteUiItem *self,
-                           guint32       index)
+                           guint64       index)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM (self));
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
 
     g_paste_ui_item_skeleton_set_index (G_PASTE_UI_ITEM_SKELETON (self), index);
 
-    guint32 old_index = priv->index;
+    guint64 old_index = priv->index;
     priv->index = index;
 
     if (!index)
@@ -154,7 +154,7 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
     else if (!old_index)
         priv->bold = FALSE;
 
-    if (index != (guint32)-1)
+    if (index != (guint64)-1)
     {
         g_paste_ui_item_reset_text (self);
         gtk_widget_show (GTK_WIDGET (self));
@@ -206,7 +206,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_item_new (GPasteClient   *client,
                      GPasteSettings *settings,
                      GtkWindow      *rootwin,
-                     guint32         index)
+                     guint64         index)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);

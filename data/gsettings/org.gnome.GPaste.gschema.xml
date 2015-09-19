@@ -1,7 +1,7 @@
 <schemalist>
     <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/">
 
-    <key name="element-size" type="u">
+    <key name="element-size" type="t">
       <range min="0" max="255"/>
       <default>60</default>
       <summary>Max size of an element when displaying it</summary>
@@ -53,7 +53,7 @@
       </description>
     </key>
 
-    <key name="max-displayed-history-size" type="u">
+    <key name="max-displayed-history-size" type="t">
       <range min="10" max="255"/>
       <default>20</default>
       <summary>Max displayed history size</summary>
@@ -62,7 +62,7 @@
       </description>
     </key>
 
-    <key name="max-history-size" type="u">
+    <key name="max-history-size" type="t">
       <range min="5" max="65535"/>
       <default>100</default>
       <summary>Max history size</summary>
@@ -71,7 +71,7 @@
       </description>
     </key>
 
-    <key name="max-memory-usage" type="u">
+    <key name="max-memory-usage" type="t">
       <range min="5" max="2000"/>
       <default>30</default>
       <summary>Max memory usage (MB)</summary>
@@ -80,7 +80,7 @@
       </description>
     </key>
 
-    <key name="max-text-item-size" type="u">
+    <key name="max-text-item-size" type="t">
       <range min="1" max="2147483647"/>
       <default>2147483647</default>
       <summary>Max text item size</summary>
@@ -89,7 +89,7 @@
       </description>
     </key>
 
-    <key name="min-text-item-size" type="u">
+    <key name="min-text-item-size" type="t">
       <range min="1" max="2147483647"/>
       <default>1</default>
       <summary>Min text item size</summary>

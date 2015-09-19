@@ -32,7 +32,7 @@ enum
 };
 
 static void
-signal_handler (int signum)
+signal_handler (gint32 signum)
 {
     g_print (_("Signal %d received, exiting\n"), signum);
     g_application_quit (_app);
@@ -108,7 +108,7 @@ main (gint argc, gchar *argv[])
 
     g_paste_bus_own_name (bus);
 
-    gint exit_status = g_application_run (gapp, argc, argv);
+    gint64 exit_status = g_application_run (gapp, argc, argv);
 
     g_signal_handler_disconnect (bus, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);

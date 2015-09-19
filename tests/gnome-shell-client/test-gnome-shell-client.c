@@ -29,13 +29,13 @@ typedef struct
 
 static void
 on_accelerator_activated (GPasteGnomeShellClient *client G_GNUC_UNUSED,
-                          guint32                 action,
+                          guint64                 action,
                           gpointer                user_data)
 {
     Accelerator *accels = user_data;
 
-    g_print ("Recieved action %u, was ", action);
-    for (guint i = 0; i < 3; ++i)
+    g_print ("Recieved action %lu, was ", action);
+    for (guint64 i = 0; i < 3; ++i)
     {
         if (accels[i].action == action)
         {
@@ -77,14 +77,14 @@ main (gint argc, gchar *argv[])
     GPasteGnomeShellAccelerator gs_accels[3];
     GPasteGnomeShellAccelerator gs_accel = G_PASTE_GNOME_SHELL_ACCELERATOR (accels[2].accelerator);
 
-    for (guint i = 0; i < 2; ++i)
+    for (guint64 i = 0; i < 2; ++i)
         gs_accels[i] = G_PASTE_GNOME_SHELL_ACCELERATOR (accels[i].accelerator);
     gs_accels[2].accelerator = NULL;
-    guint signal_id = g_signal_connect (client, "accelerator-activated", G_CALLBACK (on_accelerator_activated), accels);
+    guint64 signal_id = g_signal_connect (client, "accelerator-activated", G_CALLBACK (on_accelerator_activated), accels);
 
     g_print ("Now testing KeyGrabber\n");
     guint32 *actions = g_paste_gnome_shell_client_grab_accelerators_sync (client, gs_accels, &error);
-    for (guint i = 0; i < 2; ++i)
+    for (guint64 i = 0; i < 2; ++i)
         accels[i].action = actions[i];
     g_free (actions);
     if (error)
@@ -104,7 +104,7 @@ main (gint argc, gchar *argv[])
     g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
     g_source_set_name_by_id (g_timeout_add_seconds (10, kill_loop, loop), "[GPaste] test loop");
     g_main_loop_run (loop);
-    for (guint i = 0; i < 2; ++i)
+    for (guint64 i = 0; i < 2; ++i)
     {
         g_paste_gnome_shell_client_ungrab_accelerator_sync (client, accels[i].action, &error);
         accels[i].action = 0;

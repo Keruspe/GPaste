@@ -23,9 +23,9 @@
 
 typedef struct
 {
-    gchar *value;
-    gchar *display_string;
-    gsize  size;
+    gchar  *value;
+    gchar  *display_string;
+    guint64 size;
 } GPasteItemPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteItem, g_paste_item, G_TYPE_OBJECT)
@@ -135,7 +135,7 @@ g_paste_item_get_kind (const GPasteItem *self)
  *
  * Returns: The size of its contents
  */
-G_PASTE_VISIBLE gsize
+G_PASTE_VISIBLE guint64
 g_paste_item_get_size (const GPasteItem *self)
 {
     g_return_val_if_fail (G_PASTE_IS_ITEM (self), 0);
@@ -156,7 +156,7 @@ g_paste_item_get_size (const GPasteItem *self)
  */
 G_PASTE_VISIBLE void
 g_paste_item_set_size (GPasteItem *self,
-                       gsize       size)
+                       guint64     size)
 {
     g_return_if_fail (G_PASTE_IS_ITEM (self));
 
@@ -176,7 +176,7 @@ g_paste_item_set_size (GPasteItem *self,
  */
 G_PASTE_VISIBLE void
 g_paste_item_add_size (GPasteItem *self,
-                       gsize       size)
+                       guint64     size)
 {
     g_return_if_fail (G_PASTE_IS_ITEM (self));
 
@@ -196,7 +196,7 @@ g_paste_item_add_size (GPasteItem *self,
  */
 G_PASTE_VISIBLE void
 g_paste_item_remove_size (GPasteItem *self,
-                          gsize       size)
+                          guint64     size)
 {
     g_return_if_fail (G_PASTE_IS_ITEM (self));
 

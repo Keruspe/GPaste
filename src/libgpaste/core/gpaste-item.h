@@ -58,7 +58,7 @@ const gchar *g_paste_item_get_display_string (const GPasteItem *self);
 gboolean     g_paste_item_equals             (const GPasteItem *self,
                                               const GPasteItem *other);
 const gchar *g_paste_item_get_kind           (const GPasteItem *self);
-gsize        g_paste_item_get_size           (const GPasteItem *self);
+guint64      g_paste_item_get_size           (const GPasteItem *self);
 
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
@@ -67,11 +67,11 @@ void g_paste_item_set_display_string (GPasteItem  *self,
                                       const gchar *display_string);
 
 void g_paste_item_set_size    (GPasteItem *self,
-                               gsize       size);
+                               guint64     size);
 void g_paste_item_add_size    (GPasteItem *self,
-                               gsize       size);
+                               guint64     size);
 void g_paste_item_remove_size (GPasteItem *self,
-                               gsize       size);
+                               guint64     size);
 
 GPasteItem *g_paste_item_new (GType        type,
                               const gchar *value);

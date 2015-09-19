@@ -48,7 +48,7 @@ void g_paste_ui_item_skeleton_set_text   (GPasteUiItemSkeleton *self,
 void g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
                                           const gchar          *markup);
 void g_paste_ui_item_skeleton_set_index  (GPasteUiItemSkeleton *self,
-                                          guint32               index);
+                                          guint64               index);
 
 GtkLabel *g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self);
 

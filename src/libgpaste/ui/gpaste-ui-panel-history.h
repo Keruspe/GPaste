@@ -34,7 +34,7 @@ G_PASTE_FINAL_TYPE (UiPanelHistory, ui_panel_history, UI_PANEL_HISTORY, GtkListB
 
 void g_paste_ui_panel_history_activate  (GPasteUiPanelHistory *self);
 void g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
-                                          gsize                 length);
+                                          guint64               length);
 
 const gchar *g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self);
 

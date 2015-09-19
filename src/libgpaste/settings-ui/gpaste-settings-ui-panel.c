@@ -27,7 +27,7 @@ struct _GPasteSettingsUiPanel
 typedef struct
 {
     GSList *callback_data;
-    guint   current_line;
+    guint64 current_line;
 } GPasteSettingsUiPanelPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiPanel, g_paste_settings_ui_panel, GTK_TYPE_GRID)

@@ -77,7 +77,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiStack, g_paste_settings_ui_stack, GT
 #define BOOLEAN_CALLBACK(setting) SETTING_CALLBACK (setting, gboolean)
 #define STRING_CALLBACK(setting)  SETTING_CALLBACK (setting, const gchar *)
 
-#define UINT_CALLBACK(setting) SETTING_CALLBACK_FULL (setting, gdouble, uint)
+#define UINT64_CALLBACK(setting) SETTING_CALLBACK_FULL (setting, gdouble, uint64)
 
 /**
  * g_paste_settings_ui_stack_add_panel:
@@ -185,12 +185,12 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
     return panel;
 }
 
-UINT_CALLBACK (element_size)
-UINT_CALLBACK (max_displayed_history_size)
-UINT_CALLBACK (max_history_size)
-UINT_CALLBACK (max_memory_usage)
-UINT_CALLBACK (max_text_item_size)
-UINT_CALLBACK (min_text_item_size)
+UINT64_CALLBACK (element_size)
+UINT64_CALLBACK (max_displayed_history_size)
+UINT64_CALLBACK (max_history_size)
+UINT64_CALLBACK (max_memory_usage)
+UINT64_CALLBACK (max_text_item_size)
+UINT64_CALLBACK (min_text_item_size)
 
 static GPasteSettingsUiPanel *
 g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiStackPrivate *priv)
@@ -229,14 +229,14 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     priv->max_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Max text item length: "),
                                                                                    (gdouble) g_paste_settings_get_max_text_item_size (settings),
-                                                                                   1, G_MAXUINT, 1,
+                                                                                   1, G_MAXUINT64, 1,
                                                                                    max_text_item_size_callback,
                                                                                    (GPasteResetCallback) g_paste_settings_reset_max_text_item_size,
                                                                                    settings);
     priv->min_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Min text item length: "),
                                                                                    (gdouble) g_paste_settings_get_min_text_item_size (settings),
-                                                                                   1, G_MAXUINT, 1,
+                                                                                   1, G_MAXUINT64, 1,
                                                                                    min_text_item_size_callback,
                                                                                    (GPasteResetCallback) g_paste_settings_reset_min_text_item_size,
                                                                                    settings);
@@ -415,7 +415,7 @@ g_paste_settings_ui_stack_finalize (GObject *object)
     GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
     GStrv *actions = priv->actions;
 
-    for (guint i = 0; actions[i]; ++i)
+    for (guint64 i = 0; actions[i]; ++i)
         g_free ((GStrv) actions[i]);
     g_free ((GStrv *) actions);
 

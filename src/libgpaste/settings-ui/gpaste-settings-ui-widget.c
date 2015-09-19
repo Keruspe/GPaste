@@ -59,7 +59,7 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
 {
     GPasteSettingsUiWidgetPrivate *priv = g_paste_settings_ui_widget_get_instance_private (self);
     GtkGrid *grid = GTK_GRID (self);
-    guint current_line = 0;
+    guint64 current_line = 0;
 
     GPasteSettingsUiStack *stack = priv->stack = g_paste_settings_ui_stack_new ();
 

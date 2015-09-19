@@ -32,17 +32,17 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Settings, settings, SETTINGS, GObject)
 
-guint32      g_paste_settings_get_element_size               (const GPasteSettings *self);
+guint64      g_paste_settings_get_element_size               (const GPasteSettings *self);
 gboolean     g_paste_settings_get_growing_lines              (const GPasteSettings *self);
 const gchar *g_paste_settings_get_history_name               (const GPasteSettings *self);
 gboolean     g_paste_settings_get_images_support             (const GPasteSettings *self);
 const gchar *g_paste_settings_get_launch_ui                  (const GPasteSettings *self);
 const gchar *g_paste_settings_get_make_password              (const GPasteSettings *self);
-guint32      g_paste_settings_get_max_displayed_history_size (const GPasteSettings *self);
-guint32      g_paste_settings_get_max_history_size           (const GPasteSettings *self);
-guint32      g_paste_settings_get_max_memory_usage           (const GPasteSettings *self);
-guint32      g_paste_settings_get_max_text_item_size         (const GPasteSettings *self);
-guint32      g_paste_settings_get_min_text_item_size         (const GPasteSettings *self);
+guint64      g_paste_settings_get_max_displayed_history_size (const GPasteSettings *self);
+guint64      g_paste_settings_get_max_history_size           (const GPasteSettings *self);
+guint64      g_paste_settings_get_max_memory_usage           (const GPasteSettings *self);
+guint64      g_paste_settings_get_max_text_item_size         (const GPasteSettings *self);
+guint64      g_paste_settings_get_min_text_item_size         (const GPasteSettings *self);
 const gchar *g_paste_settings_get_pop                        (const GPasteSettings *self);
 gboolean     g_paste_settings_get_primary_to_history         (const GPasteSettings *self);
 gboolean     g_paste_settings_get_save_history               (const GPasteSettings *self);
@@ -79,7 +79,7 @@ void g_paste_settings_reset_trim_items                 (GPasteSettings *self);
 void g_paste_settings_reset_upload                     (GPasteSettings *self);
 
 void g_paste_settings_set_element_size               (GPasteSettings *self,
-                                                      guint32         value);
+                                                      guint64         value);
 void g_paste_settings_set_growing_lines              (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_history_name               (GPasteSettings *self,
@@ -91,15 +91,15 @@ void g_paste_settings_set_launch_ui                  (GPasteSettings *self,
 void g_paste_settings_set_make_password              (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
-                                                      guint32         value);
+                                                      guint64         value);
 void g_paste_settings_set_max_history_size           (GPasteSettings *self,
-                                                      guint32         value);
+                                                      guint64         value);
 void g_paste_settings_set_max_memory_usage           (GPasteSettings *self,
-                                                      guint32         value);
+                                                      guint64         value);
 void g_paste_settings_set_max_text_item_size         (GPasteSettings *self,
-                                                      guint32         value);
+                                                      guint64         value);
 void g_paste_settings_set_min_text_item_size         (GPasteSettings *self,
-                                                      guint32         value);
+                                                      guint64         value);
 void g_paste_settings_set_pop                        (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_primary_to_history         (GPasteSettings *self,
