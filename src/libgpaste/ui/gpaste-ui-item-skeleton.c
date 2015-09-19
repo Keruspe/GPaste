@@ -66,6 +66,27 @@ g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
 }
 
 /**
+ * g_paste_ui_item_skeleton_set_markup:
+ * @self: the #GPasteUiItemSkeleton instance
+ * @markup: the new markup for the label
+ *
+ * Changes the displayed markup
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
+                                     const gchar          *markup)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
+    g_return_val_if_fail (g_utf8_validate (markup, -1, NULL), NULL);
+
+    GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
+
+    gtk_label_set_markup (priv->label, markup);
+}
+
+/**
  * g_paste_ui_item_skeleton_set_index:
  * @self: the #GPasteUiItemSkeleton instance
  * @index: the new index to display

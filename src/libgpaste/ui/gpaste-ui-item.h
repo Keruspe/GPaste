@@ -25,13 +25,13 @@
 #define __G_PASTE_UI_ITEM_H__
 
 #include <gpaste-client.h>
-#include <gpaste-settings.h>
+#include <gpaste-ui-item-skeleton.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_ITEM (g_paste_ui_item_get_type ())
 
-G_PASTE_FINAL_TYPE (UiItem, ui_item, UI_ITEM, GtkListBoxRow)
+G_PASTE_FINAL_TYPE (UiItem, ui_item, UI_ITEM, GPasteUiItemSkeleton)
 
 void g_paste_ui_item_activate  (GPasteUiItem *self);
 void g_paste_ui_item_refresh   (GPasteUiItem *self);

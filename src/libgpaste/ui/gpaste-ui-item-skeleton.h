@@ -37,10 +37,12 @@ struct _GPasteUiItemSkeletonClass
     GtkListBoxRowClass parent_class;
 };
 
-void g_paste_ui_item_skeleton_set_text  (GPasteUiItemSkeleton *self,
-                                         const gchar          *text);
-void g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
-                                         guint32               index);
+void g_paste_ui_item_skeleton_set_text   (GPasteUiItemSkeleton *self,
+                                          const gchar          *text);
+void g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
+                                          const gchar          *markup);
+void g_paste_ui_item_skeleton_set_index  (GPasteUiItemSkeleton *self,
+                                          guint32               index);
 
 GtkLabel *g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self);
 
