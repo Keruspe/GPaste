@@ -108,12 +108,13 @@ g_paste_ui_history_update_height_request (GPasteSettings *settings,
 {
     GPasteUiHistory *self = user_data;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+    guint64 new_size = g_paste_settings_get_max_displayed_history_size (settings);
 
     if (priv->item_height)
-        g_object_set (G_OBJECT (self), "height-request", g_paste_settings_get_max_displayed_history_size (settings) * priv->item_height, NULL);
+        g_object_set (G_OBJECT (self), "height-request", new_size * priv->item_height, NULL);
 
-    /* in case we now can display more or less stuff */
-    g_paste_ui_history_refresh (self, 0);
+    if (new_size != priv->size)
+        g_paste_ui_history_refresh (self, 0);
 }
 
 typedef struct {
