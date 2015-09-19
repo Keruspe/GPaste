@@ -307,6 +307,15 @@ g_paste_daemon_private_delete_history_signal (GPasteDaemonPrivate *priv,
 }
 
 static void
+g_paste_daemon_private_empty_history_signal (GPasteDaemonPrivate *priv,
+                                             const gchar         *history)
+{
+    GVariant *variant = g_variant_new_string (history);
+
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (EMPTY_HISTORY, variant);
+}
+
+static void
 g_paste_daemon_private_switch_history_signal (GPasteDaemonPrivate *priv,
                                               const gchar         *history)
 {
@@ -384,8 +393,10 @@ g_paste_daemon_private_empty_history (GPasteDaemonPrivate *priv,
                                       GVariant            *parameters)
 {
     g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
+    g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_paste_history_save (history, g_paste_daemon_get_dbus_string_parameter (parameters, NULL));
+    g_paste_history_save (history, name);
+    g_paste_daemon_private_empty_history_signal (priv, name);
 }
 
 static GVariant *
@@ -483,8 +494,9 @@ g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv,
                                          GVariant            *parameters)
 {
     g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
+    g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_paste_history_load (history, g_paste_daemon_get_dbus_string_parameter (parameters, NULL));
+    g_paste_history_load (history, name);
 
     GVariant *variant = g_variant_new_uint32 (g_paste_history_get_length (history));
     return g_variant_new_tuple (&variant, 1);
@@ -634,8 +646,8 @@ static GVariant *
 g_paste_daemon_private_search (GPasteDaemonPrivate *priv,
                                GVariant            *parameters)
 {
-    g_autoptr (GArray) results = g_paste_history_search (priv->history,
-                                                         g_paste_daemon_get_dbus_string_parameter (parameters, NULL));
+    g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    g_autoptr (GArray) results = g_paste_history_search (priv->history, name);
     GVariant *variant = g_variant_new_fixed_array (G_VARIANT_TYPE_UINT32, results->data, results->len, sizeof (guint32));
 
     return g_variant_new_tuple (&variant, 1);
