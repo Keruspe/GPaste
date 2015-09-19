@@ -40,6 +40,7 @@ typedef struct
     gulong                  activated_id;
     gulong                  button_pressed_id;
     gulong                  delete_history_id;
+    gulong                  empty_history_id;
     gulong                  switch_activated_id;
     gulong                  switch_clicked_id;
     gulong                  switch_history_id;
@@ -106,6 +107,16 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
 
     priv->histories = g_slist_remove_link (priv->histories, h);
     gtk_container_remove (GTK_CONTAINER (priv->list_box), h->data);
+}
+
+static void
+on_history_emptied (GPasteClient *client G_GNUC_UNUSED,
+                    const gchar  *history,
+                    gpointer      user_data)
+{
+    GPasteUiPanel *self = user_data;
+
+    g_paste_ui_panel_update_history_length (self, history, 0);
 }
 
 static void
@@ -254,6 +265,7 @@ g_paste_ui_panel_dispose (GObject *object)
     if (priv->client)
     {
         g_signal_handler_disconnect (priv->client, priv->delete_history_id);
+        g_signal_handler_disconnect (priv->client, priv->empty_history_id);
         g_signal_handler_disconnect (priv->client, priv->switch_history_id);
         g_clear_object (&priv->client);
     }
@@ -345,6 +357,10 @@ g_paste_ui_panel_new (GPasteClient   *client,
                                                 "delete-history",
                                                 G_CALLBACK (on_history_deleted),
                                                 priv);
+    priv->empty_history_id = g_signal_connect (priv->client,
+                                               "empty-history",
+                                               G_CALLBACK (on_history_emptied),
+                                               self);
     priv->switch_history_id = g_signal_connect (priv->client,
                                                 "switch-history",
                                                 G_CALLBACK (on_history_switched),
