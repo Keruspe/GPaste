@@ -102,8 +102,7 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
                                                           res,
                                                           &hits,
                                                           NULL); /* Error */
-    // FIXME g_auto (GStrv) results = g_new (char *, hits);
-    GStrv results = g_new (char *, hits);
+    g_auto (GStrv) results = g_new (char *, hits);
 
     for (guint64 i = 0; i < hits; ++i)
         results[i] = g_strdup_printf ("%lu", r[i]);
