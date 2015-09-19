@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-19 21:15+0200\n"
+"POT-Creation-Date: 2015-09-20 00:14+0200\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -193,12 +193,12 @@ msgstr "Vaihda kohteeseen"
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
 #: ../src/libgpaste/ui/gpaste-ui-delete-item.c:62
 #: ../src/libgpaste/ui/gpaste-ui-delete-history.c:37
-#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:76
+#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:74
 msgid "Delete"
 msgstr "Poista"
 
 #: ../src/libgpaste/ui/gpaste-ui-backup-history.c:47
-#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:135
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:133
 msgid "Backup"
 msgstr "Varmuuskopioi"
 
@@ -222,10 +222,8 @@ msgid "Edit"
 msgstr ""
 
 #. Translators: this is the translation for emptying the history
-#. TODO: move set_label in ctor
-#. Translators: this is the translation for emptying the history
 #: ../src/libgpaste/ui/gpaste-ui-empty-history.c:38
-#: ../src/libgpaste/ui/gpaste-ui-empty-history.c:79
+#: ../src/libgpaste/ui/gpaste-ui-empty-history.c:76
 #, fuzzy
 msgid "Empty"
 msgstr "(Tyhjä)"
