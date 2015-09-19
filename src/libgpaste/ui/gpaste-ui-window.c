@@ -259,8 +259,6 @@ g_paste_ui_window_new (GtkApplication *app)
                                       "type",            GTK_WINDOW_TOPLEVEL,
                                       "window-position", GTK_WIN_POS_CENTER_ALWAYS,
                                       "resizable",       FALSE,
-                                      "width-request",   800,
-                                      "height-request",  600,
                                       NULL);
 
     g_paste_client_new (on_client_ready, self);
