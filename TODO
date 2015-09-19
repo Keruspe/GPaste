@@ -1,3 +1,7 @@
+3.18:
+    ui:
+        track max-displayed-history-size changes in history
+
 3.20:
     general:
         autoconf cleanup w/ AX_* + custom macros
