@@ -18,15 +18,15 @@
  */
 
 #include <gpaste-gsettings-keys.h>
-#include <gpaste-ui-item-skeleton.h>
-#include <gpaste-ui-delete.h>
+#include <gpaste-ui-delete-item.h>
 #include <gpaste-ui-edit.h>
+#include <gpaste-ui-item-skeleton.h>
 
 typedef struct
 {
     GPasteSettings *settings;
     GPasteUiEdit   *edit;
-    GPasteUiDelete *delete;
+    GPasteUiItemAction *delete;
 
     GtkLabel       *index_label;
     GtkLabel       *label;
@@ -162,8 +162,7 @@ g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
     gtk_label_set_text (priv->index_label, _index);
 
     g_paste_ui_edit_set_index (priv->edit, index);
-    g_paste_ui_delete_set_index (priv->delete, index);
-
+    g_paste_ui_item_action_set_index (priv->delete, index);
 }
 
 /**
@@ -263,11 +262,11 @@ g_paste_ui_item_skeleton_new (GType           type,
     GtkWidget *self = gtk_widget_new (type, "selectable", FALSE, NULL);
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (self));
     GtkWidget *edit = g_paste_ui_edit_new (client, rootwin);
-    GtkWidget *delete = g_paste_ui_delete_new (client);
+    GtkWidget *delete = g_paste_ui_delete_item_new (client);
 
     priv->settings = g_object_ref (settings);
     priv->edit = G_PASTE_UI_EDIT (edit);
-    priv->delete = G_PASTE_UI_DELETE (delete);
+    priv->delete = G_PASTE_UI_ITEM_ACTION (delete);
 
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), delete, FALSE, TRUE, 0);
     gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), edit, FALSE, TRUE, 0);

@@ -21,22 +21,19 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_DELETE_H__
-#define __G_PASTE_UI_DELETE_H__
+#ifndef __G_PASTE_UI_DELETE_ITEM_H__
+#define __G_PASTE_UI_DELETE_ITEM_H__
 
-#include <gpaste-client.h>
+#include <gpaste-ui-item-action.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_DELETE (g_paste_ui_delete_get_type ())
+#define G_PASTE_TYPE_UI_DELETE_ITEM (g_paste_ui_delete_item_get_type ())
 
-G_PASTE_FINAL_TYPE (UiDelete, ui_delete, UI_DELETE, GtkButton)
+G_PASTE_FINAL_TYPE (UiDeleteItem, ui_delete_item, UI_DELETE_ITEM, GPasteUiItemAction)
 
-void g_paste_ui_delete_set_index (GPasteUiDelete *self,
-                                  guint32         index);
-
-GtkWidget *g_paste_ui_delete_new (GPasteClient *client);
+GtkWidget *g_paste_ui_delete_item_new (GPasteClient *client);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_DELETE_H__*/
+#endif /*__G_PASTE_UI_DELETE_ITEM_H__*/

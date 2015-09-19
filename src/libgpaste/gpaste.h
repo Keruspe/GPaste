@@ -93,7 +93,7 @@
 /* GPasteUi */
 #include <gpaste-ui-about.h>
 #include <gpaste-ui-backup-history.h>
-#include <gpaste-ui-delete.h>
+#include <gpaste-ui-delete-item.h>
 #include <gpaste-ui-delete-history.h>
 #include <gpaste-ui-edit.h>
 #include <gpaste-ui-empty-history.h>

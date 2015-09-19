@@ -296,8 +296,6 @@ global:
 
     g_paste_ui_about_get_type;
     g_paste_ui_about_new;
-    g_paste_ui_delete_get_type;
-    g_paste_ui_delete_set_index;
     g_paste_ui_empty_item_get_type;
     g_paste_ui_header_get_type;
     g_paste_ui_header_new;
@@ -395,7 +393,8 @@ global:
     g_paste_ui_backup_history_new;
     g_paste_ui_delete_history_get_type;
     g_paste_ui_delete_history_new;
-    g_paste_ui_delete_new;
+    g_paste_ui_delete_item_get_type;
+    g_paste_ui_delete_item_new;
     g_paste_ui_edit_get_type;
     g_paste_ui_edit_new;
     g_paste_ui_edit_set_index;
