@@ -102,10 +102,11 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
                                                           res,
                                                           &hits,
                                                           NULL); /* Error */
-    g_auto (GStrv) results = g_new (char *, hits);
+    g_auto (GStrv) results = g_new (char *, hits + 1);
 
     for (guint64 i = 0; i < hits; ++i)
         results[i] = g_strdup_printf ("%lu", r[i]);
+    results[hits] = NULL;
 
     GVariant *ans = g_variant_new_strv ((const char * const *) results, hits);
     g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
