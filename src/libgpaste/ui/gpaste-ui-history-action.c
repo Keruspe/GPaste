@@ -128,7 +128,8 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_history_action_new (GType         type,
                                GPasteClient *client,
                                GtkWidget    *actions,
-                               GtkWindow    *rootwin)
+                               GtkWindow    *rootwin,
+                               const gchar  *label)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_HISTORY_ACTION), NULL);
     g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
@@ -144,6 +145,8 @@ g_paste_ui_history_action_new (GType         type,
     priv->client = g_object_ref (client);
     priv->actions = G_PASTE_UI_HISTORY_ACTIONS (actions);
     priv->rootwin = rootwin;
+
+    gtk_button_set_label (GTK_BUTTON (self), label);
 
     return self;
 }

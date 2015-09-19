@@ -49,7 +49,8 @@ void g_paste_ui_history_action_set_history (GPasteUiHistoryAction *self,
 GtkWidget *g_paste_ui_history_action_new (GType         type,
                                           GPasteClient *client,
                                           GtkWidget    *actions,
-                                          GtkWindow    *rootwin);
+                                          GtkWindow    *rootwin,
+                                          const gchar  *label);
 
 G_END_DECLS
 

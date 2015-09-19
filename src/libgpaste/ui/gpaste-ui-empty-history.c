@@ -72,11 +72,6 @@ g_paste_ui_empty_history_new (GPasteClient *client,
     g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = g_paste_ui_history_action_new (G_PASTE_TYPE_UI_EMPTY_HISTORY, client, actions, rootwin);
-    /* TODO: move set_label in ctor */
-
     /* Translators: this is the translation for emptying the history */
-    gtk_button_set_label (GTK_BUTTON (self), _("Empty"));
-
-    return self;
+    return g_paste_ui_history_action_new (G_PASTE_TYPE_UI_EMPTY_HISTORY, client, actions, rootwin, _("Empty"));
 }
