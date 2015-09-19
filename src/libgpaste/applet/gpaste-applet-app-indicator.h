@@ -21,7 +21,6 @@
 #define __G_PASTE_APPLET_APP_INDICATOR_H__
 
 #include <gpaste-applet-icon.h>
-#include <gpaste-client.h>
 
 G_BEGIN_DECLS
 

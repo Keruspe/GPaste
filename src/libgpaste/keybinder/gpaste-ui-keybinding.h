@@ -24,6 +24,8 @@
 #ifndef __G_PASTE_UI_KEYBINDING_H__
 #define __G_PASTE_UI_KEYBINDING_H__
 
+#include <gpaste-keybinding.h>
+
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_KEYBINDING (g_paste_ui_keybinding_get_type ())

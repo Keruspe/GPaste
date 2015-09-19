@@ -63,6 +63,18 @@ gsize        g_paste_item_get_size           (const GPasteItem *self);
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
 
+void g_paste_item_set_display_string (GPasteItem  *self,
+                                      const gchar *display_string);
+
+void g_paste_item_set_size    (GPasteItem *self,
+                               gsize       size);
+void g_paste_item_add_size    (GPasteItem *self,
+                               gsize       size);
+void g_paste_item_remove_size (GPasteItem *self,
+                               gsize       size);
+
+GPasteItem *g_paste_item_new (GType        type,
+                              const gchar *value);
 G_END_DECLS
 
 #endif /*__G_PASTE_ITEM_H__*/

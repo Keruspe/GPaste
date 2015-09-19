@@ -24,7 +24,7 @@
 #ifndef __G_PASTE_APPLET_ICON_H__
 #define __G_PASTE_APPLET_ICON_H__
 
-#include <gpaste-macros.h>
+#include <gpaste-client.h>
 
 G_BEGIN_DECLS
 
@@ -36,6 +36,11 @@ struct _GPasteAppletIconClass
 {
     GObjectClass parent_class;
 };
+
+void g_paste_applet_icon_activate (void);
+
+GPasteAppletIcon *g_paste_applet_icon_new (GType         type,
+                                           GPasteClient *client);
 
 G_END_DECLS
 

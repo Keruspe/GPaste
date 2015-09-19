@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinding-private.h"
-
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-keybinding.h>
 #include <gpaste-util.h>
@@ -58,9 +56,9 @@ launch_ui (GPasteKeybinding *self G_GNUC_UNUSED,
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_ui_keybinding_new (void)
 {
-    return _g_paste_keybinding_new (G_PASTE_TYPE_UI_KEYBINDING,
-                                    G_PASTE_LAUNCH_UI_SETTING,
-                                    g_paste_settings_get_launch_ui,
-                                    launch_ui,
-                                    NULL);
+    return g_paste_keybinding_new (G_PASTE_TYPE_UI_KEYBINDING,
+                                   G_PASTE_LAUNCH_UI_SETTING,
+                                   g_paste_settings_get_launch_ui,
+                                   launch_ui,
+                                   NULL);
 }

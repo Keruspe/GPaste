@@ -17,8 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-applet-icon-private.h"
-
+#include <gpaste-applet-icon.h>
 #include <gpaste-util.h>
 
 typedef struct
@@ -31,9 +30,13 @@ typedef struct
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TYPE_OBJECT)
 
 /*
- * g_paste_applet_icon_activate: (skip)
+ * g_paste_applet_icon_activate:
+ *
+ * Activate the applet icon action
+ *
+ * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_applet_icon_activate (void)
 {
     g_paste_util_spawn ("Ui");
@@ -72,7 +75,14 @@ g_paste_applet_icon_init (GPasteAppletIcon *self G_GNUC_UNUSED)
 }
 
 /**
- * g_paste_applet_icon_new: (skip)
+ * g_paste_applet_icon_new:
+ * @type: The type of the subclass to instantiate
+ * @client: a #GPasteClient
+ *
+ * Create a new instance of #GPasteAppletIcon
+ *
+ * Returns: a newly allocated #GPasteAppletIcon
+ *          free it with g_object_unref
  */
 GPasteAppletIcon *
 g_paste_applet_icon_new (GType         type,

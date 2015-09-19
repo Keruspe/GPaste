@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-item-private.h"
-
 #include <gpaste-password-item.h>
 
 #include <string.h>

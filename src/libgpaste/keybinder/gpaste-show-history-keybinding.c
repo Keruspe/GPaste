@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinding-private.h"
-
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-show-history-keybinding.h>
 
@@ -61,9 +59,9 @@ g_paste_show_history_keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUS
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_show_history_keybinding_new (GPasteDaemon *gpaste_daemon)
 {
-    return _g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
-                                    G_PASTE_SHOW_HISTORY_SETTING,
-                                    g_paste_settings_get_show_history,
-                                    g_paste_show_history_keybinding_show_history,
-                                    gpaste_daemon);
+    return g_paste_keybinding_new (G_PASTE_TYPE_SHOW_HISTORY_KEYBINDING,
+                                   G_PASTE_SHOW_HISTORY_SETTING,
+                                   g_paste_settings_get_show_history,
+                                   g_paste_show_history_keybinding_show_history,
+                                   gpaste_daemon);
 }

@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinding-private.h"
-
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-upload-keybinding.h>
 
@@ -78,11 +76,11 @@ g_paste_upload_keybinding_new (GPasteDaemon *daemon)
 {
     g_return_val_if_fail (G_PASTE_IS_DAEMON (daemon), NULL);
 
-    GPasteKeybinding *self = _g_paste_keybinding_new (G_PASTE_TYPE_UPLOAD_KEYBINDING,
-                                                      G_PASTE_UPLOAD_SETTING,
-                                                      g_paste_settings_get_upload,
-                                                      upload,
-                                                      NULL);
+    GPasteKeybinding *self = g_paste_keybinding_new (G_PASTE_TYPE_UPLOAD_KEYBINDING,
+                                                     G_PASTE_UPLOAD_SETTING,
+                                                     g_paste_settings_get_upload,
+                                                     upload,
+                                                     NULL);
     GPasteUploadKeybindingPrivate *priv = g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (self));
 
     priv->daemon = g_object_ref (daemon);

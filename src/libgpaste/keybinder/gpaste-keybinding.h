@@ -56,7 +56,8 @@ void            g_paste_keybinding_notify        (GPasteKeybinding *self,
                                                   GdkModifierType   modifiers,
                                                   guint             keycode);
 
-GPasteKeybinding *g_paste_keybinding_new (const gchar           *dconf_key,
+GPasteKeybinding *g_paste_keybinding_new (GType                  type,
+                                          const gchar           *dconf_key,
                                           GPasteKeybindingGetter getter,
                                           GPasteKeybindingFunc   callback,
                                           gpointer               user_data);

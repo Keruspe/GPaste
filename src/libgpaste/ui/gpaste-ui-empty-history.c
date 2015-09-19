@@ -18,7 +18,6 @@
  */
 
 #include <gpaste-ui-empty-history.h>
-#include <gpaste-ui-history-action-private.h>
 #include <gpaste-ui-history-actions.h>
 #include <gpaste-util.h>
 

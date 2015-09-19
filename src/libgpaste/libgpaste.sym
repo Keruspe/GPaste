@@ -184,7 +184,6 @@ global:
     g_paste_keybinding_get_modifiers;
     g_paste_keybinding_get_type;
     g_paste_keybinding_is_active;
-    g_paste_keybinding_new;
     g_paste_keybinding_notify;
     g_paste_keybinding_perform;
 
@@ -342,6 +341,9 @@ local:
 
 LIBGPASTE_3_18_0 {
 global:
+    g_paste_applet_icon_activate;
+    g_paste_applet_icon_new;
+
     g_paste_bus_get_connection;
     g_paste_bus_get_type;
     g_paste_bus_new;
@@ -376,7 +378,15 @@ global:
     g_paste_history_replace;
     g_paste_history_save;
 
+    g_paste_item_add_size;
+    g_paste_item_new;
+    g_paste_item_remove_size;
+    g_paste_item_set_display_string;
+    g_paste_item_set_size;
+
     g_paste_item_kind_get_type;
+
+    g_paste_keybinding_new;
 
     g_paste_search_provider_get_type;
     g_paste_search_provider_new;
@@ -396,6 +406,7 @@ global:
     g_paste_ui_header_show_prefs;
     g_paste_ui_history_search;
     g_paste_ui_history_action_get_type;
+    g_paste_ui_history_action_new;
     g_paste_ui_history_action_set_history;
     g_paste_ui_history_actions_get_type;
     g_paste_ui_history_actions_new;

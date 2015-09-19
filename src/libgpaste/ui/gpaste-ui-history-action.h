@@ -24,7 +24,7 @@
 #ifndef __G_PASTE_UI_HISTORY_ACTION_H__
 #define __G_PASTE_UI_HISTORY_ACTION_H__
 
-#include <gpaste-macros.h>
+#include <gpaste-client.h>
 
 G_BEGIN_DECLS
 
@@ -45,6 +45,11 @@ struct _GPasteUiHistoryActionClass
 
 void g_paste_ui_history_action_set_history (GPasteUiHistoryAction *self,
                                             const gchar           *history);
+
+GtkWidget *g_paste_ui_history_action_new (GType         type,
+                                          GPasteClient *client,
+                                          GtkWidget    *actions,
+                                          GtkWindow    *rootwin);
 
 G_END_DECLS
 

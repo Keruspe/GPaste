@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinding-private.h"
-
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-pop-keybinding.h>
 
@@ -78,11 +76,11 @@ g_paste_pop_keybinding_new (GPasteHistory *history)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
 
-    GPasteKeybinding *self = _g_paste_keybinding_new (G_PASTE_TYPE_POP_KEYBINDING,
-                                                      G_PASTE_POP_SETTING,
-                                                      g_paste_settings_get_pop,
-                                                      pop,
-                                                      NULL);
+    GPasteKeybinding *self = g_paste_keybinding_new (G_PASTE_TYPE_POP_KEYBINDING,
+                                                     G_PASTE_POP_SETTING,
+                                                     g_paste_settings_get_pop,
+                                                     pop,
+                                                     NULL);
     GPastePopKeybindingPrivate *priv = g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (self));
 
     priv->history = g_object_ref (history);

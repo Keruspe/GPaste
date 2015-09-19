@@ -25,7 +25,6 @@
 #define __G_PASTE_APPLET_STATUS_ICON_H__
 
 #include <gpaste-applet-icon.h>
-#include <gpaste-client.h>
 
 G_BEGIN_DECLS
 

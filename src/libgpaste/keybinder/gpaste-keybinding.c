@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinding-private.h"
+#include <gpaste-keybinding.h>
 
 typedef struct _GPasteKeybindingPrivate
 {
@@ -30,7 +30,7 @@ typedef struct _GPasteKeybindingPrivate
     guint                 *keycodes;
 } GPasteKeybindingPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
 
 /**
  * g_paste_keybinding_get_modifiers:
@@ -273,10 +273,20 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 }
 
 /**
- * _g_paste_keybinding_new: (skip)
+ * g_paste_keybinding_new:
+ * @type: the type of the subclass to instantiate
+ * @dconf_key: the dconf key to watch
+ * @getter: (scope notified): the getter to use to get the binding
+ * @callback: (closure user_data) (scope notified): the callback to call when activated
+ * @user_data: (closure): the data to pass to @callback, defaults to self/this
+ *
+ * Create a new instance of #GPasteKeybinding
+ *
+ * Returns: a newly allocated #GPasteKeybinding
+ *          free it with g_object_unref
  */
-GPasteKeybinding *
-_g_paste_keybinding_new (GType                  type,
+G_PASTE_VISIBLE GPasteKeybinding *
+g_paste_keybinding_new (GType                  type,
                          const gchar           *dconf_key,
                          GPasteKeybindingGetter getter,
                          GPasteKeybindingFunc   callback,
@@ -297,29 +307,4 @@ _g_paste_keybinding_new (GType                  type,
     priv->keycodes = NULL;
 
     return self;
-}
-
-/**
- * g_paste_keybinding_new:
- * @dconf_key: the dconf key to watch
- * @getter: (scope notified): the getter to use to get the binding
- * @callback: (closure user_data) (scope notified): the callback to call when activated
- * @user_data: (closure): the data to pass to @callback, defaults to self/this
- *
- * Create a new instance of #GPasteKeybinding
- *
- * Returns: a newly allocated #GPasteKeybinding
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_keybinding_new (const gchar           *dconf_key,
-                        GPasteKeybindingGetter getter,
-                        GPasteKeybindingFunc   callback,
-                        gpointer               user_data)
-{
-    return _g_paste_keybinding_new (G_PASTE_TYPE_KEYBINDING,
-                                    dconf_key,
-                                    getter,
-                                    callback,
-                                    user_data);
 }

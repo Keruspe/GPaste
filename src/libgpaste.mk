@@ -19,10 +19,6 @@ libgpaste_la_file = lib/libgpaste.la
 
 lib_libgpaste_la_private_headers = \
 	src/libgpaste/gpaste-gdbus-macros.h \
-	src/libgpaste/applet/gpaste-applet-icon-private.h \
-	src/libgpaste/core/gpaste-item-private.h \
-	src/libgpaste/keybinder/gpaste-keybinding-private.h \
-	src/libgpaste/ui/gpaste-ui-history-action-private.h \
 	$(NULL)
 
 lib_libgpaste_la_misc_headers = \

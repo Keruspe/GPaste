@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinding-private.h"
-
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-sync-primary-to-clipboard-keybinding.h>
 
@@ -62,9 +60,9 @@ g_paste_sync_primary_to_clipboard_keybinding_sync (GPasteKeybinding *self G_GNUC
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_sync_primary_to_clipboard_keybinding_new (GPasteClipboardsManager *gcm)
 {
-    return _g_paste_keybinding_new (G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING,
-                                    G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING,
-                                    g_paste_settings_get_sync_primary_to_clipboard,
-                                    g_paste_sync_primary_to_clipboard_keybinding_sync,
-                                    gcm);
+    return g_paste_keybinding_new (G_PASTE_TYPE_SYNC_PRIMARY_TO_CLIPBOARD_KEYBINDING,
+                                   G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING,
+                                   g_paste_settings_get_sync_primary_to_clipboard,
+                                   g_paste_sync_primary_to_clipboard_keybinding_sync,
+                                   gcm);
 }

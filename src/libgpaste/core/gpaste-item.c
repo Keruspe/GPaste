@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-item-private.h"
+#include <gpaste-item.h>
 
 #include <string.h>
 
@@ -146,9 +146,15 @@ g_paste_item_get_size (const GPasteItem *self)
 }
 
 /**
- * g_paste_item_set_size: (skip)
+ * g_paste_item_set_size:
+ * @self: a #GPasteItem instance
+ * @size: the new size
+ *
+ * Set the size of the item
+ *
+ * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_item_set_size (GPasteItem *self,
                        gsize       size)
 {
@@ -160,9 +166,15 @@ g_paste_item_set_size (GPasteItem *self,
 }
 
 /**
- * g_paste_item_add_size: (skip)
+ * g_paste_item_add_size:
+ * @self: a #GPasteItem instance
+ * @size: the size to add
+ *
+ * Add some size of the item
+ *
+ * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_item_add_size (GPasteItem *self,
                        gsize       size)
 {
@@ -174,9 +186,15 @@ g_paste_item_add_size (GPasteItem *self,
 }
 
 /**
- * g_paste_item_remove_size: (skip)
+ * g_paste_item_remove_size:
+ * @self: a #GPasteItem instance
+ * @size: the size to remove
+ *
+ * Remove some size from the item
+ *
+ * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_item_remove_size (GPasteItem *self,
                           gsize       size)
 {
@@ -190,9 +208,15 @@ g_paste_item_remove_size (GPasteItem *self,
 }
 
 /**
- * g_paste_item_set_display_string: (skip)
+ * g_paste_item_set_display_string:
+ * @self: a #GPasteItem instance
+ * @display_string: the new display string
+ *
+ * Set the string to display
+ *
+ * Returns:
  */
-void
+G_PASTE_VISIBLE void
 g_paste_item_set_display_string (GPasteItem  *self,
                                  const gchar *display_string)
 {
@@ -280,9 +304,16 @@ g_paste_item_init (GPasteItem *self G_GNUC_UNUSED)
 }
 
 /**
- * g_paste_item_new: (skip)
+ * g_paste_item_new:
+ * @type: the type of the subclass to instantiate
+ * @value: the value of the item
+ *
+ * Create a new instance of #GPasteItem
+ *
+ * Returns: a newly allocated #GPasteItem
+ *          free it with g_object_unref
  */
-GPasteItem *
+G_PASTE_VISIBLE GPasteItem *
 g_paste_item_new (GType        type,
                   const gchar *value)
 {

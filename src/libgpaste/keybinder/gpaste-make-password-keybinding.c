@@ -17,8 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gpaste-keybinding-private.h"
-
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-make-password-keybinding.h>
 
@@ -60,9 +58,9 @@ g_paste_make_password_keybinding_make_password (GPasteKeybinding *self G_GNUC_UN
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_make_password_keybinding_new (GPasteHistory *history)
 {
-    return _g_paste_keybinding_new (G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING,
-                                    G_PASTE_MAKE_PASSWORD_SETTING,
-                                    g_paste_settings_get_make_password,
-                                    g_paste_make_password_keybinding_make_password,
-                                    history);
+    return g_paste_keybinding_new (G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING,
+                                   G_PASTE_MAKE_PASSWORD_SETTING,
+                                   g_paste_settings_get_make_password,
+                                   g_paste_make_password_keybinding_make_password,
+                                   history);
 }

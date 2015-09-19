@@ -17,7 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gpaste-ui-history-action-private.h>
+#include <gpaste-ui-history-action.h>
 #include <gpaste-ui-history-actions.h>
 
 typedef struct
@@ -30,7 +30,7 @@ typedef struct
     gchar                  *history;
 } GPasteUiHistoryActionPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistoryAction, g_paste_ui_history_action, GTK_TYPE_BUTTON)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiHistoryAction, g_paste_ui_history_action, GTK_TYPE_BUTTON)
 
 /**
  * g_paste_ui_history_action_set_history:
@@ -113,9 +113,18 @@ g_paste_ui_history_action_init (GPasteUiHistoryAction *self)
 }
 
 /**
- * g_paste_ui_history_action_new: (skip)
+ * g_paste_ui_history_action_new:
+ * @type: the type of the subclass to instantiate
+ * @client: a #GPasteClient
+ * @actions: a #GPasteUiHistoryActions
+ * @rootwin: the main #GtkWindow
+ *
+ * Create a new instance of #GPasteUiHistoryAction
+ *
+ * Returns: a newly allocated #GPasteUiHistoryAction
+ *          free it with g_object_unref
  */
-GtkWidget *
+G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_history_action_new (GType         type,
                                GPasteClient *client,
                                GtkWidget    *actions,

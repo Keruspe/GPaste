@@ -25,6 +25,7 @@
 #define __G_PASTE_UPLOAD_KEYBINDING_H__
 
 #include <gpaste-daemon.h>
+#include <gpaste-keybinding.h>
 
 G_BEGIN_DECLS
 
