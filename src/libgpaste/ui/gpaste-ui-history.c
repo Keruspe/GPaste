@@ -17,6 +17,7 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gpaste-gsettings-keys.h>
 #include <gpaste-ui-empty-item.h>
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-item.h>
@@ -45,6 +46,7 @@ typedef struct
     gsize           search_results_size;
 
     gulong          activated_id;
+    gulong          size_id;
     gulong          update_id;
 } GPasteUiHistoryPrivate;
 
@@ -97,11 +99,15 @@ g_paste_ui_history_drop_list (GtkContainer *self,
 }
 
 static void
-g_paste_ui_history_update_height_request (GPasteUiHistory *self)
+g_paste_ui_history_update_height_request (GPasteSettings *settings,
+                                          const gchar    *key G_GNUC_UNUSED,
+                                          gpointer        user_data)
 {
+    GPasteUiHistory *self = user_data;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    g_object_set (G_OBJECT (self), "height-request", g_paste_settings_get_max_displayed_history_size (priv->settings) * priv->item_height, NULL);
+    if (priv->item_height)
+        g_object_set (G_OBJECT (self), "height-request", g_paste_settings_get_max_displayed_history_size (settings) * priv->item_height, NULL);
 }
 
 typedef struct {
@@ -169,7 +175,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     if (!priv->item_height)
     {
         gtk_widget_get_preferred_height ((priv->items) ? GTK_WIDGET (priv->items->data) : priv->dummy_item, NULL, &priv->item_height);
-        g_paste_ui_history_update_height_request (self);
+        g_paste_ui_history_update_height_request (priv->settings, NULL, self);
     }
 }
 
@@ -309,14 +315,17 @@ g_paste_ui_history_dispose (GObject *object)
         priv->activated_id = 0;
     }
 
-    if (priv->update_id)
+    if (priv->settings)
     {
-        g_signal_handler_disconnect (priv->client, priv->update_id);
-        priv->update_id = 0;
+        g_signal_handler_disconnect (priv->settings, priv->size_id);
+        g_clear_object (&priv->settings);
     }
 
-    g_clear_object (&priv->settings);
-    g_clear_object (&priv->client);
+    if (priv->client)
+    {
+        g_signal_handler_disconnect (priv->client, priv->update_id);
+        g_clear_object (&priv->client);
+    }
 
     G_OBJECT_CLASS (g_paste_ui_history_parent_class)->dispose (object);
 }
@@ -386,6 +395,10 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     gtk_container_add (GTK_CONTAINER (self), priv->dummy_item);
 
+    priv->size_id = g_signal_connect (settings,
+                                      "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
+                                      G_CALLBACK (g_paste_ui_history_update_height_request),
+                                      self);
     priv->update_id = g_signal_connect (client,
                                         "update",
                                         G_CALLBACK (g_paste_ui_history_on_update),
