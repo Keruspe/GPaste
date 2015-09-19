@@ -298,9 +298,9 @@ g_paste_ui_item_skeleton_new (GType           type,
     priv->settings = g_object_ref (settings);
     priv->edit = edit;
 
-    priv->actions = g_slist_append (priv->actions, edit);
-    priv->actions = g_slist_append (priv->actions, upload);
-    priv->actions = g_slist_append (priv->actions, delete);
+    priv->actions = g_slist_prepend (priv->actions, edit);
+    priv->actions = g_slist_prepend (priv->actions, upload);
+    priv->actions = g_slist_prepend (priv->actions, delete);
 
     g_slist_foreach (priv->actions, add_action, gtk_bin_get_child (GTK_BIN (self)));
 
