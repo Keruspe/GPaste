@@ -25,8 +25,9 @@
 typedef struct
 {
     GPasteSettings *settings;
-    GPasteUiItemAction *edit;
-    GPasteUiItemAction *delete;
+
+    GSList         *actions;
+    GtkWidget      *edit;
 
     GtkLabel       *index_label;
     GtkLabel       *label;
@@ -50,6 +51,16 @@ g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
     gtk_label_set_max_width_chars (priv->label, size);
 }
 
+static void
+action_set_activatable (gpointer data,
+                        gpointer user_data)
+{
+    GtkWidget *w = data;
+    gboolean *a = user_data;
+
+    gtk_widget_set_sensitive (w, *a);
+}
+
 /**
  * g_paste_ui_item_skeleton_set_activatable:
  * @self: the #GPasteUiItemSkeleton instance
@@ -70,11 +81,10 @@ g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
     gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), activatable);
     gtk_widget_set_sensitive (GTK_WIDGET (priv->label), activatable);
 
-    if (priv->delete)
-        gtk_widget_set_sensitive (GTK_WIDGET (priv->delete), activatable);
+    g_slist_foreach (priv->actions, action_set_activatable, &activatable);
 
     if (priv->edit)
-        gtk_widget_set_sensitive (GTK_WIDGET (priv->edit), activatable && priv->editable);
+        gtk_widget_set_sensitive (priv->edit, activatable && priv->editable);
 }
 
 /**
@@ -96,7 +106,7 @@ g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
 
     priv->editable = editable;
 
-    gtk_widget_set_sensitive (GTK_WIDGET (priv->edit), editable);
+    gtk_widget_set_sensitive (priv->edit, editable);
 }
 
 /**
@@ -141,6 +151,16 @@ g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
     gtk_label_set_markup (priv->label, markup);
 }
 
+static void
+action_set_index (gpointer data,
+                  gpointer user_data)
+{
+    GPasteUiItemAction *a = data;
+    guint32 *i = user_data;
+
+    g_paste_ui_item_action_set_index (a, *i);
+}
+
 /**
  * g_paste_ui_item_skeleton_set_index:
  * @self: the #GPasteUiItemSkeleton instance
@@ -161,8 +181,7 @@ g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
 
     gtk_label_set_text (priv->index_label, _index);
 
-    g_paste_ui_item_action_set_index (priv->edit, index);
-    g_paste_ui_item_action_set_index (priv->delete, index);
+    g_slist_foreach (priv->actions, action_set_index, &index);
 }
 
 /**
@@ -181,6 +200,16 @@ g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self)
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     return priv->label;
+}
+
+static void
+add_action (gpointer data,
+            gpointer user_data)
+{
+    GtkWidget *w = data;
+    GtkBox *b =user_data;
+
+    gtk_box_pack_end (b, w, FALSE, TRUE, 0);
 }
 
 static void
@@ -265,11 +294,12 @@ g_paste_ui_item_skeleton_new (GType           type,
     GtkWidget *delete = g_paste_ui_delete_item_new (client);
 
     priv->settings = g_object_ref (settings);
-    priv->edit = G_PASTE_UI_ITEM_ACTION (edit);
-    priv->delete = G_PASTE_UI_ITEM_ACTION (delete);
+    priv->edit = edit;
 
-    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), delete, FALSE, TRUE, 0);
-    gtk_box_pack_end (GTK_BOX (gtk_bin_get_child (GTK_BIN (self))), edit, FALSE, TRUE, 0);
+    priv->actions = g_slist_append (priv->actions, edit);
+    priv->actions = g_slist_append (priv->actions, delete);
+
+    g_slist_foreach (priv->actions, add_action, gtk_bin_get_child (GTK_BIN (self)));
 
     priv->size_id = g_signal_connect (settings,
                                       "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
