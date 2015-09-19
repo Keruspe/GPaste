@@ -31,12 +31,19 @@ typedef struct
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEditItem, g_paste_ui_edit_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 
+typedef struct
+{
+    GPasteUiEditItemPrivate *priv;
+    guint32                  index;
+} CallbackData;
+
 static void
 on_item_ready (GObject      *source_object,
                GAsyncResult *res,
                gpointer      user_data)
 {
-    GPasteUiEditItemPrivate *priv = user_data;
+    g_autofree CallbackData *data = user_data;
+    GPasteUiEditItemPrivate *priv = data->priv;
     GPasteClient *client = G_PASTE_CLIENT (source_object);
     g_autofree gchar *old_txt = g_paste_client_get_raw_element_finish (client, res, NULL);
 
@@ -69,7 +76,7 @@ on_item_ready (GObject      *source_object,
 
         g_object_get (G_OBJECT (buf), "text", &txt, NULL);
         if (txt && *txt)
-            g_paste_client_replace (client, /* FIXME: index */ -1, txt, NULL, NULL);
+            g_paste_client_replace (client, data->index, txt, NULL, NULL);
     }
 
     gtk_widget_destroy (dialog);
@@ -80,9 +87,12 @@ g_paste_ui_edit_item_activate (GPasteUiItemAction *self,
                                GPasteClient       *client,
                                guint32             index)
 {
-    GPasteUiEditItemPrivate *priv = g_paste_ui_edit_item_get_instance_private (G_PASTE_UI_EDIT_ITEM (self));
+    CallbackData *data = g_malloc (sizeof (CallbackData));
 
-    g_paste_client_get_raw_element (client, index, on_item_ready, priv);
+    data->priv = g_paste_ui_edit_item_get_instance_private (G_PASTE_UI_EDIT_ITEM (self));
+    data->index = index;
+
+    g_paste_client_get_raw_element (client, index, on_item_ready, data);
 }
 
 static void
