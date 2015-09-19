@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-16 16:01+0200\n"
+"POT-Creation-Date: 2015-09-19 21:15+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -41,28 +41,28 @@ msgstr "Quitter"
 msgid "launch the graphical tool"
 msgstr "lance l'interface graphique"
 
-#: ../src/libgpaste/core/gpaste-history.c:758
+#: ../src/libgpaste/core/gpaste-history.c:759
 msgid "Could not create history dir"
 msgstr "Impossible de créer le dossier d'historique"
 
 #. This is the date format "month/day/year time"
-#: ../src/libgpaste/core/gpaste-image-item.c:231
+#: ../src/libgpaste/core/gpaste-image-item.c:229
 msgid "%m/%d/%y %T"
 msgstr "%d/%m/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: ../src/libgpaste/core/gpaste-image-item.c:233
+#: ../src/libgpaste/core/gpaste-image-item.c:231
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Image, %d x %d (%s)]"
 
 #. This is the prefix displayed in history to identify a password
-#: ../src/libgpaste/core/gpaste-password-item.c:84
+#: ../src/libgpaste/core/gpaste-password-item.c:82
 msgid "Password"
 msgstr "Mot de passe"
 
 #. This is the prefix displayed in history to identify selected files
-#: ../src/libgpaste/core/gpaste-uris-item.c:119
+#: ../src/libgpaste/core/gpaste-uris-item.c:117
 msgid "[Files] "
 msgstr "[Fichiers] "
 
@@ -163,7 +163,7 @@ msgid "Upload the active item to a pastebin service: "
 msgstr "Téléverser l'élément actif vers un sevice type pastebin : "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: ../src/libgpaste/ui/gpaste-ui-window.c:212
+#: ../src/libgpaste/ui/gpaste-ui-window.c:211
 #: ../src/gpaste-client/gpaste-client.c:185
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
@@ -182,58 +182,69 @@ msgstr "Raccourcis clavier"
 
 #. translators: This is the name of a multi-history management action
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
-#: ../src/libgpaste/ui/gpaste-ui-panel.c:235
+#: ../src/libgpaste/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
 msgstr "Passer à"
 
 #. translators: This is the name of a multi-history management action
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
-#: ../src/libgpaste/ui/gpaste-ui-delete.c:88
-#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:38
-#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:77
+#: ../src/libgpaste/ui/gpaste-ui-delete-item.c:62
+#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:37
+#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:76
 msgid "Delete"
 msgstr "Supprimer"
 
-#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:48
-#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:136
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:47
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:135
 msgid "Backup"
 msgstr "Copier"
 
-#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:49
-#: ../src/libgpaste/ui/gpaste-ui-edit.c:71
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:48
+#: ../src/libgpaste/ui/gpaste-ui-edit-item.c:56
 #: ../src/libgpaste/util/gpaste-util.c:43
 msgid "Cancel"
 msgstr "Annuler"
 
-#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:52
+#: ../src/libgpaste/ui/gpaste-ui-backup-history.c:51
 msgid "Under which name do you want to backup this history?"
 msgstr "Sous quel nom voulez-vous copier cet historique ?"
 
-#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:38
+#: ../src/libgpaste/ui/gpaste-ui-delete-history.c:37
 msgid "Are you sure you want to delete this history?"
 msgstr "Voulez-vous vraiment supprimer cet historique ?"
 
-#: ../src/libgpaste/ui/gpaste-ui-edit.c:70
-#: ../src/libgpaste/ui/gpaste-ui-edit.c:133
+#: ../src/libgpaste/ui/gpaste-ui-edit-item.c:55
+#: ../src/libgpaste/ui/gpaste-ui-edit-item.c:126
 msgid "Edit"
 msgstr "Modifier"
 
 #. Translators: this is the translation for emptying the history
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:43
+#. TODO: move set_label in ctor
+#. Translators: this is the translation for emptying the history
+#: ../src/libgpaste/ui/gpaste-ui-empty-history.c:38
+#: ../src/libgpaste/ui/gpaste-ui-empty-history.c:79
 msgid "Empty"
 msgstr "Vider"
 
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:43
+#: ../src/libgpaste/ui/gpaste-ui-empty-history.c:38
 msgid "Do you really want to empty the history?"
 msgstr "Voulez-vous vraiment vider l'historique ?"
-
-#: ../src/libgpaste/ui/gpaste-ui-empty.c:67
-msgid "Empty history"
-msgstr "Vider l'historique"
 
 #: ../src/libgpaste/ui/gpaste-ui-empty-item.c:37
 msgid "(Empty)"
 msgstr "(Vide)"
+
+#: ../src/libgpaste/ui/gpaste-ui-reexec.c:42
+msgid "Restart"
+msgstr "Redémarer"
+
+#: ../src/libgpaste/ui/gpaste-ui-reexec.c:42
+msgid "Do you really want to restart the daemon?"
+msgstr "Voulez-vous vraiment redémarer le démon ?"
+
+#: ../src/libgpaste/ui/gpaste-ui-reexec.c:66
+msgid "Restart the daemon"
+msgstr "Redémarer le démon"
 
 #: ../src/libgpaste/ui/gpaste-ui-search.c:37
 msgid "Search"
@@ -251,6 +262,10 @@ msgstr "Arrêter"
 msgid "Do you really want to stop tracking clipboard changes?"
 msgstr ""
 "Voulez-vous vraiment arrêter de suivre les changements du presse-papier ?"
+
+#: ../src/libgpaste/ui/gpaste-ui-upload-item.c:62
+msgid "Upload"
+msgstr "Publier"
 
 #: ../src/daemon/gpaste-daemon.c:37
 #, c-format
@@ -535,14 +550,14 @@ msgid "add the given separator between each item when merging"
 msgstr "ajoute le séparateur entre chaque élément à la fusion"
 
 #: ../src/gpaste-client/gpaste-client.c:196
-#: ../src/gpaste-client/gpaste-client.c:404
+#: ../src/gpaste-client/gpaste-client.c:410
 msgid "Couldn't spawn"
 msgstr "Impossible de lancer"
 
 #: ../src/gpaste-client/gpaste-client.c:355
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
-msgstr "Démon redémarré avec succès\n"
+msgstr "Démon redémaré avec succès\n"
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
