@@ -404,6 +404,7 @@ global:
     g_paste_ui_item_skeleton_get_label;
     g_paste_ui_item_skeleton_get_type;
     g_paste_ui_item_skeleton_new;
+    g_paste_ui_item_skeleton_set_activatable;
     g_paste_ui_item_skeleton_set_index;
     g_paste_ui_item_skeleton_set_markup;
     g_paste_ui_item_skeleton_set_text;

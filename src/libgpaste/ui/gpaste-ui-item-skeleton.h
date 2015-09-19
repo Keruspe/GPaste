@@ -37,6 +37,9 @@ struct _GPasteUiItemSkeletonClass
     GtkListBoxRowClass parent_class;
 };
 
+void g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
+                                               gboolean              activatable);
+
 void g_paste_ui_item_skeleton_set_text   (GPasteUiItemSkeleton *self,
                                           const gchar          *text);
 void g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,

@@ -45,6 +45,27 @@ g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
 }
 
 /**
+ * g_paste_ui_item_skeleton_set_activatable:
+ * @self: the #GPasteUiItemSkeleton instance
+ * @activatable: whether the item should now be activatable or not
+ *
+ * Mark the item as being activatable or not
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
+                                          gboolean              activatable)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
+
+    GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
+
+    gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), activatable);
+    gtk_widget_set_sensitive (GTK_WIDGET (priv->label), activatable);
+}
+
+/**
  * g_paste_ui_item_skeleton_set_text:
  * @self: the #GPasteUiItemSkeleton instance
  * @text: the new text for the label
@@ -58,7 +79,7 @@ g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
                                    const gchar          *text)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
-    g_return_val_if_fail (g_utf8_validate (text, -1, NULL), NULL);
+    g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
@@ -79,7 +100,7 @@ g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
                                      const gchar          *markup)
 {
     g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
-    g_return_val_if_fail (g_utf8_validate (markup, -1, NULL), NULL);
+    g_return_if_fail (g_utf8_validate (markup, -1, NULL));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 

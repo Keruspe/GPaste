@@ -34,8 +34,10 @@ g_paste_ui_empty_item_class_init (GPasteUiEmptyItemClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_empty_item_init (GPasteUiEmptyItem *self)
 {
-    g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), _("(Empty)"));
-    gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (self), FALSE);
+    GPasteUiItemSkeleton *is = G_PASTE_UI_ITEM_SKELETON (self);
+
+    g_paste_ui_item_skeleton_set_text (is, _("(Empty)"));
+    g_paste_ui_item_skeleton_set_activatable (is, FALSE);
 }
 
 /**
