@@ -1,6 +1,3 @@
-3.18:
-    allow specifying history name in gpaste-client for some commands
-
 3.20:
     general:
         autoconf cleanup w/ AX_* + custom macros
@@ -8,6 +5,9 @@
         class methods for signals
         wayland support
         apply some redesign ideas
+    cli:
+        allow specifying history name in gpaste-client for some commands
+        command-dispatcher
     gpaste-ui:
         merge
 
