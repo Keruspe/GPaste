@@ -27,8 +27,9 @@ struct _GPasteUiDeleteItem
 G_DEFINE_TYPE (GPasteUiDeleteItem, g_paste_ui_delete_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 
 static void
-g_paste_ui_delete_item_activate (GPasteClient *client,
-                                 guint32       index)
+g_paste_ui_delete_item_activate (GPasteUiItemAction *self,
+                                 GPasteClient       *client,
+                                 guint32             index)
 {
     g_paste_client_delete (client, index, NULL, NULL);
 }

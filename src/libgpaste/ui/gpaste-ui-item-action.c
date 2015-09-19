@@ -57,7 +57,7 @@ g_paste_ui_item_action_button_press_event (GtkWidget      *widget,
     GPasteUiItemActionClass *klass = G_PASTE_UI_ITEM_ACTION_GET_CLASS (self);
 
     if (klass->activate)
-        klass->activate (priv->client, priv->index);
+        klass->activate (self, priv->client, priv->index);
 
     return TRUE;
 }

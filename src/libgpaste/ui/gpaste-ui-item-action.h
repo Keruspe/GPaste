@@ -37,8 +37,9 @@ struct _GPasteUiItemActionClass
     GtkButtonClass parent_class;
 
     /*< pure virtual >*/
-    void (*activate) (GPasteClient *client,
-                      guint32       index);
+    void (*activate) (GPasteUiItemAction *self,
+                      GPasteClient       *client,
+                      guint32             index);
 };
 
 void g_paste_ui_item_action_set_index (GPasteUiItemAction *self,
