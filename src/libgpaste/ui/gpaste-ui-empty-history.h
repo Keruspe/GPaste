@@ -24,7 +24,6 @@
 #ifndef __G_PASTE_UI_EMPTY_HISTORY_H__
 #define __G_PASTE_UI_EMPTY_HISTORY_H__
 
-#include <gpaste-client.h>
 #include <gpaste-ui-history-action.h>
 
 G_BEGIN_DECLS
