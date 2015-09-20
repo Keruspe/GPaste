@@ -105,7 +105,7 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     g_auto (GStrv) results = g_new (char *, hits + 1);
 
     for (guint64 i = 0; i < hits; ++i)
-        results[i] = g_strdup_printf ("%lu", r[i]);
+        results[i] = g_strdup_printf ("%" G_GUINT64_FORMAT, r[i]);
     results[hits] = NULL;
 
     GVariant *ans = g_variant_new_strv ((const char * const *) results, hits);
@@ -198,7 +198,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
     for (guint64 i = 0; results[i]; ++i)
     {
         g_auto (GVariantBuilder) dict;
-        g_autofree gchar *index = g_strdup_printf ("%lu", indexes[i]);
+        g_autofree gchar *index = g_strdup_printf ("%" G_GUINT64_FORMAT, indexes[i]);
         g_autofree gchar *result = g_paste_util_replace (results[i], "\n", " ");
 
         g_variant_builder_init (&dict, G_VARIANT_TYPE_VARDICT);

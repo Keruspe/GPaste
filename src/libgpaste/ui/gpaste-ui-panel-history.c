@@ -70,7 +70,7 @@ g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
     g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
 
     GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
-    g_autofree gchar *_length = g_strdup_printf("%lu", length);
+    g_autofree gchar *_length = g_strdup_printf("%" G_GUINT64_FORMAT, length);
 
     gtk_label_set_text (priv->index_label, _length);
 }

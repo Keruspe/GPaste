@@ -178,7 +178,7 @@ g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
     g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
-    g_autofree gchar *_index = g_strdup_printf("%lu", index);
+    g_autofree gchar *_index = g_strdup_printf("%" G_GUINT64_FORMAT, index);
 
     gtk_label_set_text (priv->index_label, _index);
 

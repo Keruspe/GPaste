@@ -148,7 +148,7 @@ print_history_line (gchar   *line,
                     gboolean zero)
 {
     if (!raw)
-        printf ("%lu: ", index);
+        printf ("%" G_GUINT64_FORMAT ": ", index);
     printf ("%s%c", (oneline) ? strip_newline (line) : line, (zero) ? '\0' : '\n');
 }
 
@@ -388,7 +388,7 @@ main (gint argc, gchar *argv[])
                 {
                     guint64 size = g_paste_client_get_history_size_sync (client, name, &error);
                     if (!error)
-                        printf ("%lu\n", size);
+                        printf ("%" G_GUINT64_FORMAT "\n", size);
                 }
             }
             else if (!g_strcmp0 (arg1, "lh") ||

@@ -875,11 +875,11 @@ typedef struct
     gchar                *text;
 } Data;
 
-#define ASSERT_STATE(x)                                              \
-    if (data->state != x)                                            \
-    {                                                                \
-        g_warning ("Expected state %d, but got %d", x, data->state); \
-        return;                                                      \
+#define ASSERT_STATE(x)                                                                           \
+    if (data->state != x)                                                                         \
+    {                                                                                             \
+        g_warning ("Expected state %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, x, data->state); \
+        return;                                                                                   \
     }
 #define SWITCH_STATE(x, y) \
     ASSERT_STATE (x);      \
@@ -923,7 +923,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             {
                 if (data->type != IMAGE)
                 {
-                    g_warning ("Expected type %d, but got %d", IMAGE, data->type);
+                    g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
                     return;
                 }
                 data->date = g_strdup (*v);
@@ -932,7 +932,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             {
                 if (data->type != PASSWORD)
                 {
-                    g_warning ("Expected type %d, but got %d", PASSWORD, data->type);
+                    g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, PASSWORD, data->type);
                     return;
                 }
                 data->name = g_strdup (*v);
@@ -1042,7 +1042,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         break;
     }
     default:
-        g_warning ("Unexpected state: %d", data->state);
+        g_warning ("Unexpected state: %" G_GINT32_FORMAT, data->state);
     }
 }
 
@@ -1122,7 +1122,7 @@ g_paste_history_load (GPasteHistory *self,
         g_markup_parse_context_end_parse (ctx, NULL);
 
         if (data.state != END)
-            g_warning ("Unexpected state adter parsing history: %d", data.state);
+            g_warning ("Unexpected state adter parsing history: %" G_GINT32_FORMAT, data.state);
         g_markup_parse_context_unref (ctx);
     }
     else
