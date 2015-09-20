@@ -64,15 +64,6 @@ G_BEGIN_DECLS
 #define G_PASTE_INIT_APPLICATION(name) \
     G_PASTE_INIT_APPLICATION_FULL (name, NULL)
 
-#define G_PASTE_CLEANUP_STRING_FREE __attribute__((cleanup(g_paste_string_free_ptr)))
-
-static inline void
-g_paste_string_free_ptr (GString **ptr)
-{
-    if (*ptr)
-        g_string_free (*ptr, TRUE);
-}
-
 G_END_DECLS
 
 #endif /*__GPASTE_MACROS_H__*/

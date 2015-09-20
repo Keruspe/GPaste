@@ -323,7 +323,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
         /* The content is requested as special gnome-copied-files by nautilus */
         else
         {
-            G_PASTE_CLEANUP_STRING_FREE GString *copy_string = g_string_new ("copy");
+            g_autoptr (GString) copy_string = g_string_new ("copy");
             guint64 length = g_strv_length ((GStrv) uris);
 
             for (guint64 i = 0; i < length; ++i)

@@ -285,7 +285,7 @@ main (gint argc, gchar *argv[])
     if (!isatty (fileno (stdin)))
     {
         /* We are being piped */
-        G_PASTE_CLEANUP_STRING_FREE GString *data = g_string_new (NULL);
+        g_autoptr (GString) data = g_string_new (NULL);
 
         while ((c = fgetc (stdin)) != EOF)
             data = g_string_append_c (data, (guchar)c);

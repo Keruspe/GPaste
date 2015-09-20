@@ -577,7 +577,7 @@ g_paste_daemon_private_merge (GPasteDaemonPrivate *priv,
         G_PASTE_DBUS_ASSERT (indexes[i] < history_length, "invalid index received");
     }
 
-    G_PASTE_CLEANUP_STRING_FREE GString *str = g_string_new (NULL);
+    g_autoptr (GString) str = g_string_new (NULL);
 
     for (guint64 i = 0; i < length; ++i)
     {
