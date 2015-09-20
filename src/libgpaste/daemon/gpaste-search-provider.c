@@ -64,7 +64,7 @@ _g_paste_dbus_get_as_result (GVariant *parameters)
 }
 
 static guint64 *
-_g_paste_dbus_get_as_result_as_au (GVariant *parameters,
+_g_paste_dbus_get_as_result_as_at (GVariant *parameters,
                                    guint64  *len)
 {
     GVariantIter parameters_iter;
@@ -220,7 +220,7 @@ g_paste_search_provider_private_get_result_metas (GPasteSearchProviderPrivate *p
                                                   GVariant                    *parameters)
 {
     guint64 len;
-    guint64 *indexes = _g_paste_dbus_get_as_result_as_au (parameters, &len);
+    guint64 *indexes = _g_paste_dbus_get_as_result_as_at (parameters, &len);
 
     if (!len)
     {
