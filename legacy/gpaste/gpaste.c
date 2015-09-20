@@ -27,20 +27,22 @@ main (int   argc __attribute__((unused)),
       char *argv[])
 {
     const char *gpaste_client = BINDIR "/gpaste-client";
-    char **_argv = alloca (argc + 1);
 
     fprintf (stderr, "\nThe \"gpaste\" command is deprecated and will soon be removed, please use \"gpaste-client\" instead.\n\n");
 
     for (int i = 1; i < argc; ++i)
-        _argv[i] = strdup (argv[i]);
+    {
+        if (argv[i])
+            argv[i] = strdup (argv[i]);
+    }
 
-    _argv[0] = (char *) gpaste_client;
-    _argv[argc] = NULL;
+    argv[0] = (char *) gpaste_client;
+    argv[argc] = NULL;
 
-    execv (gpaste_client, _argv);
+    execv (gpaste_client, argv);
 
     for (int i = 1; i < argc; ++i)
-        free (_argv[i]);
+        free (argv[i]);
 
     return EXIT_SUCCESS;
 }
