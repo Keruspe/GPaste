@@ -17,9 +17,9 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "gpaste-gdbus-macros.h"
+
 #include <gpaste-client.h>
-#define __G_PASTE_NEEDS_AT__
-#include <gpaste-gdbus-macros.h>
 #include <gpaste-update-enums.h>
 
 struct _GPasteClient

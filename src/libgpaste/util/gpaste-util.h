@@ -50,6 +50,12 @@ gboolean g_paste_util_has_unity  (void);
 
 void g_paste_util_show_win (GApplication *application);
 
+guint64 *g_paste_util_get_dbus_at_result (GVariant *variant,
+                                          guint64  *len);
+
+guint32 *g_paste_util_get_dbus_au_result (GVariant *variant,
+                                          guint64  *len);
+
 G_END_DECLS
 
 #endif /*__G_PASTE_UTIL_H__*/

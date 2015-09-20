@@ -17,8 +17,8 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define __G_PASTE_NEEDS_AT__
-#include <gpaste-gdbus-macros.h>
+#include "gpaste-gdbus-macros.h"
+
 #include <gpaste-keybinder.h>
 #include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>
@@ -29,7 +29,6 @@
 #include <gpaste-ui-keybinding.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-upload-keybinding.h>
-#include <gpaste-util.h>
 
 #include <string.h>
 
@@ -450,7 +449,7 @@ g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
 
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     guint64 len;
-    g_autofree guint64 *indexes = g_paste_dbus_get_at_result (variant, &len);
+    g_autofree guint64 *indexes = g_paste_util_get_dbus_at_result (variant, &len);
     g_auto (GStrv) ans = g_new0 (gchar *, len + 1);
     guint64 history_length = g_paste_history_get_length (history);
 

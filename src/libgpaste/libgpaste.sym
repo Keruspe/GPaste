@@ -443,4 +443,6 @@ global:
 
     g_paste_util_activate_ui;
     g_paste_util_activate_ui_sync;
+    g_paste_util_get_dbus_at_result;
+    g_paste_util_get_dbus_au_result;
 } LIBGPASTE_3_16_0;

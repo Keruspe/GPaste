@@ -17,7 +17,6 @@
  *      along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define __G_PASTE_NEEDS_AU__
 #include "gpaste-gdbus-macros.h"
 
 #include <gpaste-gnome-shell-client.h>
