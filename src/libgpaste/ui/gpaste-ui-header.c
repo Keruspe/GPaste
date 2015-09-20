@@ -51,7 +51,7 @@ g_paste_ui_header_show_prefs (const GPasteUiHeader *self)
     g_return_if_fail (G_PASTE_IS_UI_HEADER (self));
 
     GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
-    
+
     gtk_button_clicked (priv->settings);
 }
 

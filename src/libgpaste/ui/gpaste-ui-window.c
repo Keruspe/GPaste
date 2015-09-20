@@ -112,7 +112,7 @@ g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
     g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
 
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-    
+
     g_source_set_name_by_id (g_idle_add (_show_prefs, priv), "[GPaste] show_prefs");
 }
 
