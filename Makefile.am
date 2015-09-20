@@ -25,20 +25,9 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--enable-appstream-util \
 	--enable-applet \
 	--enable-introspection \
+	--enable-legacy-cli \
 	--enable-unity \
 	--enable-vala \
-	$(NULL)
-
-AM_VALAFLAGS = \
-	--enable-checking \
-	--enable-experimental \
-	--enable-experimental-non-null \
-	--target-glib=$(GLIB_TARGET) \
-	--vapidir=$(srcdir)/bindings/vapi \
-	--pkg=config \
-	--pkg=posix \
-	$(GIO_VALAFLAGS) \
-	$(GTK_VALAFLAGS) \
 	$(NULL)
 
 AM_CFLAGS = \
