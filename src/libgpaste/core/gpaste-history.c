@@ -635,7 +635,7 @@ g_paste_history_delete_password (GPasteHistory *self,
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     guint64 index;
-   
+
     if (_g_paste_history_private_get_password (priv, name, &index))
         g_paste_history_remove (self, index);
 }
@@ -1468,7 +1468,7 @@ G_PASTE_VISIBLE GPasteHistory *
 g_paste_history_new (GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    
+
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 

@@ -22,7 +22,7 @@ SUFFIXES += .xml.in .xml.in.in
 
 nodist_controlcenter_DATA = \
 	data/control-center/42-gpaste.xml \
-	$(NULL)	
+	$(NULL)
 
 EXTRA_DIST += \
 	$(nodist_controlcenter_DATA:.xml=.xml.in.in) \
