@@ -21,15 +21,15 @@ A default daemon named `gpaste-daemon` is provided, with seven keybindings:
 * upload the active item to a pastebin service (using wgetpaste)
 * launch the graphical tool
 
-A simple CLI interface is provided: `gpaste`, with two subcommands: `gpaste settings` which makes the preferences
-utility pop, `gpaste applet` which starts the status icon in your notification area and `gpaste app-indicator` which
+A simple CLI interface is provided: `gpaste-client`, with three subcommands: `gpaste-client ui` which makes the graphical
+tool pop, `gpaste-client applet` which starts the status icon in your notification area and `gpaste-client app-indicator` which
 starts the unity application indicator.
 
 A native gnome-shell extension is provided.
 
-/!\ Don't forget to run `gpaste dr` aka `gpaste daemon-reexec` after upgrading GPaste to activate new functionalities ;)
+/!\ Don't forget to run `gpaste-client dr` aka `gpaste-client daemon-reexec` after upgrading GPaste to activate new functionalities ;)
 
-You can then run `gpaste daemon-version` to check the correct daemon is now running.
+You can then run `gpaste-client daemon-version` to check the correct daemon is now running.
 
 Steps to install it after cloning (skip the `./autogen.sh` part if you're building it from a tarball):
 
