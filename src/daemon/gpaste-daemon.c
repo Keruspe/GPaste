@@ -34,7 +34,7 @@ enum
 static void
 signal_handler (gint32 signum)
 {
-    g_print (_("Signal %" G_GINT32_FORMAT " received, exiting\n"), signum);
+    g_print ("Signal %" G_GINT32_FORMAT " received, exiting\n", signum);
     g_application_quit (_app);
 }
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-20 00:14+0200\n"
+"POT-Creation-Date: 2015-09-21 17:40+0200\n"
 "PO-Revision-Date: 2015-03-29 11:59-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -267,11 +267,6 @@ msgstr ""
 #: ../src/libgpaste/ui/gpaste-ui-upload-item.c:62
 msgid "Upload"
 msgstr ""
-
-#: ../src/daemon/gpaste-daemon.c:37
-#, c-format
-msgid "Signal %d received, exiting\n"
-msgstr "Sinal %d recebido, saindo\n"
 
 #: ../src/daemon/gpaste-daemon.c:47
 msgid "Could not acquire DBus name."
@@ -864,6 +859,9 @@ msgid ""
 msgstr ""
 "Por padrão, a combinação de teclas ctrl + alt + u faz isso (\"&lt;Ctrl&gt;"
 "&lt;Alt&gt;U\"). Deixar vazio aqui desabilita essa funcionalidade."
+
+#~ msgid "Signal %d received, exiting\n"
+#~ msgstr "Sinal %d recebido, saindo\n"
 
 #~ msgid "Empty history"
 #~ msgstr "Esvaziar histórico"

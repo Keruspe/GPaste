@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-20 00:14+0200\n"
+"POT-Creation-Date: 2015-09-21 17:40+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -272,11 +272,6 @@ msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 #: ../src/libgpaste/ui/gpaste-ui-upload-item.c:62
 msgid "Upload"
 msgstr ""
-
-#: ../src/daemon/gpaste-daemon.c:37
-#, c-format
-msgid "Signal %d received, exiting\n"
-msgstr "Signal %d wurde empfangen. Programm wird beendet\n"
 
 #: ../src/daemon/gpaste-daemon.c:47
 msgid "Could not acquire DBus name."
@@ -875,6 +870,9 @@ msgid ""
 msgstr ""
 "Die Vorgabe ist Strg + Alt + v (\"&lt;Strg&gt;&lt;Alt&gt;V\"). Ein leeres "
 "Feld schaltet diese Funktion ab."
+
+#~ msgid "Signal %d received, exiting\n"
+#~ msgstr "Signal %d wurde empfangen. Programm wird beendet\n"
 
 #~ msgid "Empty history"
 #~ msgstr "Chronik leeren"

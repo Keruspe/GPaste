@@ -23,7 +23,7 @@ AC_INIT([GPaste],[3.18],[Marc-Antoine@Perennou.com],[gpaste])
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-LIBGPASTE_LT_VERSION=3:3:0
+LIBGPASTE_LT_VERSION=4:0:0
 AC_SUBST(LIBGPASTE_LT_VERSION)
 
 INTLTOOL_REQUIRED="0.50.1"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-20 00:14+0200\n"
+"POT-Creation-Date: 2015-09-21 17:40+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -272,11 +272,6 @@ msgstr "detener seguimiento de cambios en el portapapeles"
 #: ../src/libgpaste/ui/gpaste-ui-upload-item.c:62
 msgid "Upload"
 msgstr ""
-
-#: ../src/daemon/gpaste-daemon.c:37
-#, c-format
-msgid "Signal %d received, exiting\n"
-msgstr "Recibida señal %d, saliendo\n"
 
 #: ../src/daemon/gpaste-daemon.c:47
 msgid "Could not acquire DBus name."
@@ -862,6 +857,9 @@ msgid ""
 msgstr ""
 "Por omisión, pulsando ctrl + alt + v (\"&lt;Ctrl&gt;&lt;Alt&gt;v\"). Una "
 "cadena vacía desactivaría esta funcionalidad."
+
+#~ msgid "Signal %d received, exiting\n"
+#~ msgstr "Recibida señal %d, saliendo\n"
 
 #~ msgid "Empty history"
 #~ msgstr "Vaciar historial"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-20 00:14+0200\n"
+"POT-Creation-Date: 2015-09-21 17:40+0200\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -270,11 +270,6 @@ msgstr "lopettaa leikepöydän muutosten seuraamisen"
 #: ../src/libgpaste/ui/gpaste-ui-upload-item.c:62
 msgid "Upload"
 msgstr ""
-
-#: ../src/daemon/gpaste-daemon.c:37
-#, c-format
-msgid "Signal %d received, exiting\n"
-msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
 
 #: ../src/daemon/gpaste-daemon.c:47
 msgid "Could not acquire DBus name."
@@ -853,6 +848,9 @@ msgid ""
 msgstr ""
 "Oletuksena näppäinyhdistelmä ctrl + alt + v tekee tämän(\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Tämän tyhjäksi jättäminen poistaa ominaisuuden käytöstä."
+
+#~ msgid "Signal %d received, exiting\n"
+#~ msgstr "Vastaanotettiin signaali %d, lopetetaan.\n"
 
 #~ msgid "Empty history"
 #~ msgstr "Tyhjennä historia"
