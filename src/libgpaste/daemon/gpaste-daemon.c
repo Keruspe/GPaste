@@ -493,12 +493,23 @@ static GVariant *
 g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv,
                                          GVariant            *parameters)
 {
-    g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    guint64 size;
 
-    g_paste_history_load (history, name);
+    if (!g_strcmp0 (name, g_paste_history_get_current (priv->history)))
+    {
+        size = g_paste_history_get_length (priv->history);
+    }
+    else
+    {
+        g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
 
-    GVariant *variant = g_variant_new_uint64 (g_paste_history_get_length (history));
+        g_paste_history_load (history, name);
+        size = g_paste_history_get_length (history);
+    }
+
+
+    GVariant *variant = g_variant_new_uint64 (size);
     return g_variant_new_tuple (&variant, 1);
 }
 
