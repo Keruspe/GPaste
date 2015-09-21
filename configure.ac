@@ -16,7 +16,7 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([GPaste],[3.18],[Marc-Antoine@Perennou.com],[gpaste])
+AC_INIT([GPaste],[3.19],[Marc-Antoine@Perennou.com],[gpaste])
 
 # Update LIBGPASTE_LT_VERSION before each release (and only then)
 # The format is C:R:A (current revision age)
