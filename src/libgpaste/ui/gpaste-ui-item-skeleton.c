@@ -29,6 +29,7 @@ typedef struct
 
     GSList         *actions;
     GtkWidget      *edit;
+    GtkWidget      *upload;
 
     GtkLabel       *index_label;
     GtkLabel       *label;
@@ -86,6 +87,8 @@ g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
 
     if (priv->edit)
         gtk_widget_set_sensitive (priv->edit, activatable && priv->editable);
+    if (priv->upload)
+        gtk_widget_set_sensitive (priv->upload, activatable && priv->editable);
 }
 
 /**
@@ -108,6 +111,7 @@ g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
     priv->editable = editable;
 
     gtk_widget_set_sensitive (priv->edit, editable);
+    gtk_widget_set_sensitive (priv->upload, editable);
 }
 
 /**
@@ -297,6 +301,7 @@ g_paste_ui_item_skeleton_new (GType           type,
 
     priv->settings = g_object_ref (settings);
     priv->edit = edit;
+    priv->upload = upload;
 
     priv->actions = g_slist_prepend (priv->actions, edit);
     priv->actions = g_slist_prepend (priv->actions, upload);
