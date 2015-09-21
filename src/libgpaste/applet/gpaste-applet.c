@@ -31,7 +31,7 @@ typedef struct
 {
     GPasteClient        *client;
 
-    GPasteAppletIcon    *icon; 
+    GPasteAppletIcon    *icon;
 
     GApplication        *application;
     GtkWidget           *win;
@@ -66,7 +66,7 @@ g_paste_applet_new_finish (GPasteAppletPrivate *priv,
                            GAsyncResult        *res)
 {
     g_autoptr (GError) error = NULL;
-    
+
     priv->client = g_paste_client_new_finish (res, &error);
     if (error)
     {
