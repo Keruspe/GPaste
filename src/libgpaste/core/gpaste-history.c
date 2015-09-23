@@ -210,7 +210,7 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
 {
     if (!(g_paste_settings_get_growing_lines (priv->settings) &&
         G_PASTE_IS_TEXT_ITEM (old) && G_PASTE_IS_TEXT_ITEM (new) &&
-        G_PASTE_IS_PASSWORD_ITEM (old) && G_PASTE_IS_PASSWORD_ITEM (new)))
+        !G_PASTE_IS_PASSWORD_ITEM (old) && !G_PASTE_IS_PASSWORD_ITEM (new)))
             return FALSE;
 
     const gchar *n = g_paste_item_get_value (new);
