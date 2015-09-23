@@ -1,6 +1,11 @@
 NEW in 3.19 (Not released yet)
 =============
 
+NEW in 3.18.1 (23/09/2015)
+=============
+
+- fix a regression in growing lines detection
+
 NEW in 3.18 (21/09/2015)
 =============
 
@@ -38,6 +43,11 @@ NEW in 3.18 (21/09/2015)
 - Various build system cleanups (gobject-introspection and vapigen are now required to build from git
 - Shell completion updates
 - Translations updates
+
+NEW in 3.16.3.1 (23/09/2015)
+=============
+
+- fix a regression in growing lines detection
 
 NEW in 3.16.3 (05/09/2015)
 =============

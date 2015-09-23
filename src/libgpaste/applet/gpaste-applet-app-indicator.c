@@ -83,8 +83,8 @@ g_paste_applet_app_indicator_init (GPasteAppletAppIndicator *self)
 {
     GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private (self);
 
-    priv->icon = app_indicator_new ("GPaste", "edit-paste", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
-    app_indicator_set_title (priv->icon, "GPaste");
+    priv->icon = app_indicator_new (PACKAGE_STRING, "edit-paste", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+    app_indicator_set_title (priv->icon, PACKAGE_STRING);
 }
 
 /**
