@@ -50,7 +50,7 @@ on_item_ready (GObject      *source_object,
     if (!old_txt)
         return;
 
-    GtkWidget *dialog = gtk_dialog_new_with_buttons ("GPaste", priv->rootwin,
+    GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, priv->rootwin,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
                                                      _("Edit"),   GTK_RESPONSE_OK,
                                                      _("Cancel"), GTK_RESPONSE_CANCEL,

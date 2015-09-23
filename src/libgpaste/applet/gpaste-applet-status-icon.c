@@ -81,7 +81,7 @@ g_paste_applet_status_icon_init (GPasteAppletStatusIcon *self)
 
     G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     priv->icon = gtk_status_icon_new_from_icon_name ("edit-paste");
-    gtk_status_icon_set_tooltip_text (priv->icon, "GPaste");
+    gtk_status_icon_set_tooltip_text (priv->icon, PACKAGE_STRING);
     gtk_status_icon_set_visible (priv->icon, TRUE);
     G_GNUC_END_IGNORE_DEPRECATIONS
 

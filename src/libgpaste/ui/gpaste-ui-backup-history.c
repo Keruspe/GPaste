@@ -42,7 +42,7 @@ g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
                                           const gchar *history)
 {
     g_autofree gchar *default_name = g_strdup_printf ("%s_backup", history);
-    GtkWidget *dialog = gtk_dialog_new_with_buttons ("GPaste", parent,
+    GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, parent,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
                                                      _("Backup"), GTK_RESPONSE_OK,
                                                      _("Cancel"), GTK_RESPONSE_CANCEL,
