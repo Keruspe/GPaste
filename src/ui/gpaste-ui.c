@@ -46,10 +46,8 @@ prefs_activated (GSimpleAction *action    G_GNUC_UNUSED,
     g_paste_ui_window_show_prefs (get_ui_window (user_data));
 }
 
-static void
-about_activated (GSimpleAction *action    G_GNUC_UNUSED,
-                 GVariant      *parameter G_GNUC_UNUSED,
-                 gpointer       user_data)
+static gboolean
+show_about_dialog (gpointer user_data)
 {
     GtkWindow *parent = GTK_WINDOW (gtk_application_get_windows (GTK_APPLICATION (user_data))->data);
     const gchar *authors[] = {
@@ -69,6 +67,16 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                            "website-label",  "Follow GPaste news",
                            "wrap-license",   TRUE,
                            NULL);
+
+    return G_SOURCE_REMOVE;
+}
+
+static void
+about_activated (GSimpleAction *action    G_GNUC_UNUSED,
+                 GVariant      *parameter G_GNUC_UNUSED,
+                 gpointer       user_data)
+{
+    g_idle_add (show_about_dialog, user_data);
 }
 
 static void
