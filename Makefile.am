@@ -100,6 +100,7 @@ include legacy/gpaste.mk
 
 include src/applet.mk
 include src/app-indicator.mk
+include src/extension.mk
 include src/gnome-shell.mk
 
 # Data
