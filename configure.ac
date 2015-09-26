@@ -147,7 +147,7 @@ IT_PROG_INTLTOOL([$INTLTOOL_REQUIRED])
 PKG_PROG_PKG_CONFIG([$PKGCONFIG_REQUIRED])
 
 PKG_CHECK_MODULES(GLIB, [glib-2.0 >= $GLIB_REQUIRED gobject-2.0 >= $GLIB_REQUIRED gio-2.0 >= $GLIB_REQUIRED])
-PKG_CHECK_MODULES(GTK, [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED])
+PKG_CHECK_MODULES(GTK, [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED pango])
 PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED])
 PKG_CHECK_MODULES(X11, [x11 xi])
 AC_CHECK_HEADERS([X11/extensions/XInput2.h])
@@ -188,7 +188,7 @@ if test x$enable_gnome_shell_extension = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
     fi
-    PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0 pango])
+    PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0])
     AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the gnome-shell extension is enabled])
 fi
 
@@ -198,7 +198,7 @@ if test x$enable_cinnamon_applet = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the cinnamon applet])
     fi
-    PKG_CHECK_MODULES(CINNAMON, [clutter-1.0 pango])
+    PKG_CHECK_MODULES(CINNAMON, [clutter-1.0])
 fi
 
 AC_ARG_ENABLE(x-keybinder, AS_HELP_STRING([--disable-x-keybinder], [Disable the X keybinder]), enable_x_keybinder=$enableval, enable_x_keybinder=yes)
