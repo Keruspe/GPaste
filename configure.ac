@@ -26,10 +26,8 @@ AC_INIT([GPaste],[3.19],[Marc-Antoine@Perennou.com],[gpaste])
 LIBGPASTE_LT_VERSION=4:0:0
 AC_SUBST(LIBGPASTE_LT_VERSION)
 
-AUTOMAKE_REQUIRED="1.11"
 INTLTOOL_REQUIRED="0.50.1"
 PKGCONFIG_REQUIRED="0.22"
-LIBTOOL_REQUIRED="2.2.6"
 
 GLIB_MIN_MAJOR="2"
 GLIB_MIN_MINOR="46"
@@ -62,10 +60,10 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
 
 AM_PROG_AR
-LT_PREREQ([$LIBTOOL_REQUIRED])
+LT_PREREQ([2.2.6])
 LT_INIT([disable-static pic-only])
 
-AM_INIT_AUTOMAKE([$AUTOMAKE_REQUIRED subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
+AM_INIT_AUTOMAKE([1.11 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
 
@@ -162,41 +160,37 @@ PKG_CHECK_MODULES(DBUS, [dbus-1])
 G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [`$PKG_CONFIG --variable session_bus_services_dir dbus-1`])
 G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`$PKG_CONFIG --variable keysdir gnome-keybindings`])
 
-G_PASTE_ENABLE([applet],          [ENABLE_APPLET],          [Enable gpaste-applet],        [no])
-G_PASTE_ENABLE([unity],           [ENABLE_UNITY],           [Enable gpaste-app-indicator], [no])
-G_PASTE_ENABLE([cinnamon-applet], [ENABLE_CINNAMON_APPLET], [Enable cinnamon applet],      [no])
+G_PASTE_ENABLE([applet],                [ENABLE_APPLET],                [Enable gpaste-applet],                    [no])
+G_PASTE_ENABLE([cinnamon-applet],       [ENABLE_CINNAMON_APPLET],       [Enable cinnamon applet],                  [no])
+G_PASTE_ENABLE([gnome-shell-extension], [ENABLE_GNOME_SHELL_EXTENSION], [Disable gnome-shell extension],           [yes])
+G_PASTE_ENABLE([legacy-cli],            [ENABLE_LEGACY_CLI],            [Disable the legacy cli wrapper (gpaste)], [yes])
+G_PASTE_ENABLE([unity],                 [ENABLE_UNITY],                 [Enable gpaste-app-indicator],             [no])
+G_PASTE_ENABLE([x-keybinder],           [ENABLE_X_KEYBINDER],           [Disable the X keybinder],                 [yes])
+
+has_js_extension=no
+if test x$enable_gnome_shell_extension = xyes; then
+    has_js_extension=yes
+    AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the gnome-shell extension is enabled])
+fi
+if test x$enable_cinnamon_applet = xyes; then
+    has_js_extension=yes
+fi
+if test x$has_js_extension = xyes; then
+    if test x$enable_introspection != xyes; then
+        AC_MSG_ERROR([*** Introspection support is required to run the javascript extensions])
+    fi
+    PKG_CHECK_MODULES(JS_EXTENSION, [clutter-1.0])
+fi
 
 if test x$enable_unity = xyes; then
     PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
     AC_DEFINE([ENABLE_UNITY], [1], [Whether the app-indicator is built])
 fi
 
-AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_gnome_shell_extension=$enableval, enable_gnome_shell_extension=yes)
-AM_CONDITIONAL(ENABLE_GNOME_SHELL_EXTENSION, test x$enable_gnome_shell_extension = xyes)
-if test x$enable_gnome_shell_extension = xyes; then
-    if test x$enable_introspection != xyes; then
-        AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
-    fi
-    PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0])
-    AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the gnome-shell extension is enabled])
-fi
-
-if test x$enable_cinnamon_applet = xyes; then
-    if test x$enable_introspection != xyes; then
-        AC_MSG_ERROR([*** Introspection support is required to run the cinnamon applet])
-    fi
-    PKG_CHECK_MODULES(CINNAMON, [clutter-1.0])
-fi
-
-AC_ARG_ENABLE(x-keybinder, AS_HELP_STRING([--disable-x-keybinder], [Disable the X keybinder]), enable_x_keybinder=$enableval, enable_x_keybinder=yes)
-AM_CONDITIONAL(ENABLE_X_KEYBINDER, test x$enable_x_keybinder = xyes)
 if test x$enable_x_keybinder = xyes; then
     PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= $GTK_REQUIRED])
     AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
 fi
-
-AC_ARG_ENABLE(legacy-cli, AS_HELP_STRING([--disable-legacy-cli], [Disable the legacy cli wrapper (gpaste)]), enable_legacy_cli=$enableval, enable_legacy_cli=yes)
-AM_CONDITIONAL(ENABLE_LEGACY_CLI, test x$enable_legacy_cli = xyes)
 
 AC_CONFIG_FILES([
     Makefile

@@ -35,9 +35,9 @@ dnl G_PASTE_ENABLE([feature], [automakem var], [help string], [default value])
 
 AC_DEFUN([_G_PASTE_ENABLE], [
     AC_ARG_ENABLE([$1],
-                  AS_HELP_STRING([--enable-$1], [$3]),
+                  AS_HELP_STRING([--$6-$1], [$3]),
                   [],
                   [enable_$5=$4])
     AM_CONDITIONAL([$2], [test x$enable_$5 = xyes])
 ])
-AC_DEFUN([G_PASTE_ENABLE], [_G_PASTE_ENABLE([$1],[$2],[$3],[$4],m4_translit([$1],[-+.],[___]))])
+AC_DEFUN([G_PASTE_ENABLE], [_G_PASTE_ENABLE([$1],[$2],[$3],[$4],m4_translit([$1],[-+.],[___]),m4_if([$4],[no],[enable],[disable]))])
