@@ -4,6 +4,7 @@
     ],
     "uuid": "GPaste@gnome-shell-extensions.gnome.org",
     "name": "GPaste",
+    "version": "@version@",
     "description": "Clipboard management system",
     "url": "http://github.com/Keruspe/GPaste",
     "gettext_package": "@gettext_package@",

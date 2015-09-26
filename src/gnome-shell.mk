@@ -40,6 +40,7 @@ SUFFIXES += .json .json.in
 	@ $(MKDIR_P) src/gnome-shell
 	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g' \
 			   -e 's,[@]gettext_package[@],$(GETTEXT_PACKAGE),g' \
+			   -e 's,[@]version[@],$(VERSION),g' \
 			   < $< > $@
 
 if ENABLE_EXTENSION
