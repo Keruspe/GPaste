@@ -21,7 +21,6 @@ gpaste_extension_files = \
 	src/extension/deleteItemPart.js \
 	src/extension/dummyHistoryItem.js \
 	src/extension/emptyHistoryItem.js \
-	src/extension/indicator.js \
 	src/extension/item.js \
 	src/extension/searchItem.js \
 	src/extension/stateSwitch.js \

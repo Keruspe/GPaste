@@ -19,6 +19,7 @@ gnomeshelldir = $(datadir)/gnome-shell/extensions/GPaste@gnome-shell-extensions.
 
 gnomeshell_extension_files = \
 	src/gnome-shell/extension.js \
+	src/gnome-shell/indicator.js \
 	src/gnome-shell/prefs.js \
 	$(NULL)
 
