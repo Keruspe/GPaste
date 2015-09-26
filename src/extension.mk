@@ -24,7 +24,6 @@ gpaste_extension_files = \
 	src/extension/item.js \
 	src/extension/searchItem.js \
 	src/extension/stateSwitch.js \
-	src/extension/statusIcon.js \
 	src/extension/uiItem.js \
 	$(NULL)
 
