@@ -182,14 +182,23 @@ if test x$enable_unity = xyes; then
     AC_DEFINE([ENABLE_UNITY], [1], [Whether the app-indicator is built])
 fi
 
-AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
-AM_CONDITIONAL(ENABLE_GNOME_SHELL_EXTENSION, test x$enable_extension = xyes)
-if test x$enable_extension = xyes; then
+AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_gnome_shell_extension=$enableval, enable_gnome_shell_extension=yes)
+AM_CONDITIONAL(ENABLE_GNOME_SHELL_EXTENSION, test x$enable_gnome_shell_extension = xyes)
+if test x$enable_gnome_shell_extension = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
     fi
     PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0 pango])
-    AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the extension is enabled])
+    AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the gnome-shell extension is enabled])
+fi
+
+AC_ARG_ENABLE(cinnamon-applet, AS_HELP_STRING([--enable-cinnamon-applet], [Enable cinnamon applet]), enable_cinnamon_applet=$enableval, enable_cinnamon_applet=yes)
+AM_CONDITIONAL(ENABLE_CINNAMON_APPLET, test x$enable_cinnamon_applet = xyes)
+if test x$enable_cinnamon_applet = xyes; then
+    if test x$enable_introspection != xyes; then
+        AC_MSG_ERROR([*** Introspection support is required to run the cinnamon applet])
+    fi
+    PKG_CHECK_MODULES(CINNAMON, [clutter-1.0 pango])
 fi
 
 AC_ARG_ENABLE(x-keybinder, AS_HELP_STRING([--disable-x-keybinder], [Disable the X keybinder]), enable_x_keybinder=$enableval, enable_x_keybinder=yes)
@@ -228,7 +237,8 @@ AC_MSG_RESULT([
 
     Status icon:            ${enable_applet}
     App indicator:          ${enable_unity}
-    Gnome-Shell extension:  ${enable_extension}
+    Gnome-Shell extension:  ${enable_gnome_shell_extension}
+    Cinnamon applet:        ${enable_cinnamon_applet}
 
     X keybinder support:    ${enable_x_keybinder}
 ])
