@@ -8,6 +8,7 @@
     "description": "Clipboard management system",
     "url": "http://github.com/Keruspe/GPaste",
     "gettext_package": "@gettext_package@",
-    "localedir": "@localedir@"
+    "localedir": "@localedir@",
+    "max-instances": -1
 }
 
