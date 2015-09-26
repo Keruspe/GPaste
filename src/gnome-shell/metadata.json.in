@@ -1,7 +1,6 @@
 {
     "shell-version": [
-        "3.16", "3.18",
-        "3.17.4", "3.17.90", "3.17.91", "3.17.92"
+        "3.16", "3.18"
     ],
     "uuid": "GPaste@gnome-shell-extensions.gnome.org",
     "name": "GPaste",
