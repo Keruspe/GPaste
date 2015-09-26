@@ -15,9 +15,6 @@ dnl
 dnl You should have received a copy of the GNU General Public License
 dnl along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-dnl Escape variable name
-dnl dns G_PASTE_ESCAPE([foo-bar])
-
 dnl Check if we override a directory and define it
 dnl G_PASTE_WITH([directory], [help string], [default value])
 
