@@ -105,7 +105,7 @@ g_paste_bus_own_name (GPasteBus *self)
  *
  * returns the #GDBusConnection
  *
- * Returns: (transfer none) (nullable): the connection
+ * Returns: (transfer none) (optional): the connection
  */
 G_PASTE_VISIBLE GDBusConnection *
 g_paste_bus_get_connection (const GPasteBus *self)
