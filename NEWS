@@ -212,7 +212,7 @@ NEW in 3.10 (25/03/2014)
 - libgpaste-settings: add reset
 - gpaste settings: add reset buttons
 - gpaste settings: add a switch to enable the gnome-shell extension
-- The gnome-shell gsettings schema is now required when --enable-gnome-shell-extension is provided (default)
+- The gnome-shell gsettings schema is now required when --enable-extension is provided (default)
 - gpasted: GetElement now returns the display string
 - gpasted now forwards the full history via dbus, letting the client manage the display limit
 - gpasted gained GetHistoryLength, GetRawHistory, GetRawElement and About
@@ -539,7 +539,7 @@ NEW in 0.99 (28/02/2011)
 - Rename gpaste-{preferences -> settings}
 - New "exit" signal
 - "start" is now a signal
-- Build the gnome-shell native extension with --enable-gnome-shell-extension
+- Build the gnome-shell native extension with --enable-extension
 - The daemon no longer exits, it just stop tracking clipboard changes
 - New DBus property: Active to see if the daemon is tracking
 - Fix an encoding issue
