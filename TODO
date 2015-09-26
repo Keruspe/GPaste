@@ -13,6 +13,8 @@
         implem USR1
     gpaste-ui:
         merge
+    extension:
+        move gnome-shell specific stuff out of indicator.js (so that we can reuse it for cinnamon)
 
 future:
     general:
