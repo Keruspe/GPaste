@@ -44,6 +44,7 @@ run_action() {
         --sysconfdir=/etc
         --enable-applet
         --enable-appstream-util
+        --enable-cinnamon-applet
         --enable-gnome-shell-extension
         --enable-introspection
         --enable-legacy-cli

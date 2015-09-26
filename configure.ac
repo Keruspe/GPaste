@@ -160,14 +160,13 @@ GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])
 VAPIGEN_CHECK([$VALA_REQUIRED])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
-G_PASTE_WITH([dbusservicesdir], [D-Bus system session directory], [`$PKG_CONFIG --variable session_bus_services_dir dbus-1`])
+G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [`$PKG_CONFIG --variable session_bus_services_dir dbus-1`])
 G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`$PKG_CONFIG --variable keysdir gnome-keybindings`])
 
-AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
-AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
+G_PASTE_ENABLE([applet],          [ENABLE_APPLET],          [Enable gpaste-applet],        [no])
+G_PASTE_ENABLE([unity],           [ENABLE_UNITY],           [Enable gpaste-app-indicator], [no])
+G_PASTE_ENABLE([cinnamon-applet], [ENABLE_CINNAMON_APPLET], [Enable cinnamon applet],      [no])
 
-AC_ARG_ENABLE(unity, AS_HELP_STRING([--enable-unity], [Enable gpaste-app-indicator]), enable_unity=$enableval, enable_unity=no)
-AM_CONDITIONAL(ENABLE_UNITY, test x$enable_unity = xyes)
 if test x$enable_unity = xyes; then
     PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
     AC_DEFINE([ENABLE_UNITY], [1], [Whether the app-indicator is built])
@@ -183,8 +182,6 @@ if test x$enable_gnome_shell_extension = xyes; then
     AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the gnome-shell extension is enabled])
 fi
 
-AC_ARG_ENABLE(cinnamon-applet, AS_HELP_STRING([--enable-cinnamon-applet], [Enable cinnamon applet]), enable_cinnamon_applet=$enableval, enable_cinnamon_applet=yes)
-AM_CONDITIONAL(ENABLE_CINNAMON_APPLET, test x$enable_cinnamon_applet = xyes)
 if test x$enable_cinnamon_applet = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the cinnamon applet])
