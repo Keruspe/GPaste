@@ -164,7 +164,7 @@ g_paste_bus_init (GPasteBus *self)
 
 /**
  * g_paste_bus_new:
- * @on_bus_acquired: (closure user_data) (scope notified) (allow-none): handler to invoke when name is acquired or %NULL
+ * @on_bus_acquired: (closure user_data) (scope notified) (nullable): handler to invoke when name is acquired or %NULL
  *
  * Create a new instance of #GPasteBus
  *
