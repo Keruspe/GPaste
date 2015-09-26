@@ -29,7 +29,7 @@ const St = imports.gi.St;
 const GPaste = imports.gi.GPaste;
 
 const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+const Me = ExtensionUtils.getCurrentExtension() || imports.ui.appletManager.applets["GPaste@gnome-shell-extensions.gnome.org"];
 
 const DeleteItemPart = Me.imports.deleteItemPart;
 

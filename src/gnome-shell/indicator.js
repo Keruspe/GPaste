@@ -31,7 +31,7 @@ const GPaste = imports.gi.GPaste;
 const _ = Gettext.domain('GPaste').gettext;
 
 const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+const Me = ExtensionUtils.getCurrentExtension() || imports.ui.appletManager.applets["GPaste@gnome-shell-extensions.gnome.org"];
 
 const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
