@@ -160,12 +160,12 @@ PKG_CHECK_MODULES(DBUS, [dbus-1])
 G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [`$PKG_CONFIG --variable session_bus_services_dir dbus-1`])
 G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`$PKG_CONFIG --variable keysdir gnome-keybindings`])
 
-G_PASTE_ENABLE([applet],                [ENABLE_APPLET],                [Enable gpaste-applet],                    [no])
-G_PASTE_ENABLE([cinnamon-applet],       [ENABLE_CINNAMON_APPLET],       [Enable cinnamon applet],                  [no])
-G_PASTE_ENABLE([gnome-shell-extension], [ENABLE_GNOME_SHELL_EXTENSION], [Disable gnome-shell extension],           [yes])
-G_PASTE_ENABLE([legacy-cli],            [ENABLE_LEGACY_CLI],            [Disable the legacy cli wrapper (gpaste)], [yes])
-G_PASTE_ENABLE([unity],                 [ENABLE_UNITY],                 [Enable gpaste-app-indicator],             [no])
-G_PASTE_ENABLE([x-keybinder],           [ENABLE_X_KEYBINDER],           [Disable the X keybinder],                 [yes])
+G_PASTE_ENABLE([applet],                [Enable gpaste-applet],                    [no])
+G_PASTE_ENABLE([cinnamon-applet],       [Enable cinnamon applet],                  [no])
+G_PASTE_ENABLE([gnome-shell-extension], [Disable gnome-shell extension],           [yes])
+G_PASTE_ENABLE([legacy-cli],            [Disable the legacy cli wrapper (gpaste)], [yes])
+G_PASTE_ENABLE([unity],                 [Enable gpaste-app-indicator],             [no])
+G_PASTE_ENABLE([x-keybinder],           [Disable the X keybinder],                 [yes])
 
 has_js_extension=no
 if test x$enable_gnome_shell_extension = xyes; then
