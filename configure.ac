@@ -159,18 +159,9 @@ APPSTREAM_XML
 GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])
 VAPIGEN_CHECK([$VALA_REQUIRED])
 
-AC_ARG_WITH([controlcenterdir],
-            AS_HELP_STRING([--with-controlcenterdir=DIR], [Gnome control-center keybindings directory]),
-            [],
-            [with_controlcenterdir=`$PKG_CONFIG --variable keysdir gnome-keybindings`])
-AC_SUBST([controlcenterdir], [$with_controlcenterdir])
-
 PKG_CHECK_MODULES(DBUS, [dbus-1])
-AC_ARG_WITH([dbusservicesdir],
-            AS_HELP_STRING([--with-dbusservicesdir=DIR], [D-Bus system service directory]),
-            [],
-            [with_dbusservicesdir=`$PKG_CONFIG --variable=session_bus_services_dir dbus-1`])
-AC_SUBST([dbusservicesdir], [$with_dbusservicesdir])
+G_PASTE_WITH([dbusservicesdir], [D-Bus system session directory], [`$PKG_CONFIG --variable session_bus_services_dir dbus-1`])
+G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`$PKG_CONFIG --variable keysdir gnome-keybindings`])
 
 AC_ARG_ENABLE(applet, AS_HELP_STRING([--enable-applet], [Enable gpaste-applet]), enable_applet=$enableval, enable_applet=no)
 AM_CONDITIONAL(ENABLE_APPLET, test x$enable_applet = xyes)
