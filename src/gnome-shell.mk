@@ -22,7 +22,7 @@ gnomeshell_extension_files = \
 	src/gnome-shell/prefs.js \
 	$(NULL)
 
-if ENABLE_EXTENSION
+if ENABLE_GNOME_SHELL_EXTENSION
 nodist_gnomeshell_DATA = \
 	$(gpaste_extension_files) \
 	$(gpaste_extension_metadata_file)   \

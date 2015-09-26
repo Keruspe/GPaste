@@ -741,7 +741,7 @@ BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
  */
 STRING_SETTING (upload, UPLOAD)
 
-#ifdef ENABLE_EXTENSION
+#ifdef ENABLE_GNOME_SHELL_EXTENSION
 #define EXTENSION_NAME "GPaste@gnome-shell-extensions.gnome.org"
 /**
  * g_paste_settings_get_extension_enabled:
@@ -956,7 +956,7 @@ g_paste_settings_dispose (GObject *object)
         g_clear_object (&priv->settings);
     }
 
-#ifdef ENABLE_EXTENSION
+#ifdef ENABLE_GNOME_SHELL_EXTENSION
     GSettings *shell_settings = priv->shell_settings;
 
     if (shell_settings)
@@ -1081,7 +1081,7 @@ g_paste_settings_init (GPasteSettings *self)
     priv->shell_settings = NULL;
     priv->extension_enabled = FALSE;
 
-#ifdef ENABLE_EXTENSION
+#ifdef ENABLE_GNOME_SHELL_EXTENSION
     GSettingsSchemaSource *source = g_settings_schema_source_get_default ();
     if (!source)
         return;

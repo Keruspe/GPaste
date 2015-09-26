@@ -183,13 +183,13 @@ if test x$enable_unity = xyes; then
 fi
 
 AC_ARG_ENABLE(gnome-shell-extension, AS_HELP_STRING([--disable-gnome-shell-extension], [Disable gnome-shell extension]), enable_extension=$enableval, enable_extension=yes)
-AM_CONDITIONAL(ENABLE_EXTENSION, test x$enable_extension = xyes)
+AM_CONDITIONAL(ENABLE_GNOME_SHELL_EXTENSION, test x$enable_extension = xyes)
 if test x$enable_extension = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])
     fi
     PKG_CHECK_MODULES(GNOME_SHELL, [clutter-1.0 pango])
-    AC_DEFINE([ENABLE_EXTENSION], [1], [Whether the extension is enabled])
+    AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the extension is enabled])
 fi
 
 AC_ARG_ENABLE(x-keybinder, AS_HELP_STRING([--disable-x-keybinder], [Disable the X keybinder]), enable_x_keybinder=$enableval, enable_x_keybinder=yes)
