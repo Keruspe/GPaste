@@ -168,22 +168,20 @@ G_PASTE_ENABLE([legacy-cli],            [Disable the legacy cli wrapper (gpaste)
 G_PASTE_ENABLE([unity],                 [Enable gpaste-app-indicator],             [no])
 G_PASTE_ENABLE([x-keybinder],           [Disable the X keybinder],                 [yes])
 
-if test x$enable_gnome_shell_extension = xyes -o x$enable_cinnamon_applet = xyes; then
-    if test x$enable_introspection != xyes; then
-        AC_MSG_ERROR([*** Introspection support is required to run the javascript extensions])
-    fi
+AS_IF([test x$enable_gnome_shell_extension = xyes -o x$enable_cinnamon_applet = xyes], [
+    AS_IF([test x$enable_introspection != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the javascript extensions])])
     PKG_CHECK_MODULES(JS_EXTENSION, [clutter-1.0])
-fi
+])
 
-if test x$enable_unity = xyes; then
+AS_IF([test x$enable_unity = xyes], [
     PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
     AC_DEFINE([ENABLE_UNITY], [1], [Whether the app-indicator is built])
-fi
+])
 
-if test x$enable_x_keybinder = xyes; then
+AS_IF([test x$enable_x_keybinder = xyes], [
     PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= $GTK_REQUIRED])
     AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
-fi
+])
 
 AC_CONFIG_FILES([
     Makefile
