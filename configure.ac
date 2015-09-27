@@ -85,9 +85,6 @@ AC_CHECK_FUNCS([mkdir])
 
 AC_CHECK_HEADER_STDBOOL
 
-CC_ATTRIBUTE_UNUSED
-CC_ATTRIBUTE_VISIBILITY([default])
-
 CC_CHECK_CFLAGS_APPEND([ \
                          -pipe \
                          -pedantic \
