@@ -32,7 +32,12 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_VISIBLE  __attribute__((visibility("default")))
+#ifdef HAVE_VISIBILITY
+#  define G_PASTE_VISIBLE  __attribute__((visibility("default")))
+#else
+#  define G_PASTE_VISIBLE
+#endif
+
 #define G_PASTE_NORETURN __attribute__((noreturn))
 
 #define G_PASTE_DERIVABLE_TYPE(TypeName, type_name, TYPE_NAME, ParentTypeName) \
