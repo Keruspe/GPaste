@@ -42,6 +42,8 @@ void g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
                                                gboolean              activatable);
 void g_paste_ui_item_skeleton_set_editable    (GPasteUiItemSkeleton *self,
                                                gboolean              editable);
+void g_paste_ui_item_skeleton_set_uploadable  (GPasteUiItemSkeleton *self,
+                                               gboolean              uploadable);
 
 void g_paste_ui_item_skeleton_set_text   (GPasteUiItemSkeleton *self,
                                           const gchar          *text);

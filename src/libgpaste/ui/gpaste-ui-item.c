@@ -114,7 +114,10 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!kind || error)
         return;
 
-    g_paste_ui_item_skeleton_set_editable (G_PASTE_UI_ITEM_SKELETON (self), kind == G_PASTE_ITEM_KIND_TEXT);
+    GPasteUiItemSkeleton *sk = G_PASTE_UI_ITEM_SKELETON (self);
+
+    g_paste_ui_item_skeleton_set_editable (sk, kind == G_PASTE_ITEM_KIND_TEXT);
+    g_paste_ui_item_skeleton_set_uploadable (sk, kind == G_PASTE_ITEM_KIND_TEXT);
 }
 
 static void

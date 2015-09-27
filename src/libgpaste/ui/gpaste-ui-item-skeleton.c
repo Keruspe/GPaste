@@ -35,6 +35,7 @@ typedef struct
     GtkLabel       *label;
 
     gboolean        editable;
+    gboolean        uploadable;
 
     gulong          size_id;
 } GPasteUiItemSkeletonPrivate;
@@ -88,7 +89,7 @@ g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
     if (priv->edit)
         gtk_widget_set_sensitive (priv->edit, activatable && priv->editable);
     if (priv->upload)
-        gtk_widget_set_sensitive (priv->upload, activatable && priv->editable);
+        gtk_widget_set_sensitive (priv->upload, activatable && priv->uploadable);
 }
 
 /**
@@ -111,7 +112,28 @@ g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
     priv->editable = editable;
 
     gtk_widget_set_sensitive (priv->edit, editable);
-    gtk_widget_set_sensitive (priv->upload, editable);
+}
+
+/**
+ * g_paste_ui_item_skeleton_set_uploadable:
+ * @self: the #GPasteUiItemSkeleton instance
+ * @uploadable: whether the item should now be uploadable or not
+ *
+ * Mark the item as being uploadable or not
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_skeleton_set_uploadable (GPasteUiItemSkeleton *self,
+                                         gboolean              uploadable)
+{
+    g_return_if_fail (G_PASTE_IS_UI_ITEM_SKELETON (self));
+
+    GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
+
+    priv->uploadable = uploadable;
+
+    gtk_widget_set_sensitive (priv->upload, uploadable);
 }
 
 /**
