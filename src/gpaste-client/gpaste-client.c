@@ -23,6 +23,16 @@
 #include <getopt.h>
 #include <stdio.h>
 
+typedef struct {
+    gboolean     help;
+    gboolean     version;
+    gboolean     oneline;
+    gboolean     raw;
+    gboolean     zero;
+    const gchar *decoration;
+    const gchar *separator;
+} Context;
+
 static void
 show_help (void)
 {
@@ -223,9 +233,8 @@ main (gint argc, gchar *argv[])
         { NULL,         no_argument,       NULL,  '\0' }
     };
 
-    gboolean help = FALSE, version = FALSE;
-    gboolean oneline = FALSE, raw = FALSE, zero = FALSE;
-    const gchar *decoration = NULL, *separator = NULL;
+    Context _ctx = { FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context *ctx = &_ctx;
     gint64 c;
 
     while ((c = getopt_long(argc, argv, "d:hors:vz", long_options, NULL)) != -1)
@@ -233,25 +242,25 @@ main (gint argc, gchar *argv[])
         switch (c)
         {
         case 'd':
-            decoration = optarg;
+            ctx->decoration = optarg;
             break;
         case 'h':
-            help = TRUE;
+            ctx->help = TRUE;
             break;
         case 'o':
-            oneline = TRUE;
+            ctx->oneline = TRUE;
             break;
         case 'r':
-            raw = TRUE;
+            ctx->raw = TRUE;
             break;
         case 's':
-            separator = optarg;
+            ctx->separator = optarg;
             break;
         case 'v':
-            version = TRUE;
+            ctx->version = TRUE;
             break;
         case 'z':
-            zero = TRUE;
+            ctx->zero = TRUE;
             break;
         default:
             return EXIT_FAILURE;
@@ -261,12 +270,12 @@ main (gint argc, gchar *argv[])
     argv += optind;
     argc -= optind;
 
-    if (help || (argc > 0 && !g_strcmp0 (argv[0], "help")))
+    if (ctx->help || (argc > 0 && !g_strcmp0 (argv[0], "help")))
     {
         show_help ();
         return EXIT_SUCCESS;
     }
-    else if (version || (argc > 0 && is_version (argv[0])))
+    else if (ctx->version || (argc > 0 && is_version (argv[0])))
     {
         show_version ();
         return EXIT_SUCCESS;
@@ -330,7 +339,7 @@ main (gint argc, gchar *argv[])
         for (gint64 i = 0; i < argc; ++i)
             indexes[i] = _strtoull (argv[i]);
 
-        g_paste_client_merge_sync (client, decoration, separator, indexes, argc, &error);
+        g_paste_client_merge_sync (client, ctx->decoration, ctx->separator, indexes, argc, &error);
     }
     else
     {
@@ -338,7 +347,7 @@ main (gint argc, gchar *argv[])
         switch (argc)
         {
         case 0:
-            show_history (client, oneline, raw, zero, &error);
+            show_history (client, ctx->oneline, ctx->raw, ctx->zero, &error);
             break;
         case 1:
             arg1 = argv[0];
@@ -378,7 +387,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "h") ||
                      !g_strcmp0 (arg1, "history"))
             {
-                show_history (client, oneline, raw, zero, &error);
+                show_history (client, ctx->oneline, ctx->raw, ctx->zero, &error);
             }
             else if (!g_strcmp0 (arg1, "hs") ||
                      !g_strcmp0 (arg1, "history-size"))
@@ -486,7 +495,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "g") ||
                      !g_strcmp0 (arg1, "get"))
             {
-                const gchar *value = (!raw) ?
+                const gchar *value = (!ctx->raw) ?
                     g_paste_client_get_element_sync (client, _strtoull (arg2), &error) :
                     g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error);
 
@@ -510,7 +519,7 @@ main (gint argc, gchar *argv[])
                             if (error)
                                 break;
 
-                            print_history_line (line, index, oneline, raw, zero);
+                            print_history_line (line, index, ctx->oneline, ctx->raw, ctx->zero);
                         }
                     }
                 }
