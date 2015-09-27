@@ -33,7 +33,7 @@
 G_BEGIN_DECLS
 
 #ifdef G_HAVE_GNUC_VISIBILITY
-#  define G_PASTE_VISIBLE  __attribute__((visibility("default")))
+#  define G_PASTE_VISIBLE __attribute__((visibility("default")))
 #else
 #  define G_PASTE_VISIBLE
 #endif

@@ -1,6 +1,12 @@
 NEW in 3.19 (Not released yet)
 =============
 
+NEW in 3.18.1.1 (27/09/2015)
+=============
+
+- few build system cleanups
+- gobject-introspection fixes
+
 NEW in 3.18.1 (23/09/2015)
 =============
 
