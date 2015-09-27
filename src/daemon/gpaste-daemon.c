@@ -38,7 +38,7 @@ signal_handler (gint32 signum)
     g_application_quit (_app);
 }
 
-G_PASTE_NORETURN static void
+G_GNUC_NORETURN static void
 on_name_lost (GPasteBus *bus G_GNUC_UNUSED,
               gpointer   user_data)
 {
