@@ -25,7 +25,7 @@ AC_DEFUN([_G_PASTE_WITH], [
                 [with_$4=$3])
     AC_SUBST([$1], [$with_$4])
 ])
-AC_DEFUN([G_PASTE_WITH], [_G_PASTE_WITH([$1],[$2],[$3],m4_translit([$1],[-+.],[___]))])
+AC_DEFUN([G_PASTE_WITH], [_G_PASTE_WITH([$1],[$2],[$3],AS_TR_SH([$1]))])
 
 dnl Check if we enable a feature and define it
 dnl G_PASTE_ENABLE([feature], [help string], [default value])
@@ -37,4 +37,4 @@ AC_DEFUN([_G_PASTE_ENABLE], [
                   [enable_$4=$3])
     AM_CONDITIONAL(AS_TR_CPP(ENABLE_$1), [test x$enable_$4 = xyes])
 ])
-AC_DEFUN([G_PASTE_ENABLE], [_G_PASTE_ENABLE([$1],[$2],[$3],m4_translit([$1],[-+.],[___]),m4_if([$3],[no],[enable],[disable]))])
+AC_DEFUN([G_PASTE_ENABLE], [_G_PASTE_ENABLE([$1],[$2],[$3],AS_TR_SH([$1]),m4_if([$3],[no],[enable],[disable]))])
