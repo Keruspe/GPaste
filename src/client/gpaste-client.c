@@ -153,23 +153,19 @@ strip_newline (gchar *str)
 static void
 print_history_line (gchar   *line,
                     guint64  index,
-                    gboolean oneline,
-                    gboolean raw,
-                    gboolean zero)
+                    Context *ctx)
 {
-    if (!raw)
+    if (!ctx->raw)
         printf ("%" G_GUINT64_FORMAT ": ", index);
-    printf ("%s%c", (oneline) ? strip_newline (line) : line, (zero) ? '\0' : '\n');
+    printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
 }
 
 static void
 show_history (GPasteClient *client,
-              gboolean      oneline,
-              gboolean      raw,
-              gboolean      zero,
+              Context      *ctx,
               GError      **error)
 {
-    g_auto (GStrv) history = (raw) ?
+    g_auto (GStrv) history = (ctx->raw) ?
         g_paste_client_get_raw_history_sync (client, error) :
         g_paste_client_get_history_sync (client, error);
 
@@ -178,7 +174,7 @@ show_history (GPasteClient *client,
         guint64 i = 0;
 
         for (GStrv h = history; *h; ++h)
-            print_history_line (*h, i++, oneline, raw, zero);
+            print_history_line (*h, i++, ctx);
     }
 }
 
@@ -355,7 +351,7 @@ main (gint argc, gchar *argv[])
         switch (argc)
         {
         case 0:
-            show_history (client, ctx->oneline, ctx->raw, ctx->zero, &error);
+            show_history (client, ctx, &error);
             break;
         case 1:
             arg1 = argv[0];
@@ -395,7 +391,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "h") ||
                      !g_strcmp0 (arg1, "history"))
             {
-                show_history (client, ctx->oneline, ctx->raw, ctx->zero, &error);
+                show_history (client, ctx, &error);
             }
             else if (!g_strcmp0 (arg1, "hs") ||
                      !g_strcmp0 (arg1, "history-size"))
@@ -527,7 +523,7 @@ main (gint argc, gchar *argv[])
                             if (error)
                                 break;
 
-                            print_history_line (line, index, ctx->oneline, ctx->raw, ctx->zero);
+                            print_history_line (line, index, ctx);
                         }
                     }
                 }
