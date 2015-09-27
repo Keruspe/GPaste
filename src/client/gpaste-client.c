@@ -216,12 +216,11 @@ _strtoull (const gchar *str)
     return g_ascii_strtoull (str, NULL, 0);
 }
 
-gint
-main (gint argc, gchar *argv[])
+static void
+parse_cmdline (int      argc,
+               char    *argv[],
+               Context *ctx)
 {
-    G_PASTE_INIT_GETTEXT ();
-    g_set_prgname (argv[0]);
-
     struct option long_options[] = {
         { "decoration", required_argument, NULL,  'd'  },
         { "help",       no_argument,       NULL,  'h'  },
@@ -232,9 +231,6 @@ main (gint argc, gchar *argv[])
         { "zero",       no_argument,       NULL,  'z'  },
         { NULL,         no_argument,       NULL,  '\0' }
     };
-
-    Context _ctx = { FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
-    Context *ctx = &_ctx;
     gint64 c;
 
     while ((c = getopt_long(argc, argv, "d:hors:vz", long_options, NULL)) != -1)
@@ -266,7 +262,18 @@ main (gint argc, gchar *argv[])
             return EXIT_FAILURE;
         }
     }
+}
 
+gint
+main (gint argc, gchar *argv[])
+{
+    G_PASTE_INIT_GETTEXT ();
+    g_set_prgname (argv[0]);
+
+    Context _ctx = { FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context *ctx = &_ctx;
+
+    parse_cmdline (argc, argv, ctx);
     argv += optind;
     argc -= optind;
 
@@ -295,6 +302,7 @@ main (gint argc, gchar *argv[])
     {
         /* We are being piped */
         g_autoptr (GString) data = g_string_new (NULL);
+        gint64 c;
 
         while ((c = fgetc (stdin)) != EOF)
             data = g_string_append_c (data, (guchar)c);
