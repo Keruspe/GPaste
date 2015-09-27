@@ -89,8 +89,8 @@ include bindings/vapi.mk
 
 # Core utilities
 
+include src/client.mk
 include src/daemon.mk
-include src/gpaste-client.mk
 include src/ui.mk
 
 # Legacy compatibility

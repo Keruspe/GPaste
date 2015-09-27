@@ -20,7 +20,7 @@ bin_PROGRAMS += \
 	$(NULL)
 
 bin_gpaste_client_SOURCES = \
-	src/gpaste-client/gpaste-client.c \
+	src/client/gpaste-client.c \
 	$(NULL)
 
 bin_gpaste_client_CFLAGS = \
