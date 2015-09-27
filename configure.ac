@@ -90,52 +90,8 @@ AC_CHECK_HEADER_STDBOOL
 
 gl_VISIBILITY
 
-G_PASTE_APPEND_CFLAGS([ \
-                         -pipe \
-                         -pedantic \
-                         -DANOTHER_BRICK_IN_THE \
-                         -Wall \
-                         -W \
-                         -Wextra \
-                         -Wvla \
-                         -Wundef \
-                         -Wformat=2 \
-                         -Wlogical-op \
-                         -Wlogical-op-parentheses \
-                         -Wsign-compare \
-                         -Wformat-security \
-                         -Wmissing-include-dirs \
-                         -Wformat-nonliteral \
-                         -Wold-style-definition \
-                         -Wpointer-arith \
-                         -Winit-self \
-                         -Wfloat-equal \
-                         -Wmissing-prototypes \
-                         -Wstrict-prototypes \
-                         -Wredundant-decls \
-                         -Wmissing-declarations \
-                         -Wmissing-noreturn \
-                         -Wshadow \
-                         -Wendif-labels \
-                         -Wcast-align \
-                         -Wstrict-aliasing=2 \
-                         -Wwrite-strings \
-                         -Wno-unknown-warning-option \
-                         -Werror=overflow \
-                         -Wp,-D_FORTIFY_SOURCE=2 \
-                         -ffast-math \
-                         -fno-common \
-                         -fdiagnostics-show-option \
-                         -fno-strict-aliasing \
-                         -fvisibility=hidden \
-                         -ffunction-sections \
-                         -fdata-sections \
-                       ])
-
-G_PASTE_APPEND_LDFLAGS([ \
-                          -Wl,--as-needed \
-                          -Wl,--gc-sections \
-                        ])
+G_PASTE_APPEND_CFLAGS
+G_PASTE_APPEND_LDFLAGS
 
 GETTEXT_PACKAGE=$PACKAGE_NAME
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [Gettext Package])
