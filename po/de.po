@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-09-23 21:13+0200\n"
+"POT-Creation-Date: 2015-09-27 14:11+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 1.5.5\n"
 
-#: ../src/libgpaste/gpaste-macros.h:60
+#: ../src/libgpaste/gpaste-macros.h:63
 msgid "Failed to register the gtk application"
 msgstr "Initialisierung der Gtk-Anwendung fehlgeschlagen"
 
