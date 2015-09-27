@@ -1,6 +1,6 @@
 dnl This file is part of GPaste.
 dnl
-dnl Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+dnl Copyright 2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 dnl
 dnl GPaste is free software: you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by

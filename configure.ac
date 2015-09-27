@@ -16,7 +16,10 @@
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([GPaste],[3.19],[Marc-Antoine@Perennou.com],[gpaste])
+AC_INIT([GPaste], [3.19], [Marc-Antoine@Perennou.com], [gpaste])
+
+AC_SUBST([PACKAGE_NAME])
+AC_SUBST([PACKAGE_VERSION])
 
 # Update LIBGPASTE_LT_VERSION before each release (and only then)
 # The format is C:R:A (current revision age)
@@ -24,7 +27,7 @@ AC_INIT([GPaste],[3.19],[Marc-Antoine@Perennou.com],[gpaste])
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
 LIBGPASTE_LT_VERSION=4:0:0
-AC_SUBST(LIBGPASTE_LT_VERSION)
+AC_SUBST([LIBGPASTE_LT_VERSION])
 
 INTLTOOL_REQUIRED="0.50.1"
 PKGCONFIG_REQUIRED="0.22"
@@ -36,6 +39,7 @@ GTK_MIN_MINOR="16"
 
 GLIB_REQUIRED="$GLIB_MIN_MAJOR.$GLIB_MIN_MINOR.0"
 GTK_REQUIRED="$GTK_MIN_MAJOR.$GTK_MIN_MINOR.0"
+
 GDK_PIXBUF_REQUIRED="2.26.0"
 GIR_REQUIRED="1.42.0"
 VALA_REQUIRED="0.30"
@@ -44,15 +48,12 @@ GLIB_API_REQUIRED="G_ENCODE_VERSION($GLIB_MIN_MAJOR, $GLIB_MIN_MINOR)"
 GDK_API_REQUIRED="G_ENCODE_VERSION($GTK_MIN_MAJOR, $GTK_MIN_MINOR)"
 
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [$GLIB_API_REQUIRED], [The lower GLib API version supported])
-AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED], [$GLIB_API_REQUIRED], [The higher GLib API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [$GDK_API_REQUIRED], [The lower Gdk API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED], [$GDK_API_REQUIRED], [The higher Gdk API version supported])
+AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED],  [$GLIB_API_REQUIRED], [The higher GLib API version supported])
+AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED],  [$GDK_API_REQUIRED],  [The lower Gdk API version supported])
+AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],   [$GDK_API_REQUIRED],  [The higher Gdk API version supported])
 
-AC_DEFINE([G_PASTE_DEFAULT_HISTORY], ["history"], [The default hsitory name])
-AC_DEFINE([G_PASTE_EXTENSION_NAME], ["GPaste@gnome-shell-extensions.gnome.org"], [The name of the GPaste extension])
-
-AC_SUBST([PACKAGE_NAME], ["$PACKAGE_NAME"])
-AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
+AC_DEFINE([G_PASTE_DEFAULT_HISTORY], ["history"],                                 [The default hsitory name])
+AC_DEFINE([G_PASTE_EXTENSION_NAME],  ["GPaste@gnome-shell-extensions.gnome.org"], [The name of the GPaste extension])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/])
@@ -95,15 +96,16 @@ G_PASTE_APPEND_LDFLAGS
 
 GETTEXT_PACKAGE=$PACKAGE_NAME
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [Gettext Package])
-AC_SUBST(GETTEXT_PACKAGE)
+AC_SUBST([GETTEXT_PACKAGE])
 IT_PROG_INTLTOOL([$INTLTOOL_REQUIRED])
 
 PKG_PROG_PKG_CONFIG([$PKGCONFIG_REQUIRED])
 
-PKG_CHECK_MODULES(GLIB, [glib-2.0 >= $GLIB_REQUIRED gobject-2.0 >= $GLIB_REQUIRED gio-2.0 >= $GLIB_REQUIRED])
-PKG_CHECK_MODULES(GTK, [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED pango])
+PKG_CHECK_MODULES(GLIB,       [glib-2.0 >= $GLIB_REQUIRED gobject-2.0 >= $GLIB_REQUIRED gio-2.0 >= $GLIB_REQUIRED])
+PKG_CHECK_MODULES(GTK,        [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED pango])
 PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED])
-PKG_CHECK_MODULES(X11, [x11 xi])
+PKG_CHECK_MODULES(X11,        [x11 xi])
+
 AC_CHECK_HEADERS([X11/extensions/XInput2.h])
 
 GLIB_GSETTINGS
