@@ -373,7 +373,7 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
     g_paste_daemon_private_delete_history_signal (priv, name);
 
     if (!g_strcmp0 (name, g_paste_history_get_current (priv->history)))
-        g_paste_history_switch (history, DEFAULT_HISTORY);
+        g_paste_history_switch (history, G_PASTE_DEFAULT_HISTORY);
 }
 
 static void

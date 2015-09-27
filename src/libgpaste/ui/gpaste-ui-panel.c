@@ -97,7 +97,7 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
 {
     GPasteUiPanelPrivate *priv = user_data;
 
-    if (!g_strcmp0 (history, DEFAULT_HISTORY))
+    if (!g_strcmp0 (history, G_PASTE_DEFAULT_HISTORY))
         return;
 
     GSList *h = history_find (priv->histories, history);
@@ -189,7 +189,7 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
     g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, NULL);
     g_autofree gchar *current = data->name;
 
-    g_paste_ui_panel_add_history (priv, DEFAULT_HISTORY, !g_strcmp0 (DEFAULT_HISTORY, current));
+    g_paste_ui_panel_add_history (priv, G_PASTE_DEFAULT_HISTORY, !g_strcmp0 (G_PASTE_DEFAULT_HISTORY, current));
     for (GStrv h = histories; *h; ++h)
         g_paste_ui_panel_add_history (priv, *h, !g_strcmp0 (*h, current));
 }
@@ -233,7 +233,7 @@ g_paste_ui_panel_switch_activated (GtkEntry *entry,
     GPasteUiPanelPrivate *priv = user_data;
     const gchar *text = gtk_entry_get_text (entry);
 
-    g_paste_client_switch_history (priv->client, (text && *text) ? text : DEFAULT_HISTORY, NULL, NULL);
+    g_paste_client_switch_history (priv->client, (text && *text) ? text : G_PASTE_DEFAULT_HISTORY, NULL, NULL);
     gtk_entry_set_text (entry, "");
 
     gtk_widget_grab_focus (priv->search_entry);
@@ -297,7 +297,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
     gtk_widget_set_tooltip_text (switch_entry, _("Switch to"));
     gtk_widget_set_margin_top (switch_entry, 5);
     gtk_widget_set_margin_bottom (switch_entry, 5);
-    gtk_entry_set_placeholder_text (priv->switch_entry, DEFAULT_HISTORY);
+    gtk_entry_set_placeholder_text (priv->switch_entry, G_PASTE_DEFAULT_HISTORY);
 
     priv->activated_id = g_signal_connect (G_OBJECT (priv->list_box),
                                            "row-activated",

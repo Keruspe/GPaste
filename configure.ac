@@ -48,7 +48,7 @@ AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED], [$GLIB_API_REQUIRED], [The higher
 AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [$GDK_API_REQUIRED], [The lower Gdk API version supported])
 AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED], [$GDK_API_REQUIRED], [The higher Gdk API version supported])
 
-AC_DEFINE([DEFAULT_HISTORY], ["history"], [The default hsitory name])
+AC_DEFINE([G_PASTE_DEFAULT_HISTORY], ["history"], [The default hsitory name])
 AC_DEFINE([G_PASTE_EXTENSION_NAME], ["GPaste@gnome-shell-extensions.gnome.org"], [The name of the GPaste extension])
 
 AC_SUBST([PACKAGE_NAME], ["$PACKAGE_NAME"])
