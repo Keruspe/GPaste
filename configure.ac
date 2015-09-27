@@ -49,6 +49,7 @@ AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [$GDK_API_REQUIRED], [The lower G
 AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED], [$GDK_API_REQUIRED], [The higher Gdk API version supported])
 
 AC_DEFINE([DEFAULT_HISTORY], ["history"], [The default hsitory name])
+AC_DEFINE([G_PASTE_EXTENSION_NAME], ["GPaste@gnome-shell-extensions.gnome.org"], [The name of the GPaste extension])
 
 AC_SUBST([PACKAGE_NAME], ["$PACKAGE_NAME"])
 AC_SUBST([PACKAGE_VERSION], ["$PACKAGE_VERSION"])
@@ -167,15 +168,7 @@ G_PASTE_ENABLE([legacy-cli],            [Disable the legacy cli wrapper (gpaste)
 G_PASTE_ENABLE([unity],                 [Enable gpaste-app-indicator],             [no])
 G_PASTE_ENABLE([x-keybinder],           [Disable the X keybinder],                 [yes])
 
-has_js_extension=no
-if test x$enable_gnome_shell_extension = xyes; then
-    has_js_extension=yes
-    AC_DEFINE([ENABLE_GNOME_SHELL_EXTENSION], [1], [Whether the gnome-shell extension is enabled])
-fi
-if test x$enable_cinnamon_applet = xyes; then
-    has_js_extension=yes
-fi
-if test x$has_js_extension = xyes; then
+if test x$enable_gnome_shell_extension = xyes -o x$enable_cinnamon_applet = xyes; then
     if test x$enable_introspection != xyes; then
         AC_MSG_ERROR([*** Introspection support is required to run the javascript extensions])
     fi

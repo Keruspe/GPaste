@@ -19,6 +19,7 @@
 
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-settings.h>
+#include <gpaste-util.h>
 
 struct _GPasteSettings
 {
@@ -741,8 +742,6 @@ BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
  */
 STRING_SETTING (upload, UPLOAD)
 
-#ifdef ENABLE_GNOME_SHELL_EXTENSION
-#define EXTENSION_NAME "GPaste@gnome-shell-extensions.gnome.org"
 /**
  * g_paste_settings_get_extension_enabled:
  * @self: a #GPasteSettings instance
@@ -771,7 +770,7 @@ g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate
     g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (priv);
     for (GStrv e = extensions; *e; ++e)
     {
-        if (!g_strcmp0 (*e, EXTENSION_NAME))
+        if (!g_strcmp0 (*e, G_PASTE_EXTENSION_NAME))
         {
             priv->extension_enabled = TRUE;
             return;
@@ -804,7 +803,7 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
     if (value)
     {
         extensions = g_realloc (extensions, (nb + 2) * sizeof (gchar *));
-        extensions[nb] = g_strdup (EXTENSION_NAME);
+        extensions[nb] = g_strdup (G_PASTE_EXTENSION_NAME);
         extensions[nb+1] = NULL;
     }
     else
@@ -812,7 +811,7 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
         gboolean found = FALSE;
         for (guint64 i = 0; i < nb; ++i)
         {
-            if (!found && !g_strcmp0 (extensions[i], EXTENSION_NAME))
+            if (!found && !g_strcmp0 (extensions[i], G_PASTE_EXTENSION_NAME))
             {
                 found = TRUE;
                 g_free (extensions[i]);
@@ -843,7 +842,6 @@ g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                    G_PASTE_EXTENSION_ENABLED_SETTING,
                    NULL);
 }
-#endif
 
 static void
 g_paste_settings_rebind (GPasteSettings *self,
@@ -949,6 +947,7 @@ g_paste_settings_dispose (GObject *object)
 {
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
     GSettings *settings = priv->settings;
+    GSettings *shell_settings = priv->shell_settings;
 
     if (settings)
     {
@@ -956,15 +955,11 @@ g_paste_settings_dispose (GObject *object)
         g_clear_object (&priv->settings);
     }
 
-#ifdef ENABLE_GNOME_SHELL_EXTENSION
-    GSettings *shell_settings = priv->shell_settings;
-
     if (shell_settings)
     {
         g_signal_handler_disconnect (shell_settings, priv->shell_changed_signal);
         g_clear_object (&priv->shell_settings);
     }
-#endif
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
 }
@@ -1081,25 +1076,17 @@ g_paste_settings_init (GPasteSettings *self)
     priv->shell_settings = NULL;
     priv->extension_enabled = FALSE;
 
-#ifdef ENABLE_GNOME_SHELL_EXTENSION
-    GSettingsSchemaSource *source = g_settings_schema_source_get_default ();
-    if (!source)
-        return;
+    if (g_paste_util_has_gnome_shell ())
+    {
+        priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
 
-    g_autoptr (GSettingsSchema) schema = g_settings_schema_source_lookup (source, G_PASTE_SHELL_SETTINGS_NAME, TRUE);
+        priv->shell_changed_signal = g_signal_connect (priv->shell_settings,
+                                                      "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
+                                                      G_CALLBACK (g_paste_settings_shell_settings_changed),
+                                                      self);
 
-    if (!schema)
-        return;
-
-    priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
-
-    priv->shell_changed_signal = g_signal_connect (priv->shell_settings,
-                                                  "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
-                                                  G_CALLBACK (g_paste_settings_shell_settings_changed),
-                                                  self);
-
-    g_paste_settings_private_set_extension_enabled_from_dconf (priv);
-#endif
+        g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+    }
 }
 
 /**
