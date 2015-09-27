@@ -88,7 +88,6 @@ AC_DEFUN([G_PASTE_APPEND_CFLAGS], [
         -fno-common                 \
         -fdiagnostics-show-option   \
         -fno-strict-aliasing        \
-        -fvisibility=hidden         \
         -ffunction-sections         \
         -fdata-sections             \
     ])

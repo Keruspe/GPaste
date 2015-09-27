@@ -51,6 +51,7 @@ AM_CFLAGS = \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
 	$(GLIB_CFLAGS) \
 	$(GTK_CFLAGS) \
+	@CFLAG_VISIBILITY@ \
 	$(NULL)
 
 AM_LIBS = \
