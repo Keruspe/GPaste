@@ -446,3 +446,8 @@ global:
     g_paste_util_get_dbus_at_result;
     g_paste_util_get_dbus_au_result;
 } LIBGPASTE_3_16_0;
+
+LIBGPASTE_3_20_0 {
+global:
+    g_paste_util_has_gnome_shell;
+} LIBGPASTE_3_18_0;

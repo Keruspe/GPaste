@@ -367,6 +367,26 @@ g_paste_util_has_unity (void)
 }
 
 /**
+ * g_paste_util_has_gnome_shell:
+ *
+ * Check whether gnome-shell is installed or not
+ *
+ * Returns: %TRUE if gnome-shell is installed
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_has_gnome_shell (void)
+{
+    GSettingsSchemaSource *source = g_settings_schema_source_get_default ();
+
+    if (!source)
+        return FALSE;
+
+    g_autoptr (GSettingsSchema) schema = g_settings_schema_source_lookup (source, G_PASTE_SHELL_SETTINGS_NAME, TRUE);
+
+    return !!schema;
+}
+
+/**
  * g_paste_util_show_win:
  * @application: a #GtkApplication
  *
