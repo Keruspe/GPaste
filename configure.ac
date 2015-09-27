@@ -90,7 +90,7 @@ AC_CHECK_HEADER_STDBOOL
 
 gl_VISIBILITY
 
-CC_CHECK_CFLAGS_APPEND([ \
+G_PASTE_APPEND_CFLAGS([ \
                          -pipe \
                          -pedantic \
                          -DANOTHER_BRICK_IN_THE \
@@ -132,7 +132,7 @@ CC_CHECK_CFLAGS_APPEND([ \
                          -fdata-sections \
                        ])
 
-CC_CHECK_LDFLAGS_APPEND([ \
+G_PASTE_APPEND_LDFLAGS([ \
                           -Wl,--as-needed \
                           -Wl,--gc-sections \
                         ])
