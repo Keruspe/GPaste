@@ -32,13 +32,11 @@
 
 G_BEGIN_DECLS
 
-#ifdef HAVE_VISIBILITY
+#ifdef G_HAVE_GNUC_VISIBILITY
 #  define G_PASTE_VISIBLE  __attribute__((visibility("default")))
 #else
 #  define G_PASTE_VISIBLE
 #endif
-
-#define G_PASTE_NORETURN __attribute__((noreturn))
 
 #define G_PASTE_DERIVABLE_TYPE(TypeName, type_name, TYPE_NAME, ParentTypeName) \
     G_PASTE_VISIBLE G_DECLARE_DERIVABLE_TYPE (GPaste##TypeName, g_paste_##type_name, G_PASTE, TYPE_NAME, ParentTypeName)
