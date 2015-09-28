@@ -25,6 +25,7 @@
 
 typedef struct {
     GPasteClient *client;
+    gchar       **argv;
     gboolean      help;
     gboolean      version;
     gboolean      oneline;
@@ -86,8 +87,10 @@ parse_cmdline (int     *argc,
         }
     }
 
-    *argv += optind;
     *argc -= optind;
+    *argv += optind;
+
+    ctx->argv = *argv;
 }
 
 static const gchar *
@@ -304,7 +307,7 @@ main (gint argc, gchar *argv[])
     G_PASTE_INIT_GETTEXT ();
     g_set_prgname (argv[0]);
 
-    Context _ctx = { NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context _ctx = { NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     Context *ctx = &_ctx;
 
     parse_cmdline (&argc, &argv, ctx);
