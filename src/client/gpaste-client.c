@@ -24,13 +24,14 @@
 #include <stdio.h>
 
 typedef struct {
-    gboolean     help;
-    gboolean     version;
-    gboolean     oneline;
-    gboolean     raw;
-    gboolean     zero;
-    const gchar *decoration;
-    const gchar *separator;
+    GPasteClient *client;
+    gboolean      help;
+    gboolean      version;
+    gboolean      oneline;
+    gboolean      raw;
+    gboolean      zero;
+    const gchar  *decoration;
+    const gchar  *separator;
 } Context;
 
 /*
@@ -104,24 +105,6 @@ print_history_line (gchar   *line,
     if (!ctx->raw)
         printf ("%" G_GUINT64_FORMAT ": ", index);
     printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
-}
-
-static void
-show_history (GPasteClient *client,
-              Context      *ctx,
-              GError      **error)
-{
-    g_auto (GStrv) history = (ctx->raw) ?
-        g_paste_client_get_raw_history_sync (client, error) :
-        g_paste_client_get_history_sync (client, error);
-
-    if (!*error)
-    {
-        guint64 i = 0;
-
-        for (GStrv h = history; *h; ++h)
-            print_history_line (*h, i++, ctx);
-    }
 }
 
 G_GNUC_NORETURN static void
@@ -262,27 +245,49 @@ show_version (void)
  */
 
 static gint64
-g_paste_help (Context *ctx G_GNUC_UNUSED)
+g_paste_help (Context *ctx   G_GNUC_UNUSED,
+              GError **error G_GNUC_UNUSED)
 {
     show_help ();
     return EXIT_SUCCESS;
 }
 
 static gint64
-g_paste_version (Context *ctx G_GNUC_UNUSED)
+g_paste_version (Context *ctx   G_GNUC_UNUSED,
+                 GError **error G_GNUC_UNUSED)
 {
     show_version ();
     return EXIT_SUCCESS;
 }
 
 static gint64
-g_paste_no_args (Context *ctx)
+g_paste_no_args (Context *ctx,
+                 GError **error)
 {
     if (ctx->help)
-        return g_paste_help (ctx);
+        return g_paste_help (ctx, error);
     if (ctx->version)
-        return g_paste_version (ctx);
+        return g_paste_version (ctx, error);
     return -1;
+}
+
+static gint64
+g_paste_show_history (Context *ctx,
+                      GError **error)
+{
+    g_auto (GStrv) history = (ctx->raw) ?
+        g_paste_client_get_raw_history_sync (ctx->client, error) :
+        g_paste_client_get_history_sync (ctx->client, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    guint64 i = 0;
+
+    for (GStrv h = history; *h; ++h)
+        print_history_line (*h, i++, ctx);
+
+    return EXIT_SUCCESS;
 }
 
 /*
@@ -295,7 +300,7 @@ main (gint argc, gchar *argv[])
     G_PASTE_INIT_GETTEXT ();
     g_set_prgname (argv[0]);
 
-    Context _ctx = { FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context _ctx = { NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     Context *ctx = &_ctx;
 
     parse_cmdline (argc, argv, ctx);
@@ -305,43 +310,28 @@ main (gint argc, gchar *argv[])
     struct {
         gint         argc;
         const gchar *verb;
-        gint64     (*handler) (Context *ctx);
+        gboolean     needs_client;
+        gint64     (*handler) (Context *ctx,
+                               GError **error);
     } dispatch[] = {
-        { 0, NULL,      g_paste_no_args },
-        { 1, "help",    g_paste_help    },
-        { 1, "v",       g_paste_version },
-        { 1, "version", g_paste_version }
+        { 0, NULL,      FALSE, g_paste_no_args      },
+        { 0, NULL,      TRUE,  g_paste_show_history },
+        { 1, "help",    FALSE, g_paste_help         },
+        { 1, "v",       FALSE, g_paste_version      },
+        { 1, "version", FALSE, g_paste_version      }
     };
 
     gint64 status = EXIT_SUCCESS;
 
-    for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
-    {
-        if (argc == dispatch[i].argc)
-        {
-            if (argc > 0 && dispatch[i].verb && g_strcmp0 (argv[0], dispatch[i].verb))
-                continue;
-
-            gint64 ret = dispatch[i].handler(ctx);
-            if (ret >= 0)
-            {
-                status = ret;
-                goto exit;
-            }
-        }
-    }
-
     g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteClient) client = ctx->client = g_paste_client_new_sync (&error);
 
-    if (!client)
-        failure_exit (error);
-
-    gboolean was_valid_pipe = FALSE;
-
-    if (!isatty (fileno (stdin)))
+    if (!isatty (fileno (stdin))) /* FIXME: add data to Context and use the dispatcher */
     {
-        /* We are being piped */
+        /* We are being piped, client is always required */
+        if (!client)
+            goto exit;
+
         g_autoptr (GString) data = g_string_new (NULL);
         gint64 c;
 
@@ -353,7 +343,7 @@ main (gint argc, gchar *argv[])
         if (!argc)
         {
             g_paste_client_add_sync (client, data->str, &error);
-            was_valid_pipe = TRUE;
+            goto exit;
         }
         else if (argc == 2)
         {
@@ -364,21 +354,41 @@ main (gint argc, gchar *argv[])
                 !g_strcmp0 (arg1, "add-password"))
             {
                 g_paste_client_add_password_sync (client, arg2, data->str, &error);
-                was_valid_pipe = TRUE;
+                goto exit;
             }
             else if (!g_strcmp0 (arg1, "replace"))
             {
                 g_paste_client_replace_sync (client, _strtoull (arg2), data->str, &error);
-                was_valid_pipe = TRUE;
+                goto exit;
             }
         }
     }
 
-    if (was_valid_pipe)
-    {}
-    else if (argc > 0 &&
-            (!g_strcmp0 (argv[0], "merge") ||
-             !g_strcmp0 (argv[0], "m")))
+    for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
+    {
+        if (argc == dispatch[i].argc)
+        {
+            if (argc > 0 && dispatch[i].verb && g_strcmp0 (argv[0], dispatch[i].verb))
+                continue;
+
+            if (dispatch[i].needs_client && !client)
+                goto exit;
+
+            gint64 ret = dispatch[i].handler(ctx, &error);
+            if (ret >= 0)
+            {
+                status = ret;
+                goto exit;
+            }
+        }
+    }
+
+    if (!client) /* FIXME: drop that, clean error if client not needed */
+        goto exit;
+
+    if (argc > 0 &&
+        (!g_strcmp0 (argv[0], "merge") ||
+         !g_strcmp0 (argv[0], "m")))
     {
         --argc;
         ++argv;
@@ -395,9 +405,6 @@ main (gint argc, gchar *argv[])
         const gchar *arg1, *arg2, *arg3;
         switch (argc)
         {
-        case 0:
-            show_history (client, ctx, &error);
-            break;
         case 1:
             arg1 = argv[0];
             if (!g_strcmp0 (arg1, "about"))
@@ -436,7 +443,7 @@ main (gint argc, gchar *argv[])
             else if (!g_strcmp0 (arg1, "h") ||
                      !g_strcmp0 (arg1, "history"))
             {
-                show_history (client, ctx, &error);
+                g_paste_show_history (ctx, &error);
             }
             else if (!g_strcmp0 (arg1, "hs") ||
                      !g_strcmp0 (arg1, "history-size"))
