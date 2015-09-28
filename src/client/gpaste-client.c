@@ -33,6 +33,124 @@ typedef struct {
     const gchar *separator;
 } Context;
 
+/*
+ * Utility functions
+ */
+
+static void
+parse_cmdline (int      argc,
+               char    *argv[],
+               Context *ctx)
+{
+    struct option long_options[] = {
+        { "decoration", required_argument, NULL,  'd'  },
+        { "help",       no_argument,       NULL,  'h'  },
+        { "oneline",    no_argument,       NULL,  'o'  },
+        { "raw"    ,    no_argument,       NULL,  'r'  },
+        { "separator" , required_argument, NULL,  's'  },
+        { "version",    no_argument,       NULL,  'v'  },
+        { "zero",       no_argument,       NULL,  'z'  },
+        { NULL,         no_argument,       NULL,  '\0' }
+    };
+    gint64 c;
+
+    while ((c = getopt_long(argc, argv, "d:hors:vz", long_options, NULL)) != -1)
+    {
+        switch (c)
+        {
+        case 'd':
+            ctx->decoration = optarg;
+            break;
+        case 'h':
+            ctx->help = TRUE;
+            break;
+        case 'o':
+            ctx->oneline = TRUE;
+            break;
+        case 'r':
+            ctx->raw = TRUE;
+            break;
+        case 's':
+            ctx->separator = optarg;
+            break;
+        case 'v':
+            ctx->version = TRUE;
+            break;
+        case 'z':
+            ctx->zero = TRUE;
+            break;
+        default:
+            return EXIT_FAILURE;
+        }
+    }
+}
+
+static const gchar *
+strip_newline (gchar *str)
+{
+    for (gchar *s = str; *s; ++s)
+    {
+        if (*s == '\n')
+            *s = ' ';
+    }
+    return str;
+}
+
+static void
+print_history_line (gchar   *line,
+                    guint64  index,
+                    Context *ctx)
+{
+    if (!ctx->raw)
+        printf ("%" G_GUINT64_FORMAT ": ", index);
+    printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
+}
+
+static void
+show_history (GPasteClient *client,
+              Context      *ctx,
+              GError      **error)
+{
+    g_auto (GStrv) history = (ctx->raw) ?
+        g_paste_client_get_raw_history_sync (client, error) :
+        g_paste_client_get_history_sync (client, error);
+
+    if (!*error)
+    {
+        guint64 i = 0;
+
+        for (GStrv h = history; *h; ++h)
+            print_history_line (*h, i++, ctx);
+    }
+}
+
+G_GNUC_NORETURN static void
+failure_exit (GError *error)
+{
+    g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknown error");
+    exit (EXIT_FAILURE);
+}
+
+static gint64
+spawn (const gchar *app)
+{
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_util_spawn_sync (app, &error))
+    {
+        g_critical ("%s %s: %s", _("Couldn't spawn"), app, error->message);
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+static guint64
+_strtoull (const gchar *str)
+{
+    return g_ascii_strtoull (str, NULL, 0);
+}
+
 static void
 show_help (void)
 {
@@ -139,126 +257,37 @@ show_version (void)
     printf ("%s\n", PACKAGE_STRING);
 }
 
-static const gchar *
-strip_newline (gchar *str)
-{
-    for (gchar *s = str; *s; ++s)
-    {
-        if (*s == '\n')
-            *s = ' ';
-    }
-    return str;
-}
-
-static void
-print_history_line (gchar   *line,
-                    guint64  index,
-                    Context *ctx)
-{
-    if (!ctx->raw)
-        printf ("%" G_GUINT64_FORMAT ": ", index);
-    printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
-}
-
-static void
-show_history (GPasteClient *client,
-              Context      *ctx,
-              GError      **error)
-{
-    g_auto (GStrv) history = (ctx->raw) ?
-        g_paste_client_get_raw_history_sync (client, error) :
-        g_paste_client_get_history_sync (client, error);
-
-    if (!*error)
-    {
-        guint64 i = 0;
-
-        for (GStrv h = history; *h; ++h)
-            print_history_line (*h, i++, ctx);
-    }
-}
-
-static inline gboolean
-is_version (const gchar *option)
-{
-    return (!g_strcmp0 (option, "v") ||
-            !g_strcmp0 (option, "version"));
-}
-
-G_GNUC_NORETURN static void
-failure_exit (GError *error)
-{
-    g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknown error");
-    exit (EXIT_FAILURE);
-}
+/*
+ * GPaste commands
+ */
 
 static gint64
-spawn (const gchar *app)
+g_paste_help (Context *ctx G_GNUC_UNUSED)
 {
-    g_autoptr (GError) error = NULL;
-
-    if (!g_paste_util_spawn_sync (app, &error))
-    {
-        g_critical ("%s %s: %s", _("Couldn't spawn"), app, error->message);
-        return EXIT_FAILURE;
-    }
-
+    show_help ();
     return EXIT_SUCCESS;
 }
 
-static guint64
-_strtoull (const gchar *str)
+static gint64
+g_paste_version (Context *ctx G_GNUC_UNUSED)
 {
-    return g_ascii_strtoull (str, NULL, 0);
+    show_version ();
+    return EXIT_SUCCESS;
 }
 
-static void
-parse_cmdline (int      argc,
-               char    *argv[],
-               Context *ctx)
+static gint64
+g_paste_no_args (Context *ctx)
 {
-    struct option long_options[] = {
-        { "decoration", required_argument, NULL,  'd'  },
-        { "help",       no_argument,       NULL,  'h'  },
-        { "oneline",    no_argument,       NULL,  'o'  },
-        { "raw"    ,    no_argument,       NULL,  'r'  },
-        { "separator" , required_argument, NULL,  's'  },
-        { "version",    no_argument,       NULL,  'v'  },
-        { "zero",       no_argument,       NULL,  'z'  },
-        { NULL,         no_argument,       NULL,  '\0' }
-    };
-    gint64 c;
-
-    while ((c = getopt_long(argc, argv, "d:hors:vz", long_options, NULL)) != -1)
-    {
-        switch (c)
-        {
-        case 'd':
-            ctx->decoration = optarg;
-            break;
-        case 'h':
-            ctx->help = TRUE;
-            break;
-        case 'o':
-            ctx->oneline = TRUE;
-            break;
-        case 'r':
-            ctx->raw = TRUE;
-            break;
-        case 's':
-            ctx->separator = optarg;
-            break;
-        case 'v':
-            ctx->version = TRUE;
-            break;
-        case 'z':
-            ctx->zero = TRUE;
-            break;
-        default:
-            return EXIT_FAILURE;
-        }
-    }
+    if (ctx->help)
+        return g_paste_help (ctx);
+    if (ctx->version)
+        return g_paste_version (ctx);
+    return -1;
 }
+
+/*
+ * Main
+ */
 
 gint
 main (gint argc, gchar *argv[])
@@ -273,18 +302,34 @@ main (gint argc, gchar *argv[])
     argv += optind;
     argc -= optind;
 
-    if (ctx->help || (argc > 0 && !g_strcmp0 (argv[0], "help")))
-    {
-        show_help ();
-        return EXIT_SUCCESS;
-    }
-    else if (ctx->version || (argc > 0 && is_version (argv[0])))
-    {
-        show_version ();
-        return EXIT_SUCCESS;
-    }
+    struct {
+        gint         argc;
+        const gchar *verb;
+        gint64     (*handler) (Context *ctx);
+    } dispatch[] = {
+        { 0, NULL,      g_paste_no_args },
+        { 1, "help",    g_paste_help    },
+        { 1, "v",       g_paste_version },
+        { 1, "version", g_paste_version }
+    };
 
     gint64 status = EXIT_SUCCESS;
+
+    for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
+    {
+        if (argc == dispatch[i].argc)
+        {
+            if (argc > 0 && dispatch[i].verb && g_strcmp0 (argv[0], dispatch[i].verb))
+                continue;
+
+            gint64 ret = dispatch[i].handler(ctx);
+            if (ret >= 0)
+            {
+                status = ret;
+                goto exit;
+            }
+        }
+    }
 
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
@@ -586,6 +631,7 @@ main (gint argc, gchar *argv[])
         }
     }
 
+exit:
     if (error)
         failure_exit (error);
 
