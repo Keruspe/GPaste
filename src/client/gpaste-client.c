@@ -83,6 +83,7 @@ parse_cmdline (int     *argc,
             break;
         default:
             ctx->help = TRUE;
+            /* FIXME: make this fail somehow */
             break;
         }
     }
