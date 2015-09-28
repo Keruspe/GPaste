@@ -39,8 +39,8 @@ typedef struct {
  */
 
 static void
-parse_cmdline (int      argc,
-               char    *argv[],
+parse_cmdline (int     *argc,
+               char   **argv[],
                Context *ctx)
 {
     struct option long_options[] = {
@@ -55,7 +55,7 @@ parse_cmdline (int      argc,
     };
     gint64 c;
 
-    while ((c = getopt_long(argc, argv, "d:hors:vz", long_options, NULL)) != -1)
+    while ((c = getopt_long(*argc, *argv, "d:hors:vz", long_options, NULL)) != -1)
     {
         switch (c)
         {
@@ -81,9 +81,13 @@ parse_cmdline (int      argc,
             ctx->zero = TRUE;
             break;
         default:
-            return EXIT_FAILURE;
+            ctx->help = TRUE;
+            break;
         }
     }
+
+    *argv += optind;
+    *argc -= optind;
 }
 
 static const gchar *
@@ -303,9 +307,7 @@ main (gint argc, gchar *argv[])
     Context _ctx = { NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     Context *ctx = &_ctx;
 
-    parse_cmdline (argc, argv, ctx);
-    argv += optind;
-    argc -= optind;
+    parse_cmdline (&argc, &argv, ctx);
 
     struct {
         gint         argc;
