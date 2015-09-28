@@ -261,8 +261,8 @@ g_paste_version (Context *ctx   G_GNUC_UNUSED,
 }
 
 static gint64
-g_paste_no_args (Context *ctx,
-                 GError **error)
+g_paste_flag_action (Context *ctx,
+                     GError **error)
 {
     if (ctx->help)
         return g_paste_help (ctx, error);
@@ -310,15 +310,16 @@ main (gint argc, gchar *argv[])
     struct {
         gint         argc;
         const gchar *verb;
+        gboolean     accepts_more_args;
         gboolean     needs_client;
         gint64     (*handler) (Context *ctx,
                                GError **error);
     } dispatch[] = {
-        { 0, NULL,      FALSE, g_paste_no_args      },
-        { 0, NULL,      TRUE,  g_paste_show_history },
-        { 1, "help",    FALSE, g_paste_help         },
-        { 1, "v",       FALSE, g_paste_version      },
-        { 1, "version", FALSE, g_paste_version      }
+        { 0, NULL,      TRUE,  FALSE, g_paste_flag_action  },
+        { 0, NULL,      FALSE, TRUE,  g_paste_show_history },
+        { 1, "help",    FALSE, FALSE, g_paste_help         },
+        { 1, "v",       FALSE, FALSE, g_paste_version      },
+        { 1, "version", FALSE, FALSE, g_paste_version      }
     };
 
     gint64 status = EXIT_SUCCESS;
@@ -366,7 +367,7 @@ main (gint argc, gchar *argv[])
 
     for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
     {
-        if (argc == dispatch[i].argc)
+        if (argc == dispatch[i].argc || (dispatch[i].accepts_more_args && argc > dispatch[i].argc))
         {
             if (argc > 0 && dispatch[i].verb && g_strcmp0 (argv[0], dispatch[i].verb))
                 continue;
