@@ -378,12 +378,16 @@ main (gint argc, gchar *argv[])
             if (ret >= 0)
             {
                 status = ret;
+
+                if (!dispatch[i].needs_client && !client)
+                    g_clear_error (&error);
+
                 goto exit;
             }
         }
     }
 
-    if (!client) /* FIXME: drop that, clean error if client not needed */
+    if (!client) /* FIXME: drop that */
         goto exit;
 
     if (argc > 0 &&
