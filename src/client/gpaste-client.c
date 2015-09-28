@@ -493,46 +493,46 @@ main (gint argc, gchar *argv[])
     struct {
         gint         argc;
         const gchar *verb;
-        gboolean     accepts_more_args; /* FIXME: guint64 */
+        gint64       extra_args;
         gboolean     needs_client;
         gint64     (*handler) (Context *ctx,
                                GError **error);
     } dispatch[] = {
-        { 0, NULL,             TRUE,  FALSE, g_paste_flag_action    },
-        { 0, NULL,             FALSE, TRUE,  g_paste_history        },
-        { 1, "help",           FALSE, FALSE, g_paste_help           },
-        { 1, "v",              FALSE, FALSE, g_paste_version        },
-        { 1, "version",        FALSE, FALSE, g_paste_version        },
-        { 1, "about",          FALSE, TRUE,  g_paste_about          },
-        { 1, "dr",             FALSE, TRUE,  g_paste_daemon_reexec  },
-        { 1, "daemon-reexec",  FALSE, TRUE,  g_paste_daemon_reexec  },
-        { 1, "dv",             FALSE, TRUE,  g_paste_daemon_version },
-        { 1, "daemon-version", FALSE, TRUE,  g_paste_daemon_version },
-        { 1, "e",              FALSE, TRUE,  g_paste_empty          },
-        { 1, "empty",          FALSE, TRUE,  g_paste_empty          },
-        { 1, "gh",             FALSE, TRUE,  g_paste_get_history    },
-        { 1, "get-history",    FALSE, TRUE,  g_paste_get_history    },
-        { 1, "h",              FALSE, TRUE,  g_paste_history        },
-        { 1, "history",        FALSE, TRUE,  g_paste_history        },
-        { 1, "hs",             FALSE, TRUE,  g_paste_history_size   },
-        { 1, "history-size",   FALSE, TRUE,  g_paste_history_size   },
-        { 1, "lh",             FALSE, TRUE,  g_paste_list_histories },
-        { 1, "list-histories", FALSE, TRUE,  g_paste_list_histories },
-        { 1, "settings",       FALSE, FALSE, g_paste_settings       },
-        { 1, "p",              FALSE, FALSE, g_paste_settings       },
-        { 1, "preferences",    FALSE, FALSE, g_paste_settings       },
-        { 1, "show-history",   FALSE, TRUE,  g_paste_show_history   },
-        { 1, "start",          FALSE, TRUE,  g_paste_start          },
-        { 1, "d",              FALSE, TRUE,  g_paste_start          },
-        { 1, "daemon",         FALSE, TRUE,  g_paste_start          },
-        { 1, "stop",           FALSE, TRUE,  g_paste_stop           },
-        { 1, "q",              FALSE, TRUE,  g_paste_stop           },
-        { 1, "quit",           FALSE, TRUE,  g_paste_stop           },
-        { 1, "ui",             FALSE, FALSE, g_paste_ui             },
-        { 1, "applet",         FALSE, FALSE, g_paste_applet         },
-        { 1, "app-indicator",  FALSE, FALSE, g_paste_app_indicator  },
-        { 2, "g",              FALSE, TRUE,  g_paste_get            },
-        { 2, "get",            FALSE, TRUE,  g_paste_get            }
+        { 0, NULL,             G_MAXINT64, FALSE, g_paste_flag_action    },
+        { 0, NULL,             0,          TRUE,  g_paste_history        },
+        { 1, "help",           0,          FALSE, g_paste_help           },
+        { 1, "v",              0,          FALSE, g_paste_version        },
+        { 1, "version",        0,          FALSE, g_paste_version        },
+        { 1, "about",          0,          TRUE,  g_paste_about          },
+        { 1, "dr",             0,          TRUE,  g_paste_daemon_reexec  },
+        { 1, "daemon-reexec",  0,          TRUE,  g_paste_daemon_reexec  },
+        { 1, "dv",             0,          TRUE,  g_paste_daemon_version },
+        { 1, "daemon-version", 0,          TRUE,  g_paste_daemon_version },
+        { 1, "e",              0,          TRUE,  g_paste_empty          },
+        { 1, "empty",          0,          TRUE,  g_paste_empty          },
+        { 1, "gh",             0,          TRUE,  g_paste_get_history    },
+        { 1, "get-history",    0,          TRUE,  g_paste_get_history    },
+        { 1, "h",              0,          TRUE,  g_paste_history        },
+        { 1, "history",        0,          TRUE,  g_paste_history        },
+        { 1, "hs",             0,          TRUE,  g_paste_history_size   },
+        { 1, "history-size",   0,          TRUE,  g_paste_history_size   },
+        { 1, "lh",             0,          TRUE,  g_paste_list_histories },
+        { 1, "list-histories", 0,          TRUE,  g_paste_list_histories },
+        { 1, "settings",       0,          FALSE, g_paste_settings       },
+        { 1, "p",              0,          FALSE, g_paste_settings       },
+        { 1, "preferences",    0,          FALSE, g_paste_settings       },
+        { 1, "show-history",   0,          TRUE,  g_paste_show_history   },
+        { 1, "start",          0,          TRUE,  g_paste_start          },
+        { 1, "d",              0,          TRUE,  g_paste_start          },
+        { 1, "daemon",         0,          TRUE,  g_paste_start          },
+        { 1, "stop",           0,          TRUE,  g_paste_stop           },
+        { 1, "q",              0,          TRUE,  g_paste_stop           },
+        { 1, "quit",           0,          TRUE,  g_paste_stop           },
+        { 1, "ui",             0,          FALSE, g_paste_ui             },
+        { 1, "applet",         0,          FALSE, g_paste_applet         },
+        { 1, "app-indicator",  0,          FALSE, g_paste_app_indicator  },
+        { 2, "g",              0,          TRUE,  g_paste_get            },
+        { 2, "get",            0,          TRUE,  g_paste_get            }
     };
 
     gint64 status = EXIT_SUCCESS;
@@ -580,7 +580,7 @@ main (gint argc, gchar *argv[])
 
     for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
     {
-        if (argc == dispatch[i].argc || (dispatch[i].accepts_more_args && argc > dispatch[i].argc))
+        if (argc == dispatch[i].argc || (argc > dispatch[i].argc && (argc - dispatch[i].argc) < dispatch[i].extra_args))
         {
             if (argc > 0 && dispatch[i].verb && g_strcmp0 (argv[0], dispatch[i].verb))
                 continue;
