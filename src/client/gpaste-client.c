@@ -25,7 +25,7 @@
 
 typedef struct {
     GPasteClient *client;
-    gchar       **argv;
+    gchar       **args;
     gboolean      help;
     gboolean      version;
     gboolean      oneline;
@@ -90,7 +90,8 @@ parse_cmdline (int     *argc,
     *argc -= optind;
     *argv += optind;
 
-    ctx->argv = *argv;
+    ctx->args = *argv;
+    ++ctx->args;
 }
 
 static const gchar *
@@ -297,6 +298,22 @@ g_paste_show_history (Context *ctx,
     return EXIT_SUCCESS;
 }
 
+static gint64
+g_paste_get (Context *ctx,
+             GError **error)
+{
+    const gchar *value = (!ctx->raw) ?
+        g_paste_client_get_element_sync (ctx->client, _strtoull (ctx->args[0]), error) :
+        g_paste_client_get_raw_element_sync (ctx->client, _strtoull (ctx->args[0]), error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    printf ("%s", value);
+
+    return EXIT_SUCCESS;
+}
+
 /*
  * Main
  */
@@ -324,7 +341,9 @@ main (gint argc, gchar *argv[])
         { 0, NULL,      FALSE, TRUE,  g_paste_show_history },
         { 1, "help",    FALSE, FALSE, g_paste_help         },
         { 1, "v",       FALSE, FALSE, g_paste_version      },
-        { 1, "version", FALSE, FALSE, g_paste_version      }
+        { 1, "version", FALSE, FALSE, g_paste_version      },
+        { 2, "g",       FALSE, TRUE,  g_paste_get          },
+        { 2, "get",     FALSE, TRUE,  g_paste_get          }
     };
 
     gint64 status = EXIT_SUCCESS;
@@ -557,16 +576,6 @@ main (gint argc, gchar *argv[])
                      !g_strcmp0 (arg1, "file"))
             {
                 g_paste_client_add_file_sync (client, arg2, &error);
-            }
-            else if (!g_strcmp0 (arg1, "g") ||
-                     !g_strcmp0 (arg1, "get"))
-            {
-                const gchar *value = (!ctx->raw) ?
-                    g_paste_client_get_element_sync (client, _strtoull (arg2), &error) :
-                    g_paste_client_get_raw_element_sync (client, _strtoull (arg2), &error);
-
-                if (!error)
-                    printf ("%s", value);
             }
             else if (!g_strcmp0 (arg1, "search"))
             {
