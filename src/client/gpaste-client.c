@@ -281,8 +281,8 @@ g_paste_flag_action (Context *ctx,
 }
 
 static gint64
-g_paste_show_history (Context *ctx,
-                      GError **error)
+g_paste_history (Context *ctx,
+                 GError **error)
 {
     g_auto (GStrv) history = (ctx->raw) ?
         g_paste_client_get_raw_history_sync (ctx->client, error) :
@@ -297,6 +297,166 @@ g_paste_show_history (Context *ctx,
         print_history_line (*h, i++, ctx);
 
     return EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_about (Context *ctx,
+               GError **error)
+{
+    g_paste_client_about_sync (ctx->client, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_daemon_reexec (Context *ctx,
+                       GError **error)
+{
+    g_paste_client_reexecute_sync (ctx->client, error);
+
+    if (*error && (*error)->code != G_DBUS_ERROR_NO_REPLY)
+        return EXIT_FAILURE;
+
+    g_clear_error (error);
+    printf (_("Successfully reexecuted the daemon\n"));
+
+    return EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_daemon_version (Context *ctx,
+                        GError **error G_GNUC_UNUSED)
+{
+    g_autofree gchar *v = g_paste_client_get_version (ctx->client);
+
+    printf ("%s\n", v);
+
+    return EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_empty (Context *ctx,
+               GError **error)
+{
+    g_autofree gchar *name = g_paste_client_get_history_name_sync (ctx->client, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    g_paste_client_empty_history_sync (ctx->client, name, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_get_history (Context *ctx,
+                     GError **error)
+{
+    g_autofree gchar *name = g_paste_client_get_history_name_sync (ctx->client, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    printf("%s\n", name);
+
+    return EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_history_size (Context *ctx,
+                      GError **error)
+{
+    g_autofree gchar *name = g_paste_client_get_history_name_sync (ctx->client, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    guint64 size = g_paste_client_get_history_size_sync (ctx->client, name, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    printf ("%" G_GUINT64_FORMAT "\n", size);
+
+    return EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_list_histories (Context *ctx,
+                        GError **error)
+{
+    g_auto (GStrv) histories = g_paste_client_list_histories_sync (ctx->client, error);
+
+    if (*error)
+        return EXIT_FAILURE;
+
+    for (GStrv h = histories; *h; ++h)
+        printf ("%s\n", *h);
+
+    return EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_settings (Context *ctx G_GNUC_UNUSED,
+                  GError **error)
+{
+    if (!g_paste_util_activate_ui_sync ("prefs", NULL, error))
+    {
+        g_critical ("%s Ui: %s", _("Couldn't spawn"), (*error)->message);
+        g_clear_error (error);
+
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_show_history (Context *ctx,
+                      GError **error)
+{
+    g_paste_client_show_history_sync (ctx->client, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_start (Context *ctx,
+               GError **error)
+{
+    g_paste_client_track_sync (ctx->client, TRUE, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_stop (Context *ctx,
+              GError **error)
+{
+    g_paste_client_track_sync (ctx->client, FALSE, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_ui (Context *ctx   G_GNUC_UNUSED,
+            GError **error G_GNUC_UNUSED)
+{
+    return spawn ("Ui");
+}
+
+static gint64
+g_paste_applet (Context *ctx   G_GNUC_UNUSED,
+                GError **error G_GNUC_UNUSED)
+{
+    return (g_paste_util_has_applet ()) ? spawn ("Applet") : -1;
+}
+
+static gint64
+g_paste_app_indicator (Context *ctx   G_GNUC_UNUSED,
+                       GError **error G_GNUC_UNUSED)
+{
+    return (g_paste_util_has_unity ()) ? spawn ("AppIndicator") : -1;
 }
 
 static gint64
@@ -333,18 +493,46 @@ main (gint argc, gchar *argv[])
     struct {
         gint         argc;
         const gchar *verb;
-        gboolean     accepts_more_args;
+        gboolean     accepts_more_args; /* FIXME: guint64 */
         gboolean     needs_client;
         gint64     (*handler) (Context *ctx,
                                GError **error);
     } dispatch[] = {
-        { 0, NULL,      TRUE,  FALSE, g_paste_flag_action  },
-        { 0, NULL,      FALSE, TRUE,  g_paste_show_history },
-        { 1, "help",    FALSE, FALSE, g_paste_help         },
-        { 1, "v",       FALSE, FALSE, g_paste_version      },
-        { 1, "version", FALSE, FALSE, g_paste_version      },
-        { 2, "g",       FALSE, TRUE,  g_paste_get          },
-        { 2, "get",     FALSE, TRUE,  g_paste_get          }
+        { 0, NULL,             TRUE,  FALSE, g_paste_flag_action    },
+        { 0, NULL,             FALSE, TRUE,  g_paste_history        },
+        { 1, "help",           FALSE, FALSE, g_paste_help           },
+        { 1, "v",              FALSE, FALSE, g_paste_version        },
+        { 1, "version",        FALSE, FALSE, g_paste_version        },
+        { 1, "about",          FALSE, TRUE,  g_paste_about          },
+        { 1, "dr",             FALSE, TRUE,  g_paste_daemon_reexec  },
+        { 1, "daemon-reexec",  FALSE, TRUE,  g_paste_daemon_reexec  },
+        { 1, "dv",             FALSE, TRUE,  g_paste_daemon_version },
+        { 1, "daemon-version", FALSE, TRUE,  g_paste_daemon_version },
+        { 1, "e",              FALSE, TRUE,  g_paste_empty          },
+        { 1, "empty",          FALSE, TRUE,  g_paste_empty          },
+        { 1, "gh",             FALSE, TRUE,  g_paste_get_history    },
+        { 1, "get-history",    FALSE, TRUE,  g_paste_get_history    },
+        { 1, "h",              FALSE, TRUE,  g_paste_history        },
+        { 1, "history",        FALSE, TRUE,  g_paste_history        },
+        { 1, "hs",             FALSE, TRUE,  g_paste_history_size   },
+        { 1, "history-size",   FALSE, TRUE,  g_paste_history_size   },
+        { 1, "lh",             FALSE, TRUE,  g_paste_list_histories },
+        { 1, "list-histories", FALSE, TRUE,  g_paste_list_histories },
+        { 1, "settings",       FALSE, FALSE, g_paste_settings       },
+        { 1, "p",              FALSE, FALSE, g_paste_settings       },
+        { 1, "preferences",    FALSE, FALSE, g_paste_settings       },
+        { 1, "show-history",   FALSE, TRUE,  g_paste_show_history   },
+        { 1, "start",          FALSE, TRUE,  g_paste_start          },
+        { 1, "d",              FALSE, TRUE,  g_paste_start          },
+        { 1, "daemon",         FALSE, TRUE,  g_paste_start          },
+        { 1, "stop",           FALSE, TRUE,  g_paste_stop           },
+        { 1, "q",              FALSE, TRUE,  g_paste_stop           },
+        { 1, "quit",           FALSE, TRUE,  g_paste_stop           },
+        { 1, "ui",             FALSE, FALSE, g_paste_ui             },
+        { 1, "applet",         FALSE, FALSE, g_paste_applet         },
+        { 1, "app-indicator",  FALSE, FALSE, g_paste_app_indicator  },
+        { 2, "g",              FALSE, TRUE,  g_paste_get            },
+        { 2, "get",            FALSE, TRUE,  g_paste_get            }
     };
 
     gint64 status = EXIT_SUCCESS;
@@ -432,117 +620,10 @@ main (gint argc, gchar *argv[])
     }
     else
     {
-        const gchar *arg1, *arg2, *arg3;
+        const gchar *arg1 = argv[0], *arg2 = argv[1], *arg3;
         switch (argc)
         {
-        case 1:
-            arg1 = argv[0];
-            if (!g_strcmp0 (arg1, "about"))
-            {
-                g_paste_client_about_sync (client, &error);
-            }
-            else if (!g_strcmp0 (arg1, "dr") ||
-                     !g_strcmp0 (arg1, "daemon-reexec"))
-            {
-                g_paste_client_reexecute_sync (client, &error);
-                if (error && error->code == G_DBUS_ERROR_NO_REPLY)
-                {
-                    printf (_("Successfully reexecuted the daemon\n"));
-                    return EXIT_SUCCESS;
-                }
-            }
-            else if (!g_strcmp0 (arg1, "dv") ||
-                     !g_strcmp0 (arg1, "daemon-version"))
-            {
-                g_autofree gchar *v = g_paste_client_get_version (client);
-                printf ("%s\n", v);
-            }
-            else if (!g_strcmp0 (arg1, "e") ||
-                     !g_strcmp0 (arg1, "empty"))
-            {
-                g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
-                if (!error)
-                    g_paste_client_empty_history_sync (client, name, &error);
-            }
-            else if (!g_strcmp0 (arg1, "gh") ||
-                     !g_strcmp0 (arg1, "get-history"))
-            {
-                g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
-                printf("%s\n", name);
-            }
-            else if (!g_strcmp0 (arg1, "h") ||
-                     !g_strcmp0 (arg1, "history"))
-            {
-                g_paste_show_history (ctx, &error);
-            }
-            else if (!g_strcmp0 (arg1, "hs") ||
-                     !g_strcmp0 (arg1, "history-size"))
-            {
-                g_autofree gchar *name = g_paste_client_get_history_name_sync (client, &error);
-                if (!error)
-                {
-                    guint64 size = g_paste_client_get_history_size_sync (client, name, &error);
-                    if (!error)
-                        printf ("%" G_GUINT64_FORMAT "\n", size);
-                }
-            }
-            else if (!g_strcmp0 (arg1, "lh") ||
-                     !g_strcmp0 (arg1, "list-histories"))
-            {
-                g_auto (GStrv) histories = g_paste_client_list_histories_sync (client, &error);
-                if (!error)
-                {
-                    for (GStrv h = histories; *h; ++h)
-                        printf ("%s\n", *h);
-                }
-            }
-            else if (!g_strcmp0 (arg1, "settings") ||
-                     !g_strcmp0 (arg1, "p")        ||
-                     !g_strcmp0 (arg1, "preferences"))
-            {
-                if (!g_paste_util_activate_ui_sync ("prefs", NULL, &error))
-                {
-                    g_critical ("%s Ui: %s", _("Couldn't spawn"), error->message);
-                    return EXIT_FAILURE;
-                }
-            }
-            else if (!g_strcmp0 (arg1, "show-history"))
-            {
-                g_paste_client_show_history_sync (client, &error);
-            }
-            else if (!g_strcmp0 (arg1, "start") ||
-                     !g_strcmp0 (arg1, "d")     ||
-                     !g_strcmp0 (arg1, "daemon"))
-            {
-                g_paste_client_track_sync (client, TRUE, &error);
-            }
-            else if (!g_strcmp0 (arg1, "stop") ||
-                     !g_strcmp0 (arg1, "q")    ||
-                     !g_strcmp0 (arg1, "quit"))
-            {
-                g_paste_client_track_sync (client, FALSE, &error);
-            }
-            else if (!g_strcmp0 (arg1, "ui"))
-            {
-                status = spawn ("Ui");
-            }
-            else if (g_paste_util_has_applet () && !g_strcmp0 (arg1, "applet"))
-            {
-                status = spawn ("Applet");
-            }
-            else if (g_paste_util_has_unity () && !g_strcmp0 (arg1, "app-indicator"))
-            {
-                status = spawn ("AppIndicator");
-            }
-            else
-            {
-                show_help ();
-                status = EXIT_FAILURE;
-            }
-            break;
         case 2:
-            arg1 = argv[0];
-            arg2 = argv[1];
             if (!g_strcmp0 (arg1, "a") ||
                 !g_strcmp0 (arg1, "add"))
             {
@@ -623,8 +704,6 @@ main (gint argc, gchar *argv[])
             }
             break;
         case 3:
-            arg1 = argv[0];
-            arg2 = argv[1];
             arg3 = argv[2];
             if (!g_strcmp0 (arg1, "ap") ||
                 !g_strcmp0 (arg1, "add-password"))
