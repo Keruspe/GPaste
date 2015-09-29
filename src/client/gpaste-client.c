@@ -41,7 +41,7 @@ typedef struct {
  * Utility functions
  */
 
-static void
+static gboolean
 parse_cmdline (int     *argc,
                char   **argv[],
                Context *ctx)
@@ -85,8 +85,7 @@ parse_cmdline (int     *argc,
             break;
         default:
             ctx->help = TRUE;
-            /* FIXME: make this fail somehow */
-            break;
+            return FALSE;
         }
     }
 
@@ -96,23 +95,25 @@ parse_cmdline (int     *argc,
     ctx->argc = *argc - 1;
     ctx->args = (const gchar **) *argv;
     ++ctx->args;
+
+    return TRUE;
 }
 
-static void
-extract_pipe_data (Context *ctx)
+static gchar *
+extract_pipe_data (void)
 {
-    if (!isatty (fileno (stdin)))
-    {
-        g_autoptr (GString) data = g_string_new (NULL);
-        gint64 c;
+    if (isatty (fileno (stdin)))
+        return NULL; /* We're not being piped */
 
-        while ((c = fgetc (stdin)) != EOF)
-            data = g_string_append_c (data, (guchar)c);
+    g_autoptr (GString) data = g_string_new (NULL);
+    gint64 c;
 
-        data->str[data->len - 1] = '\0';
+    while ((c = fgetc (stdin)) != EOF)
+        data = g_string_append_c (data, (guchar)c);
 
-        ctx->pipe_data = g_strdup (data->str);
-    }
+    data->str[data->len - 1] = '\0';
+
+    return g_strdup (data->str);
 }
 
 static const gchar *
@@ -134,14 +135,6 @@ print_history_line (gchar   *line,
     if (!ctx->raw)
         printf ("%" G_GUINT64_FORMAT ": ", index);
     printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
-}
-
-G_GNUC_NORETURN static void
-failure_exit (GError *error)
-{
-    g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknown error");
-
-    exit (EXIT_FAILURE);
 }
 
 static gint
@@ -795,18 +788,23 @@ main (gint argc, gchar *argv[])
     G_PASTE_INIT_GETTEXT ();
     g_set_prgname (argv[0]);
 
+    g_autoptr (GError) error = NULL;
     Context _ctx = { NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    gint status;
+
     Context *ctx = &_ctx;
 
-    parse_cmdline (&argc, &argv, ctx);
+    if (parse_cmdline (&argc, &argv, ctx))
+    {
+        g_autoptr (GPasteClient) client = ctx->client = g_paste_client_new_sync (&error);
+        g_autofree gchar *pipe_data = ctx->pipe_data = extract_pipe_data ();
 
-    gint status = EXIT_SUCCESS;
-
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteClient) client = ctx->client = g_paste_client_new_sync (&error);
-
-    extract_pipe_data (ctx);
-    status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, ctx, &error);
+        status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, ctx, &error);
+    }
+    else
+    {
+        status = -1;
+    }
 
     if (status < 0)
     {
@@ -814,10 +812,11 @@ main (gint argc, gchar *argv[])
         status = EXIT_FAILURE;
     }
 
-    g_free (ctx->pipe_data);
-
     if (error)
-        failure_exit (error);
+    {
+        g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknown error");
+        status = EXIT_FAILURE;
+    }
 
     return status;
 }
