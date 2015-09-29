@@ -789,17 +789,15 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     g_autoptr (GError) error = NULL;
-    Context _ctx = { NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context ctx = { NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     gint status;
 
-    Context *ctx = &_ctx;
-
-    if (parse_cmdline (&argc, &argv, ctx))
+    if (parse_cmdline (&argc, &argv, &ctx))
     {
-        g_autoptr (GPasteClient) client = ctx->client = g_paste_client_new_sync (&error);
-        g_autofree gchar *pipe_data = ctx->pipe_data = extract_pipe_data ();
+        g_autoptr (GPasteClient) client = ctx.client = g_paste_client_new_sync (&error);
+        g_autofree gchar *pipe_data = ctx.pipe_data = extract_pipe_data ();
 
-        status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, ctx, &error);
+        status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
     }
     else
     {
