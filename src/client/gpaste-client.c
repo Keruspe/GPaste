@@ -123,6 +123,7 @@ G_GNUC_NORETURN static void
 failure_exit (GError *error)
 {
     g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknown error");
+
     exit (EXIT_FAILURE);
 }
 
@@ -261,6 +262,7 @@ g_paste_help (Context *ctx   G_GNUC_UNUSED,
               GError **error G_GNUC_UNUSED)
 {
     show_help ();
+
     return EXIT_SUCCESS;
 }
 
@@ -269,6 +271,7 @@ g_paste_version (Context *ctx   G_GNUC_UNUSED,
                  GError **error G_GNUC_UNUSED)
 {
     show_version ();
+
     return EXIT_SUCCESS;
 }
 
@@ -585,7 +588,7 @@ g_paste_search (Context *ctx,
         for (guint64 i = 0; i < hits; ++i)
         {
             guint64 index = results[i];
-            /* TODO: get_elements */
+            /* FIXME: get_elements */
             gchar *line = g_paste_client_get_element_sync (ctx->client, index, error);
 
             if (*error)
@@ -747,7 +750,7 @@ g_paste_dispatch (gint         argc,
 
     for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
     {
-        if (argc == dispatch[i].argc || (argc > dispatch[i].argc && (argc - dispatch[i].argc) < dispatch[i].extra_args))
+        if (argc == dispatch[i].argc || (argc > dispatch[i].argc && argc < (dispatch[i].argc + dispatch[i].extra_args)))
         {
             if (argc > 0 && dispatch[i].verb && g_strcmp0 (verb, dispatch[i].verb))
                 continue;
