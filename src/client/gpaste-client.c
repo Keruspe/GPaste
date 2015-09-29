@@ -466,7 +466,12 @@ static gint
 g_paste_add (Context *ctx,
              GError **error)
 {
-    g_paste_client_add_sync (ctx->client, ctx->args[0], error);
+    const gchar *data = (ctx->argc > 0) ? ctx->args[0] : ctx->pipe_data;
+
+    if (!data)
+        return -1;
+
+    g_paste_client_add_sync (ctx->client, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -560,7 +565,7 @@ g_paste_replace (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_paste_client_replace_sync (ctx->client, _strtoull (ctx->args[0]), ctx->args[1], error);
+    g_paste_client_replace_sync (ctx->client, _strtoull (ctx->args[0]), data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -671,6 +676,7 @@ g_paste_dispatch (gint         argc,
                                GError **error);
     } dispatch[] = {
         { 0, NULL,              G_MAXINT, FALSE, g_paste_flag_action     },
+        { 0, NULL,              0,        TRUE,  g_paste_add             },
         { 0, NULL,              0,        TRUE,  g_paste_history         },
         { 1, "help",            0,        FALSE, g_paste_help            },
         { 1, "v",               0,        FALSE, g_paste_version         },
@@ -790,7 +796,6 @@ main (gint argc, gchar *argv[])
         data->str[data->len - 1] = '\0';
 
         ctx->pipe_data = g_strdup (data->str);
-        /* FIXME: restore add when no argc */
     }
 
     status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, ctx, &error);
