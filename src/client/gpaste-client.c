@@ -589,6 +589,42 @@ g_paste_upload (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+static gint64
+g_paste_add_password (Context *ctx,
+                      GError **error)
+{
+    g_paste_client_add_password_sync (ctx->client, ctx->args[0], ctx->args[1], error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_rename_password (Context *ctx,
+                         GError **error)
+{
+    g_paste_client_rename_password_sync (ctx->client, ctx->args[0], ctx->args[1], error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_replace (Context *ctx,
+                 GError **error)
+{
+    g_paste_client_replace_sync (ctx->client, _strtoull (ctx->args[0]), ctx->args[1], error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint64
+g_paste_set_password (Context *ctx,
+                      GError **error)
+{
+    g_paste_client_set_password_sync (ctx->client, _strtoull (ctx->args[0]), ctx->args[1], error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
 /*
  * Main
  */
@@ -670,6 +706,13 @@ main (gint argc, gchar *argv[])
         { 2, "switch-history",  0,          TRUE,  g_paste_switch_history  },
         { 2, "u",               0,          TRUE,  g_paste_upload          },
         { 2, "upload",          0,          TRUE,  g_paste_upload          },
+        { 3, "ap",              0,          TRUE,  g_paste_add_password    },
+        { 3, "add-password",    0,          TRUE,  g_paste_add_password    },
+        { 3, "rp",              0,          TRUE,  g_paste_rename_password },
+        { 3, "rename-password", 0,          TRUE,  g_paste_rename_password },
+        { 3, "replace",         0,          TRUE,  g_paste_replace         },
+        { 3, "sp",              0,          TRUE,  g_paste_set_password    },
+        { 3, "set-password",    0,          TRUE,  g_paste_set_password    },
     };
 
     gint64 status = EXIT_SUCCESS;
@@ -757,40 +800,8 @@ main (gint argc, gchar *argv[])
     }
     else
     {
-        const gchar *arg1 = argv[0], *arg2 = argv[1], *arg3 = argv[2];
-        switch (argc)
-        {
-        case 3:
-            if (!g_strcmp0 (arg1, "ap") ||
-                !g_strcmp0 (arg1, "add-password"))
-            {
-                g_paste_client_add_password_sync (client, arg2, arg3, &error);
-            }
-            else if (!g_strcmp0 (arg1, "rp") ||
-                     !g_strcmp0 (arg1, "rename-password"))
-            {
-                g_paste_client_rename_password_sync (client, arg2, arg3, &error);
-            }
-            else if (!g_strcmp0 (arg1, "replace"))
-            {
-                g_paste_client_replace_sync (client, _strtoull (arg2), arg3, &error);
-            }
-            else if (!g_strcmp0 (arg1, "sp")   ||
-                     !g_strcmp0 (arg1, "set-password"))
-            {
-                g_paste_client_set_password_sync (client, _strtoull (arg2), arg3, &error);
-            }
-            else
-            {
-                show_help ();
-                status = EXIT_FAILURE;
-            }
-            break;
-        default:
-            show_help ();
-            status = EXIT_FAILURE;
-            break;
-        }
+        show_help ();
+        status = EXIT_FAILURE;
     }
 
 exit:
