@@ -25,6 +25,7 @@
 
 typedef struct {
     GPasteClient *client;
+    gint64        argc;
     gchar       **args;
     gboolean      help;
     gboolean      version;
@@ -91,6 +92,7 @@ parse_cmdline (int     *argc,
     *argc -= optind;
     *argv += optind;
 
+    ctx->argc = *argc - 1;
     ctx->args = *argv;
     ++ctx->args;
 }
@@ -625,6 +627,20 @@ g_paste_set_password (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+static gint64
+g_paste_merge (Context *ctx,
+               GError **error)
+{
+    guint64 *indexes = alloca (ctx->argc * sizeof (guint64));
+
+    for (gint64 i = 0; i < ctx->argc; ++i)
+        indexes[i] = _strtoull (ctx->args[i]);
+
+    g_paste_client_merge_sync (ctx->client, ctx->decoration, ctx->separator, indexes, ctx->argc, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
 /*
  * Main
  */
@@ -713,6 +729,8 @@ main (gint argc, gchar *argv[])
         { 3, "replace",         0,          TRUE,  g_paste_replace         },
         { 3, "sp",              0,          TRUE,  g_paste_set_password    },
         { 3, "set-password",    0,          TRUE,  g_paste_set_password    },
+        { 4, "m",               G_MAXINT64, TRUE,  g_paste_merge           },
+        { 4, "merge",           G_MAXINT64, TRUE,  g_paste_merge           },
     };
 
     gint64 status = EXIT_SUCCESS;
@@ -781,28 +799,8 @@ main (gint argc, gchar *argv[])
         }
     }
 
-    if (!client) /* FIXME: drop that */
-        goto exit;
-
-    if (argc > 0 &&
-        (!g_strcmp0 (argv[0], "merge") ||
-         !g_strcmp0 (argv[0], "m")))
-    {
-        --argc;
-        ++argv;
-
-        guint64 *indexes = alloca (argc * sizeof (guint64));
-
-        for (gint64 i = 0; i < argc; ++i)
-            indexes[i] = _strtoull (argv[i]);
-
-        g_paste_client_merge_sync (client, ctx->decoration, ctx->separator, indexes, argc, &error);
-    }
-    else
-    {
-        show_help ();
-        status = EXIT_FAILURE;
-    }
+    show_help ();
+    status = EXIT_FAILURE;
 
 exit:
     if (error)
