@@ -98,6 +98,23 @@ parse_cmdline (int     *argc,
     ++ctx->args;
 }
 
+static void
+extract_pipe_data (Context *ctx)
+{
+    if (!isatty (fileno (stdin)))
+    {
+        g_autoptr (GString) data = g_string_new (NULL);
+        gint64 c;
+
+        while ((c = fgetc (stdin)) != EOF)
+            data = g_string_append_c (data, (guchar)c);
+
+        data->str[data->len - 1] = '\0';
+
+        ctx->pipe_data = g_strdup (data->str);
+    }
+}
+
 static const gchar *
 strip_newline (gchar *str)
 {
@@ -788,19 +805,7 @@ main (gint argc, gchar *argv[])
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = ctx->client = g_paste_client_new_sync (&error);
 
-    if (!isatty (fileno (stdin)))
-    {
-        g_autoptr (GString) data = g_string_new (NULL);
-        gint64 c;
-
-        while ((c = fgetc (stdin)) != EOF)
-            data = g_string_append_c (data, (guchar)c);
-
-        data->str[data->len - 1] = '\0';
-
-        ctx->pipe_data = g_strdup (data->str);
-    }
-
+    extract_pipe_data (ctx);
     status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, ctx, &error);
 
     if (status < 0)
