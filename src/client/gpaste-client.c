@@ -645,18 +645,13 @@ g_paste_merge (Context *ctx,
  * Main
  */
 
-gint
-main (gint argc, gchar *argv[])
+static gint64
+g_paste_dispatch (gint         argc,
+                  const gchar *verb,
+                  Context     *ctx,
+                  GError     **error)
 {
-    G_PASTE_INIT_GETTEXT ();
-    g_set_prgname (argv[0]);
-
-    Context _ctx = { NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
-    Context *ctx = &_ctx;
-
-    parse_cmdline (&argc, &argv, ctx);
-
-    struct {
+    static struct {
         gint         argc;
         const gchar *verb;
         gint64       extra_args;
@@ -733,6 +728,41 @@ main (gint argc, gchar *argv[])
         { 4, "merge",           G_MAXINT64, TRUE,  g_paste_merge           },
     };
 
+    for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
+    {
+        if (argc == dispatch[i].argc || (argc > dispatch[i].argc && (argc - dispatch[i].argc) < dispatch[i].extra_args))
+        {
+            if (argc > 0 && dispatch[i].verb && g_strcmp0 (verb, dispatch[i].verb))
+                continue;
+
+            if (dispatch[i].needs_client && !ctx->client)
+                return EXIT_FAILURE;
+
+            gint64 ret = dispatch[i].handler(ctx, error);
+            if (ret >= 0)
+            {
+                if (!dispatch[i].needs_client && !ctx->client)
+                    g_clear_error (error);
+
+                return ret;
+            }
+        }
+    }
+
+    return -1;
+}
+
+gint
+main (gint argc, gchar *argv[])
+{
+    G_PASTE_INIT_GETTEXT ();
+    g_set_prgname (argv[0]);
+
+    Context _ctx = { NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context *ctx = &_ctx;
+
+    parse_cmdline (&argc, &argv, ctx);
+
     gint64 status = EXIT_SUCCESS;
 
     g_autoptr (GError) error = NULL;
@@ -776,31 +806,13 @@ main (gint argc, gchar *argv[])
         }
     }
 
-    for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
+    status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, ctx, &error);
+
+    if (status < 0)
     {
-        if (argc == dispatch[i].argc || (argc > dispatch[i].argc && (argc - dispatch[i].argc) < dispatch[i].extra_args))
-        {
-            if (argc > 0 && dispatch[i].verb && g_strcmp0 (argv[0], dispatch[i].verb))
-                continue;
-
-            if (dispatch[i].needs_client && !client)
-                goto exit;
-
-            gint64 ret = dispatch[i].handler(ctx, &error);
-            if (ret >= 0)
-            {
-                status = ret;
-
-                if (!dispatch[i].needs_client && !client)
-                    g_clear_error (&error);
-
-                goto exit;
-            }
-        }
+        show_help ();
+        status = EXIT_FAILURE;
     }
-
-    show_help ();
-    status = EXIT_FAILURE;
 
 exit:
     if (error)
