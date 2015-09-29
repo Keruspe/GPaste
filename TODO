@@ -6,7 +6,6 @@
         apply some redesign ideas
     cli:
         allow specifying history name in gpaste-client for some commands
-        command-dispatcher
         fallback to USR1 for daemon-reexec
     daemon:
         implem USR1
