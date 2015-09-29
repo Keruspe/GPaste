@@ -552,6 +552,20 @@ g_paste_get (Context *ctx,
 }
 
 static gint
+g_paste_replace (Context *ctx,
+                 GError **error)
+{
+    const gchar *data = (ctx->argc > 1) ? ctx->args[1] : ctx->pipe_data;
+
+    if (!data)
+        return EXIT_FAILURE;
+
+    g_paste_client_replace_sync (ctx->client, _strtoull (ctx->args[0]), ctx->args[1], error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint
 g_paste_search (Context *ctx,
                 GError **error)
 {
@@ -611,15 +625,6 @@ g_paste_rename_password (Context *ctx,
                          GError **error)
 {
     g_paste_client_rename_password_sync (ctx->client, ctx->args[0], ctx->args[1], error);
-
-    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
-}
-
-static gint
-g_paste_replace (Context *ctx,
-                 GError **error)
-{
-    g_paste_client_replace_sync (ctx->client, _strtoull (ctx->args[0]), ctx->args[1], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -717,6 +722,7 @@ g_paste_dispatch (gint         argc,
         { 2, "file",            0,        TRUE,  g_paste_file            },
         { 2, "g",               0,        TRUE,  g_paste_get             },
         { 2, "get",             0,        TRUE,  g_paste_get             },
+        { 2, "replace",         1,        TRUE,  g_paste_replace         },
         { 2, "search",          0,        TRUE,  g_paste_search          },
         { 2, "s",               0,        TRUE,  g_paste_select          },
         { 2, "set",             0,        TRUE,  g_paste_select          },
@@ -727,7 +733,6 @@ g_paste_dispatch (gint         argc,
         { 2, "upload",          0,        TRUE,  g_paste_upload          },
         { 3, "rp",              0,        TRUE,  g_paste_rename_password },
         { 3, "rename-password", 0,        TRUE,  g_paste_rename_password },
-        { 3, "replace",         0,        TRUE,  g_paste_replace         },
         { 3, "sp",              0,        TRUE,  g_paste_set_password    },
         { 3, "set-password",    0,        TRUE,  g_paste_set_password    },
         { 4, "m",               G_MAXINT, TRUE,  g_paste_merge           },
