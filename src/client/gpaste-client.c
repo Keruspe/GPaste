@@ -25,7 +25,7 @@
 
 typedef struct {
     GPasteClient *client;
-    gint64        argc;
+    gint          argc;
     gchar       **args;
     gboolean      help;
     gboolean      version;
@@ -125,7 +125,7 @@ failure_exit (GError *error)
     exit (EXIT_FAILURE);
 }
 
-static gint64
+static gint
 spawn (const gchar *app)
 {
     g_autoptr (GError) error = NULL;
@@ -255,7 +255,7 @@ show_version (void)
  * GPaste commands
  */
 
-static gint64
+static gint
 g_paste_help (Context *ctx   G_GNUC_UNUSED,
               GError **error G_GNUC_UNUSED)
 {
@@ -263,7 +263,7 @@ g_paste_help (Context *ctx   G_GNUC_UNUSED,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_version (Context *ctx   G_GNUC_UNUSED,
                  GError **error G_GNUC_UNUSED)
 {
@@ -271,7 +271,7 @@ g_paste_version (Context *ctx   G_GNUC_UNUSED,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_flag_action (Context *ctx,
                      GError **error)
 {
@@ -282,7 +282,7 @@ g_paste_flag_action (Context *ctx,
     return -1;
 }
 
-static gint64
+static gint
 g_paste_history (Context *ctx,
                  GError **error)
 {
@@ -301,7 +301,7 @@ g_paste_history (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_about (Context *ctx,
                GError **error)
 {
@@ -310,7 +310,7 @@ g_paste_about (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_daemon_reexec (Context *ctx,
                        GError **error)
 {
@@ -325,7 +325,7 @@ g_paste_daemon_reexec (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_daemon_version (Context *ctx,
                         GError **error G_GNUC_UNUSED)
 {
@@ -336,7 +336,7 @@ g_paste_daemon_version (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_empty (Context *ctx,
                GError **error)
 {
@@ -350,7 +350,7 @@ g_paste_empty (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_get_history (Context *ctx,
                      GError **error)
 {
@@ -364,7 +364,7 @@ g_paste_get_history (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_history_size (Context *ctx,
                       GError **error)
 {
@@ -383,7 +383,7 @@ g_paste_history_size (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_list_histories (Context *ctx,
                         GError **error)
 {
@@ -398,7 +398,7 @@ g_paste_list_histories (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_settings (Context *ctx G_GNUC_UNUSED,
                   GError **error)
 {
@@ -413,7 +413,7 @@ g_paste_settings (Context *ctx G_GNUC_UNUSED,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_show_history (Context *ctx,
                       GError **error)
 {
@@ -422,7 +422,7 @@ g_paste_show_history (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_start (Context *ctx,
                GError **error)
 {
@@ -431,7 +431,7 @@ g_paste_start (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_stop (Context *ctx,
               GError **error)
 {
@@ -440,28 +440,28 @@ g_paste_stop (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_ui (Context *ctx   G_GNUC_UNUSED,
             GError **error G_GNUC_UNUSED)
 {
     return spawn ("Ui");
 }
 
-static gint64
+static gint
 g_paste_applet (Context *ctx   G_GNUC_UNUSED,
                 GError **error G_GNUC_UNUSED)
 {
     return (g_paste_util_has_applet ()) ? spawn ("Applet") : -1;
 }
 
-static gint64
+static gint
 g_paste_app_indicator (Context *ctx   G_GNUC_UNUSED,
                        GError **error G_GNUC_UNUSED)
 {
     return (g_paste_util_has_unity ()) ? spawn ("AppIndicator") : -1;
 }
 
-static gint64
+static gint
 g_paste_add (Context *ctx,
              GError **error)
 {
@@ -470,7 +470,7 @@ g_paste_add (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_backup_history (Context *ctx   G_GNUC_UNUSED,
                         GError **error G_GNUC_UNUSED)
 {
@@ -484,7 +484,7 @@ g_paste_backup_history (Context *ctx   G_GNUC_UNUSED,
     return (g_paste_util_has_unity ()) ? spawn ("AppIndicator") : -1;
 }
 
-static gint64
+static gint
 g_paste_delete (Context *ctx,
                 GError **error)
 {
@@ -493,7 +493,7 @@ g_paste_delete (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_delete_password (Context *ctx,
                          GError **error)
 {
@@ -502,7 +502,7 @@ g_paste_delete_password (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_delete_history (Context *ctx,
                         GError **error)
 {
@@ -511,7 +511,7 @@ g_paste_delete_history (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_file (Context *ctx,
               GError **error)
 {
@@ -520,7 +520,7 @@ g_paste_file (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
@@ -536,7 +536,7 @@ g_paste_get (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_search (Context *ctx,
                 GError **error)
 {
@@ -564,7 +564,7 @@ g_paste_search (Context *ctx,
     return EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_select (Context *ctx,
                 GError **error)
 {
@@ -573,7 +573,7 @@ g_paste_select (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_switch_history (Context *ctx,
                         GError **error)
 {
@@ -582,7 +582,7 @@ g_paste_switch_history (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_upload (Context *ctx,
                 GError **error)
 {
@@ -591,7 +591,7 @@ g_paste_upload (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_add_password (Context *ctx,
                       GError **error)
 {
@@ -600,7 +600,7 @@ g_paste_add_password (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_rename_password (Context *ctx,
                          GError **error)
 {
@@ -609,7 +609,7 @@ g_paste_rename_password (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_replace (Context *ctx,
                  GError **error)
 {
@@ -618,7 +618,7 @@ g_paste_replace (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_set_password (Context *ctx,
                       GError **error)
 {
@@ -627,13 +627,13 @@ g_paste_set_password (Context *ctx,
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint64
+static gint
 g_paste_merge (Context *ctx,
                GError **error)
 {
     guint64 *indexes = alloca (ctx->argc * sizeof (guint64));
 
-    for (gint64 i = 0; i < ctx->argc; ++i)
+    for (gint i = 0; i < ctx->argc; ++i)
         indexes[i] = _strtoull (ctx->args[i]);
 
     g_paste_client_merge_sync (ctx->client, ctx->decoration, ctx->separator, indexes, ctx->argc, error);
@@ -645,7 +645,7 @@ g_paste_merge (Context *ctx,
  * Main
  */
 
-static gint64
+static gint
 g_paste_dispatch (gint         argc,
                   const gchar *verb,
                   Context     *ctx,
@@ -654,78 +654,78 @@ g_paste_dispatch (gint         argc,
     static struct {
         gint         argc;
         const gchar *verb;
-        gint64       extra_args;
+        gint         extra_args;
         gboolean     needs_client;
-        gint64     (*handler) (Context *ctx,
+        gint       (*handler) (Context *ctx,
                                GError **error);
     } dispatch[] = {
-        { 0, NULL,              G_MAXINT64, FALSE, g_paste_flag_action     },
-        { 0, NULL,              0,          TRUE,  g_paste_history         },
-        { 1, "help",            0,          FALSE, g_paste_help            },
-        { 1, "v",               0,          FALSE, g_paste_version         },
-        { 1, "version",         0,          FALSE, g_paste_version         },
-        { 1, "about",           0,          TRUE,  g_paste_about           },
-        { 1, "dr",              0,          TRUE,  g_paste_daemon_reexec   },
-        { 1, "daemon-reexec",   0,          TRUE,  g_paste_daemon_reexec   },
-        { 1, "dv",              0,          TRUE,  g_paste_daemon_version  },
-        { 1, "daemon-version",  0,          TRUE,  g_paste_daemon_version  },
-        { 1, "e",               0,          TRUE,  g_paste_empty           },
-        { 1, "empty",           0,          TRUE,  g_paste_empty           },
-        { 1, "gh",              0,          TRUE,  g_paste_get_history     },
-        { 1, "get-history",     0,          TRUE,  g_paste_get_history     },
-        { 1, "h",               0,          TRUE,  g_paste_history         },
-        { 1, "history",         0,          TRUE,  g_paste_history         },
-        { 1, "hs",              0,          TRUE,  g_paste_history_size    },
-        { 1, "history-size",    0,          TRUE,  g_paste_history_size    },
-        { 1, "lh",              0,          TRUE,  g_paste_list_histories  },
-        { 1, "list-histories",  0,          TRUE,  g_paste_list_histories  },
-        { 1, "settings",        0,          FALSE, g_paste_settings        },
-        { 1, "p",               0,          FALSE, g_paste_settings        },
-        { 1, "preferences",     0,          FALSE, g_paste_settings        },
-        { 1, "show-history",    0,          TRUE,  g_paste_show_history    },
-        { 1, "start",           0,          TRUE,  g_paste_start           },
-        { 1, "d",               0,          TRUE,  g_paste_start           },
-        { 1, "daemon",          0,          TRUE,  g_paste_start           },
-        { 1, "stop",            0,          TRUE,  g_paste_stop            },
-        { 1, "q",               0,          TRUE,  g_paste_stop            },
-        { 1, "quit",            0,          TRUE,  g_paste_stop            },
-        { 1, "ui",              0,          FALSE, g_paste_ui              },
-        { 1, "applet",          0,          FALSE, g_paste_applet          },
-        { 1, "app-indicator",   0,          FALSE, g_paste_app_indicator   },
-        { 2, "a",               0,          TRUE,  g_paste_add             },
-        { 2, "add",             0,          TRUE,  g_paste_add             },
-        { 2, "bh",              0,          TRUE,  g_paste_backup_history  },
-        { 2, "backup-history",  0,          TRUE,  g_paste_backup_history  },
-        { 2, "d",               0,          TRUE,  g_paste_delete          },
-        { 2, "del",             0,          TRUE,  g_paste_delete          },
-        { 2, "delete",          0,          TRUE,  g_paste_delete          },
-        { 2, "rm",              0,          TRUE,  g_paste_delete          },
-        { 2, "remove",          0,          TRUE,  g_paste_delete          },
-        { 2, "dp",              0,          TRUE,  g_paste_delete_password },
-        { 2, "delete-password", 0,          TRUE,  g_paste_delete_password },
-        { 2, "dh",              0,          TRUE,  g_paste_delete_history  },
-        { 2, "delete-history",  0,          TRUE,  g_paste_delete_history  },
-        { 2, "f",               0,          TRUE,  g_paste_file            },
-        { 2, "file",            0,          TRUE,  g_paste_file            },
-        { 2, "g",               0,          TRUE,  g_paste_get             },
-        { 2, "get",             0,          TRUE,  g_paste_get             },
-        { 2, "search",          0,          TRUE,  g_paste_search          },
-        { 2, "s",               0,          TRUE,  g_paste_select          },
-        { 2, "set",             0,          TRUE,  g_paste_select          },
-        { 2, "select",          0,          TRUE,  g_paste_select          },
-        { 2, "sh",              0,          TRUE,  g_paste_switch_history  },
-        { 2, "switch-history",  0,          TRUE,  g_paste_switch_history  },
-        { 2, "u",               0,          TRUE,  g_paste_upload          },
-        { 2, "upload",          0,          TRUE,  g_paste_upload          },
-        { 3, "ap",              0,          TRUE,  g_paste_add_password    },
-        { 3, "add-password",    0,          TRUE,  g_paste_add_password    },
-        { 3, "rp",              0,          TRUE,  g_paste_rename_password },
-        { 3, "rename-password", 0,          TRUE,  g_paste_rename_password },
-        { 3, "replace",         0,          TRUE,  g_paste_replace         },
-        { 3, "sp",              0,          TRUE,  g_paste_set_password    },
-        { 3, "set-password",    0,          TRUE,  g_paste_set_password    },
-        { 4, "m",               G_MAXINT64, TRUE,  g_paste_merge           },
-        { 4, "merge",           G_MAXINT64, TRUE,  g_paste_merge           },
+        { 0, NULL,              G_MAXINT, FALSE, g_paste_flag_action     },
+        { 0, NULL,              0,        TRUE,  g_paste_history         },
+        { 1, "help",            0,        FALSE, g_paste_help            },
+        { 1, "v",               0,        FALSE, g_paste_version         },
+        { 1, "version",         0,        FALSE, g_paste_version         },
+        { 1, "about",           0,        TRUE,  g_paste_about           },
+        { 1, "dr",              0,        TRUE,  g_paste_daemon_reexec   },
+        { 1, "daemon-reexec",   0,        TRUE,  g_paste_daemon_reexec   },
+        { 1, "dv",              0,        TRUE,  g_paste_daemon_version  },
+        { 1, "daemon-version",  0,        TRUE,  g_paste_daemon_version  },
+        { 1, "e",               0,        TRUE,  g_paste_empty           },
+        { 1, "empty",           0,        TRUE,  g_paste_empty           },
+        { 1, "gh",              0,        TRUE,  g_paste_get_history     },
+        { 1, "get-history",     0,        TRUE,  g_paste_get_history     },
+        { 1, "h",               0,        TRUE,  g_paste_history         },
+        { 1, "history",         0,        TRUE,  g_paste_history         },
+        { 1, "hs",              0,        TRUE,  g_paste_history_size    },
+        { 1, "history-size",    0,        TRUE,  g_paste_history_size    },
+        { 1, "lh",              0,        TRUE,  g_paste_list_histories  },
+        { 1, "list-histories",  0,        TRUE,  g_paste_list_histories  },
+        { 1, "settings",        0,        FALSE, g_paste_settings        },
+        { 1, "p",               0,        FALSE, g_paste_settings        },
+        { 1, "preferences",     0,        FALSE, g_paste_settings        },
+        { 1, "show-history",    0,        TRUE,  g_paste_show_history    },
+        { 1, "start",           0,        TRUE,  g_paste_start           },
+        { 1, "d",               0,        TRUE,  g_paste_start           },
+        { 1, "daemon",          0,        TRUE,  g_paste_start           },
+        { 1, "stop",            0,        TRUE,  g_paste_stop            },
+        { 1, "q",               0,        TRUE,  g_paste_stop            },
+        { 1, "quit",            0,        TRUE,  g_paste_stop            },
+        { 1, "ui",              0,        FALSE, g_paste_ui              },
+        { 1, "applet",          0,        FALSE, g_paste_applet          },
+        { 1, "app-indicator",   0,        FALSE, g_paste_app_indicator   },
+        { 2, "a",               0,        TRUE,  g_paste_add             },
+        { 2, "add",             0,        TRUE,  g_paste_add             },
+        { 2, "bh",              0,        TRUE,  g_paste_backup_history  },
+        { 2, "backup-history",  0,        TRUE,  g_paste_backup_history  },
+        { 2, "d",               0,        TRUE,  g_paste_delete          },
+        { 2, "del",             0,        TRUE,  g_paste_delete          },
+        { 2, "delete",          0,        TRUE,  g_paste_delete          },
+        { 2, "rm",              0,        TRUE,  g_paste_delete          },
+        { 2, "remove",          0,        TRUE,  g_paste_delete          },
+        { 2, "dp",              0,        TRUE,  g_paste_delete_password },
+        { 2, "delete-password", 0,        TRUE,  g_paste_delete_password },
+        { 2, "dh",              0,        TRUE,  g_paste_delete_history  },
+        { 2, "delete-history",  0,        TRUE,  g_paste_delete_history  },
+        { 2, "f",               0,        TRUE,  g_paste_file            },
+        { 2, "file",            0,        TRUE,  g_paste_file            },
+        { 2, "g",               0,        TRUE,  g_paste_get             },
+        { 2, "get",             0,        TRUE,  g_paste_get             },
+        { 2, "search",          0,        TRUE,  g_paste_search          },
+        { 2, "s",               0,        TRUE,  g_paste_select          },
+        { 2, "set",             0,        TRUE,  g_paste_select          },
+        { 2, "select",          0,        TRUE,  g_paste_select          },
+        { 2, "sh",              0,        TRUE,  g_paste_switch_history  },
+        { 2, "switch-history",  0,        TRUE,  g_paste_switch_history  },
+        { 2, "u",               0,        TRUE,  g_paste_upload          },
+        { 2, "upload",          0,        TRUE,  g_paste_upload          },
+        { 3, "ap",              0,        TRUE,  g_paste_add_password    },
+        { 3, "add-password",    0,        TRUE,  g_paste_add_password    },
+        { 3, "rp",              0,        TRUE,  g_paste_rename_password },
+        { 3, "rename-password", 0,        TRUE,  g_paste_rename_password },
+        { 3, "replace",         0,        TRUE,  g_paste_replace         },
+        { 3, "sp",              0,        TRUE,  g_paste_set_password    },
+        { 3, "set-password",    0,        TRUE,  g_paste_set_password    },
+        { 4, "m",               G_MAXINT, TRUE,  g_paste_merge           },
+        { 4, "merge",           G_MAXINT, TRUE,  g_paste_merge           },
     };
 
     for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
@@ -738,7 +738,7 @@ g_paste_dispatch (gint         argc,
             if (dispatch[i].needs_client && !ctx->client)
                 return EXIT_FAILURE;
 
-            gint64 ret = dispatch[i].handler(ctx, error);
+            gint ret = dispatch[i].handler(ctx, error);
             if (ret >= 0)
             {
                 if (!dispatch[i].needs_client && !ctx->client)
@@ -763,7 +763,7 @@ main (gint argc, gchar *argv[])
 
     parse_cmdline (&argc, &argv, ctx);
 
-    gint64 status = EXIT_SUCCESS;
+    gint status = EXIT_SUCCESS;
 
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = ctx->client = g_paste_client_new_sync (&error);
