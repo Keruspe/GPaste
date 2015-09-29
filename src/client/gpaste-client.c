@@ -27,7 +27,7 @@ typedef struct {
     GPasteClient *client;
     gint          argc;
     const gchar **args;
-    const gchar  *pipe_data;
+    gchar        *pipe_data;
     gboolean      help;
     gboolean      version;
     gboolean      oneline;
@@ -779,12 +779,8 @@ main (gint argc, gchar *argv[])
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = ctx->client = g_paste_client_new_sync (&error);
 
-    if (!isatty (fileno (stdin))) /* FIXME: add data to Context and use the dispatcher */
+    if (!isatty (fileno (stdin)))
     {
-        /* We are being piped, client is always required */
-        if (!client)
-            goto exit;
-
         g_autoptr (GString) data = g_string_new (NULL);
         gint64 c;
 
@@ -793,28 +789,8 @@ main (gint argc, gchar *argv[])
 
         data->str[data->len - 1] = '\0';
 
-        if (!argc)
-        {
-            g_paste_client_add_sync (client, data->str, &error);
-            goto exit;
-        }
-        else if (argc == 2)
-        {
-            const gchar *arg1 = argv[0];
-            const gchar *arg2 = argv[1];
-
-            if (!g_strcmp0 (arg1, "ap") ||
-                !g_strcmp0 (arg1, "add-password"))
-            {
-                g_paste_client_add_password_sync (client, arg2, data->str, &error);
-                goto exit;
-            }
-            else if (!g_strcmp0 (arg1, "replace"))
-            {
-                g_paste_client_replace_sync (client, _strtoull (arg2), data->str, &error);
-                goto exit;
-            }
-        }
+        ctx->pipe_data = g_strdup (data->str);
+        /* FIXME: restore add when no argc */
     }
 
     status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, ctx, &error);
@@ -825,7 +801,8 @@ main (gint argc, gchar *argv[])
         status = EXIT_FAILURE;
     }
 
-exit:
+    g_free (ctx->pipe_data);
+
     if (error)
         failure_exit (error);
 
