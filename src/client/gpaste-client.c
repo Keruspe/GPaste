@@ -105,12 +105,15 @@ extract_pipe_data (void)
     if (isatty (fileno (stdin)))
         return NULL; /* We're not being piped */
 
-    gchar *contents;
+    g_autoptr (GString) data = g_string_new (NULL);
+    gint64 c;
 
-    if (!g_file_get_contents ("/dev/stdin", &contents, NULL, NULL))
-        return NULL;
+    while ((c = fgetc (stdin)) != EOF)
+        data = g_string_append_c (data, (guchar)c);
 
-    return contents;
+    data->str[data->len - 1] = '\0';
+
+    return g_strdup (data->str);
 }
 
 static const gchar *
