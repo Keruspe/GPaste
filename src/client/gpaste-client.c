@@ -26,7 +26,8 @@
 typedef struct {
     GPasteClient *client;
     gint          argc;
-    gchar       **args;
+    const gchar **args;
+    const gchar  *pipe_data;
     gboolean      help;
     gboolean      version;
     gboolean      oneline;
@@ -93,7 +94,7 @@ parse_cmdline (int     *argc,
     *argv += optind;
 
     ctx->argc = *argc - 1;
-    ctx->args = *argv;
+    ctx->args = (const gchar **) *argv;
     ++ctx->args;
 }
 
@@ -471,6 +472,20 @@ g_paste_add (Context *ctx,
 }
 
 static gint
+g_paste_add_password (Context *ctx,
+                      GError **error)
+{
+    const gchar *data = (ctx->argc > 1) ? ctx->args[1] : ctx->pipe_data;
+
+    if (!data)
+        return EXIT_FAILURE;
+
+    g_paste_client_add_password_sync (ctx->client, ctx->args[0], data, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint
 g_paste_backup_history (Context *ctx   G_GNUC_UNUSED,
                         GError **error G_GNUC_UNUSED)
 {
@@ -592,15 +607,6 @@ g_paste_upload (Context *ctx,
 }
 
 static gint
-g_paste_add_password (Context *ctx,
-                      GError **error)
-{
-    g_paste_client_add_password_sync (ctx->client, ctx->args[0], ctx->args[1], error);
-
-    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
-}
-
-static gint
 g_paste_rename_password (Context *ctx,
                          GError **error)
 {
@@ -694,6 +700,8 @@ g_paste_dispatch (gint         argc,
         { 1, "app-indicator",   0,        FALSE, g_paste_app_indicator   },
         { 2, "a",               0,        TRUE,  g_paste_add             },
         { 2, "add",             0,        TRUE,  g_paste_add             },
+        { 2, "ap",              1,        TRUE,  g_paste_add_password    },
+        { 2, "add-password",    1,        TRUE,  g_paste_add_password    },
         { 2, "bh",              0,        TRUE,  g_paste_backup_history  },
         { 2, "backup-history",  0,        TRUE,  g_paste_backup_history  },
         { 2, "d",               0,        TRUE,  g_paste_delete          },
@@ -717,8 +725,6 @@ g_paste_dispatch (gint         argc,
         { 2, "switch-history",  0,        TRUE,  g_paste_switch_history  },
         { 2, "u",               0,        TRUE,  g_paste_upload          },
         { 2, "upload",          0,        TRUE,  g_paste_upload          },
-        { 3, "ap",              0,        TRUE,  g_paste_add_password    },
-        { 3, "add-password",    0,        TRUE,  g_paste_add_password    },
         { 3, "rp",              0,        TRUE,  g_paste_rename_password },
         { 3, "rename-password", 0,        TRUE,  g_paste_rename_password },
         { 3, "replace",         0,        TRUE,  g_paste_replace         },
@@ -758,7 +764,7 @@ main (gint argc, gchar *argv[])
     G_PASTE_INIT_GETTEXT ();
     g_set_prgname (argv[0]);
 
-    Context _ctx = { NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context _ctx = { NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     Context *ctx = &_ctx;
 
     parse_cmdline (&argc, &argv, ctx);
