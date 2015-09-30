@@ -1,6 +1,15 @@
 3.20:
     general:
+        m4_define
+        STDIN_FILENO
+        GList when remove/delete
+        LOG_DOMAIN
+        build bindigns in bindings/
+        rework MKDIR_P + dirname
+        rework completions install
+        more cppflags
         automake 1.15 + %reldir%
+        use vapigen.make
         class methods for signals
         wayland support
         apply some redesign ideas
@@ -15,6 +24,8 @@
         move gnome-shell specific stuff out of indicator.js (so that we can reuse it for cinnamon)
 
 future:
+    configure:
+        PKG_PREREQ
     general:
         gpg support
         properties all the way (when GProperty stuff lands)
