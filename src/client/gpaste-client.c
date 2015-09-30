@@ -110,8 +110,7 @@ extract_pipe_data (void)
 
     while ((c = fgetc (stdin)) != EOF)
         data = g_string_append_c (data, (guchar)c);
-
-    data->str[data->len - 1] = '\0';
+    g_string_append_c (data, '\0');
 
     return g_strdup (data->str);
 }
