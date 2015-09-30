@@ -24,7 +24,6 @@ SUFFIXES += .pc.in .pc
 	    -e 's,[@]VERSION[@],$(VERSION),g' \
 	    < $< > $@
 
-pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = \
 	data/pkg-config/gpaste-1.0.pc \
 	$(NULL)
