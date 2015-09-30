@@ -24,6 +24,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
 	--enable-appstream-util \
 	--enable-applet \
+	--enable-cinnamon-applet \
 	--enable-gnome-shell-extension \
 	--enable-introspection \
 	--enable-legacy-cli \
