@@ -6,15 +6,13 @@
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
 /data/dbus/*.service
-/bindings/gi
+/bindings
 /data/pkg-config/*.pc
 /man/*.1
 /po/Makefile
 /po/missing
 /src/extension/metadata.json
 /src/gpaste-settings/*.c
-/bindings/vapi/*.vapi
-!/bindings/vapi/config.vapi
 /test-suite.log
 /result
 /result-tmp

@@ -104,6 +104,7 @@ PKG_CHECK_MODULES(GLIB,       [glib-2.0 >= $GLIB_REQUIRED gobject-2.0 >= $GLIB_R
 PKG_CHECK_MODULES(GTK,        [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED pango])
 PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED])
 PKG_CHECK_MODULES(X11,        [x11 xi])
+PKG_CHECK_MODULES(APPSTREAM,  [appstream-glib])
 
 AC_CHECK_HEADERS([X11/extensions/XInput2.h])
 
