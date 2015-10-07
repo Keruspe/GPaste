@@ -1,51 +1,77 @@
 #!/bin/zsh
 
-dissect() {
-    mkdir -p "$(dirname "${3}")"
-    touch "${3}.data"
-    for include in $(grep '#include' "${1}" | awk '{print $NF}' | sed -e 's/<//' -e 's/>//' -e 's/"//g'); do
-        [[ -z "${4}" ]] && echo "${include}" >> "${3}".includes
-        sed -i '\|^'"${2}"'$|d' "${3}.data"
-        echo "${2} => ${include}" >> "${3}.data"
-        [[ "${include/gpaste/}" != "${include}" ]] && dissect **/"${include}" "${2} => ${include}"  "${3}" "rec"
+typeset -A includes
+
+get_file_name() {
+    local file="${1}"
+
+    if [[ "${file}" == *.h ]]; then
+       echo "$(basename ${file})"
+   else 
+       echo "${file}"
+   fi
+}
+
+parse_includes() {
+    local file name
+
+    for file in **/*.[ch]; do
+        name=$(get_file_name "${file}")
+
+        includes[${name}]="$(grep '#include' "${file}" | awk '{print $NF}' | sed -e 's/<//' -e 's/>//' -e 's/"//g')"
+    done
+}
+
+get_includes() {
+    local file="${1}"
+    local name
+
+    name=$(get_file_name "${file}")
+
+    echo ${includes[${name}]}
+}
+
+has_include() {
+    local file="${1}"
+    local include="${2}"
+    local output="${3}"
+    local i
+
+    for i in $(get_includes "${file}"); do
+        [[ "${i}" == "${include}" ]] && echo "${include}: ${output} => ${include}" && return 0
+        has_include "${i}" "${include}" "${output} => ${i}" && return 0
+    done
+
+    return 1
+}
+
+check_include() {
+    local file="${1}"
+    local include="${2}"
+    local i
+
+    for i in $(get_includes "${file}"); do
+        [[ "${include}" == "${i}" ]] && continue
+        has_include "${i}" "${include}" "${file} => ${i}"
+    done
+}
+
+check_includes() {
+    local file i
+
+    for file in **/*.[ch]; do
+        [[ "${file}" == "src/libgpaste/gpaste.h" ]] && continue
+        for i in $(get_includes "${file}"); do
+            check_include "${file}" "${i}"
+        done
     done
 }
 
 main() {
-    local ROOTDIR="$(dirname ${1})/.."
-    local TMPDIR="${ROOTDIR}/tmp"
-    local RESULTFILE="${ROOTDIR}/result"
-    local TMPFILE="${RESULTFILE}-tmp"
-
-    pushd "${ROOTDIR}"
-
-    rm -fr "${TMPDIR}" "${RESULTFILE}"
-
-    for file in **/*.[ch]; do
-        dissect "${file}" "${file}" "${TMPDIR}/${file}"
-    done
-
-    for result in "${TMPDIR}"/**/*.[ch].includes; do
-        file="${result/.includes/}"
-        file="${file/${TMPDIR}\//}"
-        sort -u "${result}" | tee "${result}" > /dev/null
-        rm -f "${TMPFILE}"
-        for include in $(< "${result}"); do
-            concurrent="$(grep "${include}" "${result/includes/data}" | grep -v "^${file} => ${include}" | head -n1)"
-            [[ -z "${concurrent}" ]] || echo "${include}: ${concurrent}" >> "${TMPFILE}"
-        done
-        if [[ -s "${TMPFILE}" ]]; then
-            echo "${file}\n================" >> "${RESULTFILE}"
-            cat "${TMPFILE}" >> "${RESULTFILE}"
-            echo >> "${RESULTFILE}"
-        fi
-    done
-
-    rm -fr "${TMPDIR}"
-
-    cat "${RESULTFILE}"
-
-    popd
+    pushd "$(dirname "${1}")/.." &>/dev/null
+    parse_includes
+    check_includes
+    popd &>/dev/null
 }
 
 main "${0}"
