@@ -2,15 +2,11 @@ LIBGPASTE_3_16_0 {
 global:
     g_paste_applet_about_get_type;
     g_paste_applet_about_new;
-    g_paste_applet_app_indicator_get_type;
-    g_paste_applet_app_indicator_new;
     g_paste_applet_get_active;
     g_paste_applet_get_type;
     g_paste_applet_icon_get_type;
     g_paste_applet_menu_get_type;
     g_paste_applet_menu_new;
-    g_paste_applet_new_app_indicator;
-    g_paste_applet_new_status_icon;
     g_paste_applet_quit_get_type;
     g_paste_applet_quit_new;
     g_paste_applet_set_active;
@@ -449,6 +445,8 @@ global:
 
 LIBGPASTE_3_20_0 {
 global:
+    g_paste_applet_new;
+
     g_paste_ui_item_skeleton_set_uploadable;
 
     g_paste_util_has_gnome_shell;

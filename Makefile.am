@@ -46,7 +46,6 @@ AM_CFLAGS =                                          \
 	-I$(srcdir)/src/libgpaste/settings-ui        \
 	-I$(srcdir)/src/libgpaste/ui                 \
 	-I$(srcdir)/src/libgpaste/util               \
-	-I$(builddir)/src/libgpaste                  \
 	-DG_PASTE_COMPILATION                        \
 	-DLOCALEDIR=\"$(localedir)\"                 \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"         \

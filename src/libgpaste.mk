@@ -156,15 +156,6 @@ lib_libgpaste_la_source_files =                                               \
 	%D%/libgpaste/util/gpaste-util.c                                      \
 	$(NULL)
 
-if ENABLE_UNITY
-lib_libgpaste_la_public_headers +=                         \
-	%D%/libgpaste/applet/gpaste-applet-app-indicator.h \
-	$(NULL)
-lib_libgpaste_la_source_files +=                           \
-	%D%/libgpaste/applet/gpaste-applet-app-indicator.c \
-	$(NULL)
-endif
-
 lib_libgpaste_la_SOURCES =                  \
 	$(lib_libgpaste_la_private_headers) \
 	$(lib_libgpaste_la_source_files)    \
@@ -173,7 +164,6 @@ lib_libgpaste_la_SOURCES =                  \
 lib_libgpaste_la_CFLAGS =    \
 	$(GDK_CFLAGS)        \
 	$(GDK_PIXBUF_CFLAGS) \
-	$(UNITY_CFLAGS)      \
 	$(X11_CFLAGS)        \
 	$(AM_CFLAGS)         \
 	$(NULL)
@@ -182,7 +172,6 @@ lib_libgpaste_la_LIBADD =  \
 	$(GDK_LIBS)        \
 	$(GDK_PIXBUF_LIBS) \
 	$(GTK_LIBS)        \
-	$(UNITY_LIBS)      \
 	$(X11_LIBS)        \
 	$(AM_LIBS)         \
 	$(NULL)

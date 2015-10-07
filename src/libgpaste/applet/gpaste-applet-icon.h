@@ -42,6 +42,9 @@ void g_paste_applet_icon_activate (void);
 GPasteAppletIcon *g_paste_applet_icon_new (GType         type,
                                            GPasteClient *client);
 
+typedef GPasteAppletIcon *(*GPasteStatusIconFunc) (GPasteClient *client,
+                                                   GApplication *application);
+
 G_END_DECLS
 
 #endif /*__G_PASTE_APPLET_ICON_H__*/

@@ -133,7 +133,6 @@ AS_IF([test x$enable_gnome_shell_extension = xyes -o x$enable_cinnamon_applet = 
 
 AS_IF([test x$enable_unity = xyes], [
     PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
-    AC_DEFINE([ENABLE_UNITY], [1], [Whether the app-indicator is built])
 ])
 
 AS_IF([test x$enable_x_keybinder = xyes], [

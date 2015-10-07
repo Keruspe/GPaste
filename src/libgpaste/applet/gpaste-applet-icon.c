@@ -84,7 +84,7 @@ g_paste_applet_icon_init (GPasteAppletIcon *self G_GNUC_UNUSED)
  * Returns: a newly allocated #GPasteAppletIcon
  *          free it with g_object_unref
  */
-GPasteAppletIcon *
+G_PASTE_VISIBLE GPasteAppletIcon *
 g_paste_applet_icon_new (GType         type,
                          GPasteClient *client)
 {

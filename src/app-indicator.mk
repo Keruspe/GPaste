@@ -21,16 +21,21 @@ pkglibexec_PROGRAMS +=           \
 	$(NULL)
 endif
 
-bin_gpaste_app_indicator_SOURCES =               \
-	%D%/app-indicator/gpaste-app-indicator.c \
+bin_gpaste_app_indicator_SOURCES =                      \
+	%D%/app-indicator/gpaste-applet-app-indicator.h \
+	%D%/app-indicator/gpaste-applet-app-indicator.c \
+	%D%/app-indicator/gpaste-app-indicator.c        \
 	$(NULL)
 
-bin_gpaste_app_indicator_CFLAGS = \
-	$(AM_CFLAGS)              \
+bin_gpaste_app_indicator_CFLAGS =     \
+	-I$(srcdir)/%D%/app-indicator \
+	$(UNITY_CFLAGS)               \
+	$(AM_CFLAGS)                  \
 	$(NULL)
 
 bin_gpaste_app_indicator_LDADD =         \
 	$(builddir)/$(libgpaste_la_file) \
 	$(GTK_LIBS)                      \
+	$(UNITY_LIBS)                    \
 	$(AM_LIBS)                       \
 	$(NULL)
