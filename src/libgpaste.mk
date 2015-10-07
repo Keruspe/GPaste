@@ -161,11 +161,12 @@ lib_libgpaste_la_SOURCES =                  \
 	$(lib_libgpaste_la_source_files)    \
 	$(NULL)
 
-lib_libgpaste_la_CFLAGS =    \
-	$(GDK_CFLAGS)        \
-	$(GDK_PIXBUF_CFLAGS) \
-	$(X11_CFLAGS)        \
-	$(AM_CFLAGS)         \
+lib_libgpaste_la_CFLAGS =         \
+	-DG_LOG_DOMAIN=\"GPaste\" \
+	$(GDK_CFLAGS)             \
+	$(GDK_PIXBUF_CFLAGS)      \
+	$(X11_CFLAGS)             \
+	$(AM_CFLAGS)              \
 	$(NULL)
 
 lib_libgpaste_la_LIBADD =  \

@@ -2,7 +2,6 @@
     general:
         m4_define
         GList when remove/delete
-        LOG_DOMAIN
         rework completions install
         more cppflags
         class methods for signals
