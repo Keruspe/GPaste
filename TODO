@@ -1,7 +1,6 @@
 3.20:
     general:
         m4_define
-        STDIN_FILENO
         GList when remove/delete
         LOG_DOMAIN
         rework completions install

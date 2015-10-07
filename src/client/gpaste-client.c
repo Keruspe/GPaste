@@ -102,7 +102,7 @@ parse_cmdline (int     *argc,
 static gchar *
 extract_pipe_data (void)
 {
-    if (isatty (fileno (stdin)))
+    if (isatty (STDIN_FILENO))
         return NULL; /* We're not being piped */
 
     g_autoptr (GString) data = g_string_new (NULL);
