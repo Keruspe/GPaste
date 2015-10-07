@@ -1,7 +1,6 @@
 3.20:
     general:
         m4_define
-        GList when remove/delete
         rework completions install
         more cppflags
         class methods for signals

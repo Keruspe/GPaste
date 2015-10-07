@@ -33,7 +33,7 @@ typedef struct
 
     GtkListBox             *list_box;
     GtkEntry               *switch_entry;
-    GSList                 *histories;
+    GList                  *histories;
 
     GtkWidget              *search_entry;
 
@@ -55,11 +55,11 @@ history_equals (gconstpointer a,
     return g_strcmp0 (b, g_paste_ui_panel_history_get_history (a));
 }
 
-static GSList *
-history_find (GSList      *histories,
+static GList *
+history_find (GList       *histories,
               const gchar *history)
 {
-    return g_slist_find_custom (histories, history, history_equals);
+    return g_list_find_custom (histories, history, history_equals);
 }
 
 /**
@@ -80,7 +80,7 @@ g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
     g_return_if_fail (G_PASTE_IS_UI_PANEL (self));
 
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
-    GSList *h = history_find (priv->histories, history);
+    GList *h = history_find (priv->histories, history);
 
     if (h)
     {
@@ -100,12 +100,12 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
     if (!g_strcmp0 (history, G_PASTE_DEFAULT_HISTORY))
         return;
 
-    GSList *h = history_find (priv->histories, history);
+    GList *h = history_find (priv->histories, history);
 
     if (!h)
         return;
 
-    priv->histories = g_slist_remove_link (priv->histories, h);
+    priv->histories = g_list_remove_link (priv->histories, h);
     gtk_container_remove (GTK_CONTAINER (priv->list_box), h->data);
 }
 
@@ -149,7 +149,7 @@ g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
 {
     GtkContainer *c = GTK_CONTAINER (priv->list_box);
 
-    GSList *concurrent = history_find (priv->histories, history);
+    GList *concurrent = history_find (priv->histories, history);
     GtkListBoxRow *row;
 
     if (concurrent)
@@ -164,7 +164,7 @@ g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
         gtk_container_add (c, h);
         gtk_widget_show_all (h);
 
-        priv->histories = g_slist_prepend (priv->histories, h);
+        priv->histories = g_list_prepend (priv->histories, h);
 
         row = GTK_LIST_BOX_ROW (h);
     }
