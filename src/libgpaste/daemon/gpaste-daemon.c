@@ -469,11 +469,11 @@ g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
 static GVariant *
 g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 {
-    const GSList *history = g_paste_history_get_history (priv->history);
-    guint64 length = g_slist_length ((GSList *) history);
+    const GList *history = g_paste_history_get_history (priv->history);
+    guint64 length = g_list_length ((GList *) history);
     g_autofree const gchar **displayed_history = g_new (const gchar *, length + 1);
 
-    for (guint64 i = 0; i < length; ++i, history = g_slist_next (history))
+    for (guint64 i = 0; i < length; ++i, history = g_list_next (history))
         displayed_history[i] = g_paste_item_get_display_string (history->data);
     displayed_history[length] = NULL;
 
@@ -535,11 +535,11 @@ g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
 static GVariant *
 g_paste_daemon_private_get_raw_history (GPasteDaemonPrivate *priv)
 {
-    const GSList *history = g_paste_history_get_history (priv->history);
-    guint64 length = g_slist_length ((GSList *) history);
+    const GList *history = g_paste_history_get_history (priv->history);
+    guint64 length = g_list_length ((GList *) history);
     g_autofree const gchar **displayed_history = g_new (const gchar *, length + 1);
 
-    for (guint64 i = 0; i < length; ++i, history = g_slist_next (history))
+    for (guint64 i = 0; i < length; ++i, history = g_list_next (history))
         displayed_history[i] = g_paste_item_get_value (history->data);
     displayed_history[length] = NULL;
 

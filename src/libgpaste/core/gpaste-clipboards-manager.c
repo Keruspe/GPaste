@@ -121,7 +121,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
 
     if (!something_in_clipboard)
     {
-        const GSList *hist = g_paste_history_get_history (history);
+        const GList *hist = g_paste_history_get_history (history);
         if (hist)
             g_paste_clipboard_select_item (clipboard, hist->data);
     }

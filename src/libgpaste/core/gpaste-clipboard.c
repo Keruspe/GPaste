@@ -59,7 +59,7 @@ g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
 
     if (!priv->text && !priv->image_checksum)
     {
-        const GSList *h = g_paste_history_get_history (history);
+        const GList *h = g_paste_history_get_history (history);
         if (h)
             g_paste_clipboard_select_item (self, h->data);
     }

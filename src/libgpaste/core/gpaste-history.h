@@ -60,19 +60,19 @@ void                      g_paste_history_delete_password (GPasteHistory *self,
 void                      g_paste_history_rename_password (GPasteHistory *self,
                                                            const gchar   *old_name,
                                                            const gchar   *new_name);
-void          g_paste_history_empty       (GPasteHistory *self);
-void          g_paste_history_save        (GPasteHistory *self,
-                                           const gchar   *name);
-void          g_paste_history_load        (GPasteHistory *self,
-                                           const gchar   *name);
-void          g_paste_history_switch      (GPasteHistory *self,
-                                           const gchar   *name);
-void          g_paste_history_delete      (GPasteHistory *self,
-                                           const gchar   *name,
-                                           GError       **error);
-const GSList *g_paste_history_get_history (const GPasteHistory *self);
-guint64       g_paste_history_get_length  (const GPasteHistory *self);
-const gchar  *g_paste_history_get_current (const GPasteHistory *self);
+void         g_paste_history_empty       (GPasteHistory *self);
+void         g_paste_history_save        (GPasteHistory *self,
+                                          const gchar   *name);
+void         g_paste_history_load        (GPasteHistory *self,
+                                          const gchar   *name);
+void         g_paste_history_switch      (GPasteHistory *self,
+                                          const gchar   *name);
+void         g_paste_history_delete      (GPasteHistory *self,
+                                          const gchar   *name,
+                                          GError       **error);
+const GList *g_paste_history_get_history (const GPasteHistory *self);
+guint64      g_paste_history_get_length  (const GPasteHistory *self);
+const gchar *g_paste_history_get_current (const GPasteHistory *self);
 
 GArray *g_paste_history_search (const GPasteHistory *self,
                                 const gchar         *pattern);
