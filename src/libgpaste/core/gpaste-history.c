@@ -89,7 +89,7 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
                                 gboolean              remove_leftovers)
 {
     if (!elem)
-        return NULL;
+        return;
 
     GPasteItem *item = elem->data;
 
