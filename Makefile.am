@@ -27,7 +27,6 @@ AM_DISTCHECK_CONFIGURE_FLAGS =                                          \
 	--enable-cinnamon-applet                                        \
 	--enable-gnome-shell-extension                                  \
 	--enable-introspection                                          \
-	--enable-legacy-cli                                             \
 	--enable-unity                                                  \
 	--enable-vala                                                   \
 	$(NULL)
@@ -92,10 +91,6 @@ include src/vapi.mk
 include src/client.mk
 include src/daemon.mk
 include src/ui.mk
-
-# Legacy compatibility
-
-include legacy/gpaste.mk
 
 # Applets
 

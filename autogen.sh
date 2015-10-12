@@ -47,7 +47,6 @@ run_action() {
         --enable-cinnamon-applet
         --enable-gnome-shell-extension
         --enable-introspection
-        --enable-legacy-cli
         --enable-unity
         --enable-vala
         --enable-x-keybinder
