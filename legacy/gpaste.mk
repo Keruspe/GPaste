@@ -15,9 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+if ENABLE_LEGACY_CLI
 bin_PROGRAMS += \
 	bin/gpaste \
 	$(NULL)
+endif
 
 bin_gpaste_SOURCES = \
 	legacy/gpaste/gpaste.c \
