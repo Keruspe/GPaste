@@ -20,6 +20,8 @@
 
 const Lang = imports.lang;
 
+const PopupMenu = imports.ui.popupMenu;
+
 const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 
@@ -34,11 +36,6 @@ const GPasteStatusIcon = new Lang.Class({
             style_class: 'system-status-icon'
         }));
 
-        this.actor.add_child(new St.Icon({
-            style_class: 'popup-menu-arrow',
-            icon_name: 'pan-down-symbolic',
-            y_expand: true,
-            y_align: Clutter.ActorAlign.CENTER
-        }));
+        this.actor.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
     }
 });
