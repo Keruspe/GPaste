@@ -392,10 +392,19 @@ static void
 g_paste_daemon_private_empty_history (GPasteDaemonPrivate *priv,
                                       GVariant            *parameters)
 {
-    g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_paste_history_save (history, name);
+    if (!g_strcmp0 (name, g_paste_history_get_current (priv->history)))
+    {
+        g_paste_history_empty (priv->history);
+    }
+    else
+    {
+        g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
+
+        g_paste_history_save (history, name);
+    }
+
     g_paste_daemon_private_empty_history_signal (priv, name);
 }
 
