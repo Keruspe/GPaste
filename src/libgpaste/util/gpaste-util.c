@@ -382,7 +382,10 @@ g_paste_util_show_win (GApplication *application)
     for (GList *wins = gtk_application_get_windows (GTK_APPLICATION (application)); wins; wins = g_list_next (wins))
     {
         if (gtk_widget_get_realized (wins->data))
+        {
             gtk_window_present (wins->data);
+            break;
+        }
     }
 }
 
