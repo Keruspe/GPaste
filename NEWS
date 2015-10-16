@@ -1,6 +1,15 @@
 NEW in 3.19 (Not released yet)
 =============
 
+NEW in 3.18.2 (16/10/2015)
+=============
+
+- fix disabling legacy cli
+- fix gnome-shell empty button
+- fix emptying the active history
+- fix showing about dialog
+- update brazilian portuguese translation
+
 NEW in 3.18.1.1 (27/09/2015)
 =============
 
