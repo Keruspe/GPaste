@@ -49,7 +49,10 @@ prefs_activated (GSimpleAction *action    G_GNUC_UNUSED,
 static gboolean
 show_about_dialog (gpointer user_data)
 {
-    GtkWindow *parent = GTK_WINDOW (gtk_application_get_windows (GTK_APPLICATION (user_data))->data);
+    if (!gtk_widget_get_realized (GTK_WIDGET (user_data)))
+        return G_SOURCE_CONTINUE;
+
+    GtkWindow *parent = GTK_WINDOW (user_data);
     const gchar *authors[] = {
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
@@ -76,7 +79,7 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data)
 {
-    g_idle_add (show_about_dialog, user_data);
+    g_idle_add (show_about_dialog, gtk_application_get_windows (GTK_APPLICATION (user_data))->data);
 }
 
 static void
