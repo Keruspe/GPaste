@@ -22,7 +22,6 @@ const Lang = imports.lang;
 
 const PopupMenu = imports.ui.popupMenu;
 
-const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 
 const GPasteStatusIcon = new Lang.Class({
