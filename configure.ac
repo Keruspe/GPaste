@@ -120,13 +120,12 @@ G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [
 G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`$PKG_CONFIG --variable keysdir gnome-keybindings`])
 
 G_PASTE_ENABLE([applet],                [Enable gpaste-applet],          [no])
-G_PASTE_ENABLE([cinnamon-applet],       [Enable cinnamon applet],        [no])
 G_PASTE_ENABLE([gnome-shell-extension], [Disable gnome-shell extension], [yes])
 G_PASTE_ENABLE([unity],                 [Enable gpaste-app-indicator],   [no])
 G_PASTE_ENABLE([x-keybinder],           [Disable the X keybinder],       [yes])
 
-AS_IF([test x$enable_gnome_shell_extension = xyes -o x$enable_cinnamon_applet = xyes], [
-    AS_IF([test x$enable_introspection != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the javascript extensions])])
+AS_IF([test x$enable_gnome_shell_extension = xyes], [
+    AS_IF([test x$enable_introspection != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
     PKG_CHECK_MODULES(JS_EXTENSION, [clutter-1.0])
 ])
 
@@ -166,7 +165,6 @@ AC_MSG_RESULT([
     Status icon:            ${enable_applet}
     App indicator:          ${enable_unity}
     Gnome-Shell extension:  ${enable_gnome_shell_extension}
-    Cinnamon applet:        ${enable_cinnamon_applet}
 
     X keybinder support:    ${enable_x_keybinder}
 ])

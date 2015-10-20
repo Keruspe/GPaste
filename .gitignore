@@ -11,6 +11,6 @@
 /man/*.1
 /po/Makefile
 /po/missing
-/src/extension/metadata.json
+/src/gnome-shell/metadata.json
 /src/gpaste-settings/*.c
 /test-suite.log

@@ -24,7 +24,6 @@ AM_DISTCHECK_CONFIGURE_FLAGS =                                          \
 	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
 	--enable-appstream-util                                         \
 	--enable-applet                                                 \
-	--enable-cinnamon-applet                                        \
 	--enable-gnome-shell-extension                                  \
 	--enable-introspection                                          \
 	--enable-unity                                                  \
@@ -96,9 +95,7 @@ include src/ui.mk
 
 include src/applet.mk
 include src/app-indicator.mk
-include src/extension.mk
 include src/gnome-shell.mk
-include src/cinnamon.mk
 
 # Data
 

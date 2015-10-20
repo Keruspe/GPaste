@@ -23,7 +23,7 @@ const Lang = imports.lang;
 const St = imports.gi.St;
 
 const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension() || imports.ui.appletManager.applets["GPaste@gnome-shell-extensions.gnome.org"];
+const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteButton = Me.imports.deleteButton;
 
