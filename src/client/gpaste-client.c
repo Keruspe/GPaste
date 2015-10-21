@@ -811,7 +811,7 @@ main (gint argc, gchar *argv[])
 
     if (error)
     {
-        g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), (error) ? error->message: "unknown error");
+        g_critical ("%s\n", (error) ? error->message : _("Couldn't connect to GPaste daemon"));
         status = EXIT_FAILURE;
     }
 
