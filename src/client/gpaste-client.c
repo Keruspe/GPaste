@@ -112,7 +112,7 @@ extract_pipe_data (void)
         data = g_string_append_c (data, (guchar)c);
     g_string_append_c (data, '\0');
 
-    return g_strdup (data->str);
+    return (*data->str) ? g_strdup (data->str) : NULL;
 }
 
 static const gchar *
@@ -480,7 +480,7 @@ g_paste_add (Context *ctx,
 {
     const gchar *data = (ctx->argc > 0) ? ctx->args[0] : ctx->pipe_data;
 
-    if (!data || !*data)
+    if (!data)
         return -1;
 
     g_paste_client_add_sync (ctx->client, data, error);
