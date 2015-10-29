@@ -21,7 +21,20 @@
 #include <gpaste-daemon.h>
 #include <gpaste-search-provider.h>
 
-static GApplication *_app;
+#ifdef G_OS_UNIX
+#include <glib-unix.h>
+
+static gboolean
+signal_handler (gpointer user_data)
+{
+    GApplication *app = user_data;
+
+    g_print ("%s\n", _("Stop signal received, exiting"));
+    g_application_quit (app);
+
+    return G_SOURCE_REMOVE;
+}
+#endif
 
 enum
 {
@@ -30,13 +43,6 @@ enum
 
     C_LAST_SIGNAL
 };
-
-static void
-signal_handler (gint32 signum)
-{
-    g_print ("Signal %" G_GINT32_FORMAT " received, exiting\n", signum);
-    g_application_quit (_app);
-}
 
 G_GNUC_NORETURN static void
 on_name_lost (GPasteBus *bus G_GNUC_UNUSED,
@@ -116,7 +122,7 @@ main (gint argc, gchar *argv[])
     g_autoptr (GPasteBusObject) search_provider = NULL;
 
     data->search_provider = &search_provider;
-    _app = data->gapp = gapp;
+    data->gapp = gapp;
 
     g_autoptr (GPasteBus) bus = data->bus = g_paste_bus_new (on_bus_acquired, data);
 
@@ -131,8 +137,10 @@ main (gint argc, gchar *argv[])
                                                gapp)
     };
 
-    signal (SIGTERM, &signal_handler);
-    signal (SIGINT, &signal_handler);
+#ifdef G_OS_UNIX
+    g_unix_signal_add (SIGTERM, signal_handler, app);
+    g_unix_signal_add (SIGINT,  signal_handler, app);
+#endif
 
     g_paste_bus_own_name (bus);
 
