@@ -15,8 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
+m4_define([gpaste_version],      [3.19])
+
+m4_define([intltool_requird],    [0.50.1])
+m4_define([pkgconfig_required],  [0.27])
+m4_define([gdk_pixbuf_required], [2.26.0])
+m4_define([gir_required],        [1.42.0])
+m4_define([vala_required],       [0.30])
+m4_define([glib_major_required], [2])
+m4_define([glib_minor_required], [46])
+m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_minor_required)])
+m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
+m4_define([gtk_major_required],  [3])
+m4_define([gtk_minor_required],  [16])
+m4_define([gtk_api_required],    [G_ENCODE_VERSION(gtk_major_required, gtk_minor_required)])
+m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
+
 AC_PREREQ([2.69])
-AC_INIT([GPaste], [3.19], [Marc-Antoine@Perennou.com], [gpaste])
+AC_INIT([GPaste], [gpaste_version], [Marc-Antoine@Perennou.com], [gpaste])
 
 AC_SUBST([PACKAGE_NAME])
 AC_SUBST([PACKAGE_VERSION])
@@ -29,28 +45,10 @@ AC_SUBST([PACKAGE_VERSION])
 LIBGPASTE_LT_VERSION=4:0:0
 AC_SUBST([LIBGPASTE_LT_VERSION])
 
-INTLTOOL_REQUIRED="0.50.1"
-PKGCONFIG_REQUIRED="0.27"
-
-GLIB_MIN_MAJOR="2"
-GLIB_MIN_MINOR="46"
-GTK_MIN_MAJOR="3"
-GTK_MIN_MINOR="16"
-
-GLIB_REQUIRED="$GLIB_MIN_MAJOR.$GLIB_MIN_MINOR.0"
-GTK_REQUIRED="$GTK_MIN_MAJOR.$GTK_MIN_MINOR.0"
-
-GDK_PIXBUF_REQUIRED="2.26.0"
-GIR_REQUIRED="1.42.0"
-VALA_REQUIRED="0.30"
-
-GLIB_API_REQUIRED="G_ENCODE_VERSION($GLIB_MIN_MAJOR, $GLIB_MIN_MINOR)"
-GDK_API_REQUIRED="G_ENCODE_VERSION($GTK_MIN_MAJOR, $GTK_MIN_MINOR)"
-
-AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [$GLIB_API_REQUIRED], [The lower GLib API version supported])
-AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED],  [$GLIB_API_REQUIRED], [The higher GLib API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED],  [$GDK_API_REQUIRED],  [The lower Gdk API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],   [$GDK_API_REQUIRED],  [The higher Gdk API version supported])
+AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [glib_api_required], [The lower GLib API version supported])
+AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED],  [glib_api_required], [The higher GLib API version supported])
+AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED],  [gtk_api_required],  [The lower Gdk API version supported])
+AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],   [gtk_api_required],  [The higher Gdk API version supported])
 
 AC_DEFINE([G_PASTE_DEFAULT_HISTORY], ["history"],                                 [The default hsitory name])
 AC_DEFINE([G_PASTE_EXTENSION_NAME],  ["GPaste@gnome-shell-extensions.gnome.org"], [The name of the GPaste extension])
@@ -95,14 +93,14 @@ G_PASTE_APPEND_LDFLAGS
 GETTEXT_PACKAGE=$PACKAGE_NAME
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [Gettext Package])
 AC_SUBST([GETTEXT_PACKAGE])
-IT_PROG_INTLTOOL([$INTLTOOL_REQUIRED])
+IT_PROG_INTLTOOL([intltool_required])
 
-PKG_PROG_PKG_CONFIG([$PKGCONFIG_REQUIRED])
+PKG_PROG_PKG_CONFIG([pkgconfig_required])
 PKG_INSTALLDIR
 
-PKG_CHECK_MODULES(GLIB,       [glib-2.0 >= $GLIB_REQUIRED gobject-2.0 >= $GLIB_REQUIRED gio-2.0 >= $GLIB_REQUIRED])
-PKG_CHECK_MODULES(GTK,        [gdk-3.0 >= $GTK_REQUIRED gtk+-3.0 >= $GTK_REQUIRED pango])
-PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED])
+PKG_CHECK_MODULES(GLIB,       [glib-2.0 >= glib_required gobject-2.0 >= glib_required gio-2.0 >= glib_required])
+PKG_CHECK_MODULES(GTK,        [gdk-3.0 >= gtk_required gtk+-3.0 >= gtk_required pango])
+PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0 >= gdk_pixbuf_required])
 PKG_CHECK_MODULES(X11,        [x11 xi])
 PKG_CHECK_MODULES(APPSTREAM,  [appstream-glib])
 
@@ -112,8 +110,8 @@ GLIB_GSETTINGS
 
 APPSTREAM_XML
 
-GOBJECT_INTROSPECTION_CHECK([$GIR_REQUIRED])
-VAPIGEN_CHECK([$VALA_REQUIRED])
+GOBJECT_INTROSPECTION_CHECK([gir_required])
+VAPIGEN_CHECK([vala_required])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
 G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [`$PKG_CONFIG --variable session_bus_services_dir dbus-1`])
@@ -134,7 +132,7 @@ AS_IF([test x$enable_unity = xyes], [
 ])
 
 AS_IF([test x$enable_x_keybinder = xyes], [
-    PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= $GTK_REQUIRED])
+    PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= gtk_required])
     AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
 ])
 
