@@ -17,11 +17,21 @@
 
 m4_define([gpaste_version],      [3.19])
 
+# Update gpaste_lt_version before each release (and only then)
+# The format is C:R:A (current revision age)
+# - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
+# - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
+# - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
+m4_define([gpaste_lt_version],   [4:0:0])
+
+# Build system requirements
+m4_define([autoconf_required],   [2.69])
+m4_define([automake_required],   [1.15])
 m4_define([intltool_requird],    [0.50.1])
+m4_define([libtool_required],    [2.2.6])
 m4_define([pkgconfig_required],  [0.27])
-m4_define([gdk_pixbuf_required], [2.26.0])
-m4_define([gir_required],        [1.42.0])
-m4_define([vala_required],       [0.30])
+
+# Glib and Gtk macros and dependencies
 m4_define([glib_major_required], [2])
 m4_define([glib_minor_required], [46])
 m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_minor_required)])
@@ -31,18 +41,18 @@ m4_define([gtk_minor_required],  [16])
 m4_define([gtk_api_required],    [G_ENCODE_VERSION(gtk_major_required, gtk_minor_required)])
 m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
 
-AC_PREREQ([2.69])
+# Other dependencies
+m4_define([gdk_pixbuf_required], [2.26.0])
+m4_define([gir_required],        [1.42.0])
+m4_define([vala_required],       [0.30])
+
+AC_PREREQ(autoconf_required)
 AC_INIT([GPaste], [gpaste_version], [Marc-Antoine@Perennou.com], [gpaste])
 
 AC_SUBST([PACKAGE_NAME])
 AC_SUBST([PACKAGE_VERSION])
 
-# Update LIBGPASTE_LT_VERSION before each release (and only then)
-# The format is C:R:A (current revision age)
-# - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
-# - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
-# - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-LIBGPASTE_LT_VERSION=4:0:0
+LIBGPASTE_LT_VERSION="gpaste_lt_version"
 AC_SUBST([LIBGPASTE_LT_VERSION])
 
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [glib_api_required], [The lower GLib API version supported])
@@ -60,10 +70,10 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
 
 AM_PROG_AR
-LT_PREREQ([2.2.6])
+LT_PREREQ(libtool_required)
 LT_INIT([disable-static pic-only])
 
-AM_INIT_AUTOMAKE([1.15 subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
+AM_INIT_AUTOMAKE(automake_required [subdir-objects check-news foreign no-dist-gzip dist-xz tar-ustar -Wall])
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
 
