@@ -425,6 +425,17 @@ g_paste_list_histories (Context *ctx,
 }
 
 static gint
+g_paste_delete_history (Context *ctx,
+                        GError **error)
+{
+    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : g_paste_client_get_history_name_sync (ctx->client, error);
+
+    g_paste_client_delete_history_sync (ctx->client, name, error);
+
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static gint
 g_paste_settings (Context *ctx G_GNUC_UNUSED,
                   GError **error)
 {
@@ -543,15 +554,6 @@ g_paste_delete_password (Context *ctx,
                          GError **error)
 {
     g_paste_client_delete_password_sync (ctx->client, ctx->args[0], error);
-
-    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
-}
-
-static gint
-g_paste_delete_history (Context *ctx,
-                        GError **error)
-{
-    g_paste_client_delete_history_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -721,6 +723,8 @@ g_paste_dispatch (gint         argc,
         { 1, "history-size",    0,        TRUE,  g_paste_history_size    },
         { 1, "lh",              0,        TRUE,  g_paste_list_histories  },
         { 1, "list-histories",  0,        TRUE,  g_paste_list_histories  },
+        { 1, "dh",              1,        TRUE,  g_paste_delete_history  },
+        { 1, "delete-history",  1,        TRUE,  g_paste_delete_history  },
         { 1, "settings",        0,        FALSE, g_paste_settings        },
         { 1, "p",               0,        FALSE, g_paste_settings        },
         { 1, "preferences",     0,        FALSE, g_paste_settings        },
@@ -747,8 +751,6 @@ g_paste_dispatch (gint         argc,
         { 2, "remove",          0,        TRUE,  g_paste_delete          },
         { 2, "dp",              0,        TRUE,  g_paste_delete_password },
         { 2, "delete-password", 0,        TRUE,  g_paste_delete_password },
-        { 2, "dh",              0,        TRUE,  g_paste_delete_history  },
-        { 2, "delete-history",  0,        TRUE,  g_paste_delete_history  },
         { 2, "f",               0,        TRUE,  g_paste_file            },
         { 2, "file",            0,        TRUE,  g_paste_file            },
         { 2, "g",               0,        TRUE,  g_paste_get             },
