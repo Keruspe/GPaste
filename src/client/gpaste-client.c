@@ -530,14 +530,15 @@ static gint
 g_paste_backup_history (Context *ctx   G_GNUC_UNUSED,
                         GError **error G_GNUC_UNUSED)
 {
-    g_autofree gchar *name = g_paste_client_get_history_name_sync (ctx->client, error);
+    guint64 index = 0;
+    g_autofree gchar *name = (ctx->argc > 1) ? g_strdup (ctx->args[index++]) : g_paste_client_get_history_name_sync (ctx->client, error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    g_paste_client_backup_history_sync (ctx->client, name, ctx->args[0], error);
+    g_paste_client_backup_history_sync (ctx->client, name, ctx->args[index], error);
 
-    return (g_paste_util_has_unity ()) ? spawn ("AppIndicator") : -1;
+    return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static gint
@@ -742,8 +743,8 @@ g_paste_dispatch (gint         argc,
         { 2, "add",             0,        TRUE,  g_paste_add             },
         { 2, "ap",              1,        TRUE,  g_paste_add_password    },
         { 2, "add-password",    1,        TRUE,  g_paste_add_password    },
-        { 2, "bh",              0,        TRUE,  g_paste_backup_history  },
-        { 2, "backup-history",  0,        TRUE,  g_paste_backup_history  },
+        { 2, "bh",              1,        TRUE,  g_paste_backup_history  },
+        { 2, "backup-history",  1,        TRUE,  g_paste_backup_history  },
         { 2, "d",               0,        TRUE,  g_paste_delete          },
         { 2, "del",             0,        TRUE,  g_paste_delete          },
         { 2, "delete",          0,        TRUE,  g_paste_delete          },
