@@ -3,8 +3,6 @@
         rework completions install
         more cppflags
         class methods for signals
-        wayland support
-        apply some redesign ideas
     cli:
         allow specifying history name in gpaste-client for some commands
     gpaste-ui:
@@ -14,7 +12,9 @@ future:
     configure:
         PKG_PREREQ
     general:
+        apply some redesign ideas
         gpg support
+        wayland support
         properties all the way (when GProperty stuff lands)
     libgpaste-client:
         specify errors types when possible in g-i
