@@ -450,5 +450,6 @@ global:
     g_paste_ui_item_skeleton_set_uploadable;
 
     g_paste_util_has_gnome_shell;
+    g_paste_util_read_pid_file;
     g_paste_util_write_pid_file;
 } LIBGPASTE_3_18_0;

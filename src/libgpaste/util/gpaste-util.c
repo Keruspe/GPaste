@@ -476,3 +476,23 @@ g_paste_util_write_pid_file (void)
     g_mkdir_with_parents (dir, 0700);
     g_file_set_contents (pidfile, contents, -1, NULL);
 }
+
+/**
+ * g_paste_util_read_pid_file:
+ *
+ * Read the pid file
+ *
+ * Returns: the pid
+ */
+G_PASTE_VISIBLE pid_t
+g_paste_util_read_pid_file (void)
+{
+    g_autofree gchar *dir = g_paste_util_get_runtime_dir ();
+    g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
+    g_autofree gchar *contents = NULL;
+
+    if (!g_file_get_contents (pidfile, &contents, NULL, NULL))
+        return (pid_t) -1;
+
+    return (pid_t) g_ascii_strtoll (contents, NULL, 0);
+}
