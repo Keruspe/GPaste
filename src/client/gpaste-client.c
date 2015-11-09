@@ -394,7 +394,7 @@ static gint
 g_paste_history_size (Context *ctx,
                       GError **error)
 {
-    g_autofree gchar *name = g_paste_client_get_history_name_sync (ctx->client, error);
+    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : g_paste_client_get_history_name_sync (ctx->client, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -719,8 +719,8 @@ g_paste_dispatch (gint         argc,
         { 1, "get-history",     0,        TRUE,  g_paste_get_history     },
         { 1, "h",               0,        TRUE,  g_paste_history         },
         { 1, "history",         0,        TRUE,  g_paste_history         },
-        { 1, "hs",              0,        TRUE,  g_paste_history_size    },
-        { 1, "history-size",    0,        TRUE,  g_paste_history_size    },
+        { 1, "hs",              1,        TRUE,  g_paste_history_size    },
+        { 1, "history-size",    1,        TRUE,  g_paste_history_size    },
         { 1, "lh",              0,        TRUE,  g_paste_list_histories  },
         { 1, "list-histories",  0,        TRUE,  g_paste_list_histories  },
         { 1, "dh",              1,        TRUE,  g_paste_delete_history  },
