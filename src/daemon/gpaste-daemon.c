@@ -159,12 +159,12 @@ main (gint argc, gchar *argv[])
     };
 
 #ifdef G_OS_UNIX
-    g_unix_signal_add (SIGTERM, signal_handler, app);
-    g_unix_signal_add (SIGINT,  signal_handler, app);
+    g_source_set_name_by_id (g_unix_signal_add (SIGTERM, signal_handler, app), "[GPaste] SIGTERM listener");
+    g_source_set_name_by_id (g_unix_signal_add (SIGINT,  signal_handler, app), "[GPaste] SIGINT listener");
 
     Usr1Data usr1_data = { g_paste_daemon, gapp };
 
-    g_unix_signal_add (SIGUSR1, usr1_handler, &usr1_data);
+    g_source_set_name_by_id (g_unix_signal_add (SIGUSR1, usr1_handler, &usr1_data), "[GPaste] SIGUSR1 listener");
 #endif
 
     g_paste_bus_own_name (bus);
