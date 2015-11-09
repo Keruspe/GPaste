@@ -452,3 +452,27 @@ g_paste_util_get_dbus_au_result (GVariant *variant,
 
     return ret;
 }
+
+static gchar *
+g_paste_util_get_runtime_dir (void)
+{
+    return g_strdup_printf ("%s/" PACKAGE_NAME, g_get_user_runtime_dir ());
+}
+
+/**
+ * g_paste_util_write_pid_file:
+ *
+ * Write the pid file
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_util_write_pid_file (void)
+{
+    g_autofree gchar *dir = g_paste_util_get_runtime_dir ();
+    g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
+    g_autofree gchar *contents = g_strdup_printf ("%d", getpid ());
+
+    g_mkdir_with_parents (dir, 0700);
+    g_file_set_contents (pidfile, contents, -1, NULL);
+}

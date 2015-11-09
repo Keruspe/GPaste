@@ -19,6 +19,7 @@
 
 #include <gpaste-bus.h>
 #include <gpaste-daemon.h>
+#include <gpaste-util.h>
 #include <gpaste-search-provider.h>
 
 #ifdef G_OS_UNIX
@@ -167,6 +168,8 @@ main (gint argc, gchar *argv[])
 #endif
 
     g_paste_bus_own_name (bus);
+
+    g_paste_util_write_pid_file ();
 
     gint64 exit_status = g_application_run (gapp, argc, argv);
 
