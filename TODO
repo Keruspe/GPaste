@@ -7,7 +7,6 @@
         apply some redesign ideas
     cli:
         allow specifying history name in gpaste-client for some commands
-        fallback to USR1 for daemon-reexec
     gpaste-ui:
         merge
 

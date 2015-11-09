@@ -329,10 +329,23 @@ g_paste_daemon_reexec (Context *ctx,
 {
     g_paste_client_reexecute_sync (ctx->client, error);
 
-    if (*error && (*error)->code != G_DBUS_ERROR_NO_REPLY)
-        return EXIT_FAILURE;
+    gboolean success = (!*error || (*error)->code == G_DBUS_ERROR_NO_REPLY);
 
     g_clear_error (error);
+
+#ifdef G_OS_UNIX
+    if (!success)
+    {
+        pid_t pid = g_paste_util_read_pid_file ();
+
+        if (pid != (pid_t) -1)
+            success = !kill (pid, SIGUSR1);
+    }
+#endif
+
+    if (!success)
+        return EXIT_FAILURE;
+
     printf (_("Successfully reexecuted the daemon\n"));
 
     return EXIT_SUCCESS;
