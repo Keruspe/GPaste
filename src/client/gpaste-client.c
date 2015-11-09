@@ -366,7 +366,7 @@ static gint
 g_paste_empty (Context *ctx,
                GError **error)
 {
-    g_autofree gchar *name = g_paste_client_get_history_name_sync (ctx->client, error);
+    g_autofree gchar *name = (ctx->argc) ? g_strdup (ctx->args[0]) : g_paste_client_get_history_name_sync (ctx->client, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -713,8 +713,8 @@ g_paste_dispatch (gint         argc,
         { 1, "daemon-reexec",   0,        TRUE,  g_paste_daemon_reexec   },
         { 1, "dv",              0,        TRUE,  g_paste_daemon_version  },
         { 1, "daemon-version",  0,        TRUE,  g_paste_daemon_version  },
-        { 1, "e",               0,        TRUE,  g_paste_empty           },
-        { 1, "empty",           0,        TRUE,  g_paste_empty           },
+        { 1, "e",               1,        TRUE,  g_paste_empty           },
+        { 1, "empty",           1,        TRUE,  g_paste_empty           },
         { 1, "gh",              0,        TRUE,  g_paste_get_history     },
         { 1, "get-history",     0,        TRUE,  g_paste_get_history     },
         { 1, "h",               0,        TRUE,  g_paste_history         },
