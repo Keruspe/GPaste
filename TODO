@@ -8,8 +8,6 @@
     cli:
         allow specifying history name in gpaste-client for some commands
         fallback to USR1 for daemon-reexec
-    daemon:
-        implem USR1
     gpaste-ui:
         merge
 
