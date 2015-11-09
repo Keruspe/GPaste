@@ -484,7 +484,7 @@ g_paste_util_write_pid_file (void)
  *
  * Returns: the pid
  */
-G_PASTE_VISIBLE pid_t
+G_PASTE_VISIBLE GPid
 g_paste_util_read_pid_file (void)
 {
     g_autofree gchar *dir = g_paste_util_get_runtime_dir ();
@@ -492,7 +492,7 @@ g_paste_util_read_pid_file (void)
     g_autofree gchar *contents = NULL;
 
     if (!g_file_get_contents (pidfile, &contents, NULL, NULL))
-        return (pid_t) -1;
+        return (GPid) -1;
 
-    return (pid_t) g_ascii_strtoll (contents, NULL, 0);
+    return (GPid) g_ascii_strtoll (contents, NULL, 0);
 }
