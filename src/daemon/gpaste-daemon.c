@@ -22,8 +22,21 @@
 #include <gpaste-search-provider.h>
 
 #ifdef G_OS_UNIX
-#include <glib-unix.h>
+#  include <glib-unix.h>
+#endif
 
+static void
+reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
+        gpointer      user_data)
+{
+    GApplication *app = user_data;
+
+    g_application_quit (app);
+
+    execl (PKGLIBEXECDIR "/gpaste-daemon", "gpaste-daemon", NULL);
+}
+
+#ifdef G_OS_UNIX
 static gboolean
 signal_handler (gpointer user_data)
 {
@@ -31,6 +44,22 @@ signal_handler (gpointer user_data)
 
     g_print ("%s\n", _("Stop signal received, exiting"));
     g_application_quit (app);
+
+    return G_SOURCE_REMOVE;
+}
+
+typedef struct
+{
+    GPasteDaemon *daemon;
+    GApplication *app;
+} Usr1Data;
+
+static gboolean
+usr1_handler (gpointer user_data)
+{
+    Usr1Data *data = user_data;
+
+    reexec (data->daemon, data->app);
 
     return G_SOURCE_REMOVE;
 }
@@ -52,6 +81,7 @@ on_name_lost (GPasteBus *bus G_GNUC_UNUSED,
 
     fprintf (stderr, "%s\n", _("Could not acquire DBus name."));
     g_application_quit (app);
+
     exit (EXIT_FAILURE);
 }
 
@@ -96,16 +126,6 @@ on_bus_acquired (GPasteBus *bus,
     g_idle_add (register_search_provider, user_data);
 }
 
-static void
-reexec (GPasteDaemon *g_paste_daemon G_GNUC_UNUSED,
-        gpointer      user_data)
-{
-    GApplication *app = user_data;
-
-    g_application_quit (app);
-    execl (PKGLIBEXECDIR "/gpaste-daemon", "gpaste-daemon", NULL);
-}
-
 gint
 main (gint argc, gchar *argv[])
 {
@@ -140,6 +160,10 @@ main (gint argc, gchar *argv[])
 #ifdef G_OS_UNIX
     g_unix_signal_add (SIGTERM, signal_handler, app);
     g_unix_signal_add (SIGINT,  signal_handler, app);
+
+    Usr1Data usr1_data = { g_paste_daemon, gapp };
+
+    g_unix_signal_add (SIGUSR1, usr1_handler, &usr1_data);
 #endif
 
     g_paste_bus_own_name (bus);
