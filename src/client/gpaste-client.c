@@ -772,7 +772,7 @@ g_paste_dispatch (gint         argc,
 
     for (guint64 i = 0; i < G_N_ELEMENTS (dispatch); ++i)
     {
-        if (argc == dispatch[i].argc || (argc > dispatch[i].argc && argc < (dispatch[i].argc + dispatch[i].extra_args)))
+        if (argc == dispatch[i].argc || dispatch[i].extra_args == G_MAXINT || (argc > dispatch[i].argc && argc <= (dispatch[i].argc + dispatch[i].extra_args)))
         {
             if (argc > 0 && dispatch[i].verb && g_strcmp0 (verb, dispatch[i].verb))
                 continue;
