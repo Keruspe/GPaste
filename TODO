@@ -3,8 +3,6 @@
         rework completions install
         more cppflags
         class methods for signals
-    cli:
-        allow specifying history name in gpaste-client for some commands
     gpaste-ui:
         merge
 
