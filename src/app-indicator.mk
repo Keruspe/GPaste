@@ -27,15 +27,20 @@ bin_gpaste_app_indicator_SOURCES =                      \
 	%D%/app-indicator/gpaste-app-indicator.c        \
 	$(NULL)
 
-bin_gpaste_app_indicator_CFLAGS =     \
+bin_gpaste_app_indicator_CPPFLAGS =   \
+	$(AM_CPPFLAGS)                \
 	-I$(srcdir)/%D%/app-indicator \
-	$(UNITY_CFLAGS)               \
-	$(AM_CFLAGS)                  \
+	$(NULL)
+
+bin_gpaste_app_indicator_CFLAGS = \
+	$(GLIB_CFLAGS)            \
+	$(GTK_CFLAGS)             \
+	$(UNITY_CFLAGS)           \
 	$(NULL)
 
 bin_gpaste_app_indicator_LDADD =         \
 	$(builddir)/$(libgpaste_la_file) \
+	$(GLIB_LIBS)                     \
 	$(GTK_LIBS)                      \
 	$(UNITY_LIBS)                    \
-	$(AM_LIBS)                       \
 	$(NULL)

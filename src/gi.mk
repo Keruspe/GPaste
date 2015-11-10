@@ -27,7 +27,7 @@ bindings_GPaste_1_0_gir_FILES =     \
 	$(lib_libgpaste_la_SOURCES) \
 	$(NULL)
 bindings_GPaste_1_0_gir_CFLAGS = \
-	$(AM_CFLAGS)             \
+	$(AM_CPPFLAGS)           \
 	$(NULL)
 bindings_GPaste_1_0_gir_LIBS = $(libgpaste_la_file)
 binsings_GPaste_1_0_gir_EXPORT_PACKAGES = libgpaste

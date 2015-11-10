@@ -161,20 +161,25 @@ lib_libgpaste_la_SOURCES =                  \
 	$(lib_libgpaste_la_source_files)    \
 	$(NULL)
 
-lib_libgpaste_la_CFLAGS =         \
+lib_libgpaste_la_CPPFLAGS =       \
+	$(AM_CPPFLAGS)            \
 	-DG_LOG_DOMAIN=\"GPaste\" \
-	$(GDK_CFLAGS)             \
-	$(GDK_PIXBUF_CFLAGS)      \
-	$(X11_CFLAGS)             \
-	$(AM_CFLAGS)              \
+	$(NULL)
+
+lib_libgpaste_la_CFLAGS =    \
+	$(GDK_CFLAGS)        \
+	$(GDK_PIXBUF_CFLAGS) \
+	$(GLIB_CFLAGS)       \
+	$(GTK_CFLAGS)        \
+	$(X11_CFLAGS)        \
 	$(NULL)
 
 lib_libgpaste_la_LIBADD =  \
 	$(GDK_LIBS)        \
 	$(GDK_PIXBUF_LIBS) \
+	$(GLIB_LIBS)       \
 	$(GTK_LIBS)        \
 	$(X11_LIBS)        \
-	$(AM_LIBS)         \
 	$(NULL)
 
 libgpaste_symbols_file = $(srcdir)/%D%/libgpaste/libgpaste.sym

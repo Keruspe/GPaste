@@ -24,10 +24,11 @@ bin_gpaste_client_SOURCES =        \
 	$(NULL)
 
 bin_gpaste_client_CFLAGS = \
-	$(AM_CFLAGS)       \
+	$(GLIB_CFLAGS)     \
+	$(GTK_CFLAGS)      \
 	$(NULL)
 
 bin_gpaste_client_LDADD =                \
 	$(builddir)/$(libgpaste_la_file) \
-	$(AM_LIBS)                       \
+	$(GLIB_LIBS)                     \
 	$(NULL)

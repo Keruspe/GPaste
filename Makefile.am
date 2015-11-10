@@ -30,7 +30,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS =                                          \
 	--enable-vala                                                   \
 	$(NULL)
 
-AM_CFLAGS =                                          \
+AM_CPPFLAGS =                                        \
 	-include config.h                            \
 	-I$(srcdir)/src/libgpaste                    \
 	-I$(srcdir)/src/libgpaste/applet             \
@@ -47,12 +47,6 @@ AM_CFLAGS =                                          \
 	-DG_PASTE_COMPILATION                        \
 	-DLOCALEDIR=\"$(localedir)\"                 \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"         \
-	$(GLIB_CFLAGS)                               \
-	$(GTK_CFLAGS)                                \
-	$(NULL)
-
-AM_LIBS =            \
-	$(GLIB_LIBS) \
 	$(NULL)
 
 EXTRA_DIST =       \

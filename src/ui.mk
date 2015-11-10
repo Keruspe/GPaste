@@ -24,11 +24,12 @@ bin_gpaste_ui_SOURCES =    \
 	$(NULL)
 
 bin_gpaste_ui_CFLAGS = \
-	$(AM_CFLAGS)   \
+	$(GLIB_CFLAGS) \
+	$(GTK_CFLAGS)  \
 	$(NULL)
 
 bin_gpaste_ui_LDADD =                    \
 	$(builddir)/$(libgpaste_la_file) \
+	$(GLIB_LIBS)                     \
 	$(GTK_LIBS)                      \
-	$(AM_LIBS)                       \
 	$(NULL)
