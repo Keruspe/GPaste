@@ -459,13 +459,6 @@ g_paste_util_get_runtime_dir (const gchar *component)
     return g_strdup_printf ("%s/" PACKAGE_NAME "/%s", g_get_user_runtime_dir (), component);
 }
 
-/* Taken from glib's tests/child-test.c */
-#ifdef G_OS_WIN32
-#  define _GPID_FORMAT "%p"
-#else
-#  define _GPID_FORMAT "%d"
-#endif
-
 /**
  * g_paste_util_write_pid_file:
  * @component: The component we're handling
@@ -478,11 +471,15 @@ G_PASTE_VISIBLE void
 g_paste_util_write_pid_file (const gchar *component)
 {
     g_autofree gchar *dir = g_paste_util_get_runtime_dir (component);
-    g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
-    g_autofree gchar *contents = g_strdup_printf (_GPID_FORMAT, getpid ());
 
     g_mkdir_with_parents (dir, 0700);
+
+#ifdef G_OS_UNIX
+    g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
+    g_autofree gchar *contents = g_strdup_printf ("%d", getpid ());
+
     g_file_set_contents (pidfile, contents, -1, NULL);
+#endif
 }
 
 /**
@@ -496,6 +493,7 @@ g_paste_util_write_pid_file (const gchar *component)
 G_PASTE_VISIBLE GPid
 g_paste_util_read_pid_file (const gchar *component)
 {
+#ifdef G_OS_UNIX
     g_autofree gchar *dir = g_paste_util_get_runtime_dir (component);
     g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
     g_autofree gchar *contents = NULL;
@@ -504,4 +502,7 @@ g_paste_util_read_pid_file (const gchar *component)
         return (GPid) -1;
 
     return (GPid) g_ascii_strtoll (contents, NULL, 0);
+#else
+    return (GPid) -1;
+#endif
 }
