@@ -169,7 +169,7 @@ main (gint argc, gchar *argv[])
 
     g_paste_bus_own_name (bus);
 
-    g_paste_util_write_pid_file ();
+    g_paste_util_write_pid_file ("Daemon");
 
     gint64 exit_status = g_application_run (gapp, argc, argv);
 

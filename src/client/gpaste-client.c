@@ -336,7 +336,7 @@ g_paste_daemon_reexec (Context *ctx,
 #ifdef G_OS_UNIX
     if (!success)
     {
-        GPid pid = g_paste_util_read_pid_file ();
+        GPid pid = g_paste_util_read_pid_file ("Daemon");
 
         if (pid != (GPid) -1)
             success = !kill (pid, SIGUSR1);

@@ -454,9 +454,9 @@ g_paste_util_get_dbus_au_result (GVariant *variant,
 }
 
 static gchar *
-g_paste_util_get_runtime_dir (void)
+g_paste_util_get_runtime_dir (const gchar *component)
 {
-    return g_strdup_printf ("%s/" PACKAGE_NAME, g_get_user_runtime_dir ());
+    return g_strdup_printf ("%s/" PACKAGE_NAME "/%s", g_get_user_runtime_dir (), component);
 }
 
 /* Taken from glib's tests/child-test.c */
@@ -468,15 +468,16 @@ g_paste_util_get_runtime_dir (void)
 
 /**
  * g_paste_util_write_pid_file:
+ * @component: The component we're handling
  *
  * Write the pid file
  *
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_util_write_pid_file (void)
+g_paste_util_write_pid_file (const gchar *component)
 {
-    g_autofree gchar *dir = g_paste_util_get_runtime_dir ();
+    g_autofree gchar *dir = g_paste_util_get_runtime_dir (component);
     g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
     g_autofree gchar *contents = g_strdup_printf (_GPID_FORMAT, getpid ());
 
@@ -486,15 +487,16 @@ g_paste_util_write_pid_file (void)
 
 /**
  * g_paste_util_read_pid_file:
+ * @component: The component we're handling
  *
  * Read the pid file
  *
  * Returns: the pid
  */
 G_PASTE_VISIBLE GPid
-g_paste_util_read_pid_file (void)
+g_paste_util_read_pid_file (const gchar *component)
 {
-    g_autofree gchar *dir = g_paste_util_get_runtime_dir ();
+    g_autofree gchar *dir = g_paste_util_get_runtime_dir (component);
     g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
     g_autofree gchar *contents = NULL;
 

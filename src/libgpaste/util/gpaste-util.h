@@ -57,8 +57,8 @@ guint64 *g_paste_util_get_dbus_at_result (GVariant *variant,
 guint32 *g_paste_util_get_dbus_au_result (GVariant *variant,
                                           guint64  *len);
 
-void g_paste_util_write_pid_file (void);
-GPid g_paste_util_read_pid_file  (void);
+void g_paste_util_write_pid_file (const gchar *component);
+GPid g_paste_util_read_pid_file  (const gchar *component);
 
 G_END_DECLS
 
