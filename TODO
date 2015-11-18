@@ -5,12 +5,15 @@
     gpaste-ui:
         merge
 
-future:
+3.22:
     configure:
-        PKG_PREREQ
+        PKG_PREREQ([0.29])
     general:
         apply some redesign ideas
         gpg support
+
+future:
+    general:
         wayland support
         properties all the way (when GProperty stuff lands)
     libgpaste-client:
