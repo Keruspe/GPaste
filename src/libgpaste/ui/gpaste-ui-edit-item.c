@@ -21,12 +21,12 @@
 
 struct _GPasteUiEditItem
 {
-    GtkButton parent_instance;
+    GPasteUiItemAction parent_instance;
 };
 
 typedef struct
 {
-    GtkWindow    *rootwin;
+    GtkWindow *rootwin;
 } GPasteUiEditItemPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEditItem, g_paste_ui_edit_item, G_PASTE_TYPE_UI_ITEM_ACTION)
