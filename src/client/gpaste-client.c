@@ -804,7 +804,7 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     g_autoptr (GError) error = NULL;
-    Context ctx = { NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context ctx = { NULL, 0, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     gint status;
 
     if (parse_cmdline (&argc, &argv, &ctx))
