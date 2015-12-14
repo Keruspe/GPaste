@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2015-10-16 14:50+0200\n"
+"POT-Creation-Date: 2015-12-14 18:46+0100\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -22,11 +22,6 @@ msgstr ""
 msgid "Failed to register the gtk application"
 msgstr "Initialisierung der Gtk-Anwendung fehlgeschlagen"
 
-#: ../src/libgpaste/applet/gpaste-applet.c:156
-#: ../src/libgpaste/applet/gpaste-applet.c:184
-msgid "is not installed"
-msgstr ""
-
 #: ../src/libgpaste/applet/gpaste-applet-about.c:81
 #: ../src/libgpaste/ui/gpaste-ui-about.c:52
 msgid "About"
@@ -38,12 +33,12 @@ msgstr "Beenden"
 
 #. Translators: help for gpaste ui
 #: ../src/libgpaste/applet/gpaste-applet-ui.c:61
-#: ../src/gpaste-client/gpaste-client.c:83
+#: ../src/client/gpaste-client.c:216
 #, fuzzy
 msgid "launch the graphical tool"
 msgstr "Konfigurationswerkzeug starten"
 
-#: ../src/libgpaste/core/gpaste-history.c:759
+#: ../src/libgpaste/core/gpaste-history.c:744
 msgid "Could not create history dir"
 msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
@@ -68,7 +63,7 @@ msgstr ""
 msgid "[Files] "
 msgstr "[Dateien]"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:126
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:124
 #: ../src/libgpaste/ui/gpaste-ui-switch.c:96
 msgid "Track clipboard changes"
 msgstr "Verfolge Änderungen in der Zwischenablage"
@@ -81,118 +76,117 @@ msgstr "Die Gnome-Shell-Erweiterung aktivieren"
 msgid "Sync the daemon state with the extension's one"
 msgstr "Synchronisiere Daemon mit der Erweiterung"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:147
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:148
 msgid "Primary selection affects history"
 msgstr "Auswahl beeinflusst Chronik"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:153
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:154
 msgid "Synchronize clipboard with primary selection"
 msgstr "Synchronisiere Zwischenablage mit Auswahl"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:160
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:161
 msgid "Images support"
 msgstr "Bilder unterstützen"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:166
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:167
 msgid "Trim items"
 msgstr "Objekte trimmen"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:172
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:173
 msgid "Detect growing lines"
 msgstr "Länger werdende Zeilen entdecken"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:179
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:180
 msgid "Save history"
 msgstr "Chronik speichern"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:202
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:203
 msgid "Max element size when displaying: "
 msgstr "Maximale Größe des anzuzeigenden Eintrages:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:209
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:210
 msgid "Max displayed history size: "
 msgstr "Anzahl der anzuzeigenden Einträge:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:216
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:217
 msgid "Max history size: "
 msgstr "Maximale Größe der Chronik:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:223
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:224
 msgid "Max memory usage (MB): "
 msgstr "Maximaler Speicherverbrauch (MB):"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:230
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:231
 msgid "Max text item length: "
 msgstr "Maximale Textlänge:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:237
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:238
 msgid "Min text item length: "
 msgstr "Minimale Textlänge:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:263
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:264
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
 #, fuzzy
 msgid "Delete the active item from history: "
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:270
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:271
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
 #, fuzzy
 msgid "Launch the graphical tool: "
 msgstr "Konfigurationswerkzeug starten"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:277
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:278
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
 msgid "Mark the active item as being a password: "
 msgstr ""
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:284
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:285
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
 msgid "Display the history: "
 msgstr "Chronik anzeigen:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:291
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:292
 #: ../data/control-center/42-gpaste.xml.in.in.h:5
 msgid "Sync the clipboard to the primary selection: "
 msgstr "Zwischenablage mit der Auswahl synchronisieren:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:298
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:299
 #: ../data/control-center/42-gpaste.xml.in.in.h:6
 msgid "Sync the primary selection to the clipboard: "
 msgstr "Auswahl mit der Zwischenablage synchronisieren:"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:305
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:306
 #: ../data/control-center/42-gpaste.xml.in.in.h:7
 #, fuzzy
 msgid "Upload the active item to a pastebin service: "
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: ../src/libgpaste/ui/gpaste-ui-window.c:211
-#: ../src/gpaste-client/gpaste-client.c:185
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:321
+#: ../src/libgpaste/ui/gpaste-ui-window.c:211 ../src/client/gpaste-client.c:830
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:337
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:338
 msgid "General behaviour"
 msgstr "Allgemeine Optionen"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:338
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:339
 msgid "History settings"
 msgstr "Einstellungen zur Chronik"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:339
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:340
 msgid "Keyboard shortcuts"
 msgstr "Tastaturkürzel"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:455
 #: ../src/libgpaste/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
 msgstr "Wechseln zu"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:460
 #: ../src/libgpaste/ui/gpaste-ui-delete-item.c:62
 #: ../src/libgpaste/ui/gpaste-ui-delete-history.c:37
 #: ../src/libgpaste/ui/gpaste-ui-delete-history.c:74
@@ -206,7 +200,8 @@ msgstr "Backup"
 
 #: ../src/libgpaste/ui/gpaste-ui-backup-history.c:48
 #: ../src/libgpaste/ui/gpaste-ui-edit-item.c:56
-#: ../src/libgpaste/util/gpaste-util.c:43
+#: ../src/libgpaste/ui/gpaste-ui-new-item.c:43
+#: ../src/libgpaste/util/gpaste-util.c:44
 msgid "Cancel"
 msgstr ""
 
@@ -238,6 +233,11 @@ msgstr ""
 #: ../src/libgpaste/ui/gpaste-ui-empty-item.c:37
 msgid "(Empty)"
 msgstr "(Leer)"
+
+#: ../src/libgpaste/ui/gpaste-ui-new-item.c:42
+#: ../src/libgpaste/ui/gpaste-ui-new-item.c:90
+msgid "New"
+msgstr ""
 
 #: ../src/libgpaste/ui/gpaste-ui-reexec.c:42
 msgid "Restart"
@@ -273,28 +273,29 @@ msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 msgid "Upload"
 msgstr ""
 
-#: ../src/daemon/gpaste-daemon.c:47
-msgid "Could not acquire DBus name."
-msgstr "DBus-Name konnte nicht bestimmt werden."
+#: ../src/client/gpaste-client.c:146 ../src/client/gpaste-client.c:444
+#, fuzzy
+msgid "Couldn't spawn"
+msgstr "gpaste-applet konnte nicht gestartet werden.\n"
 
-#: ../src/gpaste-client/gpaste-client.c:31
+#: ../src/client/gpaste-client.c:164
 #, c-format
 msgid "Usage:\n"
 msgstr "Verwendung:\n"
 
 #. Translators: help for gpaste history
-#: ../src/gpaste-client/gpaste-client.c:33
+#: ../src/client/gpaste-client.c:166
 msgid "print the history with indexes"
 msgstr "Chronik mit Index anzeigen"
 
 #. Translators: help for gpaste history-size
-#: ../src/gpaste-client/gpaste-client.c:35
+#: ../src/client/gpaste-client.c:168
 #, fuzzy
 msgid "print the size of the history"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #. Translators: help for gpaste get-history
-#: ../src/gpaste-client/gpaste-client.c:37
+#: ../src/client/gpaste-client.c:170
 #, fuzzy
 msgid "get the name of the current history"
 msgstr "Name der Aktuellen Chronik"
@@ -304,62 +305,59 @@ msgstr "Name der Aktuellen Chronik"
 #. Translators: help for gpaste delete-history <name>
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste delete-passworf <name>
-#: ../src/gpaste-client/gpaste-client.c:39
-#: ../src/gpaste-client/gpaste-client.c:41
-#: ../src/gpaste-client/gpaste-client.c:43
-#: ../src/gpaste-client/gpaste-client.c:49
-#: ../src/gpaste-client/gpaste-client.c:61
-#: ../src/gpaste-client/gpaste-client.c:65
+#: ../src/client/gpaste-client.c:172 ../src/client/gpaste-client.c:174
+#: ../src/client/gpaste-client.c:176 ../src/client/gpaste-client.c:182
+#: ../src/client/gpaste-client.c:194 ../src/client/gpaste-client.c:198
 msgid "name"
 msgstr "Name"
 
-#: ../src/gpaste-client/gpaste-client.c:39
+#: ../src/client/gpaste-client.c:172
 msgid "backup current history"
 msgstr "Aktuelle Chronik sichern"
 
-#: ../src/gpaste-client/gpaste-client.c:41
+#: ../src/client/gpaste-client.c:174
 msgid "switch to another history"
 msgstr "Zu einer anderen Chronik wechseln"
 
-#: ../src/gpaste-client/gpaste-client.c:43
+#: ../src/client/gpaste-client.c:176
 msgid "delete a history"
 msgstr "Lösche eine Chronik"
 
 #. Translators: help for gpaste list-histories
-#: ../src/gpaste-client/gpaste-client.c:45
+#: ../src/client/gpaste-client.c:178
 msgid "list available histories"
 msgstr "Verfügbare Chroniken anzeigen"
 
 #. Translators: help for gpaste add <text>
-#: ../src/gpaste-client/gpaste-client.c:47
+#: ../src/client/gpaste-client.c:180
 msgid "text"
 msgstr "Text"
 
-#: ../src/gpaste-client/gpaste-client.c:47
+#: ../src/client/gpaste-client.c:180
 msgid "set text to clipboard"
 msgstr "Den markierten Text in die Zwischenablage kopieren"
 
-#: ../src/gpaste-client/gpaste-client.c:49
+#: ../src/client/gpaste-client.c:182
 msgid "password"
 msgstr ""
 
-#: ../src/gpaste-client/gpaste-client.c:49
+#: ../src/client/gpaste-client.c:182
 #, fuzzy
 msgid "add the name - password couple to the clipboard"
 msgstr "Auswahl mit der Zwischenablage synchronisieren:"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: ../src/gpaste-client/gpaste-client.c:51
+#: ../src/client/gpaste-client.c:184
 #, fuzzy
 msgid "old name"
 msgstr "Name"
 
-#: ../src/gpaste-client/gpaste-client.c:51
+#: ../src/client/gpaste-client.c:184
 #, fuzzy
 msgid "new name"
 msgstr "Name"
 
-#: ../src/gpaste-client/gpaste-client.c:51
+#: ../src/client/gpaste-client.c:184
 msgid "rename the password"
 msgstr ""
 
@@ -370,202 +368,201 @@ msgstr ""
 #. Translators: help for gpaste set-password <number> <name>
 #. Translators: help for gpaste delete <number>
 #. Translators: help for gpaste upload
-#: ../src/gpaste-client/gpaste-client.c:53
-#: ../src/gpaste-client/gpaste-client.c:55
-#: ../src/gpaste-client/gpaste-client.c:57
-#: ../src/gpaste-client/gpaste-client.c:59
-#: ../src/gpaste-client/gpaste-client.c:61
-#: ../src/gpaste-client/gpaste-client.c:63
-#: ../src/gpaste-client/gpaste-client.c:97
+#: ../src/client/gpaste-client.c:186 ../src/client/gpaste-client.c:188
+#: ../src/client/gpaste-client.c:190 ../src/client/gpaste-client.c:192
+#: ../src/client/gpaste-client.c:194 ../src/client/gpaste-client.c:196
+#: ../src/client/gpaste-client.c:230
 msgid "number"
 msgstr "Nummer"
 
-#: ../src/gpaste-client/gpaste-client.c:53
+#: ../src/client/gpaste-client.c:186
 msgid "get the <number>th item from the history"
 msgstr "Hole den <number>ten Eintrag aus der Chronik"
 
-#: ../src/gpaste-client/gpaste-client.c:55
+#: ../src/client/gpaste-client.c:188
 msgid "set the <number>th item from the history to the clipboard"
 msgstr "Setze den <number>ten Eintrag aus der Chronik in die Zwischenablage"
 
-#: ../src/gpaste-client/gpaste-client.c:57
+#: ../src/client/gpaste-client.c:190
 msgid "contents"
 msgstr ""
 
-#: ../src/gpaste-client/gpaste-client.c:57
+#: ../src/client/gpaste-client.c:190
 #, fuzzy
 msgid ""
 "replace the contents of the <number>th item from the history with the "
 "provided one"
 msgstr "Setze den <number>ten Eintrag aus der Chronik in die Zwischenablage"
 
-#: ../src/gpaste-client/gpaste-client.c:59
+#: ../src/client/gpaste-client.c:192
 #, fuzzy
 msgid ""
 "merge the <number>th items from the history and add put the result in the "
 "clipboard"
 msgstr "Setze den <number>ten Eintrag aus der Chronik in die Zwischenablage"
 
-#: ../src/gpaste-client/gpaste-client.c:61
+#: ../src/client/gpaste-client.c:194
 #, fuzzy
 msgid "set the <number>th item from the history as a password named <name>"
 msgstr "Setze den <number>ten Eintrag aus der Chronik in die Zwischenablage"
 
-#: ../src/gpaste-client/gpaste-client.c:63
+#: ../src/client/gpaste-client.c:196
 msgid "delete <number>th item of the history"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
-#: ../src/gpaste-client/gpaste-client.c:65
+#: ../src/client/gpaste-client.c:198
 #, fuzzy
 msgid "delete the password <name> from the history"
 msgstr "Hole den <number>ten Eintrag aus der Chronik"
 
 #. Translators: help for gpaste file <path>
-#: ../src/gpaste-client/gpaste-client.c:67
+#: ../src/client/gpaste-client.c:200
 msgid "path"
 msgstr "Pfad"
 
-#: ../src/gpaste-client/gpaste-client.c:67
+#: ../src/client/gpaste-client.c:200
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "Kopiere den Inhalt der Datei in <path> zur Zwischenablage"
 
 #. Translators: help for whatever | gpaste
-#: ../src/gpaste-client/gpaste-client.c:69
+#: ../src/client/gpaste-client.c:202
 msgid "whatever"
 msgstr "PROGRAMM"
 
-#: ../src/gpaste-client/gpaste-client.c:69
+#: ../src/client/gpaste-client.c:202
 msgid "set the output of whatever to clipboard"
 msgstr "kopiert die Ausgabe von PROGRAMM in die Zwischenablage"
 
 #. Translators: help for gpaste empty
-#: ../src/gpaste-client/gpaste-client.c:71
+#: ../src/client/gpaste-client.c:204
 msgid "empty the history"
 msgstr "Chronik leeren"
 
 #. Translators: help for gpaste start
-#: ../src/gpaste-client/gpaste-client.c:73
+#: ../src/client/gpaste-client.c:206
 msgid "start tracking clipboard changes"
 msgstr "Startet die Verfolgung von Änderungen an der Zwischenablage"
 
 #. Translators: help for gpaste stop
-#: ../src/gpaste-client/gpaste-client.c:75
+#: ../src/client/gpaste-client.c:208
 msgid "stop tracking clipboard changes"
 msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 
 #. Translators: help for gpaste quit
-#: ../src/gpaste-client/gpaste-client.c:77
+#: ../src/client/gpaste-client.c:210
 #, fuzzy
 msgid "alias for stop"
 msgstr "Alias für stop"
 
 #. Translators: help for gpaste daemon-reexec
-#: ../src/gpaste-client/gpaste-client.c:79
+#: ../src/client/gpaste-client.c:212
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "Startet den Daemon neu (Nach einem Update …)"
 
 #. Translators: help for gpaste settings
-#: ../src/gpaste-client/gpaste-client.c:81
+#: ../src/client/gpaste-client.c:214
 msgid "launch the configuration tool"
 msgstr "Konfigurationswerkzeug starten"
 
 #. Translators: help for gpaste applet
-#: ../src/gpaste-client/gpaste-client.c:87
+#: ../src/client/gpaste-client.c:220
 msgid "launch the applet"
 msgstr "Applet starten"
 
 #. Translators: help for gpaste app-indicator
-#: ../src/gpaste-client/gpaste-client.c:92
+#: ../src/client/gpaste-client.c:225
 #, fuzzy
 msgid "launch the unity application indicator"
 msgstr "Konfigurationswerkzeug starten"
 
 #. Translators: help for gpaste show-history
-#: ../src/gpaste-client/gpaste-client.c:95
+#: ../src/client/gpaste-client.c:228
 #, fuzzy
 msgid "make the applet or extension display the history"
 msgstr "Die maximale Anzahl der anzuzeigenden Einträge in der Chronik"
 
-#: ../src/gpaste-client/gpaste-client.c:97
+#: ../src/client/gpaste-client.c:230
 #, fuzzy
 msgid "upload the <number>th item to a pastebin service"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #. Translators: help for gpaste version
-#: ../src/gpaste-client/gpaste-client.c:99
+#: ../src/client/gpaste-client.c:232
 msgid "display the version"
 msgstr "Programmversion anzeigen"
 
 #. Translators: help for gpaste daemon-version
-#: ../src/gpaste-client/gpaste-client.c:101
+#: ../src/client/gpaste-client.c:234
 #, fuzzy
 msgid "display the daemon version"
 msgstr "Programmversion anzeigen"
 
 #. Translators: help for gpaste help
-#: ../src/gpaste-client/gpaste-client.c:103
+#: ../src/client/gpaste-client.c:236
 msgid "display this help"
 msgstr "Diesen Hilfetext anzeigen"
 
 #. Translators: help for gpaste about
-#: ../src/gpaste-client/gpaste-client.c:105
+#: ../src/client/gpaste-client.c:238
 #, fuzzy
 msgid "display the about dialog"
 msgstr "Programmversion anzeigen"
 
-#: ../src/gpaste-client/gpaste-client.c:108
+#: ../src/client/gpaste-client.c:241
 #, fuzzy, c-format
 msgid "Display options:"
 msgstr "Chronik anzeigen:"
 
 #. Translators: help for --oneline
-#: ../src/gpaste-client/gpaste-client.c:111
+#: ../src/client/gpaste-client.c:244
 #, fuzzy
 msgid "display each item on only one line"
 msgstr "Programmversion anzeigen"
 
 #. Translators: help for --oneline
-#: ../src/gpaste-client/gpaste-client.c:113
+#: ../src/client/gpaste-client.c:246
 msgid "display each item raw (without line numbers)"
 msgstr ""
 
 #. Translators: help for --oneline
-#: ../src/gpaste-client/gpaste-client.c:115
+#: ../src/client/gpaste-client.c:248
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
 
-#: ../src/gpaste-client/gpaste-client.c:118
+#: ../src/client/gpaste-client.c:251
 #, fuzzy, c-format
 msgid "Merge options:"
 msgstr "Chronik anzeigen:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: ../src/gpaste-client/gpaste-client.c:121
-#: ../src/gpaste-client/gpaste-client.c:123
+#: ../src/client/gpaste-client.c:254 ../src/client/gpaste-client.c:256
 msgid "string"
 msgstr ""
 
-#: ../src/gpaste-client/gpaste-client.c:121
+#: ../src/client/gpaste-client.c:254
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
 
-#: ../src/gpaste-client/gpaste-client.c:123
+#: ../src/client/gpaste-client.c:256
 msgid "add the given separator between each item when merging"
 msgstr ""
 
-#: ../src/gpaste-client/gpaste-client.c:196
-#: ../src/gpaste-client/gpaste-client.c:410
-#, fuzzy
-msgid "Couldn't spawn"
-msgstr "gpaste-applet konnte nicht gestartet werden.\n"
-
-#: ../src/gpaste-client/gpaste-client.c:355
+#: ../src/client/gpaste-client.c:349
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Daemon wurde erfolgreich neu gestartet\n"
+
+#: ../src/daemon/gpaste-daemon.c:46
+#, fuzzy
+msgid "Stop signal received, exiting"
+msgstr "Signal %d wurde empfangen. Programm wird beendet\n"
+
+#: ../src/daemon/gpaste-daemon.c:83
+msgid "Could not acquire DBus name."
+msgstr "DBus-Name konnte nicht bestimmt werden."
 
 #: ../data/appstream/org.gnome.GPaste.Applet.appdata.xml.in.h:1
 #: ../data/desktop/org.gnome.GPaste.Applet.desktop.in.in.h:1
@@ -870,9 +867,6 @@ msgid ""
 msgstr ""
 "Die Vorgabe ist Strg + Alt + v (\"&lt;Strg&gt;&lt;Alt&gt;V\"). Ein leeres "
 "Feld schaltet diese Funktion ab."
-
-#~ msgid "Signal %d received, exiting\n"
-#~ msgstr "Signal %d wurde empfangen. Programm wird beendet\n"
 
 #~ msgid "Empty history"
 #~ msgstr "Chronik leeren"

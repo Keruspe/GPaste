@@ -15,6 +15,7 @@ src/libgpaste/ui/gpaste-ui-delete-history.c
 src/libgpaste/ui/gpaste-ui-edit-item.c
 src/libgpaste/ui/gpaste-ui-empty-history.c
 src/libgpaste/ui/gpaste-ui-empty-item.c
+src/libgpaste/ui/gpaste-ui-new-item.c
 src/libgpaste/ui/gpaste-ui-panel.c
 src/libgpaste/ui/gpaste-ui-reexec.c
 src/libgpaste/ui/gpaste-ui-search.c
