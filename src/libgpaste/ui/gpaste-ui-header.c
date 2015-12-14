@@ -19,6 +19,7 @@
 
 #include <gpaste-ui-about.h>
 #include <gpaste-ui-header.h>
+#include <gpaste-ui-new-item.h>
 #include <gpaste-ui-reexec.h>
 #include <gpaste-ui-search.h>
 #include <gpaste-ui-settings.h>
@@ -119,6 +120,7 @@ g_paste_ui_header_new (GtkWindow    *topwin,
     gtk_header_bar_pack_start (bar, g_paste_ui_reexec_new (topwin, client));
 
     gtk_header_bar_pack_end (bar, g_paste_ui_about_new (gtk_window_get_application (topwin)));
+    gtk_header_bar_pack_end (bar, g_paste_ui_new_item_new (topwin, client));
 
     return self;
 }
