@@ -1,6 +1,5 @@
 3.20:
     general:
-        rework completions install
         class methods for signals
     gpaste-ui:
         merge
