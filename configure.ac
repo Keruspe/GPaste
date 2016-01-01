@@ -1,4 +1,4 @@
-#a This file is part of GPaste.
+# This file is part of GPaste.
 #
 # Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
