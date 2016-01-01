@@ -1,4 +1,4 @@
-# This file is part of GPaste.
+#a This file is part of GPaste.
 #
 # Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
@@ -100,8 +100,8 @@ AC_CHECK_HEADER_STDBOOL
 G_PASTE_APPEND_CFLAGS
 G_PASTE_APPEND_LDFLAGS
 
-GETTEXT_PACKAGE=$PACKAGE_NAME
-AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [Gettext Package])
+GETTEXT_PACKAGE=${PACKAGE_NAME}
+AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["${GETTEXT_PACKAGE}"], [Gettext Package])
 AC_SUBST([GETTEXT_PACKAGE])
 IT_PROG_INTLTOOL([intltool_required])
 
@@ -124,26 +124,36 @@ GOBJECT_INTROSPECTION_CHECK([gir_required])
 VAPIGEN_CHECK([vala_required])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1])
-G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [`$PKG_CONFIG --variable session_bus_services_dir dbus-1`])
-G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`$PKG_CONFIG --variable keysdir gnome-keybindings`])
+G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [`${PKG_CONFIG} --variable session_bus_services_dir dbus-1`])
+G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`${PKG_CONFIG} --variable keysdir gnome-keybindings`])
 
 G_PASTE_ENABLE([applet],                [Enable gpaste-applet],          [no])
+G_PASTE_ENABLE([bash-completion],       [Disable the bash completion],   [yes])
 G_PASTE_ENABLE([gnome-shell-extension], [Disable gnome-shell extension], [yes])
 G_PASTE_ENABLE([unity],                 [Enable gpaste-app-indicator],   [no])
 G_PASTE_ENABLE([x-keybinder],           [Disable the X keybinder],       [yes])
+G_PASTE_ENABLE([zsh-completion],        [Disable the zsh completion],    [yes])
 
-AS_IF([test x$enable_gnome_shell_extension = xyes], [
-    AS_IF([test x$enable_introspection != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
+AS_IF([test x${enable_gnome_shell_extension} = xyes], [
+    AS_IF([test x${enable_introspection} != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
     PKG_CHECK_MODULES(JS_EXTENSION, [clutter-1.0])
 ])
 
-AS_IF([test x$enable_unity = xyes], [
+AS_IF([test x${enable_unity} = xyes], [
     PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
 ])
 
-AS_IF([test x$enable_x_keybinder = xyes], [
+AS_IF([test x${enable_x_keybinder} = xyes], [
     PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= gtk_required])
     AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
+])
+
+AS_IF([test x${enable_bash_completion} = xyes], [
+    G_PASTE_WITH([bashcompletiondir], [Bash completion directory], ['${datadir}/bash-completion/completions'])
+])
+
+AS_IF([test x${enable_zsh_completion} = xyes], [
+    G_PASTE_WITH([zshcompletiondir], [Zsh completion directory], ['${datadir}/zsh/site-functions'])
 ])
 
 AC_CONFIG_FILES([
@@ -152,14 +162,17 @@ AC_CONFIG_FILES([
 ])
 AC_OUTPUT
 AC_MSG_RESULT([
-    $PACKAGE_NAME $VERSION
+    ${PACKAGE_NAME} ${VERSION}
     ===========
 
     prefix:                 ${prefix}
     exec_prefix:            ${exec_prefix}
     sysconfdir:             ${sysconfdir}
     libdir:                 ${libdir}
+    libexecdir:             ${libexecdir}
     includedir:             ${includedir}
+    datarootdir:            ${datarootdir}
+    datadir:                ${datadir}
 
     compiler:               ${CC}
     cflags:                 ${CFLAGS}
@@ -175,4 +188,10 @@ AC_MSG_RESULT([
     Gnome-Shell extension:  ${enable_gnome_shell_extension}
 
     X keybinder support:    ${enable_x_keybinder}
+
+    Bash completion:        ${enable_bash_completion}
+    Bash completion dir:    ${bashcompletiondir}
+
+    Zsh completion:         ${enable_zsh_completion}
+    Zsh completion dir:     ${zshcompletiondir}
 ])

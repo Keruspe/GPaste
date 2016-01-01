@@ -15,11 +15,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-noinst_DATA =                          \
-	%D%/completions/_gpaste-client \
-	%D%/completions/gpaste-client  \
-	$(NULL)
+bashcompletion_DATA = %D%/completions/gpaste-client
+zshcompletion_DATA  = %D%/completions/_gpaste-client
 
-EXTRA_DIST +=          \
-	$(noinst_DATA) \
+EXTRA_DIST +=                  \
+	$(bashcompletion_DATA) \
+	$(zshcompletion_DATA)  \
 	$(NULL)
