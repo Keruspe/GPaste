@@ -33,6 +33,7 @@ const GPasteSearchItem = new Lang.Class({
         this.parent({
             activate: false,
             reactive: true,
+            hover: false,
             can_focus: false
         });
 
