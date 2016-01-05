@@ -1,0 +1,16 @@
+---
+AlignAfterOpenBracket: true
+AlignOperands: true
+AlignTrailingComments: true
+AlwaysBreakAfterDefinitionReturnType: All
+BinPackArguments: false
+BreakBeforeBraces: Allman
+ColumnLimit: 0
+IndentWidth: 4
+MaxEmptyLinesToKeep: 1
+SpaceBeforeParens: Always
+UseTab: Never
+...
+Language: JavaScript
+DisableFormat: true
+...
