@@ -1,6 +1,7 @@
 3.20:
     general:
         class methods for signals
+        nuke gulong
     gpaste-ui:
         merge
 
