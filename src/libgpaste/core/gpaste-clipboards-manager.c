@@ -28,6 +28,12 @@ struct _GPasteClipboardsManager
 
 typedef struct
 {
+    GPasteClipboard *clipboard;
+    gulong           signal;
+} _Clipboard;
+
+typedef struct
+{
     GSList         *clipboards;
     GPasteHistory  *history;
     GPasteSettings *settings;
@@ -54,8 +60,11 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (clipboard));
 
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
+    _Clipboard *clip = g_new0 (_Clipboard, 1);
 
-    priv->clipboards = g_slist_prepend (priv->clipboards, g_object_ref (clipboard));
+    clip->clipboard = g_object_ref (clipboard);
+
+    priv->clipboards = g_slist_prepend (priv->clipboards, clip);
     g_paste_clipboard_bootstrap (clipboard, priv->history);
 }
 
@@ -90,7 +99,8 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
-        GPasteClipboard *clip = clipboard->data;
+        _Clipboard *_clip = clipboard->data;
+        GPasteClipboard *clip = _clip->clipboard;
         GdkAtom cur = g_paste_clipboard_get_target (clip);
 
         if (cur == from)
@@ -130,7 +140,8 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
     {
         for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
         {
-            GPasteClipboard *clip = _clipboard->data;
+            _Clipboard *_clip = _clipboard->data;
+            GPasteClipboard *clip = _clip->clipboard;
 
             if (clipboard == clip)
                 continue;
@@ -244,7 +255,8 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
 
     for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
     {
-        GPasteClipboard *clip = _clipboard->data;
+        _Clipboard *_clip = _clipboard->data;
+        GPasteClipboard *clip = _clip->clipboard;
 
         if (g_paste_clipboard_get_target (clip) != atom)
             continue;
@@ -279,10 +291,12 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
-        g_signal_connect (G_PASTE_CLIPBOARD (clipboard->data),
-                          "owner-change",
-                          G_CALLBACK (g_paste_clipboards_manager_notify),
-                          priv);
+        _Clipboard *clip = clipboard->data;
+
+        clip->signal = g_signal_connect (clip->clipboard,
+                                         "owner-change",
+                                         G_CALLBACK (g_paste_clipboards_manager_notify),
+                                         priv);
     }
 }
 
@@ -305,7 +319,11 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
-        g_paste_clipboard_select_item (clipboard->data, item);
+    {
+        _Clipboard *clip = clipboard->data;
+
+        g_paste_clipboard_select_item (clip->clipboard, item);
+    }
 }
 
 static void
@@ -314,6 +332,16 @@ on_item_selected (GPasteClipboardsManager *self,
                   GPasteHistory           *history G_GNUC_UNUSED)
 {
     g_paste_clipboards_manager_select (self, item);
+}
+
+static void
+_clipboard_free (gpointer data)
+{
+    _Clipboard *clip = data;
+
+    g_signal_handler_disconnect (clip->clipboard, clip->signal);
+    g_object_unref (clip->clipboard);
+    g_free (clip);
 }
 
 static void
@@ -329,27 +357,19 @@ g_paste_clipboards_manager_dispose (GObject *object)
         g_clear_object (&priv->history);
     }
 
+    if (priv->clipboards)
+    {
+        g_slist_free_full (priv->clipboards, _clipboard_free);
+        priv->clipboards = NULL;
+    }
+
     G_OBJECT_CLASS (g_paste_clipboards_manager_parent_class)->dispose (object);
-}
-
-static void
-g_paste_clipboards_manager_finalize (GObject *object)
-{
-    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (G_PASTE_CLIPBOARDS_MANAGER (object));
-
-    g_slist_free_full (priv->clipboards,
-                       g_object_unref);
-
-    G_OBJECT_CLASS (g_paste_clipboards_manager_parent_class)->finalize (object);
 }
 
 static void
 g_paste_clipboards_manager_class_init (GPasteClipboardsManagerClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_clipboards_manager_dispose;
-    object_class->finalize = g_paste_clipboards_manager_finalize;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_clipboards_manager_dispose;
 }
 
 static void
