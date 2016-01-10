@@ -246,6 +246,7 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
     }
     else
     {
+        g_paste_clipboard_clear (data->clip);
         g_paste_clipboards_manager_ensure_clipboard_not_empty (data->clip, data->priv->history);
     }
 }
