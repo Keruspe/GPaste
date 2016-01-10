@@ -55,7 +55,7 @@ static void
 g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
                                     GPasteHistory   *history)
 {
-    GPasteClipboardPrivate  *priv = g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     if (!priv->text && !priv->image_checksum)
     {
@@ -370,6 +370,27 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
     gtk_clipboard_store (real);
 
     gtk_target_table_free (targets, n_targets);
+}
+
+/**
+ * g_paste_clipboard_clear:
+ * @self: a #GPasteClipboard instance
+ *
+ * Clears the content of the clipboard
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_clear (GPasteClipboard *self)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
+
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    g_clear_pointer (&priv->text, g_free);
+    g_clear_pointer (&priv->image_checksum, g_free);
+
+    gtk_clipboard_clear (priv->real);
 }
 
 /**
