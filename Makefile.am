@@ -108,7 +108,7 @@ include man/1.mk
 
 # Tests stuff
 
-include tests/clipboard-watcher.mk
+include src/clipboard-watcher.mk
 include tests/gnome-shell-client.mk
 
 # Maintainance stuff

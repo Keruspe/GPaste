@@ -34,9 +34,6 @@ on_owner_change (GPasteClipboard *clipboard,
 gint
 main (gint argc, gchar *argv[])
 {
-    if (argc != 2 || g_strcmp0 (argv[1], "--dont-skip"))
-        return EXIT_TEST_SKIP;
-
     /* FIXME: remove this once gtk supports clipboard correctly on wayland */
     gdk_set_allowed_backends ("x11");
 
