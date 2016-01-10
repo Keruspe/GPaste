@@ -370,6 +370,8 @@ global:
     g_paste_client_replace_finish;
     g_paste_client_replace_sync;
 
+    g_paste_clipboard_clear;
+
     g_paste_history_delete;
     g_paste_history_get_current;
     g_paste_history_load;
