@@ -253,25 +253,16 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
     gboolean track = ((atom != GDK_SELECTION_PRIMARY || g_paste_settings_get_primary_to_history (settings)) &&
                       g_paste_settings_get_track_changes (settings));
 
-    for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
-    {
-        _Clipboard *_clip = _clipboard->data;
-        GPasteClipboard *clip = _clip->clipboard;
+    GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
 
-        if (g_paste_clipboard_get_target (clip) != atom)
-            continue;
+    data->priv = priv;
+    data->clip = clipboard;
+    data->track = track;
 
-        GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
-
-        data->priv = priv;
-        data->clip = clip;
-        data->track = track;
-
-        gtk_clipboard_request_contents (g_paste_clipboard_get_real (clip),
-                                        gdk_atom_intern_static_string ("TARGETS"),
-                                        g_paste_clipboards_manager_targets_ready,
-                                        data);
-    }
+    gtk_clipboard_request_contents (g_paste_clipboard_get_real (clipboard),
+                                    gdk_atom_intern_static_string ("TARGETS"),
+                                    g_paste_clipboards_manager_targets_ready,
+                                    data);
 }
 
 /**
