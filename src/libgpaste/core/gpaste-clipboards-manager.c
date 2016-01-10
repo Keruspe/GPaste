@@ -121,7 +121,7 @@ static void
 g_paste_clipboards_manager_ensure_clipboard_not_empty (GPasteClipboard *clipboard,
                                                        GPasteHistory   *history)
 {
-    const GList *hist = g_paste_history_get_history (history);
+    const GSList *hist = g_paste_history_get_history (history);
     if (hist)
         g_paste_clipboard_select_item (clipboard, hist->data);
 }
