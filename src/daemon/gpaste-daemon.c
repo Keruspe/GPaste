@@ -147,7 +147,7 @@ main (gint argc, gchar *argv[])
 
     g_autoptr (GPasteBus) bus = data->bus = g_paste_bus_new (on_bus_acquired, data);
 
-    gulong c_signals[C_LAST_SIGNAL] = {
+    guint64 c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (bus,
                                           "name-lost",
                                           G_CALLBACK (on_name_lost),

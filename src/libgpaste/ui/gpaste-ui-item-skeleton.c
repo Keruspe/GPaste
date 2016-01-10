@@ -37,7 +37,7 @@ typedef struct
     gboolean        editable;
     gboolean        uploadable;
 
-    gulong          size_id;
+    guint64         size_id;
 } GPasteUiItemSkeletonPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiItemSkeleton, g_paste_ui_item_skeleton, GTK_TYPE_LIST_BOX_ROW)

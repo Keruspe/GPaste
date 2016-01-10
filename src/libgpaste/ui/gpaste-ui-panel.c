@@ -37,13 +37,13 @@ typedef struct
 
     GtkWidget              *search_entry;
 
-    gulong                  activated_id;
-    gulong                  button_pressed_id;
-    gulong                  delete_history_id;
-    gulong                  empty_history_id;
-    gulong                  switch_activated_id;
-    gulong                  switch_clicked_id;
-    gulong                  switch_history_id;
+    guint64                 activated_id;
+    guint64                 button_pressed_id;
+    guint64                 delete_history_id;
+    guint64                 empty_history_id;
+    guint64                 switch_activated_id;
+    guint64                 switch_clicked_id;
+    guint64                 switch_history_id;
 } GPasteUiPanelPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanel, g_paste_ui_panel, GTK_TYPE_BOX)

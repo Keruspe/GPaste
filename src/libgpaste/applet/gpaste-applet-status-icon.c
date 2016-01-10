@@ -30,7 +30,7 @@ typedef struct
     GtkStatusIcon *icon;
     GtkMenu       *menu;
 
-    gulong         press_id;
+    guint64        press_id;
 } GPasteAppletStatusIconPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletStatusIcon, g_paste_applet_status_icon, G_PASTE_TYPE_APPLET_ICON)

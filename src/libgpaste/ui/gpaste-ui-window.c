@@ -36,8 +36,8 @@ typedef struct
 
     gboolean         initialized;
 
-    gulong           key_press_signal;
-    gulong           search_signal;
+    guint64          key_press_signal;
+    guint64          search_signal;
 } GPasteUiWindowPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)

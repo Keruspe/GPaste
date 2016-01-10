@@ -24,7 +24,7 @@ typedef struct
 {
     GPasteClient *client;
 
-    gulong         show_id;
+    guint64        show_id;
 } GPasteAppletIconPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TYPE_OBJECT)

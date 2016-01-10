@@ -41,7 +41,7 @@ typedef struct
     guint64         biggest_index;
     guint64         biggest_size;
 
-    gulong          changed_signal;
+    guint64         changed_signal;
 } GPasteHistoryPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)

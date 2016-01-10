@@ -34,7 +34,7 @@ typedef struct
     guint64         index;
     gboolean        bold;
 
-    gulong          size_id;
+    guint64         size_id;
 } GPasteUiItemPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiItem, g_paste_ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON)

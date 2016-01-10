@@ -29,7 +29,7 @@ struct _GPasteClipboardsManager
 typedef struct
 {
     GPasteClipboard *clipboard;
-    gulong           signal;
+    guint64          signal;
 } _Clipboard;
 
 typedef struct
@@ -38,7 +38,7 @@ typedef struct
     GPasteHistory  *history;
     GPasteSettings *settings;
 
-    gulong          selected_signal;
+    guint64         selected_signal;
 } GPasteClipboardsManagerPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager, G_TYPE_OBJECT)

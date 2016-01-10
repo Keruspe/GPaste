@@ -44,7 +44,7 @@ typedef struct
     gboolean                grabbing;
     guint64                 retries;
 
-    gulong                  accel_signal;
+    guint64                 accel_signal;
     guint64                 shell_watch;
 } GPasteKeybinderPrivate;
 
@@ -159,7 +159,7 @@ typedef struct
 
     guint32                 action;
 
-    gulong                  rebind_signal;
+    guint64                 rebind_signal;
 } _Keybinding;
 
 static void

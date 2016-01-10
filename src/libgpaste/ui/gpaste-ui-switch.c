@@ -31,7 +31,7 @@ typedef struct
 
     GtkWindow    *topwin;
 
-    gulong        tracking_id;
+    guint64       tracking_id;
 } GPasteUiSwitchPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSwitch, g_paste_ui_switch, GTK_TYPE_SWITCH)

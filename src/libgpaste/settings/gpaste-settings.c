@@ -56,8 +56,8 @@ typedef struct
 
     gboolean   extension_enabled;
 
-    gulong     changed_signal;
-    gulong     shell_changed_signal;
+    guint64    changed_signal;
+    guint64    shell_changed_signal;
 } GPasteSettingsPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)

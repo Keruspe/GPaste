@@ -89,7 +89,7 @@ typedef struct
     GDBusNodeInfo           *g_paste_daemon_dbus_info;
     GDBusInterfaceVTable     g_paste_daemon_dbus_vtable;
 
-    gulong                   c_signals[C_LAST_SIGNAL];
+    guint64                  c_signals[C_LAST_SIGNAL];
 } GPasteDaemonPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteDaemon, g_paste_daemon, G_PASTE_TYPE_BUS_OBJECT)
@@ -936,7 +936,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
 {
     g_autoptr (GPasteDaemon) self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    gulong *c_signals = priv->c_signals;
+    guint64 *c_signals = priv->c_signals;
 
     g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
     g_signal_handler_disconnect (priv->history,  c_signals[C_UPDATE]);
@@ -1041,7 +1041,7 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
     if (!priv->id_on_bus)
         return FALSE;
 
-    gulong *c_signals = priv->c_signals;
+    guint64 *c_signals = priv->c_signals;
 
     c_signals[C_TRACK] = g_signal_connect_swapped (priv->settings,
                                                    "track",

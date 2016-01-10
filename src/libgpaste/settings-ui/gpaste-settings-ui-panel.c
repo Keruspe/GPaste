@@ -62,8 +62,8 @@ typedef struct
     CallbackDataWrapper wrap;
     GtkWidget          *widget;
     GtkWidget          *reset_widget;
-    gulong              signal;
-    gulong              reset_signal;
+    guint64             signal;
+    guint64             reset_signal;
 } _CallbackDataWrapper;
 
 static void

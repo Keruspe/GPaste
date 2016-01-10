@@ -37,7 +37,7 @@ typedef struct
     gchar          *text;
     gchar          *image_checksum;
 
-    gulong          owner_change_signal;
+    guint64         owner_change_signal;
 } GPasteClipboardPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboard, g_paste_clipboard, G_TYPE_OBJECT)

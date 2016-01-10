@@ -45,9 +45,9 @@ typedef struct
     guint64        *search_results;
     guint64         search_results_size;
 
-    gulong          activated_id;
-    gulong          size_id;
-    gulong          update_id;
+    guint64         activated_id;
+    guint64         size_id;
+    guint64         update_id;
 } GPasteUiHistoryPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_BOX)

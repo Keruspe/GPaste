@@ -64,10 +64,10 @@ g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
     gtk_entry_set_text (e, default_name);
     gtk_widget_show (entry);
 
-    gulong activated_id = g_signal_connect (G_OBJECT (entry),
-                                            "activate",
-                                            G_CALLBACK (on_entry_activated),
-                                            dialog);
+    guint64 activated_id = g_signal_connect (G_OBJECT (entry),
+                                             "activate",
+                                             G_CALLBACK (on_entry_activated),
+                                             dialog);
 
     gchar *backup = NULL;
 
