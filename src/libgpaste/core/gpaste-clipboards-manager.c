@@ -118,15 +118,6 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
 }
 
 static void
-g_paste_clipboards_manager_ensure_clipboard_not_empty (GPasteClipboard *clipboard,
-                                                       GPasteHistory   *history)
-{
-    const GSList *hist = g_paste_history_get_history (history);
-    if (hist)
-        g_paste_clipboard_select_item (clipboard, hist->data);
-}
-
-static void
 g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
                                           GPasteClipboard                *clipboard,
                                           GPasteItem                     *item,
@@ -139,7 +130,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
         g_paste_history_add (history, item);
 
     if (!something_in_clipboard)
-        g_paste_clipboards_manager_ensure_clipboard_not_empty (clipboard, history);
+        g_paste_clipboard_ensure_not_empty (clipboard, history);
 
     if (synchronized_text)
     {
@@ -247,7 +238,7 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
     else
     {
         g_paste_clipboard_clear (data->clip);
-        g_paste_clipboards_manager_ensure_clipboard_not_empty (data->clip, data->priv->history);
+        g_paste_clipboard_ensure_not_empty (data->clip, data->priv->history);
     }
 }
 
