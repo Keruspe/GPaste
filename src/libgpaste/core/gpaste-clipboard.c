@@ -97,7 +97,7 @@ g_paste_clipboard_bootstrap (GPasteClipboard *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (G_PASTE_IS_HISTORY (history));
 
-    GPasteClipboardPrivate  *priv = g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GtkClipboard *real = priv->real;
 
     if (gtk_clipboard_wait_is_uris_available (real) ||
@@ -107,7 +107,7 @@ g_paste_clipboard_bootstrap (GPasteClipboard *self,
                                     g_paste_clipboard_bootstrap_finish_text,
                                     history);
     }
-    else if (gtk_clipboard_wait_is_image_available (real))
+    else if (g_paste_settings_get_images_support (priv->settings) && gtk_clipboard_wait_is_image_available (real))
     {
         g_paste_clipboard_set_image (self,
                                      g_paste_clipboard_bootstrap_finish_image,
