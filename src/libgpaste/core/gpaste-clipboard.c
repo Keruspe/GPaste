@@ -97,7 +97,7 @@ g_paste_clipboard_bootstrap (GPasteClipboard *self,
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (G_PASTE_IS_HISTORY (history));
 
-    GPasteClipboardPrivate  *priv = g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GtkClipboard *real = priv->real;
 
     if (gtk_clipboard_wait_is_uris_available (real) ||
@@ -107,11 +107,15 @@ g_paste_clipboard_bootstrap (GPasteClipboard *self,
                                     g_paste_clipboard_bootstrap_finish_text,
                                     history);
     }
-    else if (gtk_clipboard_wait_is_image_available (real))
+    else if (g_paste_settings_get_images_support (priv->settings) && gtk_clipboard_wait_is_image_available (real))
     {
         g_paste_clipboard_set_image (self,
                                      g_paste_clipboard_bootstrap_finish_image,
                                      history);
+    }
+    else
+    {
+        g_paste_clipboard_ensure_not_empty (self, history);
     }
 }
 
@@ -550,6 +554,28 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
                 g_assert_not_reached ();
         }
     }
+}
+
+/**
+ * g_paste_clipboard_ensure_not_empty:
+ * @self: a #GPasteClipboard instance
+ * @history: a #GPasteHistory instance
+ *
+ * Ensure the clipboard has some contents (as long as the history's not empty)
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,
+                                    const GPasteHistory *history)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (history));
+
+    const GList *hist = g_paste_history_get_history (history);
+
+    if (hist)
+        g_paste_clipboard_select_item (self, hist->data);
 }
 
 static void

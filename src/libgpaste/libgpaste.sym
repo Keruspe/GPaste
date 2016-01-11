@@ -367,6 +367,7 @@ global:
     g_paste_client_replace_sync;
 
     g_paste_clipboard_clear;
+    g_paste_clipboard_ensure_not_empty;
 
     g_paste_history_delete;
     g_paste_history_get_current;

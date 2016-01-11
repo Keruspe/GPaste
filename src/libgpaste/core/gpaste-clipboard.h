@@ -59,6 +59,8 @@ void          g_paste_clipboard_set_image          (GPasteClipboard             
                                                     gpointer                     user_data);
 void          g_paste_clipboard_select_item        (GPasteClipboard  *self,
                                                     const GPasteItem *item);
+void          g_paste_clipboard_ensure_not_empty   (GPasteClipboard     *self,
+                                                    const GPasteHistory *history);
 
 GPasteClipboard *g_paste_clipboard_new (GdkAtom         target,
                                         GPasteSettings *settings);
