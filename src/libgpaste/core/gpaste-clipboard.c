@@ -552,6 +552,28 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
     }
 }
 
+/**
+ * g_paste_clipboard_ensure_not_empty:
+ * @self: a #GPasteClipboard instance
+ * @history: a #GPasteHistory instance
+ *
+ * Ensure the clipboard has some contents (as long as the history's not empty)
+ *
+ * Returns:
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,
+                                    const GPasteHistory *history)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
+    g_return_if_fail (G_PASTE_IS_HISTORY (history));
+
+    const GSList *hist = g_paste_history_get_history (history);
+
+    if (hist)
+        g_paste_clipboard_select_item (self, hist->data);
+}
+
 static void
 g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
                                 GdkEventOwnerChange *event,
