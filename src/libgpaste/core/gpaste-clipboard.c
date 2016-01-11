@@ -113,6 +113,10 @@ g_paste_clipboard_bootstrap (GPasteClipboard *self,
                                      g_paste_clipboard_bootstrap_finish_image,
                                      history);
     }
+    else
+    {
+        g_paste_clipboard_ensure_not_empty (self, history);
+    }
 }
 
 /**
