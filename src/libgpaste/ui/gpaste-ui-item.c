@@ -29,8 +29,6 @@ typedef struct
 {
     GPasteClient   *client;
 
-    GtkLabel       *index_label;
-    GtkLabel       *label;
     guint64         index;
     gboolean        bold;
 
@@ -162,9 +160,8 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
         g_paste_ui_item_reset_text (self);
         gtk_widget_show (GTK_WIDGET (self));
     }
-    else
+    else if (index != old_index)
     {
-        gtk_label_set_text (priv->label, "");
         gtk_widget_hide (GTK_WIDGET (self));
     }
 }
