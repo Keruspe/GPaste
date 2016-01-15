@@ -1,7 +1,6 @@
 3.20:
     general:
         https://wiki.gnome.org/Initiatives/GnomeGoals/ShortcutWindows
-        class methods for signals
         c_signals all the way
     gpaste-ui:
         merge

@@ -32,11 +32,11 @@ typedef struct
     GPasteUiHeader  *header;
     GPasteUiHistory *history;
 
+    GtkSearchBar    *search_bar;
     GtkSearchEntry  *search_entry;
 
     gboolean         initialized;
 
-    guint64          key_press_signal;
     guint64          search_signal;
 } GPasteUiWindowPrivate;
 
@@ -117,17 +117,17 @@ g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
 }
 
 static gboolean
-on_key_press_event (GtkWidget *widget,
-                    GdkEvent  *event,
-                    gpointer   user_data)
+on_key_press_event (GtkWidget   *widget,
+                    GdkEventKey *event)
 {
-    GtkSearchBar *bar = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
     GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (widget));
 
-    if (GTK_IS_ENTRY (focus) && !GTK_IS_SEARCH_ENTRY (focus))
-        return FALSE;
+    if (focus == GTK_WIDGET (priv->search_entry) && gtk_search_bar_handle_event (priv->search_bar, (GdkEvent *) event))
+        return TRUE;
 
-    return gtk_search_bar_handle_event (bar, event);
+    return GTK_WIDGET_CLASS (g_paste_ui_window_parent_class)->key_press_event (widget, event);
+
 }
 
 static void
@@ -145,15 +145,13 @@ g_paste_ui_window_dispose (GObject *object)
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    if (priv->key_press_signal)
+    if (priv->search_signal)
     {
-        GtkContainer *box = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (self)));
-        GPasteUiSearchBar *search_bar = G_PASTE_UI_SEARCH_BAR (gtk_container_get_children (box)->data);
+        GPasteUiSearchBar *search_bar = G_PASTE_UI_SEARCH_BAR (priv->search_bar);
         GtkSearchEntry *entry = g_paste_ui_search_bar_get_entry (search_bar);
 
-        g_signal_handler_disconnect (self, priv->key_press_signal);
         g_signal_handler_disconnect (entry, priv->search_signal);
-        priv->key_press_signal = 0;
+        priv->search_signal = 0;
     }
 
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
@@ -163,6 +161,7 @@ static void
 g_paste_ui_window_class_init (GPasteUiWindowClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_window_dispose;
+    GTK_WIDGET_CLASS (klass)->key_press_event = on_key_press_event;
 }
 
 static void
@@ -179,14 +178,12 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     GtkWidget *search_bar = g_paste_ui_search_bar_new ();
     GtkContainer *box = GTK_CONTAINER (vbox);
 
+    priv->search_bar = GTK_SEARCH_BAR (search_bar);
+
     gtk_container_add (GTK_CONTAINER (win), vbox);
     gtk_box_pack_start (GTK_BOX (box), search_bar, FALSE, FALSE, 0);
 
     GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar));
-    priv->key_press_signal = g_signal_connect (self,
-                                               "key-press-event",
-                                               G_CALLBACK (on_key_press_event),
-                                               search_bar);
     priv->search_signal = g_signal_connect (entry,
                                             "search-changed",
                                             G_CALLBACK (on_search),

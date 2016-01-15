@@ -45,7 +45,6 @@ typedef struct
     guint64        *search_results;
     guint64         search_results_size;
 
-    guint64         activated_id;
     guint64         size_id;
     guint64         update_id;
 } GPasteUiHistoryPrivate;
@@ -54,8 +53,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_B
 
 static void
 on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
-                  GtkListBoxRow *row,
-                  gpointer       user_data G_GNUC_UNUSED)
+                  GtkListBoxRow *row)
 {
     g_paste_ui_item_activate (G_PASTE_UI_ITEM (row));
 }
@@ -318,12 +316,6 @@ g_paste_ui_history_dispose (GObject *object)
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
 
-    if (priv->activated_id)
-    {
-        g_signal_handler_disconnect (object, priv->activated_id);
-        priv->activated_id = 0;
-    }
-
     if (priv->settings)
     {
         g_signal_handler_disconnect (priv->settings, priv->size_id);
@@ -357,17 +349,13 @@ g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 
     object_class->dispose = g_paste_ui_history_dispose;
     object_class->finalize = g_paste_ui_history_finalize;
+
+    GTK_LIST_BOX_CLASS (klass)->row_activated = on_row_activated;
 }
 
 static void
-g_paste_ui_history_init (GPasteUiHistory *self)
+g_paste_ui_history_init (GPasteUiHistory *self G_GNUC_UNUSED)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-
-    priv->activated_id = g_signal_connect (G_OBJECT (self),
-                                           "row-activated",
-                                           G_CALLBACK (on_row_activated),
-                                           NULL);
 }
 
 /**
