@@ -1,3 +1,10 @@
+NEW in 3.18.3 (15/01/2016)
+=============
+
+- fix synchronisation issues between clipboard and primary selection
+- fix a memory leak
+- never handle images when images support is disabled
+
 NEW in 3.18.2 (16/10/2015)
 =============
 
