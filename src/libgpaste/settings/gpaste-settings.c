@@ -161,8 +161,6 @@ g_settings_set_gpaste_uint64 (GSettings   *settings,
  * @self: a #GPasteSettings instance
  *
  * Reset the "element-size" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_element_size:
@@ -170,8 +168,6 @@ g_settings_set_gpaste_uint64 (GSettings   *settings,
  * @value: the maximum displayed size of an item
  *
  * Change the "element-size" setting
- *
- * Returns:
  */
 UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
 
@@ -188,8 +184,6 @@ UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
  * @self: a #GPasteSettings instance
  *
  * Reset the "growing-lines" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_growing_lines:
@@ -197,8 +191,6 @@ UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
  * @value: whether to detect or not growing lines
  *
  * Change the "growing-lines" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (growing_lines, GROWING_LINES)
 
@@ -215,8 +207,6 @@ BOOLEAN_SETTING (growing_lines, GROWING_LINES)
  * @self: a #GPasteSettings instance
  *
  * Reset the "history-name" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_history_name:
@@ -224,8 +214,6 @@ BOOLEAN_SETTING (growing_lines, GROWING_LINES)
  * @value: the new history name
  *
  * Change the "history-name" setting
- *
- * Returns:
  */
 STRING_SETTING (history_name, HISTORY_NAME)
 
@@ -242,8 +230,6 @@ STRING_SETTING (history_name, HISTORY_NAME)
  * @self: a #GPasteSettings instance
  *
  * Reset the "images-support" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_images_support:
@@ -251,8 +237,6 @@ STRING_SETTING (history_name, HISTORY_NAME)
  * @value: the new history name
  *
  * Change the "images-support" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
 
@@ -269,8 +253,6 @@ BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
  * @self: a #GPasteSettings instance
  *
  * Reset the "launch-ui" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_launch_ui:
@@ -278,8 +260,6 @@ BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
  * @value: the new keyboard shortcut
  *
  * Change the "launch-ui" setting
- *
- * Returns:
  */
 STRING_SETTING (launch_ui, LAUNCH_UI)
 
@@ -296,8 +276,6 @@ STRING_SETTING (launch_ui, LAUNCH_UI)
  * @self: a #GPasteSettings instance
  *
  * Reset the "make-password" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_make_password:
@@ -305,8 +283,6 @@ STRING_SETTING (launch_ui, LAUNCH_UI)
  * @value: the new keyboard shortcut
  *
  * Change the "make-password" setting
- *
- * Returns:
  */
 STRING_SETTING (make_password, MAKE_PASSWORD)
 
@@ -323,8 +299,6 @@ STRING_SETTING (make_password, MAKE_PASSWORD)
  * @self: a #GPasteSettings instance
  *
  * Reset the "max-displayed-history-size" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_max_displayed_history_size:
@@ -332,8 +306,6 @@ STRING_SETTING (make_password, MAKE_PASSWORD)
  * @value: the maximum number of items to display
  *
  * Change the "max-displayed-history-size" setting
- *
- * Returns:
  */
 UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)
 
@@ -350,8 +322,6 @@ UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)
  * @self: a #GPasteSettings instance
  *
  * Reset the "max-history-size" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_max_history_size:
@@ -359,8 +329,6 @@ UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)
  * @value: the maximum number of items the history can contain
  *
  * Change the "max-history-size" setting
- *
- * Returns:
  */
 UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE)
 
@@ -377,8 +345,6 @@ UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE)
  * @self: a #GPasteSettings instance
  *
  * Reset the "max-memory-usage" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_max_memory_usage:
@@ -386,8 +352,6 @@ UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE)
  * @value: the maximum amout of memory we can use
  *
  * Change the "max-memory-usage" setting
- *
- * Returns:
  */
 UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE)
 
@@ -404,8 +368,6 @@ UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE)
  * @self: a #GPasteSettings instance
  *
  * Reset the "max-text-item-size" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_max_text_item_size:
@@ -413,8 +375,6 @@ UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE)
  * @value: the maximum size for a textual item to be handled
  *
  * Change the "max-text-item-size" setting
- *
- * Returns:
  */
 UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE)
 
@@ -431,8 +391,6 @@ UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE)
  * @self: a #GPasteSettings instance
  *
  * Reset the "min-text-item-size" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_min_text_item_size:
@@ -440,8 +398,6 @@ UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE)
  * @value: the minimum size for a textual item to be handled
  *
  * Change the "min-text-item-size" setting
- *
- * Returns:
  */
 UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE)
 
@@ -458,8 +414,6 @@ UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE)
  * @self: a #GPasteSettings instance
  *
  * Reset the "pop" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_pop:
@@ -467,8 +421,6 @@ UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE)
  * @value: the new keyboard shortcut
  *
  * Change the "pop" setting
- *
- * Returns:
  */
 STRING_SETTING (pop, POP)
 
@@ -485,8 +437,6 @@ STRING_SETTING (pop, POP)
  * @self: a #GPasteSettings instance
  *
  * Reset the "primary-to-history" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_primary_to_history:
@@ -494,8 +444,6 @@ STRING_SETTING (pop, POP)
  * @value: whether to track or not the primary selection changes as clipboard ones
  *
  * Change the "primary-to-history" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
 
@@ -512,8 +460,6 @@ BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
  * @self: a #GPasteSettings instance
  *
  * Reset the "save-history" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_save_history:
@@ -521,8 +467,6 @@ BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
  * @value: whether to save or not the history
  *
  * Change the "save-history" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (save_history, SAVE_HISTORY)
 
@@ -539,8 +483,6 @@ BOOLEAN_SETTING (save_history, SAVE_HISTORY)
  * @self: a #GPasteSettings instance
  *
  * Reset the "show-history" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_show_history:
@@ -548,8 +490,6 @@ BOOLEAN_SETTING (save_history, SAVE_HISTORY)
  * @value: the new keyboard shortcut
  *
  * Change the "show-history" setting
- *
- * Returns:
  */
 STRING_SETTING (show_history, SHOW_HISTORY)
 
@@ -566,8 +506,6 @@ STRING_SETTING (show_history, SHOW_HISTORY)
  * @self: a #GPasteSettings instance
  *
  * Reset the "sync-clipboard-to-primary" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_sync_clipboard_to_primary:
@@ -575,8 +513,6 @@ STRING_SETTING (show_history, SHOW_HISTORY)
  * @value: the new keyboard shortcut
  *
  * Change the "sync-clipboard-to-primary" setting
- *
- * Returns:
  */
 STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY)
 
@@ -593,8 +529,6 @@ STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY)
  * @self: a #GPasteSettings instance
  *
  * Reset the "sync-primary-to-clipboard" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_sync_primary_to_clipboard:
@@ -602,8 +536,6 @@ STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY)
  * @value: the new keyboard shortcut
  *
  * Change the "sync-primary-to-clipboard" setting
- *
- * Returns:
  */
 STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD)
 
@@ -620,8 +552,6 @@ STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD)
  * @self: a #GPasteSettings instance
  *
  * Reset the "synchronize-clipboards" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_synchronize_clipboards:
@@ -629,8 +559,6 @@ STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD)
  * @value: whether to synchronize the clipboard and the primary selection or not
  *
  * Change the "synchronize-clipboards" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS)
 
@@ -647,8 +575,6 @@ BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS)
  * @self: a #GPasteSettings instance
  *
  * Reset the "track-changes" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_track_changes:
@@ -656,8 +582,6 @@ BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS)
  * @value: whether to track or not the clipboard changes
  *
  * Change the "track-changes" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (track_changes, TRACK_CHANGES)
 
@@ -674,8 +598,6 @@ BOOLEAN_SETTING (track_changes, TRACK_CHANGES)
  * @self: a #GPasteSettings instance
  *
  * Reset the "track-extension-state" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_track_extension_state:
@@ -683,8 +605,6 @@ BOOLEAN_SETTING (track_changes, TRACK_CHANGES)
  * @value: whether to stop tracking or not the clipboard changes when an applet exits
  *
  * Change the "track-extension-state" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
 
@@ -701,8 +621,6 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  * @self: a #GPasteSettings instance
  *
  * Reset the "trim-items" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_trim_items:
@@ -710,8 +628,6 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  * @value: whether to trim or not textual items
  *
  * Change the "trim-items" setting
- *
- * Returns:
  */
 BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
 
@@ -728,8 +644,6 @@ BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
  * @self: a #GPasteSettings instance
  *
  * Reset the "upload" setting
- *
- * Returns:
  */
 /**
  * g_paste_settings_set_upload:
@@ -737,8 +651,6 @@ BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
  * @value: the new keyboard shortcut
  *
  * Change the "upload" setting
- *
- * Returns:
  */
 STRING_SETTING (upload, UPLOAD)
 
@@ -785,8 +697,6 @@ g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate
  * @value: whether to enable or not the gnome-shell extension
  *
  * Change the "extension-enabled" special setting
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_settings_set_extension_enabled (GPasteSettings *self,

@@ -66,8 +66,6 @@ _search (gpointer user_data)
  * @search: the text to search
  *
  * Do a search
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_window_search (const GPasteUiWindow *self,
@@ -103,8 +101,6 @@ _show_prefs (gpointer user_data)
  * @self: the #GPasteUiWindow
  *
  * Show the prefs pane
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_window_show_prefs (const GPasteUiWindow *self)

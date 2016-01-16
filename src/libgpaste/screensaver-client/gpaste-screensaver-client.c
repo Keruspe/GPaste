@@ -127,8 +127,6 @@ g_paste_screensaver_client_new_sync (GError **error)
  * @user_data: User data to pass to @callback.
  *
  * Create a new instance of #GPasteScreensaverClient
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_screensaver_client_new (GAsyncReadyCallback callback,

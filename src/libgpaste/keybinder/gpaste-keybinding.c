@@ -112,8 +112,6 @@ g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
  * @settings: a #GPasteSettings instance
  *
  * Activate the keybinding
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinding_activate (GPasteKeybinding *self,
@@ -141,8 +139,6 @@ g_paste_keybinding_activate (GPasteKeybinding *self,
  * @self: a #GPasteKeybinding instance
  *
  * Deactivate the keybinding
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinding_deactivate (GPasteKeybinding *self)
@@ -198,8 +194,6 @@ g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
  * @keycode: the keycode of the current event
  *
  * Runs the callback associated to the keybinding if needed
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinding_notify (GPasteKeybinding *self,
@@ -219,8 +213,6 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
  * @self: a #GPasteKeybinding instance
  *
  * Runs the callback associated to the keybinding
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinding_perform (GPasteKeybinding *self)

@@ -42,8 +42,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiItem, g_paste_ui_item, G_PASTE_TYPE_UI_ITEM_
  * @self: a #GPasteUiItem instance
  *
  * Refresh the item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_activate (GPasteUiItem *self)
@@ -60,8 +58,6 @@ g_paste_ui_item_activate (GPasteUiItem *self)
  * @self: a #GPasteUiItem instance
  *
  * Refresh the item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_refresh (GPasteUiItem *self)
@@ -135,8 +131,6 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
  * @index: the index of the corresponding item
  *
  * Track a new index
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_set_index (GPasteUiItem *self,

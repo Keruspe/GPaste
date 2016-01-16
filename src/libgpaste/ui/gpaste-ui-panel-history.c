@@ -41,8 +41,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanelHistory, g_paste_ui_panel_history, GTK_
  * @self: a #GPasteUiPanelHistory instance
  *
  * Switch to this history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
@@ -60,8 +58,6 @@ g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
  * @length: the length of the #GPasteHistory
  *
  * Update the index label of this history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,

@@ -69,8 +69,6 @@ history_find (GList       *histories,
  * @length: the new length
  *
  * Update the displayed length of the specified history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_panel_update_history_length (GPasteUiPanel *self,

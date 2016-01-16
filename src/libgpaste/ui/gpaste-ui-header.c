@@ -43,8 +43,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_B
  * @self: the #GPasteUiHeader
  *
  * Show the prefs pane
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_header_show_prefs (const GPasteUiHeader *self)

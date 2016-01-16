@@ -87,8 +87,6 @@ g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
  * @history: a #GPasteHistory instance
  *
  * Bootstrap a #GPasteClipboard with an initial value
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_bootstrap (GPasteClipboard *self,
@@ -245,8 +243,6 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
  * @user_data: user data to pass to @callback
  *
  * Put the text from the intern GtkClipboard in the #GPasteClipboard
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_set_text (GPasteClipboard            *self,
@@ -273,8 +269,6 @@ g_paste_clipboard_set_text (GPasteClipboard            *self,
  * @text: the text to select
  *
  * Put the text into the #GPasteClipbaord and the intern GtkClipboard
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_select_text (GPasteClipboard *self,
@@ -381,8 +375,6 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
  * @self: a #GPasteClipboard instance
  *
  * Clears the content of the clipboard
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_clear (GPasteClipboard *self)
@@ -488,8 +480,6 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
  * @user_data: user data to pass to @callback
  *
  * Put the image from the intern GtkClipboard in the #GPasteClipboard
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_set_image (GPasteClipboard             *self,
@@ -516,8 +506,6 @@ g_paste_clipboard_set_image (GPasteClipboard             *self,
  * @item: the item to select
  *
  * Put the value of the item into the #GPasteClipbaord and the intern GtkClipboard
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_select_item (GPasteClipboard  *self,
@@ -562,8 +550,6 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
  * @history: a #GPasteHistory instance
  *
  * Ensure the clipboard has some contents (as long as the history's not empty)
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,

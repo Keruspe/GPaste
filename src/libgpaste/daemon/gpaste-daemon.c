@@ -192,8 +192,6 @@ g_paste_daemon_update (GPasteDaemon      *self,
  * @error: a #GError
  *
  * Emit the signal to show history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self,
@@ -777,8 +775,6 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
  * @index: the index of the item to upload
  *
  * Upload an item to a pastebin service
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_upload (GPasteDaemon *self,
@@ -943,7 +939,7 @@ g_paste_daemon_unregister_object (gpointer user_data)
     g_signal_handler_disconnect (priv->history,  c_signals[C_SWITCH]);
 
     if (priv->screensaver)
-        g_signal_handler_disconnect (priv->screensaver,  c_signals[C_ACTIVE_CHANGED]);
+        g_signal_handler_disconnect (priv->screensaver, c_signals[C_ACTIVE_CHANGED]);
 
     priv->registered = FALSE;
 }

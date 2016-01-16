@@ -38,8 +38,6 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiHistoryAction, g_paste_ui_history_a
  * @history: the history to delete
  *
  * Set the history to delete
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_history_action_set_history (GPasteUiHistoryAction *self,

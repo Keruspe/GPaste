@@ -151,8 +151,6 @@ g_paste_item_get_size (const GPasteItem *self)
  * @size: the new size
  *
  * Set the size of the item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_item_set_size (GPasteItem *self,
@@ -171,8 +169,6 @@ g_paste_item_set_size (GPasteItem *self,
  * @size: the size to add
  *
  * Add some size of the item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_item_add_size (GPasteItem *self,
@@ -191,8 +187,6 @@ g_paste_item_add_size (GPasteItem *self,
  * @size: the size to remove
  *
  * Remove some size from the item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_item_remove_size (GPasteItem *self,
@@ -213,8 +207,6 @@ g_paste_item_remove_size (GPasteItem *self,
  * @display_string: the new display string
  *
  * Set the string to display
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_item_set_display_string (GPasteItem  *self,
@@ -245,8 +237,6 @@ g_paste_item_set_display_string (GPasteItem  *self,
  * @state: a #GPasteItemState
  *
  * Set whether this item is Active or Idle
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_item_set_state (GPasteItem     *self,

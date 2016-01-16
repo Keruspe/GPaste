@@ -57,8 +57,6 @@ g_paste_password_item_get_name (const GPastePasswordItem *self)
  * @name: (nullable): the new name
  *
  * Set the name of the given item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_password_item_set_name (GPastePasswordItem *self,

@@ -304,8 +304,6 @@ _keybinding_free (_Keybinding *k)
  * @binding: (transfer full): a #GPasteKeybinding instance
  *
  * Add a new keybinding
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
@@ -430,8 +428,6 @@ g_paste_keybinder_private_grab_all_gnome_shell (GPasteKeybinderPrivate *priv)
  * @self: a #GPasteKeybinder instance
  *
  * Activate all the managed keybindings
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinder_activate_all (GPasteKeybinder *self)
@@ -463,8 +459,6 @@ g_paste_keybinder_deactivate_keybinding_func (gpointer data,
  * @self: a #GPasteKeybinder instance
  *
  * Deactivate all the managed keybindings
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_keybinder_deactivate_all (GPasteKeybinder *self)

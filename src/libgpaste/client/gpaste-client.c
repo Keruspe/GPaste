@@ -190,8 +190,6 @@ compute_at_param (const guint64 *indexes,
  * @error: a #GError
  *
  * Display the about dialog
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_about_sync (GPasteClient *self,
@@ -207,8 +205,6 @@ g_paste_client_about_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Add an item to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_sync (GPasteClient *self,
@@ -225,8 +221,6 @@ g_paste_client_add_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Add the file contents to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file_sync (GPasteClient *self,
@@ -252,8 +246,6 @@ g_paste_client_add_file_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Add the password to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_password_sync (GPasteClient *self,
@@ -277,8 +269,6 @@ g_paste_client_add_password_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Backup the current history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_backup_history_sync (GPasteClient *self,
@@ -301,8 +291,6 @@ g_paste_client_backup_history_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Delete an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_sync (GPasteClient *self,
@@ -319,8 +307,6 @@ g_paste_client_delete_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Delete an history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_history_sync (GPasteClient *self,
@@ -337,8 +323,6 @@ g_paste_client_delete_history_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Delete the password from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_password_sync (GPasteClient *self,
@@ -355,8 +339,6 @@ g_paste_client_delete_password_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Empty the history from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_empty_history_sync (GPasteClient *self,
@@ -547,8 +529,6 @@ g_paste_client_list_histories_sync (GPasteClient *self,
  *
  * If decoration is " and separator is , and entries are foo bar baz
  * result will be "foo","bar","baz"
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_merge_sync (GPasteClient  *self,
@@ -574,8 +554,6 @@ g_paste_client_merge_sync (GPasteClient  *self,
  * @error: a #GError
  *
  * Call this when the extension changes its state
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
@@ -591,8 +569,6 @@ g_paste_client_on_extension_state_changed_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Reexecute the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute_sync (GPasteClient *self,
@@ -609,8 +585,6 @@ g_paste_client_reexecute_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Rename the password in the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_rename_password_sync (GPasteClient *self,
@@ -634,8 +608,6 @@ g_paste_client_rename_password_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Replace the contents of an item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_replace_sync (GPasteClient *self,
@@ -678,8 +650,6 @@ g_paste_client_search_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Select an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_select_sync (GPasteClient *self,
@@ -697,8 +667,6 @@ g_paste_client_select_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Set the item as password
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password_sync (GPasteClient *self,
@@ -720,8 +688,6 @@ g_paste_client_set_password_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Emit the ShowHistory signal
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_show_history_sync (GPasteClient *self,
@@ -736,8 +702,6 @@ g_paste_client_show_history_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Switch to another history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_switch_history_sync (GPasteClient *self,
@@ -754,8 +718,6 @@ g_paste_client_switch_history_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Change the tracking state of the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_track_sync (GPasteClient *self,
@@ -772,8 +734,6 @@ g_paste_client_track_sync (GPasteClient *self,
  * @error: a #GError
  *
  * Upload an item to a pastebin service
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_upload_sync (GPasteClient *self,
@@ -795,8 +755,6 @@ g_paste_client_upload_sync (GPasteClient *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Display the about dialog
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_about (GPasteClient       *self,
@@ -815,8 +773,6 @@ g_paste_client_about (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Add an item to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add (GPasteClient       *self,
@@ -836,8 +792,6 @@ g_paste_client_add (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Add the file contents to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file (GPasteClient       *self,
@@ -866,8 +820,6 @@ g_paste_client_add_file (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Add the password to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_password (GPasteClient       *self,
@@ -894,8 +846,6 @@ g_paste_client_add_password (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Backup the current history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_backup_history (GPasteClient       *self,
@@ -921,8 +871,6 @@ g_paste_client_backup_history (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Delete an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete (GPasteClient       *self,
@@ -942,8 +890,6 @@ g_paste_client_delete (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Delete an history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_history (GPasteClient       *self,
@@ -963,8 +909,6 @@ g_paste_client_delete_history (GPasteClient       *self,
  * @user_data: The data to pass to @callback.
  *
  * Delete the password from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_password (GPasteClient       *self,
@@ -984,8 +928,6 @@ g_paste_client_delete_password (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Empty the history from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_empty_history (GPasteClient       *self,
@@ -1005,8 +947,6 @@ g_paste_client_empty_history (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_element (GPasteClient       *self,
@@ -1026,8 +966,6 @@ g_paste_client_get_element (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the kind of an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_element_kind (GPasteClient       *self,
@@ -1048,8 +986,6 @@ g_paste_client_get_element_kind (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get some items from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_elements (GPasteClient       *self,
@@ -1070,8 +1006,6 @@ g_paste_client_get_elements (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the history from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_history (GPasteClient       *self,
@@ -1089,8 +1023,6 @@ g_paste_client_get_history (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the name of the history from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_history_name (GPasteClient       *self,
@@ -1109,8 +1041,6 @@ g_paste_client_get_history_name (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the history isize from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_history_size (GPasteClient       *self,
@@ -1130,8 +1060,6 @@ g_paste_client_get_history_size (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_raw_element (GPasteClient       *self,
@@ -1150,8 +1078,6 @@ g_paste_client_get_raw_element (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Get the history from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_raw_history (GPasteClient       *self,
@@ -1169,8 +1095,6 @@ g_paste_client_get_raw_history (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * List all available hisotries
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_list_histories (GPasteClient       *self,
@@ -1195,8 +1119,6 @@ g_paste_client_list_histories (GPasteClient       *self,
  *
  * If decoration is " and separator is , and entries are foo bar baz
  * result will be "foo","bar","baz"
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_merge (GPasteClient       *self,
@@ -1225,8 +1147,6 @@ g_paste_client_merge (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Call this when the extension changes its state
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_on_extension_state_changed (GPasteClient       *self,
@@ -1245,8 +1165,6 @@ g_paste_client_on_extension_state_changed (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Reexecute the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute (GPasteClient       *self,
@@ -1266,8 +1184,6 @@ g_paste_client_reexecute (GPasteClient       *self,
  * @user_data: The data to pass to @callback.
  *
  * Rename the password in the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_rename_password (GPasteClient       *self,
@@ -1294,8 +1210,6 @@ g_paste_client_rename_password (GPasteClient       *self,
  * @user_data: The data to pass to @callback.
  *
  * Replace the contents of an item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_replace (GPasteClient       *self,
@@ -1321,8 +1235,6 @@ g_paste_client_replace (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Search for items matching @pattern in history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_search (GPasteClient       *self,
@@ -1342,8 +1254,6 @@ g_paste_client_search (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Select an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_select (GPasteClient       *self,
@@ -1364,8 +1274,6 @@ g_paste_client_select (GPasteClient       *self,
  * @user_data: The data to pass to @callback.
  *
  * Set the item as password
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password (GPasteClient       *self,
@@ -1390,8 +1298,6 @@ g_paste_client_set_password (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Emit the ShowHistory signal
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_show_history (GPasteClient       *self,
@@ -1410,8 +1316,6 @@ g_paste_client_show_history (GPasteClient       *self,
  * @user_data: (nullable):The data to pass to @callback.
  *
  * Switch to another history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_switch_history (GPasteClient       *self,
@@ -1431,8 +1335,6 @@ g_paste_client_switch_history (GPasteClient       *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Change the tracking state of the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_track (GPasteClient *self,
@@ -1452,8 +1354,6 @@ g_paste_client_track (GPasteClient *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Upload an item to a pastebin service
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_upload (GPasteClient       *self,
@@ -1475,8 +1375,6 @@ g_paste_client_upload (GPasteClient       *self,
  * @error: a #GError
  *
  * Display the about dialog
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_about_finish (GPasteClient *self,
@@ -1493,8 +1391,6 @@ g_paste_client_about_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Add an item to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_finish (GPasteClient *self,
@@ -1511,8 +1407,6 @@ g_paste_client_add_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Add the file contents to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_file_finish (GPasteClient *self,
@@ -1529,8 +1423,6 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Add the password to the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_add_password_finish (GPasteClient *self,
@@ -1547,8 +1439,6 @@ g_paste_client_add_password_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Backup the current history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_backup_history_finish (GPasteClient *self,
@@ -1565,8 +1455,6 @@ g_paste_client_backup_history_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Delete an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_finish (GPasteClient *self,
@@ -1583,8 +1471,6 @@ g_paste_client_delete_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Delete an history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_history_finish (GPasteClient *self,
@@ -1601,8 +1487,6 @@ g_paste_client_delete_history_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Delete the password from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_password_finish (GPasteClient *self,
@@ -1619,8 +1503,6 @@ g_paste_client_delete_password_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Empty the history from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_empty_history_finish (GPasteClient *self,
@@ -1810,8 +1692,6 @@ g_paste_client_list_histories_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Merge some history entries
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_merge_finish (GPasteClient *self,
@@ -1828,8 +1708,6 @@ g_paste_client_merge_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Call this when the extension changes its state
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
@@ -1846,8 +1724,6 @@ g_paste_client_on_extension_state_changed_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Reexecute the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute_finish (GPasteClient *self,
@@ -1864,8 +1740,6 @@ g_paste_client_reexecute_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Rename the password in the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_rename_password_finish (GPasteClient *self,
@@ -1882,8 +1756,6 @@ g_paste_client_rename_password_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Replace the contents of an item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_replace_finish (GPasteClient *self,
@@ -1920,8 +1792,6 @@ g_paste_client_search_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Select an item from the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_select_finish (GPasteClient *self,
@@ -1938,8 +1808,6 @@ g_paste_client_select_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Set the item as password
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password_finish (GPasteClient *self,
@@ -1956,8 +1824,6 @@ g_paste_client_set_password_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Emit the ShowHistory signal
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_show_history_finish (GPasteClient *self,
@@ -1974,8 +1840,6 @@ g_paste_client_show_history_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Switch to another history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_switch_history_finish (GPasteClient *self,
@@ -1992,8 +1856,6 @@ g_paste_client_switch_history_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Change the tracking state of the #GPasteDaemon
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_track_finish (GPasteClient *self,
@@ -2010,8 +1872,6 @@ g_paste_client_track_finish (GPasteClient *self,
  * @error: a #GError
  *
  * Upload an item to a pastebin service
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_upload_finish (GPasteClient *self,
@@ -2192,8 +2052,6 @@ g_paste_client_new_sync (GError **error)
  * @user_data: User data to pass to @callback.
  *
  * Create a new instance of #GPasteClient
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_client_new (GAsyncReadyCallback callback,

@@ -70,8 +70,6 @@ action_set_activatable (gpointer data,
  * @activatable: whether the item should now be activatable or not
  *
  * Mark the item as being activatable or not
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
@@ -98,8 +96,6 @@ g_paste_ui_item_skeleton_set_activatable (GPasteUiItemSkeleton *self,
  * @editable: whether the item should now be editable or not
  *
  * Mark the item as being editable or not
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
@@ -120,8 +116,6 @@ g_paste_ui_item_skeleton_set_editable (GPasteUiItemSkeleton *self,
  * @uploadable: whether the item should now be uploadable or not
  *
  * Mark the item as being uploadable or not
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_uploadable (GPasteUiItemSkeleton *self,
@@ -142,8 +136,6 @@ g_paste_ui_item_skeleton_set_uploadable (GPasteUiItemSkeleton *self,
  * @text: the new text for the label
  *
  * Changes the displayed text
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
@@ -163,8 +155,6 @@ g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
  * @markup: the new markup for the label
  *
  * Changes the displayed markup
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
@@ -194,8 +184,6 @@ action_set_index (gpointer data,
  * @index: the new index to display
  *
  * Changes the displayed index
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,

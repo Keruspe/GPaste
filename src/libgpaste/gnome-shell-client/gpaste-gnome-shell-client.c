@@ -198,8 +198,6 @@ g_paste_gnome_shell_client_ungrab_accelerator_sync (GPasteGnomeShellClient *self
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Grab a keybinding
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
@@ -223,8 +221,6 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Grab some keybindings
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
@@ -259,8 +255,6 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
  * @user_data: (nullable): The data to pass to @callback.
  *
  * Ungrab a keybinding
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_ungrab_accelerator (GPasteGnomeShellClient *self,
@@ -408,8 +402,6 @@ g_paste_gnome_shell_client_new_sync (GError **error)
  * @user_data: User data to pass to @callback.
  *
  * Create a new instance of #GPasteGnomeShellClient
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_gnome_shell_client_new (GAsyncReadyCallback callback,

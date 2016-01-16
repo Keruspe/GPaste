@@ -27,8 +27,6 @@
  * @msg: the message to display
  *
  * Show GPaste about dialog
- *
- * Returns:
  */
 G_PASTE_VISIBLE gboolean
 g_paste_util_confirm_dialog (GtkWindow   *parent,
@@ -100,8 +98,6 @@ g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
  * @app: the GPaste app to spawn
  *
  * spawn a GPaste app
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_util_spawn (const gchar *app)
@@ -214,8 +210,6 @@ g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUS
  * @arg: (nullable): the action argument
  *
  * Activate an action on a GPaste app
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_util_activate_ui (const gchar *action,
@@ -392,8 +386,6 @@ g_paste_util_has_gnome_shell (void)
  * @application: a #GtkApplication
  *
  * Present the application's window to user
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_util_show_win (GApplication *application)
@@ -464,8 +456,6 @@ g_paste_util_get_runtime_dir (const gchar *component)
  * @component: The component we're handling
  *
  * Write the pid file
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_util_write_pid_file (const gchar *component)

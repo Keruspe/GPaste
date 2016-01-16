@@ -77,8 +77,6 @@ g_paste_bus_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
  * @self: the #GPasteBus
  *
  * Own the bus name
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_bus_own_name (GPasteBus *self)

@@ -34,8 +34,6 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiItemAction, g_paste_ui_item_action,
  * @index: the index of the corresponding item
  *
  * Track a new index
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_action_set_index (GPasteUiItemAction *self,

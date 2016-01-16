@@ -33,8 +33,6 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TY
  * g_paste_applet_icon_activate:
  *
  * Activate the applet icon action
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_applet_icon_activate (void)

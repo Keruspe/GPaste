@@ -49,8 +49,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteClipboardsManager, g_paste_clipboards_manager,
  * @clipboard: (transfer none): the GPasteClipboard to add
  *
  * Add a #GPasteClipboard to the #GPasteClipboardsManager
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
@@ -84,8 +82,6 @@ g_paste_clipboards_manager_sync_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
  * @to: the destination clipboard type
  *
  * Sync a clipboard into another
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
@@ -271,8 +267,6 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
  * @self: a #GPasteClipboardsManager instance
  *
  * Activate the #GPasteClipboardsManager
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
@@ -298,8 +292,6 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
  * @item: the #GPasteItem to select
  *
  * Select a new #GPasteItem
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_select (GPasteClipboardsManager *self,

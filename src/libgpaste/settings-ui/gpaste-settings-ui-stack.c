@@ -88,8 +88,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiStack, g_paste_settings_ui_stack, GT
  * @panel: (transfer none): the #GPasteSettingsUiPanel to add
  *
  * Add a new panel to the #GPasteSettingsUiStack
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
@@ -327,8 +325,6 @@ g_paste_settings_ui_check_connection_error (GError *error)
  * @self: a #GPasteSettingsUiStack instance
  *
  * Fill the #GPasteSettingsUiStack with default panels
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_settings_ui_stack_fill (GPasteSettingsUiStack *self)

@@ -227,8 +227,6 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
  * @item: (transfer full): the #GPasteItem to add
  *
  * Add a #GPasteItem to the #GPasteHistory
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_add (GPasteHistory *self,
@@ -310,8 +308,6 @@ g_paste_history_add (GPasteHistory *self,
  * @index: the index of the #GPasteItem to delete
  *
  * Delete a #GPasteItem from the #GPasteHistory
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_remove (GPasteHistory *self,
@@ -440,8 +436,6 @@ g_paste_history_get_display_string (GPasteHistory *self,
  * @index: the index of the #GPasteItem to select
  *
  * Select a #GPasteItem from the #GPasteHistory
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_select (GPasteHistory *self,
@@ -488,8 +482,6 @@ _g_paste_history_replace (GPasteHistory *self,
  * @contents: the new contents
  *
  * Replace the contents of text item at index @index
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_replace (GPasteHistory *self,
@@ -527,8 +519,6 @@ g_paste_history_replace (GPasteHistory *self,
  * @name: (nullable): the name to give to the password
  *
  * Mark a text item as password
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_set_password (GPasteHistory *self,
@@ -608,8 +598,6 @@ g_paste_history_get_password (GPasteHistory *self,
  * @name: the name of the #GPastePasswordItem
  *
  * Delete the password matching name
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_delete_password (GPasteHistory *self,
@@ -632,8 +620,6 @@ g_paste_history_delete_password (GPasteHistory *self,
  * @new_name: (nullable): the new name of the #GPastePasswordItem
  *
  * Rename the password item
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_rename_password (GPasteHistory *self,
@@ -659,8 +645,6 @@ g_paste_history_rename_password (GPasteHistory *self,
  * @self: a #GPasteHistory instance
  *
  * Empty the #GPasteHistory
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_empty (GPasteHistory *self)
@@ -755,8 +739,6 @@ ensure_history_dir_exists (gboolean save_history)
  * @name: (nullable): the name to save the history to (defaults to the configured one)
  *
  * Save the #GPasteHistory to the history file
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_save (GPasteHistory *self,
@@ -1048,8 +1030,6 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
  * @name: (nullable): the name of the history to load, defaults to the configured one
  *
  * Load the #GPasteHistory from the history file
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_load (GPasteHistory *self,
@@ -1130,8 +1110,6 @@ g_paste_history_load (GPasteHistory *self,
  * @name: the name of the new history
  *
  * Switch to a new history
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_switch (GPasteHistory *self,
@@ -1153,8 +1131,6 @@ g_paste_history_switch (GPasteHistory *self,
  * @error: a #GError
  *
  * Delete the current #GPasteHistory
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_history_delete (GPasteHistory *self,

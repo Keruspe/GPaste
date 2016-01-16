@@ -248,8 +248,6 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
  * @search: the search
  *
  * Apply a search to a #GPasteUiHistory instance
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_history_search (GPasteUiHistory *self,

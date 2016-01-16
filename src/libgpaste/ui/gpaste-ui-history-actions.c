@@ -52,8 +52,6 @@ action_set_history (gpointer data,
  * @history: (nullable): a #GPasteUiPanelHistory instance
  *
  * Set which history we'll deal with
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_ui_history_actions_set_relative_to (GPasteUiHistoryActions *self,

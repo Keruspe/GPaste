@@ -152,8 +152,6 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
  * @self: a #GPasteSettingsUiPanel instance
  *
  * Add a new separator to the current pane
- *
- * Returns:
  */
 G_PASTE_VISIBLE void
 g_paste_settings_ui_panel_add_separator (GPasteSettingsUiPanel *self)
