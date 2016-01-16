@@ -34,6 +34,13 @@ struct _GPasteKeybinder
     GObject parent_instance;
 };
 
+enum
+{
+    C_ACCEL,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GSList                 *keybindings;
@@ -44,8 +51,9 @@ typedef struct
     gboolean                grabbing;
     guint64                 retries;
 
-    guint64                 accel_signal;
     guint64                 shell_watch;
+
+    guint64                 c_signals[C_LAST_SIGNAL];
 } GPasteKeybinderPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Keybinder, keybinder, G_TYPE_OBJECT)
@@ -150,6 +158,13 @@ g_paste_keybinder_change_grab_internal (GPasteKeybinding *binding,
 /* Wrapper around GPasteKeybinding */
 /***********************************/
 
+enum
+{
+    C_K_REBIND,
+
+    C_K_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteKeybinding       *binding;
@@ -159,7 +174,7 @@ typedef struct
 
     guint32                 action;
 
-    guint64                 rebind_signal;
+    guint64                 c_signals[C_K_LAST_SIGNAL];
 } _Keybinding;
 
 static void
@@ -270,12 +285,12 @@ _keybinding_new (GPasteKeybinding       *binding,
 
     k->action = 0;
 
-    g_autofree gchar *detailed_signal = g_strdup_printf ("rebind::%s",
-                                                                   g_paste_keybinding_get_dconf_key (binding));
-    k->rebind_signal = g_signal_connect_swapped (settings,
-                                                 detailed_signal,
-                                                 G_CALLBACK (_keybinding_rebind),
-                                                 k);
+    g_autofree gchar *detailed_signal = g_strdup_printf ("rebind::%s", g_paste_keybinding_get_dconf_key (binding));
+
+    k->c_signals[C_K_REBIND] = g_signal_connect_swapped (settings,
+                                                         detailed_signal,
+                                                         G_CALLBACK (_keybinding_rebind),
+                                                         k);
     return k;
 }
 
@@ -289,7 +304,7 @@ static void
 _keybinding_free (_Keybinding *k)
 {
     _keybinding_ungrab (k);
-    g_signal_handler_disconnect (k->settings, k->rebind_signal);
+    g_signal_handler_disconnect (k->settings, k->c_signals[C_K_REBIND]);
     g_object_unref (k->binding);
     g_object_unref (k->settings);
     g_clear_object (&k->shell_client);
@@ -630,7 +645,7 @@ g_paste_keybinder_dispose (GObject *object)
 
     if (priv->shell_client)
     {
-        g_signal_handler_disconnect (priv->shell_client, priv->accel_signal);
+        g_signal_handler_disconnect (priv->shell_client, priv->c_signals[C_ACCEL]);
         g_clear_object (&priv->shell_client);
     }
 
@@ -714,10 +729,10 @@ g_paste_keybinder_new (GPasteSettings         *settings,
 
     if (shell_client)
     {
-        priv->accel_signal = g_signal_connect (shell_client,
-                                               "accelerator-activated",
-                                               G_CALLBACK (on_accelerator_activated),
-                                               priv);
+        priv->c_signals[C_ACCEL] = g_signal_connect (shell_client,
+                                                     "accelerator-activated",
+                                                     G_CALLBACK (on_accelerator_activated),
+                                                     priv);
         priv->shell_watch = g_bus_watch_name (G_BUS_TYPE_SESSION,
                                               G_PASTE_GNOME_SHELL_BUS_NAME,
                                               G_BUS_NAME_WATCHER_FLAGS_NONE,

@@ -4,7 +4,6 @@
     gpaste-ui:
         merge
     general:
-        c_signals all the way
         apply some redesign ideas
         gpg support
 

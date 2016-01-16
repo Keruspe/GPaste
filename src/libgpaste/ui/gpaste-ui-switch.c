@@ -25,13 +25,20 @@ struct _GPasteUiSwitch
     GtkSwitch parent_instance;
 };
 
+enum
+{
+    C_TRACKING,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteClient *client;
 
     GtkWindow    *topwin;
 
-    guint64       tracking_id;
+    guint64       c_signals[C_LAST_SIGNAL];
 } GPasteUiSwitchPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiSwitch, ui_switch, GTK_TYPE_SWITCH)
@@ -72,10 +79,10 @@ g_paste_ui_switch_dispose (GObject *object)
 {
     GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private (G_PASTE_UI_SWITCH (object));
 
-    if (priv->tracking_id)
+    if (priv->c_signals[C_TRACKING])
     {
-        g_signal_handler_disconnect (priv->client, priv->tracking_id);
-        priv->tracking_id = 0;
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_TRACKING]);
+        priv->c_signals[C_TRACKING] = 0;
     }
 
     g_clear_object (&priv->client);
@@ -122,10 +129,10 @@ g_paste_ui_switch_new (GtkWindow    *topwin,
     priv->topwin = topwin;
     priv->client = g_object_ref (client);
 
-    priv->tracking_id = g_signal_connect (G_OBJECT (priv->client),
-                                          "tracking",
-                                          G_CALLBACK (on_tracking_changed),
-                                          self);
+    priv->c_signals[C_TRACKING] = g_signal_connect (G_OBJECT (priv->client),
+                                                    "tracking",
+                                                    G_CALLBACK (on_tracking_changed),
+                                                    self);
 
     gtk_switch_set_active (GTK_SWITCH (self), g_paste_client_is_active (client));
 

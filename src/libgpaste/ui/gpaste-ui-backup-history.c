@@ -28,6 +28,13 @@ struct _GPasteUiBackupHistory
 
 G_PASTE_DEFINE_TYPE (UiBackupHistory, ui_backup_history, G_PASTE_TYPE_UI_HISTORY_ACTION)
 
+enum
+{
+    C_ACTIVATED,
+
+    C_LAST_SIGNAL
+};
+
 static void
 on_entry_activated (GtkEntry *entry G_GNUC_UNUSED,
                     gpointer  user_data)
@@ -64,10 +71,12 @@ g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
     gtk_entry_set_text (e, default_name);
     gtk_widget_show (entry);
 
-    guint64 activated_id = g_signal_connect (G_OBJECT (entry),
-                                             "activate",
-                                             G_CALLBACK (on_entry_activated),
-                                             dialog);
+    guint64 c_signals[C_LAST_SIGNAL] = {
+       [C_ACTIVATED] = g_signal_connect (G_OBJECT (entry),
+                                         "activate",
+                                         G_CALLBACK (on_entry_activated),
+                                         dialog)
+    };
 
     gchar *backup = NULL;
 
@@ -79,7 +88,7 @@ g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
             backup = g_strdup (text);
     }
 
-    g_signal_handler_disconnect (entry, activated_id);
+    g_signal_handler_disconnect (entry, c_signals[C_ACTIVATED]);
     gtk_widget_destroy (dialog);
 
     return backup;

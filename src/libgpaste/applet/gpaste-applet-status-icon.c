@@ -25,12 +25,19 @@ struct _GPasteAppletStatusIcon
     GPasteAppletIcon parent_instance;
 };
 
+enum
+{
+    C_PRESS,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GtkStatusIcon *icon;
     GtkMenu       *menu;
 
-    guint64        press_id;
+    guint64        c_signals[C_LAST_SIGNAL];
 } GPasteAppletStatusIconPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (AppletStatusIcon, applet_status_icon, G_PASTE_TYPE_APPLET_ICON)
@@ -61,7 +68,7 @@ g_paste_applet_status_icon_dispose (GObject *object)
 
     if (priv->icon)
     {
-        g_signal_handler_disconnect (priv->icon, priv->press_id);
+        g_signal_handler_disconnect (priv->icon, priv->c_signals[C_PRESS]);
         g_clear_object (&priv->icon);
     }
 
@@ -85,10 +92,10 @@ g_paste_applet_status_icon_init (GPasteAppletStatusIcon *self)
     gtk_status_icon_set_visible (priv->icon, TRUE);
     G_GNUC_END_IGNORE_DEPRECATIONS
 
-    priv->press_id = g_signal_connect (priv->icon,
-                                       "button-press-event",
-                                       G_CALLBACK (g_paste_applet_status_icon_popup),
-                                       priv);
+    priv->c_signals[C_PRESS] = g_signal_connect (priv->icon,
+                                                 "button-press-event",
+                                                 G_CALLBACK (g_paste_applet_status_icon_popup),
+                                                 priv);
 }
 
 /**
