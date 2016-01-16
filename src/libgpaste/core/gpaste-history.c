@@ -577,7 +577,7 @@ _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
  *
  * Get the first password matching name
  *
- * Returns: (optional): a #GPastePasswordItem or %NULL
+ * Returns: (nullable): a #GPastePasswordItem or %NULL
  */
 G_PASTE_VISIBLE const GPastePasswordItem *
 g_paste_history_get_password (GPasteHistory *self,
