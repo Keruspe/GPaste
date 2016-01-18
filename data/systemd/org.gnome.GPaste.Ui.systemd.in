@@ -1,0 +1,7 @@
+[Unit]
+Description=GPaste user interface
+
+[Service]
+Type=dbus
+BusName=org.gnome.GPaste.Ui
+ExecStart=@pkglibexecdir@/gpaste-ui --gapplication-service

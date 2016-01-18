@@ -1,0 +1,7 @@
+[Unit]
+Description=GPaste app indicator
+
+[Service]
+Type=dbus
+BusName=org.gnome.GPaste.AppIndicator
+ExecStart=@pkglibexecdir@/gpaste-app-indicator --gapplication-service

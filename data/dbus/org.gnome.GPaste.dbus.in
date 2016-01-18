@@ -1,3 +1,4 @@
 [D-BUS Service]
 Name=org.gnome.GPaste
 Exec=@pkglibexecdir@/gpaste-daemon
+SystemdService=org.gnome.GPaste.service

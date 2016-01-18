@@ -102,6 +102,7 @@ include data/desktop.mk
 include data/gsettings.mk
 include data/pkg-config.mk
 include data/search-provider.mk
+include data/systemd.mk
 
 # Man pages
 
