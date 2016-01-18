@@ -2,6 +2,7 @@
 /bin/*
 /tests/bin/*
 /data/appstream/*.appdata.xml
+/data/appstream/*.appdata.valid
 /data/control-center/*.xml
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
