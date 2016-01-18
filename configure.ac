@@ -123,9 +123,12 @@ APPSTREAM_XML
 GOBJECT_INTROSPECTION_CHECK([gir_required])
 VAPIGEN_CHECK([vala_required])
 
+# For bus_services_dir in pkg-config
 PKG_CHECK_MODULES(DBUS, [dbus-1])
-G_PASTE_WITH([dbusservicesdir],  [D-Bus system session directory],             [`${PKG_CONFIG} --variable session_bus_services_dir dbus-1`])
-G_PASTE_WITH([controlcenterdir], [Gnome control-center keybindings directory], [`${PKG_CONFIG} --variable keysdir gnome-keybindings`])
+
+G_PASTE_WITH([controlcenterdir],   [Gnome control-center keybindings directory], [`${PKG_CONFIG} --variable keysdir gnome-keybindings`])
+G_PASTE_WITH([dbusservicesdir],    [D-Bus system session directory],             [`${PKG_CONFIG} --variable session_bus_services_dir dbus-1`])
+G_PASTE_WITH([systemduserunitdir], [systemd user units directory],               [`${PKG_CONFIG} --variable systemduserunitdir systemd`])
 
 G_PASTE_ENABLE([applet],                [Enable gpaste-applet],          [no])
 G_PASTE_ENABLE([bash-completion],       [Disable the bash completion],   [yes])
@@ -188,6 +191,10 @@ AC_MSG_RESULT([
     Gnome-Shell extension:  ${enable_gnome_shell_extension}
 
     X keybinder support:    ${enable_x_keybinder}
+
+    Control Center dir:     ${controlcenterdir}
+    DBus user services dir: ${dbusservicesdir}
+    systemd user units dir: ${systemduserunitdir}
 
     Bash completion:        ${enable_bash_completion}
     Bash completion dir:    ${bashcompletiondir}

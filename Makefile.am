@@ -19,15 +19,16 @@ SUBDIRS = po
 
 ACLOCAL_AMFLAGS  = -I m4 ${ACLOCAL_FLAGS}
 AM_MAKEFLAGS = --no-print-directory
-AM_DISTCHECK_CONFIGURE_FLAGS =                                          \
-	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)"   \
-	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)" \
-	--enable-appstream-util                                         \
-	--enable-applet                                                 \
-	--enable-gnome-shell-extension                                  \
-	--enable-introspection                                          \
-	--enable-unity                                                  \
-	--enable-vala                                                   \
+AM_DISTCHECK_CONFIGURE_FLAGS =                                              \
+	--with-controlcenterdir="$$dc_install_base/$(controlcenterdir)"     \
+	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)"       \
+	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
+	--enable-appstream-util                                             \
+	--enable-applet                                                     \
+	--enable-gnome-shell-extension                                      \
+	--enable-introspection                                              \
+	--enable-unity                                                      \
+	--enable-vala                                                       \
 	$(NULL)
 
 AM_CPPFLAGS =                                        \
