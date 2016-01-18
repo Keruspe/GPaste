@@ -34,7 +34,10 @@ g_paste_ui_search_class_init (GPasteUiSearchClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_search_init (GPasteUiSearch *self)
 {
-    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Search"));
+    GtkWidget *widget = GTK_WIDGET (self);
+
+    gtk_widget_set_tooltip_text (widget, _("Search"));
+    gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 }
 
 /**

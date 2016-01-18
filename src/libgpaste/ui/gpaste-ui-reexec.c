@@ -63,7 +63,10 @@ g_paste_ui_reexec_class_init (GPasteUiReexecClass *klass)
 static void
 g_paste_ui_reexec_init (GPasteUiReexec *self)
 {
-    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Restart the daemon"));
+    GtkWidget *widget = GTK_WIDGET (self);
+
+    gtk_widget_set_tooltip_text (widget, _("Restart the daemon"));
+    gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 }
 
 /**

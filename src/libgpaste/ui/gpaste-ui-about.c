@@ -49,7 +49,10 @@ g_paste_ui_about_class_init (GPasteUiAboutClass *klass)
 static void
 g_paste_ui_about_init (GPasteUiAbout *self)
 {
-    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("About"));
+    GtkWidget *widget = GTK_WIDGET (self);
+
+    gtk_widget_set_tooltip_text (widget, _("About"));
+    gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 }
 
 /**

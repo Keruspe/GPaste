@@ -93,7 +93,10 @@ g_paste_ui_switch_class_init (GPasteUiSwitchClass *klass)
 static void
 g_paste_ui_switch_init (GPasteUiSwitch *self)
 {
-    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("Track clipboard changes"));
+    GtkWidget *widget = GTK_WIDGET (self);
+
+    gtk_widget_set_tooltip_text (widget, _("Track clipboard changes"));
+    gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 }
 
 /**

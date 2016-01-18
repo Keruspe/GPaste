@@ -35,11 +35,13 @@ g_paste_ui_settings_class_init (GPasteUiSettingsClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_settings_init (GPasteUiSettings *self)
 {
+    GtkWidget *widget = GTK_WIDGET (self);
     GtkMenuButton *menu = GTK_MENU_BUTTON (self);
     GtkWidget *popover = gtk_popover_new (GTK_WIDGET (self));
     GtkWidget *settings_widget = g_paste_settings_ui_widget_new ();
 
-    gtk_widget_set_tooltip_text (GTK_WIDGET (self), _("GPaste Settings"));
+    gtk_widget_set_tooltip_text (widget, _("GPaste Settings"));
+    gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 
     gtk_menu_button_set_direction (menu, GTK_ARROW_NONE);
     gtk_menu_button_set_use_popover (menu, TRUE);
