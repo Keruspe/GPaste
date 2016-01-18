@@ -135,6 +135,22 @@ on_search (GtkSearchEntry *entry,
     g_paste_ui_history_search (priv->history, gtk_entry_get_text (GTK_ENTRY (entry)));
 }
 
+static gboolean
+focus_search (gpointer user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    GtkWindow *win = user_data;
+    GtkWidget *widget = user_data;
+
+    if (!gtk_widget_get_realized (widget))
+        return G_SOURCE_CONTINUE;
+
+    gtk_window_set_focus (win, GTK_WIDGET (priv->search_entry));
+
+    return G_SOURCE_REMOVE;
+}
+
 static void
 g_paste_ui_window_dispose (GObject *object)
 {
@@ -185,7 +201,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
                                             G_CALLBACK (on_search),
                                             priv);
 
-    gtk_window_set_focus (win, GTK_WIDGET (entry));
+    g_source_set_name_by_id (g_idle_add (focus_search, self), "[GPaste] focus_search");
 }
 
 static void
