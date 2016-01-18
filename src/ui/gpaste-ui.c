@@ -79,7 +79,9 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data)
 {
-    g_idle_add (show_about_dialog, gtk_application_get_windows (GTK_APPLICATION (user_data))->data);
+    g_source_set_name_by_id (g_idle_add (show_about_dialog,
+                                         gtk_application_get_windows (GTK_APPLICATION (user_data))->data),
+                             "[GPaste] about_dialog");
 }
 
 static void

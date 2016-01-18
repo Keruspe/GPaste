@@ -124,7 +124,7 @@ on_bus_acquired (GPasteBus *bus,
 
     register_bus_object (bus, G_PASTE_BUS_OBJECT (data->daemon), data->gapp);
 
-    g_idle_add (register_search_provider, user_data);
+    g_source_set_name_by_id (g_idle_add (register_search_provider, user_data), "[GPaste] register_search_provider");
 }
 
 gint
