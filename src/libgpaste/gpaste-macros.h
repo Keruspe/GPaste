@@ -39,9 +39,9 @@ G_BEGIN_DECLS
 #endif
 
 #define G_PASTE_CONST_CHECKER(TYPE_NAME)            \
-  static inline gboolean                               \
-  _G_PASTE_IS_##TYPE_NAME (gconstpointer ptr) {        \
-    return G_PASTE_IS_##TYPE_NAME ((gpointer) ptr);    \
+  static inline gboolean                            \
+  _G_PASTE_IS_##TYPE_NAME (gconstpointer ptr) {     \
+    return G_PASTE_IS_##TYPE_NAME ((gpointer) ptr); \
   }
 
 #define G_PASTE_DERIVABLE_TYPE(TypeName, type_name, TYPE_NAME, ParentTypeName)                                           \
@@ -51,6 +51,21 @@ G_BEGIN_DECLS
 #define G_PASTE_FINAL_TYPE(TypeName, type_name, TYPE_NAME, ParentTypeName)                                           \
     G_PASTE_VISIBLE G_DECLARE_FINAL_TYPE (GPaste##TypeName, g_paste_##type_name, G_PASTE, TYPE_NAME, ParentTypeName) \
     G_PASTE_CONST_CHECKER (TYPE_NAME)
+
+#define G_PASTE_CONST_PRIV_ACCESSOR(TypeName, type_name)                             \
+    static inline gconstpointer                                                      \
+    _g_paste_##type_name##_get_instance_private (const GPaste##TypeName *self)       \
+    {                                                                                \
+      return g_paste_##type_name##_get_instance_private ((GPaste##TypeName *) self); \
+    }
+
+#define G_PASTE_DEFINE_TYPE(TypeName, type_name, ParentTypeName)          \
+    G_DEFINE_TYPE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
+    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
+
+#define G_PASTE_DEFINE_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName)          \
+    G_DEFINE_TYPE_WITH_PRIVATE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
+    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
 
 #define G_PASTE_INIT_GETTEXT()                          \
     bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);        \
