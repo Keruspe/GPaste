@@ -74,8 +74,6 @@ G_BEGIN_DECLS
 
 #define G_PASTE_INIT_APPLICATION_FULL(name, activate_cb)                                            \
     G_PASTE_INIT_GETTEXT ();                                                                        \
-    gtk_init (&argc, &argv);                                                                        \
-    g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL);    \
     GtkApplication *app = gtk_application_new ("org.gnome.GPaste." name, G_APPLICATION_FLAGS_NONE); \
     GApplication *gapp = G_APPLICATION (app);                                                       \
     g_autoptr (GError) error = NULL;                                                                \
@@ -85,7 +83,8 @@ G_BEGIN_DECLS
     {                                                                                               \
         fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);  \
         return EXIT_FAILURE;                                                                        \
-    }
+    }                                                                                               \
+    g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL)
 
 #define G_PASTE_INIT_APPLICATION(name) \
     G_PASTE_INIT_APPLICATION_FULL (name, NULL)
