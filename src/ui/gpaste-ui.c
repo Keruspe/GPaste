@@ -61,7 +61,7 @@ show_about_dialog (gpointer user_data)
     gtk_show_about_dialog (parent,
                            "program-name",   PACKAGE_NAME,
                            "version",        PACKAGE_VERSION,
-                           "logo-icon-name", "gtk-paste",
+                           "logo-icon-name", "edit-paste",
                            "license",        LICENSE,
                            "authors",        authors,
                            "copyright",      "Copyright © 2010-2015 Marc-Antoine Perennou",
