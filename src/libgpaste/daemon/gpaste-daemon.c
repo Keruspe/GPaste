@@ -291,8 +291,8 @@ g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
 
     G_PASTE_DBUS_ASSERT (name && password, "no password to add");
 
-    g_paste_daemon_private_do_add_item (priv,
-                                        g_paste_password_item_new (name, password));
+    g_paste_history_delete_password (priv->history, name);
+    g_paste_daemon_private_do_add_item (priv, g_paste_password_item_new (name, password));
 }
 
 static void
