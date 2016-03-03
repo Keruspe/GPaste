@@ -777,7 +777,7 @@ g_paste_dispatch (gint         argc,
     {
         if (argc == dispatch[i].argc || dispatch[i].extra_args == G_MAXINT || (argc > dispatch[i].argc && argc <= (dispatch[i].argc + dispatch[i].extra_args)))
         {
-            if (argc > 0 && dispatch[i].verb && g_strcmp0 (verb, dispatch[i].verb))
+            if (argc > 0 && dispatch[i].verb && !g_str_equal (verb, dispatch[i].verb))
                 continue;
 
             if (dispatch[i].needs_client && !ctx->client)

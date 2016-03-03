@@ -268,7 +268,7 @@ g_paste_item_default_equals (const GPasteItem *self,
     const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
     const GPasteItemPrivate *_priv = _g_paste_item_get_instance_private (other);
 
-    return !g_strcmp0 (priv->value, _priv->value);
+    return g_str_equal (priv->value, _priv->value);
 }
 
 static void

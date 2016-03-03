@@ -502,7 +502,7 @@ g_paste_history_replace (GPasteHistory *self,
 
     GPasteItem *item = todel->data;
 
-    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && g_str_equal (g_paste_item_get_kind (item), "Text"));
 
     GPasteItem *new = g_paste_text_item_new (contents);
 
@@ -539,7 +539,7 @@ g_paste_history_set_password (GPasteHistory *self,
 
     GPasteItem *item = todel->data;
 
-    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && g_str_equal (g_paste_item_get_kind (item), "Text"));
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
 
@@ -557,7 +557,7 @@ _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
     {
         GPasteItem *i = h->data;
         if (_G_PASTE_IS_PASSWORD_ITEM (i) &&
-            !g_strcmp0 (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
+            g_str_equal (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
         {
             if (index)
                 *index = idx;
@@ -782,7 +782,7 @@ g_paste_history_save (GPasteHistory *self,
             GPasteItem *item = history->data;
             const gchar *kind = g_paste_item_get_kind (item);
 
-            if (!g_strcmp0 (kind, "Password"))
+            if (g_str_equal (kind, "Password"))
                 continue;
 
             g_autofree gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
@@ -861,31 +861,31 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
 {
     Data *data = user_data;
 
-    if (!g_strcmp0 (element_name, "history"))
+    if (g_str_equal (element_name, "history"))
     {
         SWITCH_STATE (BEGIN, IN_HISTORY);
     }
-    else if (!g_strcmp0 (element_name, "item"))
+    else if (g_str_equal (element_name, "item"))
     {
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->text, g_free);
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
-            if (!g_strcmp0 (*a, "kind"))
+            if (g_str_equal (*a, "kind"))
             {
-                if (!g_strcmp0 (*v, "Text"))
+                if (g_str_equal (*v, "Text"))
                     data->type = TEXT;
-                else if (!g_strcmp0 (*v, "Image"))
+                else if (g_str_equal (*v, "Image"))
                     data->type = IMAGE;
-                else if (!g_strcmp0 (*v, "Uris"))
+                else if (g_str_equal (*v, "Uris"))
                     data->type = URIS;
-                else if (!g_strcmp0 (*v, "Password"))
+                else if (g_str_equal (*v, "Password"))
                     data->type = PASSWORD;
                 else
                     g_critical ("Unknown item kind: %s", *v);
             }
-            else if (!g_strcmp0 (*a, "date"))
+            else if (g_str_equal (*a, "date"))
             {
                 if (data->type != IMAGE)
                 {
@@ -894,7 +894,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 }
                 data->date = g_strdup (*v);
             }
-            else if (!g_strcmp0 (*a, "name"))
+            else if (g_str_equal (*a, "name"))
             {
                 if (data->type != PASSWORD)
                 {
@@ -919,11 +919,11 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
 {
     Data *data = user_data;
 
-    if (!g_strcmp0 (element_name, "history"))
+    if (g_str_equal (element_name, "history"))
     {
         SWITCH_STATE (IN_HISTORY, END);
     }
-    else if (!g_strcmp0 (element_name, "item"))
+    else if (g_str_equal (element_name, "item"))
     {
         SWITCH_STATE (HAS_TEXT, IN_HISTORY);
     }
@@ -1040,7 +1040,7 @@ g_paste_history_load (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
 
-    if (priv->name && !g_strcmp0(name, priv->name))
+    if (priv->name && g_str_equal(name, priv->name))
         return;
 
     g_list_free_full (priv->history,
@@ -1142,7 +1142,7 @@ g_paste_history_delete (GPasteHistory *self,
 
     g_autoptr (GFile) history_file = g_paste_history_get_history_file ((name) ? name : priv->name);
 
-    if (!g_strcmp0 (name, priv->name))
+    if (g_str_equal (name, priv->name))
         g_paste_history_empty (self);
 
     if (g_file_query_exists (history_file,
@@ -1172,11 +1172,11 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
     GPasteHistory *self = user_data;
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    if (!g_strcmp0(key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
+    if (g_str_equal(key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         g_paste_history_private_check_size (priv);
-    else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_history_private_check_memory_usage (priv);
-    else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
+    else if (g_str_equal (key, G_PASTE_HISTORY_NAME_SETTING))
         g_paste_history_history_name_changed (self);
 }
 

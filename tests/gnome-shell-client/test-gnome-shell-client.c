@@ -56,7 +56,7 @@ kill_loop (gpointer user_data)
 gint
 main (gint argc, gchar *argv[])
 {
-    if (argc != 2 || g_strcmp0 (argv[1], "--dont-skip"))
+    if (argc != 2 || !g_str_equal (argv[1], "--dont-skip"))
         return EXIT_TEST_SKIP;
 
     g_setenv ("G_MESSAGES_DEBUG", "all", TRUE);

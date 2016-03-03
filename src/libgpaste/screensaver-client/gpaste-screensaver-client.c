@@ -59,7 +59,7 @@ g_paste_screensaver_client_g_signal (GDBusProxy  *proxy,
 {
     GPasteScreensaverClient *self = G_PASTE_SCREENSAVER_CLIENT (proxy);
 
-    if (!g_strcmp0 (signal_name, G_PASTE_SCREENSAVER_SIG_ACTIVE_CHANGED))
+    if (g_str_equal (signal_name, G_PASTE_SCREENSAVER_SIG_ACTIVE_CHANGED))
     {
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);

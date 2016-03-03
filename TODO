@@ -1,7 +1,6 @@
 3.20:
     general:
         https://wiki.gnome.org/Initiatives/GnomeGoals/ShortcutWindows
-        g_str_equal
 
 3.22:
     configure:

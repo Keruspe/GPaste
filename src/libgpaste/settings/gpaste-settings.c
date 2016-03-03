@@ -682,7 +682,7 @@ g_paste_settings_private_set_extension_enabled_from_dconf (GPasteSettingsPrivate
     g_auto (GStrv) extensions = g_paste_settings_private_get_enabled_extensions (priv);
     for (GStrv e = extensions; *e; ++e)
     {
-        if (!g_strcmp0 (*e, G_PASTE_EXTENSION_NAME))
+        if (g_str_equal (*e, G_PASTE_EXTENSION_NAME))
         {
             priv->extension_enabled = TRUE;
             return;
@@ -723,7 +723,7 @@ g_paste_settings_set_extension_enabled (GPasteSettings *self,
         gboolean found = FALSE;
         for (guint64 i = 0; i < nb; ++i)
         {
-            if (!found && !g_strcmp0 (extensions[i], G_PASTE_EXTENSION_NAME))
+            if (!found && g_str_equal (extensions[i], G_PASTE_EXTENSION_NAME))
             {
                 found = TRUE;
                 g_free (extensions[i]);
@@ -773,61 +773,61 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
-    if (!g_strcmp0 (key, G_PASTE_ELEMENT_SIZE_SETTING))
+    if (g_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
         g_paste_settings_private_set_element_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
+    else if (g_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
         g_paste_settings_private_set_growing_lines_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_HISTORY_NAME_SETTING))
+    else if (g_str_equal (key, G_PASTE_HISTORY_NAME_SETTING))
         g_paste_settings_private_set_history_name_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
+    else if (g_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         g_paste_settings_private_set_images_support_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_LAUNCH_UI_SETTING))
+    else if (g_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
     {
         g_paste_settings_private_set_launch_ui_from_dconf (priv);
         g_paste_settings_rebind (self, G_PASTE_LAUNCH_UI_SETTING);
     }
-    else if (!g_strcmp0 (key, G_PASTE_MAKE_PASSWORD_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAKE_PASSWORD_SETTING))
     {
         g_paste_settings_private_set_make_password_from_dconf (priv);
         g_paste_settings_rebind (self, G_PASTE_MAKE_PASSWORD_SETTING);
     }
-    else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         g_paste_settings_private_set_max_history_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_settings_private_set_max_memory_usage_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING))
         g_paste_settings_private_set_max_text_item_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
         g_paste_settings_private_set_min_text_item_size_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_POP_SETTING))
+    else if (g_str_equal (key, G_PASTE_POP_SETTING))
     {
         g_paste_settings_private_set_pop_from_dconf (priv);
         g_paste_settings_rebind (self, G_PASTE_POP_SETTING);
     }
-    else if (!g_strcmp0 (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
+    else if (g_str_equal (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
         g_paste_settings_private_set_primary_to_history_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_SAVE_HISTORY_SETTING))
+    else if (g_str_equal (key, G_PASTE_SAVE_HISTORY_SETTING))
         g_paste_settings_private_set_save_history_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_SHOW_HISTORY_SETTING))
+    else if (g_str_equal (key, G_PASTE_SHOW_HISTORY_SETTING))
     {
         g_paste_settings_private_set_show_history_from_dconf (priv);
         g_paste_settings_rebind (self, G_PASTE_SHOW_HISTORY_SETTING);
     }
-    else if (!g_strcmp0 (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
+    else if (g_str_equal (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
     {
         g_paste_settings_private_set_sync_clipboard_to_primary_from_dconf (priv);
         g_paste_settings_rebind (self, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING);
     }
-    else if (!g_strcmp0 (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
+    else if (g_str_equal (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
     {
         g_paste_settings_private_set_sync_primary_to_clipboard_from_dconf (priv);
         g_paste_settings_rebind (self, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING);
     }
-    else if (!g_strcmp0 (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
+    else if (g_str_equal (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
         g_paste_settings_private_set_synchronize_clipboards_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))
+    else if (g_str_equal (key, G_PASTE_TRACK_CHANGES_SETTING))
     {
         g_paste_settings_private_set_track_changes_from_dconf (priv);
         g_signal_emit (self,
@@ -836,11 +836,11 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                        priv->track_changes,
                        NULL);
     }
-    else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
+    else if (g_str_equal (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
         g_paste_settings_private_set_track_extension_state_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
+    else if (g_str_equal (key, G_PASTE_TRIM_ITEMS_SETTING))
         g_paste_settings_private_set_trim_items_from_dconf (priv);
-    else if (!g_strcmp0 (key, G_PASTE_UPLOAD_SETTING))
+    else if (g_str_equal (key, G_PASTE_UPLOAD_SETTING))
     {
         g_paste_settings_private_set_upload_from_dconf (priv);
         g_paste_settings_rebind (self, G_PASTE_UPLOAD_SETTING);

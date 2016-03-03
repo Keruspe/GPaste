@@ -343,51 +343,51 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
 
-    if (!g_strcmp0 (key, G_PASTE_ELEMENT_SIZE_SETTING))
+    if (g_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
-    else if (!g_strcmp0 (key, G_PASTE_GROWING_LINES_SETTING))
+    else if (g_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->growing_lines_switch), g_paste_settings_get_growing_lines (settings));
-    else if (!g_strcmp0 (key, G_PASTE_IMAGES_SUPPORT_SETTING))
+    else if (g_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_switch), g_paste_settings_get_images_support (settings));
-    else if (!g_strcmp0 (key, G_PASTE_LAUNCH_UI_SETTING))
+    else if (g_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
         gtk_entry_set_text (priv->launch_ui_entry, g_paste_settings_get_launch_ui (settings));
-    else if (!g_strcmp0 (key, G_PASTE_MAKE_PASSWORD_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAKE_PASSWORD_SETTING))
         gtk_entry_set_text (priv->make_password_entry, g_paste_settings_get_make_password (settings));
-    else if (!g_strcmp0 (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
-    else if (!g_strcmp0 (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         gtk_spin_button_set_value (priv->max_history_size_button, g_paste_settings_get_max_history_size (settings));
-    else if (!g_strcmp0 (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         gtk_spin_button_set_value (priv->max_memory_usage_button, g_paste_settings_get_max_memory_usage (settings));
-    else if (!g_strcmp0 (key, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING))
         gtk_spin_button_set_value (priv->max_text_item_size_button, g_paste_settings_get_max_text_item_size (settings));
-    else if (!g_strcmp0 (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
+    else if (g_str_equal (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
         gtk_spin_button_set_value (priv->min_text_item_size_button, g_paste_settings_get_min_text_item_size (settings));
-    else if (!g_strcmp0 (key, G_PASTE_POP_SETTING))
+    else if (g_str_equal (key, G_PASTE_POP_SETTING))
         gtk_entry_set_text (priv->pop_entry, g_paste_settings_get_pop (settings));
-    else if (!g_strcmp0 (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
+    else if (g_str_equal (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
         gtk_switch_set_active (GTK_SWITCH (priv->primary_to_history_switch), g_paste_settings_get_primary_to_history (settings));
-    else if (!g_strcmp0 (key, G_PASTE_SAVE_HISTORY_SETTING))
+    else if (g_str_equal (key, G_PASTE_SAVE_HISTORY_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->save_history_switch), g_paste_settings_get_save_history (settings));
-    else if (!g_strcmp0 (key, G_PASTE_SHOW_HISTORY_SETTING))
+    else if (g_str_equal (key, G_PASTE_SHOW_HISTORY_SETTING))
         gtk_entry_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings));
-    else if (!g_strcmp0 (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
+    else if (g_str_equal (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
         gtk_entry_set_text (priv->sync_clipboard_to_primary_entry, g_paste_settings_get_sync_clipboard_to_primary (settings));
-    else if (!g_strcmp0 (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
+    else if (g_str_equal (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
         gtk_entry_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings));
-    else if (!g_strcmp0 (key, G_PASTE_UPLOAD_SETTING))
+    else if (g_str_equal (key, G_PASTE_UPLOAD_SETTING))
         gtk_entry_set_text (priv->upload_entry, g_paste_settings_get_upload (settings));
-    else if (!g_strcmp0 (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
+    else if (g_str_equal (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_switch), g_paste_settings_get_synchronize_clipboards (settings));
-    else if (!g_strcmp0 (key, G_PASTE_TRACK_CHANGES_SETTING))
+    else if (g_str_equal (key, G_PASTE_TRACK_CHANGES_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->track_changes_switch), g_paste_settings_get_track_changes (settings));
-    else if (!g_strcmp0 (key, G_PASTE_TRIM_ITEMS_SETTING))
+    else if (g_str_equal (key, G_PASTE_TRIM_ITEMS_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->trim_items_switch), g_paste_settings_get_trim_items (settings));
     else if (g_paste_util_has_gnome_shell ())
     {
-        if (!g_strcmp0 (key, G_PASTE_EXTENSION_ENABLED_SETTING))
+        if (g_str_equal (key, G_PASTE_EXTENSION_ENABLED_SETTING))
             gtk_switch_set_active (GTK_SWITCH (priv->extension_enabled_switch), g_paste_settings_get_extension_enabled (settings));
-        else if (!g_strcmp0 (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
+        else if (g_str_equal (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
             gtk_switch_set_active (GTK_SWITCH (priv->track_extension_state_switch), g_paste_settings_get_track_extension_state (settings));
     }
 }

@@ -52,7 +52,7 @@ static gint32
 history_equals (gconstpointer a,
                 gconstpointer b)
 {
-    return g_strcmp0 (b, g_paste_ui_panel_history_get_history (a));
+    return !g_str_equal (b, g_paste_ui_panel_history_get_history (a));
 }
 
 static GList *
@@ -95,7 +95,7 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
 {
     GPasteUiPanelPrivate *priv = user_data;
 
-    if (!g_strcmp0 (history, G_PASTE_DEFAULT_HISTORY))
+    if (g_str_equal (history, G_PASTE_DEFAULT_HISTORY))
         return;
 
     GList *h = history_find (priv->histories, history);
@@ -187,9 +187,9 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
     g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, NULL);
     g_autofree gchar *current = data->name;
 
-    g_paste_ui_panel_add_history (priv, G_PASTE_DEFAULT_HISTORY, !g_strcmp0 (G_PASTE_DEFAULT_HISTORY, current));
+    g_paste_ui_panel_add_history (priv, G_PASTE_DEFAULT_HISTORY, g_str_equal (G_PASTE_DEFAULT_HISTORY, current));
     for (GStrv h = histories; *h; ++h)
-        g_paste_ui_panel_add_history (priv, *h, !g_strcmp0 (*h, current));
+        g_paste_ui_panel_add_history (priv, *h, g_str_equal (*h, current));
 }
 
 static void

@@ -129,16 +129,16 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 /* Signals */
 /***********/
 
-#define HANDLE_SIGNAL(sig)                                  \
-    if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_##sig)) \
-    {                                                       \
-        g_signal_emit (self,                                \
-                       signals[sig],                        \
-                       0, /* detail */                      \
-                       NULL);                               \
+#define HANDLE_SIGNAL(sig)                                   \
+    if (g_str_equal (signal_name, G_PASTE_DAEMON_SIG_##sig)) \
+    {                                                        \
+        g_signal_emit (self,                                 \
+                       signals[sig],                         \
+                       0, /* detail */                       \
+                       NULL);                                \
     }
 #define HANDLE_SIGNAL_WITH_DATA(sig, ans_type, get_data)                         \
-    if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_##sig))                      \
+    if (g_str_equal (signal_name, G_PASTE_DAEMON_SIG_##sig))                     \
     {                                                                            \
         GVariantIter params_iter;                                                \
         g_variant_iter_init (&params_iter, parameters);                          \
@@ -1926,7 +1926,7 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
     else HANDLE_SIGNAL_WITH_DATA (EMPTY_HISTORY,  const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (TRACKING,       gboolean,      g_variant_get_boolean (variant))
-    else if (!g_strcmp0 (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
+    else if (g_str_equal (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
     {
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);
