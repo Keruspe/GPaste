@@ -40,7 +40,7 @@ typedef struct
     guint64          search_signal;
 } GPasteUiWindowPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_WINDOW)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_APPLICATION_WINDOW)
 
 static gboolean
 _search (gpointer user_data)
