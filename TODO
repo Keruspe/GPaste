@@ -1,15 +1,15 @@
 3.20:
     general:
         https://wiki.gnome.org/Initiatives/GnomeGoals/ShortcutWindows
-        c_signals all the way
         g_str_equal
-    gpaste-ui:
-        merge
 
 3.22:
     configure:
         PKG_PREREQ([0.29])
+    gpaste-ui:
+        merge
     general:
+        c_signals all the way
         apply some redesign ideas
         gpg support
 
