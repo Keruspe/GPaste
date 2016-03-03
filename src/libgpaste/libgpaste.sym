@@ -453,6 +453,8 @@ global:
     g_paste_ui_item_skeleton_set_uploadable;
     g_paste_ui_new_item_get_type;
     g_paste_ui_new_item_new;
+    g_paste_ui_shortcuts_window_get_type;
+    g_paste_ui_shortcuts_window_new;
 
     g_paste_util_has_gnome_shell;
     g_paste_util_read_pid_file;

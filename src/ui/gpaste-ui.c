@@ -79,9 +79,7 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
                  GVariant      *parameter G_GNUC_UNUSED,
                  gpointer       user_data)
 {
-    g_source_set_name_by_id (g_idle_add (show_about_dialog,
-                                         gtk_application_get_windows (GTK_APPLICATION (user_data))->data),
-                             "[GPaste] about_dialog");
+    g_source_set_name_by_id (g_idle_add (show_about_dialog, gtk_application_get_windows (GTK_APPLICATION (user_data))->data), "[GPaste] about_dialog");
 }
 
 static void
@@ -113,10 +111,12 @@ main (gint argc, gchar *argv[])
     };
 
     g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
+
     GMenu *menu = g_menu_new ();
-    g_menu_append (menu, "GPaste Settings", "app.prefs");
-    g_menu_append (menu, "About GPaste", "app.about");
-    g_menu_append (menu, "Quit", "app.quit");
+    g_menu_append (menu, _("GPaste Settings"),    "app.prefs");
+    g_menu_append (menu, _("Keyboard Shortcuts"), "win.show-help-overlay");
+    g_menu_append (menu, _("About GPaste"),       "app.about");
+    g_menu_append (menu, _("Quit"),               "app.quit");
     gtk_application_set_app_menu (app, G_MENU_MODEL (menu));
 
     G_GNUC_UNUSED GtkWidget *window = g_paste_ui_window_new (app);

@@ -20,6 +20,7 @@ src/libgpaste/ui/gpaste-ui-panel.c
 src/libgpaste/ui/gpaste-ui-reexec.c
 src/libgpaste/ui/gpaste-ui-search.c
 src/libgpaste/ui/gpaste-ui-settings.c
+src/libgpaste/ui/gpaste-ui-shortcuts-window.c
 src/libgpaste/ui/gpaste-ui-switch.c
 src/libgpaste/ui/gpaste-ui-upload-item.c
 src/libgpaste/ui/gpaste-ui-window.c
@@ -27,6 +28,7 @@ src/libgpaste/util/gpaste-util.c
 src/gnome-shell/extension.js
 src/client/gpaste-client.c
 src/daemon/gpaste-daemon.c
+src/ui/gpaste-ui.c
 data/appstream/org.gnome.GPaste.Applet.appdata.xml.in
 data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in
 data/appstream/org.gnome.GPaste.Ui.appdata.xml.in

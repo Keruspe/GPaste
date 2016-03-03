@@ -21,6 +21,7 @@
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-window.h>
+#include <gpaste-ui-shortcuts-window.h>
 
 struct _GPasteUiWindow
 {
@@ -40,7 +41,7 @@ typedef struct
     guint64          search_signal;
 } GPasteUiWindowPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_WINDOW)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_APPLICATION_WINDOW)
 
 static gboolean
 _search (gpointer user_data)
@@ -230,6 +231,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     priv->history = G_PASTE_UI_HISTORY (history);
 
     gtk_window_set_titlebar (win, header);
+    gtk_application_window_set_help_overlay (GTK_APPLICATION_WINDOW (user_data), GTK_SHORTCUTS_WINDOW (g_paste_ui_shortcuts_window_new (settings)));
 
     GtkContainer *vbox = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (win)));
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);

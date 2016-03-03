@@ -198,42 +198,42 @@ g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiS
     GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
 
     priv->element_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
-                                                                             _("Max element size when displaying: "),
+                                                                             _("Max element size when displaying"),
                                                                              (gdouble) g_paste_settings_get_element_size (settings),
                                                                              0, 511, 5,
                                                                              element_size_callback,
                                                                              (GPasteResetCallback) g_paste_settings_reset_element_size,
                                                                              settings);
     priv->max_displayed_history_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
-                                                                                           _("Max displayed history size: "),
+                                                                                           _("Max displayed history size"),
                                                                                            (gdouble) g_paste_settings_get_max_displayed_history_size (settings),
                                                                                            10, 255, 5,
                                                                                            max_displayed_history_size_callback,
                                                                                            (GPasteResetCallback) g_paste_settings_reset_max_displayed_history_size,
                                                                                            settings);
     priv->max_history_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
-                                                                                 _("Max history size: "),
+                                                                                 _("Max history size"),
                                                                                  (gdouble) g_paste_settings_get_max_history_size (settings),
                                                                                  100, 65535, 5,
                                                                                  max_history_size_callback,
                                                                                  (GPasteResetCallback) g_paste_settings_reset_max_history_size,
                                                                                  settings);
     priv->max_memory_usage_button = g_paste_settings_ui_panel_add_range_setting (panel,
-                                                                                 _("Max memory usage (MB): "),
+                                                                                 _("Max memory usage (MB)"),
                                                                                  (gdouble) g_paste_settings_get_max_memory_usage (settings),
                                                                                  5, 16383, 5,
                                                                                  max_memory_usage_callback,
                                                                                  (GPasteResetCallback) g_paste_settings_reset_max_memory_usage,
                                                                                  settings);
     priv->max_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
-                                                                                   _("Max text item length: "),
+                                                                                   _("Max text item length"),
                                                                                    (gdouble) g_paste_settings_get_max_text_item_size (settings),
                                                                                    1, G_MAXUINT64, 1,
                                                                                    max_text_item_size_callback,
                                                                                    (GPasteResetCallback) g_paste_settings_reset_max_text_item_size,
                                                                                    settings);
     priv->min_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
-                                                                                   _("Min text item length: "),
+                                                                                   _("Min text item length"),
                                                                                    (gdouble) g_paste_settings_get_min_text_item_size (settings),
                                                                                    1, 65535, 1,
                                                                                    min_text_item_size_callback,
@@ -259,49 +259,49 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
 
     /* translators: Keyboard shortcut to delete the active item from history */
     priv->pop_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                  _("Delete the active item from history: "),
+                                                                  _("Delete the active item from history"),
                                                                   g_paste_settings_get_pop (settings),
                                                                   pop_callback,
                                                                   (GPasteResetCallback) g_paste_settings_reset_pop,
                                                                   settings);
     /* translators: Keyboard shortcut to launch the graphical tool */
     priv->launch_ui_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                        _("Launch the graphical tool: "),
+                                                                        _("Launch the graphical tool"),
                                                                         g_paste_settings_get_launch_ui (settings),
                                                                         launch_ui_callback,
                                                                         (GPasteResetCallback) g_paste_settings_reset_launch_ui,
                                                                         settings);
     /* translators: Keyboard shortcut to mark the active item as being a password */
     priv->make_password_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                            _("Mark the active item as being a password: "),
+                                                                            _("Mark the active item as being a password"),
                                                                             g_paste_settings_get_make_password (settings),
                                                                             make_password_callback,
                                                                             (GPasteResetCallback) g_paste_settings_reset_make_password,
                                                                             settings);
     /* translators: Keyboard shortcut to display the history */
     priv->show_history_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                           _("Display the history: "),
+                                                                           _("Display the history"),
                                                                            g_paste_settings_get_show_history (settings),
                                                                            show_history_callback,
                                                                            (GPasteResetCallback) g_paste_settings_reset_show_history,
                                                                            settings);
     /* translators: Keyboard shortcut to sync the clipboard to the primary selection */
     priv->sync_clipboard_to_primary_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                                        _("Sync the clipboard to the primary selection: "),
+                                                                                        _("Sync the clipboard to the primary selection"),
                                                                                         g_paste_settings_get_sync_clipboard_to_primary (settings),
                                                                                         sync_clipboard_to_primary_callback,
                                                                                         (GPasteResetCallback) g_paste_settings_reset_sync_clipboard_to_primary,
                                                                                         settings);
     /* translators: Keyboard shortcut to sync the primary selection to the clipboard */
     priv->sync_primary_to_clipboard_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                                        _("Sync the primary selection to the clipboard: "),
+                                                                                        _("Sync the primary selection to the clipboard"),
                                                                                         g_paste_settings_get_sync_primary_to_clipboard (settings),
                                                                                         sync_primary_to_clipboard_callback,
                                                                                         (GPasteResetCallback) g_paste_settings_reset_sync_primary_to_clipboard,
                                                                                         settings);
     /* translators: Keyboard shortcut to upload the active item from history to a pastebin service */
     priv->upload_entry = g_paste_settings_ui_panel_add_text_setting (panel,
-                                                                     _("Upload the active item to a pastebin service: "),
+                                                                     _("Upload the active item to a pastebin service"),
                                                                      g_paste_settings_get_upload (settings),
                                                                      upload_callback,
                                                                      (GPasteResetCallback) g_paste_settings_reset_upload,

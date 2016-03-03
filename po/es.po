@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-01-15 13:37+0100\n"
+"POT-Creation-Date: 2016-03-03 23:35+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -17,12 +17,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../src/libgpaste/gpaste-macros.h:63
+#: ../src/libgpaste/gpaste-macros.h:111
 msgid "Failed to register the gtk application"
 msgstr "Fallo al registrar la aplicación gtk"
 
 #: ../src/libgpaste/applet/gpaste-applet-about.c:81
-#: ../src/libgpaste/ui/gpaste-ui-about.c:52
+#: ../src/libgpaste/ui/gpaste-ui-about.c:54
 msgid "About"
 msgstr ""
 
@@ -37,7 +37,7 @@ msgstr "Salir"
 msgid "launch the graphical tool"
 msgstr "iniciar la herramienta de configuración"
 
-#: ../src/libgpaste/core/gpaste-history.c:744
+#: ../src/libgpaste/core/gpaste-history.c:727
 msgid "Could not create history dir"
 msgstr "No se pudo crear directorio de historial"
 
@@ -53,7 +53,7 @@ msgid "[Image, %d x %d (%s)]"
 msgstr "[Imagen, %d x %d (%s)]"
 
 #. This is the prefix displayed in history to identify a password
-#: ../src/libgpaste/core/gpaste-password-item.c:82
+#: ../src/libgpaste/core/gpaste-password-item.c:80
 msgid "Password"
 msgstr ""
 
@@ -62,130 +62,140 @@ msgstr ""
 msgid "[Files] "
 msgstr "[Ficheros] "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:124
-#: ../src/libgpaste/ui/gpaste-ui-switch.c:96
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
+#: ../src/libgpaste/ui/gpaste-ui-switch.c:98
 msgid "Track clipboard changes"
 msgstr "Seguimiento de cambios en el portapapeles"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:133
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
 msgid "Enable the gnome-shell extension"
 msgstr ""
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:139
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
 msgid "Sync the daemon state with the extension's one"
 msgstr "Sincronizar el estado del servicio con el de la _extensión"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:148
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
 msgid "Primary selection affects history"
 msgstr "Selección principal afecta al historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:154
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
 msgid "Synchronize clipboard with primary selection"
 msgstr "Sincronizar el portapapeles con selección principal"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:161
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
 msgid "Images support"
 msgstr ""
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:167
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
 msgid "Trim items"
 msgstr "Recortar elementos"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:173
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
 msgid "Detect growing lines"
 msgstr ""
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:180
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
 msgid "Save history"
 msgstr "Guardar historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:203
-msgid "Max element size when displaying: "
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
+#, fuzzy
+msgid "Max element size when displaying"
 msgstr "Tamaño máximo de los elementos al visualizarlos: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:210
-msgid "Max displayed history size: "
-msgstr "Tamaño máximo a mostrar: "
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:13
+msgid "Max displayed history size"
+msgstr "Tamaño máximo al mostrar"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:217
-msgid "Max history size: "
-msgstr "Tamaño máximo del historial: "
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:15
+msgid "Max history size"
+msgstr "Tamaño máximo del historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:224
-msgid "Max memory usage (MB): "
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
+#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:17
+msgid "Max memory usage (MB)"
 msgstr ""
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:231
-msgid "Max text item length: "
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
+#, fuzzy
+msgid "Max text item length"
 msgstr "Tamaño máximo de texto"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:238
-msgid "Min text item length: "
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
+#, fuzzy
+msgid "Min text item length"
 msgstr "Tamaño mínimo de texto"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:264
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
 #, fuzzy
-msgid "Delete the active item from history: "
+msgid "Delete the active item from history"
 msgstr "Eliminar el primer elemento del historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:271
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
 #, fuzzy
-msgid "Launch the graphical tool: "
+msgid "Launch the graphical tool"
 msgstr "iniciar la herramienta de configuración"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:278
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
-msgid "Mark the active item as being a password: "
-msgstr ""
+#, fuzzy
+msgid "Mark the active item as being a password"
+msgstr "Atajo de teclado para eliminar la primera entrada del historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:285
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
-msgid "Display the history: "
+#, fuzzy
+msgid "Display the history"
 msgstr "Mostrar el historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:292
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
 #: ../data/control-center/42-gpaste.xml.in.in.h:5
-msgid "Sync the clipboard to the primary selection: "
+#, fuzzy
+msgid "Sync the clipboard to the primary selection"
 msgstr "Sincronizar el portapapeles con selección principal: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:299
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
 #: ../data/control-center/42-gpaste.xml.in.in.h:6
-msgid "Sync the primary selection to the clipboard: "
+#, fuzzy
+msgid "Sync the primary selection to the clipboard"
 msgstr "Sincronizar selección principal con el portapapeles: "
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:306
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: ../data/control-center/42-gpaste.xml.in.in.h:7
 #, fuzzy
-msgid "Upload the active item to a pastebin service: "
+msgid "Upload the active item to a pastebin service"
 msgstr "Eliminar el primer elemento del historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:321
-#: ../src/libgpaste/ui/gpaste-ui-window.c:211 ../src/client/gpaste-client.c:830
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
+#: ../src/libgpaste/ui/gpaste-ui-window.c:221 ../src/client/gpaste-client.c:830
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:338
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
 msgid "General behaviour"
 msgstr "Comportamiento general"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:339
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
 msgid "History settings"
 msgstr "Ajustes del historial"
 
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:340
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
 msgid "Keyboard shortcuts"
 msgstr "Atajos de teclado "
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:455
-#: ../src/libgpaste/ui/gpaste-ui-panel.c:297
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:451
+#: ../src/libgpaste/ui/gpaste-ui-panel.c:295
 msgid "Switch to"
 msgstr "Cambiar a"
 
 #. translators: This is the name of a multi-history management action
-#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:460
+#: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:456
 #: ../src/libgpaste/ui/gpaste-ui-delete-item.c:62
 #: ../src/libgpaste/ui/gpaste-ui-delete-history.c:37
 #: ../src/libgpaste/ui/gpaste-ui-delete-history.c:74
@@ -200,7 +210,7 @@ msgstr "Copia de seguridad"
 #: ../src/libgpaste/ui/gpaste-ui-backup-history.c:48
 #: ../src/libgpaste/ui/gpaste-ui-edit-item.c:56
 #: ../src/libgpaste/ui/gpaste-ui-new-item.c:43
-#: ../src/libgpaste/util/gpaste-util.c:44
+#: ../src/libgpaste/util/gpaste-util.c:42
 msgid "Cancel"
 msgstr ""
 
@@ -234,7 +244,7 @@ msgid "(Empty)"
 msgstr "(Vacío)"
 
 #: ../src/libgpaste/ui/gpaste-ui-new-item.c:42
-#: ../src/libgpaste/ui/gpaste-ui-new-item.c:90
+#: ../src/libgpaste/ui/gpaste-ui-new-item.c:92
 msgid "New"
 msgstr ""
 
@@ -247,15 +257,15 @@ msgstr ""
 msgid "Do you really want to restart the daemon?"
 msgstr "detener seguimiento de cambios en el portapapeles"
 
-#: ../src/libgpaste/ui/gpaste-ui-reexec.c:66
+#: ../src/libgpaste/ui/gpaste-ui-reexec.c:68
 msgid "Restart the daemon"
 msgstr ""
 
-#: ../src/libgpaste/ui/gpaste-ui-search.c:37
+#: ../src/libgpaste/ui/gpaste-ui-search.c:39
 msgid "Search"
 msgstr ""
 
-#: ../src/libgpaste/ui/gpaste-ui-settings.c:42
+#: ../src/libgpaste/ui/gpaste-ui-settings.c:43
 #, fuzzy
 msgid "GPaste Settings"
 msgstr "Ajustes del servicio GPaste"
@@ -694,25 +704,13 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:13
-msgid "Max displayed history size"
-msgstr "Tamaño máximo al mostrar"
-
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:14
 msgid "Maximum number of items displayed in the history"
 msgstr "Número máximo de elementos mostrados en el historial"
 
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:15
-msgid "Max history size"
-msgstr "Tamaño máximo del historial"
-
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:16
 msgid "Maximum number of items in history"
 msgstr "Número máximo de elementos en el historial"
-
-#: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:17
-msgid "Max memory usage (MB)"
-msgstr ""
 
 #: ../data/gsettings/org.gnome.GPaste.gschema.xml.h:18
 msgid "Maximum amount of memory used to store contents"
@@ -854,6 +852,12 @@ msgid ""
 msgstr ""
 "Por omisión, pulsando ctrl + alt + v (\"&lt;Ctrl&gt;&lt;Alt&gt;v\"). Una "
 "cadena vacía desactivaría esta funcionalidad."
+
+#~ msgid "Max displayed history size: "
+#~ msgstr "Tamaño máximo a mostrar: "
+
+#~ msgid "Max history size: "
+#~ msgstr "Tamaño máximo del historial: "
 
 #~ msgid "Empty history"
 #~ msgstr "Vaciar historial"
