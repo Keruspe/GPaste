@@ -257,7 +257,7 @@ g_paste_ui_history_search (GPasteUiHistory *self,
 
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    if (g_str_equal (search, ""))
+    if (g_paste_str_equal (search, ""))
     {
         g_clear_pointer (&priv->search, g_free);
         g_clear_pointer (&priv->search_results, g_free);

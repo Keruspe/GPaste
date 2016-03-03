@@ -331,7 +331,7 @@ g_paste_gnome_shell_client_g_signal (GDBusProxy  *proxy,
 {
     GPasteGnomeShellClient *self = G_PASTE_GNOME_SHELL_CLIENT (proxy);
 
-    if (g_str_equal (signal_name, G_PASTE_GNOME_SHELL_SIG_ACCELERATOR_ACTIVATED))
+    if (g_paste_str_equal (signal_name, G_PASTE_GNOME_SHELL_SIG_ACCELERATOR_ACTIVATED))
     {
         GVariantIter params_iter;
         g_variant_iter_init (&params_iter, parameters);

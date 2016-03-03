@@ -218,7 +218,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
             data->callback (self, NULL, data->user_data);
         return;
     }
-    if (priv->text && g_str_equal (priv->text, to_add))
+    if (priv->text && g_paste_str_equal (priv->text, to_add))
     {
         if (data->callback)
             data->callback (self, NULL, data->user_data);
@@ -227,7 +227,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
 
     if (trim_items &&
         priv->target == GDK_SELECTION_CLIPBOARD &&
-        !g_str_equal (text, stripped))
+        !g_paste_str_equal (text, stripped))
             g_paste_clipboard_select_text (self, stripped);
     else
         g_paste_clipboard_private_set_text (priv, to_add);
@@ -458,7 +458,7 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
                                                                         (guchar *) gdk_pixbuf_get_pixels (image),
                                                                         -1);
 
-    if (!g_str_equal (checksum, priv->image_checksum))
+    if (!g_paste_str_equal (checksum, priv->image_checksum))
     {
         g_paste_clipboard_private_select_image (priv,
                                                 image,
@@ -521,7 +521,7 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
         const GPasteImageItem *image_item = _G_PASTE_IMAGE_ITEM (item);
         const gchar *checksum = g_paste_image_item_get_checksum (image_item);
 
-        if (!g_str_equal (checksum, priv->image_checksum))
+        if (!g_paste_str_equal (checksum, priv->image_checksum))
         {
             g_paste_clipboard_private_select_image (priv,
                                                     g_paste_image_item_get_image (image_item),
@@ -532,7 +532,7 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
     {
         const gchar *text = g_paste_item_get_real_value (item);
 
-        if (!g_str_equal (text, priv->text))
+        if (!g_paste_str_equal (text, priv->text))
         {
             if (_G_PASTE_IS_URIS_ITEM (item))
                 g_paste_clipboard_private_select_uris (priv, G_PASTE_URIS_ITEM (item));
@@ -586,7 +586,7 @@ g_paste_clipboard_fake_event_finish_text (GtkClipboard *clipboard G_GNUC_UNUSED,
     GPasteClipboard *self = user_data;
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
-    if (!g_str_equal (text, priv->text))
+    if (!g_paste_str_equal (text, priv->text))
         g_paste_clipboard_owner_change (NULL, NULL, self);
 }
 
@@ -599,7 +599,7 @@ g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     g_autofree gchar *checksum = g_paste_util_compute_checksum (image);
 
-    if (!g_str_equal (checksum, priv->image_checksum))
+    if (!g_paste_str_equal (checksum, priv->image_checksum))
         g_paste_clipboard_owner_change (NULL, NULL, self);
 
     g_object_unref (image);

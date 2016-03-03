@@ -38,6 +38,8 @@ G_BEGIN_DECLS
 #  define G_PASTE_VISIBLE
 #endif
 
+#define g_paste_str_equal(s1, s2) (!g_strcmp0 (s1, s2))
+
 #define G_PASTE_CONST_CHECKER(TYPE_NAME)            \
   static inline gboolean                            \
   _G_PASTE_IS_##TYPE_NAME (gconstpointer ptr) {     \

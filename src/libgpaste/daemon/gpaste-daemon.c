@@ -370,7 +370,7 @@ g_paste_daemon_private_delete_history (const GPasteDaemonPrivate *priv,
     g_paste_history_delete (history, name, NULL);
     g_paste_daemon_private_delete_history_signal (priv, name);
 
-    if (g_str_equal (name, g_paste_history_get_current (priv->history)))
+    if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
         g_paste_history_switch (history, G_PASTE_DEFAULT_HISTORY);
 }
 
@@ -392,7 +392,7 @@ g_paste_daemon_private_empty_history (const GPasteDaemonPrivate *priv,
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    if (g_str_equal (name, g_paste_history_get_current (priv->history)))
+    if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
     {
         g_paste_history_empty (priv->history);
     }
@@ -503,7 +503,7 @@ g_paste_daemon_private_get_history_size (const GPasteDaemonPrivate *priv,
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     guint64 size;
 
-    if (g_str_equal (name, g_paste_history_get_current (priv->history)))
+    if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
     {
         size = g_paste_history_get_length (priv->history);
     }
@@ -698,7 +698,7 @@ g_paste_daemon_private_replace (const GPasteDaemonPrivate *priv,
     const GPasteItem *item = g_paste_history_get (history, index);
 
     G_PASTE_DBUS_ASSERT (item, "received no item for this index");
-    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *contents = g_variant_dup_string (variant2, &length);
@@ -727,7 +727,7 @@ g_paste_daemon_private_set_password (const GPasteDaemonPrivate *priv,
     const GPasteItem *item = g_paste_history_get (history, index);
 
     G_PASTE_DBUS_ASSERT (item, "received no item for this index");
-    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *name = g_variant_dup_string (variant2, &length);
@@ -839,65 +839,65 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     GError *error = NULL;
     g_autofree GPasteDBusError *err = NULL;
 
-    if (g_str_equal (method_name, G_PASTE_DAEMON_ABOUT))
+    if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ABOUT))
         g_paste_util_activate_ui ("about", NULL);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_ADD))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ADD))
         g_paste_daemon_private_add (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_ADD_FILE))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ADD_FILE))
         g_paste_daemon_private_add_file (priv, parameters, &error, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_ADD_PASSWORD))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ADD_PASSWORD))
         g_paste_daemon_private_add_password (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
         g_paste_daemon_private_backup_history (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_DELETE))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE))
         g_paste_daemon_private_delete (priv, parameters);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
         g_paste_daemon_private_delete_history (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
         g_paste_daemon_private_delete_password (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_EMPTY_HISTORY))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_EMPTY_HISTORY))
         g_paste_daemon_private_empty_history (priv, parameters);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT))
         answer = g_paste_daemon_private_get_element (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT_KIND))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT_KIND))
         answer = g_paste_daemon_private_get_element_kind (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENTS))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENTS))
         answer = g_paste_daemon_private_get_elements (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY))
         answer = g_paste_daemon_private_get_history (priv);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_NAME))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_NAME))
         answer = g_paste_daemon_private_get_history_name (priv);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
         answer = g_paste_daemon_private_get_history_size (priv, parameters);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
         answer = g_paste_daemon_private_get_raw_element (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
         answer = g_paste_daemon_private_get_raw_history (priv);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
         answer = g_paste_daemon_list_histories (&error);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_MERGE))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_MERGE))
         g_paste_daemon_private_merge (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))
         g_paste_daemon_on_extension_state_changed (self, parameters);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_REEXECUTE))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_REEXECUTE))
         g_paste_daemon_reexecute (self);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_RENAME_PASSWORD))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_RENAME_PASSWORD))
         g_paste_daemon_private_rename_password (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_REPLACE))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_REPLACE))
         g_paste_daemon_private_replace (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_SEARCH))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SEARCH))
         answer = g_paste_daemon_private_search (priv, parameters);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_SELECT))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SELECT))
         g_paste_daemon_private_select (priv, parameters);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_SET_PASSWORD))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SET_PASSWORD))
         g_paste_daemon_private_set_password (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
         g_paste_daemon_show_history (self, &error);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SWITCH_HISTORY))
         g_paste_daemon_private_switch_history (priv, parameters, &err);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_TRACK))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_TRACK))
         g_paste_daemon_track (self, parameters);
-    else if (g_str_equal (method_name, G_PASTE_DAEMON_UPLOAD))
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_UPLOAD))
         _g_paste_daemon_upload (self, parameters);
 
     if (error)
@@ -919,9 +919,9 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
 {
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (G_PASTE_DAEMON (user_data));
 
-    if (g_str_equal (property_name, G_PASTE_DAEMON_PROP_ACTIVE))
+    if (g_paste_str_equal (property_name, G_PASTE_DAEMON_PROP_ACTIVE))
         return g_variant_new_boolean (g_paste_settings_get_track_changes (priv->settings));
-    else if (g_str_equal (property_name, G_PASTE_DAEMON_PROP_VERSION))
+    else if (g_paste_str_equal (property_name, G_PASTE_DAEMON_PROP_VERSION))
         return g_variant_new_string (VERSION);
 
     return NULL;

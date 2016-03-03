@@ -103,7 +103,7 @@ g_paste_image_item_equals (const GPasteItem *self,
     const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (_G_PASTE_IMAGE_ITEM (self));
     const GPasteImageItemPrivate *_priv = _g_paste_image_item_get_instance_private (_G_PASTE_IMAGE_ITEM (other));
 
-    return g_str_equal (priv->checksum, _priv->checksum);
+    return g_paste_str_equal (priv->checksum, _priv->checksum);
 }
 
 static void

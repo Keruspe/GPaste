@@ -288,15 +288,15 @@ g_paste_search_provider_dbus_method_call (GDBusConnection       *connection     
     const GPasteSearchProviderPrivate *priv = _g_paste_search_provider_get_instance_private (self);
     gboolean async = FALSE;
 
-    if (g_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_INITIAL_RESULT_SET))
+    if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_INITIAL_RESULT_SET))
         async = g_paste_search_provider_private_get_initial_result_set (priv, invocation, parameters);
-    else if (g_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_SUBSEARCH_RESULT_SET))
+    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_SUBSEARCH_RESULT_SET))
         async = g_paste_search_provider_private_get_subsearch_result_set (priv, invocation, parameters);
-    else if (g_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_RESULT_METAS))
+    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_GET_RESULT_METAS))
         async = g_paste_search_provider_private_get_result_metas (priv, invocation, parameters);
-    else if (g_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_ACTIVATE_RESULT))
+    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_ACTIVATE_RESULT))
         async = g_paste_search_provider_private_activate_result (priv, parameters);
-    else if (g_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_LAUNCH_SEARCH))
+    else if (g_paste_str_equal (method_name, G_PASTE_SEARCH_PROVIDER_LAUNCH_SEARCH))
         async = g_paste_search_provider_private_launch_search (priv, parameters);
 
     if (!async)

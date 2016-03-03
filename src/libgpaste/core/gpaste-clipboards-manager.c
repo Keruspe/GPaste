@@ -140,7 +140,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
 
             const gchar *text = g_paste_clipboard_get_text (clip);
 
-            if (!text || !g_str_equal (text, synchronized_text))
+            if (!text || !g_paste_str_equal (text, synchronized_text))
                 g_paste_clipboard_select_text (clip, synchronized_text);
         }
     }
