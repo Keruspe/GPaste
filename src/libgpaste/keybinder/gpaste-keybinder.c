@@ -532,19 +532,18 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
                           gpointer   data)
 {
     GPasteKeybinderPrivate *priv = data;
+    GdkDisplay *display = gdk_display_get_default ();
 
-    for (GList *dev = gdk_device_manager_list_devices (gdk_display_get_device_manager (gdk_display_get_default ()),
-                                                       GDK_DEVICE_TYPE_MASTER); dev; dev = g_list_next (dev))
+    for (GList *_seat = gdk_display_list_seats (display); _seat; _seat = g_list_next (_seat))
     {
-        GdkDevice *device = dev->data;
+        GdkSeat *seat = _seat->data;
 
-        if (gdk_device_get_source (device) == GDK_SOURCE_KEYBOARD)
-            gdk_device_ungrab (device, GDK_CURRENT_TIME);
+        if (gdk_seat_get_keyboard (seat))
+            gdk_seat_ungrab (seat);
     }
 
     gdk_flush ();
 
-    GdkDisplay *display = gdk_display_get_default ();
     GdkModifierType modifiers = 0;
     guint64 keycode = 0;
 
