@@ -111,6 +111,7 @@
 #include <gpaste-ui-search.h>
 #include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-settings.h>
+#include <gpaste-ui-shortcuts-window.h>
 #include <gpaste-ui-switch.h>
 #include <gpaste-ui-upload-item.h>
 #include <gpaste-ui-window.h>
