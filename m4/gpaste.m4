@@ -78,6 +78,7 @@ AC_DEFUN([G_PASTE_APPEND_CFLAGS], [
         -Wmissing-noreturn          \
         -Wshadow                    \
         -Wendif-labels              \
+        -Wmisleading-indentation    \
         -Wcast-align                \
         -Wstrict-aliasing=2         \
         -Wwrite-strings             \
