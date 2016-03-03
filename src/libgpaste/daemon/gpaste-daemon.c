@@ -92,7 +92,7 @@ typedef struct
     guint64                  c_signals[C_LAST_SIGNAL];
 } GPasteDaemonPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteDaemon, g_paste_daemon, G_PASTE_TYPE_BUS_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
 
 enum
 {
@@ -176,7 +176,7 @@ g_paste_daemon_update (GPasteDaemon      *self,
                        GPasteUpdateTarget target,
                        guint64            position)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
 
     GVariant *data[] = {
         g_variant_new_string (g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_UPDATE_ACTION), action)->value_nick),
@@ -197,9 +197,9 @@ G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self,
                              GError      **error)
 {
-    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
 
     G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SHOW_HISTORY);
 }
@@ -209,7 +209,7 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
                          gboolean        tracking_state,
                          GPasteSettings *settings G_GNUC_UNUSED)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GVariant *variant = g_variant_new_boolean (tracking_state);
 
     G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (TRACKING, variant);
@@ -220,18 +220,18 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
 /****************/
 
 static void
-g_paste_daemon_private_do_add_item (GPasteDaemonPrivate *priv,
-                                    GPasteItem          *item)
+g_paste_daemon_private_do_add_item (const GPasteDaemonPrivate *priv,
+                                    GPasteItem                *item)
 {
     g_paste_history_add (priv->history, item);
     g_paste_clipboards_manager_select (priv->clipboards_manager, item);
 }
 
 static void
-g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
-                               const gchar         *text,
-                               guint64              length,
-                               GPasteDBusError    **err)
+g_paste_daemon_private_do_add (const GPasteDaemonPrivate *priv,
+                               const gchar               *text,
+                               guint64                    length,
+                               GPasteDBusError          **err)
 {
     G_PASTE_DBUS_ASSERT (text && length, "no content to add");
 
@@ -248,9 +248,9 @@ g_paste_daemon_private_do_add (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_add (GPasteDaemonPrivate *priv,
-                            GVariant            *parameters,
-                            GPasteDBusError    **err)
+g_paste_daemon_private_add (const GPasteDaemonPrivate *priv,
+                            GVariant                  *parameters,
+                            GPasteDBusError          **err)
 {
     guint64 length;
     g_autofree gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
@@ -259,10 +259,10 @@ g_paste_daemon_private_add (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
-                                 GVariant            *parameters,
-                                 GError             **error,
-                                 GPasteDBusError    **err)
+g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
+                                 GVariant                  *parameters,
+                                 GError                   **error,
+                                 GPasteDBusError          **err)
 {
     guint64 length;
     g_autofree gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
@@ -280,9 +280,9 @@ g_paste_daemon_private_add_file (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
-                                     GVariant            *parameters,
-                                     GPasteDBusError    **err)
+g_paste_daemon_private_add_password (const GPasteDaemonPrivate *priv,
+                                     GVariant                  *parameters,
+                                     GPasteDBusError          **err)
 {
     g_autofree gchar *name = NULL;
     g_autofree gchar *password = NULL;
@@ -296,8 +296,8 @@ g_paste_daemon_private_add_password (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_delete_history_signal (GPasteDaemonPrivate *priv,
-                                              const gchar         *history)
+g_paste_daemon_private_delete_history_signal (const GPasteDaemonPrivate *priv,
+                                              const gchar               *history)
 {
     GVariant *variant = g_variant_new_string (history);
 
@@ -305,8 +305,8 @@ g_paste_daemon_private_delete_history_signal (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_empty_history_signal (GPasteDaemonPrivate *priv,
-                                             const gchar         *history)
+g_paste_daemon_private_empty_history_signal (const GPasteDaemonPrivate *priv,
+                                             const gchar               *history)
 {
     GVariant *variant = g_variant_new_string (history);
 
@@ -314,8 +314,8 @@ g_paste_daemon_private_empty_history_signal (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_switch_history_signal (GPasteDaemonPrivate *priv,
-                                              const gchar         *history)
+g_paste_daemon_private_switch_history_signal (const GPasteDaemonPrivate *priv,
+                                              const gchar               *history)
 {
     GVariant *variant = g_variant_new_string (history);
 
@@ -323,9 +323,9 @@ g_paste_daemon_private_switch_history_signal (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters,
-                                       GPasteDBusError    **err)
+g_paste_daemon_private_backup_history (const GPasteDaemonPrivate *priv,
+                                       GVariant                  *parameters,
+                                       GPasteDBusError          **err)
 {
     g_autofree gchar *history = NULL;
     g_autofree gchar *backup = NULL;
@@ -349,17 +349,17 @@ g_paste_daemon_private_backup_history (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_delete (GPasteDaemonPrivate *priv,
-                               GVariant            *parameters)
+g_paste_daemon_private_delete (const GPasteDaemonPrivate *priv,
+                               GVariant                  *parameters)
 {
     g_paste_history_remove (priv->history,
                             g_paste_daemon_get_dbus_uint64_parameter (parameters));
 }
 
 static void
-g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters,
-                                       GPasteDBusError    **err)
+g_paste_daemon_private_delete_history (const GPasteDaemonPrivate *priv,
+                                       GVariant                  *parameters,
+                                       GPasteDBusError          **err)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
@@ -375,9 +375,9 @@ g_paste_daemon_private_delete_history (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_delete_password (GPasteDaemonPrivate *priv,
-                                        GVariant            *parameters,
-                                        GPasteDBusError    **err)
+g_paste_daemon_private_delete_password (const GPasteDaemonPrivate *priv,
+                                        GVariant                  *parameters,
+                                        GPasteDBusError          **err)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
@@ -387,8 +387,8 @@ g_paste_daemon_private_delete_password (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_empty_history (GPasteDaemonPrivate *priv,
-                                      GVariant            *parameters)
+g_paste_daemon_private_empty_history (const GPasteDaemonPrivate *priv,
+                                      GVariant                  *parameters)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
@@ -407,9 +407,9 @@ g_paste_daemon_private_empty_history (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
-g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
-                                    GVariant            *parameters,
-                                    GPasteDBusError    **err)
+g_paste_daemon_private_get_element (const GPasteDaemonPrivate *priv,
+                                    GVariant                  *parameters,
+                                    GPasteDBusError          **err)
 {
     GPasteHistory *history = priv->history;
     guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
@@ -426,9 +426,9 @@ g_paste_daemon_private_get_element (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
-g_paste_daemon_private_get_element_kind (GPasteDaemonPrivate *priv,
-                                         GVariant            *parameters,
-                                         GPasteDBusError    **err)
+g_paste_daemon_private_get_element_kind (const GPasteDaemonPrivate *priv,
+                                         GVariant                  *parameters,
+                                         GPasteDBusError          **err)
 {
     GPasteHistory *history = priv->history;
     guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
@@ -445,9 +445,9 @@ g_paste_daemon_private_get_element_kind (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
-g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
-                                     GVariant            *parameters,
-                                     GPasteDBusError    **err)
+g_paste_daemon_private_get_elements (const GPasteDaemonPrivate *priv,
+                                     GVariant                  *parameters,
+                                     GPasteDBusError          **err)
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
@@ -474,7 +474,7 @@ g_paste_daemon_private_get_elements (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
-g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
+g_paste_daemon_private_get_history (const GPasteDaemonPrivate *priv)
 {
     const GList *history = g_paste_history_get_history (priv->history);
     guint64 length = g_list_length ((GList *) history);
@@ -490,15 +490,15 @@ g_paste_daemon_private_get_history (GPasteDaemonPrivate *priv)
 }
 
 static GVariant *
-g_paste_daemon_private_get_history_name (GPasteDaemonPrivate *priv)
+g_paste_daemon_private_get_history_name (const GPasteDaemonPrivate *priv)
 {
     GVariant *variant = g_variant_new_string (g_paste_history_get_current (priv->history));
     return g_variant_new_tuple (&variant, 1);
 }
 
 static GVariant *
-g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv,
-                                         GVariant            *parameters)
+g_paste_daemon_private_get_history_size (const GPasteDaemonPrivate *priv,
+                                         GVariant                  *parameters)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     guint64 size;
@@ -521,9 +521,9 @@ g_paste_daemon_private_get_history_size (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
-g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
-                                        GVariant            *parameters,
-                                        GPasteDBusError    **err)
+g_paste_daemon_private_get_raw_element (const GPasteDaemonPrivate *priv,
+                                        GVariant                  *parameters,
+                                        GPasteDBusError          **err)
 {
     GPasteHistory *history = priv->history;
     guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
@@ -540,7 +540,7 @@ g_paste_daemon_private_get_raw_element (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
-g_paste_daemon_private_get_raw_history (GPasteDaemonPrivate *priv)
+g_paste_daemon_private_get_raw_history (const GPasteDaemonPrivate *priv)
 {
     const GList *history = g_paste_history_get_history (priv->history);
     guint64 length = g_list_length ((GList *) history);
@@ -569,9 +569,9 @@ g_paste_daemon_list_histories (GError **error)
 }
 
 static void
-g_paste_daemon_private_merge (GPasteDaemonPrivate *priv,
-                              GVariant            *parameters,
-                              GPasteDBusError    **err)
+g_paste_daemon_private_merge (const GPasteDaemonPrivate *priv,
+                              GVariant                  *parameters,
+                              GPasteDBusError          **err)
 {
     GVariantIter parameters_iter;
 
@@ -620,7 +620,7 @@ g_paste_daemon_track (GPasteDaemon *self,
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     gboolean tracking_state = g_variant_get_boolean (variant);
 
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
 
     g_paste_settings_set_track_changes (priv->settings, tracking_state);
     g_paste_daemon_tracking (self, tracking_state, NULL);
@@ -630,7 +630,7 @@ static void
 g_paste_daemon_on_extension_state_changed (GPasteDaemon *self,
                                            GVariant     *parameters)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
 
     if (g_paste_settings_get_track_extension_state (priv->settings))
         g_paste_daemon_track (self, parameters);
@@ -646,9 +646,9 @@ g_paste_daemon_reexecute (GPasteDaemon *self)
 }
 
 static void
-g_paste_daemon_private_rename_password (GPasteDaemonPrivate *priv,
-                                        GVariant            *parameters,
-                                        GPasteDBusError    **err)
+g_paste_daemon_private_rename_password (const GPasteDaemonPrivate *priv,
+                                        GVariant                  *parameters,
+                                        GPasteDBusError          **err)
 {
     g_autofree gchar *old_name = NULL;
     g_autofree gchar *new_name = NULL;
@@ -661,8 +661,8 @@ g_paste_daemon_private_rename_password (GPasteDaemonPrivate *priv,
 }
 
 static GVariant *
-g_paste_daemon_private_search (GPasteDaemonPrivate *priv,
-                               GVariant            *parameters)
+g_paste_daemon_private_search (const GPasteDaemonPrivate *priv,
+                               GVariant                  *parameters)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     g_autoptr (GArray) results = g_paste_history_search (priv->history, name);
@@ -672,17 +672,17 @@ g_paste_daemon_private_search (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_select (GPasteDaemonPrivate *priv,
-                               GVariant            *parameters)
+g_paste_daemon_private_select (const GPasteDaemonPrivate *priv,
+                               GVariant                  *parameters)
 {
     g_paste_history_select (priv->history,
                             g_paste_daemon_get_dbus_uint64_parameter (parameters));
 }
 
 static void
-g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
-                                GVariant            *parameters,
-                                GPasteDBusError    **err)
+g_paste_daemon_private_replace (const GPasteDaemonPrivate *priv,
+                                GVariant                  *parameters,
+                                GPasteDBusError          **err)
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
@@ -698,7 +698,7 @@ g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
     const GPasteItem *item = g_paste_history_get (history, index);
 
     G_PASTE_DBUS_ASSERT (item, "received no item for this index");
-    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *contents = g_variant_dup_string (variant2, &length);
@@ -709,9 +709,9 @@ g_paste_daemon_private_replace (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
-                                     GVariant            *parameters,
-                                     GPasteDBusError    **err)
+g_paste_daemon_private_set_password (const GPasteDaemonPrivate *priv,
+                                     GVariant                  *parameters,
+                                     GPasteDBusError          **err)
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
@@ -727,7 +727,7 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
     const GPasteItem *item = g_paste_history_get (history, index);
 
     G_PASTE_DBUS_ASSERT (item, "received no item for this index");
-    G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
+    G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
     g_autofree gchar *name = g_variant_dup_string (variant2, &length);
@@ -738,9 +738,9 @@ g_paste_daemon_private_set_password (GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_switch_history (GPasteDaemonPrivate *priv,
-                                       GVariant            *parameters,
-                                       GPasteDBusError    **err)
+g_paste_daemon_private_switch_history (const GPasteDaemonPrivate *priv,
+                                       GVariant                  *parameters,
+                                       GPasteDBusError          **err)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
@@ -780,7 +780,7 @@ G_PASTE_VISIBLE void
 g_paste_daemon_upload (GPasteDaemon *self,
                        guint64       index)
 {
-    g_return_if_fail (G_PASTE_IS_DAEMON (self));
+    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, NULL, "wgetpaste", NULL);
@@ -803,7 +803,7 @@ _g_paste_daemon_upload (GPasteDaemon *self,
 static void
 g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GPasteKeybinder *keybinder = priv->keybinder;
     GPasteHistory *history = priv->history;
     GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager;
@@ -834,7 +834,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
                                  gpointer               user_data)
 {
     GPasteDaemon *self = user_data;
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GVariant *answer = NULL;
     GError *error = NULL;
     g_autofree GPasteDBusError *err = NULL;
@@ -917,7 +917,7 @@ g_paste_daemon_dbus_get_property (GDBusConnection *connection G_GNUC_UNUSED,
                                   GError         **error G_GNUC_UNUSED,
                                   gpointer         user_data)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (user_data));
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (G_PASTE_DAEMON (user_data));
 
     if (!g_strcmp0 (property_name, G_PASTE_DAEMON_PROP_ACTIVE))
         return g_variant_new_boolean (g_paste_settings_get_track_changes (priv->settings));
@@ -979,7 +979,7 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
 
     if (!active)
     {
-        const GPasteItem *item = g_paste_history_get (priv->history, 0);
+        g_autoptr (GPasteItem) item = g_paste_history_dup (priv->history, 0);
 
         if (item)
             g_paste_clipboards_manager_select (priv->clipboards_manager, item);
@@ -999,7 +999,7 @@ _g_paste_daemon_changed (gpointer data)
 static void
 g_paste_daemon_dispose (GObject *object)
 {
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
 
     if (priv->settings)
     {

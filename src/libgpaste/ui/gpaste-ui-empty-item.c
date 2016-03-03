@@ -24,7 +24,7 @@ struct _GPasteUiEmptyItem
     GPasteUiItemSkeleton parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiEmptyItem, g_paste_ui_empty_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
+G_PASTE_DEFINE_TYPE (UiEmptyItem, ui_empty_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
 
 static void
 g_paste_ui_empty_item_class_init (GPasteUiEmptyItemClass *klass G_GNUC_UNUSED)
@@ -53,8 +53,8 @@ g_paste_ui_empty_item_new (GPasteClient   *client,
                            GPasteSettings *settings,
                            GtkWindow      *rootwin)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_paste_ui_item_skeleton_new (G_PASTE_TYPE_UI_EMPTY_ITEM, client, settings, rootwin);

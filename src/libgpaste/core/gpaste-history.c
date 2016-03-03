@@ -44,7 +44,7 @@ typedef struct
     guint64         changed_signal;
 } GPasteHistoryPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteHistory, g_paste_history, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (History, history, G_TYPE_OBJECT)
 
 enum
 {
@@ -97,7 +97,7 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
 
     if (remove_leftovers)
     {
-        if (G_PASTE_IS_IMAGE_ITEM (item))
+        if (_G_PASTE_IS_IMAGE_ITEM (item))
         {
             g_autoptr (GFile) image = g_file_new_for_path (g_paste_item_get_value (item));
             g_file_delete (image,
@@ -211,8 +211,8 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
                                          GPasteItem           *new)
 {
     if (!(g_paste_settings_get_growing_lines (priv->settings) &&
-        G_PASTE_IS_TEXT_ITEM (old) && G_PASTE_IS_TEXT_ITEM (new) &&
-        !G_PASTE_IS_PASSWORD_ITEM (old) && !G_PASTE_IS_PASSWORD_ITEM (new)))
+        _G_PASTE_IS_TEXT_ITEM (old) && _G_PASTE_IS_TEXT_ITEM (new) &&
+        !_G_PASTE_IS_PASSWORD_ITEM (old) && !_G_PASTE_IS_PASSWORD_ITEM (new)))
             return FALSE;
 
     const gchar *n = g_paste_item_get_value (new);
@@ -232,8 +232,8 @@ G_PASTE_VISIBLE void
 g_paste_history_add (GPasteHistory *self,
                      GPasteItem    *item)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (G_PASTE_IS_ITEM (item));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_ITEM (item));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     guint64 max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
@@ -313,7 +313,7 @@ G_PASTE_VISIBLE void
 g_paste_history_remove (GPasteHistory *self,
                         guint64        pos)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GList *history = priv->history;
@@ -338,8 +338,8 @@ g_paste_history_remove (GPasteHistory *self,
 }
 
 static GPasteItem *
-g_paste_history_private_get (GPasteHistoryPrivate *priv,
-                             guint64               pos)
+g_paste_history_private_get (const GPasteHistoryPrivate *priv,
+                             guint64                     pos)
 {
     GList *history = priv->history;
 
@@ -362,9 +362,9 @@ G_PASTE_VISIBLE const GPasteItem *
 g_paste_history_get (GPasteHistory *self,
                      guint64        pos)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    return g_paste_history_private_get (g_paste_history_get_instance_private (self), pos);
+    return g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos);
 }
 
 /**
@@ -381,9 +381,9 @@ G_PASTE_VISIBLE GPasteItem *
 g_paste_history_dup (GPasteHistory *self,
                      guint64        pos)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    return g_object_ref (g_paste_history_private_get (g_paste_history_get_instance_private (self), pos));
+    return g_object_ref (g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos));
 }
 
 /**
@@ -399,9 +399,9 @@ G_PASTE_VISIBLE const gchar *
 g_paste_history_get_value (GPasteHistory *self,
                            guint64        pos)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    GPasteItem *item = g_paste_history_private_get (g_paste_history_get_instance_private (self), pos);
+    const GPasteItem *item = g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos);
     if (!item)
         return NULL;
 
@@ -421,9 +421,9 @@ G_PASTE_VISIBLE const gchar *
 g_paste_history_get_display_string (GPasteHistory *self,
                                     guint64        pos)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    GPasteItem *item = g_paste_history_private_get (g_paste_history_get_instance_private (self), pos);
+    const GPasteItem *item = g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos);
     if (!item)
         return NULL;
 
@@ -441,9 +441,9 @@ G_PASTE_VISIBLE void
 g_paste_history_select (GPasteHistory *self,
                         guint64        index)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     GList *history = priv->history;
 
     g_return_if_fail (index < g_list_length (history));
@@ -488,10 +488,10 @@ g_paste_history_replace (GPasteHistory *self,
                          guint64        index,
                          const gchar   *contents)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!contents || g_utf8_validate (contents, -1, NULL));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     GList *history = priv->history;
 
     g_return_if_fail (index < g_list_length (history));
@@ -502,7 +502,7 @@ g_paste_history_replace (GPasteHistory *self,
 
     GPasteItem *item = todel->data;
 
-    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
 
     GPasteItem *new = g_paste_text_item_new (contents);
 
@@ -525,10 +525,10 @@ g_paste_history_set_password (GPasteHistory *self,
                               guint64        index,
                               const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     GList *history = priv->history;
 
     g_return_if_fail (index < g_list_length (history));
@@ -539,7 +539,7 @@ g_paste_history_set_password (GPasteHistory *self,
 
     GPasteItem *item = todel->data;
 
-    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && !g_strcmp0 (g_paste_item_get_kind (item), "Text"));
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
 
@@ -556,7 +556,7 @@ _g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
     for (GList *h = priv->history; h; h = g_list_next (h), ++idx)
     {
         GPasteItem *i = h->data;
-        if (G_PASTE_IS_PASSWORD_ITEM (i) &&
+        if (_G_PASTE_IS_PASSWORD_ITEM (i) &&
             !g_strcmp0 (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
         {
             if (index)
@@ -583,10 +583,10 @@ G_PASTE_VISIBLE const GPastePasswordItem *
 g_paste_history_get_password (GPasteHistory *self,
                               const gchar   *name)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     GPasteItem *item = _g_paste_history_private_get_password (priv, name, NULL);
 
     return (item) ? G_PASTE_PASSWORD_ITEM (item) : NULL;
@@ -603,10 +603,10 @@ G_PASTE_VISIBLE void
 g_paste_history_delete_password (GPasteHistory *self,
                                  const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     guint64 index;
 
     if (_g_paste_history_private_get_password (priv, name, &index))
@@ -626,11 +626,11 @@ g_paste_history_rename_password (GPasteHistory *self,
                                  const gchar   *old_name,
                                  const gchar   *new_name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL));
     g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     guint64 index = 0;
     GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, &index);
     if (item)
@@ -649,12 +649,11 @@ g_paste_history_rename_password (GPasteHistory *self,
 G_PASTE_VISIBLE void
 g_paste_history_empty (GPasteHistory *self)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    g_list_free_full (priv->history,
-                      g_object_unref);
+    g_list_free_full (priv->history, g_object_unref);
     priv->history = NULL;
     priv->size = 0;
 
@@ -744,9 +743,9 @@ G_PASTE_VISIBLE void
 g_paste_history_save (GPasteHistory *self,
                       const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     GPasteSettings *settings = priv->settings;
     gboolean save_history = g_paste_settings_get_save_history (settings);
@@ -790,7 +789,7 @@ g_paste_history_save (GPasteHistory *self,
 
             if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
                 !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
-                (G_PASTE_IS_IMAGE_ITEM (item) &&
+                (_G_PASTE_IS_IMAGE_ITEM (item) &&
                     (!g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
                      !g_output_stream_write_all (stream, g_date_time_format ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item)), "%s"), 10, NULL, NULL /* cancellable */, NULL /* error */))) ||
                 !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
@@ -1035,7 +1034,7 @@ G_PASTE_VISIBLE void
 g_paste_history_load (GPasteHistory *self,
                       const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
@@ -1115,11 +1114,11 @@ G_PASTE_VISIBLE void
 g_paste_history_switch (GPasteHistory *self,
                         const gchar   *name)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (name);
     g_return_if_fail (g_utf8_validate (name, -1, NULL));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     g_paste_settings_set_history_name (priv->settings, name);
 }
@@ -1137,9 +1136,9 @@ g_paste_history_delete (GPasteHistory *self,
                         const gchar   *name,
                         GError       **error)
 {
-    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     g_autoptr (GFile) history_file = g_paste_history_get_history_file ((name) ? name : priv->name);
 
@@ -1158,7 +1157,7 @@ g_paste_history_delete (GPasteHistory *self,
 static void
 g_paste_history_history_name_changed (GPasteHistory *self)
 {
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     g_paste_history_load (self, NULL);
     g_paste_history_emit_switch (self, priv->name);
@@ -1185,7 +1184,7 @@ static void
 g_paste_history_dispose (GObject *object)
 {
     GPasteHistory *self = G_PASTE_HISTORY (object);
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
 
     if (settings)
@@ -1200,11 +1199,10 @@ g_paste_history_dispose (GObject *object)
 static void
 g_paste_history_finalize (GObject *object)
 {
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (G_PASTE_HISTORY (object));
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (G_PASTE_HISTORY (object));
 
     g_free (priv->name);
-    g_list_free_full (priv->history,
-                      g_object_unref);
+    g_list_free_full (priv->history, g_object_unref);
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->finalize (object);
 }
@@ -1284,9 +1282,6 @@ g_paste_history_init (GPasteHistory *self)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    priv->history = NULL;
-    priv->size = 0;
-
     g_paste_history_private_elect_new_biggest (priv);
 }
 
@@ -1301,9 +1296,9 @@ g_paste_history_init (GPasteHistory *self)
 G_PASTE_VISIBLE const GList *
 g_paste_history_get_history (const GPasteHistory *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     return priv->history;
 }
@@ -1319,9 +1314,9 @@ g_paste_history_get_history (const GPasteHistory *self)
 G_PASTE_VISIBLE guint64
 g_paste_history_get_length (const GPasteHistory *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), 0);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     return g_list_length (priv->history);
 }
@@ -1337,9 +1332,9 @@ g_paste_history_get_length (const GPasteHistory *self)
 G_PASTE_VISIBLE const gchar *
 g_paste_history_get_current (const GPasteHistory *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), 0);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
     return priv->name;
 }
@@ -1357,10 +1352,10 @@ G_PASTE_VISIBLE GArray *
 g_paste_history_search (const GPasteHistory *self,
                         const gchar         *pattern)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
 
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GRegex) regex = g_regex_new (pattern,
                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
@@ -1428,7 +1423,7 @@ g_paste_history_search (const GPasteHistory *self,
 G_PASTE_VISIBLE GPasteHistory *
 g_paste_history_new (GPasteSettings *settings)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
 
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);

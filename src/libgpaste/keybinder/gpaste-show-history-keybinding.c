@@ -25,7 +25,7 @@ struct _GPasteShowHistoryKeybinding
     GPasteKeybinding parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteShowHistoryKeybinding, g_paste_show_history_keybinding, G_PASTE_TYPE_KEYBINDING)
+G_PASTE_DEFINE_TYPE (ShowHistoryKeybinding, show_history_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
 g_paste_show_history_keybinding_class_init (GPasteShowHistoryKeybindingClass *klass G_GNUC_UNUSED)

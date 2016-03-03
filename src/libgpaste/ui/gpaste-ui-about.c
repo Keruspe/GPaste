@@ -30,12 +30,12 @@ typedef struct
     GActionGroup *action_group;
 } GPasteUiAboutPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiAbout, g_paste_ui_about, GTK_TYPE_BUTTON)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiAbout, ui_about, GTK_TYPE_BUTTON)
 
 static void
 g_paste_ui_about_clicked (GtkButton *button)
 {
-    GPasteUiAboutPrivate *priv = g_paste_ui_about_get_instance_private (G_PASTE_UI_ABOUT (button));
+    const GPasteUiAboutPrivate *priv = _g_paste_ui_about_get_instance_private (G_PASTE_UI_ABOUT (button));
 
     g_action_group_activate_action (priv->action_group, "about", NULL);
 }

@@ -27,7 +27,7 @@ typedef struct
     guint64        show_id;
 } GPasteAppletIconPrivate;
 
-G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteAppletIcon, g_paste_applet_icon, G_TYPE_OBJECT)
+G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (AppletIcon, applet_icon, G_TYPE_OBJECT)
 
 /*
  * g_paste_applet_icon_activate:
@@ -50,7 +50,7 @@ g_paste_applet_icon_show_history (GPasteClient *client G_GNUC_UNUSED,
 static void
 g_paste_applet_icon_dispose (GObject *object)
 {
-    GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private (G_PASTE_APPLET_ICON (object));
+    const GPasteAppletIconPrivate *priv = _g_paste_applet_icon_get_instance_private (G_PASTE_APPLET_ICON (object));
 
     if (priv->client)
     {
@@ -87,7 +87,7 @@ g_paste_applet_icon_new (GType         type,
                          GPasteClient *client)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_APPLET_ICON), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
     GPasteAppletIcon *self = g_object_new (type, NULL);
     GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private (self);

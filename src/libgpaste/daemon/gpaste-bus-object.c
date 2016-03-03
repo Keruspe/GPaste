@@ -19,7 +19,7 @@
 
 #include "gpaste-bus-object.h"
 
-G_DEFINE_ABSTRACT_TYPE (GPasteBusObject, g_paste_bus_object, G_TYPE_OBJECT)
+G_PASTE_DEFINE_ABSTRACT_TYPE (BusObject, bus_object, G_TYPE_OBJECT)
 
 /**
  * g_paste_bus_object_register_on_connection:
@@ -36,7 +36,7 @@ g_paste_bus_object_register_on_connection (GPasteBusObject *self,
                                            GDBusConnection *connection,
                                            GError         **error)
 {
-    g_return_val_if_fail (G_PASTE_IS_BUS_OBJECT (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_BUS_OBJECT (self), FALSE);
     g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 

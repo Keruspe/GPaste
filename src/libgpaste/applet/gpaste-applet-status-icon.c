@@ -33,7 +33,7 @@ typedef struct
     guint64        press_id;
 } GPasteAppletStatusIconPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletStatusIcon, g_paste_applet_status_icon, G_PASTE_TYPE_APPLET_ICON)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (AppletStatusIcon, applet_status_icon, G_PASTE_TYPE_APPLET_ICON)
 
 static gboolean
 g_paste_applet_status_icon_popup (GtkStatusIcon  *icon,
@@ -57,7 +57,7 @@ g_paste_applet_status_icon_popup (GtkStatusIcon  *icon,
 static void
 g_paste_applet_status_icon_dispose (GObject *object)
 {
-    GPasteAppletStatusIconPrivate *priv = g_paste_applet_status_icon_get_instance_private (G_PASTE_APPLET_STATUS_ICON (object));
+    const GPasteAppletStatusIconPrivate *priv = _g_paste_applet_status_icon_get_instance_private (G_PASTE_APPLET_STATUS_ICON (object));
 
     if (priv->icon)
     {
@@ -105,7 +105,7 @@ G_PASTE_VISIBLE GPasteAppletIcon *
 g_paste_applet_status_icon_new (GPasteClient *client,
                                 GApplication *app)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (!app || G_IS_APPLICATION (app), NULL);
 
     GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_STATUS_ICON, client);

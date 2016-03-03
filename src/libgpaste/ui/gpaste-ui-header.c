@@ -36,7 +36,7 @@ typedef struct
     GtkButton *search;
 } GPasteUiHeaderPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_BAR)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHeader, ui_header, GTK_TYPE_HEADER_BAR)
 
 /**
  * g_paste_ui_header_show_prefs:
@@ -47,9 +47,9 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHeader, g_paste_ui_header, GTK_TYPE_HEADER_B
 G_PASTE_VISIBLE void
 g_paste_ui_header_show_prefs (const GPasteUiHeader *self)
 {
-    g_return_if_fail (G_PASTE_IS_UI_HEADER (self));
+    g_return_if_fail (_G_PASTE_IS_UI_HEADER (self));
 
-    GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
+    const GPasteUiHeaderPrivate *priv = _g_paste_ui_header_get_instance_private (self);
 
     gtk_button_clicked (priv->settings);
 }
@@ -65,9 +65,9 @@ g_paste_ui_header_show_prefs (const GPasteUiHeader *self)
 G_PASTE_VISIBLE GtkButton *
 g_paste_ui_header_get_search_button (const GPasteUiHeader *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_UI_HEADER (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_UI_HEADER (self), NULL);
 
-    GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
+    const GPasteUiHeaderPrivate *priv = _g_paste_ui_header_get_instance_private (self);
 
     return priv->search;
 }
@@ -109,7 +109,7 @@ g_paste_ui_header_new (GtkWindow    *topwin,
                        GPasteClient *client)
 {
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HEADER, NULL);
     GtkHeaderBar *bar = GTK_HEADER_BAR (self);

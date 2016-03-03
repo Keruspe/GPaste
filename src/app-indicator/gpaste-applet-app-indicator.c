@@ -36,7 +36,7 @@ typedef struct
     guint64       tracking_id;
 } GPasteAppletAppIndicatorPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletAppIndicator, g_paste_applet_app_indicator, G_PASTE_TYPE_APPLET_ICON)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (AppletAppIndicator, applet_app_indicator, G_PASTE_TYPE_APPLET_ICON)
 
 static inline void
 indicator_set_state (AppIndicator *indicator,
@@ -101,7 +101,7 @@ G_PASTE_VISIBLE GPasteAppletIcon *
 g_paste_applet_app_indicator_new (GPasteClient *client,
                                   GApplication *app)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (!app || G_IS_APPLICATION (app), NULL);
 
     GPasteAppletIcon *self = g_paste_applet_icon_new (G_PASTE_TYPE_APPLET_APP_INDICATOR, client);

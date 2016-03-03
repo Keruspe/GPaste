@@ -30,7 +30,7 @@ typedef struct _GPasteKeybindingPrivate
     guint32               *keycodes;
 } GPasteKeybindingPrivate;
 
-G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYPE_OBJECT)
+G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (Keybinding, keybinding, G_TYPE_OBJECT)
 
 /**
  * g_paste_keybinding_get_modifiers:
@@ -43,9 +43,9 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteKeybinding, g_paste_keybinding, G_TYP
 G_PASTE_VISIBLE GdkModifierType
 g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), 0);
+    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING (self), 0);
 
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     return priv->modifiers;
 }
@@ -61,9 +61,9 @@ g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
 G_PASTE_VISIBLE const guint32 *
 g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING (self), NULL);
 
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     return priv->keycodes;
 }
@@ -79,9 +79,9 @@ g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
 
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     return priv->dconf_key;
 }
@@ -98,10 +98,10 @@ G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
                                     const GPasteSettings   *settings)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) settings), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) settings), NULL);
 
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     return priv->getter (settings);
 }
@@ -117,8 +117,8 @@ G_PASTE_VISIBLE void
 g_paste_keybinding_activate (GPasteKeybinding *self,
                              GPasteSettings   *settings)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
-    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
@@ -143,7 +143,7 @@ g_paste_keybinding_activate (GPasteKeybinding *self,
 G_PASTE_VISIBLE void
 g_paste_keybinding_deactivate (GPasteKeybinding *self)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
 
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
@@ -163,17 +163,17 @@ g_paste_keybinding_deactivate (GPasteKeybinding *self)
 G_PASTE_VISIBLE gboolean
 g_paste_keybinding_is_active (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING (self), FALSE);
 
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     return priv->active;
 }
 
 static gboolean
-g_paste_keybinding_private_match (GPasteKeybindingPrivate *priv,
-                                  GdkModifierType          modifiers,
-                                  guint64                  keycode)
+g_paste_keybinding_private_match (const GPasteKeybindingPrivate *priv,
+                                  GdkModifierType                modifiers,
+                                  guint64                        keycode)
 {
     if (priv->keycodes && priv->modifiers == (priv->modifiers & modifiers))
     {
@@ -200,9 +200,9 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
                            GdkModifierType   modifiers,
                            guint64           keycode)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
 
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     if (keycode && g_paste_keybinding_private_match (priv, modifiers, keycode))
         priv->callback (self, priv->user_data);
@@ -217,9 +217,9 @@ g_paste_keybinding_notify (GPasteKeybinding *self,
 G_PASTE_VISIBLE void
 g_paste_keybinding_perform (GPasteKeybinding *self)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
 
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     priv->callback (self, priv->user_data);
 }
@@ -228,7 +228,7 @@ static void
 g_paste_keybinding_dispose (GObject *object)
 {
     GPasteKeybinding *self = G_PASTE_KEYBINDING (object);
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     if (priv->active)
         g_paste_keybinding_deactivate (self);
@@ -239,7 +239,7 @@ g_paste_keybinding_dispose (GObject *object)
 static void
 g_paste_keybinding_finalize (GObject *object)
 {
-    GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (G_PASTE_KEYBINDING (object));
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (G_PASTE_KEYBINDING (object));
 
     g_free (priv->keycodes);
     g_free (priv->dconf_key);

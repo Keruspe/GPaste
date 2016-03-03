@@ -34,7 +34,7 @@ typedef struct
     gchar        *history;
 } GPasteUiPanelHistoryPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanelHistory, g_paste_ui_panel_history, GTK_TYPE_LIST_BOX_ROW)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiPanelHistory, ui_panel_history, GTK_TYPE_LIST_BOX_ROW)
 
 /**
  * g_paste_ui_panel_history_activate:
@@ -45,9 +45,9 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanelHistory, g_paste_ui_panel_history, GTK_
 G_PASTE_VISIBLE void
 g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
 {
-    g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self));
 
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
+    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private (self);
 
     g_paste_client_switch_history (priv->client, priv->history, NULL, NULL);
 }
@@ -63,9 +63,9 @@ G_PASTE_VISIBLE void
 g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
                                      guint64               length)
 {
-    g_return_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self));
 
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
+    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private (self);
     g_autofree gchar *_length = g_strdup_printf("%" G_GUINT64_FORMAT, length);
 
     gtk_label_set_text (priv->index_label, _length);
@@ -82,9 +82,9 @@ g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
 G_PASTE_VISIBLE const gchar *
 g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self), NULL);
 
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private ((GPasteUiPanelHistory *) self);
+    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private ((GPasteUiPanelHistory *) self);
 
     return priv->history;
 }
@@ -102,7 +102,7 @@ on_size_ready (GObject      *source_object,
 static void
 g_paste_ui_panel_history_dispose (GObject *object)
 {
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
+    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
 
     g_clear_object (&priv->client);
 
@@ -154,7 +154,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_panel_history_new (GPasteClient *client,
                               const gchar  *history)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL_HISTORY,

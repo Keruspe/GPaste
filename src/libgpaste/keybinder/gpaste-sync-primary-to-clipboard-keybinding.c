@@ -25,7 +25,7 @@ struct _GPasteSyncPrimaryToClipboardKeybinding
     GPasteKeybinding parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteSyncPrimaryToClipboardKeybinding, g_paste_sync_primary_to_clipboard_keybinding, G_PASTE_TYPE_KEYBINDING)
+G_PASTE_DEFINE_TYPE (SyncPrimaryToClipboardKeybinding, sync_primary_to_clipboard_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
 g_paste_sync_primary_to_clipboard_keybinding_class_init (GPasteSyncPrimaryToClipboardKeybindingClass *klass G_GNUC_UNUSED)

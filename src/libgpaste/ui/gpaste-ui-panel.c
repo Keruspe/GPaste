@@ -46,7 +46,7 @@ typedef struct
     guint64                 switch_history_id;
 } GPasteUiPanelPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiPanel, g_paste_ui_panel, GTK_TYPE_BOX)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiPanel, ui_panel, GTK_TYPE_BOX)
 
 static gint32
 history_equals (gconstpointer a,
@@ -75,9 +75,9 @@ g_paste_ui_panel_update_history_length (GPasteUiPanel *self,
                                         const gchar   *history,
                                         guint64        length)
 {
-    g_return_if_fail (G_PASTE_IS_UI_PANEL (self));
+    g_return_if_fail (_G_PASTE_IS_UI_PANEL (self));
 
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+    const GPasteUiPanelPrivate *priv = _g_paste_ui_panel_get_instance_private (self);
     GList *h = history_find (priv->histories, history);
 
     if (h)
@@ -336,8 +336,8 @@ g_paste_ui_panel_new (GPasteClient   *client,
                       GtkWindow      *rootwin,
                       GtkSearchEntry *search_entry)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
     g_return_val_if_fail (GTK_IS_SEARCH_ENTRY (search_entry), NULL);
 

@@ -34,7 +34,7 @@ typedef struct
     GSList       *actions;
 } GPasteUiHistoryActionsPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistoryActions, g_paste_ui_history_actions, GTK_TYPE_POPOVER)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHistoryActions, ui_history_actions, GTK_TYPE_POPOVER)
 
 static void
 action_set_history (gpointer data,
@@ -57,10 +57,10 @@ G_PASTE_VISIBLE void
 g_paste_ui_history_actions_set_relative_to (GPasteUiHistoryActions *self,
                                             GPasteUiPanelHistory   *history)
 {
-    g_return_if_fail (G_PASTE_IS_UI_HISTORY_ACTIONS (self));
-    g_return_if_fail (!history || G_PASTE_IS_UI_PANEL_HISTORY (history));
+    g_return_if_fail (_G_PASTE_IS_UI_HISTORY_ACTIONS (self));
+    g_return_if_fail (!history || _G_PASTE_IS_UI_PANEL_HISTORY (history));
 
-    GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (self);
+    const GPasteUiHistoryActionsPrivate *priv = _g_paste_ui_history_actions_get_instance_private (self);
     const gchar *h = (history) ? g_paste_ui_panel_history_get_history (history) : NULL;
 
     g_slist_foreach (priv->actions, action_set_history, (gpointer) h);
@@ -84,7 +84,7 @@ add_action_to_box (gpointer data,
 static void
 g_paste_ui_history_actions_dispose (GObject *object)
 {
-    GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (object));
+    const GPasteUiHistoryActionsPrivate *priv = _g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (object));
 
     g_clear_object (&priv->client);
 
@@ -116,7 +116,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_history_actions_new (GPasteClient *client,
                                 GtkWindow    *rootwin)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY_ACTIONS,

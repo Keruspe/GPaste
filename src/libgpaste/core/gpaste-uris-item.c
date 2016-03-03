@@ -30,7 +30,7 @@ typedef struct
     GStrv uris;
 } GPasteUrisItemPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUrisItem, g_paste_uris_item, G_PASTE_TYPE_TEXT_ITEM)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UrisItem, uris_item, G_PASTE_TYPE_TEXT_ITEM)
 
 /**
  * g_paste_uris_item_get_uris:
@@ -43,9 +43,9 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUrisItem, g_paste_uris_item, G_PASTE_TYPE_TEXT
 G_PASTE_VISIBLE const gchar * const *
 g_paste_uris_item_get_uris (const GPasteUrisItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_URIS_ITEM (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_URIS_ITEM (self), FALSE);
 
-    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (self);
+    const GPasteUrisItemPrivate *priv = _g_paste_uris_item_get_instance_private (self);
 
     return (const gchar * const *) priv->uris;
 }
@@ -54,7 +54,7 @@ static gboolean
 g_paste_uris_item_equals (const GPasteItem *self,
                           const GPasteItem *other)
 {
-    return (G_PASTE_IS_URIS_ITEM (other) &&
+    return (_G_PASTE_IS_URIS_ITEM (other) &&
             G_PASTE_ITEM_CLASS (g_paste_uris_item_parent_class)->equals (self, other));
 }
 
@@ -69,7 +69,7 @@ g_paste_uris_item_get_kind (const GPasteItem *self G_GNUC_UNUSED)
 static void
 g_paste_uris_item_finalize (GObject *object)
 {
-    GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (object));
+    const GPasteUrisItemPrivate *priv = _g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (object));
 
     g_strfreev (priv->uris);
 

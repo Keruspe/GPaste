@@ -26,7 +26,7 @@ struct _GPasteUiKeybinding
     GPasteKeybinding parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiKeybinding, g_paste_ui_keybinding, G_PASTE_TYPE_KEYBINDING)
+G_PASTE_DEFINE_TYPE (UiKeybinding, ui_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
 g_paste_ui_keybinding_class_init (GPasteUiKeybindingClass *klass G_GNUC_UNUSED)

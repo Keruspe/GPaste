@@ -37,7 +37,7 @@ typedef struct _GPasteImageItemPrivate
     guint64    additional_size;
 } GPasteImageItemPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_ITEM)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ImageItem, image_item, G_PASTE_TYPE_ITEM)
 
 /**
  * g_paste_image_item_get_checksum:
@@ -50,9 +50,9 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteImageItem, g_paste_image_item, G_PASTE_TYPE_IT
 G_PASTE_VISIBLE const gchar *
 g_paste_image_item_get_checksum (const GPasteImageItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (self);
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
 
     return priv->checksum;
 }
@@ -68,9 +68,9 @@ g_paste_image_item_get_checksum (const GPasteImageItem *self)
 G_PASTE_VISIBLE const GDateTime *
 g_paste_image_item_get_date (const GPasteImageItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (self);
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
 
     return priv->date;
 }
@@ -86,9 +86,9 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
 G_PASTE_VISIBLE GdkPixbuf *
 g_paste_image_item_get_image (const GPasteImageItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_IMAGE_ITEM (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
 
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (self);
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
 
     return priv->image;
 }
@@ -97,11 +97,11 @@ static gboolean
 g_paste_image_item_equals (const GPasteItem *self,
                            const GPasteItem *other)
 {
-    if (!G_PASTE_IS_IMAGE_ITEM (other))
+    if (!_G_PASTE_IS_IMAGE_ITEM (other))
         return FALSE;
 
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
-    GPasteImageItemPrivate *_priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (other));
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (_G_PASTE_IMAGE_ITEM (self));
+    const GPasteImageItemPrivate *_priv = _g_paste_image_item_get_instance_private (_G_PASTE_IMAGE_ITEM (other));
 
     return !g_strcmp0 (priv->checksum, _priv->checksum);
 }
@@ -181,7 +181,7 @@ g_paste_image_item_dispose (GObject *object)
 static void
 g_paste_image_item_finalize (GObject *object)
 {
-    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
 
     g_free (priv->checksum);
 
