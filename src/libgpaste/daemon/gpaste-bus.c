@@ -36,7 +36,7 @@ typedef struct
     gpointer                  user_data;
 } GPasteBusPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteBus, g_paste_bus, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Bus, bus, G_TYPE_OBJECT)
 
 enum
 {
@@ -81,7 +81,7 @@ g_paste_bus_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
 G_PASTE_VISIBLE void
 g_paste_bus_own_name (GPasteBus *self)
 {
-    g_return_if_fail (G_PASTE_IS_BUS (self));
+    g_return_if_fail (_G_PASTE_IS_BUS (self));
 
     GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
 
@@ -108,9 +108,9 @@ g_paste_bus_own_name (GPasteBus *self)
 G_PASTE_VISIBLE GDBusConnection *
 g_paste_bus_get_connection (const GPasteBus *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_BUS (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_BUS (self), NULL);
 
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
+    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (self);
 
     return priv->connection;
 }
@@ -118,7 +118,7 @@ g_paste_bus_get_connection (const GPasteBus *self)
 static void
 g_paste_bus_dispose (GObject *object)
 {
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (G_PASTE_BUS (object));
+    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (G_PASTE_BUS (object));
 
     if (priv->connection)
     {
@@ -153,11 +153,8 @@ g_paste_bus_class_init (GPasteBusClass *klass)
 }
 
 static void
-g_paste_bus_init (GPasteBus *self)
+g_paste_bus_init (GPasteBus *self G_GNUC_UNUSED)
 {
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
-
-    priv->id_on_bus = 0;
 }
 
 /**

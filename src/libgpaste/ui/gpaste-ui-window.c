@@ -40,7 +40,7 @@ typedef struct
     guint64          search_signal;
 } GPasteUiWindowPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiWindow, g_paste_ui_window, GTK_TYPE_WINDOW)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_WINDOW)
 
 static gboolean
 _search (gpointer user_data)
@@ -68,10 +68,10 @@ _search (gpointer user_data)
  * Do a search
  */
 G_PASTE_VISIBLE void
-g_paste_ui_window_search (const GPasteUiWindow *self,
-                          const gchar          *search)
+g_paste_ui_window_search (GPasteUiWindow *self,
+                          const gchar    *search)
 {
-    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
+    g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (search, -1, NULL));
 
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
@@ -103,9 +103,9 @@ _show_prefs (gpointer user_data)
  * Show the prefs pane
  */
 G_PASTE_VISIBLE void
-g_paste_ui_window_show_prefs (const GPasteUiWindow *self)
+g_paste_ui_window_show_prefs (GPasteUiWindow *self)
 {
-    g_return_if_fail (G_PASTE_IS_UI_WINDOW (self));
+    g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
 
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
@@ -116,7 +116,7 @@ static gboolean
 on_key_press_event (GtkWidget   *widget,
                     GdkEventKey *event)
 {
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
+    const GPasteUiWindowPrivate *priv = _g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
     GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (widget));
 
     if (focus == GTK_WIDGET (priv->search_entry) && gtk_search_bar_handle_event (priv->search_bar, (GdkEvent *) event))
@@ -139,7 +139,7 @@ static gboolean
 focus_search (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    const GPasteUiWindowPrivate *priv = _g_paste_ui_window_get_instance_private (self);
     GtkWindow *win = user_data;
     GtkWidget *widget = user_data;
 

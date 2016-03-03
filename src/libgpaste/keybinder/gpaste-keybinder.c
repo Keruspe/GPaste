@@ -48,7 +48,7 @@ typedef struct
     guint64                 shell_watch;
 } GPasteKeybinderPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteKeybinder, g_paste_keybinder, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Keybinder, keybinder, G_TYPE_OBJECT)
 
 /***************************/
 /* Internal grabbing stuff */
@@ -309,8 +309,8 @@ G_PASTE_VISIBLE void
 g_paste_keybinder_add_keybinding (GPasteKeybinder  *self,
                                   GPasteKeybinding *binding)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
-    g_return_if_fail (G_PASTE_IS_KEYBINDING (binding));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDING (binding));
 
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
@@ -432,7 +432,7 @@ g_paste_keybinder_private_grab_all_gnome_shell (GPasteKeybinderPrivate *priv)
 G_PASTE_VISIBLE void
 g_paste_keybinder_activate_all (GPasteKeybinder *self)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDER (self));
 
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
@@ -463,9 +463,9 @@ g_paste_keybinder_deactivate_keybinding_func (gpointer data,
 G_PASTE_VISIBLE void
 g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 {
-    g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
+    g_return_if_fail (_G_PASTE_IS_KEYBINDER (self));
 
-    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
+    const GPasteKeybinderPrivate *priv = _g_paste_keybinder_get_instance_private (self);
 
     g_slist_foreach (priv->keybindings,
                      g_paste_keybinder_deactivate_keybinding_func,
@@ -701,8 +701,8 @@ G_PASTE_VISIBLE GPasteKeybinder *
 g_paste_keybinder_new (GPasteSettings         *settings,
                        GPasteGnomeShellClient *shell_client)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (!shell_client || G_PASTE_IS_GNOME_SHELL_CLIENT (shell_client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (!shell_client || _G_PASTE_IS_GNOME_SHELL_CLIENT (shell_client), NULL);
 
     GPasteKeybinder *self = G_PASTE_KEYBINDER (g_object_new (G_PASTE_TYPE_KEYBINDER, NULL));
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);

@@ -34,12 +34,12 @@ typedef struct
     GApplication        *application;
 } GPasteAppletPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteApplet, g_paste_applet, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Applet, applet, G_TYPE_OBJECT)
 
 static void
 g_paste_applet_dispose (GObject *object)
 {
-    GPasteAppletPrivate *priv = g_paste_applet_get_instance_private (G_PASTE_APPLET (object));
+    const GPasteAppletPrivate *priv = _g_paste_applet_get_instance_private (G_PASTE_APPLET (object));
 
     g_clear_object (&priv->client);
     g_clear_object (&priv->icon);

@@ -27,7 +27,7 @@ struct _GPasteClient
     GDBusProxy parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteClient, g_paste_client, G_TYPE_DBUS_PROXY)
+G_PASTE_DEFINE_TYPE (Client, client, G_TYPE_DBUS_PROXY)
 
 enum
 {

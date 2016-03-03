@@ -29,12 +29,12 @@ typedef struct
     GPasteClient *client;
 } GPasteAppletAboutPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletAbout, g_paste_applet_about, GTK_TYPE_MENU_ITEM)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (AppletAbout, applet_about, GTK_TYPE_MENU_ITEM)
 
 static void
 g_paste_applet_about_activate (GtkMenuItem *menu_item)
 {
-    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private (G_PASTE_APPLET_ABOUT (menu_item));
+    const GPasteAppletAboutPrivate *priv = _g_paste_applet_about_get_instance_private (G_PASTE_APPLET_ABOUT (menu_item));
 
     g_paste_client_about (priv->client, NULL, NULL);
 
@@ -44,7 +44,7 @@ g_paste_applet_about_activate (GtkMenuItem *menu_item)
 static void
 g_paste_applet_about_dispose (GObject *object)
 {
-    GPasteAppletAboutPrivate *priv = g_paste_applet_about_get_instance_private (G_PASTE_APPLET_ABOUT (object));
+    const GPasteAppletAboutPrivate *priv = _g_paste_applet_about_get_instance_private (G_PASTE_APPLET_ABOUT (object));
 
     g_clear_object (&priv->client);
 
@@ -75,7 +75,7 @@ g_paste_applet_about_init (GPasteAppletAbout *self G_GNUC_UNUSED)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_applet_about_new (GPasteClient *client)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_APPLET_ABOUT,
                                       "label", _("About"),

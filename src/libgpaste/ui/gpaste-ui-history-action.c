@@ -30,7 +30,7 @@ typedef struct
     gchar                  *history;
 } GPasteUiHistoryActionPrivate;
 
-G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiHistoryAction, g_paste_ui_history_action, GTK_TYPE_BUTTON)
+G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiHistoryAction, ui_history_action, GTK_TYPE_BUTTON)
 
 /**
  * g_paste_ui_history_action_set_history:
@@ -43,7 +43,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_history_action_set_history (GPasteUiHistoryAction *self,
                                        const gchar           *history)
 {
-    g_return_if_fail (G_PASTE_IS_UI_HISTORY_ACTION (self));
+    g_return_if_fail (_G_PASTE_IS_UI_HISTORY_ACTION (self));
 
     GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (self));
 
@@ -57,7 +57,7 @@ g_paste_ui_history_action_button_press_event (GtkWidget      *widget,
 {
     GPasteUiHistoryAction *self = G_PASTE_UI_HISTORY_ACTION (widget);
     GPasteUiHistoryActionClass *klass = G_PASTE_UI_HISTORY_ACTION_GET_CLASS (self);
-    GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (self);
+    const GPasteUiHistoryActionPrivate *priv = _g_paste_ui_history_action_get_instance_private (self);
     gboolean ret;
 
     if (priv->history && klass->activate)
@@ -73,7 +73,7 @@ g_paste_ui_history_action_button_press_event (GtkWidget      *widget,
 static void
 g_paste_ui_history_action_dispose (GObject *object)
 {
-    GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (object));
+    const GPasteUiHistoryActionPrivate *priv = _g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (object));
 
     g_clear_object (&priv->client);
 
@@ -83,7 +83,7 @@ g_paste_ui_history_action_dispose (GObject *object)
 static void
 g_paste_ui_history_action_finalize (GObject *object)
 {
-    GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (object));
+    const GPasteUiHistoryActionPrivate *priv = _g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (object));
 
     g_free (priv->history);
 
@@ -130,8 +130,8 @@ g_paste_ui_history_action_new (GType         type,
                                const gchar  *label)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_HISTORY_ACTION), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (type,

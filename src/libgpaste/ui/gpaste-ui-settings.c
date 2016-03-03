@@ -25,7 +25,7 @@ struct _GPasteUiSettings
     GtkMenuButton parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiSettings, g_paste_ui_settings, GTK_TYPE_MENU_BUTTON)
+G_PASTE_DEFINE_TYPE (UiSettings, ui_settings, GTK_TYPE_MENU_BUTTON)
 
 static void
 g_paste_ui_settings_class_init (GPasteUiSettingsClass *klass G_GNUC_UNUSED)

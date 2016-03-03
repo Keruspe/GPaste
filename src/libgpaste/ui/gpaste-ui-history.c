@@ -49,7 +49,7 @@ typedef struct
     guint64         update_id;
 } GPasteUiHistoryPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiHistory, g_paste_ui_history, GTK_TYPE_LIST_BOX)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHistory, ui_history, GTK_TYPE_LIST_BOX)
 
 static void
 on_row_activated (GtkListBox    *history G_GNUC_UNUSED,
@@ -105,7 +105,7 @@ g_paste_ui_history_update_height_request (GPasteSettings *settings,
                                           gpointer        user_data)
 {
     GPasteUiHistory *self = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
     guint64 new_size = g_paste_settings_get_max_displayed_history_size (settings);
 
     if (priv->item_height)
@@ -192,7 +192,7 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
                gpointer      user_data)
 {
     OnUpdateCallbackData *data = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (data->self);
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (data->self);
 
     data->name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
 
@@ -203,7 +203,7 @@ static void
 g_paste_ui_history_refresh (GPasteUiHistory *self,
                             guint64          from_index)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
 
     if (priv->search)
     {
@@ -253,7 +253,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_history_search (GPasteUiHistory *self,
                            const gchar     *search)
 {
-    g_return_if_fail (G_PASTE_IS_UI_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_UI_HISTORY (self));
 
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
@@ -280,7 +280,7 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
                               gpointer           user_data)
 {
     GPasteUiHistory *self = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
     gboolean refresh = FALSE;
 
     switch (target)
@@ -312,7 +312,7 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
 static void
 g_paste_ui_history_dispose (GObject *object)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
 
     if (priv->settings)
     {
@@ -332,7 +332,7 @@ g_paste_ui_history_dispose (GObject *object)
 static void
 g_paste_ui_history_finalize (GObject *object)
 {
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
 
     g_free (priv->search);
     g_free (priv->search_results);
@@ -374,9 +374,9 @@ g_paste_ui_history_new (GPasteClient   *client,
                         GPasteUiPanel  *panel,
                         GtkWindow      *rootwin)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (G_PASTE_IS_UI_PANEL (panel), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_UI_PANEL (panel), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY, NULL);

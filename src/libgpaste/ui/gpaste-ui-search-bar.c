@@ -29,7 +29,7 @@ typedef struct
     GtkSearchEntry *entry;
 } GPasteUiSearchBarPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSearchBar, g_paste_ui_search_bar, GTK_TYPE_SEARCH_BAR)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiSearchBar, ui_search_bar, GTK_TYPE_SEARCH_BAR)
 
 /**
  * g_paste_ui_search_bar_get_entry:
@@ -41,8 +41,8 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiSearchBar, g_paste_ui_search_bar, GTK_TYPE_S
 G_PASTE_VISIBLE GtkSearchEntry *
 g_paste_ui_search_bar_get_entry (const GPasteUiSearchBar *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_UI_SEARCH_BAR (self), NULL);
-    GPasteUiSearchBarPrivate *priv = g_paste_ui_search_bar_get_instance_private (self);
+    g_return_val_if_fail (_G_PASTE_IS_UI_SEARCH_BAR (self), NULL);
+    const GPasteUiSearchBarPrivate *priv = _g_paste_ui_search_bar_get_instance_private (self);
 
     return priv->entry;
 }

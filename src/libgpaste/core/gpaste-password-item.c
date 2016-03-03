@@ -31,7 +31,7 @@ typedef struct
     gchar *name;
 } GPastePasswordItemPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPastePasswordItem, g_paste_password_item, G_PASTE_TYPE_TEXT_ITEM)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (PasswordItem, password_item, G_PASTE_TYPE_TEXT_ITEM)
 
 /**
  * g_paste_password_item_get_name:
@@ -44,9 +44,9 @@ G_DEFINE_TYPE_WITH_PRIVATE (GPastePasswordItem, g_paste_password_item, G_PASTE_T
 G_PASTE_VISIBLE const gchar *
 g_paste_password_item_get_name (const GPastePasswordItem *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self), NULL);
 
-    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (self);
+    const GPastePasswordItemPrivate *priv = _g_paste_password_item_get_instance_private (self);
 
     return priv->name;
 }
@@ -62,7 +62,7 @@ G_PASTE_VISIBLE void
 g_paste_password_item_set_name (GPastePasswordItem *self,
                                 const gchar        *name)
 {
-    g_return_if_fail (G_PASTE_IS_PASSWORD_ITEM (self));
+    g_return_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (self);
@@ -97,8 +97,8 @@ static gboolean
 g_paste_password_item_equals (const GPasteItem *self,
                               const GPasteItem *other)
 {
-    g_return_val_if_fail (G_PASTE_IS_PASSWORD_ITEM (self), FALSE);
-    g_return_val_if_fail (G_PASTE_IS_ITEM (other), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_PASSWORD_ITEM (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_ITEM (other), FALSE);
 
     /* Passwords are never considered equals, except when it's the exact same object */
     return FALSE;
@@ -107,7 +107,7 @@ g_paste_password_item_equals (const GPasteItem *self,
 static void
 g_paste_password_item_finalize (GObject *object)
 {
-    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (G_PASTE_PASSWORD_ITEM (object));
+    const GPastePasswordItemPrivate *priv = _g_paste_password_item_get_instance_private (G_PASTE_PASSWORD_ITEM (object));
 
     g_free (priv->name);
 
@@ -128,11 +128,8 @@ g_paste_password_item_class_init (GPastePasswordItemClass *klass)
 }
 
 static void
-g_paste_password_item_init (GPastePasswordItem *self )
+g_paste_password_item_init (GPastePasswordItem *self G_GNUC_UNUSED)
 {
-    GPastePasswordItemPrivate *priv = g_paste_password_item_get_instance_private (self);
-
-    priv->name = NULL;
 }
 
 /**

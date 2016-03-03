@@ -25,7 +25,7 @@ struct _GPasteMakePasswordKeybinding
     GPasteKeybinding parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteMakePasswordKeybinding, g_paste_make_password_keybinding, G_PASTE_TYPE_KEYBINDING)
+G_PASTE_DEFINE_TYPE (MakePasswordKeybinding, make_password_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
 g_paste_make_password_keybinding_class_init (GPasteMakePasswordKeybindingClass *klass G_GNUC_UNUSED)

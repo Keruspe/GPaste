@@ -29,7 +29,7 @@ typedef struct
     GtkWindow *rootwin;
 } GPasteUiEditItemPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiEditItem, g_paste_ui_edit_item, G_PASTE_TYPE_UI_ITEM_ACTION)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiEditItem, ui_edit_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 
 typedef struct
 {
@@ -120,7 +120,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_edit_item_new (GPasteClient *client,
                           GtkWindow    *rootwin)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = g_paste_ui_item_action_new (G_PASTE_TYPE_UI_EDIT_ITEM, client, "accessories-text-editor-symbolic", _("Edit"));

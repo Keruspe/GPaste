@@ -2,6 +2,7 @@
     general:
         https://wiki.gnome.org/Initiatives/GnomeGoals/ShortcutWindows
         c_signals all the way
+        g_str_equal
     gpaste-ui:
         merge
 

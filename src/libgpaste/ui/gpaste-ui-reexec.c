@@ -32,12 +32,12 @@ typedef struct
     GtkWindow    *topwin;
 } GPasteUiReexecPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiReexec, g_paste_ui_reexec, GTK_TYPE_BUTTON)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiReexec, ui_reexec, GTK_TYPE_BUTTON)
 
 static void
 g_paste_ui_reexec_clicked (GtkButton *button)
 {
-    GPasteUiReexecPrivate *priv = g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (button));
+    const GPasteUiReexecPrivate *priv = _g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (button));
 
     if (g_paste_util_confirm_dialog (priv->topwin, _("Restart"), _("Do you really want to restart the daemon?")))
         g_paste_client_reexecute (priv->client, NULL, NULL);
@@ -46,7 +46,7 @@ g_paste_ui_reexec_clicked (GtkButton *button)
 static void
 g_paste_ui_reexec_dispose (GObject *object)
 {
-    GPasteUiReexecPrivate *priv = g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (object));
+    const GPasteUiReexecPrivate *priv = _g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (object));
 
     g_clear_object (&priv->client);
 
@@ -84,7 +84,7 @@ g_paste_ui_reexec_new (GtkWindow    *topwin,
                        GPasteClient *client)
 {
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_REEXEC,
                                       "image", gtk_image_new_from_icon_name ("view-refresh-symbolic", GTK_ICON_SIZE_BUTTON),

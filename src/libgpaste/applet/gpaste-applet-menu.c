@@ -27,7 +27,7 @@ struct _GPasteAppletMenu
     GtkMenu parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteAppletMenu, g_paste_applet_menu, GTK_TYPE_MENU)
+G_PASTE_DEFINE_TYPE (AppletMenu, applet_menu, GTK_TYPE_MENU)
 
 static void
 g_paste_applet_menu_class_init (GPasteAppletMenuClass *klass G_GNUC_UNUSED)
@@ -56,7 +56,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_applet_menu_new (GPasteClient *client,
                          GApplication *app)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail ((!app || G_IS_APPLICATION (app)), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_APPLET_MENU, NULL);

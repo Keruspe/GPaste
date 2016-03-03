@@ -25,7 +25,7 @@ struct _GPasteAppletUi
     GtkMenuItem parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteAppletUi, g_paste_applet_ui, GTK_TYPE_MENU_ITEM)
+G_PASTE_DEFINE_TYPE (AppletUi, applet_ui, GTK_TYPE_MENU_ITEM)
 
 static void
 g_paste_applet_ui_activate (GtkMenuItem *menu_item G_GNUC_UNUSED)

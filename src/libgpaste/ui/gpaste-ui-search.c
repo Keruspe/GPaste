@@ -24,7 +24,7 @@ struct _GPasteUiSearch
     GtkToggleButton parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiSearch, g_paste_ui_search, GTK_TYPE_TOGGLE_BUTTON)
+G_PASTE_DEFINE_TYPE (UiSearch, ui_search, GTK_TYPE_TOGGLE_BUTTON)
 
 static void
 g_paste_ui_search_class_init (GPasteUiSearchClass *klass G_GNUC_UNUSED)

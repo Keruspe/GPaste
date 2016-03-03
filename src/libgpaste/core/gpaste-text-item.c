@@ -19,13 +19,13 @@
 
 #include <gpaste-text-item.h>
 
-G_DEFINE_TYPE (GPasteTextItem, g_paste_text_item, G_PASTE_TYPE_ITEM)
+G_PASTE_DEFINE_TYPE (TextItem, text_item, G_PASTE_TYPE_ITEM)
 
 static gboolean
 g_paste_text_item_equals (const GPasteItem *self,
                           const GPasteItem *other)
 {
-    return (G_PASTE_IS_TEXT_ITEM (other) &&
+    return (_G_PASTE_IS_TEXT_ITEM (other) &&
             G_PASTE_ITEM_CLASS (g_paste_text_item_parent_class)->equals (self, other));
 }
 

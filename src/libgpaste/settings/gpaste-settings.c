@@ -60,7 +60,7 @@ typedef struct
     guint64    shell_changed_signal;
 } GPasteSettingsPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettings, g_paste_settings, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Settings, settings, G_TYPE_OBJECT)
 
 enum
 {
@@ -77,15 +77,15 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     G_PASTE_VISIBLE type                                                                               \
     g_paste_settings_get_##name (const GPasteSettings *self)                                           \
     {                                                                                                  \
-        g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), fail);                                       \
-        GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self); \
+        g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) self), fail);                           \
+        const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);             \
         return priv->name;                                                                             \
     }                                                                                                  \
     G_PASTE_VISIBLE void                                                                               \
     g_paste_settings_reset_##name (GPasteSettings *self)                                               \
     {                                                                                                  \
-        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                 \
-        GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self); \
+        g_return_if_fail (_G_PASTE_IS_SETTINGS (self));                                                \
+        const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);             \
         g_settings_reset (priv->settings, G_PASTE_##key##_SETTING);                                    \
     }                                                                                                  \
     static void                                                                                        \
@@ -97,7 +97,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     g_paste_settings_set_##name (GPasteSettings *self,                                                 \
                                  type            value)                                                \
     {                                                                                                  \
-        g_return_if_fail (G_PASTE_IS_SETTINGS (self));                                                 \
+        g_return_if_fail (_G_PASTE_IS_SETTINGS (self));                                                \
         guards                                                                                         \
         GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);                    \
         clear_func                                                                                     \
@@ -665,8 +665,8 @@ STRING_SETTING (upload, UPLOAD)
 G_PASTE_VISIBLE gboolean
 g_paste_settings_get_extension_enabled (const GPasteSettings *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) self), FALSE);
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS ((gpointer) self), FALSE);
+    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);
     return priv->extension_enabled;
 }
 
@@ -702,9 +702,11 @@ G_PASTE_VISIBLE void
 g_paste_settings_set_extension_enabled (GPasteSettings *self,
                                         gboolean        value)
 {
-    g_return_if_fail (G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
     g_auto (GStrv) extensions = NULL;
+
     if (!priv->shell_settings || (value == priv->extension_enabled))
         return;
 
@@ -855,7 +857,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 static void
 g_paste_settings_dispose (GObject *object)
 {
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
+    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
     GSettings *settings = priv->settings;
     GSettings *shell_settings = priv->shell_settings;
 
@@ -877,7 +879,7 @@ g_paste_settings_dispose (GObject *object)
 static void
 g_paste_settings_finalize (GObject *object)
 {
-    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
+    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
 
     g_free (priv->history_name);
     g_free (priv->launch_ui);

@@ -44,13 +44,30 @@ G_BEGIN_DECLS
     return G_PASTE_IS_##TYPE_NAME ((gpointer) ptr); \
   }
 
+#define G_PASTE_CONST_CLASS_GETTER(TypeName, TYPE_NAME)      \
+  static inline const GPaste##TypeName##Class *              \
+  _G_PASTE_##TYPE_NAME##_GET_CLASS (gconstpointer ptr) {     \
+    return G_PASTE_##TYPE_NAME##_GET_CLASS ((gpointer) ptr); \
+  }
+
+#define G_PASTE_CONST_CASTER(TypeName, TYPE_NAME) \
+  static inline const GPaste##TypeName *          \
+  _G_PASTE_##TYPE_NAME (gconstpointer ptr) {      \
+    return G_PASTE_##TYPE_NAME ((gpointer) ptr);  \
+  }
+
+#define G_PASTE_CONST_FUNCS(TypeName, TYPE_NAME) \
+    G_PASTE_CONST_CHECKER (TYPE_NAME)            \
+    G_PASTE_CONST_CASTER (TypeName, TYPE_NAME)
+
 #define G_PASTE_DERIVABLE_TYPE(TypeName, type_name, TYPE_NAME, ParentTypeName)                                           \
     G_PASTE_VISIBLE G_DECLARE_DERIVABLE_TYPE (GPaste##TypeName, g_paste_##type_name, G_PASTE, TYPE_NAME, ParentTypeName) \
-    G_PASTE_CONST_CHECKER (TYPE_NAME)
+    G_PASTE_CONST_CLASS_GETTER (TypeName, TYPE_NAME)                                                                     \
+    G_PASTE_CONST_FUNCS (TypeName, TYPE_NAME)
 
 #define G_PASTE_FINAL_TYPE(TypeName, type_name, TYPE_NAME, ParentTypeName)                                           \
     G_PASTE_VISIBLE G_DECLARE_FINAL_TYPE (GPaste##TypeName, g_paste_##type_name, G_PASTE, TYPE_NAME, ParentTypeName) \
-    G_PASTE_CONST_CHECKER (TYPE_NAME)
+    G_PASTE_CONST_FUNCS (TypeName, TYPE_NAME)
 
 #define G_PASTE_CONST_PRIV_ACCESSOR(TypeName, type_name)                             \
     static inline gconstpointer                                                      \
@@ -65,6 +82,14 @@ G_BEGIN_DECLS
 
 #define G_PASTE_DEFINE_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName)          \
     G_DEFINE_TYPE_WITH_PRIVATE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
+    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
+
+#define G_PASTE_DEFINE_ABSTRACT_TYPE(TypeName, type_name, ParentTypeName)          \
+    G_DEFINE_ABSTRACT_TYPE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
+    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
+
+#define G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName)          \
+    G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
     G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
 
 #define G_PASTE_INIT_GETTEXT()                          \

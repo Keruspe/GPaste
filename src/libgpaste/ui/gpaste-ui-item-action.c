@@ -26,7 +26,7 @@ typedef struct
     guint64       index;
 } GPasteUiItemActionPrivate;
 
-G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPasteUiItemAction, g_paste_ui_item_action, GTK_TYPE_BUTTON)
+G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemAction, ui_item_action, GTK_TYPE_BUTTON)
 
 /**
  * g_paste_ui_item_action_set_index:
@@ -39,7 +39,7 @@ G_PASTE_VISIBLE void
 g_paste_ui_item_action_set_index (GPasteUiItemAction *self,
                              guint64         index)
 {
-    g_return_if_fail (G_PASTE_IS_UI_ITEM_ACTION (self));
+    g_return_if_fail (_G_PASTE_IS_UI_ITEM_ACTION (self));
 
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
 
@@ -51,7 +51,7 @@ g_paste_ui_item_action_button_press_event (GtkWidget      *widget,
                                            GdkEventButton *event G_GNUC_UNUSED)
 {
     GPasteUiItemAction *self = G_PASTE_UI_ITEM_ACTION (widget);
-    GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
+    const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (self);
     GPasteUiItemActionClass *klass = G_PASTE_UI_ITEM_ACTION_GET_CLASS (self);
 
     if (klass->activate)
@@ -63,7 +63,7 @@ g_paste_ui_item_action_button_press_event (GtkWidget      *widget,
 static void
 g_paste_ui_item_action_dispose (GObject *object)
 {
-    GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (object));
+    const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (object));
 
     g_clear_object (&priv->client);
 
@@ -104,7 +104,7 @@ g_paste_ui_item_action_new (GType         type,
                             const gchar  *tooltip)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_ITEM_ACTION), NULL);
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
     GtkWidget *self = gtk_widget_new (type, NULL);
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (self));

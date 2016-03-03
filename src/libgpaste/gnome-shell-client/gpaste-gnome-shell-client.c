@@ -58,7 +58,7 @@ struct _GPasteGnomeShellClient
     GDBusProxy parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteGnomeShellClient, g_paste_gnome_shell_client, G_TYPE_DBUS_PROXY)
+G_PASTE_DEFINE_TYPE (GnomeShellClient, gnome_shell_client, G_TYPE_DBUS_PROXY)
 
 enum
 {

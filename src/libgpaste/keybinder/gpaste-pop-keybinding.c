@@ -30,12 +30,12 @@ typedef struct
     GPasteHistory *history;
 } GPastePopKeybindingPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPastePopKeybinding, g_paste_pop_keybinding, G_PASTE_TYPE_KEYBINDING)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (PopKeybinding, pop_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
 g_paste_pop_keybinding_dispose (GObject *object)
 {
-    GPastePopKeybindingPrivate *priv = g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (object));
+    const GPastePopKeybindingPrivate *priv = _g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (object));
 
     g_clear_object (&priv->history);
 
@@ -57,7 +57,7 @@ static void
 pop (GPasteKeybinding *self,
      gpointer          data G_GNUC_UNUSED)
 {
-    GPastePopKeybindingPrivate *priv = g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (self));
+    const GPastePopKeybindingPrivate *priv = _g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (self));
 
     g_paste_history_remove (priv->history, 0);
 }
@@ -74,7 +74,7 @@ pop (GPasteKeybinding *self,
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_pop_keybinding_new (GPasteHistory *history)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (history), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (history), NULL);
 
     GPasteKeybinding *self = g_paste_keybinding_new (G_PASTE_TYPE_POP_KEYBINDING,
                                                      G_PASTE_POP_SETTING,

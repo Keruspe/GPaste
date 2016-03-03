@@ -31,12 +31,12 @@ typedef struct
     GtkWindow    *rootwin;
 } GPasteUiNewItemPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUiNewItem, g_paste_ui_new_item, GTK_TYPE_BUTTON)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiNewItem, ui_new_item, GTK_TYPE_BUTTON)
 
 static void
 g_paste_ui_new_item_clicked (GtkButton *self)
 {
-    GPasteUiNewItemPrivate *priv = g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (self));
+    const GPasteUiNewItemPrivate *priv = _g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (self));
     GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, priv->rootwin,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
                                                      _("New"),   GTK_RESPONSE_OK,
@@ -70,7 +70,7 @@ g_paste_ui_new_item_clicked (GtkButton *self)
 static void
 g_paste_ui_new_item_dispose (GObject *object)
 {
-    GPasteUiNewItemPrivate *priv = g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (object));
+    const GPasteUiNewItemPrivate *priv = _g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (object));
 
     g_clear_object (&priv->client);
 
@@ -107,7 +107,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_new_item_new (GtkWindow    *rootwin,
                          GPasteClient *client)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_NEW_ITEM,

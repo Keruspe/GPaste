@@ -30,12 +30,12 @@ typedef struct
     GPasteDaemon *daemon;
 } GPasteUploadKeybindingPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteUploadKeybinding, g_paste_upload_keybinding, G_PASTE_TYPE_KEYBINDING)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UploadKeybinding, upload_keybinding, G_PASTE_TYPE_KEYBINDING)
 
 static void
 g_paste_upload_keybinding_dispose (GObject *object)
 {
-    GPasteUploadKeybindingPrivate *priv = g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (object));
+    const GPasteUploadKeybindingPrivate *priv = _g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (object));
 
     g_clear_object (&priv->daemon);
 
@@ -57,7 +57,7 @@ static void
 upload (GPasteKeybinding *self,
         gpointer          data G_GNUC_UNUSED)
 {
-    GPasteUploadKeybindingPrivate *priv = g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (self));
+    const GPasteUploadKeybindingPrivate *priv = _g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (self));
 
     g_paste_daemon_upload (priv->daemon, 0);
 }
@@ -74,7 +74,7 @@ upload (GPasteKeybinding *self,
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_upload_keybinding_new (GPasteDaemon *daemon)
 {
-    g_return_val_if_fail (G_PASTE_IS_DAEMON (daemon), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_DAEMON (daemon), NULL);
 
     GPasteKeybinding *self = g_paste_keybinding_new (G_PASTE_TYPE_UPLOAD_KEYBINDING,
                                                      G_PASTE_UPLOAD_SETTING,

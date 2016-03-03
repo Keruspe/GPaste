@@ -24,7 +24,7 @@ struct _GPasteUiUploadItem
     GPasteUiItemAction parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiUploadItem, g_paste_ui_upload_item, G_PASTE_TYPE_UI_ITEM_ACTION)
+G_PASTE_DEFINE_TYPE (UiUploadItem, ui_upload_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 
 static void
 g_paste_ui_upload_item_activate (GPasteUiItemAction *self G_GNUC_UNUSED,
@@ -57,7 +57,7 @@ g_paste_ui_upload_item_init (GPasteUiUploadItem *self G_GNUC_UNUSED)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_upload_item_new (GPasteClient *client)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
     return g_paste_ui_item_action_new (G_PASTE_TYPE_UI_UPLOAD_ITEM, client, "document-send-symbolic", _("Upload"));
 }

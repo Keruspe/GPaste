@@ -29,12 +29,12 @@ typedef struct
     GApplication *app;
 } GPasteAppletQuitPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteAppletQuit, g_paste_applet_quit, GTK_TYPE_MENU_ITEM)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (AppletQuit, applet_quit, GTK_TYPE_MENU_ITEM)
 
 static void
 g_paste_applet_quit_activate (GtkMenuItem *menu_item)
 {
-    GPasteAppletQuitPrivate *priv = g_paste_applet_quit_get_instance_private (G_PASTE_APPLET_QUIT (menu_item));
+    const GPasteAppletQuitPrivate *priv = _g_paste_applet_quit_get_instance_private (G_PASTE_APPLET_QUIT (menu_item));
 
     g_application_quit (priv->app);
 

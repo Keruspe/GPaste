@@ -63,7 +63,7 @@ typedef struct
     guint64          settings_signal;
 } GPasteSettingsUiStackPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteSettingsUiStack, g_paste_settings_ui_stack, GTK_TYPE_STACK)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_STACK)
 
 #define SETTING_CALLBACK_FULL(setting, type, cast)                            \
     static inline void                                                        \
@@ -95,7 +95,7 @@ g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
                                      const gchar           *label,
                                      GPasteSettingsUiPanel *panel)
 {
-    g_return_if_fail (G_PASTE_IS_SETTINGS_UI_STACK (self));
+    g_return_if_fail (_G_PASTE_IS_SETTINGS_UI_STACK (self));
 
     gtk_stack_add_titled (GTK_STACK (self),
                           GTK_WIDGET (panel),
@@ -395,7 +395,7 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
 static void
 g_paste_settings_ui_stack_dispose (GObject *object)
 {
-    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
+    const GPasteSettingsUiStackPrivate *priv = _g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
 
     if (priv->settings) /* first dispose call */
     {
@@ -410,7 +410,7 @@ g_paste_settings_ui_stack_dispose (GObject *object)
 static void
 g_paste_settings_ui_stack_finalize (GObject *object)
 {
-    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
+    const GPasteSettingsUiStackPrivate *priv = _g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
     GStrv *actions = priv->actions;
 
     for (guint64 i = 0; actions[i]; ++i)
@@ -473,7 +473,7 @@ g_paste_settings_ui_stack_new (void)
                                                                              "margin",      12,
                                                                              "homogeneous", TRUE,
                                                                              NULL));
-    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
+    const GPasteSettingsUiStackPrivate *priv = _g_paste_settings_ui_stack_get_instance_private (self);
 
     if (g_paste_settings_ui_check_connection_error (priv->init_error))
     {

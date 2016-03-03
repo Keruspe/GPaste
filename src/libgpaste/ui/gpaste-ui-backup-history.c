@@ -26,7 +26,7 @@ struct _GPasteUiBackupHistory
     GPasteUiHistoryAction parent_instance;
 };
 
-G_DEFINE_TYPE (GPasteUiBackupHistory, g_paste_ui_backup_history, G_PASTE_TYPE_UI_HISTORY_ACTION)
+G_PASTE_DEFINE_TYPE (UiBackupHistory, ui_backup_history, G_PASTE_TYPE_UI_HISTORY_ACTION)
 
 static void
 on_entry_activated (GtkEntry *entry G_GNUC_UNUSED,
@@ -126,8 +126,8 @@ g_paste_ui_backup_history_new (GPasteClient *client,
                                GtkWidget    *actions,
                                GtkWindow    *rootwin)
 {
-    g_return_val_if_fail (G_PASTE_IS_CLIENT (client), NULL);
-    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     return g_paste_ui_history_action_new (G_PASTE_TYPE_UI_BACKUP_HISTORY, client, actions, rootwin, _("Backup"));

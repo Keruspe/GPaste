@@ -39,7 +39,7 @@ void g_paste_clipboards_manager_sync_from_to  (GPasteClipboardsManager *self,
                                                GdkAtom                  to);
 void g_paste_clipboards_manager_activate      (GPasteClipboardsManager *self);
 void g_paste_clipboards_manager_select        (GPasteClipboardsManager *self,
-                                               const GPasteItem        *item);
+                                               GPasteItem              *item);
 
 GPasteClipboardsManager *g_paste_clipboards_manager_new (GPasteHistory  *history,
                                                          GPasteSettings *settings);

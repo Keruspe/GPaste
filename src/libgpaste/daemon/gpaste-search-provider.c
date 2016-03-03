@@ -41,7 +41,7 @@ typedef struct
     GDBusInterfaceVTable g_paste_search_provider_dbus_vtable;
 } GPasteSearchProviderPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (GPasteSearchProvider, g_paste_search_provider, G_PASTE_TYPE_BUS_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SearchProvider, search_provider, G_PASTE_TYPE_BUS_OBJECT)
 
 static char *
 g_paste_dbus_get_as_result (GVariant *variant)
@@ -113,9 +113,9 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static gboolean
-_do_search (GPasteSearchProviderPrivate *priv G_GNUC_UNUSED,
-            gchar                       *search,
-            GDBusMethodInvocation       *invocation)
+_do_search (const GPasteSearchProviderPrivate *priv,
+            gchar                             *search,
+            GDBusMethodInvocation             *invocation)
 {
     if (strlen (search) < 3 || !priv->client)
     {
@@ -139,18 +139,18 @@ _do_search (GPasteSearchProviderPrivate *priv G_GNUC_UNUSED,
 }
 
 static gboolean
-g_paste_search_provider_private_get_initial_result_set (GPasteSearchProviderPrivate *priv,
-                                                        GDBusMethodInvocation       *invocation,
-                                                        GVariant                    *parameters)
+g_paste_search_provider_private_get_initial_result_set (const GPasteSearchProviderPrivate *priv,
+                                                        GDBusMethodInvocation             *invocation,
+                                                        GVariant                          *parameters)
 {
     g_autofree gchar *search = _g_paste_dbus_get_as_result (parameters);
     return _do_search (priv, search, invocation);
 }
 
 static gboolean
-g_paste_search_provider_private_get_subsearch_result_set (GPasteSearchProviderPrivate *priv,
-                                                          GDBusMethodInvocation       *invocation,
-                                                          GVariant                    *parameters)
+g_paste_search_provider_private_get_subsearch_result_set (const GPasteSearchProviderPrivate *priv,
+                                                          GDBusMethodInvocation             *invocation,
+                                                          GVariant                          *parameters)
 {
     GVariantIter parameters_iter;
 
@@ -215,9 +215,9 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static gboolean
-g_paste_search_provider_private_get_result_metas (GPasteSearchProviderPrivate *priv,
-                                                  GDBusMethodInvocation       *invocation,
-                                                  GVariant                    *parameters)
+g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPrivate *priv,
+                                                  GDBusMethodInvocation             *invocation,
+                                                  GVariant                          *parameters)
 {
     guint64 len;
     guint64 *indexes = _g_paste_dbus_get_as_result_as_at (parameters, &len);
@@ -240,8 +240,8 @@ g_paste_search_provider_private_get_result_metas (GPasteSearchProviderPrivate *p
 }
 
 static gboolean
-g_paste_search_provider_private_activate_result (GPasteSearchProviderPrivate *priv G_GNUC_UNUSED,
-                                                 GVariant                    *parameters)
+g_paste_search_provider_private_activate_result (const GPasteSearchProviderPrivate *priv G_GNUC_UNUSED,
+                                                 GVariant                          *parameters)
 {
     GVariantIter parameters_iter;
 
@@ -258,8 +258,8 @@ g_paste_search_provider_private_activate_result (GPasteSearchProviderPrivate *pr
 }
 
 static gboolean
-g_paste_search_provider_private_launch_search (GPasteSearchProviderPrivate *priv G_GNUC_UNUSED,
-                                               GVariant                    *parameters G_GNUC_UNUSED)
+g_paste_search_provider_private_launch_search (const GPasteSearchProviderPrivate *priv G_GNUC_UNUSED,
+                                               GVariant                          *parameters)
 {
     GVariantIter parameters_iter;
 
@@ -285,7 +285,7 @@ g_paste_search_provider_dbus_method_call (GDBusConnection       *connection     
                                           gpointer               user_data)
 {
     GPasteSearchProvider *self = user_data;
-    GPasteSearchProviderPrivate *priv = g_paste_search_provider_get_instance_private (self);
+    const GPasteSearchProviderPrivate *priv = _g_paste_search_provider_get_instance_private (self);
     gboolean async = FALSE;
 
     if (!g_strcmp0 (method_name, G_PASTE_SEARCH_PROVIDER_GET_INITIAL_RESULT_SET))
@@ -315,7 +315,7 @@ g_paste_search_provider_unregister_object (gpointer user_data)
 static void
 g_paste_search_provider_dispose (GObject *object)
 {
-    GPasteSearchProviderPrivate *priv = g_paste_search_provider_get_instance_private (G_PASTE_SEARCH_PROVIDER (object));
+    const GPasteSearchProviderPrivate *priv = _g_paste_search_provider_get_instance_private (G_PASTE_SEARCH_PROVIDER (object));
 
     if (priv->connection)
     {
