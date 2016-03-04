@@ -20,6 +20,7 @@
 #include "gpaste-gdbus-macros.h"
 
 #include <gpaste-keybinder.h>
+#include <gpaste-image-item.h>
 #include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>
 #include <gpaste-screensaver-client.h>
@@ -275,7 +276,16 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
                              &length,
                              error))
     {
-        g_paste_daemon_private_do_add (priv, content, length, err);
+        if (g_utf8_validate (content, length, NULL))
+        {
+            g_paste_daemon_private_do_add (priv, content, length, err);
+        }
+        else
+        {
+            g_autoptr (GdkPixbuf) img = gdk_pixbuf_new_from_file (file, NULL /* Error */);
+
+            g_paste_daemon_private_do_add_item (priv, g_paste_image_item_new (img));
+        }
     }
 }
 
