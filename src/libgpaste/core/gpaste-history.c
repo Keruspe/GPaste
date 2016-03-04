@@ -238,7 +238,8 @@ g_paste_history_add (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     guint64 max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
 
-    g_return_if_fail (g_paste_item_get_size (item) < max_memory);
+    if (g_paste_item_get_size (item) > max_memory)
+        return;
 
     GList *history = priv->history;
     gboolean election_needed = FALSE;
