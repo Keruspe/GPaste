@@ -1,4 +1,3 @@
-data/control-center/42-gpaste.xml.in
 data/desktop/org.gnome.GPaste.Applet.desktop.in
 data/desktop/org.gnome.GPaste.AppIndicator.desktop.in
 data/desktop/org.gnome.GPaste.Ui.desktop.in
