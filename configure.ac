@@ -29,7 +29,7 @@ m4_define([autoconf_required],   [2.69])
 m4_define([automake_required],   [1.15])
 m4_define([intltool_requird],    [0.50.1])
 m4_define([libtool_required],    [2.2.6])
-m4_define([pkgconfig_required],  [0.27])
+m4_define([pkgconfig_required],  [0.29])
 
 # Glib and Gtk macros and dependencies
 m4_define([glib_major_required], [2])
@@ -106,6 +106,7 @@ AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["${GETTEXT_PACKAGE}"], [Gettext Package])
 AC_SUBST([GETTEXT_PACKAGE])
 IT_PROG_INTLTOOL([intltool_required])
 
+PKG_PREREQ(pkgconfig_required)
 PKG_PROG_PKG_CONFIG([pkgconfig_required])
 PKG_INSTALLDIR
 

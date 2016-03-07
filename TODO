@@ -1,6 +1,4 @@
 3.22:
-    configure:
-        PKG_PREREQ([0.29])
     gpaste-ui:
         merge
     general:
