@@ -32,7 +32,6 @@ src/ui/gpaste-ui.c
 data/appstream/org.gnome.GPaste.Applet.appdata.xml.in
 data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in
 data/appstream/org.gnome.GPaste.Ui.appdata.xml.in
-data/control-center/42-gpaste.xml.in.in
 data/desktop/org.gnome.GPaste.Applet.desktop.in.in
 data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in
 data/desktop/org.gnome.GPaste.Ui.desktop.in.in

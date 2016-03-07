@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<KeyListEntries schema="org.gnome.GPaste" group="system" name="GPaste">
+	<KeyListEntry name="launch-ui"                 description="Launch the graphical tool"></KeyListEntry>
+	<KeyListEntry name="make-password"             description="Mark the active item as being a password"></KeyListEntry>
+	<KeyListEntry name="pop"                       description="Delete the active item from history"></KeyListEntry>
+	<KeyListEntry name="show-history"              description="Display the history"></KeyListEntry>
+	<KeyListEntry name="sync-clipboard-to-primary" description="Sync the clipboard to the primary selection"></KeyListEntry>
+	<KeyListEntry name="sync-primary-to-clipboard" description="Sync the primary selection to the clipboard"></KeyListEntry>
+	<KeyListEntry name="upload"                    description="Upload the active item to a pastebin service"></KeyListEntry>
+</KeyListEntries>
