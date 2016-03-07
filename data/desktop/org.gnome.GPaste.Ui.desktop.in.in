@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
 Name=GPaste
-_Comment=Manage your clipboard history
-_Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
+Comment=Manage your clipboard history
+Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
 Icon=edit-paste
 Exec=@pkglibexecdir@/gpaste-ui
 DBusActivatable=true

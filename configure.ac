@@ -27,7 +27,6 @@ m4_define([gpaste_lt_version],   [4:0:0])
 # Build system requirements
 m4_define([autoconf_required],   [2.69])
 m4_define([automake_required],   [1.15])
-m4_define([intltool_requird],    [0.50.1])
 m4_define([libtool_required],    [2.2.6])
 m4_define([pkgconfig_required],  [0.27])
 
@@ -70,6 +69,8 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
 
+AC_USE_SYSTEM_EXTENSIONS
+
 AM_PROG_AR
 LT_PREREQ(libtool_required)
 LT_INIT([disable-static pic-only])
@@ -104,7 +105,9 @@ G_PASTE_APPEND_LDFLAGS
 GETTEXT_PACKAGE=${PACKAGE_NAME}
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["${GETTEXT_PACKAGE}"], [Gettext Package])
 AC_SUBST([GETTEXT_PACKAGE])
-IT_PROG_INTLTOOL([intltool_required])
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION
+AM_GNU_GETTEXT_REQUIRE_VERSION([0.19.7])
 
 PKG_PROG_PKG_CONFIG([pkgconfig_required])
 PKG_INSTALLDIR

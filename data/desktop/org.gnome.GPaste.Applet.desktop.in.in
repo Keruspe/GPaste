@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-_Name=GPaste Applet
-_Comment=Tray icon to manage GPaste
-_Keywords=Clipboard;Manager;
+Name=GPaste Applet
+Comment=Tray icon to manage GPaste
+Keywords=Clipboard;Manager;
 Icon=edit-paste
 Exec=@pkglibexecdir@/gpaste-applet
 DBusActivatable=true
