@@ -3,18 +3,18 @@
 <component type="desktop">
   <id>org.gnome.GPaste.Ui.desktop</id>
   <name>GPaste</name>
-  <_summary>Manage your clipboard history</_summary>
+  <summary>Manage your clipboard history</summary>
   <developer_name>Marc-Antoine Perennou</developer_name>
   <project_license>GPL-3.0</project_license>
   <metadata_license>CC-BY-SA-3.0</metadata_license>
   <project_group>GNOME</project_group>
   <description>
-    <_p>
+    <p>
       GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
-    </_p>
-    <_p>
+    </p>
+    <p>
       GPaste provides you with a graphical tool allowing you to manage everything easily.
-    </_p>
+    </p>
   </description>
   <url type="homepage">http://www.imagination-land.org/tags/GPaste.html</url>
   <screenshots>

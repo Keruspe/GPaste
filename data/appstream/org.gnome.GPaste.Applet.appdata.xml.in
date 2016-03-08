@@ -2,19 +2,19 @@
 <!-- Copyright 2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
 <component type="desktop">
   <id>org.gnome.GPaste.Applet.desktop</id>
-  <_name>GPaste Applet</_name>
-  <_summary>Tray icon to manage GPaste</_summary>
+  <name>GPaste Applet</name>
+  <summary>Tray icon to manage GPaste</summary>
   <developer_name>Marc-Antoine Perennou</developer_name>
   <project_license>GPL-3.0</project_license>
   <metadata_license>CC-BY-SA-3.0</metadata_license>
   <project_group>GNOME</project_group>
   <description>
-    <_p>
+    <p>
       GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
-    </_p>
-    <_p>
+    </p>
+    <p>
       GPaste provides you with an applet, in the form of a status icon which will give you access to your history in your tray area.
-    </_p>
+    </p>
   </description>
   <url type="homepage">http://www.imagination-land.org/tags/GPaste.html</url>
   <screenshots>
