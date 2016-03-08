@@ -28,6 +28,13 @@ struct _GPasteSettingsUiStack
     GtkStack parent_instance;
 };
 
+enum
+{
+    C_SETTINGS,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteClient    *client;
@@ -60,7 +67,7 @@ typedef struct
     GtkSwitch       *extension_enabled_switch;
     GtkSwitch       *track_extension_state_switch;
 
-    guint64          settings_signal;
+    guint64          c_signals[C_LAST_SIGNAL];
 } GPasteSettingsUiStackPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_STACK)
@@ -399,7 +406,7 @@ g_paste_settings_ui_stack_dispose (GObject *object)
 
     if (priv->settings) /* first dispose call */
     {
-        g_signal_handler_disconnect (priv->settings, priv->settings_signal);
+        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_SETTINGS]);
         g_clear_object (&priv->settings);
         g_clear_object (&priv->client);
     }
@@ -438,10 +445,10 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
     priv->client = g_paste_client_new_sync (&priv->init_error);
 
     priv->settings = g_paste_settings_new ();
-    priv->settings_signal = g_signal_connect (priv->settings,
-                                              "changed",
-                                              G_CALLBACK (g_paste_settings_ui_stack_settings_changed),
-                                              priv);
+    priv->c_signals[C_SETTINGS] = g_signal_connect (priv->settings,
+                                                    "changed",
+                                                    G_CALLBACK (g_paste_settings_ui_stack_settings_changed),
+                                                    priv);
 
     GStrv *actions = priv->actions = (GStrv *) g_malloc (3 * sizeof (GStrv));
 

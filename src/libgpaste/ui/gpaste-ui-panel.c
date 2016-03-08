@@ -25,6 +25,19 @@ struct _GPasteUiPanel
     GtkBox parent_instance;
 };
 
+enum
+{
+    C_ACTIVATED,
+    C_BUTTON_PRESSED,
+    C_DELETE_HISTORY,
+    C_EMPTY_HISTORY,
+    C_SWITCH_ACTIVATED,
+    C_SWITCH_CLICKED,
+    C_SWITCH_HISTORY,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteClient           *client;
@@ -37,13 +50,7 @@ typedef struct
 
     GtkWidget              *search_entry;
 
-    guint64                 activated_id;
-    guint64                 button_pressed_id;
-    guint64                 delete_history_id;
-    guint64                 empty_history_id;
-    guint64                 switch_activated_id;
-    guint64                 switch_clicked_id;
-    guint64                 switch_history_id;
+    guint64                 c_signals[C_LAST_SIGNAL];
 } GPasteUiPanelPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiPanel, ui_panel, GTK_TYPE_BOX)
@@ -251,20 +258,20 @@ g_paste_ui_panel_dispose (GObject *object)
 {
     GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (G_PASTE_UI_PANEL (object));
 
-    if (priv->activated_id)
+    if (priv->c_signals[C_ACTIVATED])
     {
-        g_signal_handler_disconnect (priv->list_box, priv->activated_id);
-        g_signal_handler_disconnect (priv->list_box, priv->button_pressed_id);
-        g_signal_handler_disconnect (priv->switch_entry, priv->switch_activated_id);
-        g_signal_handler_disconnect (priv->switch_entry, priv->switch_clicked_id);
-        priv->activated_id = 0;
+        g_signal_handler_disconnect (priv->list_box, priv->c_signals[C_ACTIVATED]);
+        g_signal_handler_disconnect (priv->list_box, priv->c_signals[C_BUTTON_PRESSED]);
+        g_signal_handler_disconnect (priv->switch_entry, priv->c_signals[C_SWITCH_ACTIVATED]);
+        g_signal_handler_disconnect (priv->switch_entry, priv->c_signals[C_SWITCH_CLICKED]);
+        priv->c_signals[C_ACTIVATED] = 0;
     }
 
     if (priv->client)
     {
-        g_signal_handler_disconnect (priv->client, priv->delete_history_id);
-        g_signal_handler_disconnect (priv->client, priv->empty_history_id);
-        g_signal_handler_disconnect (priv->client, priv->switch_history_id);
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_DELETE_HISTORY]);
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_EMPTY_HISTORY]);
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_SWITCH_HISTORY]);
         g_clear_object (&priv->client);
     }
 
@@ -297,22 +304,22 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
     gtk_widget_set_margin_bottom (switch_entry, 5);
     gtk_entry_set_placeholder_text (priv->switch_entry, G_PASTE_DEFAULT_HISTORY);
 
-    priv->activated_id = g_signal_connect (G_OBJECT (priv->list_box),
-                                           "row-activated",
-                                           G_CALLBACK (on_row_activated),
-                                           NULL);
-    priv->button_pressed_id = g_signal_connect (G_OBJECT (list_box),
-                                                "button-press-event",
-                                                G_CALLBACK (g_paste_ui_panel_button_press_event),
-                                                priv);
-    priv->switch_activated_id = g_signal_connect (G_OBJECT (switch_entry),
-                                                  "activate",
-                                                  G_CALLBACK (g_paste_ui_panel_switch_activated),
-                                                  priv);
-    priv->switch_clicked_id = g_signal_connect (G_OBJECT (switch_entry),
-                                                "icon-press",
-                                                G_CALLBACK (g_paste_ui_panel_switch_clicked),
-                                                priv);
+    priv->c_signals[C_ACTIVATED] = g_signal_connect (G_OBJECT (priv->list_box),
+                                                     "row-activated",
+                                                     G_CALLBACK (on_row_activated),
+                                                     NULL);
+    priv->c_signals[C_BUTTON_PRESSED] = g_signal_connect (G_OBJECT (list_box),
+                                                          "button-press-event",
+                                                          G_CALLBACK (g_paste_ui_panel_button_press_event),
+                                                          priv);
+    priv->c_signals[C_SWITCH_ACTIVATED] = g_signal_connect (G_OBJECT (switch_entry),
+                                                            "activate",
+                                                            G_CALLBACK (g_paste_ui_panel_switch_activated),
+                                                            priv);
+    priv->c_signals[C_SWITCH_CLICKED] = g_signal_connect (G_OBJECT (switch_entry),
+                                                          "icon-press",
+                                                          G_CALLBACK (g_paste_ui_panel_switch_clicked),
+                                                          priv);
 
     gtk_box_pack_start (box, list_box, FALSE, TRUE, 0);
     gtk_box_pack_start (box, switch_entry, FALSE, FALSE, 0);
@@ -351,18 +358,18 @@ g_paste_ui_panel_new (GPasteClient   *client,
     priv->actions = G_PASTE_UI_HISTORY_ACTIONS (g_paste_ui_history_actions_new (client, rootwin));
     priv->search_entry = GTK_WIDGET (search_entry);
 
-    priv->delete_history_id = g_signal_connect (priv->client,
-                                                "delete-history",
-                                                G_CALLBACK (on_history_deleted),
-                                                priv);
-    priv->empty_history_id = g_signal_connect (priv->client,
-                                               "empty-history",
-                                               G_CALLBACK (on_history_emptied),
-                                               self);
-    priv->switch_history_id = g_signal_connect (priv->client,
-                                                "switch-history",
-                                                G_CALLBACK (on_history_switched),
-                                                priv);
+    priv->c_signals[C_DELETE_HISTORY] = g_signal_connect (priv->client,
+                                                          "delete-history",
+                                                          G_CALLBACK (on_history_deleted),
+                                                          priv);
+    priv->c_signals[C_EMPTY_HISTORY] = g_signal_connect (priv->client,
+                                                         "empty-history",
+                                                         G_CALLBACK (on_history_emptied),
+                                                         self);
+    priv->c_signals[C_SWITCH_HISTORY] = g_signal_connect (priv->client,
+                                                          "switch-history",
+                                                          G_CALLBACK (on_history_switched),
+                                                          priv);
 
     g_paste_client_get_history_name (client, on_name_ready, priv);
 

@@ -29,6 +29,13 @@ struct _GPasteClipboard
     GObject parent_instance;
 };
 
+enum
+{
+    C_OWNER_CHANGE,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GdkAtom         target;
@@ -37,7 +44,7 @@ typedef struct
     gchar          *text;
     gchar          *image_checksum;
 
-    guint64         owner_change_signal;
+    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteClipboardPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Clipboard, clipboard, G_TYPE_OBJECT)
@@ -628,7 +635,7 @@ g_paste_clipboard_dispose (GObject *object)
 
     if (priv->settings)
     {
-        g_signal_handler_disconnect (priv->real, priv->owner_change_signal);
+        g_signal_handler_disconnect (priv->real, priv->c_signals[C_OWNER_CHANGE]);
         g_clear_object (&priv->settings);
     }
 
@@ -704,10 +711,10 @@ g_paste_clipboard_new (GdkAtom         target,
 
     GtkClipboard *real = priv->real = gtk_clipboard_get (target);
 
-    priv->owner_change_signal = g_signal_connect (real,
-                                                  "owner-change",
-                                                  G_CALLBACK (g_paste_clipboard_owner_change),
-                                                  self);
+    priv->c_signals[C_OWNER_CHANGE] = g_signal_connect (real,
+                                                        "owner-change",
+                                                        G_CALLBACK (g_paste_clipboard_owner_change),
+                                                        self);
 
     if (!gdk_display_request_selection_notification (gdk_display_get_default (), target))
     {

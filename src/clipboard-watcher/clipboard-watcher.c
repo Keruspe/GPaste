@@ -31,6 +31,14 @@ on_owner_change (GPasteClipboard *clipboard,
     g_print ("%s changed: '%s'\n", target, gtk_clipboard_wait_for_text (g_paste_clipboard_get_real (clipboard)));
 }
 
+enum
+{
+    C_CLIPBOARD,
+    C_PRIMARY,
+
+    C_LAST_SIGNAL
+};
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -46,19 +54,21 @@ main (gint argc, gchar *argv[])
     g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
     g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
 
-    guint64 cs = g_signal_connect (clipboard,
-                                   "owner-change",
-                                   G_CALLBACK (on_owner_change),
-                                   (gpointer) "CLIPBOARD");
-    guint64 ps = g_signal_connect (primary,
-                                   "owner-change",
-                                   G_CALLBACK (on_owner_change),
-                                   (gpointer) "PRIMARY");
+    guint64 c_signals[C_LAST_SIGNAL] = {
+        [C_CLIPBOARD] = g_signal_connect (clipboard,
+                                          "owner-change",
+                                          G_CALLBACK (on_owner_change),
+                                          (gpointer) "CLIPBOARD"),
+        [C_PRIMARY]   = g_signal_connect (primary,
+                                          "owner-change",
+                                          G_CALLBACK (on_owner_change),
+                                          (gpointer) "PRIMARY")
+    };
 
     gint exit_code = g_application_run (gapp, argc, argv);
 
-    g_signal_handler_disconnect (clipboard, cs);
-    g_signal_handler_disconnect (primary, ps);
+    g_signal_handler_disconnect (clipboard, c_signals[C_CLIPBOARD]);
+    g_signal_handler_disconnect (primary,   c_signals[C_PRIMARY]);
 
     return exit_code;
 }
