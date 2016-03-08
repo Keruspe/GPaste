@@ -27,13 +27,20 @@ struct _GPasteAppletAppIndicator
     GPasteAppletIcon parent_instance;
 };
 
+enum
+{
+    C_TRACKING,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteClient *client;
 
     AppIndicator *icon;
 
-    guint64       tracking_id;
+    guint64       c_signals[C_LAST_SIGNAL];
 } GPasteAppletAppIndicatorPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (AppletAppIndicator, applet_app_indicator, G_PASTE_TYPE_APPLET_ICON)
@@ -60,10 +67,10 @@ g_paste_applet_app_indicator_dispose (GObject *object)
 {
     GPasteAppletAppIndicatorPrivate *priv = g_paste_applet_app_indicator_get_instance_private (G_PASTE_APPLET_APP_INDICATOR (object));
 
-    if (priv->tracking_id)
+    if (priv->c_signals[C_TRACKING])
     {
-        g_signal_handler_disconnect (priv->client, priv->tracking_id);
-        priv->tracking_id = 0;
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_TRACKING]);
+        priv->c_signals[C_TRACKING] = 0;
     }
 
     g_clear_object (&priv->icon);
@@ -110,10 +117,10 @@ g_paste_applet_app_indicator_new (GPasteClient *client,
 
     priv->client = g_object_ref (client);
 
-    priv->tracking_id = g_signal_connect (G_OBJECT (priv->client),
-                                          "tracking",
-                                          G_CALLBACK (on_tracking_changed),
-                                          priv);
+    priv->c_signals[C_TRACKING] = g_signal_connect (G_OBJECT (priv->client),
+                                                    "tracking",
+                                                    G_CALLBACK (on_tracking_changed),
+                                                    priv);
 
     indicator_set_state (priv->icon, g_paste_client_is_active (client));
     gtk_widget_show_all (menu);

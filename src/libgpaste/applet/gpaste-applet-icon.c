@@ -20,11 +20,18 @@
 #include <gpaste-applet-icon.h>
 #include <gpaste-util.h>
 
+enum
+{
+    C_SHOW,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteClient *client;
 
-    guint64        show_id;
+    guint64        c_signals[C_LAST_SIGNAL];
 } GPasteAppletIconPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (AppletIcon, applet_icon, G_TYPE_OBJECT)
@@ -54,7 +61,7 @@ g_paste_applet_icon_dispose (GObject *object)
 
     if (priv->client)
     {
-        g_signal_handler_disconnect (priv->client, priv->show_id);
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_SHOW]);
         g_clear_object (&priv->client);
     }
 
@@ -93,10 +100,10 @@ g_paste_applet_icon_new (GType         type,
     GPasteAppletIconPrivate *priv = g_paste_applet_icon_get_instance_private (self);
 
     priv->client = g_object_ref (client);
-    priv->show_id = g_signal_connect (client,
-                                      "show-history",
-                                      G_CALLBACK (g_paste_applet_icon_show_history),
-                                      self);
+    priv->c_signals[C_SHOW] = g_signal_connect (client,
+                                                "show-history",
+                                                G_CALLBACK (g_paste_applet_icon_show_history),
+                                                self);
 
     return self;
 }

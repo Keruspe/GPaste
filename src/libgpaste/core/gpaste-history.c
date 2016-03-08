@@ -29,6 +29,13 @@ struct _GPasteHistory
     GObject parent_instance;
 };
 
+enum
+{
+    C_CHANGED,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteSettings *settings;
@@ -41,7 +48,7 @@ typedef struct
     guint64         biggest_index;
     guint64         biggest_size;
 
-    guint64         changed_signal;
+    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteHistoryPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (History, history, G_TYPE_OBJECT)
@@ -1190,7 +1197,7 @@ g_paste_history_dispose (GObject *object)
 
     if (settings)
     {
-        g_signal_handler_disconnect (settings, priv->changed_signal);
+        g_signal_handler_disconnect (settings, priv->c_signals[C_CHANGED]);
         g_clear_object (&priv->settings);
     }
 
@@ -1430,10 +1437,10 @@ g_paste_history_new (GPasteSettings *settings)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     priv->settings = g_object_ref (settings);
-    priv->changed_signal = g_signal_connect (settings,
-                                             "changed",
-                                             G_CALLBACK (g_paste_history_settings_changed),
-                                             self);
+    priv->c_signals[C_CHANGED] = g_signal_connect (settings,
+                                                   "changed",
+                                                   G_CALLBACK (g_paste_history_settings_changed),
+                                                   self);
 
     return self;
 }

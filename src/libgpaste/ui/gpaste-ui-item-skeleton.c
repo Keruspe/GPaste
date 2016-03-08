@@ -23,6 +23,13 @@
 #include <gpaste-ui-item-skeleton.h>
 #include <gpaste-ui-upload-item.h>
 
+enum
+{
+    C_SIZE,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteSettings *settings;
@@ -37,7 +44,7 @@ typedef struct
     gboolean        editable;
     gboolean        uploadable;
 
-    guint64         size_id;
+    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteUiItemSkeletonPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemSkeleton, ui_item_skeleton, GTK_TYPE_LIST_BOX_ROW)
@@ -234,7 +241,7 @@ g_paste_ui_item_skeleton_dispose (GObject *object)
 
     if (priv->settings)
     {
-        g_signal_handler_disconnect (priv->settings, priv->size_id);
+        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_SIZE]);
         g_clear_object (&priv->settings);
     }
 
@@ -319,10 +326,10 @@ g_paste_ui_item_skeleton_new (GType           type,
 
     g_slist_foreach (priv->actions, add_action, gtk_bin_get_child (GTK_BIN (self)));
 
-    priv->size_id = g_signal_connect (settings,
-                                      "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
-                                      G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
-                                      priv);
+    priv->c_signals[C_SIZE] = g_signal_connect (settings,
+                                                "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
+                                                G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
+                                                priv);
     g_paste_ui_item_skeleton_set_text_size (settings, NULL, priv);
 
     return self;

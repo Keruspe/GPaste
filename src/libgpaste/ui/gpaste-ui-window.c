@@ -28,6 +28,13 @@ struct _GPasteUiWindow
     GtkApplicationWindow parent_instance;
 };
 
+enum
+{
+    C_SEARCH,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteUiHeader  *header;
@@ -38,7 +45,7 @@ typedef struct
 
     gboolean         initialized;
 
-    guint64          search_signal;
+    guint64          c_signals[C_LAST_SIGNAL];
 } GPasteUiWindowPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_APPLICATION_WINDOW)
@@ -158,13 +165,13 @@ g_paste_ui_window_dispose (GObject *object)
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    if (priv->search_signal)
+    if (priv->c_signals[C_SEARCH])
     {
         GPasteUiSearchBar *search_bar = G_PASTE_UI_SEARCH_BAR (priv->search_bar);
         GtkSearchEntry *entry = g_paste_ui_search_bar_get_entry (search_bar);
 
-        g_signal_handler_disconnect (entry, priv->search_signal);
-        priv->search_signal = 0;
+        g_signal_handler_disconnect (entry, priv->c_signals[C_SEARCH]);
+        priv->c_signals[C_SEARCH] = 0;
     }
 
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
@@ -197,10 +204,10 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     gtk_box_pack_start (GTK_BOX (box), search_bar, FALSE, FALSE, 0);
 
     GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar));
-    priv->search_signal = g_signal_connect (entry,
-                                            "search-changed",
-                                            G_CALLBACK (on_search),
-                                            priv);
+    priv->c_signals[C_SEARCH] = g_signal_connect (entry,
+                                                  "search-changed",
+                                                  G_CALLBACK (on_search),
+                                                  priv);
 
     g_source_set_name_by_id (g_idle_add (focus_search, self), "[GPaste] focus_search");
 }
