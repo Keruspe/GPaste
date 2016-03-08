@@ -1,6 +1,6 @@
 # This file is part of GPaste.
 #
-# Copyright 2011-2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# Copyright 2011-2016 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 #
 # GPaste is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-m4_define([gpaste_version],      [3.19])
+m4_define([gpaste_version],      [3.21])
 
 # Update gpaste_lt_version before each release (and only then)
 # The format is C:R:A (current revision age)
