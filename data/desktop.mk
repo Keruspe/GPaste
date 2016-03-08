@@ -48,12 +48,13 @@ nodist_applications_DATA =        \
 	$(nodist_autostart_DATA)  \
 	$(NULL)
 
-@INTLTOOL_DESKTOP_RULE@
-
-SUFFIXES += .desktop.in.in .desktop.in
+SUFFIXES += .desktop.in.in .desktop.in .desktop
 .desktop.in.in.desktop.in:
 	@ $(MKDIR_P) $(@D)
 	$(AM_V_GEN) $(SED) -e 's,[@]pkglibexecdir[@],$(pkglibexecdir),g' < $< > $@
+.desktop.in.desktop:
+	@ $(MKDIR_P) $(@D)
+	$(AM_V_GEN) $(MSGFMT) --desktop --template $< -o $@ -d $(top_builddir)/po/
 
 EXTRA_DIST +=                                        \
 	$(all_desktop_files:.desktop=.desktop.in.in) \

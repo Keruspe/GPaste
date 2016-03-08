@@ -26,6 +26,14 @@ struct _GPasteSettings
     GObject parent_instance;
 };
 
+enum
+{
+    C_CHANGED,
+    C_SHELL_CHANGED,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GSettings *settings;
@@ -56,8 +64,7 @@ typedef struct
 
     gboolean   extension_enabled;
 
-    guint64    changed_signal;
-    guint64    shell_changed_signal;
+    guint64    c_signals[C_LAST_SIGNAL];
 } GPasteSettingsPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Settings, settings, G_TYPE_OBJECT)
@@ -863,13 +870,13 @@ g_paste_settings_dispose (GObject *object)
 
     if (settings)
     {
-        g_signal_handler_disconnect (settings, priv->changed_signal);
+        g_signal_handler_disconnect (settings, priv->c_signals[C_CHANGED]);
         g_clear_object (&priv->settings);
     }
 
     if (shell_settings)
     {
-        g_signal_handler_disconnect (shell_settings, priv->shell_changed_signal);
+        g_signal_handler_disconnect (shell_settings, priv->c_signals[C_SHELL_CHANGED]);
         g_clear_object (&priv->shell_settings);
     }
 
@@ -957,10 +964,10 @@ g_paste_settings_init (GPasteSettings *self)
     priv->sync_primary_to_clipboard = NULL;
     priv->upload = NULL;
 
-    priv->changed_signal = g_signal_connect (settings,
-                                             "changed",
-                                             G_CALLBACK (g_paste_settings_settings_changed),
-                                             self);
+    priv->c_signals[C_CHANGED] = g_signal_connect (settings,
+                                                   "changed",
+                                                   G_CALLBACK (g_paste_settings_settings_changed),
+                                                   self);
 
     g_paste_settings_private_set_element_size_from_dconf (priv);
     g_paste_settings_private_set_growing_lines_from_dconf (priv);
@@ -992,10 +999,10 @@ g_paste_settings_init (GPasteSettings *self)
     {
         priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
 
-        priv->shell_changed_signal = g_signal_connect (priv->shell_settings,
-                                                      "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
-                                                      G_CALLBACK (g_paste_settings_shell_settings_changed),
-                                                      self);
+        priv->c_signals[C_SHELL_CHANGED] = g_signal_connect (priv->shell_settings,
+                                                             "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
+                                                             G_CALLBACK (g_paste_settings_shell_settings_changed),
+                                                             self);
 
         g_paste_settings_private_set_extension_enabled_from_dconf (priv);
     }

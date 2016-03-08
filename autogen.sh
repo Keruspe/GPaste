@@ -4,7 +4,6 @@ set -euo pipefail
 
 autotools() {
     autoreconf -i -Wall
-    intltoolize --force --automake
 }
 
 clean() {

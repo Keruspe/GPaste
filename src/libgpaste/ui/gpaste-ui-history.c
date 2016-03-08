@@ -28,6 +28,14 @@ struct _GPasteUiHistory
     GtkListBox parent_instance;
 };
 
+enum
+{
+    C_SIZE,
+    C_UPDATE,
+
+    C_LAST_SIGNAL
+};
+
 typedef struct
 {
     GPasteClient   *client;
@@ -45,8 +53,7 @@ typedef struct
     guint64        *search_results;
     guint64         search_results_size;
 
-    guint64         size_id;
-    guint64         update_id;
+    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteUiHistoryPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHistory, ui_history, GTK_TYPE_LIST_BOX)
@@ -316,13 +323,13 @@ g_paste_ui_history_dispose (GObject *object)
 
     if (priv->settings)
     {
-        g_signal_handler_disconnect (priv->settings, priv->size_id);
+        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_SIZE]);
         g_clear_object (&priv->settings);
     }
 
     if (priv->client)
     {
-        g_signal_handler_disconnect (priv->client, priv->update_id);
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_UPDATE]);
         g_clear_object (&priv->client);
     }
 
@@ -390,14 +397,14 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     gtk_container_add (GTK_CONTAINER (self), priv->dummy_item);
 
-    priv->size_id = g_signal_connect (settings,
-                                      "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
-                                      G_CALLBACK (g_paste_ui_history_update_height_request),
-                                      self);
-    priv->update_id = g_signal_connect (client,
-                                        "update",
-                                        G_CALLBACK (g_paste_ui_history_on_update),
-                                        self);
+    priv->c_signals[C_SIZE] = g_signal_connect (settings,
+                                                "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
+                                                G_CALLBACK (g_paste_ui_history_update_height_request),
+                                                self);
+    priv->c_signals[C_UPDATE] = g_signal_connect (client,
+                                                  "update",
+                                                  G_CALLBACK (g_paste_ui_history_on_update),
+                                                  self);
 
     g_paste_ui_history_on_update (client, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, self);
 

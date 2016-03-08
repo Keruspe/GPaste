@@ -16,7 +16,6 @@
 ## along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
 @APPSTREAM_XML_RULES@
-@INTLTOOL_XML_RULE@
 
 appstream_in_files =                                     \
 	%D%/appstream/org.gnome.GPaste.Ui.appdata.xml.in \

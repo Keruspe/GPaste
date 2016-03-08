@@ -15,21 +15,6 @@
 ## You should have received a copy of the GNU General Public License
 ## along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-SUFFIXES += .xml.in .xml.in.in
-.xml.in.in.xml.in:
-	@ $(MKDIR_P) $(@D)
-	@ cp $< $@
-
-nodist_controlcenter_DATA =              \
+dist_controlcenter_DATA =                \
 	%D%/control-center/42-gpaste.xml \
 	$(NULL)
-
-EXTRA_DIST +=                                        \
-	$(nodist_controlcenter_DATA:.xml=.xml.in.in) \
-	$(NULL)
-
-CLEANFILES +=                                     \
-	$(nodist_controlcenter_DATA)              \
-	$(nodist_controlcenter_DATA:.xml=.xml.in) \
-	$(NULL)
-
