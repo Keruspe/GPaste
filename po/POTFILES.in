@@ -35,4 +35,4 @@ data/appstream/org.gnome.GPaste.Ui.appdata.xml.in
 data/desktop/org.gnome.GPaste.Applet.desktop.in.in
 data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in
 data/desktop/org.gnome.GPaste.Ui.desktop.in.in
-data/gsettings/org.gnome.GPaste.gschema.xml
+data/gsettings/org.gnome.GPaste.gschema.xml.in

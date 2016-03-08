@@ -1,5 +1,5 @@
 <schemalist>
-    <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/">
+    <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="@GETTEXT_PACKAGE@">
 
     <key name="element-size" type="t">
       <range min="0" max="511"/>

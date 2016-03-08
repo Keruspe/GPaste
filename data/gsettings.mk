@@ -30,6 +30,11 @@ $(gpaste_gschema_file:.xml=.valid): $(gpaste_gschema_file)
 $(gschemas_compiled): $(gsettings_SCHEMAS:.xml=.valid)
 	$(AM_V_GEN) $(GLIB_COMPILE_SCHEMAS) --targetdir=$(srcdir) .
 
+SUFFIXES += .gschema.xml.in .gschema.xml
+.gschema.xml.in.gschema.xml:
+	@ $(MKDIR_P) $(@D)
+	$(AM_V_GEN) $(SED) -e 's,[@]GETTEXT_PACKAGE[@],$(GETTEXT_PACKAGE),g' < $< > $@
+
 EXTRA_DIST +=                  \
 	$(gpaste_gschema_file) \
 	$(NULL)
