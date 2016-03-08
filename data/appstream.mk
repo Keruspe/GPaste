@@ -35,6 +35,11 @@ endif
 
 appstream_XML = $(appstream_in_files:.xml.in=.xml)
 
+SUFFIXES += .appdata.xml.in .appdata.xml
+.appdata.xml.in.appdata.xml:
+	@ $(MKDIR_P) $(@D)
+	$(AM_V_GEN) $(MSGFMT) --xml --template $< -o $@ -d $(top_builddir)/po/
+
 EXTRA_DIST +=                 \
 	$(appstream_in_files) \
 	$(NULL)
