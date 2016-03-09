@@ -15,6 +15,19 @@
 ## You should have received a copy of the GNU General Public License
 ## along with GPaste.  If not, see <http://www.gnu.org/licenses/>.
 
-dist_controlcenter_DATA =                \
+controlcenter_DATA =                     \
 	%D%/control-center/42-gpaste.xml \
+	$(NULL)
+
+SUFFIXES += .control-center.xml.in .xml
+.control-center.xml.in.xml:
+	@ $(MKDIR_P) $(@D)
+	$(AM_V_GEN) $(SED) -e 's,[@]GETTEXT_PACKAGE[@],$(GETTEXT_PACKAGE),g' < $< > $@
+
+EXTRA_DIST+=                                              \
+	$(controlcenter_DATA:.xml=.control-center.xml.in) \
+	$(NULL)
+
+CLEANFILES+=                  \
+	$(controlcenter_DATA) \
 	$(NULL)

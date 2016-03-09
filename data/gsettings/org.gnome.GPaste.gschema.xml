@@ -1,0 +1,196 @@
+<schemalist>
+    <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="GPaste">
+
+    <key name="element-size" type="t">
+      <range min="0" max="511"/>
+      <default>60</default>
+      <summary>Max size of an element when displaying it</summary>
+      <description>
+        The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.
+      </description>
+    </key>
+
+    <key name="growing-lines" type="b">
+      <default>false</default>
+      <summary>Do we detect and replace growing lines in history?</summary>
+      <description>
+        By default, selecting "Here is", then "Here is an example" will create two entries in the history.
+        With this feature enabled, the first one will be replaced by the second one.
+      </description>
+    </key>
+
+    <key name="history-name" type="s">
+      <default>'history'</default>
+      <summary>The name of the current history</summary>
+      <description>
+        The default name is "history"
+      </description>
+    </key>
+
+    <key name="images-support" type="b">
+      <default>true</default>
+      <summary>Do we save the images copied to history, or only text?</summary>
+      <description>
+        By default, we're saving both
+      </description>
+    </key>
+
+    <key name="launch-ui" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;G'</default>
+      <summary>The keyboard shortcut to launch the graphical interface</summary>
+      <description>
+        By default, hitting ctrl + alt + g does that ("&lt;Ctrl&gt;&lt;Alt&gt;G").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
+    <key name="make-password" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;S'</default>
+      <summary>The keyboard shortcut to mark the active item as being a password</summary>
+      <description>
+        By default, hitting ctrl + alt + s will mark the active item as being a password ("&lt;Ctrl&gt;&lt;Alt&gt;S").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
+    <key name="max-displayed-history-size" type="t">
+      <range min="10" max="255"/>
+      <default>20</default>
+      <summary>Max displayed history size</summary>
+      <description>
+        Maximum number of items displayed in the history
+      </description>
+    </key>
+
+    <key name="max-history-size" type="t">
+      <range min="5" max="65535"/>
+      <default>100</default>
+      <summary>Max history size</summary>
+      <description>
+        Maximum number of items in history
+      </description>
+    </key>
+
+    <key name="max-memory-usage" type="t">
+      <range min="5" max="16383"/>
+      <default>30</default>
+      <summary>Max memory usage (MB)</summary>
+      <description>
+        Maximum amount of memory used to store contents
+      </description>
+    </key>
+
+    <key name="max-text-item-size" type="t">
+      <range min="1" max="2147483647"/>
+      <default>2147483647</default>
+      <summary>Max text item size</summary>
+      <description>
+        Maximum size of a text item. Anything out of this boundary is ignored.
+      </description>
+    </key>
+
+    <key name="min-text-item-size" type="t">
+      <range min="1" max="65535"/>
+      <default>1</default>
+      <summary>Min text item size</summary>
+      <description>
+        Minimum size of a text item. Anything out of this boundary is ignored.
+      </description>
+    </key>
+
+    <key name="pop" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;V'</default>
+      <summary>The keyboard shortcut to delete the first element in history</summary>
+      <description>
+        By default, hitting ctrl + alt + v does that ("&lt;Ctrl&gt;&lt;Alt&gt;V").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
+    <key name="primary-to-history" type="b">
+      <default>false</default>
+      <summary>Does the primary selection affects history?</summary>
+      <description>
+        By default, only clipboard (ctrl+c) affects history.
+      </description>
+    </key>
+
+    <key name="save-history" type="b">
+      <default>true</default>
+      <summary>Do we save the history from one session to another?</summary>
+      <description>
+        By default, we're saving it
+      </description>
+    </key>
+
+    <key name="show-history" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
+      <summary>The keyboard shortcut to display the menu</summary>
+      <description>
+        By default, hitting ctrl + alt + h displays the menu ("&lt;Ctrl&gt;&lt;Alt&gt;H").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
+    <key name="sync-clipboard-to-primary" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;O'</default>
+      <summary>The keyboard shortcut to sync the clipboard to the primary selection</summary>
+      <description>
+        By default, hitting ctrl + alt + o syncs them ("&lt;Ctrl&gt;&lt;Alt&gt;P").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
+    <key name="sync-primary-to-clipboard" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;P'</default>
+      <summary>The keyboard shortcut to sync the primary selection to the clipboard</summary>
+      <description>
+        By default, hitting ctrl + alt + p syncs them ("&lt;Ctrl&gt;&lt;Alt&gt;P").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
+    <key name="synchronize-clipboards" type="b">
+      <default>false</default>
+      <summary>Are the primary selection and the clipboard synchronized?</summary>
+      <description>
+        By default, the primary selection and the clipboard are independent.
+      </description>
+    </key>
+
+    <key name="track-changes" type="b">
+      <default>true</default>
+      <summary>Do we track the clipboard changes?</summary>
+      <description>
+        By default, we're tracking those changes.
+      </description>
+    </key>
+
+    <key name="track-extension-state" type="b">
+      <default>false</default>
+      <summary>Do we sync the daemon state with the gnome-shell extension's one? (disable the daemon when disabling the extension)</summary>
+      <description>
+        By default, the daemon state keeps unchanged
+      </description>
+    </key>
+
+    <key name="trim-items" type="b">
+      <default>false</default>
+      <summary>Do we trim the textual items before adding them to history?</summary>
+      <description>
+        Trimming means removing all trailing and ending spaces.
+        By default, we're letting them as-is.
+      </description>
+    </key>
+
+    <key name="upload" type="s">
+      <default>'&lt;Ctrl&gt;&lt;Alt&gt;U'</default>
+      <summary>The keyboard shortcut to upload the first element in history to a pastebin service</summary>
+      <description>
+        By default, hitting ctrl + alt + u does that ("&lt;Ctrl&gt;&lt;Alt&gt;U").
+        An empty string here disables this functionnality.
+      </description>
+    </key>
+
+  </schema>
+</schemalist>
