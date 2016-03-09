@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<KeyListEntries schema="org.gnome.GPaste" group="system" name="Clipboard Manager" package="@GETTEXT_PACKAGE@">
+<KeyListEntries schema="org.gnome.GPaste" group="system" name="@GETTEXT_PACKAGE@" package="@GETTEXT_PACKAGE@">
 	<KeyListEntry name="launch-ui"                 description="Launch the graphical tool"></KeyListEntry>
 	<KeyListEntry name="make-password"             description="Mark the active item as being a password"></KeyListEntry>
 	<KeyListEntry name="pop"                       description="Delete the active item from history"></KeyListEntry>
