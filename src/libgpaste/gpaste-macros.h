@@ -98,6 +98,19 @@ G_BEGIN_DECLS
         fprintf (stderr, "%s: %s\n", _("Failed to register the gtk application"), error->message);  \
         return EXIT_FAILURE;                                                                        \
     }                                                                                               \
+    if (g_application_get_is_remote (gapp))                                                         \
+    {                                                                                               \
+        if (G_APPLICATION_GET_CLASS (gapp)->activate)                                               \
+        {                                                                                           \
+            g_application_activate (gapp);                                                          \
+            return g_application_run (gapp, argc, argv);                                            \
+        }                                                                                           \
+        else                                                                                        \
+        {                                                                                           \
+            fprintf (stderr, "GPaste " name " %s\n", _("is already running."));                     \
+            exit (EXIT_FAILURE);                                                                    \
+        }                                                                                           \
+    }                                                                                               \
     g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL)
 
 #define G_PASTE_INIT_APPLICATION(name) \
