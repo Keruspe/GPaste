@@ -2,7 +2,6 @@
     gpaste-ui:
         merge
     general:
-        apply some redesign ideas
         gpg support
 
 future:
