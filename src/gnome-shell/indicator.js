@@ -70,7 +70,6 @@ const GPasteIndicator = new Lang.Class({
         GPaste.Client.new(Lang.bind(this, function (obj, result) {
             this._client = GPaste.Client.new_finish(result);
 
-            this._dummyHistoryItem.update();
             this._uiItem = new UiItem.GPasteUiItem(this.menu);
             this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client);
             this._aboutItem = new AboutItem.GPasteAboutItem(this._client, this.menu);
@@ -143,14 +142,19 @@ const GPasteIndicator = new Lang.Class({
                 let results = this._searchResults.length;
                 let maxSize = this._history.length;
 
-                if (results > maxSize)
-                    results = maxSize;
+                if (results) {
+                    if (results > maxSize)
+                        results = maxSize;
 
-                for (let i = 0; i < results; ++i) {
-                    this._history[i].setIndex(this._searchResults[i]);
-                }
-                for (let i = results; i < maxSize; ++i) {
-                    this._history[i].setIndex(-1);
+                    for (let i = 0; i < results; ++i) {
+                        this._history[i].setIndex(this._searchResults[i]);
+                    }
+                    for (let i = results; i < maxSize; ++i) {
+                        this._history[i].setIndex(-1);
+                    }
+                    this._dummyHistoryItem.actor.hide();
+                } else {
+                  this._dummyHistoryItem.showNoResult();
                 }
             }));
         } else {
@@ -234,7 +238,7 @@ const GPasteIndicator = new Lang.Class({
 
     _updateVisibility: function(empty) {
         if (empty) {
-            this._dummyHistoryItem.actor.show();
+            this._dummyHistoryItem.showEmpty();
             this._emptyHistoryItem.actor.hide();
             this._searchItem.actor.hide();
         } else {

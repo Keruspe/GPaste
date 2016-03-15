@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-03-12 23:13+0100\n"
+"POT-Creation-Date: 2016-03-15 23:04+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -20,6 +20,10 @@ msgstr ""
 #: src/libgpaste/gpaste-macros.h:98
 msgid "Failed to register the gtk application"
 msgstr "Impossible d'inscrire l'application gtk au registre"
+
+#: src/libgpaste/gpaste-macros.h:110
+msgid "is already running."
+msgstr "tourne déjà."
 
 #: src/libgpaste/applet/gpaste-applet-about.c:68
 #: src/libgpaste/ui/gpaste-ui-about.c:41
@@ -224,9 +228,17 @@ msgstr "Vider"
 msgid "Do you really want to empty the history?"
 msgstr "Voulez-vous vraiment vider l'historique ?"
 
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:24
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:35
+msgid "(No result)"
+msgstr "(Aucun résultat)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
 msgstr "(Vide)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:60
+msgid "(Couldn't connect to GPaste daemon)"
+msgstr "(Impossible de se connecter au démon GPaste)"
 
 #: src/libgpaste/ui/gpaste-ui-new-item.c:29
 #: src/libgpaste/ui/gpaste-ui-new-item.c:79

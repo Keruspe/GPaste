@@ -450,6 +450,8 @@ LIBGPASTE_3_20_0 {
 global:
     g_paste_applet_new;
 
+    g_paste_ui_empty_item_show_empty;
+    g_paste_ui_empty_item_show_no_result;
     g_paste_ui_item_skeleton_set_uploadable;
     g_paste_ui_new_item_get_type;
     g_paste_ui_new_item_new;

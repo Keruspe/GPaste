@@ -21,7 +21,13 @@ const GPasteDummyHistoryItem = new Lang.Class({
         this.setSensitive(false);
     },
 
-    update: function() {
+    showEmpty: function() {
         this.label.text = _("(Empty)");
+        this.actor.show();
+    },
+
+    showNoResult: function() {
+        this.label.text = _("(No result)");
+        this.actor.show();
     }
 });
