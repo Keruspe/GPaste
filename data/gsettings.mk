@@ -22,10 +22,11 @@ SUFFIXES += .gschema.xml.in .gschema.xml
 	@ $(MKDIR_P) $(@D)
 	$(AM_V_GEN) $(SED) -e 's,[@]GETTEXT_PACKAGE[@],$(GETTEXT_PACKAGE),g' < $< > $@
 
-EXTRA_DIST +=                  \
-	$(gpaste_gschema_file) \
+EXTRA_DIST +=                               \
+	$(gpaste_gschema_file:.xml=.xml.in) \
 	$(NULL)
 
-CLEANFILES +=                \
-	$(gschemas_compiled) \
+CLEANFILES +=                  \
+	$(gpaste_gschema_file) \
+	$(gschemas_compiled)   \
 	$(NULL)
