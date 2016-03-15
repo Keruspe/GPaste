@@ -19,6 +19,9 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiEmptyItem, ui_empty_item, UI_EMPTY_ITEM, GPasteUiItemSkeleton)
 
+void g_paste_ui_empty_item_show_no_result (GPasteUiEmptyItem *self);
+void g_paste_ui_empty_item_show_empty     (GPasteUiEmptyItem *self);
+
 GtkWidget *g_paste_ui_empty_item_new (GPasteClient   *client,
                                       GPasteSettings *settings,
                                       GtkWindow      *rootwin);

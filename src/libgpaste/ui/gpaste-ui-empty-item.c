@@ -14,6 +14,43 @@ struct _GPasteUiEmptyItem
 G_PASTE_DEFINE_TYPE (UiEmptyItem, ui_empty_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
 
 static void
+g_paste_ui_empty_item_show_text (GPasteUiEmptyItem *self,
+                                 const gchar       *text)
+{
+    g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), text);
+    gtk_widget_show (GTK_WIDGET (self));
+}
+
+/**
+ * g_paste_ui_empty_show_no_result:
+ * @self: a #GPasteUiEmptyItem instance
+ *
+ * Show a no result message
+ */
+G_PASTE_VISIBLE void
+G_PASTE_VISIBLE void
+g_paste_ui_empty_item_show_no_result (GPasteUiEmptyItem *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_EMPTY_ITEM (self));
+
+    g_paste_ui_empty_item_show_text (self, _("(No result)"));
+}
+
+/**
+ * g_paste_ui_empty_show_empty:
+ * @self: a #GPasteUiEmptyItem instance
+ *
+ * Show an empty message
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_empty_item_show_empty (GPasteUiEmptyItem *self)
+{
+    g_return_if_fail (G_PASTE_IS_UI_EMPTY_ITEM (self));
+
+    g_paste_ui_empty_item_show_text (self, _("(Empty)"));
+}
+
+static void
 g_paste_ui_empty_item_class_init (GPasteUiEmptyItemClass *klass G_GNUC_UNUSED)
 {
 }
@@ -21,7 +58,7 @@ g_paste_ui_empty_item_class_init (GPasteUiEmptyItemClass *klass G_GNUC_UNUSED)
 static void
 g_paste_ui_empty_item_init (GPasteUiEmptyItem *self)
 {
-    g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), _("(Empty)"));
+    g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), _("(Couldn't connect to GPaste daemon)"));
 }
 
 /**

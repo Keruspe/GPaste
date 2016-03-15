@@ -25,22 +25,22 @@ enum
 
 typedef struct
 {
-    GPasteClient   *client;
-    GPasteSettings *settings;
-    GPasteUiPanel  *panel;
-    GtkWidget      *dummy_item;
+    GPasteClient      *client;
+    GPasteSettings    *settings;
+    GPasteUiPanel     *panel;
+    GPasteUiEmptyItem *dummy_item;
 
-    GtkWindow      *rootwin;
+    GtkWindow         *rootwin;
 
-    GSList         *items;
-    guint64         size;
-    gint32          item_height;
+    GSList            *items;
+    guint64            size;
+    gint32             item_height;
 
-    gchar          *search;
-    guint64        *search_results;
-    guint64         search_results_size;
+    gchar             *search;
+    guint64           *search_results;
+    guint64            search_results_size;
 
-    guint64         c_signals[C_LAST_SIGNAL];
+    guint64            c_signals[C_LAST_SIGNAL];
 } GPasteUiHistoryPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHistory, ui_history, GTK_TYPE_LIST_BOX)
@@ -133,9 +133,9 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     priv->size = MIN (new_size, max_size);
 
     if (priv->size)
-        gtk_widget_hide (priv->dummy_item);
+        gtk_widget_hide (GTK_WIDGET (priv->dummy_item));
     else
-        gtk_widget_show (priv->dummy_item);
+        g_paste_ui_empty_item_show_empty (priv->dummy_item);
 
     g_paste_ui_panel_update_history_length (priv->panel, name, new_size);
 
@@ -175,7 +175,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     if (!priv->item_height)
     {
-        gtk_widget_get_preferred_height ((priv->items) ? GTK_WIDGET (priv->items->data) : priv->dummy_item, NULL, &priv->item_height);
+        gtk_widget_get_preferred_height (GTK_WIDGET ((priv->items) ? priv->items->data : priv->dummy_item), NULL, &priv->item_height);
         g_paste_ui_history_update_height_request (priv->settings, NULL, self);
     }
 }
@@ -220,18 +220,24 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     GPasteUiHistory *self = user_data;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+    GSList *item = priv->items;
 
     priv->search_results = g_paste_client_search_finish (priv->client, res, &priv->search_results_size, NULL /* error */);
 
-    if (!priv->search_results)
+    if (priv->search_results)
+    {
+        if (priv->search_results_size > priv->size)
+            priv->search_results_size = priv->size;
+
+        for (guint64 i = 0; i < priv->search_results_size; ++i, item = g_slist_next (item))
+            g_paste_ui_item_set_index (item->data, priv->search_results[i]);
+    }
+    else
+    {
+        g_paste_ui_empty_item_show_no_result (priv->dummy_item);
         priv->search_results_size = 0;
-    else if (priv->search_results_size > priv->size)
-        priv->search_results_size = priv->size;
+    }
 
-    GSList *item = priv->items;
-
-    for (guint64 i = 0; i < priv->search_results_size; ++i, item = g_slist_next (item))
-        g_paste_ui_item_set_index (item->data, priv->search_results[i]);
     for (guint64 i = priv->search_results_size; i < priv->size; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, -1);
 }
@@ -375,14 +381,15 @@ g_paste_ui_history_new (GPasteClient   *client,
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY, NULL);
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (self));
+    GtkWidget *dummy_item = g_paste_ui_empty_item_new (client, settings, rootwin);
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
-    priv->dummy_item = g_paste_ui_empty_item_new (client, settings, rootwin);
+    priv->dummy_item = G_PASTE_UI_EMPTY_ITEM (dummy_item);
     priv->panel = panel;
     priv->rootwin = rootwin;
 
-    gtk_container_add (GTK_CONTAINER (self), priv->dummy_item);
+    gtk_container_add (GTK_CONTAINER (self), dummy_item);
 
     priv->c_signals[C_SIZE] = g_signal_connect (settings,
                                                 "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
