@@ -28,7 +28,6 @@ g_paste_ui_empty_item_show_text (GPasteUiEmptyItem *self,
  * Show a no result message
  */
 G_PASTE_VISIBLE void
-G_PASTE_VISIBLE void
 g_paste_ui_empty_item_show_no_result (GPasteUiEmptyItem *self)
 {
     g_return_if_fail (G_PASTE_IS_UI_EMPTY_ITEM (self));
