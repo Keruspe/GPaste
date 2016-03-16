@@ -149,12 +149,14 @@ const GPasteIndicator = new Lang.Class({
                     for (let i = 0; i < results; ++i) {
                         this._history[i].setIndex(this._searchResults[i]);
                     }
-                    for (let i = results; i < maxSize; ++i) {
-                        this._history[i].setIndex(-1);
-                    }
+
                     this._dummyHistoryItem.actor.hide();
                 } else {
                   this._dummyHistoryItem.showNoResult();
+                }
+
+                for (let i = results; i < maxSize; ++i) {
+                    this._history[i].setIndex(-1);
                 }
             }));
         } else {
