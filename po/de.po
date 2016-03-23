@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-03-15 23:00+0100\n"
+"POT-Creation-Date: 2016-03-23 20:33+0100\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -251,15 +251,15 @@ msgstr "(Leer)"
 msgid "Do you really want to empty the history?"
 msgstr ""
 
-#: ../src/libgpaste/ui/gpaste-ui-empty-item.c:36
+#: ../src/libgpaste/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
 msgstr ""
 
-#: ../src/libgpaste/ui/gpaste-ui-empty-item.c:50
+#: ../src/libgpaste/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
 msgstr "(Leer)"
 
-#: ../src/libgpaste/ui/gpaste-ui-empty-item.c:61
+#: ../src/libgpaste/ui/gpaste-ui-empty-item.c:60
 #, fuzzy
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
