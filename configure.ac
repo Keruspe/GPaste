@@ -9,7 +9,7 @@ m4_define([gpaste_version],      [3.21])
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-m4_define([gpaste_lt_version],   [4:0:0])
+m4_define([gpaste_lt_version],   [6:0:0])
 
 # Build system requirements
 m4_define([autoconf_required],   [2.69])
@@ -25,13 +25,12 @@ m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
 m4_define([gtk_major_required],  [3])
 m4_define([gtk_minor_required],  [20])
 m4_define([gtk_api_required],    [G_ENCODE_VERSION(gtk_major_required, gtk_minor_required)])
-# m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
-m4_define([gtk_required],        [gtk_major_required.19.11])
+m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
 
 # Other dependencies
 m4_define([gdk_pixbuf_required], [2.26.0])
-m4_define([gir_required],        [1.42.0])
-m4_define([vala_required],       [0.30])
+m4_define([gir_required],        [1.48.0])
+m4_define([vala_required],       [0.32])
 
 AC_PREREQ(autoconf_required)
 AC_INIT([GPaste], [gpaste_version], [Marc-Antoine@Perennou.com], [gpaste])
@@ -42,10 +41,10 @@ AC_SUBST([PACKAGE_VERSION])
 LIBGPASTE_LT_VERSION="gpaste_lt_version"
 AC_SUBST([LIBGPASTE_LT_VERSION])
 
-AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [glib_api_required], [The lower GLib API version supported])
-AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED],  [glib_api_required], [The higher GLib API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED],  [gtk_api_required],  [The lower Gdk API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],   [gtk_api_required],  [The higher Gdk API version supported])
+AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [glib_api_required], [The lowest GLib API version supported])
+AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED],  [glib_api_required], [The highest GLib API version supported])
+AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED],  [gtk_api_required],  [The lowest Gdk API version supported])
+AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],   [gtk_api_required],  [The highest Gdk API version supported])
 
 AC_DEFINE([G_PASTE_DEFAULT_HISTORY], ["history"],                                 [The default hsitory name])
 AC_DEFINE([G_PASTE_EXTENSION_NAME],  ["GPaste@gnome-shell-extensions.gnome.org"], [The name of the GPaste extension])

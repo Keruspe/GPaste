@@ -1,6 +1,32 @@
 NEW in 3.21 (Not released yet)
 =============
 
+NEW in 3.20 (23/03/2016)
+=============
+
+- Relicensing from GPL-3 to BSD-2
+- Detect the presence of more features at runtime instead of compile time
+- The gpaste-client cli has been mostly rewritten
+- "gpaste-client file" now supports adding images to the history
+- The legacy "gpaste" cli is gone
+- gnome-shell extension cleanups and compatibility with 3.20
+- automake 1.15 is required
+- pkg-config 0.27 is required
+- gtk+ 3.20, vala 0.32 (if --enable-vapi) and gobject-introspection 1.48 are required
+- gpaste-ui now has a "new" button to add new contents to the clipboard
+- The daemon now reexecs itself on SIGUSR1
+- Avoid having two passwords under the same name in history
+- libgpaste now logs into its own G_LOG_DOMAIN
+- GPaste components now write their pid to a file
+- A new tool is provided for debugging, but not installed: clipboard-watcher
+- systemd user units are provided
+- Build system cleanups
+- Outdated translations have been dropped
+- gobject-introspection fixes
+- Fix style with gtk+ 3.20
+- Implement the new shotcut window from gtk+
+- Various code cleanups
+
 NEW in 3.18.3 (15/01/2016)
 =============
 
@@ -31,7 +57,7 @@ NEW in 3.18.1 (23/09/2015)
 NEW in 3.18 (21/09/2015)
 =============
 
-- Warning, this is a big release, with changes in API, yoi might have to kill your old daemon after upgrading
+- Warning, this is a big release, with changes in API, you might have to kill your old daemon after upgrading
 - The "gpaste" cli is now "gpaste-client". old name can still be enabled with --enable-cli for now
 - The "gpaste settings" tool is gone, use the "burger" menu from "gpaste-client ui"
 - The graphical tool now allows you to fully manage your histories
