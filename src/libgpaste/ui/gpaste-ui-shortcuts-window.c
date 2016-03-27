@@ -11,12 +11,7 @@ struct _GPasteUiShortcutsWindow
     GtkShortcutsWindow parent_instance;
 };
 
-typedef struct
-{
-    gboolean         initialized;
-} GPasteUiShortcutsWindowPrivate;
-
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiShortcutsWindow, ui_shortcuts_window, GTK_TYPE_SHORTCUTS_WINDOW)
+G_PASTE_DEFINE_TYPE (UiShortcutsWindow, ui_shortcuts_window, GTK_TYPE_SHORTCUTS_WINDOW)
 
 static void
 g_paste_ui_shortcuts_window_class_init (GPasteUiShortcutsWindowClass *klass G_GNUC_UNUSED)
@@ -60,7 +55,6 @@ g_paste_ui_shortcuts_window_new (const GPasteSettings *settings)
                                       "modal",           TRUE,
                                       "resizable",       FALSE,
                                       NULL);
-    //GPasteUiShortcutsWindowPrivate *priv = g_paste_ui_shortcuts_window_get_instance_private (self);
     GtkWidget *section = gtk_widget_new (GTK_TYPE_SHORTCUTS_SECTION,
                                          "section-name", "shortcuts",
                                          "visible",      TRUE,
