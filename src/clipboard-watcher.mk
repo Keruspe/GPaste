@@ -17,4 +17,6 @@ bin_clipboard_watcher_CFLAGS = \
 
 bin_clipboard_watcher_LDADD =            \
 	$(builddir)/$(libgpaste_la_file) \
+	$(GLIB_LIBS)                     \
+	$(GTK_LIBS)                      \
 	$(NULL)
