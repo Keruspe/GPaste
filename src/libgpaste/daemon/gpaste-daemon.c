@@ -659,10 +659,14 @@ g_paste_daemon_private_rename_password (const GPasteDaemonPrivate *priv,
 
 static GVariant *
 g_paste_daemon_private_search (const GPasteDaemonPrivate *priv,
-                               GVariant                  *parameters)
+                               GVariant                  *parameters,
+                               GPasteDBusError          **err)
 {
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     g_autoptr (GArray) results = g_paste_history_search (priv->history, name);
+
+    G_PASTE_DBUS_ASSERT_FULL (results, "Error while performing search", NULL);
+
     GVariant *variant = g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, results->data, results->len, sizeof (guint64));
 
     return g_variant_new_tuple (&variant, 1);
@@ -883,7 +887,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_REPLACE))
         g_paste_daemon_private_replace (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SEARCH))
-        answer = g_paste_daemon_private_search (priv, parameters);
+        answer = g_paste_daemon_private_search (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SELECT))
         g_paste_daemon_private_select (priv, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SET_PASSWORD))
