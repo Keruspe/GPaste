@@ -19,11 +19,12 @@ function init(extension) {
     Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
 }
 
-function enable() {
-    Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
-}
-
 function disable() {
     Main.panel.statusArea.gpaste.shutdown();
 }
 
+function enable() {
+    if (Main.panel.statusArea.gpaste)
+        disable();
+    Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
+}

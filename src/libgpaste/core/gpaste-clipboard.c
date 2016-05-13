@@ -275,10 +275,8 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GtkClipboard *real = priv->real;
 
-    /* Avoid cycling twice */
+    /* Avoid cycling twice as gtk_clipboard_set_text will make the clipboards manager react */
     g_paste_clipboard_private_set_text (priv, text);
-
-    /* Let the clipboards manager handle our internal text */
     gtk_clipboard_set_text (real, text, -1);
     gtk_clipboard_store (real);
 }
