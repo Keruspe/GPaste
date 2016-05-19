@@ -64,7 +64,7 @@ const GPasteItem = new Lang.Class({
     },
 
     setIndex: function(index) {
-        let oldIndex = this._index || -1;
+        const oldIndex = this._index || -1;
         this._index = index;
 
         if (index == 0) {
@@ -77,7 +77,7 @@ const GPasteItem = new Lang.Class({
 
         if (index != -1) {
             this._client.get_element(index, Lang.bind(this, function(client, result) {
-                let text = client.get_element_finish(result).replace(/[\t\n\r]/g, ' ');
+                const text = client.get_element_finish(result).replace(/[\t\n\r]/g, ' ');
                 if (text == this.label.get_text()) {
                     return;
                 }
@@ -101,7 +101,7 @@ const GPasteItem = new Lang.Class({
     },
 
     _onKeyPressed: function(actor, event) {
-        let symbol = event.get_key_symbol();
+        const symbol = event.get_key_symbol();
         if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
             this._client.delete(this._index, null);
             return Clutter.EVENT_STOP;

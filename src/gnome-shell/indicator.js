@@ -107,7 +107,7 @@ const GPasteIndicator = new Lang.Class({
 
     _onKeyPressEvent: function(actor, event) {
         if (event.has_control_modifier()) {
-            let nb = parseInt(event.get_key_unicode());
+            const nb = parseInt(event.get_key_unicode());
             if (nb != NaN && nb >= 0 && nb <= 9 && nb < this._history.length) {
                 this._history[nb].activate();
             }
@@ -121,43 +121,43 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _maybeUpdateIndexVisibility: function(event, state) {
-        let key = event.get_key_symbol();
+        const key = event.get_key_symbol();
         if (key == Clutter.KEY_Control_L || key == Clutter.KEY_Control_R) {
             this._updateIndexVisibility(state);
         }
     },
 
     _updateIndexVisibility: function(state) {
-        for (let i = 0; i < 10 && i < this._history.length; ++i) {
-            this._history[i].showIndex(state);
-        }
+        this._history.slice(0, 10).forEach(function(i) {
+            i.showIndex(state);
+        });
     },
 
     _onSearch: function() {
-        let search = this._searchItem.text.toLowerCase();
+        const search = this._searchItem.text.toLowerCase();
 
         if (search.length > 0) {
             this._client.search(search, Lang.bind(this, function(client, result) {
                 this._searchResults = client.search_finish(result);
-                let results = this._searchResults.length;
-                let maxSize = this._history.length;
+                const results = this._searchResults.length;
+                const maxSize = this._history.length;
 
                 if (results) {
                     if (results > maxSize)
                         results = maxSize;
 
-                    for (let i = 0; i < results; ++i) {
-                        this._history[i].setIndex(this._searchResults[i]);
-                    }
+                    this._history.slice(0, results).forEach(function(i, index) {
+                        i.setIndex(this._searchResults[index]);
+                    });
 
                     this._dummyHistoryItem.actor.hide();
                 } else {
                   this._dummyHistoryItem.showNoResult();
                 }
 
-                for (let i = results; i < maxSize; ++i) {
-                    this._history[i].setIndex(-1);
-                }
+                this._history.slice(results, maxSize).forEach(function(i) {
+                    i.setIndex(-1);
+                });
             }));
         } else {
             this._searchResults = [];
@@ -166,17 +166,17 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _resetElementSize: function() {
-        let size = this._settings.get_element_size();
+        const size = this._settings.get_element_size();
         this._searchItem.resetSize(size/2 + 3);
-        this._history.map(function(i) {
+        this._history.forEach(function(i) {
             i.setTextSize(size);
         });
     },
 
     _resetMaxDisplayedSize: function() {
-        let oldSize = this._history.length;
-        let newSize = this._settings.get_max_displayed_history_size();
-        let elementSize = this._settings.get_element_size();
+        const oldSize = this._history.length;
+        const newSize = this._settings.get_max_displayed_history_size();
+        const elementSize = this._settings.get_element_size();
 
         if (newSize > oldSize) {
             for (let index = oldSize; index < newSize; ++index) {

@@ -24,7 +24,7 @@ const GPasteEmptyHistoryItem = new Lang.Class({
 
         this.actor.connect('clicked', function() {
             client.get_history_name(Lang.bind(this, function(client, result) {
-                let name = client.get_history_name_finish(result);
+                const name = client.get_history_name_finish(result);
 
                 client.empty_history(name, null);
             }));

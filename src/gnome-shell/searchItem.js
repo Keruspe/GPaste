@@ -9,7 +9,6 @@ const Lang = imports.lang;
 
 const PopupMenu = imports.ui.popupMenu;
 
-const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 
 const GPasteSearchItem = new Lang.Class({
@@ -66,7 +65,7 @@ const GPasteSearchItem = new Lang.Class({
     },
 
     _onTextChanged: function(se, prop) {
-        let dummy = (this.text.length == 0);
+        const dummy = (this.text.length == 0);
         this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
         if (!dummy && this._iconClickedId == 0) {
             this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this.reset));

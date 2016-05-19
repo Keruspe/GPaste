@@ -15,7 +15,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const Indicator = Me.imports.indicator;
 
 function init(extension) {
-    let metadata = extension.metadata;
+    const metadata = extension.metadata;
     Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
 }
 
