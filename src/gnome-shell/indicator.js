@@ -146,9 +146,9 @@ const GPasteIndicator = new Lang.Class({
                     if (results > maxSize)
                         results = maxSize;
 
-                    this._history.slice(0, results).forEach(function(i, index) {
+                    this._history.slice(0, results).forEach(Lang.bind(this, function(i, index) {
                         i.setIndex(this._searchResults[index]);
-                    });
+                    }));
 
                     this._dummyHistoryItem.actor.hide();
                 } else {
