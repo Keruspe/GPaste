@@ -295,6 +295,8 @@ g_paste_clipboard_private_store_timeout (gpointer user_data)
     /* If we were waiting, perform the store now */
     if (waiting)
         g_paste_clipboard_private_store (priv);
+
+    return G_SOURCE_REMOVE;
 }
 
 static void
