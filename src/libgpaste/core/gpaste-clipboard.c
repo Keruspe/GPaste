@@ -184,6 +184,8 @@ g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
     g_free (priv->text);
     g_free (priv->image_checksum);
 
+    g_debug("%s: set text", gdk_atom_name (priv->target));
+
     priv->text = g_strdup (text);
     priv->image_checksum = NULL;
 }
@@ -288,6 +290,8 @@ g_paste_clipboard_private_store_timeout (gpointer user_data)
 static void
 g_paste_clipboard_private_store (GPasteClipboardPrivate *priv)
 {
+    g_debug("%s: store", gdk_atom_name (priv->target));
+
     switch (priv->state)
     {
     case CLIP_STATE_IDLE:
@@ -322,6 +326,8 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    g_debug("%s: select text", gdk_atom_name (priv->target));
 
     /* Avoid cycling twice as gtk_clipboard_set_text will make the clipboards manager react */
     g_paste_clipboard_private_set_text (priv, text);
@@ -391,6 +397,8 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
     GtkClipboard *real = priv->real;
     g_autoptr (GtkTargetList) target_list = gtk_target_list_new (NULL, 0);
 
+    g_debug("%s: select uris", gdk_atom_name (priv->target));
+
     g_paste_clipboard_private_set_text (priv, g_paste_item_get_real_value (_G_PASTE_ITEM (item)));
 
     gtk_target_list_add_text_targets (target_list, 0);
@@ -422,6 +430,8 @@ g_paste_clipboard_clear (GPasteClipboard *self)
     g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    g_debug("%s: clear", gdk_atom_name (priv->target));
 
     g_clear_pointer (&priv->text, g_free);
     g_clear_pointer (&priv->image_checksum, g_free);
@@ -466,6 +476,8 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
     g_return_if_fail (GDK_IS_PIXBUF (image));
 
     GtkClipboard *real = priv->real;
+
+    g_debug("%s: select image", gdk_atom_name (priv->target));
 
     g_paste_clipboard_private_set_image_checksum (priv, checksum);
     gtk_clipboard_set_image (real, image);
@@ -556,6 +568,8 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
+    g_debug("%s: select item", gdk_atom_name (priv->target));
+
     if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
         const GPasteImageItem *image_item = _G_PASTE_IMAGE_ITEM (item);
@@ -610,6 +624,9 @@ g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
                                 gpointer             user_data)
 {
     GPasteClipboard *self = user_data;
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    g_debug("%s: owner change", gdk_atom_name (priv->target));
 
     g_signal_emit (self,
 		   signals[OWNER_CHANGE],

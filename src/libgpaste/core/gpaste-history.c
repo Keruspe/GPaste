@@ -54,6 +54,8 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 static void
 g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
 {
+    g_debug ("history: elect biggest");
+
     priv->biggest_index = 0;
     priv->biggest_size = 0;
 
@@ -107,6 +109,8 @@ static void
 g_paste_history_selected (GPasteHistory *self,
                           GPasteItem    *item)
 {
+    g_debug ("history: selected");
+
     g_signal_emit (self,
                    signals[SELECTED],
                    0, /* detail */
@@ -118,6 +122,8 @@ static void
 g_paste_history_emit_switch (GPasteHistory *self,
                              const gchar   *name)
 {
+    g_debug ("history: switch");
+
     g_signal_emit (self,
                    signals[SWITCH],
                    0, /* detail */
@@ -132,6 +138,8 @@ g_paste_history_update (GPasteHistory     *self,
                         guint64            position)
 {
     g_paste_history_save (self, NULL);
+
+    g_debug ("history: update");
 
     g_signal_emit (self,
                    signals[UPDATE],
@@ -239,6 +247,8 @@ g_paste_history_add (GPasteHistory *self,
     gboolean election_needed = FALSE;
     GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_ALL;
 
+    g_debug ("history: add");
+
     if (history)
     {
         GPasteItem *old_first = history->data;
@@ -312,6 +322,8 @@ g_paste_history_remove (GPasteHistory *self,
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GList *history = priv->history;
+
+    g_debug ("history: remove '%" G_GUINT64_FORMAT "'", pos);
 
     g_return_if_fail (pos < g_list_length (history));
 
@@ -440,6 +452,8 @@ g_paste_history_select (GPasteHistory *self,
 
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     GList *history = priv->history;
+
+    g_debug ("history: select '%" G_GUINT64_FORMAT "'", index);
 
     g_return_if_fail (index < g_list_length (history));
 
@@ -1154,6 +1168,8 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 {
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
+    g_debug ("history: name cahnged to '%s'", priv->name);
+
     g_paste_history_load (self, NULL);
     g_paste_history_emit_switch (self, priv->name);
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
@@ -1167,6 +1183,7 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
     GPasteHistory *self = user_data;
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
+    /* FIXME: track text item size settings */
     if (g_paste_str_equal(key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         g_paste_history_private_check_size (priv);
     else if (g_paste_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
@@ -1349,6 +1366,8 @@ g_paste_history_search (const GPasteHistory *self,
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
+
+    g_debug ("history: search '%s'", pattern);
 
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     g_autoptr (GError) error = NULL;

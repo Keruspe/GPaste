@@ -27,6 +27,14 @@ NEW in 3.20 (23/03/2016)
 - Implement the new shotcut window from gtk+
 - Various code cleanups
 
+NEW in 3.18.4 (22/05/2016)
+=============
+
+- fix crash when a search goes wrong
+- fix hanging issue due to gtk+ race (?) in gtk_clipboard_store
+- fix the gnome-shell menu sometimes displaying twice
+- add debug logs to the core library
+
 NEW in 3.18.3 (15/01/2016)
 =============
 
