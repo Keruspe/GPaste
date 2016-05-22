@@ -254,6 +254,8 @@ g_paste_item_set_state (GPasteItem     *self,
 {
     g_return_if_fail (G_PASTE_IS_ITEM (self));
 
+    g_debug ("item: set state: %d", state);
+
     G_PASTE_ITEM_GET_CLASS (self)->set_state (self, state);
 }
 

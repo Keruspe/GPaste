@@ -97,6 +97,8 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
     GtkClipboard *_from = NULL, *_to = NULL;
 
+    g_debug ("clipboards-manager: sync from %s to %s", gdk_atom_name (from), gdk_atom_name (to));
+
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         _Clipboard *_clip = clipboard->data;
@@ -125,6 +127,8 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
                                           gboolean                        something_in_clipboard)
 {
     GPasteHistory *history = priv->history;
+
+    g_debug ("clipboards-manager: notify finish");
 
     if (item)
         g_paste_history_add (history, item);
@@ -167,6 +171,8 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
     GPasteItem *item = NULL;
     const gchar *synchronized_text = NULL;
 
+    g_debug ("clipboards-manager: text ready");
+
     /* Did we already have some contents, or did we get some now? */
     gboolean something_in_clipboard = !!g_paste_clipboard_get_text (clipboard);
 
@@ -197,6 +203,8 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
     GPasteClipboardsManagerPrivate *priv = data->priv;
     GPasteItem *item = NULL;
 
+    g_debug ("clipboards-manager: image ready");
+
     /* Did we already have some contents, or did we get some now? */
     gboolean something_in_clipboard = !!g_paste_clipboard_get_image_checksum (clipboard);
 
@@ -213,6 +221,8 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
                                           gpointer          user_data)
 {
     g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
+
+    g_debug ("clipboards-manager: targets ready");
 
     if (gtk_selection_data_get_length (targets) >= 0)
     {
@@ -237,6 +247,8 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
     }
     else
     {
+        g_debug ("clipboards-manager: no target ready");
+
         g_paste_clipboard_clear (data->clip);
         g_paste_clipboard_ensure_not_empty (data->clip, data->priv->history);
     }
@@ -248,6 +260,8 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
                                    gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
+
+    g_debug ("clipboards-manager: notify");
 
     GPasteSettings *settings = priv->settings;
     GdkAtom atom = g_paste_clipboard_get_target (clipboard);
@@ -309,6 +323,8 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_ITEM (item));
 
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
+
+    g_debug ("clipboards-manager: select");
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
