@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-01-15 13:26+0100\n"
+"POT-Creation-Date: 2016-05-22 22:28+0200\n"
 "PO-Revision-Date: 2012-08-28 20:52+0200\n"
 "Last-Translator: Jesse Jaara <jesse.jaara@gmail.com>\n"
 "Language-Team: \n"
@@ -41,7 +41,7 @@ msgstr "Lopeta"
 msgid "launch the graphical tool"
 msgstr "käynnistää asetusten hallinan"
 
-#: ../src/libgpaste/core/gpaste-history.c:759
+#: ../src/libgpaste/core/gpaste-history.c:773
 msgid "Could not create history dir"
 msgstr "Historiakansion luominen epäonnistui"
 

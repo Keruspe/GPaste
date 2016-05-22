@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-01-15 13:26+0100\n"
+"POT-Creation-Date: 2016-05-22 22:28+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -43,7 +43,7 @@ msgstr "Beenden"
 msgid "launch the graphical tool"
 msgstr "Konfigurationswerkzeug starten"
 
-#: ../src/libgpaste/core/gpaste-history.c:759
+#: ../src/libgpaste/core/gpaste-history.c:773
 msgid "Could not create history dir"
 msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
