@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-03-23 20:33+0100\n"
+"POT-Creation-Date: 2016-05-23 13:57+0200\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -40,7 +40,7 @@ msgstr "Sair"
 msgid "launch the graphical tool"
 msgstr "inicia a ferramenta gráfica"
 
-#: ../src/libgpaste/core/gpaste-history.c:722
+#: ../src/libgpaste/core/gpaste-history.c:736
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
@@ -133,49 +133,49 @@ msgid "Min text item length"
 msgstr "Tamanho mínimo do item de texto:"
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:256
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
 #: ../data/control-center/42-gpaste.xml.in.in.h:3
 #, fuzzy
 msgid "Delete the active item from history"
 msgstr "Apagar o item ativo do histórico: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:263
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:79
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
 #: ../data/control-center/42-gpaste.xml.in.in.h:1
 #, fuzzy
 msgid "Launch the graphical tool"
 msgstr "Iniciar a ferramenta gráfica: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:270
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:80
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
 #: ../data/control-center/42-gpaste.xml.in.in.h:2
 #, fuzzy
 msgid "Mark the active item as being a password"
 msgstr "Marcar o item ativo como sendo uma senha: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:277
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:81
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
 #: ../data/control-center/42-gpaste.xml.in.in.h:4
 #, fuzzy
 msgid "Display the history"
 msgstr "Mostrar histórico: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:284
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:82
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
 #: ../data/control-center/42-gpaste.xml.in.in.h:5
 #, fuzzy
 msgid "Sync the clipboard to the primary selection"
 msgstr "Sincronizar a área de transferência com a seleção primária: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:291
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:83
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
 #: ../data/control-center/42-gpaste.xml.in.in.h:6
 #, fuzzy
 msgid "Sync the primary selection to the clipboard"
 msgstr "Sincronizar a seleção primária com a área de transferência: "
 
 #: ../src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:298
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:84
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
 #: ../data/control-center/42-gpaste.xml.in.in.h:7
 #, fuzzy
 msgid "Upload the active item to a pastebin service"
@@ -285,7 +285,7 @@ msgstr "Pesquisar"
 msgid "GPaste Settings"
 msgstr "Configurações do GPaste"
 
-#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:70
+#: ../src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
 msgstr ""
 
