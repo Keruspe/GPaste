@@ -3,6 +3,7 @@
         merge
     general:
         gpg support
+        unhardcode edit-paste
 
 future:
     general:
