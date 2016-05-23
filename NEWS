@@ -1,6 +1,15 @@
 NEW in 3.21 (Not released yet)
 =============
 
+NEW in 3.20.1 (23/05/2016)
+=============
+
+- fix crash when a search goes wrong
+- fix hanging issue due to gtk+ race (?) in gtk_clipboard_store
+- fix the gnome-shell menu sometimes displaying twice
+- add debug logs to the core library
+- fix some build issues with some toolchains
+
 NEW in 3.20 (23/03/2016)
 =============
 
