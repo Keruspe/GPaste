@@ -24,6 +24,7 @@ const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
 const Item = Me.imports.item;
+const PageItem = Me.imports.pageItem;
 const SearchItem = Me.imports.searchItem;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
@@ -41,6 +42,8 @@ const GPasteIndicator = new Lang.Class({
 
         this._settings = new GPaste.Settings();
 
+        this._page = 1;
+
         this._headerSize = 0;
         this._postHeaderSize = 0;
         this._history = [];
@@ -52,11 +55,26 @@ const GPasteIndicator = new Lang.Class({
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
         this._searchItem = new SearchItem.GPasteSearchItem();
-        this._searchItem.connect('text-changed', Lang.bind(this, this._onSearch));
+        this._searchItem.connect('text-changed', Lang.bind(this, this._onNewSearch));
 
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetElementSize));
         this._resetElementSize();
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
+
+        this._pageSwitches = [];
+        this._pageSwitcher = new PopupMenu.PopupBaseMenuItem({
+            reactive: false,
+            can_focus: false
+        });
+
+        for (let i = 0; i < 5; ++i) {
+            let sw = new PageItem.GPastePageItem(-1);
+            this._pageSwitches[i] = sw;
+            this._pageSwitcher.actor.add(sw.actor, { expand: true, x_fill: false });
+            sw.actor.connect('clicked', Lang.bind(this, function() {
+                this._updatePage(sw._page);
+            }));
+        }
 
         this._actions = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
@@ -64,6 +82,7 @@ const GPasteIndicator = new Lang.Class({
         });
 
         this._addToPostHeader(this._dummyHistoryItem);
+        this._addToPreFooter(this._pageSwitcher);
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
         this._addToFooter(this._actions);
 
@@ -133,21 +152,28 @@ const GPasteIndicator = new Lang.Class({
         });
     },
 
-    _onSearch: function() {
+    _onSearch: function(page) {
         const search = this._searchItem.text.toLowerCase();
 
         if (search.length > 0) {
+            this._page = page;
+            const offset = this._getPageOffset();
+            log('search: ' + page + ' ' + offset);
+
             this._client.search(search, Lang.bind(this, function(client, result) {
                 this._searchResults = client.search_finish(result);
-                const results = this._searchResults.length;
+                let results = this._searchResults.length;
                 const maxSize = this._history.length;
 
                 if (results) {
-                    if (results > maxSize)
-                        results = maxSize;
+                    log('results before ' + results);
+                    if (results > (maxSize + offset))
+                        results = (maxSize + offset);
+                    log('results ' + results);
 
-                    this._history.slice(0, results).forEach(Lang.bind(this, function(i, index) {
-                        i.setIndex(this._searchResults[index]);
+                    this._history.slice(0, results - offset).forEach(Lang.bind(this, function(i, index) {
+                        log('item ' + index);
+                        i.setIndex(this._searchResults[offset + index]);
                     }));
 
                     this._dummyHistoryItem.actor.hide();
@@ -165,6 +191,10 @@ const GPasteIndicator = new Lang.Class({
         }
     },
 
+    _onNewSearch: function() {
+        this._onSearch(1);
+    },
+
     _resetElementSize: function() {
         const size = this._settings.get_element_size();
         this._searchItem.resetSize(size/2 + 3);
@@ -173,24 +203,34 @@ const GPasteIndicator = new Lang.Class({
         });
     },
 
+    _getPageOffset: function() {
+        return (this._page - 1) * this._history.length;
+    },
+
+    _updatePage: function(page) {
+        this._page = page;
+        this._refresh(0);
+    },
+
     _resetMaxDisplayedSize: function() {
         const oldSize = this._history.length;
         const newSize = this._settings.get_max_displayed_history_size();
         const elementSize = this._settings.get_element_size();
 
         if (newSize > oldSize) {
+            const offset = this._getPageOffset();
             for (let index = oldSize; index < newSize; ++index) {
-                let item = new Item.GPasteItem(this._client, elementSize, index);
+                let item = new Item.GPasteItem(this._client, elementSize, index + offset);
                 this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
                 this._history[index] = item;
             }
+            this._updatePage((offset / oldSize) + 1);
         } else {
             for (let i = newSize; i < oldSize; ++i) {
                 this._history.pop().destroy();
             }
+            this._updatePage((offset / oldSize) + 1);
         }
-
-        this._refresh(oldSize);
     },
 
     _update: function(client, action, target, position) {
@@ -199,12 +239,14 @@ const GPasteIndicator = new Lang.Class({
             this._refresh(0);
             break;
         case GPaste.UpdateTarget.POSITION:
+            const offset = this._getPageOffset();
+            const displayPos = position - offset;
             switch (action) {
             case GPaste.UpdateAction.REPLACE:
-                this._history[position].refresh();
+                this._history[displayPos].refresh();
                 break;
             case GPaste.UpdateAction.REMOVE:
-                this._refresh(position);
+                this._refresh(displayPos);
                 break;
             }
             break;
@@ -213,20 +255,33 @@ const GPasteIndicator = new Lang.Class({
 
     _refresh: function(resetTextFrom) {
         if (this._searchResults.length > 0) {
-            this._onSearch();
+            this._onSearch(this._page);
         } else {
             this._client.get_history_name(Lang.bind(this, function(client, result) {
-                let name = client.get_history_name_finish(result);
+                const name = client.get_history_name_finish(result);
 
                 this._client.get_history_size(name, Lang.bind(this, function(client, result) {
                     let size = client.get_history_size_finish(result);
-                    let maxSize = this._history.length;
+                    const maxSize = this._history.length;
+                    const offset = this._getPageOffset();
+
+                    for (let i = 0; i < (size / maxSize) && i < 5; ++i) {
+                        this._pageSwitches[i].setPage(i + 1);
+                    }
+                    for (let i = (size / maxSize); i < 5; ++i) {
+                        this._pageSwitches[i].setPage(-1);
+                    }
+
+                    if (size < offset) {
+                        this._updatePage((size / offset) + 1)
+                        return;
+                    }
 
                     if (size > maxSize)
                         size = maxSize;
 
                     for (let i = resetTextFrom; i < size; ++i) {
-                        this._history[i].setIndex(i);
+                        this._history[i].setIndex(offset + i);
                     }
                     for (let i = size ; i < maxSize; ++i) {
                         this._history[i].setIndex(-1);
@@ -288,6 +343,7 @@ const GPasteIndicator = new Lang.Class({
     _onOpenStateChanged: function(menu, state) {
         if (state) {
             this._searchItem.reset();
+            this._updatePage(1);
         } else {
             this._updateIndexVisibility(false);
         }

@@ -15,6 +15,7 @@ gnomeshell_extension_files =                \
 	%D%/gnome-shell/extension.js        \
 	%D%/gnome-shell/indicator.js        \
 	%D%/gnome-shell/item.js             \
+	%D%/gnome-shell/pageItem.js         \
 	%D%/gnome-shell/prefs.js            \
 	%D%/gnome-shell/searchItem.js       \
 	%D%/gnome-shell/stateSwitch.js      \
