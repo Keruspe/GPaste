@@ -1,11 +1,16 @@
+NEW in 3.20.2 (24/05/2016)
+=============
+
+- Add missing icon
+
 NEW in 3.20.1 (23/05/2016)
 =============
 
-- fix crash when a search goes wrong
-- fix hanging issue due to gtk+ race (?) in gtk_clipboard_store
-- fix the gnome-shell menu sometimes displaying twice
-- add debug logs to the core library
-- fix some build issues with some toolchains
+- Fix crash when a search goes wrong
+- Fix hanging issue due to gtk+ race (?) in gtk_clipboard_store
+- Fix the gnome-shell menu sometimes displaying twice
+- Add debug logs to the core library
+- Fix some build issues with some toolchains
 
 NEW in 3.20 (23/03/2016)
 =============
