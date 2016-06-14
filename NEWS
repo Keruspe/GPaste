@@ -1,6 +1,11 @@
 NEW in 3.21 (Not released yet)
 =============
 
+NEW in 3.20.3 (14/06/2016)
+=============
+
+- Fix soname versioning
+
 NEW in 3.20.2 (24/05/2016)
 =============
 
