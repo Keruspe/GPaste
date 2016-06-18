@@ -23,5 +23,4 @@
 /po/remove-potcdate.sed
 /po/remove-potcdate.sin
 /src/gnome-shell/metadata.json
-/src/gpaste-settings/*.c
 /test-suite.log
