@@ -1,6 +1,11 @@
 NEW in 3.21 (Not released yet)
 =============
 
+NEW in 3.20.4 (28/06/2016)
+=============
+
+- fix some extensive CPU usage in some cases
+
 NEW in 3.20.3 (14/06/2016)
 =============
 
@@ -45,6 +50,11 @@ NEW in 3.20 (23/03/2016)
 - Fix style with gtk+ 3.20
 - Implement the new shotcut window from gtk+
 - Various code cleanups
+
+NEW in 3.18.5 (28/06/2016)
+=============
+
+- fix some extensive CPU usage in some cases
 
 NEW in 3.18.4 (22/05/2016)
 =============
