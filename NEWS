@@ -1,3 +1,8 @@
+NEW in 3.18.5 (28/06/2016)
+=============
+
+- fix some extensive CPU usage in some cases
+
 NEW in 3.18.4 (22/05/2016)
 =============
 
