@@ -433,6 +433,10 @@ g_paste_clipboard_clear (GPasteClipboard *self)
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
+    /* We're already clear, don't enter an infinite event loop */
+    if (!priv->text && !priv->image_checksum)
+        return;
+
     g_debug("%s: clear", gdk_atom_name (priv->target));
 
     g_clear_pointer (&priv->text, g_free);
