@@ -17,7 +17,7 @@ const GPastePageItem = new Lang.Class({
             reactive: true,
             can_focus: true,
             track_hover: true,
-            style_class: 'system-menu-action'
+            style_class: 'pager-button'
         });
 
         this.setPage(page);
