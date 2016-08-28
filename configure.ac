@@ -29,7 +29,7 @@ m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
 
 # Other dependencies
 m4_define([gdk_pixbuf_required], [2.26.0])
-m4_define([gir_required],        [1.48.0])
+m4_define([gir_required],        [1.49.1])
 m4_define([vala_required],       [0.32])
 
 AC_PREREQ(autoconf_required)
@@ -131,7 +131,7 @@ G_PASTE_ENABLE([zsh-completion],        [Disable the zsh completion],    [yes])
 
 AS_IF([test x${enable_gnome_shell_extension} = xyes], [
     AS_IF([test x${enable_introspection} != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
-    PKG_CHECK_MODULES(JS_EXTENSION, [clutter-1.0])
+    PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-1.0])
 ])
 
 AS_IF([test x${enable_unity} = xyes], [
