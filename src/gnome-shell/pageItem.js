@@ -29,8 +29,9 @@ const GPastePageItem = new Lang.Class({
     },
 
     setPage: function(page) {
+        this._page = page;
+
         if (page > 0) {
-            this._page = page
             this.child = new St.Label({ text: '' + page });
             this.show();
         } else {
