@@ -24,7 +24,7 @@ const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;
 const EmptyHistoryItem = Me.imports.emptyHistoryItem;
 const Item = Me.imports.item;
-const PageItem = Me.imports.pageItem;
+const PageSwitcher = Me.imports.pageSwitcher;
 const SearchItem = Me.imports.searchItem;
 const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
@@ -61,20 +61,10 @@ const GPasteIndicator = new Lang.Class({
         this._resetElementSize();
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
 
-        this._pageSwitches = [];
-        this._pageSwitcher = new PopupMenu.PopupBaseMenuItem({
-            reactive: false,
-            can_focus: false
-        });
-
-        for (let i = 0; i < 5; ++i) {
-            let sw = new PageItem.GPastePageItem(-1);
-            this._pageSwitches[i] = sw;
-            this._pageSwitcher.actor.add(sw.actor, { expand: true, x_fill: false });
-            sw.actor.connect('clicked', Lang.bind(this, function() {
-                this._updatePage(sw._page);
-            }));
-        }
+        this._pageSwitcher = new PageSwitcher.GPastePageSwitcher(10, this);
+        this.pageSwitcher.connect('switch', Lang.bind(this, function(page) {
+          this._updatePage(page);
+        }));
 
         this._actions = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
@@ -266,10 +256,10 @@ const GPasteIndicator = new Lang.Class({
                     const offset = this._getPageOffset();
 
                     for (let i = 0; i < (size / maxSize) && i < 5; ++i) {
-                        this._pageSwitches[i].setPage(i + 1);
+                        this._pageSwitcher[i].setPage(i + 1);
                     }
                     for (let i = (size / maxSize); i < 5; ++i) {
-                        this._pageSwitches[i].setPage(-1);
+                        this._pageSwitcher[i].setPage(-1);
                     }
 
                     if (size < offset) {
