@@ -23,7 +23,7 @@ const GPastePageItem = new Lang.Class({
         this.setPage(page);
 
         this.actor.connect('clicked', Lang.bind(this, function() {
-            this.actor.emit('switch', this._page);
+            this.emit('switch', this._page);
         }));
     },
 
