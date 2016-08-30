@@ -103,7 +103,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     SETTING (name, key, type, setting_type, fail, {}, {},)
 
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
-#define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint64, gpaste_uint64, 0)
+#define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint64, uint64, 0)
 
 #define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL,                \
                                            g_return_if_fail (value);                              \
@@ -124,23 +124,6 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define NEW_SIGNAL(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg_type, arg_type)
 #define NEW_SIGNAL_DETAILED(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type)
 #define NEW_SIGNAL_DETAILED_STATIC(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type | G_SIGNAL_TYPE_STATIC_SCOPE)
-
-static guint64
-g_settings_get_gpaste_uint64 (GSettings   *settings,
-                              const gchar *key)
-{
-    g_autoptr (GVariant) v = g_settings_get_value (settings, key);
-
-    return g_variant_get_uint64 (v);
-}
-
-static void
-g_settings_set_gpaste_uint64 (GSettings   *settings,
-                              const gchar *key,
-                              guint64      value)
-{
-    g_settings_set_value (settings, key, g_variant_new_uint64 (value));
-}
 
 /**
  * g_paste_settings_get_element_size:
