@@ -24,9 +24,10 @@ m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_min
 # m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
 m4_define([glib_required],       [glib_major_required.glib_49.6])
 m4_define([gtk_major_required],  [3])
-m4_define([gtk_minor_required],  [20])
+m4_define([gtk_minor_required],  [22])
 m4_define([gtk_api_required],    [G_ENCODE_VERSION(gtk_major_required, gtk_minor_required)])
-m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
+# m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
+m4_define([gtk_required],        [gtk_major_required.21.5])
 
 # Other dependencies
 m4_define([gdk_pixbuf_required], [2.26.0])

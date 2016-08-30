@@ -32,7 +32,6 @@ typedef enum
 
 typedef struct
 {
-    GdkAtom         target;
     GtkClipboard   *real;
     GPasteSettings *settings;
     gchar          *text;
@@ -138,7 +137,7 @@ g_paste_clipboard_get_target (const GPasteClipboard *self)
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
-    return priv->target;
+    return gtk_clipboard_get_selection (priv->real);
 }
 
 /**
@@ -184,7 +183,7 @@ g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
     g_free (priv->text);
     g_free (priv->image_checksum);
 
-    g_debug("%s: set text", gdk_atom_name (priv->target));
+    g_debug("%s: set text", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     priv->text = g_strdup (text);
     priv->image_checksum = NULL;
@@ -234,7 +233,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     }
 
     if (trim_items &&
-        priv->target == GDK_SELECTION_CLIPBOARD &&
+        gtk_clipboard_get_selection (priv->real) == GDK_SELECTION_CLIPBOARD &&
         !g_paste_str_equal (text, stripped))
             g_paste_clipboard_select_text (self, stripped);
     else
@@ -292,7 +291,7 @@ g_paste_clipboard_private_store_timeout (gpointer user_data)
 static void
 g_paste_clipboard_private_store (GPasteClipboardPrivate *priv)
 {
-    g_debug("%s: store", gdk_atom_name (priv->target));
+    g_debug("%s: store", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     switch (priv->state)
     {
@@ -329,7 +328,7 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
-    g_debug("%s: select text", gdk_atom_name (priv->target));
+    g_debug("%s: select text", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     /* Avoid cycling twice as gtk_clipboard_set_text will make the clipboards manager react */
     g_paste_clipboard_private_set_text (priv, text);
@@ -399,7 +398,7 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
     GtkClipboard *real = priv->real;
     g_autoptr (GtkTargetList) target_list = gtk_target_list_new (NULL, 0);
 
-    g_debug("%s: select uris", gdk_atom_name (priv->target));
+    g_debug("%s: select uris", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     g_paste_clipboard_private_set_text (priv, g_paste_item_get_real_value (_G_PASTE_ITEM (item)));
 
@@ -437,7 +436,7 @@ g_paste_clipboard_clear (GPasteClipboard *self)
     if (!priv->text && !priv->image_checksum)
         return;
 
-    g_debug("%s: clear", gdk_atom_name (priv->target));
+    g_debug("%s: clear", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     g_clear_pointer (&priv->text, g_free);
     g_clear_pointer (&priv->image_checksum, g_free);
@@ -483,7 +482,7 @@ g_paste_clipboard_private_select_image (GPasteClipboardPrivate *priv,
 
     GtkClipboard *real = priv->real;
 
-    g_debug("%s: select image", gdk_atom_name (priv->target));
+    g_debug("%s: select image", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     g_paste_clipboard_private_set_image_checksum (priv, checksum);
     gtk_clipboard_set_image (real, image);
@@ -574,7 +573,7 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
-    g_debug("%s: select item", gdk_atom_name (priv->target));
+    g_debug("%s: select item", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -632,7 +631,7 @@ g_paste_clipboard_owner_change (GtkClipboard        *clipboard G_GNUC_UNUSED,
     GPasteClipboard *self = user_data;
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
-    g_debug("%s: owner change", gdk_atom_name (priv->target));
+    g_debug("%s: owner change", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
 
     g_signal_emit (self,
 		   signals[OWNER_CHANGE],
@@ -764,12 +763,9 @@ g_paste_clipboard_new (GdkAtom         target,
 
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
-
-    priv->target = target;
-    priv->settings = g_object_ref (settings);
-
     GtkClipboard *real = priv->real = gtk_clipboard_get (target);
 
+    priv->settings = g_object_ref (settings);
     priv->c_signals[C_OWNER_CHANGE] = g_signal_connect (real,
                                                         "owner-change",
                                                         G_CALLBACK (g_paste_clipboard_owner_change),
