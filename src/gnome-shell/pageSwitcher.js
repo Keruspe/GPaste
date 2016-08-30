@@ -32,7 +32,7 @@ const GPastePageSwitcher = new Lang.Class({
         for (let i = 0; i < limit; ++i) {
             let sw = new PageItem.GPastePageItem(-1);
             this[i] = sw;
-            this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
+            this._box.add(sw, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
 
             sw.connect('switch', Lang.bind(this, function(page) {
                 this.emit('switch', page);
