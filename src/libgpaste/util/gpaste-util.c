@@ -451,12 +451,10 @@ g_paste_util_write_pid_file (const gchar *component)
 
     g_mkdir_with_parents (dir, 0700);
 
-#ifdef G_OS_UNIX
     g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
-    g_autofree gchar *contents = g_strdup_printf ("%d", getpid ());
+    g_autofree gchar *contents = g_strdup_printf ("%" G_PID_FORMAT, getpid ());
 
     g_file_set_contents (pidfile, contents, -1, NULL);
-#endif
 }
 
 /**
