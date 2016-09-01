@@ -12,10 +12,9 @@ const St = imports.gi.St;
 
 const GPastePageItem = new Lang.Class({
     Name: 'GPastePageItem',
-    Extends: St.Button,
 
     _init: function(page) {
-        this.parent({
+        this.actor = new St.Button({
             reactive: true,
             can_focus: true,
             track_hover: true,
@@ -24,7 +23,7 @@ const GPastePageItem = new Lang.Class({
 
         this.setPage(page);
 
-        this.connect('clicked', Lang.bind(this, function() {
+        this.actor.connect('clicked', Lang.bind(this, function() {
             this.emit('switch', this._page);
         }));
     },
@@ -33,10 +32,10 @@ const GPastePageItem = new Lang.Class({
         this._page = page;
 
         if (page > 0) {
-            this.child = new St.Label({ text: '' + page });
-            this.show();
+            this.actor.child = new St.Label({ text: '' + page });
+            this.actor.show();
         } else {
-            this.hide();
+            this.actor.hide();
         }
     }
 });
