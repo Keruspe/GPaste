@@ -62,7 +62,7 @@ const GPasteIndicator = new Lang.Class({
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
 
         this._pageSwitcher = new PageSwitcher.GPastePageSwitcher(10, this);
-        this._pageSwitcher.connect('switch', Lang.bind(this, function(page) {
+        this._pageSwitcher.connect('switch', Lang.bind(this, function(sw, page) {
             this._updatePage(page);
         }));
 
@@ -117,7 +117,7 @@ const GPasteIndicator = new Lang.Class({
     _onKeyPressEvent: function(actor, event) {
         if (event.has_control_modifier()) {
             const nb = parseInt(event.get_key_unicode());
-            if (nb != NaN && nb >= 0 && nb <= 9 && nb < this._history.length) {
+            if (!isNaN(nb) && nb >= 0 && nb <= 9 && nb < this._history.length) {
                 this._history[nb].activate();
             }
         } else {
@@ -148,7 +148,6 @@ const GPasteIndicator = new Lang.Class({
         if (search.length > 0) {
             this._page = page;
             const offset = this._getPageOffset();
-            log('search: ' + page + ' ' + offset);
 
             this._client.search(search, Lang.bind(this, function(client, result) {
                 this._searchResults = client.search_finish(result);
@@ -156,13 +155,10 @@ const GPasteIndicator = new Lang.Class({
                 const maxSize = this._history.length;
 
                 if (results) {
-                    log('results before ' + results);
                     if (results > (maxSize + offset))
                         results = (maxSize + offset);
-                    log('results ' + results);
 
                     this._history.slice(0, results - offset).forEach(Lang.bind(this, function(i, index) {
-                        log('item ' + index);
                         i.setIndex(this._searchResults[offset + index]);
                     }));
 
