@@ -16,7 +16,7 @@ const GPastePageItem = new Lang.Class({
     _init: function(page) {
         this.actor = new St.Button({
             reactive: true,
-            can_focus: true,
+            can_focus: false,
             track_hover: true,
             style_class: 'pager-button'
         });

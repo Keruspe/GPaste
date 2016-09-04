@@ -337,7 +337,7 @@ const GPasteIndicator = new Lang.Class({
         }
     },
 
-    _onMenuKeyPress: funciton(actor, event) {
+    _onMenuKeyPress: function(actor, event) {
         let symbol = event.get_key_symbol();
         if (symbol == Clutter.KEY_Left && this._page > 1) {
             this._updatePage(this._page - 1);
