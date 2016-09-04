@@ -29,6 +29,8 @@ const GPastePageSwitcher = new Lang.Class({
         this._box = new St.BoxLayout();
         this.actor.add(this._box, { expand: true, x_fill: false, can_focus: false, reactive: false });
 
+        this._active = -1;
+
         for (let i = 0; i < limit; ++i) {
             let sw = new PageItem.GPastePageItem(-1);
             this[i] = sw;
@@ -37,6 +39,17 @@ const GPastePageSwitcher = new Lang.Class({
             sw.connect('switch', Lang.bind(this, function(sw, page) {
                 this.emit('switch', page);
             }));
+        }
+        this.setActive(1);
+    },
+
+    setActive: function(page) {
+        if (page !== this._active) {
+            if (this._active !== -1) {
+                this[this._active].setActive(false);
+            }
+            this._active = page - 1;
+            this[this._active].setActive(true);
         }
     }
 });

@@ -197,6 +197,7 @@ const GPasteIndicator = new Lang.Class({
     _updatePage: function(page) {
         if (!isNaN(page))
             this._page = page;
+        this._pageSwitcher.setActive(this._page);
         this._refresh(0);
     },
 

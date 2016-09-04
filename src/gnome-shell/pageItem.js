@@ -18,7 +18,7 @@ const GPastePageItem = new Lang.Class({
             reactive: true,
             can_focus: false,
             track_hover: true,
-            style_class: 'pager-button'
+            style_class: 'calendar-day-base'
         });
 
         this.setPage(page);
@@ -37,6 +37,16 @@ const GPastePageItem = new Lang.Class({
         } else {
             this.actor.hide();
         }
+    },
+
+    setActive: function(active) {
+      if (active) {
+          this.actor.add_style_pseudo_class('active');
+          this.actor.set_style("font-weight: bold;");
+      } else {
+          this.actor.remove_style_pseudo_class('active');
+          this.actor.set_style(null);
+      }
     }
 });
 Signals.addSignalMethods(GPastePageItem.prototype);
