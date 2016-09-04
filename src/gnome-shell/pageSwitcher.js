@@ -27,7 +27,7 @@ const GPastePageSwitcher = new Lang.Class({
         });
 
         this._box = new St.BoxLayout();
-        this.actor.add(this._box, { expand: true, x_fill: false });
+        this.actor.add(this._box, { expand: true, x_fill: false, can_focus: false, reactive: false });
 
         for (let i = 0; i < limit; ++i) {
             let sw = new PageItem.GPastePageItem(-1);
