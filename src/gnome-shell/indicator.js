@@ -60,6 +60,7 @@ const GPasteIndicator = new Lang.Class({
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetElementSize));
         this._resetElementSize();
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
+        this.menu.connect('key-press-event', Lang.bind(this, this._onMenuKeyPress));
 
         this._pageSwitcher = new PageSwitcher.GPastePageSwitcher(10, this);
         this._pageSwitcher.connect('switch', Lang.bind(this, function(sw, page) {
@@ -334,6 +335,19 @@ const GPasteIndicator = new Lang.Class({
         } else {
             this._updateIndexVisibility(false);
         }
+    },
+
+    _onMenuKeyPress: funciton(actor, event) {
+        let symbol = event.get_key_symbol();
+        if (symbol == Clutter.KEY_Left && this._page > 1) {
+            this._updatePage(this._page - 1);
+            return Clutter.EVENT_STOP;
+        }
+        if (symbol == Clutter.KEY_Right && this._page < 5 /*FIXME*/) {
+            this._updatePage(this._page + 1);
+            return Clutter.EVENT_STOP;
+        }
+        return Clutter.EVENT_PROPAGATE;
     },
 
     _onDestroy: function() {
