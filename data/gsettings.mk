@@ -5,7 +5,7 @@
 gpaste_gschema_file = %D%/gsettings/org.gnome.GPaste.gschema.xml
 gschemas_compiled = %D%/gsettings/gschemas.compiled
 
-gsettings_SCHEMAS =            \
+nodist_gsettings_SCHEMAS =     \
 	$(gpaste_gschema_file) \
 	$(NULL)
 

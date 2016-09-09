@@ -7,6 +7,7 @@
 /data/desktop/*.desktop
 /data/desktop/*.desktop.in
 /data/dbus/*.service
+/data/gsettings/*.gschema.xml
 /data/systemd/*.service
 /bindings
 /data/pkg-config/*.pc
