@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-03-15 23:04+0100\n"
+"POT-Creation-Date: 2016-09-09 22:53+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -40,7 +40,7 @@ msgstr "Salir"
 msgid "launch the graphical tool"
 msgstr "iniciar la herramienta de configuración"
 
-#: src/libgpaste/core/gpaste-history.c:722
+#: src/libgpaste/core/gpaste-history.c:736
 msgid "Could not create history dir"
 msgstr "No se pudo crear directorio de historial"
 
@@ -133,43 +133,50 @@ msgid "Min text item length"
 msgstr "Tamaño mínimo de texto"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:256
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
+#: data/control-center/42-gpaste.control-center.xml.in:5
 #, fuzzy
 msgid "Delete the active item from history"
 msgstr "Eliminar el primer elemento del historial"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:263
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:79
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
+#: data/control-center/42-gpaste.control-center.xml.in:3
 #, fuzzy
 msgid "Launch the graphical tool"
 msgstr "iniciar la herramienta de configuración"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:270
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:80
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
+#: data/control-center/42-gpaste.control-center.xml.in:4
 #, fuzzy
 msgid "Mark the active item as being a password"
 msgstr "Atajo de teclado para eliminar la primera entrada del historial"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:277
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:81
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
+#: data/control-center/42-gpaste.control-center.xml.in:6
 #, fuzzy
 msgid "Display the history"
 msgstr "Mostrar el historial"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:284
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:82
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
+#: data/control-center/42-gpaste.control-center.xml.in:7
 #, fuzzy
 msgid "Sync the clipboard to the primary selection"
 msgstr "Sincronizar el portapapeles con selección principal: "
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:291
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:83
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
+#: data/control-center/42-gpaste.control-center.xml.in:8
 #, fuzzy
 msgid "Sync the primary selection to the clipboard"
 msgstr "Sincronizar selección principal con el portapapeles: "
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:298
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:84
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+#: data/control-center/42-gpaste.control-center.xml.in:9
 #, fuzzy
 msgid "Upload the active item to a pastebin service"
 msgstr "Eliminar el primer elemento del historial"
@@ -281,7 +288,7 @@ msgstr ""
 msgid "GPaste Settings"
 msgstr "Ajustes del servicio GPaste"
 
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:70
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
 msgstr ""
 
@@ -681,6 +688,10 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:22
 msgid "The main UI"
+msgstr ""
+
+#: data/control-center/42-gpaste.control-center.xml.in:2
+msgid "@GETTEXT_PACKAGE@"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Applet.desktop.in.in:6

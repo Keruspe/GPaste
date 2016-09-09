@@ -1,10 +1,16 @@
-NEW in 3.21 (Not released yet)
+NEW in 3.21.90 (09/09/2016)
 =============
+
+- Port from intltool to gettext
+- pkg-config 0.29 is now required
+- Port to the internal mutter-clutter
+- gnome-shell extension cleanup
+- Add pagination to gnmoe-shell extension
 
 NEW in 3.20.4 (28/06/2016)
 =============
 
-- fix some extensive CPU usage in some cases
+- Fix some extensive CPU usage in some cases
 
 NEW in 3.20.3 (14/06/2016)
 =============

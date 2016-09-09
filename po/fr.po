@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-03-15 23:04+0100\n"
+"POT-Creation-Date: 2016-09-09 22:53+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -39,7 +39,7 @@ msgstr "Quitter"
 msgid "launch the graphical tool"
 msgstr "lance l'interface graphique"
 
-#: src/libgpaste/core/gpaste-history.c:722
+#: src/libgpaste/core/gpaste-history.c:736
 msgid "Could not create history dir"
 msgstr "Impossible de créer le dossier d'historique"
 
@@ -129,37 +129,44 @@ msgid "Min text item length"
 msgstr "Taille minimale d'un élément textuel"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:256
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
+#: data/control-center/42-gpaste.control-center.xml.in:5
 msgid "Delete the active item from history"
 msgstr "Supprimer l'élément actif de l'historique"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:263
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:79
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
+#: data/control-center/42-gpaste.control-center.xml.in:3
 msgid "Launch the graphical tool"
 msgstr "Lancer l'interface graphique"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:270
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:80
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
+#: data/control-center/42-gpaste.control-center.xml.in:4
 msgid "Mark the active item as being a password"
 msgstr "Marquer l'élément actif comme étant un mot de passe"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:277
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:81
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
+#: data/control-center/42-gpaste.control-center.xml.in:6
 msgid "Display the history"
 msgstr "Afficher l'historique"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:284
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:82
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
+#: data/control-center/42-gpaste.control-center.xml.in:7
 msgid "Sync the clipboard to the primary selection"
 msgstr "Synchroniser le presse-papier avec la sélection primaire"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:291
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:83
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
+#: data/control-center/42-gpaste.control-center.xml.in:8
 msgid "Sync the primary selection to the clipboard"
 msgstr "Synchroniser la sélection primaire avec le presse-papier"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:298
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:84
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+#: data/control-center/42-gpaste.control-center.xml.in:9
 msgid "Upload the active item to a pastebin service"
 msgstr "Téléverser l'élément actif vers un sevice type pastebin"
 
@@ -265,7 +272,7 @@ msgstr "Recherche"
 msgid "GPaste Settings"
 msgstr "Préférences du démon GPaste"
 
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:70
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
 msgstr "Général"
 
@@ -660,6 +667,10 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:22
 msgid "The main UI"
 msgstr "L'interface principale"
+
+#: data/control-center/42-gpaste.control-center.xml.in:2
+msgid "@GETTEXT_PACKAGE@"
+msgstr "@GETTEXT_PACKAGE@"
 
 #: data/desktop/org.gnome.GPaste.Applet.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in:6
