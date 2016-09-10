@@ -44,7 +44,7 @@ const GPastePageSwitcher = new Lang.Class({
     },
 
     setActive: function(page) {
-        if (page !== this._active) {
+        if (page !== (this._active + 1)) {
             if (this._active !== -1) {
                 this[this._active].setActive(false);
             }
