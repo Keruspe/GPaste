@@ -60,7 +60,7 @@ const GPasteIndicator = new Lang.Class({
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
         this.menu.connect('key-press-event', Lang.bind(this, this._onMenuKeyPress));
 
-        this._pageSwitcher = new PageSwitcher.GPastePageSwitcher(10);
+        this._pageSwitcher = new PageSwitcher.GPastePageSwitcher();
         this._pageSwitcher.connect('switch', Lang.bind(this, function(sw, page) {
             this._updatePage(page);
         }));
