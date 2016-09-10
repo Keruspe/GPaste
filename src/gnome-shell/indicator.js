@@ -42,8 +42,6 @@ const GPasteIndicator = new Lang.Class({
 
         this._settings = new GPaste.Settings();
 
-        this._page = 1;
-
         this._headerSize = 0;
         this._postHeaderSize = 0;
         this._history = [];
@@ -62,7 +60,7 @@ const GPasteIndicator = new Lang.Class({
         this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
         this.menu.connect('key-press-event', Lang.bind(this, this._onMenuKeyPress));
 
-        this._pageSwitcher = new PageSwitcher.GPastePageSwitcher(10, this);
+        this._pageSwitcher = new PageSwitcher.GPastePageSwitcher(10);
         this._pageSwitcher.connect('switch', Lang.bind(this, function(sw, page) {
             this._updatePage(page);
         }));
@@ -147,8 +145,8 @@ const GPasteIndicator = new Lang.Class({
         const search = this._searchItem.text.toLowerCase();
 
         if (search.length > 0) {
-            this._page = page;
-            const offset = this._getPageOffset();
+            this._pageSwitcher.setActive(page);
+            const offset = this._pageSwitcher.getPageOffset();
 
             this._client.search(search, Lang.bind(this, function(client, result) {
                 this._searchResults = client.search_finish(result);
@@ -190,14 +188,8 @@ const GPasteIndicator = new Lang.Class({
         });
     },
 
-    _getPageOffset: function() {
-        return (this._page - 1) * this._history.length;
-    },
-
     _updatePage: function(page) {
-        if (!isNaN(page))
-            this._page = page;
-        this._pageSwitcher.setActive(this._page);
+        this._pageSwitcher.setActive(page);
         this._refresh(0);
     },
 
@@ -206,8 +198,10 @@ const GPasteIndicator = new Lang.Class({
         const newSize = this._settings.get_max_displayed_history_size();
         const elementSize = this._settings.get_element_size();
 
+        this._pageSwitcher.setMaxDisplayedSize(newSize);
+
         if (newSize > oldSize) {
-            const offset = this._getPageOffset();
+            const offset = this._pageSwitcher.getPageOffset();
             for (let index = oldSize; index < newSize; ++index) {
                 let item = new Item.GPasteItem(this._client, elementSize, index + offset);
                 this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
@@ -228,7 +222,7 @@ const GPasteIndicator = new Lang.Class({
             this._refresh(0);
             break;
         case GPaste.UpdateTarget.POSITION:
-            const offset = this._getPageOffset();
+            const offset = this._pageSwitcher.getPageOffset();
             const displayPos = position - offset;
             switch (action) {
             case GPaste.UpdateAction.REPLACE:
@@ -244,7 +238,7 @@ const GPasteIndicator = new Lang.Class({
 
     _refresh: function(resetTextFrom) {
         if (this._searchResults.length > 0) {
-            this._onSearch(this._page);
+            this._onSearch(this._pageSwitcher.getPage());
         } else {
             this._client.get_history_name(Lang.bind(this, function(client, result) {
                 const name = client.get_history_name_finish(result);
@@ -252,7 +246,7 @@ const GPasteIndicator = new Lang.Class({
                 this._client.get_history_size(name, Lang.bind(this, function(client, result) {
                     let size = client.get_history_size_finish(result);
                     const maxSize = this._history.length;
-                    const offset = this._getPageOffset();
+                    const offset = this._pageSwitcher.getPageOffset();
 
                     for (let i = 0; i < (size / maxSize) && i < 5; ++i) {
                         this._pageSwitcher[i].setPage(i + 1);
@@ -339,16 +333,13 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onMenuKeyPress: function(actor, event) {
-        let symbol = event.get_key_symbol();
-        if (symbol == Clutter.KEY_Left && this._page > 1) {
-            this._updatePage(this._page - 1);
-            return Clutter.EVENT_STOP;
+        const symbol = event.get_key_symbol();
+        if (symbol == Clutter.KEY_Left) {
+            return this._pageSwitcher.previous();
         }
-        if (symbol == Clutter.KEY_Right && this._page < 5 /*FIXME*/) {
-            this._updatePage(this._page + 1);
-            return Clutter.EVENT_STOP;
+        if (symbol == Clutter.KEY_Right) {
+            return this._pageSwicther.next();
         }
-        return Clutter.EVENT_PROPAGATE;
     },
 
     _onDestroy: function() {
