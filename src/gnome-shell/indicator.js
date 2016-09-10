@@ -250,23 +250,17 @@ const GPasteIndicator = new Lang.Class({
 
                 this._client.get_history_size(name, Lang.bind(this, function(client, result) {
                     let size = client.get_history_size_finish(result);
-                    const maxSize = this._history.length;
-                    const offset = this._pageSwitcher.getPageOffset();
 
-                    for (let i = 0; i < (size / maxSize) && i < 10; ++i) {
-                        this._pageSwitcher[i].setPage(i + 1);
-                    }
-                    for (let i = (size / maxSize); i < 10; ++i) {
-                        this._pageSwitcher[i].setPage(-1);
-                    }
-
-                    if (size < offset) {
-                        this._updatePage((size / offset) + 1)
+                    if (!this._pageSwitcher.updateForSize(size)) {
                         return;
                     }
 
-                    if (size > maxSize)
+                    const maxSize = this._history.length;
+                    const offset = this._pageSwitcher.getPageOffset();
+
+                    if (size > maxSize) {
                         size = maxSize;
+                    }
 
                     for (let i = resetTextFrom; i < size; ++i) {
                         this._history[i].setIndex(offset + i);

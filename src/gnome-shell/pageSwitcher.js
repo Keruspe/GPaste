@@ -51,6 +51,24 @@ const GPastePageSwitcher = new Lang.Class({
         this._maxDisplayedSize = size;
     },
 
+    updateForSize: function(size) {
+        const pages = size / this._maxDisplayedSize;
+
+        for (let i = 0; i < pages && i < this._pages; ++i) {
+            this[i].setPage(i + 1);
+        }
+        for (let i = pages; i < this._pages; ++i) {
+            this[i].setPage(-1);
+        }
+
+        if (this.getPageOffset() < size) {
+            return true;
+        } else {
+            this._switch(pages);
+            return false;
+        }
+    },
+
     getPageOffset: function() {
         return this._active * this._maxDisplayedSize;
     },
