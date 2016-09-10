@@ -32,7 +32,7 @@ const GPastePageSwitcher = new Lang.Class({
 
         this._active = -1;
         this._maxDisplayedSize = -1;
-        this._pages = 0;
+        this._pages = [];
 
         this.setActive(1);
     },
@@ -44,14 +44,12 @@ const GPastePageSwitcher = new Lang.Class({
     updateForSize: function(size) {
         const pages = size / this._maxDisplayedSize;
 
-        for (let i = this._pages + 1; i < pages; ++i) {
-            this._addPage(i);
+        for (let i = this._pages.length; i < pages; ++i) {
+            this._addPage();
         }
-        for (let i = pages; i <= this._pages; ++i) {
-            this[i].destroy();
+        for (let i = pages; i < this._pages.length; ++i) {
+            this._pages.pop().destroy();
         }
-
-        this._pages = pages;
 
         if (this.getPageOffset() < size) {
             return true;
@@ -61,9 +59,9 @@ const GPastePageSwitcher = new Lang.Class({
         }
     },
 
-    _addPage: function(page) {
-        let sw = new PageItem.GPastePageItem(page);
-        this[page] = sw;
+    _addPage: function() {
+        let sw = new PageItem.GPastePageItem(this._pages.length + 1);
+        this._pages.push(sw);
         this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
 
         sw.connect('switch', Lang.bind(this, function(sw, page) {
@@ -72,7 +70,7 @@ const GPastePageSwitcher = new Lang.Class({
     },
 
     getPageOffset: function() {
-        return this._active * this._maxDisplayedSize;
+        return (this._active < 0) ? 0 : (this._active * this._maxDisplayedSize);
     },
 
     getPage: function() {
@@ -80,12 +78,12 @@ const GPastePageSwitcher = new Lang.Class({
     },
 
     setActive: function(page) {
-        if (page !== (this._active + 1) && page <= this._pages) {
+        if (page !== (this._active + 1) && page <= this._pages.length) {
             if (this._active !== -1) {
-                this[this._active].setActive(false);
+                this._pages[this._active].setActive(false);
             }
             this._active = page - 1;
-            this[this._active].setActive(true);
+            this._pages[this._active].setActive(true);
         }
     },
 
@@ -102,7 +100,7 @@ const GPastePageSwitcher = new Lang.Class({
     next: function() {
         const page = this.getPage();
 
-        if (page < this._pages) {
+        if (page < this._pages.length) {
             this._switch(page + 1);
             return Clutter.EVENT_STOP;
         }
