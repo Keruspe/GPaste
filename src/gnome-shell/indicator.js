@@ -253,10 +253,10 @@ const GPasteIndicator = new Lang.Class({
                     const maxSize = this._history.length;
                     const offset = this._pageSwitcher.getPageOffset();
 
-                    for (let i = 0; i < (size / maxSize) && i < 5; ++i) {
+                    for (let i = 0; i < (size / maxSize) && i < 10; ++i) {
                         this._pageSwitcher[i].setPage(i + 1);
                     }
-                    for (let i = (size / maxSize); i < 5; ++i) {
+                    for (let i = (size / maxSize); i < 10; ++i) {
                         this._pageSwitcher[i].setPage(-1);
                     }
 
