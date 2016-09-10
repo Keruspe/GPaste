@@ -208,11 +208,15 @@ const GPasteIndicator = new Lang.Class({
                 this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
                 this._history[index] = item;
             }
-            this._updatePage((offset / oldSize) + 1);
         } else {
             for (let i = newSize; i < oldSize; ++i) {
                 this._history.pop().destroy();
             }
+        }
+
+        if (offset === 0 || oldSize === 0) {
+            this._updatePage(1);
+        } else {
             this._updatePage((offset / oldSize) + 1);
         }
     },
