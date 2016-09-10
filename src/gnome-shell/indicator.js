@@ -200,8 +200,9 @@ const GPasteIndicator = new Lang.Class({
 
         this._pageSwitcher.setMaxDisplayedSize(newSize);
 
+        const offset = this._pageSwitcher.getPageOffset();
+
         if (newSize > oldSize) {
-            const offset = this._pageSwitcher.getPageOffset();
             for (let index = oldSize; index < newSize; ++index) {
                 let item = new Item.GPasteItem(this._client, elementSize, index + offset);
                 this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
