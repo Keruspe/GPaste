@@ -40,9 +40,7 @@ const GPastePageSwitcher = new Lang.Class({
             this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
 
             sw.connect('switch', Lang.bind(this, function(sw, page) {
-                if (!isNaN(page)) {
-                    this.emit('switch', page);
-                }
+                this._switch(page);
             }));
         }
 
@@ -75,7 +73,7 @@ const GPastePageSwitcher = new Lang.Class({
         const page = this.getPage();
 
         if (page > 1) {
-            this.setActive(page - 1);
+            this._switch(page - 1);
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
@@ -85,9 +83,15 @@ const GPastePageSwitcher = new Lang.Class({
         const page = this.getPage();
 
         if (page < this._pages) {
-            this.setActive(page + 1);
+            this._switch(page + 1);
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
+    },
+
+    _switch: function(page) {
+        if (!isNaN(page)) {
+            this.emit('switch', page);
+        }
     }
 });

@@ -345,6 +345,7 @@ const GPasteIndicator = new Lang.Class({
         if (symbol == Clutter.KEY_Right) {
             return this._pageSwitcher.next();
         }
+        return Clutter.EVENT_PROPAGATE;
     },
 
     _onDestroy: function() {
