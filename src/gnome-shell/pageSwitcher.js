@@ -21,7 +21,7 @@ const GPastePageSwitcher = new Lang.Class({
     Name: 'GPastePageSwitcher',
     Extends: PopupMenu.PopupBaseMenuItem,
 
-    _init: function(limit) {
+    _init: function() {
         this.parent({
             reactive: false,
             can_focus: false
@@ -32,17 +32,7 @@ const GPastePageSwitcher = new Lang.Class({
 
         this._active = -1;
         this._maxDisplayedSize = -1;
-        this._pages = limit;
-
-        for (let i = 0; i < limit; ++i) {
-            let sw = new PageItem.GPastePageItem(-1);
-            this[i] = sw;
-            this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
-
-            sw.connect('switch', Lang.bind(this, function(sw, page) {
-                this._switch(page);
-            }));
-        }
+        this._pages = 0;
 
         this.setActive(1);
     },
@@ -54,11 +44,11 @@ const GPastePageSwitcher = new Lang.Class({
     updateForSize: function(size) {
         const pages = size / this._maxDisplayedSize;
 
-        for (let i = 0; i < pages && i < this._pages; ++i) {
-            this[i].setPage(i + 1);
+        for (let i = this._pages + 1; i < pages; ++i) {
+            this._addPage(i);
         }
-        for (let i = pages; i < this._pages; ++i) {
-            this[i].setPage(-1);
+        for (let i = pages; i <= this._pages; ++i) {
+            this[i].destroy();
         }
 
         if (this.getPageOffset() < size) {
@@ -67,6 +57,16 @@ const GPastePageSwitcher = new Lang.Class({
             this._switch(pages);
             return false;
         }
+    },
+
+    _addPage: function(page) {
+        let sw = new PageItem.GPastePageItem(page);
+        this[page] = sw;
+        this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
+
+        sw.connect('switch', Lang.bind(this, function(sw, page) {
+            this._switch(page);
+        }));
     },
 
     getPageOffset: function() {
