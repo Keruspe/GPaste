@@ -75,7 +75,7 @@ const GPastePageSwitcher = new Lang.Class({
         const page = this.getPage();
 
         if (page > 1) {
-            this.setAtive(page - 1);
+            this.setActive(page - 1);
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
@@ -85,7 +85,7 @@ const GPastePageSwitcher = new Lang.Class({
         const page = this.getPage();
 
         if (page < this._pages) {
-            this.setAtive(page + 1);
+            this.setActive(page + 1);
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;

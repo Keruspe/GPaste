@@ -343,7 +343,7 @@ const GPasteIndicator = new Lang.Class({
             return this._pageSwitcher.previous();
         }
         if (symbol == Clutter.KEY_Right) {
-            return this._pageSwicther.next();
+            return this._pageSwitcher.next();
         }
     },
 
