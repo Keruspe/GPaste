@@ -47,6 +47,10 @@ const GPastePageItem = new Lang.Class({
           this.actor.remove_style_pseudo_class('active');
           this.actor.set_style(null);
       }
+    },
+
+    destroy: function() {
+        this.actor.destroy();
     }
 });
 Signals.addSignalMethods(GPastePageItem.prototype);
