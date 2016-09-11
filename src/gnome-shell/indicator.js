@@ -145,17 +145,22 @@ const GPasteIndicator = new Lang.Class({
         const search = this._searchItem.text.toLowerCase();
 
         if (search.length > 0) {
-            this._pageSwitcher.setActive(page);
-            const offset = this._pageSwitcher.getPageOffset();
-
             this._client.search(search, Lang.bind(this, function(client, result) {
                 this._searchResults = client.search_finish(result);
                 let results = this._searchResults.length;
                 const maxSize = this._history.length;
 
+                if (!this._pageSwitcher.updateForSize(results)) {
+                    return;
+                }
+
+                this._pageSwitcher.setActive(page);
+                const offset = this._pageSwitcher.getPageOffset();
+
                 if (results) {
-                    if (results > (maxSize + offset))
+                    if (results > (maxSize + offset)) {
                         results = (maxSize + offset);
+                    }
 
                     this._history.slice(0, results - offset).forEach(Lang.bind(this, function(i, index) {
                         i.setIndex(this._searchResults[offset + index]);
@@ -243,10 +248,6 @@ const GPasteIndicator = new Lang.Class({
 
     _refresh: function(resetTextFrom) {
         if (this._searchResults.length > 0) {
-            if (!this._pageSwitcher.updateForSize(this._searchResults.length)) {
-                return;
-            }
-
             this._onSearch(this._pageSwitcher.getPage());
         } else {
             this._client.get_history_name(Lang.bind(this, function(client, result) {
