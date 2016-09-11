@@ -42,12 +42,12 @@ const GPastePageSwitcher = new Lang.Class({
     },
 
     updateForSize: function(size) {
-        const pages = (size === 0) ? 0 : (size / this._maxDisplayedSize + 1);
+        const pages = (size === 0) ? 0 : Math.floor(size / this._maxDisplayedSize + 1);
 
         for (let i = this._pages.length; i < pages; ++i) {
             this._addPage();
         }
-        for (let i = pages; i < this._pages.length; ++i) {
+        while (this._pages.length !== pages) {
             this._pages.pop().destroy();
         }
 
