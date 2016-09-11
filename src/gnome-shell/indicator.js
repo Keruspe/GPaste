@@ -243,6 +243,10 @@ const GPasteIndicator = new Lang.Class({
 
     _refresh: function(resetTextFrom) {
         if (this._searchResults.length > 0) {
+            if (!this._pageSwitcher.updateForSize(this._searchResults.length)) {
+                return;
+            }
+
             this._onSearch(this._pageSwitcher.getPage());
         } else {
             this._client.get_history_name(Lang.bind(this, function(client, result) {
