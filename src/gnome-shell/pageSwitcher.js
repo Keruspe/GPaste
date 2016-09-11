@@ -42,7 +42,7 @@ const GPastePageSwitcher = new Lang.Class({
     },
 
     updateForSize: function(size) {
-        const pages = size / this._maxDisplayedSize;
+        const pages = (size / this._maxDisplayedSize + 1);
 
         for (let i = this._pages.length; i < pages; ++i) {
             this._addPage();
