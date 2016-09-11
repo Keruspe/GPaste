@@ -33,8 +33,6 @@ const GPastePageSwitcher = new Lang.Class({
         this._active = -1;
         this._maxDisplayedSize = -1;
         this._pages = [];
-
-        this.setActive(1);
     },
 
     setMaxDisplayedSize: function(size) {
@@ -52,9 +50,17 @@ const GPastePageSwitcher = new Lang.Class({
         }
 
         if (this.getPageOffset() < size) {
+            if (this._active === -1) {
+                this._switch(1);
+                return false;
+            }
             return true;
         } else {
-            this._switch(pages);
+            if (pages === 0) {
+                this._active = -1;
+            } else {
+                this._switch(pages);
+            }
             return false;
         }
     },
