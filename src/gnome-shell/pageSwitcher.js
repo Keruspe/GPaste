@@ -58,9 +58,8 @@ const GPastePageSwitcher = new Lang.Class({
         } else {
             if (pages === 0) {
                 this._active = -1;
-            } else {
-                this._switch(pages);
             }
+            this._switch(pages);
             return false;
         }
     },
@@ -84,7 +83,7 @@ const GPastePageSwitcher = new Lang.Class({
     },
 
     setActive: function(page) {
-        if (page !== (this._active + 1) && page <= this._pages.length) {
+        if (page !== 0 && page !== (this._active + 1) && page <= this._pages.length) {
             if (this._active !== -1) {
                 this._pages[this._active].setActive(false);
             }

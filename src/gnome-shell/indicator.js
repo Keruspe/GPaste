@@ -141,10 +141,14 @@ const GPasteIndicator = new Lang.Class({
         });
     },
 
-    _onSearch: function(page) {
-        const search = this._searchItem.text.toLowerCase();
+    _hasSearch: function() {
+        return this._searchItem.text.length > 0;
+    },
 
-        if (search.length > 0) {
+    _onSearch: function(page) {
+        if (this._hasSearch()) {
+            const search = this._searchItem.text.toLowerCase();
+
             this._client.search(search, Lang.bind(this, function(client, result) {
                 this._searchResults = client.search_finish(result);
                 let results = this._searchResults.length;
@@ -157,19 +161,16 @@ const GPasteIndicator = new Lang.Class({
                 this._pageSwitcher.setActive(page);
                 const offset = this._pageSwitcher.getPageOffset();
 
-                if (results) {
-                    if (results > (maxSize + offset)) {
-                        results = (maxSize + offset);
-                    }
-
-                    this._history.slice(0, results - offset).forEach(Lang.bind(this, function(i, index) {
-                        i.setIndex(this._searchResults[offset + index]);
-                    }));
-
-                    this._dummyHistoryItem.actor.hide();
-                } else {
-                  this._dummyHistoryItem.showNoResult();
+                if (results > (maxSize + offset)) {
+                    results = (maxSize + offset);
                 }
+
+                this._history.slice(0, results - offset).forEach(Lang.bind(this, function(i, index) {
+                    i.setIndex(this._searchResults[offset + index]);
+                }));
+
+                /* If we had no result, updateForSize would have returned false */
+                this._dummyHistoryItem.actor.hide();
 
                 this._history.slice(results - offset, maxSize).forEach(function(i) {
                     i.setIndex(-1);
@@ -249,19 +250,26 @@ const GPasteIndicator = new Lang.Class({
     _refresh: function(resetTextFrom) {
         if (this._searchResults.length > 0) {
             this._onSearch(this._pageSwitcher.getPage());
+        } else if (this._hasSearch()) {
+            this._history.forEach(function(i, index) {
+                i.setIndex(-1);
+            });
+            this._updateVisibility(true);
+            this._dummyHistoryItem.showNoResult();
         } else {
             this._client.get_history_name(Lang.bind(this, function(client, result) {
                 const name = client.get_history_name_finish(result);
 
                 this._client.get_history_size(name, Lang.bind(this, function(client, result) {
-                    const size = client.get_history_size_finish(result);
+                    const realSize = client.get_history_size_finish(result);
 
-                    if (!this._pageSwitcher.updateForSize(size)) {
+                    if (!this._pageSwitcher.updateForSize(realSize)) {
                         return;
                     }
 
                     const maxSize = this._history.length;
                     const offset = this._pageSwitcher.getPageOffset();
+                    const size = Math.min(realSize - offset, maxSize);
 
                     this._history.slice(resetTextFrom, size).forEach(function(i, index) {
                         i.setIndex(offset + index);
