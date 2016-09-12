@@ -171,7 +171,7 @@ const GPasteIndicator = new Lang.Class({
                   this._dummyHistoryItem.showNoResult();
                 }
 
-                this._history.slice(results, maxSize).forEach(function(i) {
+                this._history.slice(results - offset, maxSize).forEach(function(i) {
                     i.setIndex(-1);
                 });
             }));
@@ -254,7 +254,7 @@ const GPasteIndicator = new Lang.Class({
                 const name = client.get_history_name_finish(result);
 
                 this._client.get_history_size(name, Lang.bind(this, function(client, result) {
-                    let size = client.get_history_size_finish(result);
+                    const size = client.get_history_size_finish(result);
 
                     if (!this._pageSwitcher.updateForSize(size)) {
                         return;
@@ -263,16 +263,12 @@ const GPasteIndicator = new Lang.Class({
                     const maxSize = this._history.length;
                     const offset = this._pageSwitcher.getPageOffset();
 
-                    if (size > maxSize) {
-                        size = maxSize;
-                    }
-
-                    for (let i = resetTextFrom; i < size; ++i) {
-                        this._history[i].setIndex(offset + i);
-                    }
-                    for (let i = size ; i < maxSize; ++i) {
-                        this._history[i].setIndex(-1);
-                    }
+                    this._history.slice(resetTextFrom, size).forEach(function(i, index) {
+                        i.setIndex(offset + index);
+                    });
+                    this._history.slice(size, maxSize).forEach(function(i, index) {
+                        i.setIndex(-1);
+                    });
 
                     this._updateVisibility(size == 0);
                 }));
