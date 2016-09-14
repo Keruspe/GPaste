@@ -255,7 +255,6 @@ const GPasteIndicator = new Lang.Class({
                 i.setIndex(-1);
             });
             this._updateVisibility(true);
-            this._dummyHistoryItem.showNoResult();
         } else {
             this._client.get_history_name(Lang.bind(this, function(client, result) {
                 const name = client.get_history_name_finish(result);
@@ -284,15 +283,19 @@ const GPasteIndicator = new Lang.Class({
         }
     },
 
-    _updateVisibility: function(empty) {
-        if (empty) {
-            this._dummyHistoryItem.showEmpty();
-            this._emptyHistoryItem.actor.hide();
-            this._searchItem.actor.hide();
-        } else {
+    _updateVisibility: function(empty, search) {
+        if (!empty) {
             this._dummyHistoryItem.actor.hide();
             this._emptyHistoryItem.actor.show();
             this._searchItem.actor.show();
+        } else if (this._hasSearch()) {
+            this._dummyHistoryItem.showNoResult();
+            this._emptyHistoryItem.actor.hide();
+            this._searchItem.actor.show();
+        } else {
+            this._dummyHistoryItem.showEmpty();
+            this._emptyHistoryItem.actor.hide();
+            this._searchItem.actor.hide();
         }
     },
 
