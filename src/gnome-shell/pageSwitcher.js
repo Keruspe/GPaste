@@ -17,6 +17,8 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const PageItem = Me.imports.pageItem;
 
+const MAX_PAGES = 20;
+
 const GPastePageSwitcher = new Lang.Class({
     Name: 'GPastePageSwitcher',
     Extends: PopupMenu.PopupBaseMenuItem,
@@ -40,7 +42,7 @@ const GPastePageSwitcher = new Lang.Class({
     },
 
     updateForSize: function(size) {
-        const pages = (size === 0) ? 0 : Math.floor(size / this._maxDisplayedSize + 1);
+        const pages = Math.min((size === 0) ? 0 : Math.floor(size / this._maxDisplayedSize + 1), MAX_PAGES);
 
         for (let i = this._pages.length; i < pages; ++i) {
             this._addPage();
