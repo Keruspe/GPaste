@@ -35,5 +35,10 @@
       <image width="686" height="610">http://www.imagination-land.org/images/GPaste/3/Ui-4.png</image>
     </screenshot>
   </screenshots>
-  <updatecontact>Marc-Antoine@Perennou.com</updatecontact>
+  <update_contact>Marc-Antoine@Perennou.com</update_contact>
+  <url type="bugtracker">https://github.com/Keruspe/GPaste/issues</url>
+  <url type="donation">https://paypal.me/keruspe/</url>
+  <url type="help">https://github.com/Keruspe/GPaste/issues</url>
+  <url type="translate">https://github.com/Keruspe/GPaste</url>
+  <translation type="gettext">GPaste</translation>
 </component>
