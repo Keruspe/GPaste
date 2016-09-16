@@ -35,6 +35,7 @@ AM_CPPFLAGS =                                        \
 	-DG_PASTE_COMPILATION                        \
 	-DLOCALEDIR=\"$(localedir)\"                 \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"         \
+	-DG_LOG_USE_STRUCTURED=1                     \
 	$(NULL)
 
 EXTRA_DIST =       \
