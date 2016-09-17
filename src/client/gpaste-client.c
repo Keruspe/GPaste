@@ -494,6 +494,12 @@ g_paste_add (Context *ctx,
     if (!data)
         return -1;
 
+    if (!g_utf8_validate(data, -1, NULL))
+    {
+        g_critical ("Cannot add non utf8 data as text.");
+        return EXIT_FAILURE;
+    }
+
     g_paste_client_add_sync (ctx->client, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
