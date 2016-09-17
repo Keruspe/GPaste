@@ -496,7 +496,7 @@ g_paste_add (Context *ctx,
 
     if (!g_utf8_validate(data, -1, NULL))
     {
-        g_critical ("Cannot add non utf8 data as text.");
+        g_critical (_("Cannot add non utf8 data as text."));
         return EXIT_FAILURE;
     }
 

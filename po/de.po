@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-09-09 22:53+0200\n"
+"POT-Creation-Date: 2016-09-17 15:33+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -183,7 +183,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
-#: src/libgpaste/ui/gpaste-ui-window.c:215 src/client/gpaste-client.c:817
+#: src/libgpaste/ui/gpaste-ui-window.c:215 src/client/gpaste-client.c:823
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
@@ -586,6 +586,10 @@ msgstr ""
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Daemon wurde erfolgreich neu gestartet\n"
+
+#: src/client/gpaste-client.c:499
+msgid "Cannot add non utf8 data as text."
+msgstr ""
 
 #: src/daemon/gpaste-daemon.c:33
 #, fuzzy

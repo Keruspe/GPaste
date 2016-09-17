@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-09-09 22:53+0200\n"
+"POT-Creation-Date: 2016-09-17 15:33+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -171,7 +171,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Téléverser l'élément actif vers un sevice type pastebin"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
-#: src/libgpaste/ui/gpaste-ui-window.c:215 src/client/gpaste-client.c:817
+#: src/libgpaste/ui/gpaste-ui-window.c:215 src/client/gpaste-client.c:823
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 
@@ -563,6 +563,10 @@ msgstr "ajoute le séparateur entre chaque élément à la fusion"
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Démon redémaré avec succès\n"
+
+#: src/client/gpaste-client.c:499
+msgid "Cannot add non utf8 data as text."
+msgstr "Impossible d'ajouter de la donnée non unicode en tant que texte."
 
 #: src/daemon/gpaste-daemon.c:33
 msgid "Stop signal received, exiting"
