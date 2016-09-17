@@ -2,6 +2,7 @@
     gpaste-ui:
         merge
     general:
+        gcr secure memory for password
         gpg support
 
 future:

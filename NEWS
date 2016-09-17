@@ -1,3 +1,11 @@
+NEW in 3.21.91 (17/09/2016)
+=============
+
+- Lots of fixes in the gnome-shell extension pagination
+- Fix a crash when trying to add binary data with gpaste-client
+- Use GLib new structured logging
+- Update appstream files
+
 NEW in 3.21.90 (09/09/2016)
 =============
 
