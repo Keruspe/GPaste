@@ -73,7 +73,7 @@ g_paste_clipboards_manager_sync_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
                                        gpointer user_data)
 {
     if (text)
-        gtk_clipboard_set_text (user_data, text, -1);
+        g_paste_clipboard_select_text (user_data, text);
 }
 
 /**
@@ -92,7 +92,8 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     const GPasteClipboardsManagerPrivate *priv = _g_paste_clipboards_manager_get_instance_private (self);
-    GtkClipboard *_from = NULL, *_to = NULL;
+    GtkClipboard *_from = NULL;
+    GPasteClipboard *_to = NULL;
 
     g_debug ("clipboards-manager: sync from %s to %s", gdk_atom_name (from), gdk_atom_name (to));
 
@@ -105,7 +106,7 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
         if (cur == from)
             _from = g_paste_clipboard_get_real (clip);
         else if (cur == to)
-            _to = g_paste_clipboard_get_real (clip);
+            _to = clip;
     }
 
     if (_from && _to)
