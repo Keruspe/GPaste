@@ -23,13 +23,6 @@ enum
     C_LAST_SIGNAL
 };
 
-typedef enum
-{
-    CLIP_STATE_IDLE,
-    CLIP_STATE_WAITING,
-    CLIP_STATE_BUSY
-} ClipState;
-
 typedef struct
 {
     GtkClipboard   *real;
@@ -38,11 +31,6 @@ typedef struct
     gchar          *image_checksum;
 
     guint64         c_signals[C_LAST_SIGNAL];
-
-    /* GtkClipboard has a bug where it overrides an internal GMainLoop
-     * if we call gtk_clipboard_store twice in less than 10s, resulting
-     * in a g_main_loop_quit (NULL) call making GPaste crash */
-    ClipState       state;
 } GPasteClipboardPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Clipboard, clipboard, G_TYPE_OBJECT)
@@ -270,47 +258,6 @@ g_paste_clipboard_set_text (GPasteClipboard            *self,
                                 data);
 }
 
-static void g_paste_clipboard_private_store (GPasteClipboardPrivate *priv);
-
-static gboolean
-g_paste_clipboard_private_store_timeout (gpointer user_data)
-{
-    GPasteClipboardPrivate *priv = user_data;
-    gboolean waiting = (priv->state == CLIP_STATE_WAITING);
-
-    /* Reset us as IDLE */
-    priv->state = CLIP_STATE_IDLE;
-
-    /* If we were waiting, perform the store now */
-    if (waiting)
-        g_paste_clipboard_private_store (priv);
-
-    return G_SOURCE_REMOVE;
-}
-
-static void
-g_paste_clipboard_private_store (GPasteClipboardPrivate *priv)
-{
-    g_debug("%s: store", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
-
-    switch (priv->state)
-    {
-    case CLIP_STATE_IDLE:
-        /* We're idle, store right now and mark us BUSY for 10 secs */
-        gtk_clipboard_store (priv->real);
-        priv->state = CLIP_STATE_BUSY;
-        g_timeout_add_seconds (10, g_paste_clipboard_private_store_timeout, priv);
-        break;
-    case CLIP_STATE_BUSY:
-        /* We're busy, wait until we're finished to store once more */
-        priv->state = CLIP_STATE_WAITING;
-        break;
-    case CLIP_STATE_WAITING:
-        /* We're already waiting, nothing to do */
-        break;
-    }
-}
-
 /**
  * g_paste_clipboard_select_text:
  * @self: a #GPasteClipboard instance
@@ -333,7 +280,6 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     /* Avoid cycling twice as gtk_clipboard_set_text will make the clipboards manager react */
     g_paste_clipboard_private_set_text (priv, text);
     gtk_clipboard_set_text (priv->real, text, -1);
-    g_paste_clipboard_private_store (priv);
 }
 
 static void
@@ -414,8 +360,6 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
                                   g_paste_clipboard_get_clipboard_data,
                                   g_paste_clipboard_clear_clipboard_data,
                                   g_object_ref (item));
-    g_paste_clipboard_private_store (priv);
-
     gtk_target_table_free (targets, n_targets);
 }
 
@@ -738,11 +682,8 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
 }
 
 static void
-g_paste_clipboard_init (GPasteClipboard *self)
+g_paste_clipboard_init (GPasteClipboard *self G_GNUC_UNUSED)
 {
-    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
-
-    priv->state = CLIP_STATE_IDLE;
 }
 
 /**
