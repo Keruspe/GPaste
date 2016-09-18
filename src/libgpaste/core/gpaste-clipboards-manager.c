@@ -135,6 +135,8 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
 
     if (synchronized_text)
     {
+        g_debug ("clipboards-manager: synchronizing clipboards");
+
         for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
         {
             _Clipboard *_clip = _clipboard->data;
@@ -252,11 +254,17 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
 }
 
 static void
-g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
-                                   GdkEvent        *event G_GNUC_UNUSED,
-                                   gpointer         user_data)
+g_paste_clipboards_manager_notify (GPasteClipboard     *clipboard,
+                                   GdkEventOwnerChange *event,
+                                   gpointer             user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
+
+    if (event->reason == GDK_PROPERTY_DELETE)
+    {
+        g_debug ("clipboards-manager: gnoring deletion event");
+        return;
+    }
 
     g_debug ("clipboards-manager: notify");
 
