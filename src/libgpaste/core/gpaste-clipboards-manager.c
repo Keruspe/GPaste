@@ -261,7 +261,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard     *clipboard,
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
 
-    if (event->reason == GDK_PROPERTY_DELETE)
+    if (event->reason != GDK_OWNER_CHANGE_NEW_OWNER)
     {
         g_debug ("clipboards-manager: gnoring deletion event");
         return;
