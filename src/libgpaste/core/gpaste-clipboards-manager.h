@@ -27,6 +27,7 @@ void g_paste_clipboards_manager_sync_from_to  (GPasteClipboardsManager *self,
 void g_paste_clipboards_manager_activate      (GPasteClipboardsManager *self);
 void g_paste_clipboards_manager_select        (GPasteClipboardsManager *self,
                                                GPasteItem              *item);
+void g_paste_clipboards_manager_store         (GPasteClipboardsManager *self);
 
 GPasteClipboardsManager *g_paste_clipboards_manager_new (GPasteHistory  *history,
                                                          GPasteSettings *settings);

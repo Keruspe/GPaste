@@ -462,3 +462,10 @@ global:
     g_paste_util_read_pid_file;
     g_paste_util_write_pid_file;
 } LIBGPASTE_3_18_0;
+
+LIBGPASTE_3_22_0 {
+global:
+    g_paste_clipboard_store;
+
+    g_paste_clipboards_manager_store;
+} LIBGPASTE_3_20_0;

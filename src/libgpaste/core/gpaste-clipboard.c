@@ -397,6 +397,24 @@ g_paste_clipboard_clear (GPasteClipboard *self)
 }
 
 /**
+ * g_paste_clipboard_store:
+ * @self: a #GPasteClipboard instance
+ *
+ * Store the contents of the clipboard before exiting
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_store (GPasteClipboard *self)
+{
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
+
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    g_debug("%s: store", gdk_atom_name (gtk_clipboard_get_selection (priv->real)));
+
+    gtk_clipboard_store (priv->real);
+}
+
+/**
  * g_paste_clipboard_get_image_checksum:
  * @self: a #GPasteClipboard instance
  *

@@ -636,6 +636,10 @@ g_paste_daemon_on_extension_state_changed (GPasteDaemon *self,
 static void
 g_paste_daemon_reexecute (GPasteDaemon *self)
 {
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
+
+    g_paste_clipboards_manager_store (priv->clipboards_manager);
+
     g_signal_emit (self,
                    signals[REEXECUTE_SELF],
                    0, /* detail */

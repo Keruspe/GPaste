@@ -336,6 +336,29 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     }
 }
 
+/**
+ * g_paste_clipboards_manager_store:
+ * @self: a #GPasteClipboardsManager instance
+ *
+ * Store clipboards contents before exiting
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_store (GPasteClipboardsManager *self)
+{
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+
+    const GPasteClipboardsManagerPrivate *priv = _g_paste_clipboards_manager_get_instance_private (self);
+
+    g_debug ("clipboards-manager: store");
+
+    for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+    {
+        _Clipboard *clip = clipboard->data;
+
+        g_paste_clipboard_store (clip->clipboard);
+    }
+}
+
 static void
 on_item_selected (GPasteClipboardsManager *self,
                   GPasteItem              *item,
