@@ -30,6 +30,9 @@ typedef struct
     gchar          *text;
     gchar          *image_checksum;
 
+    gboolean        was_synced;
+    gboolean        bounced;
+
     guint64         c_signals[C_LAST_SIGNAL];
 } GPasteClipboardPrivate;
 
@@ -175,6 +178,7 @@ g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
 
     priv->text = g_strdup (text);
     priv->image_checksum = NULL;
+    priv->was_synced = g_paste_settings_get_synchronize_clipboards (priv->settings);
 }
 
 typedef struct {
@@ -213,12 +217,16 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
             data->callback (self, NULL, data->user_data);
         return;
     }
-    if (priv->text && g_paste_str_equal (priv->text, to_add))
+    if (priv->text && g_paste_str_equal (priv->text, to_add) && !(priv->was_synced && gtk_clipboard_get_selection (priv->real) == GDK_SELECTION_CLIPBOARD && priv->bounced))
     {
+        priv->bounced = TRUE;
+
         if (data->callback)
             data->callback (self, NULL, data->user_data);
         return;
     }
+
+    priv->bounced = FALSE;
 
     if (trim_items &&
         gtk_clipboard_get_selection (priv->real) == GDK_SELECTION_CLIPBOARD &&
@@ -415,6 +423,7 @@ g_paste_clipboard_private_set_image_checksum (GPasteClipboardPrivate *priv,
 
     priv->text = NULL;
     priv->image_checksum = g_strdup (image_checksum);
+    priv->was_synced = g_paste_settings_get_synchronize_clipboards (priv->settings);
 }
 
 static void
