@@ -21,22 +21,13 @@ const GPastePageItem = new Lang.Class({
             style_class: 'calendar-day-base'
         });
 
-        this.setPage(page);
+        this.actor.child = new St.Label({ text: '' + page });
+
+        this._page = page;
 
         this.actor.connect('clicked', Lang.bind(this, function() {
             this.emit('switch', this._page);
         }));
-    },
-
-    setPage: function(page) {
-        this._page = page;
-
-        if (page > 0) {
-            this.actor.child = new St.Label({ text: '' + page });
-            this.actor.show();
-        } else {
-            this.actor.hide();
-        }
     },
 
     setActive: function(active) {
