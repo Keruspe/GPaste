@@ -263,7 +263,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard     *clipboard,
 
     if (event->reason != GDK_OWNER_CHANGE_NEW_OWNER)
     {
-        g_debug ("clipboards-manager: gnoring deletion event");
+        g_debug ("clipboards-manager: ignoring deletion event");
         return;
     }
 
