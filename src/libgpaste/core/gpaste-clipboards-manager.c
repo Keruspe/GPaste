@@ -271,9 +271,10 @@ g_paste_clipboards_manager_notify (GPasteClipboard     *clipboard,
 
     GPasteSettings *settings = priv->settings;
     GdkAtom atom = g_paste_clipboard_get_target (clipboard);
-    gboolean track = ((atom != GDK_SELECTION_PRIMARY || g_paste_settings_get_primary_to_history (settings)) &&
-                      g_paste_settings_get_track_changes (settings));
-
+    gboolean track = (g_paste_settings_get_track_changes (settings) &&
+                          (atom != GDK_SELECTION_PRIMARY ||                          // We're not primary
+                           g_paste_settings_get_primary_to_history (settings) ||     // Or we asked that primary affects clipboard
+                           g_paste_settings_get_synchronize_clipboards (settings))); // Or primary and clipboards are synchronized hence primary will affect history through clipboard
     GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
 
     data->priv = priv;
