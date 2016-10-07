@@ -121,7 +121,6 @@ static void
 g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
                                           GPasteClipboard                *clipboard,
                                           GPasteItem                     *item,
-                                          const gchar                    *synchronized_text,
                                           gboolean                        something_in_clipboard)
 {
     GPasteHistory *history = priv->history;
@@ -134,7 +133,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
     if (!something_in_clipboard)
         g_paste_clipboard_ensure_not_empty (clipboard, history);
 
-    if (synchronized_text)
+    if (g_paste_settings_get_synchronize_clipboards (priv->settings))
     {
         g_debug ("clipboards-manager: synchronizing clipboards");
 
@@ -148,8 +147,8 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
 
             const gchar *text = g_paste_clipboard_get_text (clip);
 
-            if (!text || !g_paste_str_equal (text, synchronized_text))
-                g_paste_clipboard_select_text (clip, synchronized_text);
+            if (!text || !g_paste_str_equal (text, g_paste_item_get_real_value (item)))
+                g_paste_clipboard_select_item (clip, item);
         }
     }
 }
@@ -169,7 +168,6 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
     g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
     GPasteClipboardsManagerPrivate *priv = data->priv;
     GPasteItem *item = NULL;
-    const gchar *synchronized_text = NULL;
 
     g_debug ("clipboards-manager: text ready");
 
@@ -186,12 +184,9 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
             else
                 item = G_PASTE_ITEM (g_paste_text_item_new (text));
         }
-
-        if (g_paste_settings_get_synchronize_clipboards (priv->settings))
-            synchronized_text = text;
     }
 
-    g_paste_clipboards_manager_notify_finish (priv, clipboard, item, synchronized_text, something_in_clipboard);
+    g_paste_clipboards_manager_notify_finish (priv, clipboard, item, something_in_clipboard);
 }
 
 static void
@@ -212,7 +207,7 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
     if (image && data->track)
         item = G_PASTE_ITEM (g_paste_image_item_new (image));
 
-    g_paste_clipboards_manager_notify_finish (priv, clipboard, item, NULL, something_in_clipboard);
+    g_paste_clipboards_manager_notify_finish (priv, clipboard, item, something_in_clipboard);
 }
 
 static void
