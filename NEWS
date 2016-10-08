@@ -1,4 +1,4 @@
-NEW in 3.22 (07/10/2016)
+NEW in 3.22.0 (08/10/2016)
 =============
 
 - Depend on gtk+ 3.22, glib 2.50, gobject-introspeciton 1.50
