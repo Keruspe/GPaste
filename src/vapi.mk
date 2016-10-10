@@ -29,16 +29,21 @@ bindings_gpaste_1_0_vapi_DEPS = \
 	$(GPASTE_VAPI_DEPS)     \
 	$(NULL)
 
+VAPI_DEPS = $(NULL)
+
 if ENABLE_VAPIGEN
 VAPIGEN_VAPIS+=                \
 	$(libgpaste_vapi_file) \
 	$(NULL)
+VAPI_DEPS+=                         \
+	$(libgpaste_vapi_deps_file) \
+	$(NULL)
 endif
 
 vapidir = $(datadir)/vala/vapi
-vapi_DATA =                         \
-	$(VAPIGEN_VAPIS)            \
-	$(libgpaste_vapi_deps_file) \
+vapi_DATA =              \
+	$(VAPIGEN_VAPIS) \
+	$(VAPI_DEPS)     \
 	$(NULL)
 
 CLEANFILES +=        \
