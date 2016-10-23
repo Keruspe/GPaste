@@ -1,15 +1,7 @@
-3.24:
-    gpaste-ui:
-        merge
-    general:
-        gcr secure memory for password
-        gpg support
-
-future:
-    general:
-        wayland support
-        properties all the way (when GProperty stuff lands)
-    libgpaste-client:
-        specify errors types when possible in g-i
-    tests:
-        split test, add interactive wrapper
+general:
+    wayland support
+    properties all the way (when GProperty stuff lands)
+libgpaste-client:
+    specify errors types when possible in g-i
+tests:
+    split test, add interactive wrapper
