@@ -22,6 +22,10 @@
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
+/* GPasteIO */
+#include <gpaste-storage-backend.h>
+#include <gpaste-file-backend.h>
+
 /* GPasteUtil */
 #include <gpaste-util.h>
 

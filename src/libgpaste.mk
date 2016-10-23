@@ -40,6 +40,8 @@ lib_libgpaste_la_public_headers =                                             \
 	%D%/libgpaste/daemon/gpaste-daemon.h                                  \
 	%D%/libgpaste/daemon/gpaste-search-provider.h                         \
 	%D%/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.h          \
+	%D%/libgpaste/io/gpaste-file-backend.h                                \
+	%D%/libgpaste/io/gpaste-storage-backend.h                             \
 	%D%/libgpaste/keybinder/gpaste-keybinder.h                            \
 	%D%/libgpaste/keybinder/gpaste-keybinding.h                           \
 	%D%/libgpaste/keybinder/gpaste-make-password-keybinding.h             \
@@ -105,6 +107,8 @@ lib_libgpaste_la_source_files =                                               \
 	%D%/libgpaste/daemon/gpaste-daemon.c                                  \
 	%D%/libgpaste/daemon/gpaste-search-provider.c                         \
 	%D%/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.c          \
+	%D%/libgpaste/io/gpaste-file-backend.c                                \
+	%D%/libgpaste/io/gpaste-storage-backend.c                             \
 	%D%/libgpaste/keybinder/gpaste-keybinder.c                            \
 	%D%/libgpaste/keybinder/gpaste-keybinding.c                           \
 	%D%/libgpaste/keybinder/gpaste-make-password-keybinding.c             \

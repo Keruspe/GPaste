@@ -26,6 +26,7 @@ AM_CPPFLAGS =                                        \
 	-I$(srcdir)/src/libgpaste/core               \
 	-I$(srcdir)/src/libgpaste/daemon             \
 	-I$(srcdir)/src/libgpaste/gnome-shell-client \
+	-I$(srcdir)/src/libgpaste/io                 \
 	-I$(srcdir)/src/libgpaste/keybinder          \
 	-I$(srcdir)/src/libgpaste/screensaver-client \
 	-I$(srcdir)/src/libgpaste/settings           \
