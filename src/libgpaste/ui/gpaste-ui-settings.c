@@ -30,6 +30,8 @@ g_paste_ui_settings_init (GPasteUiSettings *self)
     gtk_widget_set_tooltip_text (widget, _("GPaste Settings"));
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 
+    gtk_widget_set_margin_top (settings_widget, 10);
+
     gtk_menu_button_set_direction (menu, GTK_ARROW_NONE);
     gtk_menu_button_set_use_popover (menu, TRUE);
     gtk_menu_button_set_popover (menu, popover);
