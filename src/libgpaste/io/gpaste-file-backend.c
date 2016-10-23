@@ -10,11 +10,6 @@
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
 
-struct _GPasteFileBackend
-{
-    GPasteStorageBackend parent_instance;
-};
-
 G_PASTE_DEFINE_TYPE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
 /********************/
@@ -291,7 +286,7 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self,
 }
 
 static void
-g_paste_file_backend_write_history (const GPasteStorageBackend *self G_GNUC_UNUSED,
+g_paste_file_backend_write_history (const GPasteStorageBackend *self,
                                     const gchar                *history_file_path,
                                     const GList                *history)
 {
@@ -311,12 +306,8 @@ g_paste_file_backend_write_history (const GPasteStorageBackend *self G_GNUC_UNUS
         return;
     }
 
-    g_autoptr (GOutputStream) stream = G_OUTPUT_STREAM (g_file_replace (history_file,
-                                                        NULL,
-                                                        FALSE,
-                                                        G_FILE_CREATE_REPLACE_DESTINATION,
-                                                        NULL, /* cancellable */
-                                                        NULL)); /* error */
+    const GPasteFileBackend *real_self = _G_PASTE_FILE_BACKEND (self);
+    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, history_file);
 
     if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
         !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
@@ -359,6 +350,18 @@ g_paste_file_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUS
     return "xml";
 }
 
+static GOutputStream *
+g_paste_file_backend_get_output_stream (const GPasteFileBackend *self G_GNUC_UNUSED,
+                                        GFile                   *output_file)
+{
+    return G_OUTPUT_STREAM (g_file_replace (output_file,
+                                            NULL,
+                                            FALSE,
+                                            G_FILE_CREATE_REPLACE_DESTINATION,
+                                            NULL, /* cancellable */
+                                            NULL)); /* error */
+}
+
 static void
 g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 {
@@ -367,6 +370,8 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
     storage_class->read_history = g_paste_file_backend_read_history;
     storage_class->write_history = g_paste_file_backend_write_history;
     storage_class->get_extension = g_paste_file_backend_get_extension;
+
+    klass->get_output_stream = g_paste_file_backend_get_output_stream;
 }
 
 static void
