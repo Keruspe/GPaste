@@ -7,7 +7,6 @@
 #include <gpaste-file-backend.h>
 #include <gpaste-image-item.h>
 #include <gpaste-password-item.h>
-#include <gpaste-settings.h>
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
 
@@ -235,9 +234,9 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
 
 static GList *
 g_paste_file_backend_read_history (const GPasteStorageBackend *self G_GNUC_UNUSED,
-                                   const gchar                *source)
+                                   const gchar                *history_file_path)
 {
-    g_autoptr (GFile) history_file = g_file_new_for_path (source);
+    g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     GPasteSettings *settings = NULL; /* FIXME */
 
     if (g_file_query_exists (history_file,
@@ -268,7 +267,7 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self G_GNUC_UNUSE
         gchar *text;
         guint64 text_length;
 
-        g_file_get_contents (source, &text, &text_length, NULL);
+        g_file_get_contents (history_file_path, &text, &text_length, NULL);
         g_markup_parse_context_parse (ctx, text, text_length, NULL);
         g_markup_parse_context_end_parse (ctx, NULL);
 
@@ -292,10 +291,10 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self G_GNUC_UNUSE
 
 static void
 g_paste_file_backend_write_history (const GPasteStorageBackend *self G_GNUC_UNUSED,
-                                    const gchar                *source,
+                                    const gchar                *history_file_path,
                                     const GList                *history)
 {
-    g_autoptr (GFile) history_file = g_file_new_for_path (source);
+    g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     g_autoptr (GOutputStream) stream = G_OUTPUT_STREAM (g_file_replace (history_file,
                                                         NULL,
                                                         FALSE,
@@ -336,6 +335,12 @@ g_paste_file_backend_write_history (const GPasteStorageBackend *self G_GNUC_UNUS
             g_warning ("Failed to finish writing history");
 }
 
+static const gchar *
+g_paste_file_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUSED)
+{
+    return "xml";
+}
+
 static void
 g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 {
@@ -343,6 +348,7 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 
     storage_class->read_history = g_paste_file_backend_read_history;
     storage_class->write_history = g_paste_file_backend_write_history;
+    storage_class->get_extension = g_paste_file_backend_get_extension;
 }
 
 static void

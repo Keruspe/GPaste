@@ -11,7 +11,7 @@
 #ifndef __G_PASTE_STORAGE_BACKEND_H__
 #define __G_PASTE_STORAGE_BACKEND_H__
 
-#include <gpaste-macros.h>
+#include <gpaste-settings.h>
 
 G_BEGIN_DECLS
 
@@ -30,18 +30,23 @@ struct _GPasteStorageBackendClass
 
     /*< pure virtual >*/
     GList *(*read_history)  (const GPasteStorageBackend *self,
-                             const gchar                *source);
+                             const gchar                *history_file_path);
     void   (*write_history) (const GPasteStorageBackend *self,
-                             const gchar                *source,
+                             const gchar                *history_file_path,
                              const GList                *history);
+
+    /*< protected >*/
+    const gchar *(*get_extension) (const GPasteStorageBackend *self);
 };
 
-GList *g_paste_storage_backend_read_history  (const GPasteStorageBackend *self);
+GList *g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
+                                              const gchar                *name);
 void   g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
+                                              const gchar                *name,
                                               const GList                *history);
 
-GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage storage_kind,
-                                                   const gchar  *source);
+GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
+                                                   GPasteSettings *settings);
 
 G_END_DECLS
 

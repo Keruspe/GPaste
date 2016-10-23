@@ -5,58 +5,70 @@
  */
 
 #include <gpaste-file-backend.h>
+#include <gpaste-util.h>
 
 typedef struct
 {
-    gchar *source;
+    GPasteSettings *settings;
 } GPasteStorageBackendPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TYPE_OBJECT)
 
+static gchar *
+_g_paste_storage_backend_get_history_file_path (const GPasteStorageBackend *self,
+                                                const gchar                *name)
+{
+    return g_paste_util_get_history_file_path (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
+}
+
 /**
  * g_paste_storage_backend_read_history:
  * @self: a #GPasteItem instance
+ * @name: the name of the history to load
  *
  * Reads the history from our storage backend
  *
  * Returns: the saved history
  */
 G_PASTE_VISIBLE GList *
-g_paste_storage_backend_read_history (const GPasteStorageBackend *self)
+g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
+                                      const gchar                *name)
 {
     g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), NULL);
 
-    const GPasteStorageBackendPrivate *priv = _g_paste_storage_backend_get_instance_private (self);
+    g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history (self, priv->source);
+    return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history (self, history_file_path);
 }
 
 /**
  * g_paste_storage_backend_write_history:
  * @self: a #GPasteItem instance
+ * @name: the name of the history to save
  * @history: the history to write
  *
  * Save the history by writing it to our storage backend
  */
 G_PASTE_VISIBLE void
 g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
+                                       const gchar                *name,
                                        const GList                *history)
 {
     g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
 
-    const GPasteStorageBackendPrivate *priv = _g_paste_storage_backend_get_instance_private (self);
+    g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history (self, priv->source, history);
+    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history (self, history_file_path, history);
 }
 
 static void
-g_paste_storage_backend_finalize (GObject *object)
+g_paste_storage_backend_dispose (GObject *object)
 {
     const GPasteStorageBackendPrivate *priv = _g_paste_storage_backend_get_instance_private (G_PASTE_STORAGE_BACKEND (object));
 
-    g_free (priv->source);
+    g_clear_object (&priv->settings);
 
-    G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->finalize (object);
+    G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
 }
 
 static void
@@ -65,7 +77,7 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
     klass->read_history = NULL;
     klass->write_history = NULL;
 
-    G_OBJECT_CLASS (klass)->finalize = g_paste_storage_backend_finalize;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_storage_backend_dispose;
 }
 
 static void
@@ -88,7 +100,7 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
 /**
  * g_paste_storage_backend_new:
  * @storage_kind: the kind of storage we want to use to save and load history
- * @source: the location where the storage is at
+ * @settings: a #GPasteSettings instance
  *
  * Create a new instance of #GPasteStorageBackend
  *
@@ -96,15 +108,15 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteStorageBackend *
-g_paste_storage_backend_new (GPasteStorage storage_kind,
-                             const gchar  *source)
+g_paste_storage_backend_new (GPasteStorage   storage_kind,
+                             GPasteSettings *settings)
 {
-    g_return_val_if_fail (source, NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GPasteStorageBackend *self = g_object_new (_g_paste_storage_backend_get_type (storage_kind), NULL);
     GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
 
-    priv->source = g_strdup (source);
+    priv->settings = g_object_ref (settings);
 
     return self;
 }
