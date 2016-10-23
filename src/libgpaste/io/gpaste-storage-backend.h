@@ -36,7 +36,8 @@ struct _GPasteStorageBackendClass
                              const GList                *history);
 
     /*< protected >*/
-    const gchar *(*get_extension) (const GPasteStorageBackend *self);
+    const gchar          *(*get_extension) (const GPasteStorageBackend *self);
+    const GPasteSettings *(*get_settings) (const GPasteStorageBackend *self);
 };
 
 GList *g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,

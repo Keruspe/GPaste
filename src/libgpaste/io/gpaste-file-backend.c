@@ -233,11 +233,11 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
 /******************/
 
 static GList *
-g_paste_file_backend_read_history (const GPasteStorageBackend *self G_GNUC_UNUSED,
+g_paste_file_backend_read_history (const GPasteStorageBackend *self,
                                    const gchar                *history_file_path)
 {
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
-    GPasteSettings *settings = NULL; /* FIXME */
+    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
 
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */

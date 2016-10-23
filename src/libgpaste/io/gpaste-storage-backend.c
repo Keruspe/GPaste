@@ -71,11 +71,21 @@ g_paste_storage_backend_dispose (GObject *object)
     G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
 }
 
+static const GPasteSettings *
+g_paste_storage_backend_get_settings (const GPasteStorageBackend *self)
+{
+    const GPasteStorageBackendPrivate *priv = _g_paste_storage_backend_get_instance_private (self);
+
+    return priv->settings;
+}
+
 static void
 g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
 {
     klass->read_history = NULL;
     klass->write_history = NULL;
+    klass->get_extension = NULL;
+    klass->get_settings = g_paste_storage_backend_get_settings;
 
     G_OBJECT_CLASS (klass)->dispose = g_paste_storage_backend_dispose;
 }
