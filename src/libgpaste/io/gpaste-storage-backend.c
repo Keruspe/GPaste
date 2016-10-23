@@ -37,7 +37,7 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
                                       gsize                      *size)
 {
     g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
-    g_return_if_fail (!name);
+    g_return_if_fail (name);
     g_return_if_fail (history && !*history);
     g_return_if_fail (size);
 
