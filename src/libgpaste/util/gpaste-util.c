@@ -435,6 +435,8 @@ g_paste_util_get_dbus_au_result (GVariant *variant,
 static gchar *
 g_paste_util_get_runtime_dir (const gchar *component)
 {
+    g_return_val_if_fail (component, NULL);
+
     return g_strdup_printf ("%s/" PACKAGE_NAME "/%s", g_get_user_runtime_dir (), component);
 }
 
@@ -447,6 +449,8 @@ g_paste_util_get_runtime_dir (const gchar *component)
 G_PASTE_VISIBLE void
 g_paste_util_write_pid_file (const gchar *component)
 {
+    g_return_if_fail (component);
+
     g_autofree gchar *dir = g_paste_util_get_runtime_dir (component);
 
     g_mkdir_with_parents (dir, 0700);
@@ -468,6 +472,8 @@ g_paste_util_write_pid_file (const gchar *component)
 G_PASTE_VISIBLE GPid
 g_paste_util_read_pid_file (const gchar *component)
 {
+    g_return_val_if_fail (component, (GPid) -1);
+
 #ifdef G_OS_UNIX
     g_autofree gchar *dir = g_paste_util_get_runtime_dir (component);
     g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
@@ -493,7 +499,10 @@ g_paste_util_read_pid_file (const gchar *component)
 G_PASTE_VISIBLE gchar *
 g_paste_util_xml_decode (const gchar *text)
 {
+    g_return_val_if_fail (text, NULL);
+
     g_autofree gchar *_decoded_text = g_paste_util_replace (text, "&gt;", ">");
+
     return g_paste_util_replace (_decoded_text, "&amp;", "&");
 }
 
@@ -508,7 +517,10 @@ g_paste_util_xml_decode (const gchar *text)
 G_PASTE_VISIBLE gchar *
 g_paste_util_xml_encode (const gchar *text)
 {
+    g_return_val_if_fail (text, NULL);
+
     g_autofree gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
+
     return g_paste_util_replace (_encoded_text, ">", "&gt;");
 }
 
@@ -536,6 +548,7 @@ G_PASTE_VISIBLE GFile *
 g_paste_util_get_history_dir (void)
 {
     g_autofree gchar *history_dir_path = g_paste_util_get_history_dir_path ();
+
     return g_file_new_for_path (history_dir_path);
 }
 
@@ -553,6 +566,7 @@ g_paste_util_get_history_file_path (const gchar *name,
                                     const gchar *extension)
 {
     g_return_val_if_fail (name, NULL);
+    g_return_val_if_fail (extension, NULL);
 
     g_autofree gchar *history_dir_path = g_paste_util_get_history_dir_path ();
     g_autofree gchar *history_file_name = g_strconcat (name, ".", extension, NULL);
@@ -573,7 +587,11 @@ G_PASTE_VISIBLE GFile *
 g_paste_util_get_history_file (const gchar *name,
                                const gchar *extension)
 {
+    g_return_val_if_fail (name, NULL);
+    g_return_val_if_fail (extension, NULL);
+
     g_autofree gchar *history_file_path = g_paste_util_get_history_file_path (name, extension);
+
     return g_file_new_for_path (history_file_path);
 }
 
