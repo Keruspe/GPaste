@@ -670,41 +670,10 @@ g_paste_history_empty (GPasteHistory *self)
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
-static gchar *
-g_paste_history_get_history_dir_path (void)
-{
-    return g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
-}
-
-static GFile *
-g_paste_history_get_history_dir (void)
-{
-    g_autofree gchar *history_dir_path = g_paste_history_get_history_dir_path ();
-    return g_file_new_for_path (history_dir_path);
-}
-
-static gchar *
-g_paste_history_get_history_file_path (const gchar *name)
-{
-    g_return_val_if_fail (name, NULL);
-
-    g_autofree gchar *history_dir_path = g_paste_history_get_history_dir_path ();
-    g_autofree gchar *history_file_name = g_strconcat (name, ".xml", NULL);
-
-    return g_build_filename (history_dir_path, history_file_name, NULL);
-}
-
-static GFile *
-g_paste_history_get_history_file (const gchar *name)
-{
-    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (name);
-    return g_file_new_for_path (history_file_path);
-}
-
 static gboolean
 ensure_history_dir_exists (gboolean save_history)
 {
-    g_autoptr (GFile) history_dir = g_paste_history_get_history_dir ();
+    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
 
     if (!g_file_query_exists (history_dir,
                               NULL)) /* cancellable */
@@ -750,7 +719,7 @@ g_paste_history_save (GPasteHistory *self,
     if (!ensure_history_dir_exists (save_history))
         return;
 
-    history_file_path = g_paste_history_get_history_file_path ((name) ? name : priv->name);
+    history_file_path = g_paste_util_get_history_file_path ((name) ? name : priv->name, "xml");
     history_file = g_file_new_for_path (history_file_path);
 
     if (!save_history)
@@ -1045,7 +1014,7 @@ g_paste_history_load (GPasteHistory *self,
     g_free (priv->name);
     priv->name = g_strdup ((name) ? name : g_paste_settings_get_history_name (priv->settings));
 
-    g_autofree gchar *history_file_path = g_paste_history_get_history_file_path (priv->name);
+    g_autofree gchar *history_file_path = g_paste_util_get_history_file_path (priv->name, "xml");
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
@@ -1135,7 +1104,7 @@ g_paste_history_delete (GPasteHistory *self,
 
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
-    g_autoptr (GFile) history_file = g_paste_history_get_history_file ((name) ? name : priv->name);
+    g_autoptr (GFile) history_file = g_paste_util_get_history_file ((name) ? name : priv->name, "xml");
 
     if (g_paste_str_equal (name, priv->name))
         g_paste_history_empty (self);
@@ -1454,7 +1423,7 @@ g_paste_history_list (GError **error)
     g_autoptr (GArray) history_names = g_array_new (TRUE, /* zero-terminated */
                                                     TRUE, /* clear */
                                                     sizeof (gchar *));
-    g_autoptr (GFile) history_dir = g_paste_history_get_history_dir ();
+    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
                                                                        G_FILE_QUERY_INFO_NONE,
