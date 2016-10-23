@@ -41,6 +41,7 @@ typedef enum
 typedef struct
 {
     GList   *history;
+    gsize    mem_size;
     State    state;
     Type     type;
     guint64  current_size;
@@ -206,7 +207,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
 
                 if (item)
                 {
-                    /* FIXME: priv->size += g_paste_item_get_size (item); */
+                    data->mem_size += g_paste_item_get_size (item);
                     data->history = g_list_append (data->history, item);
                     ++data->current_size;;
                 }
@@ -232,9 +233,11 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
 /* End XML Parser */
 /******************/
 
-static GList *
+static void
 g_paste_file_backend_read_history (const GPasteStorageBackend *self,
-                                   const gchar                *history_file_path)
+                                   const gchar                *history_file_path,
+                                   GList                     **history,
+                                   gsize                      *size)
 {
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
@@ -251,6 +254,7 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self,
         };
         Data data = {
             NULL,
+            0,
             BEGIN,
             TEXT,
             0,
@@ -275,7 +279,8 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self,
             g_warning ("Unexpected state adter parsing history: %" G_GINT32_FORMAT, data.state);
         g_markup_parse_context_unref (ctx);
 
-        return data.history;
+        *history = data.history;
+        *size = data.mem_size;
     }
     else
     {
@@ -284,8 +289,6 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self,
         if (ensure_history_dir_exists (g_paste_settings_get_save_history (settings)))
             g_object_unref (g_file_create (history_file, G_FILE_CREATE_NONE, NULL, NULL));
         */
-
-        return NULL;
     }
 }
 

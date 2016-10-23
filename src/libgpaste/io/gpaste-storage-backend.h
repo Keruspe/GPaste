@@ -29,22 +29,26 @@ struct _GPasteStorageBackendClass
     GObjectClass parent_class;
 
     /*< pure virtual >*/
-    GList *(*read_history)  (const GPasteStorageBackend *self,
-                             const gchar                *history_file_path);
-    void   (*write_history) (const GPasteStorageBackend *self,
-                             const gchar                *history_file_path,
-                             const GList                *history);
+    void (*read_history)  (const GPasteStorageBackend *self,
+                           const gchar                *history_file_path,
+                           GList                     **history,
+                           gsize                      *size);
+    void (*write_history) (const GPasteStorageBackend *self,
+                           const gchar                *history_file_path,
+                           const GList                *history);
 
     /*< protected >*/
     const gchar          *(*get_extension) (const GPasteStorageBackend *self);
     const GPasteSettings *(*get_settings) (const GPasteStorageBackend *self);
 };
 
-GList *g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
-                                              const gchar                *name);
-void   g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
-                                              const gchar                *name,
-                                              const GList                *history);
+void g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
+                                            const gchar                *name,
+                                            GList                     **history,
+                                            gsize                      *size);
+void g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
+                                            const gchar                *name,
+                                            const GList                *history);
 
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);

@@ -25,20 +25,25 @@ _g_paste_storage_backend_get_history_file_path (const GPasteStorageBackend *self
  * g_paste_storage_backend_read_history:
  * @self: a #GPasteItem instance
  * @name: the name of the history to load
+ * @history: (out): the history we just read
+ * @size: (out): the size used by the history
  *
  * Reads the history from our storage backend
- *
- * Returns: the saved history
  */
-G_PASTE_VISIBLE GList *
+G_PASTE_VISIBLE void
 g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
-                                      const gchar                *name)
+                                      const gchar                *name,
+                                      GList                     **history,
+                                      gsize                      *size)
 {
-    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), NULL);
+    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (!name);
+    g_return_if_fail (history && !*history);
+    g_return_if_fail (size);
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history (self, history_file_path);
+    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history (self, history_file_path, history, size);
 }
 
 /**
