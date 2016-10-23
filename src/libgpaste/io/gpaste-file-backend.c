@@ -15,13 +15,6 @@ struct _GPasteFileBackend
 
 G_PASTE_DEFINE_TYPE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
-static gchar *
-g_paste_file_backend_encode (const gchar *text)
-{
-    g_autofree gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
-    return g_paste_util_replace (_encoded_text, ">", "&gt;");
-}
-
 static GList *
 g_paste_file_backend_read_history (const GPasteStorageBackend *self,
                                    const gchar                *source)
@@ -55,7 +48,7 @@ g_paste_file_backend_write_history (const GPasteStorageBackend *self G_GNUC_UNUS
         if (g_paste_str_equal (kind, "Password"))
             continue;
 
-        g_autofree gchar *text = g_paste_file_backend_encode (g_paste_item_get_value (item));
+        g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||

@@ -671,20 +671,6 @@ g_paste_history_empty (GPasteHistory *self)
 }
 
 static gchar *
-g_paste_history_encode (const gchar *text)
-{
-    g_autofree gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
-    return g_paste_util_replace (_encoded_text, ">", "&gt;");
-}
-
-static gchar *
-g_paste_history_decode (const gchar *text)
-{
-    g_autofree gchar *_decoded_text = g_paste_util_replace (text, "&gt;", ">");
-    return g_paste_util_replace (_decoded_text, "&amp;", "&");
-}
-
-static gchar *
 g_paste_history_get_history_dir_path (void)
 {
     return g_build_filename (g_get_user_data_dir (), "gpaste", NULL);
@@ -794,7 +780,7 @@ g_paste_history_save (GPasteHistory *self,
             if (g_paste_str_equal (kind, "Password"))
                 continue;
 
-            g_autofree gchar *text = g_paste_history_encode (g_paste_item_get_value (item));
+            g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
 
             if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
                 !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
@@ -962,7 +948,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         break;
     case IN_ITEM:
     {
-        g_autofree gchar *value = g_paste_history_decode (txt);
+        g_autofree gchar *value = g_paste_util_xml_decode (txt);
         if (*g_strstrip (txt))
         {
             if (data->current_size < data->max_size)

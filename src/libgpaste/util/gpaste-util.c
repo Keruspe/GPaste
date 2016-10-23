@@ -481,3 +481,33 @@ g_paste_util_read_pid_file (const gchar *component)
     return (GPid) -1;
 #endif
 }
+
+/**
+ * g_paste_util_xml_decode:
+ * @text: The text to decode
+ *
+ * Decode the text to its original pre-xml form
+ *
+ * Returns: the decoded text
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_util_xml_decode (const gchar *text)
+{
+    g_autofree gchar *_decoded_text = g_paste_util_replace (text, "&gt;", ">");
+    return g_paste_util_replace (_decoded_text, "&amp;", "&");
+}
+
+/**
+ * g_paste_util_xml_encode:
+ * @text: The text to encode
+ *
+ * Encode the text into its xml form
+ *
+ * Returns: the encoded text
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_util_xml_encode (const gchar *text)
+{
+    g_autofree gchar *_encoded_text = g_paste_util_replace (text, "&", "&amp;");
+    return g_paste_util_replace (_encoded_text, ">", "&gt;");
+}

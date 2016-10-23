@@ -478,4 +478,7 @@ global:
     g_paste_storage_backend_read_history;
     g_paste_storage_backend_write_history;
     g_paste_storage_backend_new;
+
+    g_paste_util_xml_decode;
+    g_paste_util_xml_encode;
 } LIBGPASTE_3_22_0;

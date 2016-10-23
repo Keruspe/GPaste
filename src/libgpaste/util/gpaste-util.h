@@ -47,6 +47,9 @@ guint32 *g_paste_util_get_dbus_au_result (GVariant *variant,
 void g_paste_util_write_pid_file (const gchar *component);
 GPid g_paste_util_read_pid_file  (const gchar *component);
 
+gchar *g_paste_util_xml_decode (const gchar *text);
+gchar *g_paste_util_xml_encode (const gchar *text);
+
 G_END_DECLS
 
 #endif /*__G_PASTE_UTIL_H__*/
