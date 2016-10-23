@@ -239,8 +239,8 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self,
                                    GList                     **history,
                                    gsize                      *size)
 {
-    g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
     const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
 
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
@@ -295,7 +295,22 @@ g_paste_file_backend_write_history (const GPasteStorageBackend *self G_GNUC_UNUS
                                     const gchar                *history_file_path,
                                     const GList                *history)
 {
+    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+
+    if (!g_paste_util_ensure_history_dir_exists (settings))
+        return;
+
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
+
+    if (!g_paste_settings_get_save_history (settings))
+    {
+        g_file_delete (history_file,
+                       NULL, /* cancellable*/
+                       NULL); /* error */
+
+        return;
+    }
+
     g_autoptr (GOutputStream) stream = G_OUTPUT_STREAM (g_file_replace (history_file,
                                                         NULL,
                                                         FALSE,
@@ -333,7 +348,9 @@ g_paste_file_backend_write_history (const GPasteStorageBackend *self G_GNUC_UNUS
 
     if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
         !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
-            g_warning ("Failed to finish writing history");
+    {
+        g_warning ("Failed to finish writing history");
+    }
 }
 
 static const gchar *

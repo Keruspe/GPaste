@@ -7,6 +7,7 @@
 #include <gpaste-history.h>
 #include <gpaste-image-item.h>
 #include <gpaste-gsettings-keys.h>
+#include <gpaste-storage-backend.h>
 #include <gpaste-update-enums.h>
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
@@ -25,17 +26,18 @@ enum
 
 typedef struct
 {
-    GPasteSettings *settings;
-    GList          *history;
-    guint64         size;
+    GPasteStorageBackend *backend;
+    GPasteSettings       *settings;
+    GList                *history;
+    guint64               size;
 
-    gchar          *name;
+    gchar                *name;
 
     /* Note: we never track the first (active) item here */
-    guint64         biggest_index;
-    guint64         biggest_size;
+    guint64               biggest_index;
+    guint64               biggest_size;
 
-    guint64         c_signals[C_LAST_SIGNAL];
+    guint64               c_signals[C_LAST_SIGNAL];
 } GPasteHistoryPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (History, history, G_TYPE_OBJECT)
@@ -685,64 +687,7 @@ g_paste_history_save (GPasteHistory *self,
 
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
-    GPasteSettings *settings = priv->settings;
-    gboolean save_history = g_paste_settings_get_save_history (settings);
-    g_autofree gchar *history_file_path = NULL;
-    g_autoptr (GFile) history_file = NULL;
-
-    if (!g_paste_util_ensure_history_dir_exists (settings))
-        return;
-
-    history_file_path = g_paste_util_get_history_file_path ((name) ? name : priv->name, "xml");
-    history_file = g_file_new_for_path (history_file_path);
-
-    if (!save_history)
-    {
-        g_file_delete (history_file,
-                       NULL, /* cancellable*/
-                       NULL); /* error */
-    }
-    else
-    {
-        g_autoptr (GOutputStream) stream = G_OUTPUT_STREAM (g_file_replace (history_file,
-                                                            NULL,
-                                                            FALSE,
-                                                            G_FILE_CREATE_REPLACE_DESTINATION,
-                                                            NULL, /* cancellable */
-                                                            NULL)); /* error */
-
-        if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
-                return;
-
-        for (GList *history = priv->history; history; history = g_list_next (history))
-        {
-            GPasteItem *item = history->data;
-            const gchar *kind = g_paste_item_get_kind (item);
-
-            if (g_paste_str_equal (kind, "Password"))
-                continue;
-
-            g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
-
-            if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
-                !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
-                (_G_PASTE_IS_IMAGE_ITEM (item) &&
-                    (!g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
-                     !g_output_stream_write_all (stream, g_date_time_format ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item)), "%s"), 10, NULL, NULL /* cancellable */, NULL /* error */))) ||
-                !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
-                !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
-                !g_output_stream_write_all (stream, "]]></item>\n", 11, NULL, NULL /* cancellable */, NULL /* error */))
-            {
-                g_warning ("Failed to write an item to history");
-                continue;
-            }
-        }
-
-        if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
-                return;
-    }
+    g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, priv->history);
 }
 
 /********************/
@@ -1128,6 +1073,8 @@ g_paste_history_dispose (GObject *object)
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
 
+    g_clear_object (&priv->backend);
+
     if (settings)
     {
         g_signal_handler_disconnect (settings, priv->c_signals[C_CHANGED]);
@@ -1371,6 +1318,7 @@ g_paste_history_new (GPasteSettings *settings)
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
+    priv->backend = g_paste_storage_backend_new (G_PASTE_STORAGE_DEFAULT, settings);
     priv->settings = g_object_ref (settings);
     priv->c_signals[C_CHANGED] = g_signal_connect (settings,
                                                    "changed",
