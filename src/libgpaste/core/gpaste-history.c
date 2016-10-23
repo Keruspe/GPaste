@@ -670,32 +670,6 @@ g_paste_history_empty (GPasteHistory *self)
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
-static gboolean
-ensure_history_dir_exists (gboolean save_history)
-{
-    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
-
-    if (!g_file_query_exists (history_dir,
-                              NULL)) /* cancellable */
-    {
-        if (!save_history)
-            return TRUE;
-
-        g_autoptr (GError) error = NULL;
-
-        g_file_make_directory_with_parents (history_dir,
-                                            NULL, /* cancellable */
-                                            &error);
-        if (error)
-        {
-            g_critical ("%s: %s", _("Could not create history dir"), error->message);
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
 /**
  * g_paste_history_save:
  * @self: a #GPasteHistory instance
@@ -716,7 +690,7 @@ g_paste_history_save (GPasteHistory *self,
     g_autofree gchar *history_file_path = NULL;
     g_autoptr (GFile) history_file = NULL;
 
-    if (!ensure_history_dir_exists (save_history))
+    if (!g_paste_util_ensure_history_dir_exists (settings))
         return;
 
     history_file_path = g_paste_util_get_history_file_path ((name) ? name : priv->name, "xml");
@@ -1056,7 +1030,7 @@ g_paste_history_load (GPasteHistory *self,
     else
     {
         /* Create the empty file to be listed as an available history */
-        if (ensure_history_dir_exists (g_paste_settings_get_save_history (settings)))
+        if (g_paste_util_ensure_history_dir_exists (settings))
             g_object_unref (g_file_create (history_file, G_FILE_CREATE_NONE, NULL, NULL));
     }
 

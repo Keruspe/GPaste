@@ -285,10 +285,8 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self,
     else
     {
         /* Create the empty file to be listed as an available history */
-        /* FIXME
-        if (ensure_history_dir_exists (g_paste_settings_get_save_history (settings)))
+        if (g_paste_util_ensure_history_dir_exists (settings))
             g_object_unref (g_file_create (history_file, G_FILE_CREATE_NONE, NULL, NULL));
-        */
     }
 }
 

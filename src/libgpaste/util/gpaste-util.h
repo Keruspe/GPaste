@@ -11,6 +11,8 @@
 #ifndef __G_PASTE_UTIL_H__
 #define __G_PASTE_UTIL_H__
 
+#include <gpaste-settings.h>
+
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 
@@ -56,6 +58,8 @@ gchar *g_paste_util_get_history_file_path (const gchar *name,
                                            const gchar *extension);
 GFile *g_paste_util_get_history_file      (const gchar *name,
                                            const gchar *extension);
+
+gboolean g_paste_util_ensure_history_dir_exists (const GPasteSettings *settings);
 
 G_END_DECLS
 
