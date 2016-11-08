@@ -7,6 +7,7 @@ project('GPaste',
 apiversion = '2'
 
 adwaita_req='>=1.1'
+gcr_req='>=3.41.0'
 glib_req='>=2.70.0'
 gdk_pixbuf_req='>=2.38.0'
 gjs_req='>=1.54.0'
@@ -15,6 +16,7 @@ gtk4_req='>=4.6.0'
 mutter_clutter_req='>=40.0'
 
 appstream_dep = dependency('appstream-glib')
+gcr_dep = dependency('gcr-base-3', version: gcr_req)
 gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0', version: gdk_pixbuf_req)
 gio_dep = dependency('gio-2.0', version: glib_req)
 glib_dep = dependency('glib-2.0', version: glib_req)

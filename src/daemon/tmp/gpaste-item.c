@@ -8,6 +8,9 @@
 
 #include <string.h>
 
+#define GCR_API_SUBJECT_TO_CHANGE
+#include <gcr/gcr-base.h>
+
 typedef struct
 {
     gchar  *uuid;
@@ -347,10 +350,14 @@ g_paste_item_set_uuid (GPasteItem  *self,
 static void
 g_paste_item_finalize (GObject *object)
 {
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (G_PASTE_ITEM (object));
+    const GPasteItem *self = _G_PASTE_ITEM (object);
+    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
 
     g_free (priv->uuid);
-    g_free (priv->value);
+    if (_G_PASTE_ITEM_GET_CLASS (self)->secure (self))
+        gcr_secure_memory_strfree (priv->value);
+    else
+        g_free (priv->value);
     g_free (priv->display_string);
 
     for (GSList *sv = priv->special_values; sv; sv = sv->next)
@@ -384,6 +391,12 @@ g_paste_item_default_set_state (GPasteItem     *self  G_GNUC_UNUSED,
 {
 }
 
+static gboolean
+g_paste_item_default_secure (const GPasteItem *self G_GNUC_UNUSED)
+{
+    return FALSE;
+}
+
 static void
 g_paste_item_class_init (GPasteItemClass *klass)
 {
@@ -391,6 +404,7 @@ g_paste_item_class_init (GPasteItemClass *klass)
     klass->get_value = g_paste_item_get_real_value;
     klass->get_kind = NULL;
     klass->set_state = g_paste_item_default_set_state;
+    klass->secure = g_paste_item_default_secure;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_item_finalize;
 }
@@ -421,7 +435,7 @@ g_paste_item_new (GType        type,
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     priv->uuid = g_uuid_string_random ();
-    priv->value = g_strdup (value);
+    priv->value = (_G_PASTE_ITEM_GET_CLASS (self)->secure (self)) ? gcr_secure_memory_strdup (value) : g_strdup (value);
     priv->display_string = NULL;
 
     priv->size = strlen (priv->value) + 1;

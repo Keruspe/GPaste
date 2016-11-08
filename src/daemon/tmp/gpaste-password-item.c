@@ -91,6 +91,12 @@ g_paste_password_item_equals (const GPasteItem *self,
     return FALSE;
 }
 
+static gboolean
+g_paste_password_item_secure (const GPasteItem *self G_GNUC_UNUSED)
+{
+    return TRUE;
+}
+
 static void
 g_paste_password_item_finalize (GObject *object)
 {
@@ -110,6 +116,7 @@ g_paste_password_item_class_init (GPastePasswordItemClass *klass)
     item_class->get_kind = g_paste_password_item_get_kind;
     item_class->get_value = g_paste_password_item_get_value;
     item_class->equals = g_paste_password_item_equals;
+    item_class->secure = g_paste_password_item_secure;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_password_item_finalize;
 }

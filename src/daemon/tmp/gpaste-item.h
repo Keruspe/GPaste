@@ -39,6 +39,7 @@ struct _GPasteItemClass
                                 const GPasteItem *other);
     void          (*set_state) (GPasteItem     *self,
                                 GPasteItemState state);
+    gboolean      (*secure)    (const GPasteItem *self);
 
     /*< pure virtual >*/
     const gchar *(*get_kind) (const GPasteItem *self);
