@@ -25,7 +25,7 @@ _g_paste_storage_backend_get_history_file_path (const GPasteStorageBackend *self
  * g_paste_storage_backend_read_history:
  * @self: a #GPasteItem instance
  * @name: the name of the history to load
- * @history: (out): the history we just read
+ * @history: (out) (element-type GPasteItem): the history we just read
  * @size: (out): the size used by the history
  *
  * Reads the history from our storage backend
@@ -50,7 +50,7 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
  * g_paste_storage_backend_write_history:
  * @self: a #GPasteItem instance
  * @name: the name of the history to save
- * @history: the history to write
+ * @history: (element-type GPasteItem): the history to write
  *
  * Save the history by writing it to our storage backend
  */

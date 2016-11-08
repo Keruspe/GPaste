@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-10-08 09:17+0200\n"
+"POT-Creation-Date: 2016-11-08 10:26+0100\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -40,10 +40,6 @@ msgstr "Beenden"
 #, fuzzy
 msgid "launch the graphical tool"
 msgstr "Konfigurationswerkzeug starten"
-
-#: src/libgpaste/core/gpaste-history.c:736
-msgid "Could not create history dir"
-msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
 #. This is the date format "month/day/year time"
 #: src/libgpaste/core/gpaste-image-item.c:216
@@ -183,7 +179,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
-#: src/libgpaste/ui/gpaste-ui-window.c:215 src/client/gpaste-client.c:823
+#: src/libgpaste/ui/gpaste-ui-window.c:222 src/client/gpaste-client.c:823
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
@@ -304,6 +300,10 @@ msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 #: src/libgpaste/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
 msgstr ""
+
+#: src/libgpaste/util/gpaste-util.c:626
+msgid "Could not create history dir"
+msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
 #: src/client/gpaste-client.c:133 src/client/gpaste-client.c:431
 #, fuzzy

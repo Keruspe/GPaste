@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-10-08 09:17+0200\n"
+"POT-Creation-Date: 2016-11-08 10:26+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -38,10 +38,6 @@ msgstr "Quitter"
 #: src/libgpaste/applet/gpaste-applet-ui.c:48 src/client/gpaste-client.c:203
 msgid "launch the graphical tool"
 msgstr "lance l'interface graphique"
-
-#: src/libgpaste/core/gpaste-history.c:736
-msgid "Could not create history dir"
-msgstr "Impossible de créer le dossier d'historique"
 
 #. This is the date format "month/day/year time"
 #: src/libgpaste/core/gpaste-image-item.c:216
@@ -171,7 +167,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Téléverser l'élément actif vers un sevice type pastebin"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
-#: src/libgpaste/ui/gpaste-ui-window.c:215 src/client/gpaste-client.c:823
+#: src/libgpaste/ui/gpaste-ui-window.c:222 src/client/gpaste-client.c:823
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Impossible de se connecter au démon GPaste"
 
@@ -288,6 +284,10 @@ msgstr ""
 #: src/libgpaste/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
 msgstr "Publier"
+
+#: src/libgpaste/util/gpaste-util.c:626
+msgid "Could not create history dir"
+msgstr "Impossible de créer le dossier d'historique"
 
 #: src/client/gpaste-client.c:133 src/client/gpaste-client.c:431
 msgid "Couldn't spawn"

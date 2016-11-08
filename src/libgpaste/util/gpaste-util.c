@@ -542,7 +542,7 @@ g_paste_util_get_history_dir_path (void)
  *
  * Get the directory where we store the history
  *
- * Returns: the directory
+ * Returns: (transfer full): the directory
  */
 G_PASTE_VISIBLE GFile *
 g_paste_util_get_history_dir (void)
@@ -581,7 +581,7 @@ g_paste_util_get_history_file_path (const gchar *name,
  *
  * Get the file in which we store the history
  *
- * Returns: the file
+ * Returns: (transfer full): the file
  */
 G_PASTE_VISIBLE GFile *
 g_paste_util_get_history_file (const gchar *name,
