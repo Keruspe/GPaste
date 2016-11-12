@@ -41,11 +41,9 @@ run_action() {
     local configure_args=(
         --prefix=/usr
         --sysconfdir=/etc
-        --enable-applet
         --enable-appstream-util
         --enable-gnome-shell-extension
         --enable-introspection
-        --enable-unity
         --enable-vala
         --enable-x-keybinder
     )

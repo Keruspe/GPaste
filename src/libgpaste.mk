@@ -17,13 +17,6 @@ lib_libgpaste_la_misc_headers =               \
 
 lib_libgpaste_la_public_headers =                                             \
 	%D%/libgpaste/gpaste.h                                                \
-	%D%/libgpaste/applet/gpaste-applet.h                                  \
-	%D%/libgpaste/applet/gpaste-applet-about.h                            \
-	%D%/libgpaste/applet/gpaste-applet-icon.h                             \
-	%D%/libgpaste/applet/gpaste-applet-menu.h                             \
-	%D%/libgpaste/applet/gpaste-applet-quit.h                             \
-	%D%/libgpaste/applet/gpaste-applet-status-icon.h                      \
-	%D%/libgpaste/applet/gpaste-applet-ui.h                               \
 	%D%/libgpaste/client/gpaste-client.h                                  \
 	%D%/libgpaste/core/gpaste-clipboard.h                                 \
 	%D%/libgpaste/core/gpaste-clipboards-manager.h                        \
@@ -84,13 +77,6 @@ lib_libgpaste_la_public_headers =                                             \
 	$(NULL)
 
 lib_libgpaste_la_source_files =                                               \
-	%D%/libgpaste/applet/gpaste-applet.c                                  \
-	%D%/libgpaste/applet/gpaste-applet-about.c                            \
-	%D%/libgpaste/applet/gpaste-applet-icon.c                             \
-	%D%/libgpaste/applet/gpaste-applet-menu.c                             \
-	%D%/libgpaste/applet/gpaste-applet-quit.c                             \
-	%D%/libgpaste/applet/gpaste-applet-status-icon.c                      \
-	%D%/libgpaste/applet/gpaste-applet-ui.c                               \
 	%D%/libgpaste/client/gpaste-client.c                                  \
 	%D%/libgpaste/core/gpaste-clipboard.c                                 \
 	%D%/libgpaste/core/gpaste-clipboards-manager.c                        \

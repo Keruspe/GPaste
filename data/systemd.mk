@@ -7,18 +7,6 @@ nodist_systemduserunit_DATA =                   \
 	%D%/systemd/org.gnome.GPaste.Ui.service \
 	$(NULL)
 
-if ENABLE_APPLET
-nodist_systemduserunit_DATA +=                      \
-	%D%/systemd/org.gnome.GPaste.Applet.service \
-	$(NULL)
-endif
-
-if ENABLE_UNITY
-nodist_systemduserunit_DATA +=                            \
-	%D%/systemd/org.gnome.GPaste.AppIndicator.service \
-	$(NULL)
-endif
-
 SUFFIXES += .service .systemd.in
 .systemd.in.service:
 	@ $(MKDIR_P) $(@D)

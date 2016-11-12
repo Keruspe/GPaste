@@ -1,4 +1,0 @@
-[D-BUS Service]
-Name=org.gnome.GPaste.AppIndicator
-Exec=@pkglibexecdir@/gpaste-app-indicator --gapplication-service
-SystemdService=org.gnome.GPaste.AppIndicator.service

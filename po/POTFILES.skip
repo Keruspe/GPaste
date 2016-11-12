@@ -1,4 +1,2 @@
-data/desktop/org.gnome.GPaste.Applet.desktop.in
-data/desktop/org.gnome.GPaste.AppIndicator.desktop.in
 data/desktop/org.gnome.GPaste.Ui.desktop.in
 data/gsettings/org.gnome.GPaste.gschema.xml

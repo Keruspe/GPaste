@@ -72,15 +72,6 @@
 #include <gpaste-settings-ui-stack.h>
 #include <gpaste-settings-ui-widget.h>
 
-/* GPasteApplet */
-#include <gpaste-applet-about.h>
-#include <gpaste-applet-icon.h>
-#include <gpaste-applet-menu.h>
-#include <gpaste-applet-quit.h>
-#include <gpaste-applet-status-icon.h>
-#include <gpaste-applet-ui.h>
-#include <gpaste-applet.h>
-
 /* GPasteUi */
 #include <gpaste-ui-about.h>
 #include <gpaste-ui-backup-history.h>

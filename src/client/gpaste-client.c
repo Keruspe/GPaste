@@ -201,16 +201,6 @@ show_help (void)
     printf ("  %s settings: %s\n", progname, _("launch the configuration tool"));
     /* Translators: help for gpaste ui */
     printf ("  %s ui: %s\n", progname, _("launch the graphical tool"));
-    if (g_paste_util_has_applet ())
-    {
-        /* Translators: help for gpaste applet */
-        printf ("  %s applet: %s\n", progname, _("launch the applet"));
-    }
-    if (g_paste_util_has_unity ())
-    {
-        /* Translators: help for gpaste app-indicator */
-        printf ("  %s app-indicator: %s\n", progname, _("launch the unity application indicator"));
-    }
     /* Translators: help for gpaste show-history */
     printf ("  %s show-history: %s\n", progname, _("make the applet or extension display the history"));
     /* Translators: help for gpaste upload */
@@ -472,20 +462,6 @@ g_paste_ui (Context *ctx   G_GNUC_UNUSED,
 }
 
 static gint
-g_paste_applet (Context *ctx   G_GNUC_UNUSED,
-                GError **error G_GNUC_UNUSED)
-{
-    return (g_paste_util_has_applet ()) ? spawn ("Applet") : -1;
-}
-
-static gint
-g_paste_app_indicator (Context *ctx   G_GNUC_UNUSED,
-                       GError **error G_GNUC_UNUSED)
-{
-    return (g_paste_util_has_unity ()) ? spawn ("AppIndicator") : -1;
-}
-
-static gint
 g_paste_add (Context *ctx,
              GError **error)
 {
@@ -730,8 +706,6 @@ g_paste_dispatch (gint         argc,
         { 1, "q",               0,        TRUE,  g_paste_stop            },
         { 1, "quit",            0,        TRUE,  g_paste_stop            },
         { 1, "ui",              0,        FALSE, g_paste_ui              },
-        { 1, "applet",          0,        FALSE, g_paste_applet          },
-        { 1, "app-indicator",   0,        FALSE, g_paste_app_indicator   },
         { 2, "a",               0,        TRUE,  g_paste_add             },
         { 2, "add",             0,        TRUE,  g_paste_add             },
         { 2, "ap",              1,        TRUE,  g_paste_add_password    },

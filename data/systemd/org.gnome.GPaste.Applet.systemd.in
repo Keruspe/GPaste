@@ -1,7 +1,0 @@
-[Unit]
-Description=GPaste applet
-
-[Service]
-Type=dbus
-BusName=org.gnome.GPaste.Applet
-ExecStart=@pkglibexecdir@/gpaste-applet --gapplication-service

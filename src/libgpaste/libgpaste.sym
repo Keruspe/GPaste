@@ -1,20 +1,5 @@
 LIBGPASTE_3_16_0 {
 global:
-    g_paste_applet_about_get_type;
-    g_paste_applet_about_new;
-    g_paste_applet_get_active;
-    g_paste_applet_get_type;
-    g_paste_applet_icon_get_type;
-    g_paste_applet_menu_get_type;
-    g_paste_applet_menu_new;
-    g_paste_applet_quit_get_type;
-    g_paste_applet_quit_new;
-    g_paste_applet_set_active;
-    g_paste_applet_status_icon_get_type;
-    g_paste_applet_status_icon_new;
-    g_paste_applet_ui_get_type;
-    g_paste_applet_ui_new;
-
     g_paste_client_about;
     g_paste_client_about_finish;
     g_paste_client_about_sync;
@@ -323,8 +308,6 @@ global:
 
     g_paste_util_compute_checksum;
     g_paste_util_confirm_dialog;
-    g_paste_util_has_applet;
-    g_paste_util_has_unity;
     g_paste_util_replace;
     g_paste_util_show_win;
     g_paste_util_spawn;
@@ -335,9 +318,6 @@ local:
 
 LIBGPASTE_3_18_0 {
 global:
-    g_paste_applet_icon_activate;
-    g_paste_applet_icon_new;
-
     g_paste_bus_get_connection;
     g_paste_bus_get_type;
     g_paste_bus_new;
@@ -448,8 +428,6 @@ global:
 
 LIBGPASTE_3_20_0 {
 global:
-    g_paste_applet_new;
-
     g_paste_ui_empty_item_show_empty;
     g_paste_ui_empty_item_show_no_result;
     g_paste_ui_item_skeleton_set_uploadable;

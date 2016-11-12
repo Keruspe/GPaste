@@ -122,20 +122,14 @@ G_PASTE_WITH([controlcenterdir],   [Gnome control-center keybindings directory],
 G_PASTE_WITH([dbusservicesdir],    [D-Bus system session directory],             [`${PKG_CONFIG} --variable session_bus_services_dir dbus-1`])
 G_PASTE_WITH([systemduserunitdir], [systemd user units directory],               [`${PKG_CONFIG} --variable systemduserunitdir systemd`])
 
-G_PASTE_ENABLE([applet],                [Enable gpaste-applet],          [no])
 G_PASTE_ENABLE([bash-completion],       [Disable the bash completion],   [yes])
 G_PASTE_ENABLE([gnome-shell-extension], [Disable gnome-shell extension], [yes])
-G_PASTE_ENABLE([unity],                 [Enable gpaste-app-indicator],   [no])
 G_PASTE_ENABLE([x-keybinder],           [Disable the X keybinder],       [yes])
 G_PASTE_ENABLE([zsh-completion],        [Disable the zsh completion],    [yes])
 
 AS_IF([test x${enable_gnome_shell_extension} = xyes], [
     AS_IF([test x${enable_introspection} != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
     PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-1.0])
-])
-
-AS_IF([test x${enable_unity} = xyes], [
-    PKG_CHECK_MODULES(UNITY, [appindicator3-0.1])
 ])
 
 AS_IF([test x${enable_x_keybinder} = xyes], [
@@ -178,8 +172,6 @@ AC_MSG_RESULT([
     GObject Introspection:  ${enable_introspection}
     Vapi:                   ${enable_vala}
 
-    Status icon:            ${enable_applet}
-    App indicator:          ${enable_unity}
     Gnome-Shell extension:  ${enable_gnome_shell_extension}
 
     X keybinder support:    ${enable_x_keybinder}

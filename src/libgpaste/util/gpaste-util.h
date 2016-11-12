@@ -34,8 +34,6 @@ gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *substitution);
 gchar   *g_paste_util_compute_checksum  (GdkPixbuf *image);
 
-gboolean g_paste_util_has_applet      (void);
-gboolean g_paste_util_has_unity       (void);
 gboolean g_paste_util_has_gnome_shell (void);
 
 void g_paste_util_show_win (GApplication *application);

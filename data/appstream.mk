@@ -8,18 +8,6 @@ appstream_in_files =                                     \
 	%D%/appstream/org.gnome.GPaste.Ui.appdata.xml.in \
 	$(NULL)
 
-if ENABLE_APPLET
-appstream_in_files +=                                        \
-	%D%/appstream/org.gnome.GPaste.Applet.appdata.xml.in \
-	$(NULL)
-endif
-
-if ENABLE_UNITY
-appstream_in_files +=                                              \
-	%D%/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in \
-	$(NULL)
-endif
-
 appstream_XML = $(appstream_in_files:.xml.in=.xml)
 
 SUFFIXES += .appdata.xml.in .appdata.xml

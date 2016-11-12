@@ -323,32 +323,6 @@ g_paste_util_compute_checksum (GdkPixbuf *image)
 }
 
 /**
- * g_paste_util_has_applet:
- *
- * Check whether gpaste-applet is installed or not
- *
- * Returns: %TRUE if gpaste-applet is installed
- */
-G_PASTE_VISIBLE gboolean
-g_paste_util_has_applet (void)
-{
-    return g_file_test (PKGLIBEXECDIR "/gpaste-applet", G_FILE_TEST_IS_EXECUTABLE);
-}
-
-/**
- * g_paste_util_has_unity:
- *
- * Check whether gpaste-app-indicator is installed or not
- *
- * Returns: %TRUE if gpaste-app-indicator is installed
- */
-G_PASTE_VISIBLE gboolean
-g_paste_util_has_unity (void)
-{
-    return g_file_test (PKGLIBEXECDIR "/gpaste-app-indicator", G_FILE_TEST_IS_EXECUTABLE);
-}
-
-/**
  * g_paste_util_has_gnome_shell:
  *
  * Check whether gnome-shell is installed or not

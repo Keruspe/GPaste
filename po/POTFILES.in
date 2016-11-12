@@ -1,8 +1,4 @@
 src/libgpaste/gpaste-macros.h
-src/libgpaste/applet/gpaste-applet.c
-src/libgpaste/applet/gpaste-applet-about.c
-src/libgpaste/applet/gpaste-applet-quit.c
-src/libgpaste/applet/gpaste-applet-ui.c
 src/libgpaste/core/gpaste-history.c
 src/libgpaste/core/gpaste-image-item.c
 src/libgpaste/core/gpaste-password-item.c
@@ -29,11 +25,7 @@ src/gnome-shell/extension.js
 src/client/gpaste-client.c
 src/daemon/gpaste-daemon.c
 src/ui/gpaste-ui.c
-data/appstream/org.gnome.GPaste.Applet.appdata.xml.in
-data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in
 data/appstream/org.gnome.GPaste.Ui.appdata.xml.in
 data/control-center/42-gpaste.control-center.xml.in
-data/desktop/org.gnome.GPaste.Applet.desktop.in.in
-data/desktop/org.gnome.GPaste.AppIndicator.desktop.in.in
 data/desktop/org.gnome.GPaste.Ui.desktop.in.in
 data/gsettings/org.gnome.GPaste.gschema.xml.in

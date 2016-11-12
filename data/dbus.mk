@@ -7,18 +7,6 @@ nodist_dbusservices_DATA =                   \
 	%D%/dbus/org.gnome.GPaste.Ui.service \
 	$(NULL)
 
-if ENABLE_APPLET
-nodist_dbusservices_DATA +=                      \
-	%D%/dbus/org.gnome.GPaste.Applet.service \
-	$(NULL)
-endif
-
-if ENABLE_UNITY
-nodist_dbusservices_DATA +=                            \
-	%D%/dbus/org.gnome.GPaste.AppIndicator.service \
-	$(NULL)
-endif
-
 SUFFIXES += .service .dbus.in
 .dbus.in.service:
 	@ $(MKDIR_P) $(@D)

@@ -11,17 +11,14 @@ AM_DISTCHECK_CONFIGURE_FLAGS =                                              \
 	--with-dbusservicesdir="$$dc_install_base/$(dbusservicesdir)"       \
 	--with-systemduserunitdir="$$dc_install_base/$(systemduserunitdir)" \
 	--enable-appstream-util                                             \
-	--enable-applet                                                     \
 	--enable-gnome-shell-extension                                      \
 	--enable-introspection                                              \
-	--enable-unity                                                      \
 	--enable-vala                                                       \
 	$(NULL)
 
 AM_CPPFLAGS =                                        \
 	-include config.h                            \
 	-I$(srcdir)/src/libgpaste                    \
-	-I$(srcdir)/src/libgpaste/applet             \
 	-I$(srcdir)/src/libgpaste/client             \
 	-I$(srcdir)/src/libgpaste/core               \
 	-I$(srcdir)/src/libgpaste/daemon             \
@@ -73,10 +70,8 @@ include src/client.mk
 include src/daemon.mk
 include src/ui.mk
 
-# Applets
+# Gnome-Shell extension
 
-include src/applet.mk
-include src/app-indicator.mk
 include src/gnome-shell.mk
 
 # Data

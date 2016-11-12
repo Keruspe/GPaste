@@ -1,4 +1,0 @@
-[D-BUS Service]
-Name=org.gnome.GPaste.Applet
-Exec=@pkglibexecdir@/gpaste-applet --gapplication-service
-SystemdService=org.gnome.GPaste.Applet.service

@@ -21,9 +21,7 @@ A default daemon named `gpaste-daemon` is provided, with seven keybindings:
 * upload the active item to a pastebin service (using wgetpaste)
 * launch the graphical tool
 
-A simple CLI interface is provided: `gpaste-client`, with three subcommands: `gpaste-client ui` which makes the graphical
-tool pop, `gpaste-client applet` which starts the status icon in your notification area and `gpaste-client app-indicator` which
-starts the unity application indicator.
+A simple CLI interface is provided: `gpaste-client`, with a subcommands: `gpaste-client ui` which makes the graphical tool pop.
 
 A native gnome-shell extension is provided.
 
@@ -38,10 +36,6 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
     make
     sudo make install
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
-
-If you also want to build the status icon, you'll have to pass `--enable-applet` to configure.
-
-If you also want to build the unity application indicator, you'll have to pass `--enable-unity` to configure.
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
