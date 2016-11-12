@@ -29,17 +29,17 @@ struct _GPasteStorageBackendClass
     GObjectClass parent_class;
 
     /*< pure virtual >*/
-    void (*read_history)  (const GPasteStorageBackend *self,
-                           const gchar                *history_file_path,
-                           GList                     **history,
-                           gsize                      *size);
-    void (*write_history) (const GPasteStorageBackend *self,
-                           const gchar                *history_file_path,
-                           const GList                *history);
+    void (*read_history_file)  (const GPasteStorageBackend *self,
+                                const gchar                *history_file_path,
+                                GList                     **history,
+                                gsize                      *size);
+    void (*write_history_file) (const GPasteStorageBackend *self,
+                                const gchar                *history_file_path,
+                                const GList                *history);
 
     /*< protected >*/
     const gchar          *(*get_extension) (const GPasteStorageBackend *self);
-    const GPasteSettings *(*get_settings) (const GPasteStorageBackend *self);
+    const GPasteSettings *(*get_settings)  (const GPasteStorageBackend *self);
 };
 
 void g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,

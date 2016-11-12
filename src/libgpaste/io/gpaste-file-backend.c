@@ -229,10 +229,10 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
 /******************/
 
 static void
-g_paste_file_backend_read_history (const GPasteStorageBackend *self,
-                                   const gchar                *history_file_path,
-                                   GList                     **history,
-                                   gsize                      *size)
+g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
+                                        const gchar                *history_file_path,
+                                        GList                     **history,
+                                        gsize                      *size)
 {
     const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
@@ -286,9 +286,9 @@ g_paste_file_backend_read_history (const GPasteStorageBackend *self,
 }
 
 static void
-g_paste_file_backend_write_history (const GPasteStorageBackend *self,
-                                    const gchar                *history_file_path,
-                                    const GList                *history)
+g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
+                                         const gchar                *history_file_path,
+                                         const GList                *history)
 {
     const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
 
@@ -367,8 +367,8 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
 {
     GPasteStorageBackendClass *storage_class = G_PASTE_STORAGE_BACKEND_CLASS (klass);
 
-    storage_class->read_history = g_paste_file_backend_read_history;
-    storage_class->write_history = g_paste_file_backend_write_history;
+    storage_class->read_history_file = g_paste_file_backend_read_history_file;
+    storage_class->write_history_file = g_paste_file_backend_write_history_file;
     storage_class->get_extension = g_paste_file_backend_get_extension;
 
     klass->get_output_stream = g_paste_file_backend_get_output_stream;

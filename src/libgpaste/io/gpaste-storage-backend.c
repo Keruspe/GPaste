@@ -43,7 +43,7 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history (self, history_file_path, history, size);
+    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->read_history_file (self, history_file_path, history, size);
 }
 
 /**
@@ -63,7 +63,7 @@ g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history (self, history_file_path, history);
+    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history);
 }
 
 static void
@@ -87,8 +87,8 @@ g_paste_storage_backend_get_settings (const GPasteStorageBackend *self)
 static void
 g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
 {
-    klass->read_history = NULL;
-    klass->write_history = NULL;
+    klass->read_history_file = NULL;
+    klass->write_history_file = NULL;
     klass->get_extension = NULL;
     klass->get_settings = g_paste_storage_backend_get_settings;
 
