@@ -34,6 +34,8 @@ AM_CPPFLAGS =                                        \
 	-DLOCALEDIR=\"$(localedir)\"                 \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"         \
 	-DG_LOG_USE_STRUCTURED=1                     \
+	-DGDK_DISABLE_DEPRECATED                     \
+	-DGTK_DISABLE_DEPRECATED                     \
 	$(NULL)
 
 EXTRA_DIST =       \
