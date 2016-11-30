@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-11-08 10:26+0100\n"
+"POT-Creation-Date: 2016-11-30 14:45+0100\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -177,7 +177,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Carregar o item ativo para um serviço de pastebin: "
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:313
-#: src/libgpaste/ui/gpaste-ui-window.c:222 src/client/gpaste-client.c:823
+#: src/libgpaste/ui/gpaste-ui-window.c:223 src/client/gpaste-client.c:823
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Não foi possível se conectar ao daemon do GPaste"
 
