@@ -26,6 +26,7 @@ typedef struct
     GSettings *settings;
     GSettings *shell_settings;
 
+    gboolean   close_on_select;
     guint64    element_size;
     gboolean   growing_lines;
     gchar     *history_name;
@@ -124,6 +125,29 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define NEW_SIGNAL(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST, arg_type, arg_type)
 #define NEW_SIGNAL_DETAILED(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type)
 #define NEW_SIGNAL_DETAILED_STATIC(name, arg_type) NEW_SIGNAL_FULL (name, G_SIGNAL_RUN_LAST | G_SIGNAL_DETAILED, arg_type, arg_type | G_SIGNAL_TYPE_STATIC_SCOPE)
+
+/**
+ * g_paste_settings_get_close_on_select:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "close-on-select" setting
+ *
+ * Returns: the value of the "close-on-select" setting
+ */
+/**
+ * g_paste_settings_reset_close_on_select:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "close-on-select" setting
+ */
+/**
+ * g_paste_settings_set_close_on_select:
+ * @self: a #GPasteSettings instance
+ * @value: the new history name
+ *
+ * Change the "close-on-select" setting
+ */
+BOOLEAN_SETTING (close_on_select, CLOSE_ON_SELECT)
 
 /**
  * g_paste_settings_get_element_size:
@@ -750,7 +774,9 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
-    if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
+    if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
+        g_paste_settings_private_set_close_on_select_from_dconf (priv);
+    else if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
         g_paste_settings_private_set_element_size_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
         g_paste_settings_private_set_growing_lines_from_dconf (priv);
@@ -939,6 +965,7 @@ g_paste_settings_init (GPasteSettings *self)
                                                    G_CALLBACK (g_paste_settings_settings_changed),
                                                    self);
 
+    g_paste_settings_private_set_close_on_select_from_dconf (priv);
     g_paste_settings_private_set_element_size_from_dconf (priv);
     g_paste_settings_private_set_growing_lines_from_dconf (priv);
     g_paste_settings_private_set_history_name_from_dconf (priv);

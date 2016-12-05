@@ -29,6 +29,7 @@ typedef struct
 
     GError          *init_error;
 
+    GtkSwitch       *close_on_select_switch;
     GtkSwitch       *images_support_switch;
     GtkSwitch       *growing_lines_switch;
     GtkSwitch       *primary_to_history_switch;
@@ -96,6 +97,7 @@ g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
                           name, label);
 }
 
+BOOLEAN_CALLBACK (close_on_select)
 BOOLEAN_CALLBACK (extension_enabled)
 BOOLEAN_CALLBACK (growing_lines)
 BOOLEAN_CALLBACK (images_support)
@@ -118,6 +120,12 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
                                                                                 track_changes_callback,
                                                                                 (GPasteResetCallback) g_paste_settings_reset_track_changes,
                                                                                 settings);
+    priv->close_on_select_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+                                                                                  _("Close UI on select"),
+                                                                                  g_paste_settings_get_close_on_select (settings),
+                                                                                  close_on_select_callback,
+                                                                                  (GPasteResetCallback) g_paste_settings_reset_close_on_select,
+                                                                                  settings);
 
     if (g_paste_util_has_gnome_shell ())
     {
@@ -337,7 +345,9 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
 {
     GPasteSettingsUiStackPrivate *priv = user_data;
 
-    if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
+    if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->close_on_select_switch), g_paste_settings_get_close_on_select (settings));
+    else if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->growing_lines_switch), g_paste_settings_get_growing_lines (settings));

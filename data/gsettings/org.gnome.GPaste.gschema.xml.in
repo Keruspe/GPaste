@@ -35,6 +35,14 @@
       </description>
     </key>
 
+    <key name="close-on-select" type="b">
+      <default>true</default>
+      <summary>Do we cose the UI after selecting an item?</summary>
+      <description>
+        By default, we close it
+      </description>
+    </key>
+
     <key name="launch-ui" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;G'</default>
       <summary>The keyboard shortcut to launch the graphical interface</summary>

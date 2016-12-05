@@ -474,6 +474,10 @@ LIBGPASTE_3_24_0 {
 global:
     g_paste_file_backend_get_type;
 
+    g_paste_settings_get_close_on_select;
+    g_paste_settings_reset_close_on_select;
+    g_paste_settings_set_close_on_select;
+
     g_paste_storage_backend_get_type;
     g_paste_storage_backend_read_history;
     g_paste_storage_backend_write_history;

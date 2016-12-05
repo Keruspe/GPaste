@@ -19,6 +19,7 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Settings, settings, SETTINGS, GObject)
 
+gboolean     g_paste_settings_get_close_on_select            (const GPasteSettings *self);
 guint64      g_paste_settings_get_element_size               (const GPasteSettings *self);
 gboolean     g_paste_settings_get_growing_lines              (const GPasteSettings *self);
 const gchar *g_paste_settings_get_history_name               (const GPasteSettings *self);
@@ -42,6 +43,7 @@ gboolean     g_paste_settings_get_track_extension_state      (const GPasteSettin
 gboolean     g_paste_settings_get_trim_items                 (const GPasteSettings *self);
 const gchar *g_paste_settings_get_upload                     (const GPasteSettings *self);
 
+void g_paste_settings_reset_close_on_select            (GPasteSettings *self);
 void g_paste_settings_reset_element_size               (GPasteSettings *self);
 void g_paste_settings_reset_growing_lines              (GPasteSettings *self);
 void g_paste_settings_reset_history_name               (GPasteSettings *self);
@@ -65,6 +67,8 @@ void g_paste_settings_reset_track_extension_state      (GPasteSettings *self);
 void g_paste_settings_reset_trim_items                 (GPasteSettings *self);
 void g_paste_settings_reset_upload                     (GPasteSettings *self);
 
+void g_paste_settings_set_close_on_select            (GPasteSettings *self,
+                                                      gboolean        value);
 void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint64         value);
 void g_paste_settings_set_growing_lines              (GPasteSettings *self,
