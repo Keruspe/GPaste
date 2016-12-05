@@ -15,6 +15,9 @@ struct _GPasteUiItem
 typedef struct
 {
     GPasteClient   *client;
+    GPasteSettings *settings;
+
+    GtkWindow      *rootwin;
 
     guint64         index;
     gboolean        bold;
@@ -38,6 +41,9 @@ g_paste_ui_item_activate (GPasteUiItem *self)
     const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
 
     g_paste_client_select (priv->client, priv->index, NULL, NULL);
+
+    if (g_paste_settings_get_close_on_select (priv->settings))
+        gtk_window_close (priv->rootwin); /* Exit the application */
 }
 
 /**
@@ -153,6 +159,7 @@ g_paste_ui_item_dispose (GObject *object)
     const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (object));
 
     g_clear_object (&priv->client);
+    g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_ui_item_parent_class)->dispose (object);
 }
@@ -197,6 +204,8 @@ g_paste_ui_item_new (GPasteClient   *client,
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (self));
 
     priv->client = g_object_ref (client);
+    priv->settings = g_object_ref (settings);
+    priv->rootwin = rootwin;
 
     g_paste_ui_item_set_index (G_PASTE_UI_ITEM (self), index);
 
