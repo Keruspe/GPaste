@@ -31,19 +31,26 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiItem, ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON
  * g_paste_ui_item_activate:
  * @self: a #GPasteUiItem instance
  *
- * Refresh the item
+ * Activate/Select the item
+ *
+ * returns: whether there was anything to select or not
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_ui_item_activate (GPasteUiItem *self)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
+    g_return_val_if_fail (_G_PASTE_IS_UI_ITEM (self), FALSE);
 
     const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
+
+    if (priv->index == (guint64) -1)
+        return FALSE;
 
     g_paste_client_select (priv->client, priv->index, NULL, NULL);
 
     if (g_paste_settings_get_close_on_select (priv->settings))
         gtk_window_close (priv->rootwin); /* Exit the application */
+
+    return TRUE;
 }
 
 /**

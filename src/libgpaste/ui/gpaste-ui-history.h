@@ -22,6 +22,8 @@ G_PASTE_FINAL_TYPE (UiHistory, ui_history, UI_HISTORY, GtkListBox)
 void g_paste_ui_history_search (GPasteUiHistory *self,
                                 const gchar     *search);
 
+gboolean g_paste_ui_history_select_first (GPasteUiHistory *self);
+
 GtkWidget *g_paste_ui_history_new (GPasteClient   *client,
                                    GPasteSettings *settings,
                                    GPasteUiPanel  *panel,

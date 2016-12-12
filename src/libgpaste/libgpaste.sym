@@ -483,6 +483,8 @@ global:
     g_paste_storage_backend_write_history;
     g_paste_storage_backend_new;
 
+    g_paste_ui_history_select_first;
+
     g_paste_util_ensure_history_dir_exists;
     g_paste_util_get_history_dir_path;
     g_paste_util_get_history_dir;

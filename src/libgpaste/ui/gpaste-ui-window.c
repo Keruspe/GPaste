@@ -114,12 +114,23 @@ on_key_press_event (GtkWidget   *widget,
     const GPasteUiWindowPrivate *priv = _g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
     GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (widget));
     gboolean search_has_focus = focus == GTK_WIDGET (priv->search_entry);
+    gboolean search_in_progress = search_has_focus && gtk_entry_get_text_length (GTK_ENTRY (priv->search_entry));
 
-    if (event->keyval == GDK_KEY_Escape && !(search_has_focus && gtk_entry_get_text_length (GTK_ENTRY (priv->search_entry))))
+    switch (event->keyval)
     {
-        gtk_window_close (GTK_WINDOW (widget));
-
-        return GDK_EVENT_STOP;
+    case GDK_KEY_Escape:
+        if (!search_in_progress)
+        {
+            gtk_window_close (GTK_WINDOW (widget));
+            return GDK_EVENT_STOP;
+        }
+        break;
+    case GDK_KEY_Return:
+    case GDK_KEY_KP_Enter:
+    case GDK_KEY_ISO_Enter:
+        if (search_in_progress && g_paste_ui_history_select_first (priv->history))
+            return GDK_EVENT_STOP;
+        break;
     }
 
     if (search_has_focus && gtk_search_bar_handle_event (priv->search_bar, (GdkEvent *) event))

@@ -272,6 +272,27 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     }
 }
 
+/**
+ * g_paste_ui_history_select_first:
+ * @self: a #GPasteUiHistory instance
+ *
+ * Select the first element
+ *
+ * returns: whether anything was selected or not
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_ui_history_select_first (GPasteUiHistory *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY (self), FALSE);
+
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    if (!priv->items)
+        return FALSE;
+
+    return g_paste_ui_item_activate (priv->items->data);
+}
+
 static void
 g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
                               GPasteUpdateAction action,

@@ -19,10 +19,10 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiItem, ui_item, UI_ITEM, GPasteUiItemSkeleton)
 
-void g_paste_ui_item_activate  (GPasteUiItem *self);
-void g_paste_ui_item_refresh   (GPasteUiItem *self);
-void g_paste_ui_item_set_index (GPasteUiItem *self,
-                                guint64       index);
+gboolean  g_paste_ui_item_activate  (GPasteUiItem *self);
+void      g_paste_ui_item_refresh   (GPasteUiItem *self);
+void      g_paste_ui_item_set_index (GPasteUiItem *self,
+                                     guint64       index);
 
 GtkWidget *g_paste_ui_item_new (GPasteClient   *client,
                                 GPasteSettings *settings,
