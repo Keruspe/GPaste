@@ -22,10 +22,14 @@ m4_define([glib_major_required], [2])
 m4_define([glib_minor_required], [50])
 m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_minor_required)])
 m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
-m4_define([gtk_major_required],  [3])
-m4_define([gtk_minor_required],  [22])
-m4_define([gtk_api_required],    [G_ENCODE_VERSION(gtk_major_required, gtk_minor_required)])
-m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
+m4_define([gtk3_major_required], [3])
+m4_define([gtk3_minor_required], [22])
+m4_define([gtk3_api_required],   [G_ENCODE_VERSION(gtk3_major_required, gtk3_minor_required)])
+m4_define([gtk3_required],       [gtk3_major_required.gtk3_minor_required.0])
+m4_define([gtk4_major_required], [3])
+m4_define([gtk4_minor_required], [89])
+m4_define([gtk4_api_required],   [G_ENCODE_VERSION(gtk4_major_required, gtk4_minor_required)])
+m4_define([gtk4_required],       [gtk4_major_required.gtk4_minor_required.4])
 
 # Other dependencies
 m4_define([gdk_pixbuf_required], [2.26.0])
@@ -43,8 +47,29 @@ AC_SUBST([LIBGPASTE_LT_VERSION])
 
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [glib_api_required], [The lowest GLib API version supported])
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED],  [glib_api_required], [The highest GLib API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED],  [gtk_api_required],  [The lowest Gdk API version supported])
-AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],   [gtk_api_required],  [The highest Gdk API version supported])
+
+AC_ARG_WITH([gtk], AS_HELP_STRING([--with-gtk=3.0|4.0], [GTK API to user]), [], [with_gtk=3.0])
+case "${with_gtk}" in
+    3.0)
+        AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [gtk3_api_required], [The lowest Gdk API version supported])
+        AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],  [gtk3_api_required], [The highest Gdk API version supported])
+        GTK_REQUIRED=gtk3_required
+        GTK_DEP="gtk+-3.0"
+        GDK_DEP="gdk-3.0"
+        GDK_X11_DEP="gdk-x11-3.0"
+        ;;
+    4.0)
+        AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [gtk4_api_required], [The lowest Gdk API version supported])
+        AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],  [gtk4_api_required], [The highest Gdk API version supported])
+        GTK_REQUIRED=gtk4_required
+        GTK_DEP="gtk+-4.0"
+        GDK_DEP="gtk+-4.0"
+        GDK_X11_DEP="gtk+-x11-4.0"
+        ;;
+    *)
+        AC_MSG_ERROR([Wrong gtk+ version specified: ${with_gtk}])
+        ;;
+esac
 
 AC_DEFINE([G_PASTE_DEFAULT_HISTORY], ["history"],                                 [The default hsitory name])
 AC_DEFINE([G_PASTE_ICON_NAME],       ["edit-paste"],                              [The name of the icon used by GPaste])
@@ -101,7 +126,7 @@ PKG_PROG_PKG_CONFIG([pkgconfig_required])
 PKG_INSTALLDIR
 
 PKG_CHECK_MODULES(GLIB,       [glib-2.0 >= glib_required gobject-2.0 >= glib_required gio-2.0 >= glib_required])
-PKG_CHECK_MODULES(GTK,        [gdk-3.0 >= gtk_required gtk+-3.0 >= gtk_required pango])
+PKG_CHECK_MODULES(GTK,        [${GDK_DEP} >= ${GTK_REQUIRED} ${GTK_DEP} >= ${GTK_REQUIRED} pango])
 PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0 >= gdk_pixbuf_required])
 PKG_CHECK_MODULES(X11,        [x11 xi])
 PKG_CHECK_MODULES(APPSTREAM,  [appstream-glib])
@@ -133,7 +158,7 @@ AS_IF([test x${enable_gnome_shell_extension} = xyes], [
 ])
 
 AS_IF([test x${enable_x_keybinder} = xyes], [
-    PKG_CHECK_MODULES(GDK_X11, [gdk-x11-3.0 >= gtk_required])
+    PKG_CHECK_MODULES(GDK_X11, [${GDK_X11_DEP} >= ${GTK_REQUIRED}])
     AC_DEFINE([ENABLE_X_KEYBINDER], [1], [Whether the X keybinder is built])
 ])
 
@@ -166,6 +191,8 @@ AC_MSG_RESULT([
     compiler:               ${CC}
     cflags:                 ${CFLAGS}
     ldflags:                ${LDFLAGS}
+
+    gtk+ API:               ${with_gtk}
 
     vapi generator:         ${VAPIGEN}
 
