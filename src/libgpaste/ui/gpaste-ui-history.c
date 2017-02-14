@@ -268,8 +268,11 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     }
     else
     {
-        g_free (priv->search);
-        priv->search = g_strdup (search);
+        if (search != priv->search)
+        {
+            g_free (priv->search);
+            priv->search = g_strdup (search);
+        }
         g_paste_client_search (priv->client, search, on_search_ready, self);
     }
 }
