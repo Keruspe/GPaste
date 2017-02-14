@@ -1,6 +1,6 @@
 ## This file is part of GPaste.
 ##
-## Copyright (c) 2010-2016, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+## Copyright (c) 2010-2017, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
 TESTS+=                             \
 	bin/test-gnome-shell-client \

@@ -37,7 +37,7 @@
 
     <key name="close-on-select" type="b">
       <default>true</default>
-      <summary>Do we cose the UI after selecting an item?</summary>
+      <summary>Do we close the UI after selecting an item?</summary>
       <description>
         By default, we close it
       </description>
