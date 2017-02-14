@@ -6,6 +6,8 @@
 
 #include <gpaste-ui-edit-item.h>
 
+#include "gpaste-gtk-compat.h"
+
 struct _GPasteUiEditItem
 {
     GPasteUiItemAction parent_instance;

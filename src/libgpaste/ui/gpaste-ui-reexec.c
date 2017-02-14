@@ -54,6 +54,7 @@ g_paste_ui_reexec_init (GPasteUiReexec *self)
 
     gtk_widget_set_tooltip_text (widget, _("Restart the daemon"));
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
+    gtk_container_add (GTK_CONTAINER (self), gtk_image_new_from_icon_name ("view-refresh-symbolic", GTK_ICON_SIZE_BUTTON));
 }
 
 /**
@@ -73,9 +74,7 @@ g_paste_ui_reexec_new (GtkWindow    *topwin,
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_REEXEC,
-                                      "image", gtk_image_new_from_icon_name ("view-refresh-symbolic", GTK_ICON_SIZE_BUTTON),
-                                      NULL);
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_REEXEC,NULL);
     GPasteUiReexecPrivate *priv = g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (self));
 
     priv->topwin = topwin;

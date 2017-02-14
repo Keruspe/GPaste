@@ -10,6 +10,8 @@
 #include <gpaste-ui-item-skeleton.h>
 #include <gpaste-ui-upload-item.h>
 
+#include "gpaste-gtk-compat.h"
+
 enum
 {
     C_SIZE,

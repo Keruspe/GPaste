@@ -8,6 +8,8 @@
 #include <gpaste-ui-history-actions.h>
 #include <gpaste-util.h>
 
+#include "gpaste-gtk-compat.h"
+
 struct _GPasteUiBackupHistory
 {
     GPasteUiHistoryAction parent_instance;

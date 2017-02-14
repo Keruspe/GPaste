@@ -10,6 +10,8 @@
 #include <gpaste-ui-item.h>
 #include <gpaste-update-enums.h>
 
+#include "gpaste-gtk-compat.h"
+
 struct _GPasteUiHistory
 {
     GtkListBox parent_instance;

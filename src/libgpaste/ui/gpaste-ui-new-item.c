@@ -6,6 +6,8 @@
 
 #include <gpaste-ui-new-item.h>
 
+#include "gpaste-gtk-compat.h"
+
 struct _GPasteUiNewItem
 {
     GtkButton parent_instance;
@@ -78,6 +80,7 @@ g_paste_ui_new_item_init (GPasteUiNewItem *self)
 
     gtk_widget_set_tooltip_text (widget, _("New"));
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
+    gtk_container_add (GTK_CONTAINER (self), gtk_image_new_from_icon_name ("document-new-symbolic", GTK_ICON_SIZE_BUTTON));
 }
 
 /**
@@ -97,9 +100,7 @@ g_paste_ui_new_item_new (GtkWindow    *rootwin,
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_NEW_ITEM,
-                                      "image", gtk_image_new_from_icon_name ("document-new-symbolic", GTK_ICON_SIZE_BUTTON),
-                                      NULL);
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_NEW_ITEM, NULL);
     GPasteUiNewItemPrivate *priv = g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (self));
 
     priv->client = g_object_ref (client);

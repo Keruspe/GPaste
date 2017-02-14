@@ -6,6 +6,7 @@ libgpaste_la_file = lib/libgpaste.la
 
 lib_libgpaste_la_private_headers =          \
 	%D%/libgpaste/gpaste-gdbus-macros.h \
+	%D%/libgpaste/gpaste-gtk-compat.h   \
 	$(NULL)
 
 lib_libgpaste_la_misc_headers =               \

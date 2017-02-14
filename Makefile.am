@@ -31,6 +31,7 @@ AM_CPPFLAGS =                                        \
 	-I$(srcdir)/src/libgpaste/ui                 \
 	-I$(srcdir)/src/libgpaste/util               \
 	-DG_PASTE_COMPILATION                        \
+	-DGTK_API=$(GTK_API)                         \
 	-DLOCALEDIR=\"$(localedir)\"                 \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"         \
 	-DG_LOG_USE_STRUCTURED=1                     \

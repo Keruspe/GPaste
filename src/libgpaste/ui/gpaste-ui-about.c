@@ -40,6 +40,7 @@ g_paste_ui_about_init (GPasteUiAbout *self)
 
     gtk_widget_set_tooltip_text (widget, _("About"));
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
+    gtk_container_add (GTK_CONTAINER (self), gtk_image_new_from_icon_name ("dialog-information-symbolic", GTK_ICON_SIZE_BUTTON));
 }
 
 /**
@@ -56,9 +57,7 @@ g_paste_ui_about_new (GtkApplication *app)
 {
     g_return_val_if_fail (GTK_IS_APPLICATION (app), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ABOUT,
-                                      "image", gtk_image_new_from_icon_name ("dialog-information-symbolic", GTK_ICON_SIZE_BUTTON),
-                                      NULL);
+    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_ABOUT, NULL);
     GPasteUiAboutPrivate *priv = g_paste_ui_about_get_instance_private (G_PASTE_UI_ABOUT (self));
 
     priv->action_group = G_ACTION_GROUP (app);

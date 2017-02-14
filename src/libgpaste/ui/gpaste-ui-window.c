@@ -10,6 +10,8 @@
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
 
+#include "gpaste-gtk-compat.h"
+
 struct _GPasteUiWindow
 {
     GtkApplicationWindow parent_instance;

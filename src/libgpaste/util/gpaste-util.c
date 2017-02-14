@@ -8,6 +8,8 @@
 #include <gpaste-macros.h>
 #include <gpaste-util.h>
 
+#include "gpaste-gtk-compat.h"
+
 /**
  * g_paste_util_confirm_dialog:
  * @parent: (nullable): the parent #GtkWindow

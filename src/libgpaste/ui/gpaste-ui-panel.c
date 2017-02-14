@@ -7,6 +7,8 @@
 #include <gpaste-ui-history-actions.h>
 #include <gpaste-ui-panel.h>
 
+#include "gpaste-gtk-compat.h"
+
 struct _GPasteUiPanel
 {
     GtkBox parent_instance;

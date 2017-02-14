@@ -6,6 +6,8 @@
 
 #include <gpaste-ui-panel-history.h>
 
+#include "gpaste-gtk-compat.h"
+
 struct _GPasteUiPanelHistory
 {
     GtkListBoxRow parent_instance;

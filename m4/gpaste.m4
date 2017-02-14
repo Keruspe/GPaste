@@ -69,6 +69,7 @@ AC_DEFUN([G_PASTE_APPEND_CFLAGS], [
         -Wstrict-aliasing=2         \
         -Wwrite-strings             \
         -Wno-unknown-warning-option \
+        -Wno-float-equal            \
         -Werror=overflow            \
         -Wp,-D_FORTIFY_SOURCE=2     \
         -ffast-math                 \
