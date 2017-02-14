@@ -124,8 +124,8 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
     gtk_widget_set_margin_end (hbox, 5);
 
     gtk_label_set_ellipsize (label, PANGO_ELLIPSIZE_END);
-    gtk_box_pack_start (box, il, FALSE, FALSE, 0);
-    gtk_box_pack_start (box, l, TRUE, TRUE, 0);
+    gtk_box_pack_start (box, il, FALSE, FALSE);
+    gtk_box_pack_start (box, l, TRUE, TRUE);
     gtk_container_add (GTK_CONTAINER (self), hbox);
 }
 

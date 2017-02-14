@@ -310,8 +310,8 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                           G_CALLBACK (g_paste_ui_panel_switch_clicked),
                                                           priv);
 
-    gtk_box_pack_start (box, list_box, FALSE, TRUE, 0);
-    gtk_box_pack_start (box, switch_entry, FALSE, FALSE, 0);
+    gtk_box_pack_start (box, list_box, FALSE, TRUE);
+    gtk_box_pack_start (box, switch_entry, FALSE, FALSE);
 }
 
 /**

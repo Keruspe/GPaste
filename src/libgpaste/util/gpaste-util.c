@@ -33,11 +33,7 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
     GtkWidget *label = gtk_label_new (msg);
     GtkDialog *d = GTK_DIALOG (dialog);
 
-    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), label, TRUE, TRUE, 0);
-    gtk_widget_set_margin_start (label, 10);
-    gtk_widget_set_margin_end (label, 10);
-    gtk_widget_set_margin_top (label, 10);
-    gtk_widget_set_margin_bottom (label, 10);
+    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), label, TRUE, TRUE);
     gtk_widget_show (label);
 
     gboolean ret = gtk_dialog_run (d) == GTK_RESPONSE_OK;
