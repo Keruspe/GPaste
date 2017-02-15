@@ -159,6 +159,7 @@ typedef struct {
     GPasteClipboard                *clip;
     gboolean                        track;
     gboolean                        uris_available;
+    gboolean                        fallback;
 } GPasteClipboardsManagerCallbackData;
 
 static void
@@ -189,6 +190,16 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
 
         if (g_paste_settings_get_synchronize_clipboards (priv->settings))
             synchronized_text = text;
+    }
+    else if (data->fallback)
+    {
+        g_debug ("clipboards-manager: no target ready and text fallback failed");
+
+        /* We tried to get some text as fallback (no target advertised) but didn't get any */
+        g_paste_clipboard_clear (data->clip);
+        g_paste_clipboard_ensure_not_empty (data->clip, data->priv->history);
+
+        return;
     }
 
     g_paste_clipboards_manager_notify_finish (priv, clipboard, item, synchronized_text, something_in_clipboard);
@@ -247,10 +258,13 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
     }
     else
     {
-        g_debug ("clipboards-manager: no target ready");
+        g_debug ("clipboards-manager: no target ready, trying text as fallback");
 
-        g_paste_clipboard_clear (data->clip);
-        g_paste_clipboard_ensure_not_empty (data->clip, data->priv->history);
+        data->fallback = TRUE;
+        g_paste_clipboard_set_text (data->clip,
+                                    g_paste_clipboards_manager_text_ready,
+                                    data);
+        data = NULL;
     }
 }
 
@@ -280,6 +294,8 @@ g_paste_clipboards_manager_notify (GPasteClipboard     *clipboard,
     data->priv = priv;
     data->clip = clipboard;
     data->track = track;
+    data->uris_available = FALSE;
+    data->fallback = FALSE;
 
     gtk_clipboard_request_contents (g_paste_clipboard_get_real (clipboard),
                                     gdk_atom_intern_static_string ("TARGETS"),
