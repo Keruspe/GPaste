@@ -592,9 +592,9 @@ g_paste_clipboard_set_image (GPasteClipboard             *self,
  *
  * Put the value of the item into the #GPasteClipbaord and the intern GtkClipboard
  *
- * Returns:
+ * Returns: %FALSE if the item was invalid, %TRUE otherwise
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_clipboard_select_item (GPasteClipboard  *self,
                                const GPasteItem *item)
 {
@@ -609,13 +609,12 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
     {
         GPasteImageItem *image_item = G_PASTE_IMAGE_ITEM (item);
         const gchar *checksum = g_paste_image_item_get_checksum (image_item);
+        GdkPixuf *pixbuf = g_paste_image_item_get_image (image_item);
 
-        if (g_strcmp0 (checksum, priv->image_checksum))
-        {
-            g_paste_clipboard_private_select_image (priv,
-                                                    g_paste_image_item_get_image (image_item),
-                                                    checksum);
-        }
+        if (!image || !GDK_IS_PIXBUF (image))
+            return FALSE;
+        else if (g_strcmp0 (checksum, priv->image_checksum))
+            g_paste_clipboard_private_select_image (priv, image, checksum);
     }
     else
     {
@@ -631,6 +630,8 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
                 g_assert_not_reached ();
         }
     }
+
+    return TRUE;
 }
 
 /**

@@ -57,7 +57,7 @@ const gchar  *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self)
 void          g_paste_clipboard_set_image          (GPasteClipboard             *self,
                                                     GPasteClipboardImageCallback callback,
                                                     gpointer                     user_data);
-void          g_paste_clipboard_select_item        (GPasteClipboard  *self,
+gboolean      g_paste_clipboard_select_item        (GPasteClipboard  *self,
                                                     const GPasteItem *item);
 void          g_paste_clipboard_ensure_not_empty   (GPasteClipboard     *self,
                                                     const GPasteHistory *history);
