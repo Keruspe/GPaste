@@ -331,7 +331,7 @@ g_paste_util_replace (const gchar *text,
 G_PASTE_VISIBLE gchar *
 g_paste_util_compute_checksum (GdkPixbuf *image)
 {
-    if (!image)
+    if (!image || !GDK_IS_PIXBUF (image))
         return NULL;
 
     guint32 length;
