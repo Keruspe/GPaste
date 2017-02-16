@@ -58,7 +58,7 @@ g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
             GPasteItem *item = h->data;
 
             if (!g_paste_clipboard_select_item (self, item))
-                g_paste_history_remove (history, item);
+                g_paste_history_remove (history, 0);
         }
     }
 }
@@ -607,7 +607,7 @@ g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,
         GPasteItem *item = hist->data;
 
         if (!g_paste_clipboard_select_item (self, item))
-            g_paste_history_remove (history, item);
+            g_paste_history_remove (history, 0);
     }
 }
 
