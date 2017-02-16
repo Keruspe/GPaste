@@ -609,7 +609,7 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
     {
         GPasteImageItem *image_item = G_PASTE_IMAGE_ITEM (item);
         const gchar *checksum = g_paste_image_item_get_checksum (image_item);
-        GdkPixuf *pixbuf = g_paste_image_item_get_image (image_item);
+        GdkPixuf *image = g_paste_image_item_get_image (image_item);
 
         if (!image || !GDK_IS_PIXBUF (image))
             return FALSE;
