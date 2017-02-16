@@ -351,7 +351,13 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     {
         _Clipboard *clip = clipboard->data;
 
-        g_paste_clipboard_select_item (clip->clipboard, item);
+        if (!g_paste_clipboard_select_item (clip->clipboard, item))
+        {
+            g_debug ("clipboards-manager: item was invalid, deleting it");
+
+            g_paste_history_remove (priv->history, item);
+            break;
+        }
     }
 }
 
