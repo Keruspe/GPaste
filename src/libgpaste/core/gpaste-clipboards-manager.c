@@ -315,14 +315,14 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
  *
  * Select a new #GPasteItem
  *
- * Returns:
+ * Returns: %FALSE if the item was invalid, %TRUE otherwise
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
                                    const GPasteItem        *item)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
-    g_return_if_fail (G_PASTE_IS_ITEM (item));
+    g_return_val_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (item), FALSE);
 
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
 
@@ -335,11 +335,11 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
         if (!g_paste_clipboard_select_item (clip->clipboard, item))
         {
             g_debug ("clipboards-manager: item was invalid, deleting it");
-
-            g_paste_history_remove (priv->history, item);
-            break;
+            return FALSE;
         }
     }
+
+    return TRUE;
 }
 
 static void
@@ -347,7 +347,10 @@ on_item_selected (GPasteClipboardsManager *self,
                   GPasteItem              *item,
                   GPasteHistory           *history G_GNUC_UNUSED)
 {
-    g_paste_clipboards_manager_select (self, item);
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (G_PASTE_CLIPBOARDS_MANAGER (object));
+
+    if (!g_paste_clipboards_manager_select (self, item))
+        g_paste_history_remove (priv->history, 0);
 }
 
 static void
