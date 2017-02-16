@@ -1,3 +1,11 @@
+NEW in 3.22.2 (17/02/2017)
+=============
+
+- fix memory leaks in the debugging logs
+- fix some corner case in images handling
+- fix crash in UI when refreshing during search
+- stability improvements
+
 NEW in 3.22.1 (30/11/2016)
 =============
 
@@ -27,6 +35,13 @@ NEW in 3.21.90 (09/09/2016)
 - Port to the internal mutter-clutter
 - gnome-shell extension cleanup
 - Add pagination to gnmoe-shell extension
+
+NEW in 3.20.5 (17/02/2017)
+=============
+
+- fix memory leaks in the debugging logs
+- fix some corner case in images handling
+- stability improvements
 
 NEW in 3.20.4 (28/06/2016)
 =============
@@ -77,6 +92,13 @@ NEW in 3.20 (23/03/2016)
 - Fix style with gtk+ 3.20
 - Implement the new shotcut window from gtk+
 - Various code cleanups
+
+NEW in 3.18.6 (17/02/2017)
+=============
+
+- fix memory leaks in the debugging logs
+- fix some corner case in images handling
+- stability improvements
 
 NEW in 3.18.5 (28/06/2016)
 =============
