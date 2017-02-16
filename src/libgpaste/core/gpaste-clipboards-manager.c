@@ -94,8 +94,10 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     const GPasteClipboardsManagerPrivate *priv = _g_paste_clipboards_manager_get_instance_private (self);
     GtkClipboard *_from = NULL;
     GPasteClipboard *_to = NULL;
+    g_autofree gchar *_from_name = gdk_atom_name (from);
+    g_autofree gchar *_to_name = gdk_atom_name (to);
 
-    g_debug ("clipboards-manager: sync from %s to %s", gdk_atom_name (from), gdk_atom_name (to));
+    g_debug ("clipboards-manager: sync from %s to %s", _from_name, _to_name);
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
