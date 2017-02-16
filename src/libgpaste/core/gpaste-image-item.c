@@ -212,6 +212,12 @@ _g_paste_image_item_new (const gchar *path,
     else
         g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
 
+    if (!priv->image || !GDK_IS_PIXBUF (priv->image))
+    {
+        g_object_unref (self);
+        return NULL;
+    }
+
     /* This is the date format "month/day/year time" */
     g_autofree gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
     /* This gets displayed in history when selecting an image */

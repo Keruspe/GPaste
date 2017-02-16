@@ -54,7 +54,12 @@ g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
     {
         const GList *h = g_paste_history_get_history (history);
         if (h)
-            g_paste_clipboard_select_item (self, h->data);
+        {
+            GPasteItem *item = h->data;
+
+            if (!g_paste_clipboard_select_item (self, item))
+                g_paste_history_remove (history, 0);
+        }
     }
 }
 
@@ -538,13 +543,15 @@ g_paste_clipboard_set_image (GPasteClipboard             *self,
  * @item: the item to select
  *
  * Put the value of the item into the #GPasteClipbaord and the intern GtkClipboard
+ *
+ * Returns: %FALSE if the item was invalid, %TRUE otherwise
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_clipboard_select_item (GPasteClipboard *self,
                                GPasteItem      *item)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
-    g_return_if_fail (_G_PASTE_IS_ITEM (item));
+    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_ITEM (item), FALSE);
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
@@ -554,13 +561,12 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
     {
         const GPasteImageItem *image_item = _G_PASTE_IMAGE_ITEM (item);
         const gchar *checksum = g_paste_image_item_get_checksum (image_item);
+        GdkPixbuf *image = g_paste_image_item_get_image (image_item);
 
+        if (!image || !GDK_IS_PIXBUF (image))
+            return FALSE;
         if (!g_paste_str_equal (checksum, priv->image_checksum))
-        {
-            g_paste_clipboard_private_select_image (priv,
-                                                    g_paste_image_item_get_image (image_item),
-                                                    checksum);
-        }
+            g_paste_clipboard_private_select_image (priv, image, checksum);
     }
     else
     {
@@ -576,6 +582,8 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
                 g_assert_not_reached ();
         }
     }
+
+    return TRUE;
 }
 
 /**
@@ -586,8 +594,8 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
  * Ensure the clipboard has some contents (as long as the history's not empty)
  */
 G_PASTE_VISIBLE void
-g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,
-                                    const GPasteHistory *history)
+g_paste_clipboard_ensure_not_empty (GPasteClipboard *self,
+                                    GPasteHistory   *history)
 {
     g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (_G_PASTE_IS_HISTORY (history));
@@ -595,7 +603,12 @@ g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,
     const GList *hist = g_paste_history_get_history (history);
 
     if (hist)
-        g_paste_clipboard_select_item (self, hist->data);
+    {
+        GPasteItem *item = hist->data;
+
+        if (!g_paste_clipboard_select_item (self, item))
+            g_paste_history_remove (history, 0);
+    }
 }
 
 static void
