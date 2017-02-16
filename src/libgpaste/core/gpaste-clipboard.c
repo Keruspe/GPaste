@@ -54,7 +54,12 @@ g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
     {
         const GList *h = g_paste_history_get_history (history);
         if (h)
-            g_paste_clipboard_select_item (self, h->data);
+        {
+            GPasteItem *item = h->data;
+
+            if (!g_paste_clipboard_select_item (self, item))
+                g_paste_history_remove (history, item);
+        }
     }
 }
 
@@ -545,8 +550,8 @@ G_PASTE_VISIBLE gboolean
 g_paste_clipboard_select_item (GPasteClipboard *self,
                                GPasteItem      *item)
 {
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
-    g_return_if_fail (_G_PASTE_IS_ITEM (item));
+    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_ITEM (item), FALSE);
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
@@ -556,7 +561,7 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
     {
         const GPasteImageItem *image_item = _G_PASTE_IMAGE_ITEM (item);
         const gchar *checksum = g_paste_image_item_get_checksum (image_item);
-        GdkPixuf *image = g_paste_image_item_get_image (image_item);
+        GdkPixbuf *image = g_paste_image_item_get_image (image_item);
 
         if (!image || !GDK_IS_PIXBUF (image))
             return FALSE;
@@ -598,7 +603,12 @@ g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,
     const GList *hist = g_paste_history_get_history (history);
 
     if (hist)
-        g_paste_clipboard_select_item (self, hist->data);
+    {
+        GPasteItem *item = hist->data;
+
+        if (!g_paste_clipboard_select_item (self, item))
+            g_paste_history_remove (history, item);
+    }
 }
 
 static void
