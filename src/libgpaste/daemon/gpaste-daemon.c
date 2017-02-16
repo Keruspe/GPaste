@@ -212,7 +212,8 @@ g_paste_daemon_private_do_add_item (const GPasteDaemonPrivate *priv,
                                     GPasteItem                *item)
 {
     g_paste_history_add (priv->history, item);
-    g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+    if (!g_paste_clipboards_manager_select (priv->clipboards_manager, item))
+        g_paste_history_remove (priv->history, 0);
 }
 
 static void
@@ -975,6 +976,7 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
     /* We always do the activate action, so that the deactivate one works anyways */
     {
         g_autoptr (GPasteItem) item = g_paste_text_item_new ("");
+        /* will always return TRUE */
         g_paste_clipboards_manager_select (priv->clipboards_manager, item);
     }
 
@@ -983,7 +985,10 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
         g_autoptr (GPasteItem) item = g_paste_history_dup (priv->history, 0);
 
         if (item)
-            g_paste_clipboards_manager_select (priv->clipboards_manager, item);
+        {
+            if (!g_paste_clipboards_manager_select (priv->clipboards_manager, item))
+                g_paste_history_remove (priv->history, 0);
+        }
     }
 }
 
