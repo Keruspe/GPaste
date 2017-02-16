@@ -236,6 +236,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
 {
     const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
+    g_autofree gchar *text = NULL;
 
     if (g_file_query_exists (history_file,
                              NULL)) /* cancellable */
@@ -263,7 +264,6 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
                                                                G_MARKUP_TREAT_CDATA_AS_TEXT,
                                                                &data,
                                                                NULL);
-        gchar *text;
         guint64 text_length;
 
         g_file_get_contents (history_file_path, &text, &text_length, NULL);
