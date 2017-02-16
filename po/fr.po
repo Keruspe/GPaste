@@ -53,7 +53,7 @@ msgstr "Suivre les changements du presse-papier"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:124
 msgid "Close UI on select"
-msgstr ""
+msgstr "Fermer l'interface à la selection"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:133
 msgid "Enable the gnome-shell extension"
