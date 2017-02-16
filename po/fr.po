@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2016-06-28 15:52+0200\n"
+"POT-Creation-Date: 2017-02-16 13:47+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -45,12 +45,12 @@ msgid "Could not create history dir"
 msgstr "Impossible de créer le dossier d'historique"
 
 #. This is the date format "month/day/year time"
-#: ../src/libgpaste/core/gpaste-image-item.c:216
+#: ../src/libgpaste/core/gpaste-image-item.c:222
 msgid "%m/%d/%y %T"
 msgstr "%d/%m/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: ../src/libgpaste/core/gpaste-image-item.c:218
+#: ../src/libgpaste/core/gpaste-image-item.c:224
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Image, %d x %d (%s)]"
