@@ -347,7 +347,7 @@ on_item_selected (GPasteClipboardsManager *self,
                   GPasteItem              *item,
                   GPasteHistory           *history G_GNUC_UNUSED)
 {
-    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (G_PASTE_CLIPBOARDS_MANAGER (object));
+    GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (G_PASTE_CLIPBOARDS_MANAGER (self));
 
     if (!g_paste_clipboards_manager_select (self, item))
         g_paste_history_remove (priv->history, 0);

@@ -649,8 +649,8 @@ g_paste_clipboard_select_item (GPasteClipboard  *self,
  * Returns:
  */
 G_PASTE_VISIBLE void
-g_paste_clipboard_ensure_not_empty (GPasteClipboard     *self,
-                                    const GPasteHistory *history)
+g_paste_clipboard_ensure_not_empty (GPasteClipboard *self,
+                                    GPasteHistory   *history)
 {
     g_return_if_fail (G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (G_PASTE_IS_HISTORY (history));
