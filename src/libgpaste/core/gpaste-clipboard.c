@@ -167,7 +167,7 @@ g_paste_clipboard_get_text (const GPasteClipboard *self)
 static const gchar *
 _g_paste_clipboard_private_target_name (const GPasteClipboardPrivate *priv)
 {
-    GdkAtom target = gtk_clipboard_get_selecton (priv->real);
+    GdkAtom target = gtk_clipboard_get_selection (priv->real);
 
     if (target == GDK_SELECTION_CLIPBOARD)
         return "CLIPBOARD";
