@@ -285,6 +285,16 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
     }
 }
 
+static gboolean
+_g_paste_file_backend_write_image_metadata (GOutputStream         *stream,
+                                            const GPasteImageItem *item)
+{
+    g_autofree gchar *date_str = g_date_time_format ((GDateTime *) g_paste_image_item_get_date (item), "%s");
+
+    return g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) &&
+           g_output_stream_write_all (stream, date_str, 10, NULL, NULL /* cancellable */, NULL /* error */);
+}
+
 static void
 g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
                                          const gchar                *history_file_path,
@@ -325,9 +335,7 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
-            (_G_PASTE_IS_IMAGE_ITEM (item) &&
-                (!g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
-                 !g_output_stream_write_all (stream, g_date_time_format ((GDateTime *) g_paste_image_item_get_date (G_PASTE_IMAGE_ITEM (item)), "%s"), 10, NULL, NULL /* cancellable */, NULL /* error */))) ||
+            (_G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, _G_PASTE_IMAGE_ITEM (item))) ||
             !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, "]]></item>\n", 11, NULL, NULL /* cancellable */, NULL /* error */))
