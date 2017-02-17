@@ -5,11 +5,9 @@
 autostartdir = $(sysconfdir)/xdg/autostart
 applicationsdir = $(datadir)/applications
 
-gpaste_app_indicator_desktop_file = %D%/desktop/org.gnome.GPaste.AppIndicator.desktop
 gpaste_ui_desktop_file = %D%/desktop/org.gnome.GPaste.Ui.desktop
 
 all_desktop_files =                          \
-	$(gpaste_app_indicator_desktop_file) \
 	$(gpaste_ui_desktop_file)            \
 	$(NULL)
 
