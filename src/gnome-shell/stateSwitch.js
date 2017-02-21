@@ -20,20 +20,16 @@ const GPasteStateSwitch = new Lang.Class({
         this.parent(_("Track changes"), client.is_active());
 
         this._client = client;
-        this._fromDaemon = false;
 
         this.connect('toggled', Lang.bind(this, this._onToggle));
     },
 
     toggle: function(state) {
-        this._fromDaemon = true;
-        this.setToggleState(state);
-        this._fromDaemon = false;
+        if (state !== this.state)
+            this.parent();
     },
 
-    _onToggle: function() {
-        if (!this._fromDaemon) {
-            this._client.track(this.state, null);
-        }
+    _onToggle: function(state) {
+        this._client.track(this.state, null);
     }
 });
