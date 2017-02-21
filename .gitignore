@@ -1,3 +1,4 @@
+/.buildconfig
 /Makefile
 /bin/*
 /tests/bin/*
