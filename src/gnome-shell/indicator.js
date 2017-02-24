@@ -271,7 +271,7 @@ const GPasteIndicator = new Lang.Class({
                     const size = Math.min(realSize - offset, maxSize);
 
                     this._history.slice(resetTextFrom, size).forEach(function(i, index) {
-                        i.setIndex(offset + index);
+                        i.setIndex(offset + resetTextFrom + index);
                     });
                     this._history.slice(size, maxSize).forEach(function(i, index) {
                         i.setIndex(-1);
