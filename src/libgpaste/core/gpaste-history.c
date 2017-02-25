@@ -225,16 +225,10 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
     return (g_str_has_prefix (n, o) || g_str_has_suffix (n, o));
 }
 
-/**
- * g_paste_history_add:
- * @self: a #GPasteHistory instance
- * @item: (transfer full): the #GPasteItem to add
- *
- * Add a #GPasteItem to the #GPasteHistory
- */
-G_PASTE_VISIBLE void
-g_paste_history_add (GPasteHistory *self,
-                     GPasteItem    *item)
+static void
+_g_paste_history_add (GPasteHistory *self,
+                      GPasteItem    *item,
+                      gboolean       new_selection)
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (_G_PASTE_IS_ITEM (item));
@@ -258,7 +252,7 @@ g_paste_history_add (GPasteHistory *self,
         if (g_paste_item_equals (old_first, item))
             return;
 
-        if (g_paste_history_private_is_growing_line (priv, old_first, item))
+        if (new_selection && g_paste_history_private_is_growing_line (priv, old_first, item))
         {
             target = G_PASTE_UPDATE_TARGET_POSITION;
             g_paste_history_private_remove (priv, history, FALSE);
@@ -282,7 +276,7 @@ g_paste_history_add (GPasteHistory *self,
             guint64 index = 1;
             for (history = history->next; history; history = history->next, ++index)
             {
-                if (g_paste_item_equals (history->data, item) || g_paste_history_private_is_growing_line (priv, history->data, item))
+                if (g_paste_item_equals (history->data, item) || (new_selecion && g_paste_history_private_is_growing_line (priv, history->data, item)))
                 {
                     g_paste_history_private_remove (priv, history, FALSE);
                     if (index == priv->biggest_index)
@@ -307,6 +301,23 @@ g_paste_history_add (GPasteHistory *self,
 
     g_paste_history_private_check_memory_usage (priv);
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0);
+}
+
+/**
+ * g_paste_history_add:
+ * @self: a #GPasteHistory instance
+ * @item: (transfer full): the #GPasteItem to add
+ *
+ * Add a #GPasteItem to the #GPasteHistory
+ */
+G_PASTE_VISIBLE void
+g_paste_history_add (GPasteHistory *self,
+                     GPasteItem    *item)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_ITEM (item));
+
+    _g_paste_history_add (self, item, TRUE);
 }
 
 /**
@@ -461,7 +472,7 @@ g_paste_history_select (GPasteHistory *self,
 
     GPasteItem *item = g_list_nth_data (history, index);
 
-    g_paste_history_add (self, item);
+    _g_paste_history_add (self, item, FALSE);
     g_paste_history_selected (self, item);
 }
 
