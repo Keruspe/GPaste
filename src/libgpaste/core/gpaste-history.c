@@ -274,7 +274,7 @@ _g_paste_history_add (GPasteHistory *self,
             guint64 index = 1;
             for (history = history->next; history; history = history->next, ++index)
             {
-                if (g_paste_item_equals (history->data, item) || (new_selecion && g_paste_history_private_is_growing_line (priv, history->data, item)))
+                if (g_paste_item_equals (history->data, item) || (new_selection && g_paste_history_private_is_growing_line (priv, history->data, item)))
                 {
                     g_paste_history_private_remove (priv, history, FALSE);
                     if (index == priv->biggest_index)
