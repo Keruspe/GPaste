@@ -1,3 +1,10 @@
+NEW in 3.20.6 (28/02/2017)
+=============
+
+- fix switch in gnome-shell extension
+- fix refresh with search in the ui
+- fix some wrongly detected growing line
+
 NEW in 3.20.5 (17/02/2017)
 =============
 

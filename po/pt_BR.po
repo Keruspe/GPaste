@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2017-02-16 13:47+0100\n"
+"POT-Creation-Date: 2017-02-28 15:01+0100\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -40,7 +40,7 @@ msgstr "Sair"
 msgid "launch the graphical tool"
 msgstr "inicia a ferramenta gráfica"
 
-#: ../src/libgpaste/core/gpaste-history.c:736
+#: ../src/libgpaste/core/gpaste-history.c:747
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
