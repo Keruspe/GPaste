@@ -2,7 +2,7 @@
 ##
 ## Copyright (c) 2010-2017, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
-INTROSPECTION_SCANNER_ARGS = --c-include=gpaste.h
+INTROSPECTION_SCANNER_ARGS = $(NULL)
 INTROSPECTION_COMPILER_ARGS = $(NULL)
 INTROSPECTION_GIRS = $(NULL)
 
@@ -17,8 +17,9 @@ bindings_GPaste_1_0_gir_CFLAGS = \
 	$(AM_CPPFLAGS)           \
 	$(NULL)
 bindings_GPaste_1_0_gir_LIBS = $(libgpaste_la_file)
-binsings_GPaste_1_0_gir_EXPORT_PACKAGES = libgpaste
+bindings_GPaste_1_0_gir_EXPORT_PACKAGES = libgpaste
 bindings_GPaste_1_0_gir_SCANNERFLAGS = --warn-all
+bindings_GPaste_1_0_gir_C_INCLUDES = gpaste.h
 bindings_GPaste_1_0_gir_INCLUDES = \
 	GdkPixbuf-2.0              \
 	Gio-2.0                    \
