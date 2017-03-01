@@ -12,6 +12,7 @@ const St = imports.gi.St;
 
 const GPastePageItem = new Lang.Class({
     Name: 'GPastePageItem',
+    Implements: [Signals.WithSignals],
 
     _init: function(page) {
         this.actor = new St.Button({
@@ -44,4 +45,3 @@ const GPastePageItem = new Lang.Class({
         this.actor.destroy();
     }
 });
-Signals.addSignalMethods(GPastePageItem.prototype);
