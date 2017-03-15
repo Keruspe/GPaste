@@ -36,6 +36,8 @@ typedef struct
 enum
 {
     A_GNOME_COPIED_FILES,
+    A_TEXT_HTML,
+    A_TEXT_XML,
 
     A_LAST
 };
@@ -734,6 +736,8 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
                                           GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
 
     special_atoms[A_GNOME_COPIED_FILES] = gdk_atom_intern_static_string ("x-special/gnome-copied-files");
+    special_atoms[A_TEXT_HTML]          = gdk_atom_intern_static_string ("text/html");
+    special_atoms[A_TEXT_XML]           = gdk_atom_intern_static_string ("text/xml");
 }
 
 static void
