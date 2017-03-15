@@ -311,6 +311,16 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     gtk_clipboard_set_text (priv->real, text, -1);
 }
 
+static guchar *
+copy_str_as_uchars (const gchar *str,
+                    guint64      length)
+{
+    guchar *data = g_new (guchar, length);
+    for (guint64 i = 0; i < length; ++i)
+        data[i] = (guchar) str[i];
+    return data;
+}
+
 static void
 _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
                                        const GPasteItem *item,
@@ -333,9 +343,17 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
 
             gchar *str = copy_string->str;
             length = copy_string->len + 1;
-            data = g_new (guchar, length);
-            for (guint64 i = 0; i < length; ++i)
-                data[i] = (guchar) str[i];
+            data = copy_str_as_uchars (str, length);
+        }
+        break;
+    case A_TEXT_HTML:
+        /* fallthrough */
+    case A_TEXT_XML:
+        if (_G_PASTE_IS_TEXT_ITEM (item))
+        {
+            const gchar *str = g_paste_item_get_value (item);
+            length = strlen (str);
+            data = copy_str_as_uchars (str, length);
         }
         break;
     case A_LAST:
