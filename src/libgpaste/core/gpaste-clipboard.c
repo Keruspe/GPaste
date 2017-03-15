@@ -33,14 +33,14 @@ typedef struct
     guint64         c_signals[C_LAST_SIGNAL];
 } GPasteClipboardPrivate;
 
-enum
+typedef enum
 {
     A_GNOME_COPIED_FILES,
     A_TEXT_HTML,
     A_TEXT_XML,
 
     A_LAST
-};
+} GPasteSpecialAtom;
 
 static GdkAtom special_atoms[A_LAST] = { 0 };
 
@@ -312,6 +312,41 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
 }
 
 static void
+_get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
+                                       const GPasteItem *item,
+                                       GPasteSpecialAtom atom)
+{
+    g_autofree guchar *data = NULL;
+    guint64 length = 0;
+
+    switch (atom)
+    {
+    case A_GNOME_COPIED_FILES:
+        if (_G_PASTE_IS_URIS_ITEM (item))
+        {
+            const gchar * const *uris = g_paste_uris_item_get_uris (_G_PASTE_URIS_ITEM (item));
+            g_autoptr (GString) copy_string = g_string_new ("copy");
+
+            length = g_strv_length ((GStrv) uris);
+            for (guint64 i = 0; i < length; ++i)
+                g_string_append_printf (copy_string, "\n%s", uris[i]);
+
+            gchar *str = copy_string->str;
+            length = copy_string->len + 1;
+            data = g_new (guchar, length);
+            for (guint64 i = 0; i < length; ++i)
+                data[i] = (guchar) str[i];
+        }
+        break;
+    case A_LAST:
+        break;
+    }
+
+    if (data)
+        gtk_selection_data_set (selection_data, special_atoms[atom], 8, data, length);
+}
+
+static void
 g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
                                       GtkSelectionData *selection_data,
                                       guint32           info      G_GNUC_UNUSED,
@@ -321,42 +356,38 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
 
     GPasteItem *item = G_PASTE_ITEM (user_data_or_owner);
 
-    GdkAtom targets[1] = { gtk_selection_data_get_target (selection_data) };
+    GdkAtom target = gtk_selection_data_get_target (selection_data);
+    GdkAtom targets[1] = { target };
+
+    if (_G_PASTE_IS_IMAGE_ITEM (item))
+    {
+        if (gtk_targets_include_image (targets, 1, TRUE))
+            gtk_selection_data_set_pixbuf (selection_data, g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (item)));
+        return;
+    }
+    else if (_G_PASTE_IS_URIS_ITEM (item))
+    {
+        if (gtk_targets_include_uri (targets, 1))
+        {
+            const gchar * const *uris = g_paste_uris_item_get_uris (G_PASTE_URIS_ITEM (item));
+
+            gtk_selection_data_set_uris (selection_data, (GStrv) uris);
+            return;
+        }
+    }
+
+    for (GPasteSpecialAtom a = 0; a < A_LAST; ++a)
+    {
+        if (target == special_atoms[a])
+        {
+            _get_clipboard_data_from_special_atom (selection_data, item, a);
+            return;
+        }
+    }
 
     /* The content is requested as text */
     if (gtk_targets_include_text (targets, 1))
         gtk_selection_data_set_text (selection_data, g_paste_item_get_real_value (item), -1);
-    else if (_G_PASTE_IS_IMAGE_ITEM (item))
-    {
-        if (gtk_targets_include_image (targets, 1, TRUE))
-            gtk_selection_data_set_pixbuf (selection_data, g_paste_image_item_get_image (G_PASTE_IMAGE_ITEM (item)));
-    }
-    /* The content is requested as uris */
-    else
-    {
-        g_return_if_fail (_G_PASTE_IS_URIS_ITEM (item));
-
-        const gchar * const *uris = g_paste_uris_item_get_uris (G_PASTE_URIS_ITEM (item));
-
-        if (gtk_targets_include_uri (targets, 1))
-            gtk_selection_data_set_uris (selection_data, (GStrv) uris);
-        /* The content is requested as special gnome-copied-files by nautilus */
-        else
-        {
-            g_autoptr (GString) copy_string = g_string_new ("copy");
-            guint64 length = g_strv_length ((GStrv) uris);
-
-            for (guint64 i = 0; i < length; ++i)
-                g_string_append_printf (copy_string, "\n%s", uris[i]);
-
-            gchar *str = copy_string->str;
-            length = copy_string->len + 1;
-            g_autofree guchar *copy_files_data = g_new (guchar, length);
-            for (guint64 i = 0; i < length; ++i)
-                copy_files_data[i] = (guchar) str[i];
-            gtk_selection_data_set (selection_data, special_atoms[A_GNOME_COPIED_FILES], 8, copy_files_data, length);
-        }
-    }
 }
 
 static void
