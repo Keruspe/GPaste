@@ -33,6 +33,15 @@ typedef struct
     guint64         c_signals[C_LAST_SIGNAL];
 } GPasteClipboardPrivate;
 
+enum
+{
+    A_GNOME_COPIED_FILES,
+
+    A_LAST
+};
+
+static GdkAtom special_atoms[A_LAST] = { 0 };
+
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Clipboard, clipboard, G_TYPE_OBJECT)
 
 enum
@@ -343,7 +352,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
             g_autofree guchar *copy_files_data = g_new (guchar, length);
             for (guint64 i = 0; i < length; ++i)
                 copy_files_data[i] = (guchar) str[i];
-            gtk_selection_data_set (selection_data, g_paste_clipboard_copy_files_target, 8, copy_files_data, length);
+            gtk_selection_data_set (selection_data, special_atoms[A_GNOME_COPIED_FILES], 8, copy_files_data, length);
         }
     }
 }
@@ -368,7 +377,7 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
 
     gtk_target_list_add_text_targets (target_list, 0);
     gtk_target_list_add_uri_targets (target_list, 0);
-    gtk_target_list_add (target_list, g_paste_clipboard_copy_files_target, 0, 0);
+    gtk_target_list_add (target_list, special_atoms[A_GNOME_COPIED_FILES], 0, 0);
 
     gint32 n_targets;
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
@@ -723,6 +732,8 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
                                           G_TYPE_NONE,
                                           1,
                                           GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
+
+    special_atoms[A_GNOME_COPIED_FILES] = gdk_atom_intern_static_string ("x-special/gnome-copied-files");
 }
 
 static void

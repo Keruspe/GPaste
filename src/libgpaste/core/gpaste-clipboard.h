@@ -19,8 +19,6 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Clipboard, clipboard, CLIPBOARD, GObject)
 
-#define g_paste_clipboard_copy_files_target gdk_atom_intern_static_string ("x-special/gnome-copied-files")
-
 typedef void (*GPasteClipboardTextCallback) (GPasteClipboard *self,
                                              const gchar     *text,
                                              gpointer         user_data);
