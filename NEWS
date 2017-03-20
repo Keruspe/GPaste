@@ -1,3 +1,17 @@
+NEW in 3.23.90 (20/03/2017)
+=============
+
+- applet and unity app-indicator have been removed
+- a minimal applet is available there: https://github.com/Keruspe/gpaste-applet
+- Dutch translation has been added
+- gtk4 is now supported (--with-gtk=4.0)
+- gnome-shell/mutter 3.24 are now supported and required
+- ui will now close when you select an item (configurable)
+- more intuitive search interactions in the ui
+- preparations for future other storage backends
+- preparations for mime types support
+- more reliable "paste" behaviour part in some corener cases
+
 NEW in 3.22.3 (28/02/2017)
 =============
 
