@@ -108,8 +108,6 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->name, g_free);
         g_clear_pointer (&data->text, g_free);
-        data->special_values = NULL;
-        // TODO: free special_vlaues
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (g_paste_str_equal (*a, "kind"))
@@ -216,6 +214,17 @@ add_item (Data *data)
         data->history = g_list_append (data->history, item);
         ++data->current_size;;
     }
+
+    for (GSList *d = data->special_values; d; d = d->next)
+    {
+        GPasteSpecialValue *v = d->data;
+
+        if (item)
+            g_paste_item_add_special_value (item, v);
+
+        g_free (v->data);
+    }
+    g_clear_pointer(&data->special_values, g_slist_free);
 }
 
 static void
@@ -315,7 +324,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                     GPasteSpecialValue *sv = g_new (GPasteSpecialValue, 1);
                     sv->mime = data->mime;
                     sv->data = value;
-                    data->special_values = g_slist_append (data->special_values, sv);
+                    data->special_values = g_slist_prepend (data->special_values, sv);
                 }
             }
             else
