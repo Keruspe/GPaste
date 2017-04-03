@@ -11,6 +11,7 @@
 typedef struct
 {
     gchar  *value;
+    GSList *special_values;
     gchar  *display_string;
     guint64 size;
 } GPasteItemPrivate;
@@ -50,6 +51,24 @@ g_paste_item_get_real_value (const GPasteItem *self)
     const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
 
     return priv->value;
+}
+
+/**
+ * g_paste_item_get_special_values:
+ * @self: a #GPasteItem instance
+ *
+ * Get the special values (special mime types) for an item
+ *
+ * Returns: (element-type GPasteSpecialValue): read-only list containing the special values
+ */
+G_PASTE_VISIBLE const GSList *
+g_paste_item_get_special_values (const GPasteItem *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+
+    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+
+    return priv->special_values;
 }
 
 /**

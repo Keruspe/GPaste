@@ -33,18 +33,26 @@ typedef enum
     PASSWORD
 } Type;
 
+typedef enum
+{
+    HISTORY_1_0,
+    HISTORY_2_0,
+    HISTORY_INVALID
+} HistoryVersion;
+
 typedef struct
 {
-    GList   *history;
-    gsize    mem_size;
-    State    state;
-    Type     type;
-    guint64  current_size;
-    guint64  max_size;
-    gboolean images_support;
-    gchar   *date;
-    gchar   *name;
-    gchar   *text;
+    GList         *history;
+    gsize          mem_size;
+    State          state;
+    Type           type;
+    guint64        current_size;
+    guint64        max_size;
+    gboolean       images_support;
+    gchar         *date;
+    gchar         *name;
+    gchar         *text;
+    HistoryVersion version;
 } Data;
 
 #define ASSERT_STATE(x)                                                                           \
@@ -70,6 +78,19 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     if (g_paste_str_equal (element_name, "history"))
     {
         SWITCH_STATE (BEGIN, IN_HISTORY);
+        for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
+        {
+            if (g_paste_str_equal (*a, "version"))
+            {
+                if (g_paste_str_equal (*v, "1.0"))
+                    data->version = HISTORY_1_0;
+                else if (g_paste_str_equal (*v, "2.0"))
+                    data->version = HISTORY_2_0;
+                else
+                    data->version = HISTORY_INVALID;
+            }
+        }
+        g_assert (data->version == HISTORY_1_0);
     }
     else if (g_paste_str_equal (element_name, "item"))
     {
@@ -258,7 +279,8 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             g_paste_settings_get_images_support (settings),
             NULL,
             NULL,
-            NULL
+            NULL,
+            HISTORY_INVALID
         };
         GMarkupParseContext *ctx = g_markup_parse_context_new (&parser,
                                                                G_MARKUP_TREAT_CDATA_AS_TEXT,
@@ -295,6 +317,29 @@ _g_paste_file_backend_write_image_metadata (GOutputStream         *stream,
            g_output_stream_write_all (stream, date_str, 10, NULL, NULL /* cancellable */, NULL /* error */);
 }
 
+static gboolean
+_g_paste_file_backend_write_special_values (GOutputStream *stream,
+                                            const GSList  *special_values)
+{
+    for (const GSList *val = special_values; val; val = val->next)
+    {
+        const GPasteSpecialValue *value = val->data;
+        const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), value->mime)->value_nick;
+        g_autofree gchar *text = g_paste_util_xml_encode (value->data);
+
+        if (!g_output_stream_write_all (stream, "    <special_value mime=\"", 25, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, mime, strlen (mime), NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, "]]></special_value>\n", 20, NULL, NULL /* cancellable */, NULL /* error */))
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 static void
 g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
                                          const gchar                *history_file_path,
@@ -320,7 +365,7 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
     g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, history_file);
 
     if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
-        !g_output_stream_write_all (stream, "<history version=\"1.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
+        !g_output_stream_write_all (stream, "<history version=\"2.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
             return;
 
     for (; history; history = g_list_next (history))
@@ -331,14 +376,17 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
         if (g_paste_str_equal (kind, "Password"))
             continue;
 
+        const GSList *special_values = g_paste_item_get_special_values (item);
         g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
             (_G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, _G_PASTE_IMAGE_ITEM (item))) ||
-            !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, "\">\n    <value><![CDATA[", 23, NULL, NULL /*cancellable */, NULL /*error */) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_write_all (stream, "]]></item>\n", 11, NULL, NULL /* cancellable */, NULL /* error */))
+            !g_output_stream_write_all (stream, "]]></value>\n", 12, NULL, NULL /* cancellable */, NULL /* error */) ||
+            (special_values && !_g_paste_file_backend_write_special_values (stream, special_values)) ||
+            !g_output_stream_write_all (stream, "  </item>\n", 10, NULL, NULL /* cancellable */, NULL /* error */))
         {
             g_warning ("Failed to write an item to history");
             continue;
