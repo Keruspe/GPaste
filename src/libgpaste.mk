@@ -27,6 +27,7 @@ lib_libgpaste_la_public_headers =                                             \
 	%D%/libgpaste/core/gpaste-password-item.h                             \
 	%D%/libgpaste/core/gpaste-text-item.h                                 \
 	%D%/libgpaste/core/gpaste-item-enums.h                                \
+	%D%/libgpaste/core/gpaste-special-atom.h                              \
 	%D%/libgpaste/core/gpaste-update-enums.h                              \
 	%D%/libgpaste/core/gpaste-uris-item.h                                 \
 	%D%/libgpaste/daemon/gpaste-bus.h                                     \
@@ -87,6 +88,7 @@ lib_libgpaste_la_source_files =                                               \
 	%D%/libgpaste/core/gpaste-password-item.c                             \
 	%D%/libgpaste/core/gpaste-text-item.c                                 \
 	%D%/libgpaste/core/gpaste-item-enums.c                                \
+	%D%/libgpaste/core/gpaste-special-atom.c                              \
 	%D%/libgpaste/core/gpaste-update-enums.c                              \
 	%D%/libgpaste/core/gpaste-uris-item.c                                 \
 	%D%/libgpaste/daemon/gpaste-bus.c                                     \

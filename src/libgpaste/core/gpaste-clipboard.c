@@ -6,6 +6,7 @@
 
 #include <gpaste-clipboard.h>
 #include <gpaste-image-item.h>
+#include <gpaste-special-atom.h>
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
 
@@ -32,17 +33,6 @@ typedef struct
 
     guint64         c_signals[C_LAST_SIGNAL];
 } GPasteClipboardPrivate;
-
-typedef enum
-{
-    A_GNOME_COPIED_FILES,
-    A_TEXT_HTML,
-    A_TEXT_XML,
-
-    A_LAST
-} GPasteSpecialAtom;
-
-static GdkAtom special_atoms[A_LAST] = { 0 };
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Clipboard, clipboard, G_TYPE_OBJECT)
 
@@ -331,7 +321,7 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
 
     switch (atom)
     {
-    case A_GNOME_COPIED_FILES:
+    case G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES:
         if (_G_PASTE_IS_URIS_ITEM (item))
         {
             const gchar * const *uris = g_paste_uris_item_get_uris (_G_PASTE_URIS_ITEM (item));
@@ -346,9 +336,9 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
             data = copy_str_as_uchars (str, length);
         }
         break;
-    case A_TEXT_HTML:
+    case G_PASTE_SPECIAL_ATOM_TEXT_HTML:
         /* fallthrough */
-    case A_TEXT_XML:
+    case G_PASTE_SPECIAL_ATOM_TEXT_XML:
         if (_G_PASTE_IS_TEXT_ITEM (item))
         {
             const gchar *str = g_paste_item_get_value (item);
@@ -356,12 +346,12 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
             data = copy_str_as_uchars (str, length);
         }
         break;
-    case A_LAST:
+    case G_PASTE_SPECIAL_ATOM_LAST:
         break;
     }
 
     if (data)
-        gtk_selection_data_set (selection_data, special_atoms[atom], 8, data, length);
+        gtk_selection_data_set (selection_data, g_paste_special_atom_get (atom), 8, data, length);
 }
 
 static void
@@ -394,9 +384,9 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
         }
     }
 
-    for (GPasteSpecialAtom a = 0; a < A_LAST; ++a)
+    for (GPasteSpecialAtom a = 0; a < G_PASTE_SPECIAL_ATOM_LAST; ++a)
     {
-        if (target == special_atoms[a])
+        if (target == g_paste_special_atom_get (a))
         {
             _get_clipboard_data_from_special_atom (selection_data, item, a);
             return;
@@ -428,7 +418,7 @@ g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
 
     gtk_target_list_add_text_targets (target_list, 0);
     gtk_target_list_add_uri_targets (target_list, 0);
-    gtk_target_list_add (target_list, special_atoms[A_GNOME_COPIED_FILES], 0, 0);
+    gtk_target_list_add (target_list, g_paste_special_atom_get (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES), 0, 0);
 
     gint32 n_targets;
     GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
@@ -783,10 +773,6 @@ g_paste_clipboard_class_init (GPasteClipboardClass *klass)
                                           G_TYPE_NONE,
                                           1,
                                           GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
-
-    special_atoms[A_GNOME_COPIED_FILES] = gdk_atom_intern_static_string ("x-special/gnome-copied-files");
-    special_atoms[A_TEXT_HTML]          = gdk_atom_intern_static_string ("text/html");
-    special_atoms[A_TEXT_XML]           = gdk_atom_intern_static_string ("text/xml");
 }
 
 static void

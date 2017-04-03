@@ -19,6 +19,7 @@
 #include <gpaste-image-item.h>
 #include <gpaste-item.h>
 #include <gpaste-password-item.h>
+#include <gpaste-special-atom.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
