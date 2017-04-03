@@ -347,6 +347,8 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
         }
         break;
     case G_PASTE_SPECIAL_ATOM_LAST:
+        /* fallthrough */
+    case G_PASTE_SPECIAL_ATOM_INVALID:
         break;
     }
 
@@ -384,7 +386,7 @@ g_paste_clipboard_get_clipboard_data (GtkClipboard     *clipboard G_GNUC_UNUSED,
         }
     }
 
-    for (GPasteSpecialAtom a = 0; a < G_PASTE_SPECIAL_ATOM_LAST; ++a)
+    for (GPasteSpecialAtom a = G_PASTE_SPECIAL_ATOM_FIRST; a < G_PASTE_SPECIAL_ATOM_LAST; ++a)
     {
         if (target == g_paste_special_atom_get (a))
         {

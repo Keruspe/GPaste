@@ -27,7 +27,7 @@ g_paste_special_atom_get_type (void)
             { G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES, "G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES", "gnome-copied-files" },
             { G_PASTE_SPECIAL_ATOM_TEXT_HTML,          "G_PASTE_SPECIAL_ATOM_TEXT_HTML",          "text-html"          },
             { G_PASTE_SPECIAL_ATOM_TEXT_XML,           "G_PASTE_SPECIAL_ATOM_TEXT_XML",           "text-xml"           },
-            { G_PASTE_SPECIAL_ATOM_LAST,               NULL,                                      NULL                 },
+            { G_PASTE_SPECIAL_ATOM_INVALID,            NULL,                                      NULL                 },
         };
         etype = g_enum_register_static (g_intern_static_string ("GPasteSpecialAtom"), values);
         g_type_class_ref (etype);

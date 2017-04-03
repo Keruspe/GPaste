@@ -150,7 +150,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     else if (g_paste_str_equal (element_name, "value"))
     {
         SWITCH_STATE (IN_ITEM, IN_VALUE);
-        data->mime = G_PASTE_SPECIAL_ATOM_LAST;
+        data->mime = G_PASTE_SPECIAL_ATOM_INVALID;
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (g_paste_str_equal (*a, "mime"))
@@ -314,7 +314,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
             if (*g_strstrip (txt))
             {
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
-                if (data->mime == G_PASTE_SPECIAL_ATOM_LAST)
+                if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID)
                 {
                     g_free (data->text);
                     data->text = value;
@@ -387,7 +387,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             NULL,
             NULL,
             HISTORY_INVALID,
-            G_PASTE_SPECIAL_ATOM_LAST
+            G_PASTE_SPECIAL_ATOM_INVALID
         };
         GMarkupParseContext *ctx = g_markup_parse_context_new (&parser,
                                                                G_MARKUP_TREAT_CDATA_AS_TEXT,
