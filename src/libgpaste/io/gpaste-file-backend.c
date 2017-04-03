@@ -223,6 +223,7 @@ add_item (Data *data)
             g_paste_item_add_special_value (item, v);
 
         g_free (v->data);
+        g_free (v);
     }
     g_clear_pointer(&data->special_values, g_slist_free);
 }

@@ -289,6 +289,7 @@ g_paste_item_finalize (GObject *object)
     {
         GPasteSpecialValue *gsv = sv->data;
         g_free (gsv->data);
+        g_free (gsv);
     }
 
     g_slist_free (priv->special_values);
