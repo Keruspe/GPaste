@@ -44,17 +44,19 @@ typedef enum
 
 typedef struct
 {
-    GList         *history;
-    gsize          mem_size;
-    State          state;
-    Type           type;
-    guint64        current_size;
-    guint64        max_size;
-    gboolean       images_support;
-    gchar         *date;
-    gchar         *name;
-    gchar         *text;
-    HistoryVersion version;
+    GList            *history;
+    gsize             mem_size;
+    State             state;
+    Type              type;
+    guint64           current_size;
+    guint64           max_size;
+    gboolean          images_support;
+    gchar            *date;
+    gchar            *name;
+    gchar            *text;
+    GSList           *special_values;
+    HistoryVersion    version;
+    GPasteSpecialAtom mime;
 } Data;
 
 #define ASSERT_STATE(x)                                                                               \
@@ -106,6 +108,8 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->name, g_free);
         g_clear_pointer (&data->text, g_free);
+        data->special_values = NULL;
+        // TODO: free special_vlaues
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (g_paste_str_equal (*a, "kind"))
@@ -148,6 +152,18 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     else if (g_paste_str_equal (element_name, "value"))
     {
         SWITCH_STATE (IN_ITEM, IN_VALUE);
+        data->mime = G_PASTE_SPECIAL_ATOM_LAST;
+        for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
+        {
+            if (g_paste_str_equal (*a, "mime"))
+            {
+                GEnumValue *gev = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), *v);
+                if (gev)
+                    data->mime = gev->value;
+                else
+                    g_warning ("Unknown mime: %s", *v);
+            }
+        }
     }
     else
     {
@@ -283,17 +299,28 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         break;
     }
     case IN_VALUE:
-        // TODO: differentiate between value and special_value
         if (data->version == HISTORY_2_0)
         {
-            data->text = g_paste_util_xml_decode (txt);
+            gchar *value = g_paste_util_xml_decode (txt);
             if (*g_strstrip (txt))
             {
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
+                if (data->mime == G_PASTE_SPECIAL_ATOM_LAST)
+                {
+                    g_free (data->text);
+                    data->text = value;
+                }
+                else
+                {
+                    GPasteSpecialValue *sv = g_new (GPasteSpecialValue, 1);
+                    sv->mime = data->mime;
+                    sv->data = value;
+                    data->special_values = g_slist_append (data->special_values, sv);
+                }
             }
             else
             {
-                g_clear_pointer (&data->text, g_free);
+                g_free (value);
             }
         }
         else
@@ -349,7 +376,9 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             NULL,
             NULL,
             NULL,
-            HISTORY_INVALID
+            NULL,
+            HISTORY_INVALID,
+            G_PASTE_SPECIAL_ATOM_LAST
         };
         GMarkupParseContext *ctx = g_markup_parse_context_new (&parser,
                                                                G_MARKUP_TREAT_CDATA_AS_TEXT,
