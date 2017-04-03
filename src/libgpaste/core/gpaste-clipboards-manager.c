@@ -162,6 +162,7 @@ typedef struct {
     gboolean                        track;
     gboolean                        uris_available;
     gboolean                        fallback;
+    gboolean                        special_atom_available[G_PASTE_SPECIAL_ATOM_LAST];
 } GPasteClipboardsManagerCallbackData;
 
 static void
@@ -230,18 +231,31 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
 
 static void
 g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNUSED,
-                                          GtkSelectionData *targets,
+                                          GtkSelectionData *_targets,
                                           gpointer          user_data)
 {
     g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
 
     g_debug ("clipboards-manager: targets ready");
 
-    if (gtk_selection_data_get_length (targets) >= 0)
+    if (gtk_selection_data_get_length (_targets) >= 0)
     {
-        data->uris_available = gtk_selection_data_targets_include_uri (targets);
+        g_autofree GdkAtom *targets = NULL;
+        gint n_targets;
 
-        if (data->uris_available || gtk_selection_data_targets_include_text (targets))
+        gtk_selection_data_get_targets (_targets, &targets, &n_targets);
+        data->uris_available = gtk_targets_include_uri (targets, n_targets);
+
+        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        {
+            for (gint i = 0; i < n_targets; ++i)
+            {
+                if (targets[i] == g_paste_special_atom_get (atom))
+                    data->special_atom_available[atom] = TRUE;
+            }
+        }
+
+        if (data->uris_available || gtk_targets_include_text (targets, n_targets))
         {
             /* Update our cache from the real Clipboard */
             g_paste_clipboard_set_text (data->clip,
@@ -249,7 +263,7 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
                                         data);
             data = NULL;
         }
-        else if (g_paste_settings_get_images_support (data->priv->settings) && gtk_selection_data_targets_include_image (targets, FALSE))
+        else if (g_paste_settings_get_images_support (data->priv->settings) && gtk_targets_include_image (targets, n_targets, FALSE))
         {
             /* Update our cache from the real Clipboard */
             g_paste_clipboard_set_image (data->clip,
@@ -291,13 +305,11 @@ g_paste_clipboards_manager_notify (GPasteClipboard     *clipboard,
                           (atom != GDK_SELECTION_PRIMARY ||                          // We're not primary
                            g_paste_settings_get_primary_to_history (settings) ||     // Or we asked that primary affects clipboard
                            g_paste_settings_get_synchronize_clipboards (settings))); // Or primary and clipboards are synchronized hence primary will affect history through clipboard
-    GPasteClipboardsManagerCallbackData *data = g_new (GPasteClipboardsManagerCallbackData, 1);
+    GPasteClipboardsManagerCallbackData *data = g_new0 (GPasteClipboardsManagerCallbackData, 1);
 
     data->priv = priv;
     data->clip = clipboard;
     data->track = track;
-    data->uris_available = FALSE;
-    data->fallback = FALSE;
 
     gtk_clipboard_request_contents (g_paste_clipboard_get_real (clipboard),
                                     gdk_atom_intern_static_string ("TARGETS"),
