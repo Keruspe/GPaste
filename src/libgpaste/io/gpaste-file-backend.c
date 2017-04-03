@@ -21,7 +21,9 @@ typedef enum
     BEGIN,
     IN_HISTORY,
     IN_ITEM,
-    HAS_TEXT,
+    IN_ITEM_WITH_TEXT,
+    IN_VALUE,
+    IN_VALUE_WITH_TEXT,
     END
 } State;
 
@@ -55,11 +57,11 @@ typedef struct
     HistoryVersion version;
 } Data;
 
-#define ASSERT_STATE(x)                                                                           \
-    if (data->state != x)                                                                         \
-    {                                                                                             \
+#define ASSERT_STATE(x)                                                                               \
+    if (data->state != x)                                                                             \
+    {                                                                                                 \
         g_warning ("Expected state %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, x, data->state); \
-        return;                                                                                   \
+        return;                                                                                       \
     }
 #define SWITCH_STATE(x, y) \
     ASSERT_STATE (x);      \
@@ -83,19 +85,26 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             if (g_paste_str_equal (*a, "version"))
             {
                 if (g_paste_str_equal (*v, "1.0"))
+                {
                     data->version = HISTORY_1_0;
+                }
                 else if (g_paste_str_equal (*v, "2.0"))
+                {
                     data->version = HISTORY_2_0;
+                }
                 else
+                {
+                    g_warning ("Unknown history version: %s", *v);
                     data->version = HISTORY_INVALID;
+                }
             }
         }
-        g_assert (data->version == HISTORY_1_0);
     }
     else if (g_paste_str_equal (element_name, "item"))
     {
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
         g_clear_pointer (&data->date, g_free);
+        g_clear_pointer (&data->name, g_free);
         g_clear_pointer (&data->text, g_free);
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
@@ -131,11 +140,66 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 data->name = g_strdup (*v);
             }
             else
+            {
                 g_warning ("Unknown item attribute: %s", *a);
+            }
         }
     }
+    else if (g_paste_str_equal (element_name, "value"))
+    {
+        SWITCH_STATE (IN_ITEM, IN_VALUE);
+    }
     else
+    {
         g_warning ("Unknown element: %s", element_name);
+    }
+}
+
+static void
+add_item (Data *data)
+{
+    GPasteItem *item = NULL;
+
+    switch (data->type)
+    {
+    case TEXT:
+        item = g_paste_text_item_new (data->text);
+        break;
+    case URIS:
+        item = g_paste_uris_item_new (data->text);
+        break;
+    case PASSWORD:
+        item = g_paste_password_item_new (data->name, data->text);
+        break;
+    case IMAGE:
+        if (data->images_support && data->date)
+        {
+            g_autoptr (GDateTime) date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
+                                                                                                NULL, /* end */
+                                                                                                0)); /* base */
+            item = g_paste_image_item_new_from_file (data->text, date_time);
+        }
+        else
+        {
+            g_autoptr (GFile) img_file = g_file_new_for_path (data->text);
+
+            if (g_file_query_exists (img_file,
+                                     NULL)) /* cancellable */
+            {
+                g_file_delete (img_file,
+                               NULL, /* cancellable */
+                               NULL); /* error */
+            }
+        }
+        break;
+    }
+
+    if (item)
+    {
+        data->mem_size += g_paste_item_get_size (item);
+        data->history = g_list_append (data->history, item);
+        ++data->current_size;;
+    }
 }
 
 static void
@@ -152,10 +216,29 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     }
     else if (g_paste_str_equal (element_name, "item"))
     {
-        SWITCH_STATE (HAS_TEXT, IN_HISTORY);
+        if (data->current_size < data->max_size)
+            add_item (data);
+        switch (data->version)
+        {
+        case HISTORY_1_0:
+            SWITCH_STATE (IN_ITEM_WITH_TEXT, IN_HISTORY);
+            break;
+        case HISTORY_2_0:
+            SWITCH_STATE (IN_ITEM, IN_HISTORY);
+            break;
+        case HISTORY_INVALID:
+            g_warning ("Invalid history version, ignoring end of item");
+            break;
+        }
+    }
+    else if (g_paste_str_equal (element_name, "value"))
+    {
+        SWITCH_STATE (IN_VALUE_WITH_TEXT, IN_ITEM);
     }
     else
+    {
         g_warning ("Unknown element: %s", element_name);
+    }
 }
 
 static void
@@ -171,7 +254,8 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
     switch (data->state)
     {
     case IN_HISTORY:
-    case HAS_TEXT:
+    case IN_ITEM_WITH_TEXT:
+    case IN_VALUE_WITH_TEXT:
         if (*g_strstrip (txt))
         {
             g_warning ("Unexpected text: %s", txt);
@@ -180,61 +264,46 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         break;
     case IN_ITEM:
     {
-        g_autofree gchar *value = g_paste_util_xml_decode (txt);
-        if (*g_strstrip (txt))
+        if (data->version == HISTORY_1_0)
         {
-            if (data->current_size < data->max_size)
+            data->text = g_paste_util_xml_decode (txt);
+            if (*g_strstrip (txt))
             {
-                GPasteItem *item = NULL;
-
-                switch (data->type)
-                {
-                case TEXT:
-                    item = g_paste_text_item_new (value);
-                    break;
-                case URIS:
-                    item = g_paste_uris_item_new (value);
-                    break;
-                case PASSWORD:
-                    item = g_paste_password_item_new (data->name, value);
-                    break;
-                case IMAGE:
-                    if (data->images_support && data->date)
-                    {
-                        g_autoptr (GDateTime) date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
-                                                                                                            NULL, /* end */
-                                                                                                            0)); /* base */
-                        item = g_paste_image_item_new_from_file (value, date_time);
-                    }
-                    else
-                    {
-                        g_autoptr (GFile) img_file = g_file_new_for_path (value);
-
-                        if (g_file_query_exists (img_file,
-                                                 NULL)) /* cancellable */
-                        {
-                            g_file_delete (img_file,
-                                           NULL, /* cancellable */
-                                           NULL); /* error */
-                        }
-                    }
-                    break;
-                }
-
-                if (item)
-                {
-                    data->mem_size += g_paste_item_get_size (item);
-                    data->history = g_list_append (data->history, item);
-                    ++data->current_size;;
-                }
+                SWITCH_STATE (IN_ITEM, IN_ITEM_WITH_TEXT);
             }
-
-            SWITCH_STATE (IN_ITEM, HAS_TEXT);
+            else
+            {
+                g_clear_pointer (&data->text, g_free);
+            }
+        }
+        else if (*g_strstrip (txt))
+        {
+            g_warning ("Unexpected text in item for history version != 1.0 %s", txt);
         }
         break;
     }
+    case IN_VALUE:
+        // TODO: differentiate between value and special_value
+        if (data->version == HISTORY_2_0)
+        {
+            data->text = g_paste_util_xml_decode (txt);
+            if (*g_strstrip (txt))
+            {
+                SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
+            }
+            else
+            {
+                g_clear_pointer (&data->text, g_free);
+            }
+        }
+        else
+        {
+            g_warning ("Unexpected value for history version != 2.0");
+        }
+        break;
     default:
         g_warning ("Unexpected state: %" G_GINT32_FORMAT, data->state);
+        break;
     }
 }
 
@@ -298,6 +367,9 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
 
         *history = data.history;
         *size = data.mem_size;
+        g_clear_pointer (&data.date, g_free);
+        g_clear_pointer (&data.name, g_free);
+        g_clear_pointer (&data.text, g_free);
     }
     else
     {
@@ -327,11 +399,11 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
         const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), value->mime)->value_nick;
         g_autofree gchar *text = g_paste_util_xml_encode (value->data);
 
-        if (!g_output_stream_write_all (stream, "    <special_value mime=\"", 25, NULL, NULL /* cancellable */, NULL /* error */) ||
+        if (!g_output_stream_write_all (stream, "    <value mime=\"", 27, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, mime, strlen (mime), NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_write_all (stream, "]]></special_value>\n", 20, NULL, NULL /* cancellable */, NULL /* error */))
+            !g_output_stream_write_all (stream, "]]></value>\n", 12, NULL, NULL /* cancellable */, NULL /* error */))
         {
             return FALSE;
         }
