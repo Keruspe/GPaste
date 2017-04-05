@@ -193,13 +193,17 @@ special_contents_received (GtkClipboard     *clipboard G_GNUC_UNUSED,
 {
     g_autofree GPasteSpecialAtomCallbackData *d = data;
     g_autoptr (GPasteItem) item = d->item;
-    const guchar *val = gtk_selection_data_get_data (selection_data);
+    gint length;
+    const guchar *raw_val = gtk_selection_data_get_data_with_length (selection_data, &length);
 
-    if (val)
+    if (raw_val)
     {
+        g_autofree gchar *val = g_new (gchar, length);
+        for (gint i = 0; i < length; ++i)
+            val[i] = (gchar) raw_val[i];
         g_autofree GPasteSpecialValue *v = g_new (GPasteSpecialValue, 1);
         v->mime = d->atom;
-        v->data = (gchar *) /*TODO: should the field be changed to unsigned?*/ val;
+        v->data = val;
         g_paste_item_add_special_value (item, v);
     }
 }
@@ -265,8 +269,12 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
         return;
     }
 
-    g_paste_clipboards_manager_handle_special_atoms (clipboard, item, data);
-    data = NULL;
+    if (item)
+    {
+        g_paste_clipboards_manager_handle_special_atoms (clipboard, item, data);
+        data = NULL;
+    }
+
     g_paste_clipboards_manager_notify_finish (priv, clipboard, item, synchronized_text, something_in_clipboard);
 }
 
