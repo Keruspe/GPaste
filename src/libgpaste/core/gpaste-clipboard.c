@@ -341,7 +341,9 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
     case G_PASTE_SPECIAL_ATOM_TEXT_XML:
         if (_G_PASTE_IS_TEXT_ITEM (item))
         {
-            const gchar *str = g_paste_item_get_value (item);
+            const gchar *str = g_paste_item_get_special_value (item, atom);
+            if (!str)
+                str = g_paste_item_get_value (item);
             length = strlen (str);
             data = copy_str_as_uchars (str, length);
         }
