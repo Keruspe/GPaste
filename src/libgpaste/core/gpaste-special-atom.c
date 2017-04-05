@@ -11,9 +11,16 @@ static GdkAtom special_atoms[G_PASTE_SPECIAL_ATOM_LAST] = { 0 };
 static void
 g_paste_special_atom_init(void)
 {
-    special_atoms[G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES] = gdk_atom_intern_static_string ("x-special/gnome-copied-files");
-    special_atoms[G_PASTE_SPECIAL_ATOM_TEXT_HTML]          = gdk_atom_intern_static_string ("text/html");
-    special_atoms[G_PASTE_SPECIAL_ATOM_TEXT_XML]           = gdk_atom_intern_static_string ("text/xml");
+    static gboolean inited = FALSE;
+
+    if (!inited)
+    {
+        g_debug("atoms init");
+        special_atoms[G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES] = gdk_atom_intern_static_string ("x-special/gnome-copied-files");
+        special_atoms[G_PASTE_SPECIAL_ATOM_TEXT_HTML]          = gdk_atom_intern_static_string ("text/html");
+        special_atoms[G_PASTE_SPECIAL_ATOM_TEXT_XML]           = gdk_atom_intern_static_string ("text/xml");
+        inited = TRUE;
+    }
 }
 
 G_PASTE_VISIBLE GType
@@ -46,5 +53,6 @@ g_paste_special_atom_get_type (void)
 G_PASTE_VISIBLE GdkAtom
 g_paste_special_atom_get (GPasteSpecialAtom atom)
 {
+    g_paste_special_atom_init ();
     return special_atoms[atom];
 }
