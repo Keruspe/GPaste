@@ -195,12 +195,15 @@ special_contents_received (GtkClipboard     *clipboard G_GNUC_UNUSED,
     g_autoptr (GPasteItem) item = d->item;
     gint length;
     const guchar *raw_val = gtk_selection_data_get_data_with_length (selection_data, &length);
+    // FIXME: wtf ? the first two bytes appear to be garbage and then one out of two is a NUL byte ?
+    length = (length / 2);
 
     if (raw_val)
     {
         g_autofree gchar *val = g_new (gchar, length);
-        for (gint i = 0; i < length; ++i)
-            val[i] = (gchar) raw_val[i];
+        for (gint i = 2; i < (length * 2); i+=2)
+            val[(i/2)-1] = (gchar) raw_val[i];
+        val[length - 1] = 0;
         g_autofree GPasteSpecialValue *v = g_new (GPasteSpecialValue, 1);
         v->mime = d->atom;
         v->data = val;
