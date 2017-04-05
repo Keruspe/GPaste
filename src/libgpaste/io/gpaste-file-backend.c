@@ -438,7 +438,7 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
         const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), value->mime)->value_nick;
         g_autofree gchar *text = g_paste_util_xml_encode (value->data);
 
-        if (!g_output_stream_write_all (stream, "    <value mime=\"", 27, NULL, NULL /* cancellable */, NULL /* error */) ||
+        if (!g_output_stream_write_all (stream, "    <value mime=\"", 17, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, mime, strlen (mime), NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, "\"><![CDATA[", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
