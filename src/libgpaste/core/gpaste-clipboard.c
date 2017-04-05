@@ -342,10 +342,18 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
         if (_G_PASTE_IS_TEXT_ITEM (item))
         {
             const gchar *str = g_paste_item_get_special_value (item, atom);
-            if (!str)
+            if (str)
+            {
+                glong len;
+                data = (guchar *) g_utf8_to_utf16 (str, -1, NULL, &len, NULL);
+                length = (guint64) len;
+            }
+            else
+            {
                 str = g_paste_item_get_value (item);
-            length = strlen (str);
-            data = copy_str_as_uchars (str, length);
+                length = strlen (str);
+                data = copy_str_as_uchars (str, length);
+            }
         }
         break;
     case G_PASTE_SPECIAL_ATOM_LAST:
