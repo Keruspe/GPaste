@@ -409,32 +409,6 @@ g_paste_clipboard_clear_clipboard_data (GtkClipboard *clipboard G_GNUC_UNUSED,
     g_object_unref (user_data_or_owner);
 }
 
-static void
-g_paste_clipboard_private_select_uris (GPasteClipboardPrivate *priv,
-                                       GPasteUrisItem         *item)
-{
-    GtkClipboard *real = priv->real;
-    g_autoptr (GtkTargetList) target_list = gtk_target_list_new (NULL, 0);
-
-    g_debug("%s: select uris", _g_paste_clipboard_private_target_name (priv));
-
-    g_paste_clipboard_private_set_text (priv, g_paste_item_get_real_value (_G_PASTE_ITEM (item)));
-
-    gtk_target_list_add_text_targets (target_list, 0);
-    gtk_target_list_add_uri_targets (target_list, 0);
-    gtk_target_list_add (target_list, g_paste_special_atom_get (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES), 0, 0);
-
-    gint32 n_targets;
-    GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
-    gtk_clipboard_set_with_owner (real,
-                                  targets,
-                                  n_targets,
-                                  g_paste_clipboard_get_clipboard_data,
-                                  g_paste_clipboard_clear_clipboard_data,
-                                  g_object_ref (item));
-    gtk_target_table_free (targets, n_targets);
-}
-
 /**
  * g_paste_clipboard_clear:
  * @self: a #GPasteClipboard instance
@@ -608,34 +582,38 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
     g_return_val_if_fail (_G_PASTE_IS_ITEM (item), FALSE);
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+    GtkClipboard *real = priv->real;
+    g_autoptr (GtkTargetList) target_list = gtk_target_list_new (NULL, 0);
 
     g_debug("%s: select item", _g_paste_clipboard_private_target_name (priv));
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
-    {
-        const GPasteImageItem *image_item = _G_PASTE_IMAGE_ITEM (item);
-        const gchar *checksum = g_paste_image_item_get_checksum (image_item);
-        GdkPixbuf *image = g_paste_image_item_get_image (image_item);
-
-        if (!image || !GDK_IS_PIXBUF (image))
-            return FALSE;
-        if (!g_paste_str_equal (checksum, priv->image_checksum))
-            g_paste_clipboard_private_select_image (priv, image, checksum);
-    }
+        gtk_target_list_add_image_targets (target_list, 0, FALSE);
     else
     {
-        const gchar *text = g_paste_item_get_real_value (item);
-
-        if (!g_paste_str_equal (text, priv->text))
+        gtk_target_list_add_text_targets (target_list, 0);
+        if (_G_PASTE_IS_URIS_ITEM (item))
         {
-            if (_G_PASTE_IS_URIS_ITEM (item))
-                g_paste_clipboard_private_select_uris (priv, G_PASTE_URIS_ITEM (item));
-            else  if (_G_PASTE_IS_TEXT_ITEM (item))
-                g_paste_clipboard_select_text (self, text);
-            else
-                g_assert_not_reached ();
+            gtk_target_list_add_uri_targets (target_list, 0);
+            gtk_target_list_add (target_list, g_paste_special_atom_get (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES), 0, 0);
         }
     }
+
+    for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
+    {
+        const GPasteSpecialValue *v = sv->data;
+        gtk_target_list_add (target_list, g_paste_special_atom_get (v->mime), 0, 0);
+    }
+
+    gint32 n_targets;
+    GtkTargetEntry *targets = gtk_target_table_new_from_list (target_list, &n_targets);
+    gtk_clipboard_set_with_owner (real,
+                                  targets,
+                                  n_targets,
+                                  g_paste_clipboard_get_clipboard_data,
+                                  g_paste_clipboard_clear_clipboard_data,
+                                  g_object_ref (item));
+    gtk_target_table_free (targets, n_targets);
 
     return TRUE;
 }
