@@ -47,6 +47,8 @@ struct _GPasteItemClass
 const gchar  *g_paste_item_get_value          (const GPasteItem *self);
 const gchar  *g_paste_item_get_real_value     (const GPasteItem *self);
 const GSList *g_paste_item_get_special_values (const GPasteItem *self);
+const gchar  *g_paste_item_get_special_value  (const GPasteItem *self,
+                                               GPasteSpecialAtom atom);
 const gchar  *g_paste_item_get_display_string (const GPasteItem *self);
 gboolean      g_paste_item_equals             (const GPasteItem *self,
                                                const GPasteItem *other);

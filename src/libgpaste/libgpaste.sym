@@ -453,6 +453,7 @@ global:
     g_paste_file_backend_get_type;
 
     g_paste_item_get_special_values;
+    g_paste_item_get_special_value;
     g_paste_item_add_special_value;
 
     g_paste_settings_get_close_on_select;

@@ -72,6 +72,33 @@ g_paste_item_get_special_values (const GPasteItem *self)
 }
 
 /**
+ * g_paste_item_get_special_value:
+ * @self: a #GPasteItem instance
+ * @atom: the value we want to get
+ *
+ * Get the special value (special mime type) for an item
+ *
+ * Returns: read-only special value
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_item_get_special_value  (const GPasteItem *self,
+                                 GPasteSpecialAtom atom)
+{
+    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+
+    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+
+    for (GSList *sv = priv->special_values; sv; sv = sv->next)
+    {
+        GPasteSpecialValue *v = sv->data;
+        if (v->mime == atom)
+            return v->data;
+    }
+
+    return NULL;
+}
+
+/**
  * g_paste_item_get_display_string:
  * @self: a #GPasteItem instance
  *
