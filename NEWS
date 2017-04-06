@@ -1,3 +1,10 @@
+NEW in 3.24.0 (07/04/2017)
+=============
+
+- change the history format to 2.0 to be more flexible (backward compatible)
+- unify and consolidate some clipboard interactions
+- handle text/html and text/xml mime types
+
 NEW in 3.23.90 (20/03/2017)
 =============
 
