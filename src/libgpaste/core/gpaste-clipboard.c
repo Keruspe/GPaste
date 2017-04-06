@@ -344,9 +344,7 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
             const gchar *str = g_paste_item_get_special_value (item, atom);
             if (str)
             {
-                glong len;
-                data = (guchar *) g_utf8_to_utf16 (str, -1, NULL, &len, NULL);
-                length = (guint64) len;
+                data = g_base64_decode (str, &length);
             }
             else
             {

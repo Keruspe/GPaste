@@ -198,8 +198,7 @@ special_contents_received (GtkClipboard     *clipboard G_GNUC_UNUSED,
 
     if (raw_val)
     {
-        // FIXME: how to autodetect encoding?
-        g_autofree gchar *val = g_utf16_to_utf8 (raw_val, length, NULL, NULL, NULL);
+        g_autofree gchar *val = g_base64_encode (raw_val, length);
         g_autofree GPasteSpecialValue *v = g_new (GPasteSpecialValue, 1);
         v->mime = d->atom;
         v->data = val;
