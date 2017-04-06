@@ -297,6 +297,7 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
     g_paste_clipboards_manager_notify_finish (priv, clipboard, item, NULL, something_in_clipboard);
 }
 
+/* TODO: move part of this to GPasteClipboard to drop all set_* */
 static void
 g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNUSED,
                                           GtkSelectionData *_targets,
