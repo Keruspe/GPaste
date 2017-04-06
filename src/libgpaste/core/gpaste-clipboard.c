@@ -322,20 +322,7 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
     switch (atom)
     {
     case G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES:
-        if (_G_PASTE_IS_URIS_ITEM (item))
-        {
-            const gchar * const *uris = g_paste_uris_item_get_uris (_G_PASTE_URIS_ITEM (item));
-            g_autoptr (GString) copy_string = g_string_new ("copy");
-
-            length = g_strv_length ((GStrv) uris);
-            for (guint64 i = 0; i < length; ++i)
-                g_string_append_printf (copy_string, "\n%s", uris[i]);
-
-            gchar *str = copy_string->str;
-            length = copy_string->len + 1;
-            data = copy_str_as_uchars (str, length);
-        }
-        break;
+        /* fallthrough */
     case G_PASTE_SPECIAL_ATOM_TEXT_HTML:
         /* fallthrough */
     case G_PASTE_SPECIAL_ATOM_TEXT_XML:
@@ -599,10 +586,7 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
     {
         gtk_target_list_add_text_targets (target_list, 0);
         if (_G_PASTE_IS_URIS_ITEM (item))
-        {
             gtk_target_list_add_uri_targets (target_list, 0);
-            gtk_target_list_add (target_list, g_paste_special_atom_get (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES), 0, 0);
-        }
     }
 
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
