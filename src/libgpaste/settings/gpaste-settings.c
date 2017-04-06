@@ -5,7 +5,6 @@
  */
 
 #include <gpaste-gsettings-keys.h>
-#include <gpaste-settings.h>
 #include <gpaste-util.h>
 
 struct _GPasteSettings

@@ -14,8 +14,6 @@
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-util.h>
 
-#include <gio/gio.h>
-
 G_BEGIN_DECLS
 
 /***************/

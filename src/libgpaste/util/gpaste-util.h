@@ -14,7 +14,6 @@
 #include <gpaste-settings.h>
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

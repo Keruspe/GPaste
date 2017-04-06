@@ -6,7 +6,6 @@
 
 #include <gpaste-client.h>
 #include <gpaste-gsettings-keys.h>
-#include <gpaste-settings.h>
 #include <gpaste-settings-ui-stack.h>
 #include <gpaste-util.h>
 

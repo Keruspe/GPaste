@@ -5,7 +5,6 @@
  */
 
 #include <gpaste-gsettings-keys.h>
-#include <gpaste-macros.h>
 #include <gpaste-util.h>
 
 #include "gpaste-gtk-compat.h"
