@@ -357,6 +357,39 @@ g_paste_history_remove (GPasteHistory *self,
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, pos);
 }
 
+/**
+ * g_paste_history_refresh_item_size:
+ * @self: a #GPasteHistory instance
+ * @item: the #GPasteItem to refresh
+ * @old_size: the former size of the item
+ *
+ * Refresh the cached size of the #GPasteItem
+ */
+G_PASTE_VISIBLE void
+g_paste_history_refresh_item_size (GPasteHistory    *self,
+                                   const GPasteItem *item,
+                                   guint64           old_size)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (_G_PASTE_IS_ITEM (item));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+
+    if (!g_list_find (priv->history, item))
+        return;
+
+    guint64 size = g_paste_item_get_size (item);
+
+    g_return_if_fail (old_size <= size);
+
+    priv->size += (size - old_size);
+
+    if (size > priv->biggest_size)
+        g_paste_history_private_elect_new_biggest (priv);
+
+    g_paste_history_private_check_memory_usage (priv);
+}
+
 static GPasteItem *
 g_paste_history_private_get (const GPasteHistoryPrivate *priv,
                              guint64                     pos)
