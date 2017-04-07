@@ -170,21 +170,6 @@ typedef struct {
     GPasteSpecialAtom atom;
 } GPasteSpecialAtomCallbackData;
 
-static GPasteSpecialAtom
-special_atom_available (GPasteClipboardsManagerCallbackData *data)
-{
-    for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
-    {
-        if (data->special_atom_available[atom])
-        {
-            data->special_atom_available[atom] = FALSE;
-            return atom;
-        }
-    }
-
-    return G_PASTE_SPECIAL_ATOM_INVALID;
-}
-
 // TODO: move that to g_paste_clipboard ?
 static void
 special_contents_received (GtkClipboard     *clipboard G_GNUC_UNUSED,
@@ -204,27 +189,6 @@ special_contents_received (GtkClipboard     *clipboard G_GNUC_UNUSED,
         v->data = val;
         g_paste_item_add_special_value (item, v);
     }
-}
-
-static void
-g_paste_clipboards_manager_handle_special_atoms (GPasteClipboard                     *clipboard,
-                                                 GPasteItem                          *item,
-                                                 GPasteClipboardsManagerCallbackData *data)
-{
-    GPasteSpecialAtom atom = special_atom_available (data);
-
-    if (atom == G_PASTE_SPECIAL_ATOM_INVALID)
-    {
-        g_free (data);
-        return;
-    }
-
-    GPasteSpecialAtomCallbackData *d = g_new (GPasteSpecialAtomCallbackData, 1);
-    d->item = g_object_ref (item);
-    d->atom = atom;
-
-    gtk_clipboard_request_contents (g_paste_clipboard_get_real (clipboard), g_paste_special_atom_get (atom), special_contents_received, d);
-    g_paste_clipboards_manager_handle_special_atoms (clipboard, item, data);
 }
 
 static void
@@ -269,8 +233,16 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
 
     if (item)
     {
-        g_paste_clipboards_manager_handle_special_atoms (clipboard, item, data);
-        data = NULL;
+        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        {
+            if (data->special_atom_available[atom])
+            {
+                GPasteSpecialAtomCallbackData *d = g_new (GPasteSpecialAtomCallbackData, 1);
+                d->item = g_object_ref (item);
+                d->atom = atom;
+                gtk_clipboard_request_contents (g_paste_clipboard_get_real (clipboard), g_paste_special_atom_get (atom), special_contents_received, d);
+            }
+        }
     }
 
     g_paste_clipboards_manager_notify_finish (priv, clipboard, item, synchronized_text, something_in_clipboard);
