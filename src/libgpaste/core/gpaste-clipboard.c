@@ -315,39 +315,25 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
                                        const GPasteItem *item,
                                        GPasteSpecialAtom atom)
 {
-    g_autofree guchar *data = NULL;
-    guint64 length = 0;
-
-    switch (atom)
+    if (atom >= G_PASTE_SPECIAL_ATOM_FIRST && atom < G_PASTE_SPECIAL_ATOM_LAST)
     {
-    case G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES:
-        /* fallthrough */
-    case G_PASTE_SPECIAL_ATOM_TEXT_HTML:
-        /* fallthrough */
-    case G_PASTE_SPECIAL_ATOM_TEXT_XML:
-        if (_G_PASTE_IS_TEXT_ITEM (item))
-        {
-            const gchar *str = g_paste_item_get_special_value (item, atom);
-            if (str)
-            {
-                data = g_base64_decode (str, &length);
-            }
-            else
-            {
-                str = g_paste_item_get_value (item);
-                length = strlen (str);
-                data = copy_str_as_uchars (str, length);
-            }
-        }
-        break;
-    case G_PASTE_SPECIAL_ATOM_LAST:
-        /* fallthrough */
-    case G_PASTE_SPECIAL_ATOM_INVALID:
-        break;
-    }
+        g_autofree guchar *data = NULL;
+        guint64 length = 0;
+        const gchar *str = g_paste_item_get_special_value (item, atom);
 
-    if (data)
+        if (str)
+        {
+            data = g_base64_decode (str, &length);
+        }
+        else
+        {
+            str = g_paste_item_get_value (item);
+            length = strlen (str);
+            data = copy_str_as_uchars (str, length);
+        }
+
         gtk_selection_data_set (selection_data, g_paste_special_atom_get (atom), 8, data, length);
+    }
 }
 
 static void
