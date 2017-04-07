@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2017-04-03 16:27+0200\n"
+"POT-Creation-Date: 2017-04-07 17:21+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -47,151 +47,151 @@ msgstr ""
 msgid "[Files] "
 msgstr "[Dateien]"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:118
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:117
 #: src/libgpaste/ui/gpaste-ui-switch.c:92
 msgid "Track clipboard changes"
 msgstr "Verfolge Änderungen in der Zwischenablage"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:124
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:123
 msgid "Close UI on select"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:133
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:132
 msgid "Enable the gnome-shell extension"
 msgstr "Die Gnome-Shell-Erweiterung aktivieren"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:139
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:138
 msgid "Sync the daemon state with the extension's one"
 msgstr "Synchronisiere Daemon mit der Erweiterung"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:148
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:147
 msgid "Primary selection affects history"
 msgstr "Auswahl beeinflusst Chronik"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:154
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:153
 msgid "Synchronize clipboard with primary selection"
 msgstr "Synchronisiere Zwischenablage mit Auswahl"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:161
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:160
 msgid "Images support"
 msgstr "Bilder unterstützen"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:167
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:166
 msgid "Trim items"
 msgstr "Objekte trimmen"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:173
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:172
 msgid "Detect growing lines"
 msgstr "Länger werdende Zeilen entdecken"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:180
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:179
 msgid "Save history"
 msgstr "Chronik speichern"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:203
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:202
 #, fuzzy
 msgid "Max element size when displaying"
 msgstr "Maximale Größe des anzuzeigenden Eintrages:"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:210
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:209
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
 msgid "Max displayed history size"
 msgstr "Anzahl der anzuzeigenden Einträge"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:217
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:216
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
 msgid "Max history size"
 msgstr "Maximale Größe der Chronik"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:224
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:223
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 msgid "Max memory usage (MB)"
 msgstr "Maximal zugewiesener Speicher (MB)"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:231
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:230
 #, fuzzy
 msgid "Max text item length"
 msgstr "Maximale Textlänge:"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:238
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:237
 #, fuzzy
 msgid "Min text item length"
 msgstr "Minimale Textlänge:"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:264
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:263
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #, fuzzy
 msgid "Delete the active item from history"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:271
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:270
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #, fuzzy
 msgid "Launch the graphical tool"
 msgstr "Konfigurationswerkzeug starten"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:278
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:277
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #, fuzzy
 msgid "Mark the active item as being a password"
 msgstr "Tastenkürzel um den ersten Eintrag in der Chronik zu löschen"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:285
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:284
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #, fuzzy
 msgid "Display the history"
 msgstr "Chronik anzeigen:"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:292
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:291
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #, fuzzy
 msgid "Sync the clipboard to the primary selection"
 msgstr "Zwischenablage mit der Auswahl synchronisieren:"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:299
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:298
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #, fuzzy
 msgid "Sync the primary selection to the clipboard"
 msgstr "Auswahl mit der Zwischenablage synchronisieren:"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:306
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:305
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #, fuzzy
 msgid "Upload the active item to a pastebin service"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:321
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
 #: src/libgpaste/ui/gpaste-ui-window.c:244 src/client/gpaste-client.c:797
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
 msgid "General behaviour"
 msgstr "Allgemeine Optionen"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:337
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
 msgid "History settings"
 msgstr "Einstellungen zur Chronik"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:338
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:337
 msgid "Keyboard shortcuts"
 msgstr "Tastaturkürzel"
 
 #. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:455
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:454
 #: src/libgpaste/ui/gpaste-ui-panel.c:291
 msgid "Switch to"
 msgstr "Wechseln zu"
 
 #. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:460
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:459
 #: src/libgpaste/ui/gpaste-ui-delete-item.c:49
 #: src/libgpaste/ui/gpaste-ui-delete-history.c:24
 #: src/libgpaste/ui/gpaste-ui-delete-history.c:61
@@ -209,7 +209,7 @@ msgstr "Backup"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:44
 #: src/libgpaste/ui/gpaste-ui-edit-item.c:45
-#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:31
+#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
 msgid "Cancel"
 msgstr ""
 
@@ -294,7 +294,7 @@ msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 msgid "Upload"
 msgstr ""
 
-#: src/libgpaste/util/gpaste-util.c:598
+#: src/libgpaste/util/gpaste-util.c:597
 msgid "Could not create history dir"
 msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
