@@ -284,6 +284,7 @@ g_paste_item_add_special_value (GPasteItem               *self,
     gsv->data = g_strdup (special_value->data);
 
     priv->special_values = g_slist_prepend (priv->special_values, gsv);
+    priv->size += strlen (gsv->data);
 }
 
 /**

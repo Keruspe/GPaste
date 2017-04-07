@@ -166,6 +166,7 @@ typedef struct {
 } GPasteClipboardsManagerCallbackData;
 
 typedef struct {
+    GPasteHistory    *history;
     GPasteItem       *item;
     GPasteSpecialAtom atom;
 } GPasteSpecialAtomCallbackData;
@@ -177,6 +178,7 @@ special_contents_received (GtkClipboard     *clipboard G_GNUC_UNUSED,
                            gpointer          data)
 {
     g_autofree GPasteSpecialAtomCallbackData *d = data;
+    g_autoptr (GPasteHistory) history = d->history;
     g_autoptr (GPasteItem) item = d->item;
     gint length;
     const guchar *raw_val = gtk_selection_data_get_data_with_length (selection_data, &length);
@@ -187,7 +189,9 @@ special_contents_received (GtkClipboard     *clipboard G_GNUC_UNUSED,
         g_autofree GPasteSpecialValue *v = g_new (GPasteSpecialValue, 1);
         v->mime = d->atom;
         v->data = val;
+        guint64 old_size = g_paste_item_get_size (item);
         g_paste_item_add_special_value (item, v);
+        g_paste_history_refresh_item_size (history, item, old_size);
     }
 }
 
@@ -226,7 +230,7 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
 
         /* We tried to get some text as fallback (no target advertised) but didn't get any */
         g_paste_clipboard_clear (data->clip);
-        g_paste_clipboard_ensure_not_empty (data->clip, data->priv->history);
+        g_paste_clipboard_ensure_not_empty (data->clip, priv->history);
 
         return;
     }
@@ -238,6 +242,7 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
             if (data->special_atom_available[atom])
             {
                 GPasteSpecialAtomCallbackData *d = g_new (GPasteSpecialAtomCallbackData, 1);
+                d->history = g_object_ref (priv->history);
                 d->item = g_object_ref (item);
                 d->atom = atom;
                 gtk_clipboard_request_contents (g_paste_clipboard_get_real (clipboard), g_paste_special_atom_get (atom), special_contents_received, d);
