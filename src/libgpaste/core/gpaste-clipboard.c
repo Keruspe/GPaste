@@ -566,12 +566,16 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
     g_debug("%s: select item", _g_paste_clipboard_private_target_name (priv));
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
+    {
         gtk_target_list_add_image_targets (target_list, 0, FALSE);
+        g_paste_clipboard_private_set_image_checksum (priv, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item)));
+    }
     else
     {
         gtk_target_list_add_text_targets (target_list, 0);
         if (_G_PASTE_IS_URIS_ITEM (item))
             gtk_target_list_add_uri_targets (target_list, 0);
+        g_paste_clipboard_private_set_text (priv, g_paste_item_get_real_value (item));
     }
 
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
