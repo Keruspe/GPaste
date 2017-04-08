@@ -1,3 +1,8 @@
+NEW in 3.24.1 (08/04/2017)
+=============
+
+- fix a regression in Passwords handling
+
 NEW in 3.24.0 (07/04/2017)
 =============
 
