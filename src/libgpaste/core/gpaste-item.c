@@ -136,7 +136,7 @@ g_paste_item_equals (const GPasteItem *self,
     if (self == other)
         return TRUE;
 
-    return _G_PASTE_ITEM_GET_CLASS (self)->equals (self, other);
+    return _G_PASTE_ITEM_GET_CLASS (self)->equals (self, other) && _G_PASTE_ITEM_GET_CLASS (other)->equals (other, self);
 }
 
 /**
