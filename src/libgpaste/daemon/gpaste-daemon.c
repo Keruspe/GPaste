@@ -739,6 +739,7 @@ g_paste_daemon_private_set_password (const GPasteDaemonPrivate *priv,
     g_autofree gchar *name = g_variant_dup_string (variant2, &length);
 
     G_PASTE_DBUS_ASSERT (name, "no password name given");
+    G_PASTE_DBUS_ASSERT (!g_paste_history_get_password (priv->history, name), "a password with tat name already exists");
 
     g_paste_history_set_password (priv->history, index, name);
 }
