@@ -532,6 +532,30 @@ g_paste_history_replace (GPasteHistory *self,
         g_paste_history_selected (self, new);
 }
 
+static GPasteItem *
+_g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
+                                       const gchar                *name,
+                                       guint64                    *index)
+{
+    guint64 idx = 0;
+
+    for (GList *h = priv->history; h; h = g_list_next (h), ++idx)
+    {
+        GPasteItem *i = h->data;
+        if (_G_PASTE_IS_PASSWORD_ITEM (i) &&
+            g_paste_str_equal (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
+        {
+            if (index)
+                *index = idx;
+            return i;
+        }
+    }
+
+    if (index)
+        *index = -1;
+    return NULL;
+}
+
 /**
  * g_paste_history_set_password:
  * @self: a #GPasteHistory instance
@@ -560,34 +584,11 @@ g_paste_history_set_password (GPasteHistory *self,
     GPasteItem *item = todel->data;
 
     g_return_if_fail (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"));
+    g_return_if_fail (!_g_paste_history_private_get_password (priv, name, NULL));
 
     GPasteItem *password = g_paste_password_item_new (name, g_paste_item_get_real_value (item));
 
     _g_paste_history_replace (self, index, password, todel);
-}
-
-static GPasteItem *
-_g_paste_history_private_get_password (const GPasteHistoryPrivate *priv,
-                                       const gchar                *name,
-                                       guint64                    *index)
-{
-    guint64 idx = 0;
-
-    for (GList *h = priv->history; h; h = g_list_next (h), ++idx)
-    {
-        GPasteItem *i = h->data;
-        if (_G_PASTE_IS_PASSWORD_ITEM (i) &&
-            g_paste_str_equal (g_paste_password_item_get_name ((GPastePasswordItem *) i), name))
-        {
-            if (index)
-                *index = idx;
-            return i;
-        }
-    }
-
-    if (index)
-        *index = -1;
-    return NULL;
 }
 
 /**
