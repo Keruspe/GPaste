@@ -31,6 +31,13 @@ NEW in 3.23.90 (20/03/2017)
 - preparations for mime types support
 - more reliable "paste" behaviour part in some corener cases
 
+NEW in 3.22.4 (19/05/2017)
+=============
+
+- `gpaste-client add` now accepts reading from stdin
+- you can't have two passwords with the same name in the history anymore
+- prevent a bug adding a password both as password and text in come case
+
 NEW in 3.22.3 (28/02/2017)
 =============
 
