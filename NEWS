@@ -1,3 +1,10 @@
+NEW in 3.22.4 (19/05/2017)
+=============
+
+- `gpaste-client add` now accepts reading from stdin
+- you can't have two passwords with the same name in the history anymore
+- prevent a bug adding a password both as password and text in come case
+
 NEW in 3.22.3 (28/02/2017)
 =============
 
