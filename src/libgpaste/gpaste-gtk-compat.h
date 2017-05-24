@@ -16,6 +16,7 @@ G_BEGIN_DECLS
 #else
 #  define gtk_box_pack_start(box, child, expand, fill) gtk_box_pack_start (box, child, expand, fill, 0)
 #  define gtk_box_pack_end(box, child, expand, fill) gtk_box_pack_end (box, child, expand, fill, 0)
+#  define gtk_widget_measure(widget, orientation, for_size, minimum, natural, minimum_baseline, natural_baseline) gtk_widget_get_preferred_height (widget, minimum, natural)
 #endif
 
 G_END_DECLS
