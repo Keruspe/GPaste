@@ -220,7 +220,8 @@ add_action (gpointer data,
     GtkWidget *w = data;
     GtkBox *b =user_data;
 
-    gtk_box_pack_end (b, w, FALSE, TRUE);
+    gtk_widget_set_halign (w, TRUE);
+    gtk_box_pack_end (b, w);
 }
 
 static void
