@@ -13,6 +13,8 @@ G_BEGIN_DECLS
 
 #if GTK_API > 3
 #  define gtk_widget_show_all(widget) gtk_widget_show (widget)
+#  define gtk_box_pack_start(box, child, expand, fill) gtk_box_pack_start (box, child)
+#  define gtk_box_pack_end(box, child, expand, fill) gtk_box_pack_end (box, child)
 #else
 #  define gtk_box_pack_start(box, child, expand, fill) gtk_box_pack_start (box, child, expand, fill, 0)
 #  define gtk_box_pack_end(box, child, expand, fill) gtk_box_pack_end (box, child, expand, fill, 0)
