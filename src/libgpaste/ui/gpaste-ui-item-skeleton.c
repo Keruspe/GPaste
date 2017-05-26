@@ -271,7 +271,10 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_widget_set_margin_start (hbox, 5);
     gtk_widget_set_margin_end (hbox, 5);
+    gtk_widget_set_halign (index_label, TRUE);
     gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, TRUE);
+    gtk_widget_set_hexpand (label, TRUE);
+    gtk_widget_set_halign (label, TRUE);
     gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);

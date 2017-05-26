@@ -54,9 +54,13 @@ g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
     gtk_widget_set_margin_end (vbox, 2);
     gtk_widget_set_margin_bottom (vbox, 2);
 
+    gtk_widget_set_vexpand (label, TRUE);
+    gtk_widget_set_valign (label, TRUE);
     gtk_box_pack_start (box, label, TRUE, TRUE);
     gtk_widget_show (label);
 
+    gtk_widget_set_vexpand (entry, TRUE);
+    gtk_widget_set_valign (entry, TRUE);
     gtk_box_pack_start (box, entry, TRUE, TRUE);
     gtk_entry_set_text (e, default_name);
     gtk_widget_show (entry);

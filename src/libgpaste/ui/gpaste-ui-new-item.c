@@ -41,6 +41,8 @@ g_paste_ui_new_item_clicked (GtkButton *self)
     gtk_scrolled_window_set_min_content_height (sw, 300);
     gtk_scrolled_window_set_min_content_width (sw, 600);
     gtk_container_add (GTK_CONTAINER (sw), text);
+    gtk_widget_set_vexpand (scroll, TRUE);
+    gtk_widget_set_valign (scroll, TRUE);
     gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), scroll, TRUE, TRUE);
     gtk_widget_show_all (scroll);
 

@@ -263,7 +263,11 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     gtk_box_set_spacing (box, 2);
     gtk_box_pack_start (box, panel, FALSE, FALSE);
     gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE);
+    gtk_widget_set_hexpand (history, TRUE);
+    gtk_widget_set_halign (history, TRUE);
     gtk_box_pack_start (box, history, TRUE, TRUE);
+    gtk_widget_set_vexpand (hbox, TRUE);
+    gtk_widget_set_valign (hbox, TRUE);
     gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
