@@ -193,6 +193,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
         append_dict_entry (&dict, "id", index);
         append_dict_entry (&dict, "name", result);
         append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
+        append_dict_entry (&dict, "clipboardText", results[i]);
 
         g_variant_builder_add_value (&builder, g_variant_builder_end (&dict));
     }
