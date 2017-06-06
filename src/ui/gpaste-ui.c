@@ -24,7 +24,7 @@ prefs_activated (GSimpleAction *action    G_GNUC_UNUSED,
 static gboolean
 show_about_dialog (gpointer user_data)
 {
-    if (!GTK_IS_WIDGET (widget))
+    if (!GTK_IS_WIDGET (user_data))
         return G_SOURCE_REMOVE;
 
     if (!gtk_widget_get_realized (GTK_WIDGET (user_data)))
