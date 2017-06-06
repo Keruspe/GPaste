@@ -24,13 +24,15 @@ prefs_activated (GSimpleAction *action    G_GNUC_UNUSED,
 static gboolean
 show_about_dialog (gpointer user_data)
 {
+    GtkWidget *widget = user_data;
+
     if (!GTK_IS_WIDGET (widget))
         return G_SOURCE_REMOVE;
 
-    if (!gtk_widget_get_realized (GTK_WIDGET (user_data)))
+    if (!gtk_widget_get_realized (widget))
         return G_SOURCE_CONTINUE;
 
-    GtkWindow *parent = GTK_WINDOW (user_data);
+    GtkWindow *parent = GTK_WINDOW (widget);
     const gchar *authors[] = {
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
