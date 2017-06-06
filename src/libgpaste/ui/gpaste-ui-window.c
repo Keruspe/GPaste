@@ -167,6 +167,9 @@ focus_search (gpointer user_data)
     GtkWindow *win = user_data;
     GtkWidget *widget = user_data;
 
+    if (!GTK_IS_WIDGET (widget))
+        return G_SOURCE_REMOVE;
+
     if (!gtk_widget_get_realized (widget))
         return G_SOURCE_CONTINUE;
 
