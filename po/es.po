@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2017-05-19 17:29+0200\n"
+"POT-Creation-Date: 2017-08-20 14:26+0200\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -167,7 +167,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Eliminar el primer elemento del historial"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: src/libgpaste/ui/gpaste-ui-window.c:244 src/client/gpaste-client.c:797
+#: src/libgpaste/ui/gpaste-ui-window.c:247 src/client/gpaste-client.c:797
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
@@ -202,7 +202,7 @@ msgid "About"
 msgstr ""
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:43
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:132
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:136
 msgid "Backup"
 msgstr "Copia de seguridad"
 
@@ -222,7 +222,7 @@ msgid "Are you sure you want to delete this history?"
 msgstr "Atajo de teclado para eliminar la primera entrada del historial"
 
 #: src/libgpaste/ui/gpaste-ui-edit-item.c:44
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:115
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:117
 msgid "Edit"
 msgstr ""
 
@@ -251,7 +251,7 @@ msgid "(Couldn't connect to GPaste daemon)"
 msgstr "No se pudo conectar al servicio GPaste"
 
 #: src/libgpaste/ui/gpaste-ui-new-item.c:31
-#: src/libgpaste/ui/gpaste-ui-new-item.c:81
+#: src/libgpaste/ui/gpaste-ui-new-item.c:83
 msgid "New"
 msgstr ""
 
@@ -272,7 +272,7 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:91
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:96
 #, fuzzy
 msgid "GPaste Settings"
 msgstr "Ajustes del servicio GPaste"
@@ -294,7 +294,7 @@ msgstr "detener seguimiento de cambios en el portapapeles"
 msgid "Upload"
 msgstr ""
 
-#: src/libgpaste/util/gpaste-util.c:597
+#: src/libgpaste/util/gpaste-util.c:599
 msgid "Could not create history dir"
 msgstr "No se pudo crear directorio de historial"
 
@@ -588,28 +588,31 @@ msgstr "Recibida señal %d, saliendo\n"
 msgid "Could not acquire DBus name."
 msgstr "No se pudo obtener nombre en DBus"
 
-#: src/ui/gpaste-ui.c:92
+#: src/ui/gpaste-ui.c:97
 #, fuzzy
 msgid "Keyboard Shortcuts"
 msgstr "Atajos de teclado "
 
-#: src/ui/gpaste-ui.c:93
+#: src/ui/gpaste-ui.c:98
 msgid "About GPaste"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:94
+#: src/ui/gpaste-ui.c:99
 msgid "Quit"
 msgstr "Salir"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
 msgid "GPaste"
-msgstr "Applet GPaste"
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+msgid "Marc-Antoine Perennou"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:12
@@ -644,8 +647,8 @@ msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:7
-msgid "edit-paste"
-msgstr ""
+msgid "gpaste"
+msgstr "gpaste"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
