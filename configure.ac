@@ -75,7 +75,7 @@ esac
 AC_SUBST([GTK_API], "${with_gtk:0:1}")
 
 AC_DEFINE([G_PASTE_DEFAULT_HISTORY], ["history"],                                 [The default hsitory name])
-AC_DEFINE([G_PASTE_ICON_NAME],       ["edit-paste"],                              [The name of the icon used by GPaste])
+AC_DEFINE([G_PASTE_ICON_NAME],       ["gpaste"],                                  [The name of the icon used by GPaste])
 AC_DEFINE([G_PASTE_EXTENSION_NAME],  ["GPaste@gnome-shell-extensions.gnome.org"], [The name of the GPaste extension])
 
 AC_CONFIG_HEADERS([config.h])
