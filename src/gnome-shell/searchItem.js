@@ -36,7 +36,7 @@ var GPasteSearchItem = new Lang.Class({
             style_class:'search-entry-icon',
             icon_name:'edit-find-symbolic'
         }));
-        this._entry.clutter_text.connect('text-changed', Lang.bind(this, this._onTextChanged));
+        this._entry.clutter_text.connect('text-changed', this._onTextChanged.bind(this));
 
         this._clearIcon = new St.Icon({
             style_class: 'search-entry-icon',
@@ -68,7 +68,7 @@ var GPasteSearchItem = new Lang.Class({
         const dummy = (this.text.length == 0);
         this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
         if (!dummy && this._iconClickedId == 0) {
-            this._iconClickedId = this._entry.connect('secondary-icon-clicked', Lang.bind(this, this.reset));
+            this._iconClickedId = this._entry.connect('secondary-icon-clicked', this.reset.bind(this));
         }
         this.emit('text-changed');
     }

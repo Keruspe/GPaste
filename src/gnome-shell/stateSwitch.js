@@ -21,7 +21,7 @@ var GPasteStateSwitch = new Lang.Class({
 
         this._client = client;
 
-        this.connect('toggled', Lang.bind(this, this._onToggle));
+        this.connect('toggled', this._onToggle.bind(this));
     },
 
     toggle: function(state) {

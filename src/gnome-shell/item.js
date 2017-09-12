@@ -38,8 +38,8 @@ var GPasteItem = new Lang.Class({
             this._indexLabelVisible = false;
         }
 
-        this.connect('activate', Lang.bind (this, this._onActivate));
-        this.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressed));
+        this.connect('activate', this._onActivate.bind(this));
+        this.actor.connect('key-press-event', this._onKeyPressed.bind(this));
 
         this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, index);
         this.actor.add(this._deleteItem.actor, { expand: true, x_align: St.Align.END });
@@ -78,7 +78,7 @@ var GPasteItem = new Lang.Class({
         this._deleteItem.setIndex(index);
 
         if (index != -1) {
-            this._client.get_element(index, Lang.bind(this, function(client, result) {
+            this._client.get_element(index, (client, result) => {
                 const text = client.get_element_finish(result).replace(/[\t\n\r]/g, ' ');
                 if (text == this.label.get_text()) {
                     return;
@@ -87,7 +87,7 @@ var GPasteItem = new Lang.Class({
                 if (oldIndex == -1) {
                     this.actor.show();
                 }
-            }));
+            });
         } else {
             this.label.clutter_text.set_text(null);
             this.actor.hide();

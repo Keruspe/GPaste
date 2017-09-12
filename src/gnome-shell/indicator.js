@@ -55,17 +55,17 @@ var GPasteIndicator = new Lang.Class({
         this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
 
         this._searchItem = new SearchItem.GPasteSearchItem();
-        this._searchItem.connect('text-changed', Lang.bind(this, this._onNewSearch));
+        this._searchItem.connect('text-changed', this._onNewSearch.bind(this));
 
-        this._settingsSizeChangedId = this._settings.connect('changed::element-size', Lang.bind(this, this._resetElementSize));
+        this._settingsSizeChangedId = this._settings.connect('changed::element-size', this._resetElementSize.bind(this));
         this._resetElementSize();
-        this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));
-        this.menu.connect('key-press-event', Lang.bind(this, this._onMenuKeyPress));
+        this.menu.connect('open-state-changed', this._onOpenStateChanged.bind(this));
+        this.menu.connect('key-press-event', this._onMenuKeyPress.bind(this));
 
         this._pageSwitcher = new PageSwitcher.GPastePageSwitcher();
-        this._pageSwitcher.connect('switch', Lang.bind(this, function(sw, page) {
+        this._pageSwitcher.connect('switch', (sw, page) => {
             this._updatePage(page);
-        }));
+        });
 
         this._actions = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
@@ -76,7 +76,7 @@ var GPasteIndicator = new Lang.Class({
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
         this._addToFooter(this._actions);
 
-        GPaste.Client.new(Lang.bind(this, function (obj, result) {
+        GPaste.Client.new((obj, result) => {
             this._client = GPaste.Client.new_finish(result);
 
             this._uiItem = new UiItem.GPasteUiItem(this.menu);
@@ -92,21 +92,21 @@ var GPasteIndicator = new Lang.Class({
             this._actions.actor.add(this._emptyHistoryItem.actor, { expand: true, x_fill: false });
             this._actions.actor.add(this._aboutItem.actor, { expand: true, x_fill: false });
 
-            this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', Lang.bind(this, this._resetMaxDisplayedSize));
+            this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', this._resetMaxDisplayedSize.bind(this));
             this._resetMaxDisplayedSize();
 
-            this._clientUpdateId = this._client.connect('update', Lang.bind(this, this._update));
-            this._clientShowId = this._client.connect('show-history', Lang.bind(this, this._popup));
-            this._clientTrackingId = this._client.connect('tracking', Lang.bind(this, this._toggle));
+            this._clientUpdateId = this._client.connect('update', this._update.bind(this));
+            this._clientShowId = this._client.connect('show-history', this._popup.bind(this));
+            this._clientTrackingId = this._client.connect('tracking', this._toggle.bind(this));
 
             this._onStateChanged (true);
 
-            this.menu.actor.connect('key-press-event', Lang.bind(this, this._onKeyPressEvent));
-            this.menu.actor.connect('key-release-event', Lang.bind(this, this._onKeyReleaseEvent));
+            this.menu.actor.connect('key-press-event', this._onKeyPressEvent.bind(this));
+            this.menu.actor.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
 
             this._destroyed = false;
-            this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
-        }));
+            this.actor.connect('destroy', this._onDestroy.bind(this));
+        });
     },
 
     shutdown: function() {
@@ -151,7 +151,7 @@ var GPasteIndicator = new Lang.Class({
         if (this._hasSearch()) {
             const search = this._searchItem.text.toLowerCase();
 
-            this._client.search(search, Lang.bind(this, function(client, result) {
+            this._client.search(search, (client, result) => {
                 this._searchResults = client.search_finish(result);
                 let results = this._searchResults.length;
                 const maxSize = this._history.length;
@@ -167,9 +167,9 @@ var GPasteIndicator = new Lang.Class({
                     results = (maxSize + offset);
                 }
 
-                this._history.slice(0, results - offset).forEach(Lang.bind(this, function(i, index) {
+                this._history.slice(0, results - offset).forEach((i, index) => {
                     i.setIndex(this._searchResults[offset + index]);
-                }));
+                });
 
                 /* If we had no result, updateForSize would have returned false */
                 this._dummyHistoryItem.actor.hide();
@@ -177,7 +177,7 @@ var GPasteIndicator = new Lang.Class({
                 this._history.slice(results - offset, maxSize).forEach(function(i) {
                     i.setIndex(-1);
                 });
-            }));
+            });
         } else {
             this._searchResults = [];
             this._refresh(0);
@@ -258,10 +258,10 @@ var GPasteIndicator = new Lang.Class({
             });
             this._updateVisibility(true);
         } else {
-            this._client.get_history_name(Lang.bind(this, function(client, result) {
+            this._client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
 
-                this._client.get_history_size(name, Lang.bind(this, function(client, result) {
+                this._client.get_history_size(name, (client, result) => {
                     const realSize = client.get_history_size_finish(result);
 
                     if (!this._pageSwitcher.updateForSize(realSize)) {
@@ -280,8 +280,8 @@ var GPasteIndicator = new Lang.Class({
                     });
 
                     this._updateVisibility(size == 0);
-                }));
-            }));
+                });
+            });
         }
     },
 

@@ -26,9 +26,9 @@ var GPastePageItem = new Lang.Class({
 
         this._page = page;
 
-        this.actor.connect('clicked', Lang.bind(this, function() {
+        this.actor.connect('clicked', () => {
             this.emit('switch', this._page);
-        }));
+        });
     },
 
     setActive: function(active) {

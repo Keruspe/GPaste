@@ -23,11 +23,11 @@ var GPasteEmptyHistoryItem = new Lang.Class({
         this.actor.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
 
         this.actor.connect('clicked', function() {
-            client.get_history_name(Lang.bind(this, function(client, result) {
+            client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
 
                 client.empty_history(name, null);
-            }));
+            });
         });
     }
 });

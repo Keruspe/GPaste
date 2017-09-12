@@ -26,7 +26,7 @@ var GPasteDeleteButton = new Lang.Class({
         this._client = client;
         this.setIndex(index);
 
-        this.actor.connect('clicked', Lang.bind(this, this._onClick));
+        this.actor.connect('clicked', this._onClick.bind(this));
     },
 
     setIndex: function(index) {
