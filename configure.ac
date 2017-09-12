@@ -34,7 +34,7 @@ m4_define([gtk4_required],       [gtk4_major_required.gtk4_minor_required.0])
 # Other dependencies
 m4_define([gdk_pixbuf_required], [2.26.0])
 m4_define([gir_required],        [1.52.0])
-m4_define([gjs_required],        [1.48.0])
+m4_define([gjs_required],        [1.50.0])
 m4_define([vala_required],       [0.36])
 
 AC_PREREQ(autoconf_required)
