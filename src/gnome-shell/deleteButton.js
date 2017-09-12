@@ -12,7 +12,7 @@ const Lang = imports.lang;
 const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 
-const GPasteDeleteButton = new Lang.Class({
+var GPasteDeleteButton = new Lang.Class({
     Name: 'GPasteDeleteButton',
 
     _init: function(client, index) {

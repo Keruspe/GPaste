@@ -11,7 +11,7 @@ const GPaste = imports.gi.GPaste;
 
 const St = imports.gi.St;
 
-const GPasteUiItem = new Lang.Class({
+var GPasteUiItem = new Lang.Class({
     Name: 'GPasteUiItem',
 
     _init: function(menu) {

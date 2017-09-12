@@ -32,7 +32,7 @@ const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 const UiItem = Me.imports.uiItem;
 
-const GPasteIndicator = new Lang.Class({
+var GPasteIndicator = new Lang.Class({
     Name: 'GPasteIndicator',
     Extends: PanelMenu.Button,
 

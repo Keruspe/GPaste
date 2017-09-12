@@ -10,7 +10,7 @@ const Signals = imports.signals;
 
 const St = imports.gi.St;
 
-const GPastePageItem = new Lang.Class({
+var GPastePageItem = new Lang.Class({
     Name: 'GPastePageItem',
     Implements: [Signals.WithSignals],
 

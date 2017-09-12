@@ -9,7 +9,7 @@ const Lang = imports.lang;
 
 const St = imports.gi.St;
 
-const GPasteEmptyHistoryItem = new Lang.Class({
+var GPasteEmptyHistoryItem = new Lang.Class({
     Name: 'GPasteEmptyHistoryItem',
 
     _init: function(client) {

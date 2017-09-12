@@ -11,7 +11,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const St = imports.gi.St;
 
-const GPasteStatusIcon = new Lang.Class({
+var GPasteStatusIcon = new Lang.Class({
     Name: 'GPasteStatusIcon',
 
     _init: function() {

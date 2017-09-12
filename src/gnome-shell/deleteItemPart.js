@@ -14,7 +14,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteButton = Me.imports.deleteButton;
 
-const GPasteDeleteItemPart = new Lang.Class({
+var GPasteDeleteItemPart = new Lang.Class({
     Name: 'GPasteDeleteItemPart',
 
     _init: function(client, index) {

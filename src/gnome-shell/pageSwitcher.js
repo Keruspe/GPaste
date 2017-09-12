@@ -21,7 +21,7 @@ const PageItem = Me.imports.pageItem;
 
 const MAX_PAGES = 20;
 
-const GPastePageSwitcher = new Lang.Class({
+var GPastePageSwitcher = new Lang.Class({
     Name: 'GPastePageSwitcher',
     Extends: PopupMenu.PopupBaseMenuItem,
 

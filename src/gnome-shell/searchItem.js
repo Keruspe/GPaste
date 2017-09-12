@@ -11,7 +11,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const St = imports.gi.St;
 
-const GPasteSearchItem = new Lang.Class({
+var GPasteSearchItem = new Lang.Class({
     Name: 'GPasteSearchItem',
     Extends: PopupMenu.PopupBaseMenuItem,
 

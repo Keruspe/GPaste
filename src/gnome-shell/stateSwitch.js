@@ -12,7 +12,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const _ = Gettext.domain('GPaste').gettext;
 
-const GPasteStateSwitch = new Lang.Class({
+var GPasteStateSwitch = new Lang.Class({
     Name: 'GPasteStateSwitch',
     Extends: PopupMenu.PopupSwitchMenuItem,
 

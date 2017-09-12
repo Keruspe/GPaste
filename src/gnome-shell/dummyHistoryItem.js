@@ -12,7 +12,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const _ = Gettext.domain('GPaste').gettext;
 
-const GPasteDummyHistoryItem = new Lang.Class({
+var GPasteDummyHistoryItem = new Lang.Class({
     Name: 'GPasteDummyHistoryItem',
     Extends: PopupMenu.PopupMenuItem,
 

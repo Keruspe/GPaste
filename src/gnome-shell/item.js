@@ -22,7 +22,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteItemPart = Me.imports.deleteItemPart;
 
-const GPasteItem = new Lang.Class({
+var GPasteItem = new Lang.Class({
     Name: 'GPasteItem',
     Extends: PopupMenu.PopupMenuItem,
 
