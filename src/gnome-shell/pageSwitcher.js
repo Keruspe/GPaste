@@ -57,9 +57,7 @@ const GPastePageSwitcher = new Lang.Class({
         } else if (size == 0 || this._active < pages) {
             return true;
         } else {
-            if (pages === 0) {
-                this._active = -1;
-            }
+            this._active = -1;
             this._switch(pages);
             return false;
         }
