@@ -51,11 +51,10 @@ const GPastePageSwitcher = new Lang.Class({
             this._pages.pop().destroy();
         }
 
-        if (this.getPageOffset() < size || size === 0) {
-            if (size > 0 && this._active === -1) {
-                this._switch(1);
-                return false;
-            }
+        if (size > 0 && this._active === -1) {
+            this._switch(1);
+            return false;
+        } else if (size == 0 || this._active < pages) {
             return true;
         } else {
             if (pages === 0) {
