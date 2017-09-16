@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2017-05-19 17:29+0200\n"
+"POT-Creation-Date: 2017-09-16 15:13+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -168,7 +168,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: src/libgpaste/ui/gpaste-ui-window.c:244 src/client/gpaste-client.c:797
+#: src/libgpaste/ui/gpaste-ui-window.c:247 src/client/gpaste-client.c:797
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
@@ -273,7 +273,7 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:91
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:96
 msgid "GPaste Settings"
 msgstr "GPaste-Daemon-Einstellungen"
 
@@ -588,16 +588,16 @@ msgstr "Signal %d wurde empfangen. Programm wird beendet\n"
 msgid "Could not acquire DBus name."
 msgstr "DBus-Name konnte nicht bestimmt werden."
 
-#: src/ui/gpaste-ui.c:92
+#: src/ui/gpaste-ui.c:97
 #, fuzzy
 msgid "Keyboard Shortcuts"
 msgstr "Tastaturkürzel"
 
-#: src/ui/gpaste-ui.c:93
+#: src/ui/gpaste-ui.c:98
 msgid "About GPaste"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:94
+#: src/ui/gpaste-ui.c:99
 msgid "Quit"
 msgstr "Beenden"
 
@@ -610,6 +610,10 @@ msgstr "GPaste-Applet"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+msgid "Marc-Antoine Perennou"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:12
