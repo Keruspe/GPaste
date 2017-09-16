@@ -1,3 +1,12 @@
+NEW in 3.26.0 (16/09/2017)
+=============
+
+- Javascript modernizations
+- Adapt to gjs 1.50
+- Adapt to gnome-shell/mutter 3.26
+- use the new clipboardText feature in the search provider
+- gtk4 3.91.2 compatibility
+
 NEW in 3.24.3 (16/09/2017)
 =============
 
