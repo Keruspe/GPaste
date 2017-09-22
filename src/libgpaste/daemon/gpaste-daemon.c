@@ -20,14 +20,27 @@
 
 #include <string.h>
 
-#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,error)               \
-    g_dbus_connection_emit_signal (priv->connection,                \
-                                   NULL, /* destination_bus_name */ \
-                                   G_PASTE_DAEMON_OBJECT_PATH,      \
-                                   G_PASTE_DAEMON_INTERFACE_NAME,   \
-                                   G_PASTE_DAEMON_SIG_##sig,        \
-                                   data,                            \
+#define G_PASTE_SEND_DBUS_SIGNAL_FULLER(interface, sig, data, error) \
+    g_dbus_connection_emit_signal (priv->connection,                 \
+                                   NULL, /* destination_bus_name */  \
+                                   G_PASTE_DAEMON_OBJECT_PATH,       \
+                                   interface,                        \
+                                   sig,                              \
+                                   data,                             \
                                    error)
+
+#define G_PASTE_SEND_DBUS_SIGNAL_FULL(sig,data,error) \
+    G_PASTE_SEND_DBUS_SIGNAL_FULLER (G_PASTE_DAEMON_INTERFACE_NAME, G_PASTE_DAEMON_SIG_##sig, data, error)
+
+#define G_PASTE_SEND_DBUS_PROPERTIES_CHANGED(property, value)      \
+    GVariantDict dict;                                             \
+    g_variant_dict_init (&dict, NULL);                             \
+    g_variant_dict_insert_value (&dict, property, value);          \
+    GVariant *data = g_variant_new ("(s@a{sv}@as)",                \
+                                    G_PASTE_DAEMON_INTERFACE_NAME, \
+                                    g_variant_dict_end (&dict),    \
+                                    g_variant_new_strv (NULL, 0)); \
+    G_PASTE_SEND_DBUS_SIGNAL_FULLER ("org.freedesktop.DBus.Properties", "PropertiesChanged", data, NULL)
 
 #define __NODATA     g_variant_new_tuple (NULL,  0)
 #define __DATA(data) g_variant_new_tuple (&data, 1)
@@ -200,6 +213,7 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GVariant *variant = g_variant_new_boolean (tracking_state);
 
+    G_PASTE_SEND_DBUS_PROPERTIES_CHANGED(G_PASTE_DAEMON_PROP_ACTIVE, g_variant_new_boolean (tracking_state));
     G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (TRACKING, variant);
 }
 
