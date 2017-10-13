@@ -331,7 +331,9 @@ const GPasteIndicator = new Lang.Class({
     },
 
     _onStateChanged: function(state) {
-        this._client.on_extension_state_changed(state, null);
+        if (this.client) {
+            this._client.on_extension_state_changed(state, null);
+        }
     },
 
     _onOpenStateChanged: function(menu, state) {
