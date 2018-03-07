@@ -32,7 +32,7 @@ m4_define([gtk4_api_required],   [G_ENCODE_VERSION(gtk4_major_required, gtk4_min
 m4_define([gtk4_required],       [gtk4_major_required.gtk4_minor_required.0])
 
 # Other dependencies
-m4_define([gdk_pixbuf_required], [2.26.0])
+m4_define([gdk_pixbuf_required], [2.32.0])
 m4_define([gir_required],        [1.52.0])
 m4_define([gjs_required],        [1.50.0])
 m4_define([vala_required],       [0.36])
