@@ -39,6 +39,6 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 3.24 is: [GPaste 3.24.3](http://www.imagination-land.org/posts/2017-09-16-gpaste-3.24.3-released.html).
+Latest release for GNOME 3.24 is: [GPaste 3.24.4](http://www.imagination-land.org/posts/2018-03-07-gpaste-3.24.4-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.24.3.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.24.4.tar.xz>
