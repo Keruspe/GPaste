@@ -60,7 +60,7 @@ g_paste_keybinder_change_grab_wayland (void)
 #if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
 static void
 g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
-                                   Display          *display,
+                                   GdkDisplay       *display,
                                    gboolean          grab)
 {
     if (!g_paste_keybinding_is_active (binding))
@@ -68,10 +68,11 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
 
     guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
     XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
+    Display *xdisplay = GDK_DISPLAY_XDISPLAY (display);
 
     XISetMask (mask.mask, XI_KeyPress);
 
-    gdk_error_trap_push ();
+    gdk_x11_display_error_trap_push (display);
 
     guint64 mod_masks [] = {
         0, /* modifier only */
@@ -94,7 +95,7 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
         {
             if (grab)
             {
-                XIGrabKeycode (display,
+                XIGrabKeycode (xdisplay,
                                XIAllMasterDevices,
                                *keycode,
                                window,
@@ -107,7 +108,7 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
             }
             else
             {
-                XIUngrabKeycode (display,
+                XIUngrabKeycode (xdisplay,
                                  XIAllMasterDevices,
                                  *keycode,
                                  window,
@@ -117,8 +118,8 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
         }
     }
 
-    gdk_flush ();
-    gdk_error_trap_pop_ignored ();
+    gdk_display_flush (display);
+    gdk_x11_display_error_trap_pop_ignored (display);
 }
 #endif
 
@@ -135,7 +136,7 @@ g_paste_keybinder_change_grab_internal (GPasteKeybinding *binding,
 #endif
 #if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     if (GDK_IS_X11_DISPLAY (display))
-        g_paste_keybinder_change_grab_x11 (binding, GDK_DISPLAY_XDISPLAY (display), grab);
+        g_paste_keybinder_change_grab_x11 (binding, display, grab);
     else
 #endif
         g_warning ("Unsupported GDK backend, keybinder won't work.");
@@ -544,7 +545,7 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
             gdk_seat_ungrab (seat);
     }
 
-    gdk_flush ();
+    gdk_display_flush (display);
 
     GdkModifierType modifiers = 0;
     guint64 keycode = 0;
