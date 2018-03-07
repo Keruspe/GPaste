@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2017-05-20 13:57+0200\n"
+"POT-Creation-Date: 2018-03-07 16:25+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -593,6 +593,12 @@ msgstr "Applet GPaste"
 #: data/desktop/org.gnome.GPaste.Applet.desktop.in.in:5
 msgid "Tray icon to manage GPaste"
 msgstr "Icone de notification pour gérer GPaste"
+
+#: data/appstream/org.gnome.GPaste.Applet.appdata.xml.in:7
+#: data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in:7
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+msgid "Marc-Antoine Perennou"
+msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Applet.appdata.xml.in:12
 #: data/appstream/org.gnome.GPaste.AppIndicator.appdata.xml.in:12
