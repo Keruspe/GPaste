@@ -1,3 +1,9 @@
+NEW in 3.26.1 (07/03/2018)
+=============
+
+- fix memory leaks in images support
+- silence a warnings in the gnome-shell extension
+
 NEW in 3.26.0 (16/09/2017)
 =============
 
@@ -6,6 +12,12 @@ NEW in 3.26.0 (16/09/2017)
 - Adapt to gnome-shell/mutter 3.26
 - use the new clipboardText feature in the search provider
 - gtk4 3.91.2 compatibility
+
+NEW in 3.24.4 (07/03/2018)
+=============
+
+- fix memory leaks in images support
+- silence a warnings in the gnome-shell extension
 
 NEW in 3.24.3 (16/09/2017)
 =============
@@ -45,6 +57,12 @@ NEW in 3.23.90 (20/03/2017)
 - preparations for future other storage backends
 - preparations for mime types support
 - more reliable "paste" behaviour part in some corener cases
+
+NEW in 3.22.5 (07/03/2018)
+=============
+
+- fix memory leaks in images support
+- silence a warnings in the gnome-shell extension
 
 NEW in 3.22.4 (19/05/2017)
 =============
