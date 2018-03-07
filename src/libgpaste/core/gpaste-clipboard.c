@@ -544,19 +544,13 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     g_autofree gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                                        (guchar *) gdk_pixbuf_get_pixels (image),
-                                                                        -1);
+                                                              (guchar *) gdk_pixbuf_get_pixels (image),
+                                                              -1);
 
-    if (g_strcmp0 (checksum, priv->image_checksum))
-    {
-        g_paste_clipboard_private_select_image (priv,
-                                                image,
-                                                checksum);
-    }
+    if (!g_strcmp0 (checksum, priv->image_checksum))
+        g_clear_object (&image);
     else
-    {
-        image = NULL;
-    }
+        g_paste_clipboard_private_select_image (priv, image, checksum);
 
     if (data->callback)
         data->callback (self, image, data->user_data);
