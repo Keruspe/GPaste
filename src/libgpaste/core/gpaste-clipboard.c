@@ -73,9 +73,10 @@ g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
 
 static void
 g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
-                                          GdkPixbuf       *image G_GNUC_UNUSED,
+                                          GdkPixbuf       *image,
                                           gpointer         user_data)
 {
+    g_object_unref (image);
     g_paste_clipboard_bootstrap_finish (self, user_data);
 }
 
