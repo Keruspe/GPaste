@@ -19,6 +19,7 @@ typedef struct {
     gboolean      version;
     gboolean      oneline;
     gboolean      raw;
+    gboolean      reverse;
     gboolean      zero;
     const gchar  *decoration;
     const gchar  *separator;
@@ -37,15 +38,16 @@ parse_cmdline (int     *argc,
         { "decoration", required_argument, NULL,  'd'  },
         { "help",       no_argument,       NULL,  'h'  },
         { "oneline",    no_argument,       NULL,  'o'  },
-        { "raw"    ,    no_argument,       NULL,  'r'  },
-        { "separator" , required_argument, NULL,  's'  },
+        { "raw",        no_argument,       NULL,  'r'  },
+        { "reverse",    no_argument,       NULL,  'e'  },
+        { "separator",  required_argument, NULL,  's'  },
         { "version",    no_argument,       NULL,  'v'  },
         { "zero",       no_argument,       NULL,  'z'  },
         { NULL,         no_argument,       NULL,  '\0' }
     };
     gint64 c;
 
-    while ((c = getopt_long(*argc, *argv, "d:hors:vz", long_options, NULL)) != -1)
+    while ((c = getopt_long(*argc, *argv, "d:hores:vz", long_options, NULL)) != -1)
     {
         switch (c)
         {
@@ -60,6 +62,9 @@ parse_cmdline (int     *argc,
             break;
         case 'r':
             ctx->raw = TRUE;
+            break;
+        case 'e':
+            ctx->reverse = TRUE;
             break;
         case 's':
             ctx->separator = optarg;
@@ -219,9 +224,11 @@ show_help (void)
     printf("\n");
     /* Translators: help for --oneline */
     printf("  --oneline: %s\n", _("display each item on only one line"));
-    /* Translators: help for --oneline */
+    /* Translators: help for --raw */
     printf("  --raw: %s\n", _("display each item raw (without line numbers)"));
-    /* Translators: help for --oneline */
+    /* Translators: help for --reverse */
+    printf("  --reverse: %s\n", _("display the items in reverse order"));
+    /* Translators: help for --zero */
     printf("  --zero: %s\n", _("use a NUL character instead of a new line betweean each item"));
 
     printf("\n");
@@ -283,10 +290,10 @@ g_paste_history (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    guint64 i = 0;
+    guint length = g_strv_length (history);
 
-    for (GStrv h = history; *h; ++h)
-        print_history_line (*h, i++, ctx);
+    for (guint64 i = (ctx->reverse ? (length - 1) : 0); ctx->reverse ? i != ((guint64) -1) : i < length; i += (ctx->reverse ? -1 : 1))
+        print_history_line (history[i], i, ctx);
 
     return EXIT_SUCCESS;
 }
@@ -771,7 +778,7 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     g_autoptr (GError) error = NULL;
-    Context ctx = { NULL, 0, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    Context ctx = { NULL, 0, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
     gint status;
 
     if (parse_cmdline (&argc, &argv, &ctx))

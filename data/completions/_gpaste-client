@@ -19,6 +19,7 @@ _gpaste-client_complete_arguments() {
 
     history_arguments=(
         '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]'
+        '(-e --reverse)'{-e,--reverse}'[Display the items in reverse order.]'
         '(-r --raw)'{-r,--raw}'[Display each item raw (without index).]'
         '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]'
     )

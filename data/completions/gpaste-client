@@ -9,7 +9,7 @@ _gpaste-client()
 
         local opts
 
-        opts="about add add-password backup-history daemon daemon-reexec daemon-version delete delete-history --decoration -d delete-password empty file get get-history help --help -h history history-size list-histories merge --oneline -o preferences quit remove --raw -r rename-password replace select --separator -s set set-password settings show-history start stop switch-history upload ui version --version -v --zero -z"
+        opts="about add add-password backup-history daemon daemon-reexec daemon-version delete delete-history --decoration -d delete-password empty file get get-history help --help -h history history-size list-histories merge --oneline -o preferences quit remove --raw -r rename-password replace --reverse -e select --separator -s set set-password settings show-history start stop switch-history upload ui version --version -v --zero -z"
         COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) )
 
     elif [[ ${COMP_CWORD} == 2 ]]; then
@@ -25,7 +25,7 @@ _gpaste-client()
                 COMPREPLY=( compgen -W "--raw -r" -- ${cur} )
                 ;;
             history|h)
-                COMPREPLY=( compgen -W "--oneline -o --raw -r --zero -z" -- ${cur} )
+                COMPREPLY=( compgen -W "--oneline -o --raw -r --reverse -e --zero -z" -- ${cur} )
                 ;;
         esac
 
