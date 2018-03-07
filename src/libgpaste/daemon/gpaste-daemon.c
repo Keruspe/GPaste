@@ -678,11 +678,15 @@ g_paste_daemon_private_search (const GPasteDaemonPrivate *priv,
 }
 
 static void
-g_paste_daemon_private_select (const GPasteDaemonPrivate *priv,
-                               GVariant                  *parameters)
+g_paste_daemon_select (const GPasteDaemon *self,
+                       GVariant           *parameters)
 {
-    g_paste_history_select (priv->history,
-                            g_paste_daemon_get_dbus_uint64_parameter (parameters));
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
+    guint64 position = g_paste_daemon_get_dbus_uint64_parameter (parameters);
+
+    g_paste_history_select (priv->history, position);
+
+    G_PASTE_SEND_DBUS_SIGNAL_FULL (ITEM_SELECTED, g_variant_new_uint64 (position), NULL);
 }
 
 static void
@@ -895,7 +899,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SEARCH))
         answer = g_paste_daemon_private_search (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SELECT))
-        g_paste_daemon_private_select (priv, parameters);
+        g_paste_daemon_select (self, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SET_PASSWORD))
         g_paste_daemon_private_set_password (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
