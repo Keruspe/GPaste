@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-03-07 16:51+0100\n"
+"POT-Creation-Date: 2018-03-07 16:55+0100\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -167,7 +167,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Carregar o item ativo para um serviço de pastebin: "
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: src/libgpaste/ui/gpaste-ui-window.c:247 src/client/gpaste-client.c:797
+#: src/libgpaste/ui/gpaste-ui-window.c:247 src/client/gpaste-client.c:804
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Não foi possível se conectar ao daemon do GPaste"
 
@@ -294,27 +294,27 @@ msgstr "Carregar"
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
-#: src/client/gpaste-client.c:133 src/client/gpaste-client.c:421
+#: src/client/gpaste-client.c:138 src/client/gpaste-client.c:428
 msgid "Couldn't spawn"
 msgstr "Não foi possível executar"
 
-#: src/client/gpaste-client.c:151
+#: src/client/gpaste-client.c:156
 #, c-format
 msgid "Usage:\n"
 msgstr "Uso:\n"
 
 #. Translators: help for gpaste history
-#: src/client/gpaste-client.c:153
+#: src/client/gpaste-client.c:158
 msgid "print the history with indexes"
 msgstr "imprime o histórico com os índices"
 
 #. Translators: help for gpaste history-size
-#: src/client/gpaste-client.c:155
+#: src/client/gpaste-client.c:160
 msgid "print the size of the history"
 msgstr "imprime o tamanho do histórico"
 
 #. Translators: help for gpaste get-history
-#: src/client/gpaste-client.c:157
+#: src/client/gpaste-client.c:162
 msgid "get the name of the current history"
 msgstr "obtém o nome do histórico atual"
 
@@ -323,56 +323,56 @@ msgstr "obtém o nome do histórico atual"
 #. Translators: help for gpaste delete-history <name>
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste delete-passworf <name>
-#: src/client/gpaste-client.c:159 src/client/gpaste-client.c:161
-#: src/client/gpaste-client.c:163 src/client/gpaste-client.c:169
-#: src/client/gpaste-client.c:181 src/client/gpaste-client.c:185
+#: src/client/gpaste-client.c:164 src/client/gpaste-client.c:166
+#: src/client/gpaste-client.c:168 src/client/gpaste-client.c:174
+#: src/client/gpaste-client.c:186 src/client/gpaste-client.c:190
 msgid "name"
 msgstr "nome"
 
-#: src/client/gpaste-client.c:159
+#: src/client/gpaste-client.c:164
 msgid "backup current history"
 msgstr "faz um backup do histórico atual"
 
-#: src/client/gpaste-client.c:161
+#: src/client/gpaste-client.c:166
 msgid "switch to another history"
 msgstr "alterna para um outro histórico"
 
-#: src/client/gpaste-client.c:163
+#: src/client/gpaste-client.c:168
 msgid "delete a history"
 msgstr "apaga um histórico"
 
 #. Translators: help for gpaste list-histories
-#: src/client/gpaste-client.c:165
+#: src/client/gpaste-client.c:170
 msgid "list available histories"
 msgstr "lista os históricos disponíveis"
 
 #. Translators: help for gpaste add <text>
-#: src/client/gpaste-client.c:167
+#: src/client/gpaste-client.c:172
 msgid "text"
 msgstr "texto"
 
-#: src/client/gpaste-client.c:167
+#: src/client/gpaste-client.c:172
 msgid "set text to clipboard"
 msgstr "copia texto para a área de transferência"
 
-#: src/client/gpaste-client.c:169
+#: src/client/gpaste-client.c:174
 msgid "password"
 msgstr "senha"
 
-#: src/client/gpaste-client.c:169
+#: src/client/gpaste-client.c:174
 msgid "add the name - password couple to the clipboard"
 msgstr "adiciona o par nome - senha para a área de transferência"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:176
 msgid "old name"
 msgstr "nome anterior"
 
-#: src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:176
 msgid "new name"
 msgstr "novo nome"
 
-#: src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:176
 msgid "rename the password"
 msgstr "define um novo nome para a senha"
 
@@ -383,33 +383,33 @@ msgstr "define um novo nome para a senha"
 #. Translators: help for gpaste set-password <number> <name>
 #. Translators: help for gpaste delete <number>
 #. Translators: help for gpaste upload
-#: src/client/gpaste-client.c:173 src/client/gpaste-client.c:175
-#: src/client/gpaste-client.c:177 src/client/gpaste-client.c:179
-#: src/client/gpaste-client.c:181 src/client/gpaste-client.c:183
-#: src/client/gpaste-client.c:207
+#: src/client/gpaste-client.c:178 src/client/gpaste-client.c:180
+#: src/client/gpaste-client.c:182 src/client/gpaste-client.c:184
+#: src/client/gpaste-client.c:186 src/client/gpaste-client.c:188
+#: src/client/gpaste-client.c:212
 msgid "number"
 msgstr "número"
 
-#: src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:178
 msgid "get the <number>th item from the history"
 msgstr "obtém o <número>-ésimo item do histórico"
 
-#: src/client/gpaste-client.c:175
+#: src/client/gpaste-client.c:180
 msgid "set the <number>th item from the history to the clipboard"
 msgstr "copia o <número>-ésimo item do histórico para a área de transferência"
 
-#: src/client/gpaste-client.c:177
+#: src/client/gpaste-client.c:182
 msgid "contents"
 msgstr "conteúdo"
 
-#: src/client/gpaste-client.c:177
+#: src/client/gpaste-client.c:182
 msgid ""
 "replace the contents of the <number>th item from the history with the "
 "provided one"
 msgstr ""
 "substitui o conteúdo <número>-ésimo item do histórico com aquele fornecido"
 
-#: src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:184
 msgid ""
 "merge the <number>th items from the history and add put the result in the "
 "clipboard"
@@ -417,137 +417,143 @@ msgstr ""
 "faz um merge do <número>-ésimo item do histórico e coloca o resultado na "
 "área de transferência"
 
-#: src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:186
 msgid "set the <number>th item from the history as a password named <name>"
 msgstr ""
 "define o <número>-ésimo item do histórico como uma senha chamada <nome>"
 
-#: src/client/gpaste-client.c:183
+#: src/client/gpaste-client.c:188
 msgid "delete <number>th item of the history"
 msgstr "apaga o <número>-ésimo item do histórico"
 
-#: src/client/gpaste-client.c:185
+#: src/client/gpaste-client.c:190
 msgid "delete the password <name> from the history"
 msgstr "apaga a senha <nome> do histórico"
 
 #. Translators: help for gpaste file <path>
-#: src/client/gpaste-client.c:187
+#: src/client/gpaste-client.c:192
 msgid "path"
 msgstr "caminho"
 
-#: src/client/gpaste-client.c:187
+#: src/client/gpaste-client.c:192
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "coloca o conteúdo do arquivo em <caminho> na área de transferência"
 
 #. Translators: help for whatever | gpaste
-#: src/client/gpaste-client.c:189
+#: src/client/gpaste-client.c:194
 msgid "whatever"
 msgstr "qualquercomando"
 
-#: src/client/gpaste-client.c:189
+#: src/client/gpaste-client.c:194
 msgid "set the output of whatever to clipboard"
 msgstr "copia a saída de qualquercomando para a área de transferência"
 
 #. Translators: help for gpaste empty
-#: src/client/gpaste-client.c:191
+#: src/client/gpaste-client.c:196
 msgid "empty the history"
 msgstr "esvazia o histórico"
 
 #. Translators: help for gpaste start
-#: src/client/gpaste-client.c:193
+#: src/client/gpaste-client.c:198
 msgid "start tracking clipboard changes"
 msgstr "inicia o monitoramento de alterações na área de transferência"
 
 #. Translators: help for gpaste stop
-#: src/client/gpaste-client.c:195
+#: src/client/gpaste-client.c:200
 msgid "stop tracking clipboard changes"
 msgstr "pára o monitoramento de alterações na área de transferência"
 
 #. Translators: help for gpaste quit
-#: src/client/gpaste-client.c:197
+#: src/client/gpaste-client.c:202
 msgid "alias for stop"
 msgstr "apelido para stop"
 
 #. Translators: help for gpaste daemon-reexec
-#: src/client/gpaste-client.c:199
+#: src/client/gpaste-client.c:204
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "reinicia o daemon (depois de uma atualização...)"
 
 #. Translators: help for gpaste settings
-#: src/client/gpaste-client.c:201
+#: src/client/gpaste-client.c:206
 msgid "launch the configuration tool"
 msgstr "inicia a ferramenta de configuração"
 
 #. Translators: help for gpaste ui
-#: src/client/gpaste-client.c:203
+#: src/client/gpaste-client.c:208
 msgid "launch the graphical tool"
 msgstr "inicia a ferramenta gráfica"
 
 #. Translators: help for gpaste show-history
-#: src/client/gpaste-client.c:205
+#: src/client/gpaste-client.c:210
 msgid "make the applet or extension display the history"
 msgstr "faz o applet ou a extensão exibir o histórico"
 
-#: src/client/gpaste-client.c:207
+#: src/client/gpaste-client.c:212
 msgid "upload the <number>th item to a pastebin service"
 msgstr ""
 "Apagar o primeiro item do histórico: carrega o <número>-ésimo  item para um "
 "serviço de pastebin"
 
 #. Translators: help for gpaste version
-#: src/client/gpaste-client.c:209
+#: src/client/gpaste-client.c:214
 msgid "display the version"
 msgstr "mostra a versão"
 
 #. Translators: help for gpaste daemon-version
-#: src/client/gpaste-client.c:211
+#: src/client/gpaste-client.c:216
 msgid "display the daemon version"
 msgstr "mostra a versão do daemon"
 
 #. Translators: help for gpaste help
-#: src/client/gpaste-client.c:213
+#: src/client/gpaste-client.c:218
 msgid "display this help"
 msgstr "mostra esta ajuda"
 
 #. Translators: help for gpaste about
-#: src/client/gpaste-client.c:215
+#: src/client/gpaste-client.c:220
 msgid "display the about dialog"
 msgstr "mostra o diálogo Sobre"
 
-#: src/client/gpaste-client.c:218
+#: src/client/gpaste-client.c:223
 #, c-format
 msgid "Display options:"
 msgstr "Opções de exibição:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:221
+#: src/client/gpaste-client.c:226
 msgid "display each item on only one line"
 msgstr "Mostra cada item em uma única linha"
 
-#. Translators: help for --oneline
-#: src/client/gpaste-client.c:223
+#. Translators: help for --raw
+#: src/client/gpaste-client.c:228
 msgid "display each item raw (without line numbers)"
 msgstr "exibe cada item bruto (sem números nas linhas) "
 
-#. Translators: help for --oneline
-#: src/client/gpaste-client.c:225
+#. Translators: help for --reverse
+#: src/client/gpaste-client.c:230
+#, fuzzy
+msgid "display the items in reverse order"
+msgstr "mostra a versão do daemon"
+
+#. Translators: help for --zero
+#: src/client/gpaste-client.c:232
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
 "utiliza um caractere NUL no lugar de um caractere de nova linha entre cada "
 "item"
 
-#: src/client/gpaste-client.c:228
+#: src/client/gpaste-client.c:235
 #, c-format
 msgid "Merge options:"
 msgstr "Opções de merge:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:231 src/client/gpaste-client.c:233
+#: src/client/gpaste-client.c:238 src/client/gpaste-client.c:240
 msgid "string"
 msgstr "string"
 
-#: src/client/gpaste-client.c:231
+#: src/client/gpaste-client.c:238
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
@@ -555,16 +561,16 @@ msgstr ""
 "adiciona a decoração dada ao início e ao fim de cada item antes de fazer o "
 "merge"
 
-#: src/client/gpaste-client.c:233
+#: src/client/gpaste-client.c:240
 msgid "add the given separator between each item when merging"
 msgstr "adiciona o separador dado entre cada item durante o merge"
 
-#: src/client/gpaste-client.c:326
+#: src/client/gpaste-client.c:333
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "O daemon foi reiniciado com sucesso\n"
 
-#: src/client/gpaste-client.c:475
+#: src/client/gpaste-client.c:482
 msgid "Cannot add non utf8 data as text."
 msgstr ""
 
