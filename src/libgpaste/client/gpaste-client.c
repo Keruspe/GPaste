@@ -20,6 +20,7 @@ enum
 {
     DELETE_HISTORY,
     EMPTY_HISTORY,
+    ITEM_SELECTED,
     SHOW_HISTORY,
     SWITCH_HISTORY,
     TRACKING,
@@ -156,6 +157,17 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
                   NULL, /* accumulator */          \
                   NULL, /* accumulator data */     \
                   g_cclosure_marshal_VOID__##type, \
+                  G_TYPE_NONE,                     \
+                  1,                               \
+                  G_TYPE_##type)
+#define NEW_SIGNAL_WITH_DATA_GENERIC(name, type)   \
+    g_signal_new (name,                            \
+                  G_PASTE_TYPE_CLIENT,             \
+                  G_SIGNAL_RUN_LAST,               \
+                  0, /* class offset */            \
+                  NULL, /* accumulator */          \
+                  NULL, /* accumulator data */     \
+                  g_cclosure_marshal_generic,      \
                   G_TYPE_NONE,                     \
                   1,                               \
                   G_TYPE_##type)
@@ -1911,6 +1923,7 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
     HANDLE_SIGNAL (SHOW_HISTORY)
     else HANDLE_SIGNAL_WITH_DATA (DELETE_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (EMPTY_HISTORY,  const gchar *, g_variant_get_string (variant, NULL))
+    else HANDLE_SIGNAL_WITH_DATA (ITEM_SELECTED,  guint64      , g_variant_get_uint64 (variant))
     else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (TRACKING,       gboolean,      g_variant_get_boolean (variant))
     else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
@@ -1950,10 +1963,20 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * @client: the object on which the signal was emitted
      * @history: the name of the history we emptied
      *
-     * The "delete-history" signal is emitted when we empty
+     * The "empty-history" signal is emitted when we empty
      * an history.
      */
     signals[EMPTY_HISTORY] = NEW_SIGNAL_WITH_DATA ("empty-history", STRING);
+
+    /**
+     * GPasteClient::item-selected:
+     * @client: the object on which the signal was emitted
+     * @index: the previous index of the item which was selected
+     *
+     * The "item-selected" signal is emitted when we select
+     * an item.
+     */
+    signals[ITEM_SELECTED] = NEW_SIGNAL_WITH_DATA_GENERIC ("item-selected", UINT64);
 
     /**
      * GPasteClient::show-history:
