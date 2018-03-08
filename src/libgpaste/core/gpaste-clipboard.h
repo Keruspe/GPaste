@@ -48,8 +48,8 @@ gboolean      g_paste_clipboard_select_item        (GPasteClipboard *self,
 void          g_paste_clipboard_ensure_not_empty   (GPasteClipboard *self,
                                                     GPasteHistory   *history);
 
-GPasteClipboard *g_paste_clipboard_new (GdkAtom         target,
-                                        GPasteSettings *settings);
+GPasteClipboard *g_paste_clipboard_new_clipboard (GPasteSettings *settings);
+GPasteClipboard *g_paste_clipboard_new_primary   (GPasteSettings *settings);
 
 G_END_DECLS
 

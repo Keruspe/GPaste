@@ -733,22 +733,10 @@ g_paste_clipboard_init (GPasteClipboard *self G_GNUC_UNUSED)
 {
 }
 
-/**
- * g_paste_clipboard_new:
- * @target: the GdkAtom representating the GtkClipboard we're abstracting
- * @settings: a #GPasteSettings instance
- *
- * Create a new instance of #GPasteClipboard
- *
- * Returns: a newly allocated #GPasteClipboard
- *          free it with g_object_unref
- */
-G_PASTE_VISIBLE GPasteClipboard *
-g_paste_clipboard_new (GdkAtom         target,
-                       GPasteSettings *settings)
+static GPasteClipboard *
+_g_paste_clipboard_new (GPasteSettings *settings,
+                        GdkAtom         target)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
-
     GPasteClipboard *self = g_object_new (G_PASTE_TYPE_CLIPBOARD, NULL);
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GtkClipboard *real = priv->real = gtk_clipboard_get (target);
@@ -766,4 +754,38 @@ g_paste_clipboard_new (GdkAtom         target,
     }
 
     return self;
+}
+
+/**
+ * g_paste_clipboard_new_clipboard:
+ * @settings: a #GPasteSettings instance
+ *
+ * Create a new instance of #GPasteClipboard
+ *
+ * Returns: a newly allocated #GPasteClipboard
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteClipboard *
+g_paste_clipboard_new_clipboard (GPasteSettings *settings)
+{
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+
+    return _g_paste_clipboard_new (settings, GDK_SELECTION_CLIPBOARD);
+}
+
+/**
+ * g_paste_clipboard_new_primary:
+ * @settings: a #GPasteSettings instance
+ *
+ * Create a new instance of #GPasteClipboard
+ *
+ * Returns: a newly allocated #GPasteClipboard
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteClipboard *
+g_paste_clipboard_new_primary (GPasteSettings *settings)
+{
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+
+    return _g_paste_clipboard_new (settings, GDK_SELECTION_PRIMARY);
 }

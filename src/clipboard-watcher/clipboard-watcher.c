@@ -38,8 +38,8 @@ main (gint argc, gchar *argv[])
     g_application_hold (gapp);
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
-    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
+    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new_clipboard (settings);
+    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new_primary (settings);
 
     guint64 c_signals[C_LAST_SIGNAL] = {
         [C_CLIPBOARD] = g_signal_connect (clipboard,

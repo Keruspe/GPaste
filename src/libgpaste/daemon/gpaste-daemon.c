@@ -1147,8 +1147,8 @@ g_paste_daemon_init (GPasteDaemon *self)
     GPasteHistory *history = priv->history = g_paste_history_new (settings);
     GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager = g_paste_clipboards_manager_new (history, settings);
 
-    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new (GDK_SELECTION_CLIPBOARD, settings);
-    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new (GDK_SELECTION_PRIMARY, settings);
+    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new_clipboard (settings);
+    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new_primary (settings);
 
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
