@@ -2,14 +2,14 @@
 ##
 ## Copyright (c) 2010-2016, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
-m4_define([gpaste_version],      [3.20.6])
+m4_define([gpaste_version],      [3.20.7])
 
 # Update gpaste_lt_version before each release (and only then)
 # The format is C:R:A (current revision age)
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-m4_define([gpaste_lt_version],   [6:5:0])
+m4_define([gpaste_lt_version],   [6:6:0])
 
 # Build system requirements
 m4_define([autoconf_required],   [2.69])
@@ -29,7 +29,7 @@ m4_define([gtk_api_required],    [G_ENCODE_VERSION(gtk_major_required, gtk_minor
 m4_define([gtk_required],        [gtk_major_required.gtk_minor_required.0])
 
 # Other dependencies
-m4_define([gdk_pixbuf_required], [2.26.0])
+m4_define([gdk_pixbuf_required], [2.32.0])
 m4_define([gir_required],        [1.48.0])
 m4_define([vala_required],       [0.32])
 

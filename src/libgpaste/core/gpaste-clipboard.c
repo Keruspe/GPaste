@@ -86,9 +86,10 @@ g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
 
 static void
 g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
-                                          GdkPixbuf       *image G_GNUC_UNUSED,
+                                          GdkPixbuf       *image,
                                           gpointer         user_data)
 {
+    g_object_unref (image);
     g_paste_clipboard_bootstrap_finish (self, user_data);
 }
 
@@ -527,21 +528,12 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     }
 
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+    g_autofree gchar *checksum = g_paste_util_compute_checksum (image);
 
-    g_autofree gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256,
-                                                                        (guchar *) gdk_pixbuf_get_pixels (image),
-                                                                        -1);
-
-    if (!g_paste_str_equal (checksum, priv->image_checksum))
-    {
-        g_paste_clipboard_private_select_image (priv,
-                                                image,
-                                                checksum);
-    }
+    if (g_paste_str_equal (checksum, priv->image_checksum))
+        g_clear_object (&image);
     else
-    {
-        image = NULL;
-    }
+        g_paste_clipboard_private_select_image (priv, image, checksum);
 
     if (data->callback)
         data->callback (self, image, data->user_data);
