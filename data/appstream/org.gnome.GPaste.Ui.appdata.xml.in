@@ -5,7 +5,7 @@
   <name>GPaste</name>
   <summary>Manage your clipboard history</summary>
   <developer_name>Marc-Antoine Perennou</developer_name>
-  <project_license>GPL-3.0</project_license>
+  <project_license>BSD-2-Clause</project_license>
   <metadata_license>CC-BY-SA-3.0</metadata_license>
   <project_group>GNOME</project_group>
   <description>
