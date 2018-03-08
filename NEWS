@@ -1,5 +1,5 @@
 NEW in 3.26.2 (08/03/2018)
-=======
+=============
 
 - fix regression in gnome-shell extension
 - fix another potential images memory leak
@@ -20,7 +20,7 @@ NEW in 3.26.0 (16/09/2017)
 - gtk4 3.91.2 compatibility
 
 NEW in 3.24.5 (08/03/2018)
-=======
+=============
 
 - fix regression in gnome-shell extension
 - fix another potential images memory leak
@@ -71,13 +71,13 @@ NEW in 3.23.90 (20/03/2017)
 - more reliable "paste" behaviour part in some corener cases
 
 NEW in 3.22.6 (08/03/2018)
-=======
+=============
 
 - fix regression in gnome-shell extension
 - fix another potential images memory leak
 
 NEW in 3.22.5 (07/03/2018)
-=======
+=============
 
 - fix memory leaks in images support
 - silence a warnings in the gnome-shell extension
@@ -134,7 +134,7 @@ NEW in 3.21.90 (09/09/2016)
 - Add pagination to gnmoe-shell extension
 
 NEW in 3.20.7 (08/03/2018)
-=======
+=============
 
 - fix memory leaks in images support
 - silence a warnings in the gnome-shell extension
