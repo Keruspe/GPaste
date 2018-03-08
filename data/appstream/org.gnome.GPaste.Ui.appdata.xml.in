@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2015 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
+<!-- Copyright (c) 2010-2018 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
 <component type="desktop">
   <id>org.gnome.GPaste.Ui.desktop</id>
   <name>GPaste</name>

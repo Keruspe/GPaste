@@ -1,5 +1,5 @@
 # French translations for GPaste package.
-# Copyright (C) 2011-2015 Listed translators
+# Copyright (C) 2010-2018 Listed translators
 # This file is distributed under the same license as the GPaste package.
 # Marc-Antoine Perennou <Marc-Antoine@Perennou.com>, 2011.
 #

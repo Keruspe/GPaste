@@ -1,6 +1,6 @@
 dnl This file is part of GPaste.
 dnl
-dnl Copyright (c) 2010-2017, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+dnl Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
 dnl G_PASTE_WITH([directory], [help string], [default value])
 dnl Check if we override a directory and define it

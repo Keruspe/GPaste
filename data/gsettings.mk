@@ -1,6 +1,6 @@
 ## This file is part of GPaste.
 ##
-## Copyright (c) 2010-2017, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+## Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
 gpaste_gschema_file = %D%/gsettings/org.gnome.GPaste.gschema.xml
 gschemas_compiled = %D%/gsettings/gschemas.compiled

@@ -1,6 +1,6 @@
 ## This file is part of GPaste.
 ##
-## Copyright (c) 2010-2017, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+## Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
 m4_define([gpaste_version],      [3.26.2])
 
