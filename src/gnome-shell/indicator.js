@@ -104,7 +104,6 @@ var GPasteIndicator = new Lang.Class({
             this.menu.actor.connect('key-press-event', this._onKeyPressEvent.bind(this));
             this.menu.actor.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
 
-            this._destroyed = false;
             this.actor.connect('destroy', this._onDestroy.bind(this));
         });
     },
@@ -333,7 +332,7 @@ var GPasteIndicator = new Lang.Class({
     },
 
     _onStateChanged: function(state) {
-        if (this.client) {
+        if (this._client) {
             this._client.on_extension_state_changed(state, null);
         }
     },
@@ -359,13 +358,13 @@ var GPasteIndicator = new Lang.Class({
     },
 
     _onDestroy: function() {
-        if (this._destroyed) {
+        if (!this._client) {
             return;
         }
-        this._destroyed = true;
         this._client.disconnect(this._clientUpdateId);
         this._client.disconnect(this._clientShowId);
         this._client.disconnect(this._clientTrackingId);
+        this._client = null;
         this._settings.disconnect(this._settingsMaxSizeChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
     }
