@@ -59,14 +59,14 @@ case "${with_gtk}" in
         GDK_DEP="gdk-3.0"
         GDK_X11_DEP="gdk-x11-3.0"
         ;;
-    4.0)
-        AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [gtk4_api_required], [The lowest Gdk API version supported])
-        AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],  [gtk4_api_required], [The highest Gdk API version supported])
-        GTK_REQUIRED=gtk4_required
-        GTK_DEP="gtk+-4.0"
-        GDK_DEP="gtk+-4.0"
-        GDK_X11_DEP="gtk+-x11-4.0"
-        ;;
+#    4.0)
+#        AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [gtk4_api_required], [The lowest Gdk API version supported])
+#        AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],  [gtk4_api_required], [The highest Gdk API version supported])
+#        GTK_REQUIRED=gtk4_required
+#        GTK_DEP="gtk+-4.0"
+#        GDK_DEP="gtk+-4.0"
+#        GDK_X11_DEP="gtk+-x11-4.0"
+#        ;;
     *)
         AC_MSG_ERROR([Wrong gtk+ version specified: ${with_gtk}])
         ;;
