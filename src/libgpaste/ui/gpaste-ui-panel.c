@@ -209,11 +209,17 @@ g_paste_ui_panel_button_press_event (GtkWidget      *widget G_GNUC_UNUSED,
                                      gpointer        user_data)
 {
     GPasteUiPanelPrivate *priv = user_data;
+    GdkEvent *_event = (GdkEvent *) event;
 
-    if (gdk_event_triggers_context_menu ((GdkEvent *) event))
+    if (gdk_event_triggers_context_menu (_event))
     {
+        gdouble y;
+
+        if (!gdk_event_get_axis (_event, GDK_AXIS_Y, &y))
+            return FALSE;
+
         g_paste_ui_history_actions_set_relative_to (priv->actions,
-                                                    G_PASTE_UI_PANEL_HISTORY (gtk_list_box_get_row_at_y (priv->list_box, event->y)));
+                                                    G_PASTE_UI_PANEL_HISTORY (gtk_list_box_get_row_at_y (priv->list_box, y)));
         gtk_widget_show_all (GTK_WIDGET (priv->actions));
     }
 

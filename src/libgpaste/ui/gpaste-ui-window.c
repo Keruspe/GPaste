@@ -115,35 +115,40 @@ on_key_press_event (GtkWidget   *widget,
 {
     const GPasteUiWindowPrivate *priv = _g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
     GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (widget));
+    GdkEvent *_event = (GdkEvent *) event;
     gboolean search_has_focus = focus == GTK_WIDGET (priv->search_entry);
     gboolean search_in_progress = search_has_focus && gtk_entry_get_text_length (GTK_ENTRY (priv->search_entry));
     gboolean forward_to_search = FALSE;
+    guint keyval;
 
-    switch (event->keyval)
+    if (gdk_event_get_keyval (_event, &keyval))
     {
-    case GDK_KEY_Escape:
-        if (!search_in_progress)
+        switch (keyval)
         {
-            gtk_window_close (GTK_WINDOW (widget));
-            return GDK_EVENT_STOP;
-        }
-        else
-        {
+        case GDK_KEY_Escape:
+            if (!search_in_progress)
+            {
+                gtk_window_close (GTK_WINDOW (widget));
+                return GDK_EVENT_STOP;
+            }
+            else
+            {
+                forward_to_search = TRUE;
+            }
+            break;
+        case GDK_KEY_Return:
+        case GDK_KEY_KP_Enter:
+        case GDK_KEY_ISO_Enter:
+            if (search_in_progress && g_paste_ui_history_select_first (priv->history))
+                return GDK_EVENT_STOP;
+            break;
+        default:
             forward_to_search = TRUE;
+            break;
         }
-        break;
-    case GDK_KEY_Return:
-    case GDK_KEY_KP_Enter:
-    case GDK_KEY_ISO_Enter:
-        if (search_in_progress && g_paste_ui_history_select_first (priv->history))
-            return GDK_EVENT_STOP;
-        break;
-    default:
-        forward_to_search = TRUE;
-        break;
     }
 
-    if (forward_to_search && gtk_search_bar_handle_event (priv->search_bar, (GdkEvent *) event))
+    if (forward_to_search && gtk_search_bar_handle_event (priv->search_bar, _event))
         return GDK_EVENT_STOP;
 
     return GTK_WIDGET_CLASS (g_paste_ui_window_parent_class)->key_press_event (widget, event);
