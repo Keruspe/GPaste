@@ -127,7 +127,7 @@ var GPasteIndicator = new Lang.Class({
     },
 
     _onKeyReleaseEvent: function(actor, event) {
-        this._updateIndexVisibility(!this._eventIsControlKey(event) && event.has_control_modifier);
+        this._updateIndexVisibility(!this._eventIsControlKey(event) && event.has_control_modifier());
     },
 
     _maybeUpdateIndexVisibility: function(event, state) {
