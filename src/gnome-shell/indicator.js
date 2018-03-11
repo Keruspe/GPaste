@@ -14,6 +14,7 @@ const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
 const Clutter = imports.gi.Clutter;
+const GLib = imports.gi.GLib;
 
 const GPaste = imports.gi.GPaste;
 
@@ -306,7 +307,6 @@ var GPasteIndicator = new Lang.Class({
 
     _popup: function() {
         this.menu.open(true);
-        this._selectSearch();
     },
 
     _toggle: function(c, state) {
@@ -345,6 +345,8 @@ var GPasteIndicator = new Lang.Class({
         if (state) {
             this._searchItem.reset();
             this._updatePage(1);
+            let id = GLib.idle_add(GLib.PRIORITY_DEFAULT, Lang.bind(this, this._selectSearch));
+            GLib.Source.set_name_by_id(id, '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);
         }
