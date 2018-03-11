@@ -151,8 +151,20 @@ on_key_press_event (GtkWidget   *widget,
     if (forward_to_search && gtk_search_bar_handle_event (priv->search_bar, _event))
         return GDK_EVENT_STOP;
 
-    return GTK_WIDGET_CLASS (g_paste_ui_window_parent_class)->key_press_event (widget, event);
+    gboolean res = GTK_WIDGET_CLASS (g_paste_ui_window_parent_class)->key_press_event (widget, event);
 
+    if (res == GDK_EVENT_STOP || !forward_to_search || search_has_focus)
+        return res;
+
+    // fallback to explicitely focusing search to see if key can be handled
+    gtk_widget_grab_focus (GTK_WIDGET (priv->search_entry));
+
+    if (gtk_search_bar_handle_event (priv->search_bar, _event))
+        return GDK_EVENT_STOP;
+
+    gtk_widget_grab_focus (focus);
+
+    return res;
 }
 
 static void
