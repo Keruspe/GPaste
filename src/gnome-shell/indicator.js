@@ -126,12 +126,11 @@ var GPasteIndicator = new Lang.Class({
     },
 
     _onKeyReleaseEvent: function(actor, event) {
-        this._maybeUpdateIndexVisibility(event, false);
+        this._updateIndexVisibility(!this._eventIsControlKey(event) && event.has_control_modifier);
     },
 
     _maybeUpdateIndexVisibility: function(event, state) {
-        const key = event.get_key_symbol();
-        if (key == Clutter.KEY_Control_L || key == Clutter.KEY_Control_R) {
+        if (this._eventIsControlKey(event)) {
             this._updateIndexVisibility(state);
         }
     },
@@ -140,6 +139,11 @@ var GPasteIndicator = new Lang.Class({
         this._history.slice(0, 10).forEach(function(i) {
             i.showIndex(state);
         });
+    },
+
+    _eventIsControlKey: function(event) {
+        const key = event.get_key_symbol();
+        return (key == Clutter.KEY_Control_L || key == Clutter.KEY_Control_R);
     },
 
     _hasSearch: function() {
