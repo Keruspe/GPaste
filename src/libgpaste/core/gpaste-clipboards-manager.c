@@ -79,35 +79,30 @@ g_paste_clipboards_manager_sync_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
 /**
  * g_paste_clipboards_manager_sync_from_to:
  * @self: a #GPasteClipboardsManager instance
- * @from: the Source clipboard type
- * @to: the destination clipboard type
+ * @from_clipboard: whether we sync from clipboard or to clipboard
  *
  * Sync a clipboard into another
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
-                                         GdkAtom                  from,
-                                         GdkAtom                  to)
+                                         gboolean                 from_clipboard)
 {
     g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     const GPasteClipboardsManagerPrivate *priv = _g_paste_clipboards_manager_get_instance_private (self);
     GtkClipboard *_from = NULL;
     GPasteClipboard *_to = NULL;
-    g_autofree gchar *_from_name = gdk_atom_name (from);
-    g_autofree gchar *_to_name = gdk_atom_name (to);
 
-    g_debug ("clipboards-manager: sync from %s to %s", _from_name, _to_name);
+    g_debug ("clipboards-manager: sync_from_to");
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         _Clipboard *_clip = clipboard->data;
         GPasteClipboard *clip = _clip->clipboard;
-        GdkAtom cur = g_paste_clipboard_is_clipboard (clip) ? GDK_SELECTION_CLIPBOARD : GDK_SELECTION_PRIMARY;
 
-        if (cur == from)
+        if (g_paste_clipboard_is_clipboard (clip) == from_clipboard)
             _from = g_paste_clipboard_get_real (clip);
-        else if (cur == to)
+        else
             _to = clip;
     }
 

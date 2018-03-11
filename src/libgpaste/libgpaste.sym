@@ -93,7 +93,6 @@ global:
     g_paste_clipboards_manager_get_type;
     g_paste_clipboards_manager_new;
     g_paste_clipboards_manager_select;
-    g_paste_clipboards_manager_sync_from_to;
 
     g_paste_daemon_get_type;
     g_paste_daemon_new;
@@ -484,4 +483,6 @@ global:
     g_paste_clipboard_is_clipboard;
     g_paste_clipboard_new_clipboard;
     g_paste_clipboard_new_primary;
+
+    g_paste_clipboards_manager_sync_from_to;
 } LIBGPASTE_3_24_0;

@@ -22,8 +22,7 @@ G_PASTE_FINAL_TYPE (ClipboardsManager, clipboards_manager, CLIPBOARDS_MANAGER, G
 void     g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
                                                    GPasteClipboard         *clipboard);
 void     g_paste_clipboards_manager_sync_from_to  (GPasteClipboardsManager *self,
-                                                   GdkAtom                  from,
-                                                   GdkAtom                  to);
+                                                   gboolean                 from_clipboard);
 void     g_paste_clipboards_manager_activate      (GPasteClipboardsManager *self);
 gboolean g_paste_clipboards_manager_select        (GPasteClipboardsManager *self,
                                                    GPasteItem              *item);

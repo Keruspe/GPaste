@@ -30,9 +30,7 @@ g_paste_sync_primary_to_clipboard_keybinding_sync (GPasteKeybinding *self G_GNUC
 {
     GPasteClipboardsManager *gcm = data;
 
-    g_paste_clipboards_manager_sync_from_to (gcm,
-                                             GDK_SELECTION_PRIMARY,
-                                             GDK_SELECTION_CLIPBOARD);
+    g_paste_clipboards_manager_sync_from_to (gcm, FALSE);
 }
 
 /**
