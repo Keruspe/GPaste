@@ -7,7 +7,10 @@
 
 const Lang = imports.lang;
 
+const GLib = imports.gi.GLib;
 const St = imports.gi.St;
+
+const GPaste = imports.gi.GPaste;
 
 var GPasteEmptyHistoryItem = new Lang.Class({
     Name: 'GPasteEmptyHistoryItem',
@@ -26,7 +29,7 @@ var GPasteEmptyHistoryItem = new Lang.Class({
             client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
 
-                client.empty_history(name, null);
+                GPaste.util_activate_ui("empty", GLib.Variant.new_string(name));
             });
         });
     }
