@@ -127,7 +127,7 @@ g_paste_clipboard_bootstrap (GPasteClipboard *self,
 G_PASTE_VISIBLE gboolean
 g_paste_clipboard_is_clipboard (const GPasteClipboard *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD (self), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD (self), FALSE);
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
