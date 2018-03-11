@@ -12,6 +12,7 @@
 #define __G_PASTE_UTIL_H__
 
 #include <gpaste-settings.h>
+#include <gpaste-client.h>
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
@@ -31,7 +32,11 @@ gboolean g_paste_util_activate_ui_sync  (const gchar *action,
 gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *pattern,
                                          const gchar *substitution);
-gchar   *g_paste_util_compute_checksum  (GdkPixbuf *image);
+gchar   *g_paste_util_compute_checksum  (GdkPixbuf   *image);
+
+void     g_paste_util_empty_history     (GtkWindow    *parent_window,
+                                         GPasteClient *client,
+                                         const gchar  *history);
 
 gboolean g_paste_util_has_gnome_shell (void);
 

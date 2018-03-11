@@ -21,9 +21,7 @@ g_paste_ui_empty_history_activate (GPasteUiHistoryAction *self G_GNUC_UNUSED,
                                    GtkWindow             *rootwin,
                                    const gchar           *history)
 {
-    /* Translators: this is the translation for emptying the history */
-    if (g_paste_util_confirm_dialog (rootwin, _("Empty"), _("Do you really want to empty the history?")))
-        g_paste_client_empty_history (client, history, NULL, NULL);
+    g_paste_util_empty_history (rootwin, client, history);
 
     return TRUE;
 }
@@ -40,7 +38,7 @@ g_paste_ui_empty_history_init (GPasteUiEmptyHistory *self G_GNUC_UNUSED)
 }
 
 /**
- * g_paste_ui_empty_new:
+ * g_paste_ui_empty_history_new:
  * @client: a #GPasteClient instance
  * @actions: the #GPasteUiHistoryActions
  * @rootwin: the main #GtkWindow
