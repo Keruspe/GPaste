@@ -117,21 +117,21 @@ g_paste_clipboard_bootstrap (GPasteClipboard *self,
 }
 
 /**
- * g_paste_clipboard_get_target:
+ * g_paste_clipboard_is_clipboard:
  * @self: a #GPasteClipboard instance
  *
- * Get the target the #GPasteClipboard points to
+ * Get whether this #GPasteClipboard is a clipboard or not (primary selection)
  *
- * Returns: (transfer none): the GdkAtom representing the target (Primary, Clipboard, ...)
+ * Returns: %TRUE if this #GPasteClipboard is a clipboard
  */
-G_PASTE_VISIBLE GdkAtom
-g_paste_clipboard_get_target (const GPasteClipboard *self)
+G_PASTE_VISIBLE gboolean
+g_paste_clipboard_is_clipboard (const GPasteClipboard *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD (self), NULL);
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
-    return gtk_clipboard_get_selection (priv->real);
+    return gtk_clipboard_get_selection (priv->real) == GDK_SELECTION_CLIPBOARD;
 }
 
 /**

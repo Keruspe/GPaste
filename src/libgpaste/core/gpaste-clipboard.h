@@ -19,26 +19,26 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Clipboard, clipboard, CLIPBOARD, GObject)
 
-typedef void (*GPasteClipboardTextCallback) (GPasteClipboard *self,
-                                             const gchar     *text,
-                                             gpointer         user_data);
+typedef void (*GPasteClipboardTextCallback)  (GPasteClipboard *self,
+                                              const gchar     *text,
+                                              gpointer         user_data);
 
 typedef void (*GPasteClipboardImageCallback) (GPasteClipboard *self,
                                               GdkPixbuf       *image,
                                               gpointer         user_data);
 
-void          g_paste_clipboard_bootstrap   (GPasteClipboard *self,
-                                             GPasteHistory   *history);
-GdkAtom       g_paste_clipboard_get_target  (const GPasteClipboard *self);
-GtkClipboard *g_paste_clipboard_get_real    (const GPasteClipboard *self);
-const gchar  *g_paste_clipboard_get_text    (const GPasteClipboard *self);
-void          g_paste_clipboard_set_text    (GPasteClipboard            *self,
-                                             GPasteClipboardTextCallback callback,
-                                             gpointer                    user_data);
-void          g_paste_clipboard_select_text (GPasteClipboard *self,
-                                             const gchar     *text);
-void          g_paste_clipboard_clear       (GPasteClipboard *self);
-void          g_paste_clipboard_store       (GPasteClipboard *self);
+void          g_paste_clipboard_bootstrap    (GPasteClipboard *self,
+                                              GPasteHistory   *history);
+gboolean      g_paste_clipboard_is_clipboard (const GPasteClipboard *self);
+GtkClipboard *g_paste_clipboard_get_real     (const GPasteClipboard *self);
+const gchar  *g_paste_clipboard_get_text     (const GPasteClipboard *self);
+void          g_paste_clipboard_set_text     (GPasteClipboard            *self,
+                                              GPasteClipboardTextCallback callback,
+                                              gpointer                    user_data);
+void          g_paste_clipboard_select_text  (GPasteClipboard *self,
+                                              const gchar     *text);
+void          g_paste_clipboard_clear        (GPasteClipboard *self);
+void          g_paste_clipboard_store        (GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);
 void          g_paste_clipboard_set_image          (GPasteClipboard             *self,
                                                     GPasteClipboardImageCallback callback,

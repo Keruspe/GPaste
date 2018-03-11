@@ -82,7 +82,6 @@ global:
     g_paste_clipboard_bootstrap;
     g_paste_clipboard_get_image_checksum;
     g_paste_clipboard_get_real;
-    g_paste_clipboard_get_target;
     g_paste_clipboard_get_text;
     g_paste_clipboard_get_type;
     g_paste_clipboard_select_item;
@@ -482,6 +481,7 @@ global:
 
 LIBGPASTE_3_28_0 {
 global:
+    g_paste_clipboard_is_clipboard;
     g_paste_clipboard_new_clipboard;
     g_paste_clipboard_new_primary;
 } LIBGPASTE_3_24_0;
