@@ -41,6 +41,24 @@ typedef struct
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_APPLICATION_WINDOW)
 
+static gboolean
+_empty (gpointer user_data)
+{
+    gpointer *data = (gpointer *) user_data;
+    GPasteUiWindow *self = data[0];
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    if (!priv->initialized)
+        return G_SOURCE_CONTINUE;
+
+    g_autofree gchar *history = data[1];
+    g_free (data);
+
+    g_paste_util_empty_history (GTK_WINDOW (self), priv->client, history);
+
+    return G_SOURCE_REMOVE;
+}
+
 /**
  * g_paste_ui_window_empty_history:
  * @self: the #GPasteUiWindow
@@ -55,9 +73,11 @@ g_paste_ui_window_empty_history (GPasteUiWindow *self,
     g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (history, -1, NULL));
 
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    gpointer *data = g_new (gpointer, 2);
+    data[0] = self;
+    data[1] = g_strdup (history);
 
-    g_paste_util_empty_history (GTK_WINDOW (self), priv->client, history);
+    g_source_set_name_by_id (g_idle_add (_empty, data), "[GPaste] empty");
 }
 
 static gboolean
