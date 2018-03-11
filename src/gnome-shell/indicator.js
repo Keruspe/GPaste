@@ -302,7 +302,6 @@ var GPasteIndicator = new Lang.Class({
 
     _popup: function() {
         this.menu.open(true);
-        this._selectSearch();
     },
 
     _toggle: function(c, state) {
@@ -341,6 +340,7 @@ var GPasteIndicator = new Lang.Class({
         if (state) {
             this._searchItem.reset();
             this._updatePage(1);
+            this._selectSearch();
         } else {
             this._updateIndexVisibility(false);
         }
