@@ -19,9 +19,11 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiWindow, ui_window, UI_WINDOW, GtkApplicationWindow)
 
-void g_paste_ui_window_search     (GPasteUiWindow *self,
-                                   const gchar    *search);
-void g_paste_ui_window_show_prefs (GPasteUiWindow *self);
+void g_paste_ui_window_empty_history (GPasteUiWindow *self,
+                                      const gchar    *history);
+void g_paste_ui_window_search        (GPasteUiWindow *self,
+                                      const gchar    *search);
+void g_paste_ui_window_show_prefs    (GPasteUiWindow *self);
 
 GtkWidget *g_paste_ui_window_new (GtkApplication *app);
 

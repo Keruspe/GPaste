@@ -63,6 +63,14 @@ about_activated (GSimpleAction *action    G_GNUC_UNUSED,
 }
 
 static void
+empty_activated (GSimpleAction *action    G_GNUC_UNUSED,
+                 GVariant      *parameter,
+                 gpointer       user_data)
+{
+    g_paste_ui_window_empty_history (get_ui_window (user_data), g_variant_get_string (parameter, NULL));
+}
+
+static void
 quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
                 GVariant      *parameter G_GNUC_UNUSED,
                 gpointer       user_data)
@@ -85,6 +93,7 @@ main (gint argc, gchar *argv[])
 
     GActionEntry app_entries[] = {
         { "about",  about_activated,  NULL, NULL, NULL, { 0 } },
+        { "empty",  empty_activated,  "s",  NULL, NULL, { 0 } },
         { "prefs",  prefs_activated,  NULL, NULL, NULL, { 0 } },
         { "quit",   quit_activated,   NULL, NULL, NULL, { 0 } },
         { "search", search_activated, "s",  NULL, NULL, { 0 } }

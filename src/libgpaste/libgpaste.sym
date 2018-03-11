@@ -486,5 +486,7 @@ global:
 
     g_paste_clipboards_manager_sync_from_to;
 
+    g_paste_ui_window_empty_history;
+
     g_paste_util_empty_history;
 } LIBGPASTE_3_24_0;

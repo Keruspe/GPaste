@@ -9,6 +9,7 @@
 #include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
+#include <gpaste-util.h>
 
 #include "gpaste-gtk-compat.h"
 
@@ -28,6 +29,7 @@ typedef struct
 {
     GPasteUiHeader  *header;
     GPasteUiHistory *history;
+    GPasteClient    *client;
 
     GtkSearchBar    *search_bar;
     GtkSearchEntry  *search_entry;
@@ -38,6 +40,25 @@ typedef struct
 } GPasteUiWindowPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_APPLICATION_WINDOW)
+
+/**
+ * g_paste_ui_window_empty_history:
+ * @self: the #GPasteUiWindow
+ * @history: the history to empty
+ *
+ * Empty an history
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_window_empty_history (GPasteUiWindow *self,
+                                 const gchar    *history)
+{
+    g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
+    g_return_if_fail (g_utf8_validate (history, -1, NULL));
+
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    g_paste_util_empty_history (GTK_WINDOW (self), priv->client, history);
+}
 
 static gboolean
 _search (gpointer user_data)
@@ -213,6 +234,8 @@ g_paste_ui_window_dispose (GObject *object)
         priv->c_signals[C_SEARCH] = 0;
     }
 
+    g_clear_object (&priv->client);
+
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
 }
 
@@ -275,6 +298,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     GPasteUiHeader *h = priv->header = G_PASTE_UI_HEADER (header);
 
     priv->history = G_PASTE_UI_HISTORY (history);
+    priv->client = g_object_ref (client);
 
     gtk_window_set_titlebar (win, header);
     gtk_application_window_set_help_overlay (GTK_APPLICATION_WINDOW (user_data), GTK_SHORTCUTS_WINDOW (g_paste_ui_shortcuts_window_new (settings)));
