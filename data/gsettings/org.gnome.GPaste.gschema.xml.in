@@ -123,6 +123,14 @@
       </description>
     </key>
 
+    <key name="rich-text-support" type="b">
+      <default>true</default>
+      <summary>Do we save all versions of selected rich text (e.g. html) or just the plain text version?</summary>
+      <description>
+        By default, we're saving all
+      </description>
+    </key>
+
     <key name="save-history" type="b">
       <default>true</default>
       <summary>Do we save the history from one session to another?</summary>

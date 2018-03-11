@@ -39,6 +39,7 @@ typedef struct
     guint64    min_text_item_size;
     gchar     *pop;
     gboolean   primary_to_history;
+    gboolean   rich_text_support;
     gboolean   save_history;
     gchar     *show_history;
     gchar     *sync_clipboard_to_primary;
@@ -448,6 +449,29 @@ STRING_SETTING (pop, POP)
 BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
 
 /**
+ * g_paste_settings_get_rich_text_support:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "rich-text-support" setting
+ *
+ * Returns: the value of the "rich-text-support" setting
+ */
+/**
+ * g_paste_settings_reset_rich_text_support:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "rich-text-support" setting
+ */
+/**
+ * g_paste_settings_set_rich_text_support:
+ * @self: a #GPasteSettings instance
+ * @value: the new history name
+ *
+ * Change the "rich-text-support" setting
+ */
+BOOLEAN_SETTING (rich_text_support, RICH_TEXT_SUPPORT)
+
+/**
  * g_paste_settings_get_save_history:
  * @self: a #GPasteSettings instance
  *
@@ -810,6 +834,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     }
     else if (g_paste_str_equal (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
         g_paste_settings_private_set_primary_to_history_from_dconf (priv);
+    else if (g_paste_str_equal (key, G_PASTE_RICH_TEXT_SUPPORT_SETTING))
+        g_paste_settings_private_set_rich_text_support_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_SAVE_HISTORY_SETTING))
         g_paste_settings_private_set_save_history_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_SHOW_HISTORY_SETTING))
@@ -978,6 +1004,7 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_min_text_item_size_from_dconf (priv);
     g_paste_settings_private_set_pop_from_dconf (priv);
     g_paste_settings_private_set_primary_to_history_from_dconf (priv);
+    g_paste_settings_private_set_rich_text_support_from_dconf (priv);
     g_paste_settings_private_set_save_history_from_dconf (priv);
     g_paste_settings_private_set_show_history_from_dconf (priv);
     g_paste_settings_private_set_sync_clipboard_to_primary_from_dconf (priv);

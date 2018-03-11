@@ -235,7 +235,7 @@ g_paste_clipboards_manager_text_ready (GPasteClipboard *clipboard,
         return;
     }
 
-    if (item)
+    if (item && g_paste_settings_get_rich_text_support (priv->settings))
     {
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
