@@ -157,9 +157,12 @@ on_key_press_event (GtkWidget   *widget,
         return res;
 
     // fallback to explicitely focusing search to see if key can be handled
-    gtk_widget_grab_focus (GTK_WIDGET (priv->search_entry));
+    gtk_entry_grab_focus_without_selecting (GTK_ENTRY (priv->search_entry));
 
     if (gtk_search_bar_handle_event (priv->search_bar, _event))
+        return GDK_EVENT_STOP;
+
+    if (GTK_WIDGET_CLASS (g_paste_ui_window_parent_class)->key_press_event (widget, event) == GDK_EVENT_STOP)
         return GDK_EVENT_STOP;
 
     gtk_widget_grab_focus (focus);
