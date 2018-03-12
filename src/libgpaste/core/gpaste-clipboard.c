@@ -301,6 +301,34 @@ g_paste_clipboard_select_text (GPasteClipboard *self,
     gtk_clipboard_set_text (priv->real, text, -1);
 }
 
+static void
+g_paste_clipboard_sync_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
+                              const gchar  *text,
+                              gpointer      user_data)
+{
+    if (text)
+        g_paste_clipboard_select_text (user_data, text);
+}
+
+/**
+ * g_paste_clipboard_sync_text:
+ * @self: the source #GPasteClipboard instance
+ * @other: the target #GPasteClipboard instance
+ *
+ * Synchronise the text between two clipboards
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_sync_text (const GPasteClipboard *self,
+                             GPasteClipboard       *other)
+{
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (other));
+
+    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+
+    gtk_clipboard_request_text (priv->real, g_paste_clipboard_sync_ready, other);
+}
+
 static guchar *
 copy_str_as_uchars (const gchar *str,
                     guint64      length)

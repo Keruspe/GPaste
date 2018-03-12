@@ -67,15 +67,6 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     g_paste_clipboard_bootstrap (clipboard, priv->history);
 }
 
-static void
-g_paste_clipboards_manager_sync_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
-                                       const gchar  *text,
-                                       gpointer user_data)
-{
-    if (text)
-        g_paste_clipboard_select_text (user_data, text);
-}
-
 /**
  * g_paste_clipboards_manager_sync_from_to:
  * @self: a #GPasteClipboardsManager instance
@@ -90,7 +81,7 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     const GPasteClipboardsManagerPrivate *priv = _g_paste_clipboards_manager_get_instance_private (self);
-    GtkClipboard *_from = NULL;
+    GPasteClipboard *_from = NULL;
     GPasteClipboard *_to = NULL;
 
     g_debug ("clipboards-manager: sync_from_to");
@@ -101,17 +92,13 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
         GPasteClipboard *clip = _clip->clipboard;
 
         if (g_paste_clipboard_is_clipboard (clip) == from_clipboard)
-            _from = g_paste_clipboard_get_real (clip);
+            _from = clip;
         else
             _to = clip;
     }
 
     if (_from && _to)
-    {
-        gtk_clipboard_request_text (_from,
-                                    g_paste_clipboards_manager_sync_ready,
-                                    _to);
-    }
+        g_paste_clipboard_sync_text (_from, _to);
 }
 
 static void
@@ -277,6 +264,7 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
                                           gpointer          user_data)
 {
     g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
+    GPasteClipboardsManagerPrivate *priv = data->priv;
 
     g_debug ("clipboards-manager: targets ready");
 
@@ -305,7 +293,7 @@ g_paste_clipboards_manager_targets_ready (GtkClipboard     *clipboard G_GNUC_UNU
                                         data);
             data = NULL;
         }
-        else if (g_paste_settings_get_images_support (data->priv->settings) && gtk_targets_include_image (targets, n_targets, FALSE))
+        else if (g_paste_settings_get_images_support (priv->settings) && gtk_targets_include_image (targets, n_targets, FALSE))
         {
             /* Update our cache from the real Clipboard */
             g_paste_clipboard_set_image (data->clip,

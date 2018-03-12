@@ -37,6 +37,8 @@ void          g_paste_clipboard_set_text     (GPasteClipboard            *self,
                                               gpointer                    user_data);
 void          g_paste_clipboard_select_text  (GPasteClipboard *self,
                                               const gchar     *text);
+void          g_paste_clipboard_sync_text    (const GPasteClipboard *self,
+                                              GPasteClipboard       *other);
 void          g_paste_clipboard_clear        (GPasteClipboard *self);
 void          g_paste_clipboard_store        (GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);

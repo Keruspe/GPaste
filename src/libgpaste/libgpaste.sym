@@ -483,6 +483,7 @@ global:
     g_paste_clipboard_is_clipboard;
     g_paste_clipboard_new_clipboard;
     g_paste_clipboard_new_primary;
+    g_paste_clipboard_sync_text;
 
     g_paste_clipboards_manager_sync_from_to;
 
