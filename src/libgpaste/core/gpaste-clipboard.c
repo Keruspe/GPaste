@@ -611,7 +611,7 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
                                   n_targets,
                                   g_paste_clipboard_get_clipboard_data,
                                   g_paste_clipboard_clear_clipboard_data,
-                                  g_object_ref (item));
+                                  g_object_ref ((GObject *) item));
     gtk_target_table_free (targets, n_targets);
 
     return TRUE;
