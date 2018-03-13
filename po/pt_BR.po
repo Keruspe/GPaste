@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-03-07 16:55+0100\n"
+"POT-Creation-Date: 2018-03-13 14:55+0100\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -167,7 +167,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Carregar o item ativo para um serviço de pastebin: "
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: src/libgpaste/ui/gpaste-ui-window.c:247 src/client/gpaste-client.c:804
+#: src/libgpaste/ui/gpaste-ui-window.c:310 src/client/gpaste-client.c:804
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Não foi possível se conectar ao daemon do GPaste"
 
@@ -185,7 +185,7 @@ msgstr "Atalhos do teclado"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:454
-#: src/libgpaste/ui/gpaste-ui-panel.c:291
+#: src/libgpaste/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
 msgstr "Alternar para"
 
@@ -226,14 +226,10 @@ msgid "Edit"
 msgstr "Editar"
 
 #. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:25
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:63
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:61
+#: src/libgpaste/util/gpaste-util.c:338
 msgid "Empty"
 msgstr "Vazio"
-
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:25
-msgid "Do you really want to empty the history?"
-msgstr "Você quer mesmo esvaziar o histórico?"
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
@@ -269,7 +265,7 @@ msgstr "Reiniciar o daemon"
 msgid "Search"
 msgstr "Pesquisar"
 
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:96
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
 msgid "GPaste Settings"
 msgstr "Configurações do GPaste"
 
@@ -290,7 +286,11 @@ msgstr ""
 msgid "Upload"
 msgstr "Carregar"
 
-#: src/libgpaste/util/gpaste-util.c:599
+#: src/libgpaste/util/gpaste-util.c:338
+msgid "Do you really want to empty the history?"
+msgstr "Você quer mesmo esvaziar o histórico?"
+
+#: src/libgpaste/util/gpaste-util.c:617
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
@@ -583,16 +583,16 @@ msgstr "Sinal %d recebido, saindo\n"
 msgid "Could not acquire DBus name."
 msgstr "Não foi possível obter um nome DBus."
 
-#: src/ui/gpaste-ui.c:97
+#: src/ui/gpaste-ui.c:106
 #, fuzzy
 msgid "Keyboard Shortcuts"
 msgstr "Atalhos do teclado"
 
-#: src/ui/gpaste-ui.c:98
+#: src/ui/gpaste-ui.c:107
 msgid "About GPaste"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:99
+#: src/ui/gpaste-ui.c:108
 msgid "Quit"
 msgstr "Sair"
 
@@ -783,18 +783,29 @@ msgstr ""
 "Por padrão, somente a área de transferência (ctrl+c) afeta o histórico."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
-msgid "Do we save the history from one session to another?"
-msgstr "Salvar o histórico entre uma sessão e outra?"
+msgid ""
+"Do we save all versions of selected rich text (e.g. html) or just the plain "
+"text version?"
+msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
-msgid "By default, we're saving it"
+#, fuzzy
+msgid "By default, we're saving all"
 msgstr "Por padrão, ele é salvo"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+msgid "Do we save the history from one session to another?"
+msgstr "Salvar o histórico entre uma sessão e outra?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+msgid "By default, we're saving it"
+msgstr "Por padrão, ele é salvo"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
 msgstr "O atalho do teclado para exibir o menu"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
@@ -803,13 +814,13 @@ msgstr ""
 "Por padrão, a combinação de teclas ctrl + alt + h exibe o menu (\"&lt;"
 "Ctrl&gt;&lt;Alt&gt;H\"). Deixar vazio aqui desabilita essa funcionalidade."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 "Atalho do teclado para sincronizar a área de transferência com a seleção "
 "primária"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:146
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
@@ -818,13 +829,13 @@ msgstr ""
 "Por padrão, teclando ctrl + alt + o faz a sincronização (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;P\"). Uma string vazia aqui desabilita essa funcionalidade."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
 "Atalho do teclado para sincronizar a seleção primária com a área de "
 "transferência"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:155
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
@@ -833,24 +844,24 @@ msgstr ""
 "Por padrão, teclando ctrl + alt + p faz a sincronização (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;P\"). Uma string vazia aqui desabilita essa funcionalidade."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "Seleção primária e a área de transferência estão sincronizadas?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:164
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Por padrão, seleção primária e área de transferência são independentes."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Do we track the clipboard changes?"
 msgstr "Monitorar as alterações na área de transferência?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, we're tracking those changes."
 msgstr "Por padrão, essas alterações são monitoradas."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -858,15 +869,15 @@ msgstr ""
 "Sincronizar o estado do daemon com a extensão do gnome-shell? (desabilitar o "
 "daemon quando desabilitar a extensão)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
 msgstr "Por padrão, o estado do daemon se mantém inalterado"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid "Do we trim the textual items before adding them to history?"
 msgstr "Aparar itens textuais antes de adicioná-los ao histórico?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
@@ -874,7 +885,7 @@ msgstr ""
 "Aparar significa que espaços em branco antes e depois do texto serão "
 "removidos. Por padrão, é deixado como está."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
@@ -882,7 +893,7 @@ msgstr ""
 "O atalho do teclado para carregar o primeiro elemento do histórico para um "
 "serviço de pastebin"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:197
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "

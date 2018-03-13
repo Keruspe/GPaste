@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-03-07 16:55+0100\n"
+"POT-Creation-Date: 2018-03-13 14:55+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -167,7 +167,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Eliminar el primer elemento del historial"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: src/libgpaste/ui/gpaste-ui-window.c:247 src/client/gpaste-client.c:804
+#: src/libgpaste/ui/gpaste-ui-window.c:310 src/client/gpaste-client.c:804
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
@@ -185,7 +185,7 @@ msgstr "Atajos de teclado "
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:454
-#: src/libgpaste/ui/gpaste-ui-panel.c:291
+#: src/libgpaste/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
 msgstr "Cambiar a"
 
@@ -227,15 +227,11 @@ msgid "Edit"
 msgstr ""
 
 #. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:25
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:63
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:61
+#: src/libgpaste/util/gpaste-util.c:338
 #, fuzzy
 msgid "Empty"
 msgstr "(Vacío)"
-
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:25
-msgid "Do you really want to empty the history?"
-msgstr ""
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
@@ -272,7 +268,7 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:96
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
 #, fuzzy
 msgid "GPaste Settings"
 msgstr "Ajustes del servicio GPaste"
@@ -294,7 +290,11 @@ msgstr "detener seguimiento de cambios en el portapapeles"
 msgid "Upload"
 msgstr ""
 
-#: src/libgpaste/util/gpaste-util.c:599
+#: src/libgpaste/util/gpaste-util.c:338
+msgid "Do you really want to empty the history?"
+msgstr ""
+
+#: src/libgpaste/util/gpaste-util.c:617
 msgid "Could not create history dir"
 msgstr "No se pudo crear directorio de historial"
 
@@ -594,16 +594,16 @@ msgstr "Recibida señal %d, saliendo\n"
 msgid "Could not acquire DBus name."
 msgstr "No se pudo obtener nombre en DBus"
 
-#: src/ui/gpaste-ui.c:97
+#: src/ui/gpaste-ui.c:106
 #, fuzzy
 msgid "Keyboard Shortcuts"
 msgstr "Atajos de teclado "
 
-#: src/ui/gpaste-ui.c:98
+#: src/ui/gpaste-ui.c:107
 msgid "About GPaste"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:99
+#: src/ui/gpaste-ui.c:108
 msgid "Quit"
 msgstr "Salir"
 
@@ -789,18 +789,29 @@ msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Por omisión, solo el portapapeles (ctrl+c) afecta al historial."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
-msgid "Do we save the history from one session to another?"
-msgstr "¿Se guarda el historial de una sesión a otra?"
+msgid ""
+"Do we save all versions of selected rich text (e.g. html) or just the plain "
+"text version?"
+msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
-msgid "By default, we're saving it"
+#, fuzzy
+msgid "By default, we're saving all"
 msgstr "Por omisión se guarda"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+msgid "Do we save the history from one session to another?"
+msgstr "¿Se guarda el historial de una sesión a otra?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+msgid "By default, we're saving it"
+msgstr "Por omisión se guarda"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
 msgstr "Atajo de teclado para mostrar el menú"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
@@ -809,11 +820,11 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:146
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
@@ -822,11 +833,11 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:155
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
@@ -835,24 +846,24 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "¿Están sincronizadas la selección principal y el portapapeles?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:164
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Por omisión, la selección principal y el portapapeles son independientes."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Do we track the clipboard changes?"
 msgstr "¿Seguir los cambios en el portapapeles?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, we're tracking those changes."
 msgstr "Por omisión, se siguen esos cambios."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -860,15 +871,15 @@ msgstr ""
 "¿Sincronizar el estado del servicio con el de la extension? (deshabilitarel "
 "servicio cuando se deshabilite la extension)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
 msgstr "Por omisión, el estado del servicio se mantiene sin cambios."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid "Do we trim the textual items before adding them to history?"
 msgstr "¿Recortar elementos de texto antes de añadirlos al historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
@@ -876,14 +887,14 @@ msgstr ""
 "Recortar quiere decir eliminar los espacios antes del inicio y después del "
 "final. Por omision se dejan como están"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 #, fuzzy
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr "Atajo de teclado para eliminar la primera entrada del historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:197
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "

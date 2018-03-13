@@ -1,3 +1,12 @@
+NEW in 3.28.0 (13/03/2018)
+=============
+
+- gpaste-daemonn now emits a dbus signal when an item is selected
+- gpaste-client can now print the history in reverse order
+- drop gtk4 support, it will come back later
+- API adjustments to prepare for the future gtk4 port
+- ask confirmation before emptying an history
+
 NEW in 3.26.2 (08/03/2018)
 =============
 

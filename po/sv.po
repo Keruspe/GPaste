@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-03-07 16:55+0100\n"
+"POT-Creation-Date: 2018-03-13 14:55+0100\n"
 "PO-Revision-Date: 2018-01-06 08:14+0100\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Svenska Språkfiler <contactform@svenskasprakfiler.se>\n"
@@ -159,7 +159,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Ladda upp aktiv post till en pastebin-tjänst"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:320
-#: src/libgpaste/ui/gpaste-ui-window.c:247 src/client/gpaste-client.c:804
+#: src/libgpaste/ui/gpaste-ui-window.c:310 src/client/gpaste-client.c:804
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Kunde inte ansluta till GPaste-tjänsten"
 
@@ -177,7 +177,7 @@ msgstr "Tangentbordsgenvägar"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:454
-#: src/libgpaste/ui/gpaste-ui-panel.c:291
+#: src/libgpaste/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
 msgstr "Växla till"
 
@@ -218,14 +218,10 @@ msgid "Edit"
 msgstr "Redigera"
 
 #. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:25
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:63
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:61
+#: src/libgpaste/util/gpaste-util.c:338
 msgid "Empty"
 msgstr "Töm"
-
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:25
-msgid "Do you really want to empty the history?"
-msgstr "Vill du verkligen tömma historiken?"
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
@@ -260,7 +256,7 @@ msgstr "Starta om tjänsten"
 msgid "Search"
 msgstr "Sök"
 
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:96
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
 msgid "GPaste Settings"
 msgstr "GPaste Inställningar"
 
@@ -280,7 +276,11 @@ msgstr "Vill du verkligen sluta övervaka urklippsändringar?"
 msgid "Upload"
 msgstr "Ladda upp"
 
-#: src/libgpaste/util/gpaste-util.c:599
+#: src/libgpaste/util/gpaste-util.c:338
+msgid "Do you really want to empty the history?"
+msgstr "Vill du verkligen tömma historiken?"
+
+#: src/libgpaste/util/gpaste-util.c:617
 msgid "Could not create history dir"
 msgstr "Kunde inte skapa historikmapp"
 
@@ -568,15 +568,15 @@ msgstr "Stoppsignal mottagen, avslutar"
 msgid "Could not acquire DBus name."
 msgstr "Kunde inte hämta DBus-namn."
 
-#: src/ui/gpaste-ui.c:97
+#: src/ui/gpaste-ui.c:106
 msgid "Keyboard Shortcuts"
 msgstr "Tangentbordsgenvägar"
 
-#: src/ui/gpaste-ui.c:98
+#: src/ui/gpaste-ui.c:107
 msgid "About GPaste"
 msgstr "Om GPaste"
 
-#: src/ui/gpaste-ui.c:99
+#: src/ui/gpaste-ui.c:108
 msgid "Quit"
 msgstr "Avsluta"
 
@@ -757,18 +757,29 @@ msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Som standard påverkas historiken endast av urklipp (Ctrl+C)."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
-msgid "Do we save the history from one session to another?"
-msgstr "Skall vi spara historiken från en session till en annan?"
+msgid ""
+"Do we save all versions of selected rich text (e.g. html) or just the plain "
+"text version?"
+msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
-msgid "By default, we're saving it"
+#, fuzzy
+msgid "By default, we're saving all"
 msgstr "Som standard sparar vi den"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+msgid "Do we save the history from one session to another?"
+msgstr "Skall vi spara historiken från en session till en annan?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+msgid "By default, we're saving it"
+msgstr "Som standard sparar vi den"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
 msgstr "Tangentbordsgenväg för att visa menyn"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
@@ -776,11 +787,11 @@ msgstr ""
 "Som standard visas menyn med Ctrl+Alt+H  (\"<Ctrl><Alt>H\"). En tom sträng "
 "här, inaktiverar denna funktion."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr "Tangentbordsgenväg för att synkronisera urklipp med primär markering"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:146
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
@@ -788,11 +799,11 @@ msgstr ""
 "Som standard synkroniseras de med Ctrl+Alt+O  (\"<Ctrl><Alt>O\"). En tom "
 "sträng här, inaktiverar denna funktion."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr "Tangentbordsgenväg för att synkronisera primär markering med urklipp"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:155
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
@@ -800,23 +811,23 @@ msgstr ""
 "Som standard synkroniseras de med Ctrl+Alt+P  (\"<Ctrl><Alt>P\"). En tom "
 "sträng här, inaktiverar denna funktion."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "Är primär markering och urklipp synkroniserade?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:164
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr "Som standard är primär markering och urklipp oberoende av varandra."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Do we track the clipboard changes?"
 msgstr "Skall vi övervaka urklippsändringar?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, we're tracking those changes."
 msgstr "Som standard övervakar vi dessa ändringar."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -824,15 +835,15 @@ msgstr ""
 "Skall vi synkronisera tjänststatus med status för gnome-skaltillägget "
 "(inaktivera tjänsten när tillägget inaktiveras)?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
 msgstr "Som standard ändras inte tjänstens status"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid "Do we trim the textual items before adding them to history?"
 msgstr "Skall vi trimma textposter innan de läggs till i historiken?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
@@ -840,7 +851,7 @@ msgstr ""
 "Trimning innebär att alla efterföljande och avslutande blanksteg tas bort. "
 "Som standard lämnas de kvar."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
@@ -848,7 +859,7 @@ msgstr ""
 "Tangentbordsgenväg för att ladda upp historikens första post, till en "
 "pastebin-tjänst."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:197
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
