@@ -5,7 +5,7 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-imports.gi.versions.Clutter = '1';
+imports.gi.versions.Clutter = '2';
 
 const Gettext = imports.gettext;
 const Lang = imports.lang;
