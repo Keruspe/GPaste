@@ -5,11 +5,7 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-imports.gi.versions.Gtk = '3.0';
-
 const Gettext = imports.gettext;
-
-const Gtk = imports.gi.Gtk;
 
 const GPaste = imports.gi.GPaste;
 
@@ -23,7 +19,7 @@ function init() {
 }
 
 function buildPrefsWidget() {
-    let widget = new GPaste.SettingsUiWidget({ orientation: Gtk.Orientation.VERTICAL, margin: 12 });
+    let widget = new GPaste.SettingsUiWidget({ margin: 12 });
     if (widget) {
         widget.show_all();
     }
