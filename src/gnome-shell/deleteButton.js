@@ -5,11 +5,6 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Config = imports.misc.config;
-
-imports.gi.versions.Clutter = Config.LIBMUTTER_API_VERSION;
-imports.gi.versions.St = '1.0';
-
 const Lang = imports.lang;
 
 const Clutter = imports.gi.Clutter;
