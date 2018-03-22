@@ -6,7 +6,6 @@
 
 #include "gpaste-gdbus-macros.h"
 
-#include <gpaste-client.h>
 #include <gpaste-update-enums.h>
 
 struct _GPasteClient
