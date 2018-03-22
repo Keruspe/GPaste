@@ -4,7 +4,6 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-client.h>
 #include <gpaste-util.h>
 
 #include <getopt.h>

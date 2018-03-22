@@ -4,7 +4,6 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-client.h>
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-search-provider.h>
 #include <gpaste-util.h>
