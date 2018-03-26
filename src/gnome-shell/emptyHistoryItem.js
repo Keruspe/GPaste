@@ -15,7 +15,7 @@ const GPaste = imports.gi.GPaste;
 var GPasteEmptyHistoryItem = new Lang.Class({
     Name: 'GPasteEmptyHistoryItem',
 
-    _init: function(client) {
+    _init: function(client, settings) {
         this.actor = new St.Button({
             reactive: true,
             can_focus: true,
@@ -29,7 +29,10 @@ var GPasteEmptyHistoryItem = new Lang.Class({
             client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
 
-                GPaste.util_activate_ui("empty", GLib.Variant.new_string(name));
+                if (settings.get_empty_history_confirmation())
+                    GPaste.util_activate_ui("empty", GLib.Variant.new_string(name));
+                else
+                    client.empty_history(name, null);
             });
         });
     }

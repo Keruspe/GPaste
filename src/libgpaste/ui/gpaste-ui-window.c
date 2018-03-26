@@ -30,6 +30,7 @@ typedef struct
     GPasteUiHeader  *header;
     GPasteUiHistory *history;
     GPasteClient    *client;
+    GPasteSettings  *settings;
 
     GtkSearchBar    *search_bar;
     GtkSearchEntry  *search_entry;
@@ -54,7 +55,7 @@ _empty (gpointer user_data)
     g_autofree gchar *history = data[1];
     g_free (data);
 
-    g_paste_util_empty_history (GTK_WINDOW (self), priv->client, history);
+    g_paste_util_empty_history (GTK_WINDOW (self), priv->client, priv->settings, history);
 
     return G_SOURCE_REMOVE;
 }
@@ -319,6 +320,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     priv->history = G_PASTE_UI_HISTORY (history);
     priv->client = g_object_ref (client);
+    priv->settings = g_paste_settings_new();
 
     gtk_window_set_titlebar (win, header);
     gtk_application_window_set_help_overlay (GTK_APPLICATION_WINDOW (user_data), GTK_SHORTCUTS_WINDOW (g_paste_ui_shortcuts_window_new (settings)));

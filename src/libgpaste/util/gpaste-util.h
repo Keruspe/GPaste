@@ -34,9 +34,10 @@ gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *substitution);
 gchar   *g_paste_util_compute_checksum  (GdkPixbuf   *image);
 
-void     g_paste_util_empty_history     (GtkWindow    *parent_window,
-                                         GPasteClient *client,
-                                         const gchar  *history);
+void     g_paste_util_empty_history     (GtkWindow      *parent_window,
+                                         GPasteClient   *client,
+                                         GPasteSettings *settings,
+                                         const gchar    *history);
 
 gboolean g_paste_util_has_gnome_shell (void);
 

@@ -22,7 +22,7 @@ g_paste_ui_empty_history_activate (GPasteUiHistoryAction *self G_GNUC_UNUSED,
                                    GtkWindow             *rootwin,
                                    const gchar           *history)
 {
-    g_paste_util_empty_history (rootwin, client, history);
+    g_paste_util_empty_history (rootwin, client, settings, history);
 
     return TRUE;
 }
