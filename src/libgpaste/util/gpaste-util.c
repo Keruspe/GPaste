@@ -325,18 +325,21 @@ g_paste_util_compute_checksum (GdkPixbuf *image)
  * g_paste_util_empty_history:
  * @parent_window: (nullable): the parent #GtkWindow
  * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
  * @history: the name of the history to empty
  *
  * Empty history after prompting user for confirmation
  */
 G_PASTE_VISIBLE void
-g_paste_util_empty_history (GtkWindow    *parent_window,
-                            GPasteClient *client,
-                            const gchar  *history)
+g_paste_util_empty_history (GtkWindow      *parent_window,
+                            GPasteClient   *client,
+                            GPasteSettings *settings,
+                            const gchar    *history)
 {
-    /* Translators: this is the translation for emptying the history */
-    if (g_paste_util_confirm_dialog (parent_window, _("Empty"), _("Do you really want to empty the history?")))
-        g_paste_client_empty_history (client, history, NULL, NULL);
+    if (!g_paste_settings_get_empty_history_confirmation (settings) ||
+        /* Translators: this is the translation for emptying the history */
+        g_paste_util_confirm_dialog (parent_window, _("Empty"), _("Do you really want to empty the history?")))
+            g_paste_client_empty_history (client, history, NULL, NULL);
 }
 
 /**

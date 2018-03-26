@@ -91,6 +91,7 @@ g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
 static gboolean
 g_paste_ui_backup_history_activate (GPasteUiHistoryAction *self G_GNUC_UNUSED,
                                     GPasteClient          *client,
+                                    GPasteSettings        *settings G_GNUC_UNUSED,
                                     GtkWindow             *rootwin,
                                     const gchar           *history)
 {
@@ -116,6 +117,7 @@ g_paste_ui_backup_history_init (GPasteUiBackupHistory *self G_GNUC_UNUSED)
 /**
  * g_paste_ui_backup_history_new:
  * @client: a #GPasteClient
+ * @settings: a #GPasteSettings
  * @actions: the #GPasteUiHistoryActions
  * @rootwin: the root #GtkWindow
  *
@@ -125,13 +127,15 @@ g_paste_ui_backup_history_init (GPasteUiBackupHistory *self G_GNUC_UNUSED)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_backup_history_new (GPasteClient *client,
-                               GtkWidget    *actions,
-                               GtkWindow    *rootwin)
+g_paste_ui_backup_history_new (GPasteClient   *client,
+                               GPasteSettings *settings,
+                               GtkWidget      *actions,
+                               GtkWindow      *rootwin)
 {
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    return g_paste_ui_history_action_new (G_PASTE_TYPE_UI_BACKUP_HISTORY, client, actions, rootwin, _("Backup"));
+    return g_paste_ui_history_action_new (G_PASTE_TYPE_UI_BACKUP_HISTORY, client, settings, actions, rootwin, _("Backup"));
 }

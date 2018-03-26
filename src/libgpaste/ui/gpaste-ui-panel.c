@@ -351,7 +351,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
 
     priv->client = g_object_ref (client);
     priv->settings = g_object_ref (settings);
-    priv->actions = G_PASTE_UI_HISTORY_ACTIONS (g_paste_ui_history_actions_new (client, rootwin));
+    priv->actions = G_PASTE_UI_HISTORY_ACTIONS (g_paste_ui_history_actions_new (client, settings, rootwin));
     priv->search_entry = GTK_WIDGET (search_entry);
 
     priv->c_signals[C_DELETE_HISTORY] = g_signal_connect (priv->client,

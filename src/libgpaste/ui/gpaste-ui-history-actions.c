@@ -94,6 +94,7 @@ g_paste_ui_history_actions_init (GPasteUiHistoryActions *self G_GNUC_UNUSED)
 /**
  * g_paste_ui_history_actions_new:
  * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
  * @rootwin: the root #GtkWindow
  *
  * Create a new instance of #GPasteUiHistoryActions
@@ -102,10 +103,12 @@ g_paste_ui_history_actions_init (GPasteUiHistoryActions *self G_GNUC_UNUSED)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_history_actions_new (GPasteClient *client,
-                                GtkWindow    *rootwin)
+g_paste_ui_history_actions_new (GPasteClient   *client,
+                                GPasteSettings *settings,
+                                GtkWindow      *rootwin)
 {
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HISTORY_ACTIONS,
@@ -114,9 +117,9 @@ g_paste_ui_history_actions_new (GPasteClient *client,
                                       NULL);
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (self));
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
-    GtkWidget *backup = g_paste_ui_backup_history_new (client, self, rootwin);
-    GtkWidget *delete = g_paste_ui_delete_history_new (client, self, rootwin);
-    GtkWidget *empty = g_paste_ui_empty_history_new (client, self, rootwin);
+    GtkWidget *backup = g_paste_ui_backup_history_new (client, settings, self, rootwin);
+    GtkWidget *delete = g_paste_ui_delete_history_new (client, settings, self, rootwin);
+    GtkWidget *empty = g_paste_ui_empty_history_new (client, settings, self, rootwin);
 
     priv->client = g_object_ref (client);
     priv->actions = g_slist_append (priv->actions, backup);
