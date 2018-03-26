@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-03-22 10:05+0100\n"
+"POT-Creation-Date: 2018-03-26 17:40+0200\n"
 "PO-Revision-Date: 2014-03-27 21:03+0100\n"
 "Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
 "Language-Team: \n"
@@ -168,7 +168,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
-#: src/libgpaste/ui/gpaste-ui-window.c:310 src/client/gpaste-client.c:803
+#: src/libgpaste/ui/gpaste-ui-window.c:311 src/client/gpaste-client.c:803
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
@@ -193,8 +193,8 @@ msgstr "Wechseln zu"
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
 #: src/libgpaste/ui/gpaste-ui-delete-item.c:49
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:24
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:61
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
 msgid "Delete"
 msgstr "Löschen"
 
@@ -203,7 +203,7 @@ msgid "About"
 msgstr "Über"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:43
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:136
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
 msgid "Backup"
 msgstr "Backup"
 
@@ -217,7 +217,7 @@ msgstr ""
 msgid "Under which name do you want to backup this history?"
 msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:24
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
 #, fuzzy
 msgid "Are you sure you want to delete this history?"
 msgstr "Tastenkürzel um den ersten Eintrag in der Chronik zu löschen"
@@ -228,8 +228,8 @@ msgid "Edit"
 msgstr ""
 
 #. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:61
-#: src/libgpaste/util/gpaste-util.c:338
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
+#: src/libgpaste/util/gpaste-util.c:341
 #, fuzzy
 msgid "Empty"
 msgstr "(Leer)"
@@ -290,11 +290,11 @@ msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
 msgid "Upload"
 msgstr ""
 
-#: src/libgpaste/util/gpaste-util.c:338
+#: src/libgpaste/util/gpaste-util.c:341
 msgid "Do you really want to empty the history?"
 msgstr ""
 
-#: src/libgpaste/util/gpaste-util.c:617
+#: src/libgpaste/util/gpaste-util.c:620
 msgid "Could not create history dir"
 msgstr "Ordner für die Chronik konnte nicht angelegt werden"
 
@@ -907,6 +907,15 @@ msgid ""
 msgstr ""
 "Die Vorgabe ist Strg + Alt + v (\"&lt;Strg&gt;&lt;Alt&gt;V\"). Ein leeres "
 "Feld schaltet diese Funktion ab."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+msgid "Do we prompt for confirmation when emptying an history?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
+#, fuzzy
+msgid "By default, we do as it's a destructive action"
+msgstr "Standardmäßig bleibt der Daemon unberührt."
 
 #~ msgid "launch the applet"
 #~ msgstr "Applet starten"

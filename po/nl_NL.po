@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-03-22 10:05+0100\n"
+"POT-Creation-Date: 2018-03-26 17:40+0200\n"
 "PO-Revision-Date: 2017-03-17 17:38+0100\n"
 "Last-Translator: Heimen Stoffels <vistausss@outlook.com>\n"
 "Language-Team: Vistaus <vistausss@outlook.com>\n"
@@ -158,7 +158,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Actief item uploaden naar een pastebin-dienst"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
-#: src/libgpaste/ui/gpaste-ui-window.c:310 src/client/gpaste-client.c:803
+#: src/libgpaste/ui/gpaste-ui-window.c:311 src/client/gpaste-client.c:803
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Het verbinden met de GPaste-daemon is mislukt"
 
@@ -183,8 +183,8 @@ msgstr "Overschakelen naar"
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
 #: src/libgpaste/ui/gpaste-ui-delete-item.c:49
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:24
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:61
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
 msgid "Delete"
 msgstr "Verwijderen"
 
@@ -193,7 +193,7 @@ msgid "About"
 msgstr "Over"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:43
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:136
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
 msgid "Backup"
 msgstr "Back-uppen"
 
@@ -207,7 +207,7 @@ msgstr "Annuleren"
 msgid "Under which name do you want to backup this history?"
 msgstr "Onder welke naam wilt u de geschiedenis opslaan?"
 
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:24
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
 msgid "Are you sure you want to delete this history?"
 msgstr "Weet u zeker dat u de geschiedenis wilt verwijderen?"
 
@@ -217,8 +217,8 @@ msgid "Edit"
 msgstr "Bewerken"
 
 #. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:61
-#: src/libgpaste/util/gpaste-util.c:338
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
+#: src/libgpaste/util/gpaste-util.c:341
 msgid "Empty"
 msgstr "Legen"
 
@@ -275,11 +275,11 @@ msgstr "Weet u zeker dat u het bijhouden van klembordwijzigingen wilt stoppen?"
 msgid "Upload"
 msgstr "Uploaden"
 
-#: src/libgpaste/util/gpaste-util.c:338
+#: src/libgpaste/util/gpaste-util.c:341
 msgid "Do you really want to empty the history?"
 msgstr "Weet u zeker dat u de geschiedenis wilt legen?"
 
-#: src/libgpaste/util/gpaste-util.c:617
+#: src/libgpaste/util/gpaste-util.c:620
 msgid "Could not create history dir"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
@@ -879,6 +879,15 @@ msgid ""
 msgstr ""
 "Ctrl + Alt + U wordt gebruikt om te uploaden (\"<Ctrl><Alt>U\"). Dit "
 "leeglaten schakelt de functionaliteit uit."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+msgid "Do we prompt for confirmation when emptying an history?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
+#, fuzzy
+msgid "By default, we do as it's a destructive action"
+msgstr "Standaard blijft de daemon-staat ongewijzigd"
 
 #~ msgid "launch the applet"
 #~ msgstr "Applet starten"

@@ -1,3 +1,9 @@
+NEW in 3.28.1 (26/03/2018)
+=============
+
+- gnome-shell extension cleanups
+- allow disabling the confirmation dialog for emptying history
+
 NEW in 3.28.0 (13/03/2018)
 =============
 
