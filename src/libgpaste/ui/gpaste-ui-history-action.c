@@ -10,6 +10,7 @@
 typedef struct
 {
     GPasteClient           *client;
+    GPasteSettings         *settings;
     GPasteUiHistoryActions *actions;
 
     GtkWindow              *rootwin;
@@ -48,7 +49,7 @@ g_paste_ui_history_action_button_press_event (GtkWidget      *widget,
     gboolean ret;
 
     if (priv->history && klass->activate)
-        ret = klass->activate (self, priv->client, priv->rootwin, priv->history);
+        ret = klass->activate (self, priv->client, priv->settings, priv->rootwin, priv->history);
     else
         ret = GTK_WIDGET_CLASS (g_paste_ui_history_action_parent_class)->button_press_event (widget, event);
 
@@ -63,6 +64,7 @@ g_paste_ui_history_action_dispose (GObject *object)
     const GPasteUiHistoryActionPrivate *priv = _g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (object));
 
     g_clear_object (&priv->client);
+    g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_ui_history_action_parent_class)->dispose (object);
 }
@@ -101,6 +103,7 @@ g_paste_ui_history_action_init (GPasteUiHistoryAction *self)
  * g_paste_ui_history_action_new:
  * @type: the type of the subclass to instantiate
  * @client: a #GPasteClient
+ * @settings: a #GPasteSettings
  * @actions: a #GPasteUiHistoryActions
  * @rootwin: the main #GtkWindow
  *
@@ -110,14 +113,16 @@ g_paste_ui_history_action_init (GPasteUiHistoryAction *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
-g_paste_ui_history_action_new (GType         type,
-                               GPasteClient *client,
-                               GtkWidget    *actions,
-                               GtkWindow    *rootwin,
-                               const gchar  *label)
+g_paste_ui_history_action_new (GType           type,
+                               GPasteClient   *client,
+                               GPasteSettings *settings,
+                               GtkWidget      *actions,
+                               GtkWindow      *rootwin,
+                               const gchar    *label)
 {
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_HISTORY_ACTION), NULL);
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY_ACTIONS (actions), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
@@ -128,6 +133,7 @@ g_paste_ui_history_action_new (GType         type,
     GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (self));
 
     priv->client = g_object_ref (client);
+    priv->settings = g_object_ref (settings);
     priv->actions = G_PASTE_UI_HISTORY_ACTIONS (actions);
     priv->rootwin = rootwin;
 

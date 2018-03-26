@@ -12,6 +12,7 @@
 #define __G_PASTE_UI_HISTORY_ACTION_H__
 
 #include <gpaste-client.h>
+#include <gpaste-settings.h>
 
 G_BEGIN_DECLS
 
@@ -26,6 +27,7 @@ struct _GPasteUiHistoryActionClass
     /*< pure virtual >*/
     gboolean     (*activate) (GPasteUiHistoryAction *self,
                               GPasteClient          *client,
+                              GPasteSettings        *settings,
                               GtkWindow             *rootwin,
                               const gchar           *history);
 };
@@ -33,11 +35,12 @@ struct _GPasteUiHistoryActionClass
 void g_paste_ui_history_action_set_history (GPasteUiHistoryAction *self,
                                             const gchar           *history);
 
-GtkWidget *g_paste_ui_history_action_new (GType         type,
-                                          GPasteClient *client,
-                                          GtkWidget    *actions,
-                                          GtkWindow    *rootwin,
-                                          const gchar  *label);
+GtkWidget *g_paste_ui_history_action_new (GType           type,
+                                          GPasteClient   *client,
+                                          GPasteSettings *settings,
+                                          GtkWidget      *actions,
+                                          GtkWindow      *rootwin,
+                                          const gchar    *label);
 
 G_END_DECLS
 

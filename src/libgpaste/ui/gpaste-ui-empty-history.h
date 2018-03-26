@@ -19,9 +19,10 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UiEmptyHistory, ui_empty_history, UI_EMPTY_HISTORY, GPasteUiHistoryAction)
 
-GtkWidget *g_paste_ui_empty_history_new (GPasteClient *client,
-                                         GtkWidget    *actions,
-                                         GtkWindow    *rootwin);
+GtkWidget *g_paste_ui_empty_history_new (GPasteClient   *client,
+                                         GPasteSettings *settings,
+                                         GtkWidget      *actions,
+                                         GtkWindow      *rootwin);
 
 G_END_DECLS
 
