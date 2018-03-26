@@ -495,7 +495,7 @@ global:
 
     g_paste_util_empty_history;
 
-    g_paste_settings_get_growing_lines;
-    g_paste_settings_reset_growing_lines;
-    g_paste_settings_set_growing_lines;
+    g_paste_settings_get_empty_history_confirmation;
+    g_paste_settings_reset_empty_history_confirmation;
+    g_paste_settings_set_empty_history_confirmation;
 } LIBGPASTE_3_28_0;
