@@ -21,6 +21,7 @@ G_PASTE_FINAL_TYPE (Settings, settings, SETTINGS, GObject)
 
 gboolean     g_paste_settings_get_close_on_select            (const GPasteSettings *self);
 guint64      g_paste_settings_get_element_size               (const GPasteSettings *self);
+gboolean     g_paste_settings_get_empty_history_confirmation (const GPasteSettings *self);
 gboolean     g_paste_settings_get_growing_lines              (const GPasteSettings *self);
 const gchar *g_paste_settings_get_history_name               (const GPasteSettings *self);
 gboolean     g_paste_settings_get_images_support             (const GPasteSettings *self);
@@ -46,6 +47,7 @@ const gchar *g_paste_settings_get_upload                     (const GPasteSettin
 
 void g_paste_settings_reset_close_on_select            (GPasteSettings *self);
 void g_paste_settings_reset_element_size               (GPasteSettings *self);
+void g_paste_settings_reset_empty_history_confirmation (GPasteSettings *self);
 void g_paste_settings_reset_growing_lines              (GPasteSettings *self);
 void g_paste_settings_reset_history_name               (GPasteSettings *self);
 void g_paste_settings_reset_images_support             (GPasteSettings *self);
@@ -73,6 +75,8 @@ void g_paste_settings_set_close_on_select            (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_element_size               (GPasteSettings *self,
                                                       guint64         value);
+void g_paste_settings_set_empty_history_confirmation (GPasteSettings *self,
+                                                      gboolean        value);
 void g_paste_settings_set_growing_lines              (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_history_name               (GPasteSettings *self,

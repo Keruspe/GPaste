@@ -27,6 +27,7 @@ typedef struct
 
     gboolean   close_on_select;
     guint64    element_size;
+    gboolean   empty_history_confirmation;
     gboolean   growing_lines;
     gchar     *history_name;
     gboolean   images_support;
@@ -171,6 +172,29 @@ BOOLEAN_SETTING (close_on_select, CLOSE_ON_SELECT)
  * Change the "element-size" setting
  */
 UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
+
+/**
+ * g_paste_settings_get_empty_history_confirmation:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "empty-history-confirmation" setting
+ *
+ * Returns: the value of the "empty-history-confirmation" setting
+ */
+/**
+ * g_paste_settings_reset_empty_history_confirmation:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "empty-history-confirmation" setting
+ */
+/**
+ * g_paste_settings_set_empty_history_confirmation:
+ * @self: a #GPasteSettings instance
+ * @value: whether to prompt for confirmation when emptying an history
+ *
+ * Change the "empty-history-confirmation" setting
+ */
+BOOLEAN_SETTING (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)
 
 /**
  * g_paste_settings_get_growing_lines:
@@ -801,6 +825,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_close_on_select_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
         g_paste_settings_private_set_element_size_from_dconf (priv);
+    else if (g_paste_str_equal (key, G_PASTE_EMPTY_HISTORY_CONFIRMATION_SETTING))
+        g_paste_settings_private_set_empty_history_confirmation_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
         g_paste_settings_private_set_growing_lines_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_HISTORY_NAME_SETTING))
@@ -992,6 +1018,7 @@ g_paste_settings_init (GPasteSettings *self)
 
     g_paste_settings_private_set_close_on_select_from_dconf (priv);
     g_paste_settings_private_set_element_size_from_dconf (priv);
+    g_paste_settings_private_set_empty_history_confirmation_from_dconf (priv);
     g_paste_settings_private_set_growing_lines_from_dconf (priv);
     g_paste_settings_private_set_history_name_from_dconf (priv);
     g_paste_settings_private_set_images_support_from_dconf (priv);

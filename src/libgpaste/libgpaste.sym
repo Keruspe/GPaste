@@ -491,3 +491,10 @@ global:
 
     g_paste_util_empty_history;
 } LIBGPASTE_3_24_0;
+
+LIBGPASTE_3_28_1 {
+global:
+    g_paste_settings_get_growing_lines;
+    g_paste_settings_reset_growing_lines;
+    g_paste_settings_set_growing_lines;
+} LIBGPASTE_3_28_0;

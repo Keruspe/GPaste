@@ -20,6 +20,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_CLOSE_ON_SELECT_SETTING            "close-on-select"
 #define G_PASTE_ELEMENT_SIZE_SETTING               "element-size"
+#define G_PASTE_EMPTY_HISTORY_CONFIRMATION_SETTING "empty-history-confirmation"
 #define G_PASTE_GROWING_LINES_SETTING              "growing-lines"
 #define G_PASTE_HISTORY_NAME_SETTING               "history-name"
 #define G_PASTE_IMAGES_SUPPORT_SETTING             "images-support"
