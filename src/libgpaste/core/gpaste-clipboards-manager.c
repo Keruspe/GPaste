@@ -202,7 +202,6 @@ g_paste_clipboards_manager_image_ready (GPasteClipboard *clipboard,
                                         gpointer         user_data)
 {
     g_autofree GPasteClipboardsManagerCallbackData *data = user_data;
-    g_autoptr (GdkPixbuf) img = image;
     GPasteClipboardsManagerPrivate *priv = data->priv;
     GPasteItem *item = NULL;
 
