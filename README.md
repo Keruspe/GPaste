@@ -4,7 +4,7 @@
 </a>
 
 GPaste is a clipboard management system.
-See <http://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboard
+See <https://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboard
 managers are.
 
 A library is available for development purposes:
@@ -37,8 +37,8 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
     sudo make install
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 
-You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
+You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 3.26 is: [GPaste 3.26.2](http://www.imagination-land.org/posts/2018-03-08-gpaste-3.26.2-released.html).
+Latest release for GNOME 3.26 is: [GPaste 3.26.3](https://www.imagination-land.org/posts/2018-04-13-gpaste-3.26.3-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.26.2.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.26.3.tar.xz>
