@@ -45,6 +45,6 @@ If you also want to build the unity application indicator, you'll have to pass `
 
 You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 3.20 is: [GPaste 3.20.7](http://www.imagination-land.org/posts/2018-03-08-gpaste-3.20.7-released.html).
+Latest release for GNOME 3.20 is: [GPaste 3.20.8](http://www.imagination-land.org/posts/2018-04-13-gpaste-3.20.8-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.20.7.tar.xz>
+Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.20.8.tar.xz>
