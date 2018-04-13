@@ -1,3 +1,8 @@
+NEW in 3.28.2 (13/04/2018)
+=============
+
+- fix a crash in images support
+
 NEW in 3.28.1 (26/03/2018)
 =============
 
@@ -12,6 +17,11 @@ NEW in 3.28.0 (13/03/2018)
 - drop gtk4 support, it will come back later
 - API adjustments to prepare for the future gtk4 port
 - ask confirmation before emptying an history
+
+NEW in 3.26.3 (13/04/2018)
+=============
+
+- fix a crash in images support
 
 NEW in 3.26.2 (08/03/2018)
 =============
@@ -33,6 +43,11 @@ NEW in 3.26.0 (16/09/2017)
 - Adapt to gnome-shell/mutter 3.26
 - use the new clipboardText feature in the search provider
 - gtk4 3.91.2 compatibility
+
+NEW in 3.24.6 (13/04/2018)
+=============
+
+- fix a crash in images support
 
 NEW in 3.24.5 (08/03/2018)
 =============
@@ -85,6 +100,11 @@ NEW in 3.23.90 (20/03/2017)
 - preparations for mime types support
 - more reliable "paste" behaviour part in some corener cases
 
+NEW in 3.22.7 (13/04/2018)
+=============
+
+- fix a crash in images support
+
 NEW in 3.22.6 (08/03/2018)
 =============
 
@@ -120,7 +140,6 @@ NEW in 3.22.2 (17/02/2017)
 
 NEW in 3.22.1 (30/11/2016)
 =============
-
 - Fix some build system issues for vala and gobject-introspection
 
 NEW in 3.22.0 (08/10/2016)
@@ -147,6 +166,11 @@ NEW in 3.21.90 (09/09/2016)
 - Port to the internal mutter-clutter
 - gnome-shell extension cleanup
 - Add pagination to gnmoe-shell extension
+
+NEW in 3.20.8 (13/04/2018)
+=============
+
+- fix a crash in images support
 
 NEW in 3.20.7 (08/03/2018)
 =============
@@ -217,6 +241,11 @@ NEW in 3.20 (23/03/2016)
 - Fix style with gtk+ 3.20
 - Implement the new shotcut window from gtk+
 - Various code cleanups
+
+NEW in 3.18.8 (13/04/2018)
+=============
+
+- fix a crash in images support
 
 NEW in 3.18.7 (08/03/2018)
 =============

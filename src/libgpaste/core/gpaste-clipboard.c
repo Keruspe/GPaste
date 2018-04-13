@@ -527,7 +527,9 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     g_autofree gchar *checksum = g_paste_util_compute_checksum (image);
 
-    if (!g_paste_str_equal (checksum, priv->image_checksum))
+    if (g_paste_str_equal (checksum, priv->image_checksum))
+        image = NULL;
+    else
         g_paste_clipboard_private_select_image (priv, image, checksum);
 
     if (data->callback)
