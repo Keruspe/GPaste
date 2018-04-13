@@ -4,7 +4,7 @@
 </a>
 
 GPaste is a clipboard management system.
-See <http://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboard
+See <https://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboard
 managers are.
 
 A library is available for development purposes:
@@ -43,8 +43,8 @@ If you also want to build the status icon, you'll have to pass `--enable-applet`
 
 If you also want to build the unity application indicator, you'll have to pass `--enable-unity` to configure.
 
-You can see everything I'll post about GPaste [there](http://www.imagination-land.org/tags/GPaste.html).
+You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 3.22 is: [GPaste 3.22.6](http://www.imagination-land.org/posts/2018-03-08-gpaste-3.22.6-released.html).
+Latest release for GNOME 3.22 is: [GPaste 3.22.7](https://www.imagination-land.org/posts/2018-04-13-gpaste-3.22.7-released.html).
 
-Direct link to download: <http://www.imagination-land.org/files/gpaste/gpaste-3.22.6.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.22.7.tar.xz>
