@@ -1924,7 +1924,6 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
     else HANDLE_SIGNAL_WITH_DATA (EMPTY_HISTORY,  const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (ITEM_SELECTED,  guint64      , g_variant_get_uint64 (variant))
     else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
-    else HANDLE_SIGNAL_WITH_DATA (TRACKING,       gboolean,      g_variant_get_boolean (variant))
     else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
     {
         GVariantIter params_iter;
@@ -2001,7 +2000,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * @client: the object on which the signal was emitted
      * @tracking_state: whether we're now tracking or not
      *
-     * The "track" signal is emitted when the daemon starts or stops tracking
+     * The "tracking" signal is emitted when the daemon starts or stops tracking
      * clipboard changes.
      */
     signals[TRACKING] = NEW_SIGNAL_WITH_DATA ("tracking", BOOLEAN);

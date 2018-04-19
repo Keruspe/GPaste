@@ -213,8 +213,7 @@ g_paste_daemon_tracking (GPasteDaemon   *self,
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     GVariant *variant = g_variant_new_boolean (tracking_state);
 
-    G_PASTE_SEND_DBUS_PROPERTIES_CHANGED(G_PASTE_DAEMON_PROP_ACTIVE, g_variant_new_boolean (tracking_state));
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (TRACKING, variant);
+    G_PASTE_SEND_DBUS_PROPERTIES_CHANGED (G_PASTE_DAEMON_PROP_ACTIVE, variant);
 }
 
 /****************/

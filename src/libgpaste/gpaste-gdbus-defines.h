@@ -56,7 +56,6 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_SIG_ITEM_SELECTED  "ItemSelected"
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
 #define G_PASTE_DAEMON_SIG_SWITCH_HISTORY "SwitchHistory"
-#define G_PASTE_DAEMON_SIG_TRACKING       "Tracking"
 #define G_PASTE_DAEMON_SIG_UPDATE         "Update"
 
 #define G_PASTE_DAEMON_PROP_ACTIVE  "Active"
@@ -174,9 +173,6 @@ G_BEGIN_DECLS
         "  <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "  <signal name='" G_PASTE_DAEMON_SIG_SWITCH_HISTORY "'>"         \
         "   <arg type='s' direction='out' name='history' />"              \
-        "  </signal>"                                                     \
-        "  <signal name='" G_PASTE_DAEMON_SIG_TRACKING "'>"               \
-        "   <arg type='b' direction='out' name='tracking-state' />"       \
         "  </signal>"                                                     \
         "  <signal name='" G_PASTE_DAEMON_SIG_UPDATE "'>"                 \
         "   <arg type='s' direction='out' name='action' />"               \
