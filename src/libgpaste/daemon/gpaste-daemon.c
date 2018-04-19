@@ -634,7 +634,6 @@ g_paste_daemon_track (GPasteDaemon *self,
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
 
     g_paste_settings_set_track_changes (priv->settings, tracking_state);
-    g_paste_daemon_tracking (self, tracking_state, NULL);
 }
 
 static void
