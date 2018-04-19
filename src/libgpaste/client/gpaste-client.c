@@ -1942,9 +1942,34 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
 }
 
 static void
+g_paste_client_g_properties_changed (GDBusProxy          *proxy,
+                                     GVariant            *changed_properties,
+                                     const gchar * const *invalidated_properties G_GNUC_UNUSED)
+{
+    GPasteClient *self = G_PASTE_CLIENT (proxy);
+    GVariantDict dict;
+
+    g_variant_dict_init (&dict, changed_properties);
+
+    if (g_variant_dict_contains (&dict, G_PASTE_DAEMON_PROP_ACTIVE))
+    {
+        g_autoptr (GVariant) v = g_dbus_proxy_get_cached_property (proxy, G_PASTE_DAEMON_PROP_ACTIVE);
+
+        g_signal_emit (self,
+                       signals[TRACKING],
+                       0, /* detail */
+                       g_variant_get_boolean (v),
+                       NULL);
+    }
+}
+
+static void
 g_paste_client_class_init (GPasteClientClass *klass)
 {
-    G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_client_g_signal;
+    GDBusProxyClass *proxy_class = G_DBUS_PROXY_CLASS (klass);
+
+    proxy_class->g_signal = g_paste_client_g_signal;
+    proxy_class->g_properties_changed = g_paste_client_g_properties_changed;
 
     /**
      * GPasteClient::delete-history:
