@@ -59,6 +59,9 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define DBUS_ASYNC_FINISH_RET_STRING \
     DBUS_ASYNC_FINISH_RET_STRING_BASE (CLIENT)
 
+#define DBUS_ASYNC_FINISH_RET_ITEM \
+    DBUS_ASYNC_FINISH_RET_ITEM_BASE (CLIENT)
+
 #define DBUS_ASYNC_FINISH_RET_STRV \
     DBUS_ASYNC_FINISH_RET_STRV_BASE (CLIENT)
 
@@ -89,6 +92,9 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+
+#define DBUS_CALL_ONE_PARAM_RET_ITEM(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_ITEM_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_ONE_PARAM_RET_AT(method, param_type, param_name, len) \
     DBUS_CALL_ONE_PARAM_RET_AT_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
@@ -354,14 +360,14 @@ g_paste_client_empty_history_sync (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated string
+ * Returns: (transfer full): a new #GPasteClientItem
  */
-G_PASTE_VISIBLE gchar *
+G_PASTE_VISIBLE GPasteClientItem *
 g_paste_client_get_element_sync (GPasteClient *self,
                                  guint64       index,
                                  GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, uint64, index);
+    DBUS_CALL_ONE_PARAM_RET_ITEM (GET_ELEMENT, uint64, index);
 }
 
 static gchar *
@@ -472,14 +478,14 @@ g_paste_client_get_history_size_sync (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated string
+ * Returns: (transfer full): a new #GPasteClientItem
  */
-G_PASTE_VISIBLE gchar *
+G_PASTE_VISIBLE GPasteClientItem *
 g_paste_client_get_raw_element_sync (GPasteClient *self,
                                      guint64       index,
                                      GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_RAW_ELEMENT, uint64, index);
+    DBUS_CALL_ONE_PARAM_RET_ITEM (GET_RAW_ELEMENT, uint64, index);
 }
 
 /**
@@ -1518,14 +1524,14 @@ g_paste_client_empty_history_finish (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated string
+ * Returns: (transfer full): a new #GPasteClientItem
  */
-G_PASTE_VISIBLE gchar *
+G_PASTE_VISIBLE GPasteClientItem *
 g_paste_client_get_element_finish (GPasteClient *self,
                                    GAsyncResult *result,
                                    GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRING;
+    DBUS_ASYNC_FINISH_RET_ITEM;
 }
 
 static gchar *
@@ -1637,14 +1643,14 @@ g_paste_client_get_history_size_finish (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated string
+ * Returns: (transfer full): a new #GPasteClientItem
  */
-G_PASTE_VISIBLE gchar *
+G_PASTE_VISIBLE GPasteClientItem *
 g_paste_client_get_raw_element_finish (GPasteClient *self,
                                        GAsyncResult *result,
                                        GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_STRING;
+    DBUS_ASYNC_FINISH_RET_ITEM;
 }
 
 /**
