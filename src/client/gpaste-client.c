@@ -547,14 +547,14 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    const gchar *value = (!ctx->raw) ?
+    g_autoptr (GPasteClientItem) item = (!ctx->raw) ?
         g_paste_client_get_element_sync (ctx->client, _strtoull (ctx->args[0]), error) :
         g_paste_client_get_raw_element_sync (ctx->client, _strtoull (ctx->args[0]), error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s", value);
+    printf ("%s", g_paste_client_item_get_value (item));
 
     return EXIT_SUCCESS;
 }
@@ -589,10 +589,12 @@ g_paste_search (Context *ctx,
         {
             guint64 index = results[i];
             /* FIXME: get_elements */
-            gchar *line = g_paste_client_get_element_sync (ctx->client, index, error);
+            g_autoptr (GPasteClientItem) item = g_paste_client_get_element_sync (ctx->client, index, error);
 
             if (*error)
                 return EXIT_FAILURE;
+
+            g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
 
             print_history_line (line, index, ctx);
         }
