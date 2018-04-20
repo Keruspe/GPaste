@@ -327,7 +327,7 @@ g_paste_item_set_state (GPasteItem     *self,
 /**
  * g_paste_item_set_uuid:
  * @self: a #GPasteItem instance
- * @display_string: the new uuid
+ * @uuid: the new uuid
  *
  * Set the uuid of the item
  */
