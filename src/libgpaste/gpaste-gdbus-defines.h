@@ -18,7 +18,7 @@ G_BEGIN_DECLS
 #define G_PASTE_BUS_NAME "org.gnome.GPaste"
 
 #define G_PASTE_DAEMON_OBJECT_PATH    "/org/gnome/GPaste"
-#define G_PASTE_DAEMON_INTERFACE_NAME "org.gnome.GPaste1"
+#define G_PASTE_DAEMON_INTERFACE_NAME "org.gnome.GPaste2"
 
 #define G_PASTE_DAEMON_ABOUT                      "About"
 #define G_PASTE_DAEMON_ADD                        "Add"
