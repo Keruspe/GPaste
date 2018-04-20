@@ -462,28 +462,6 @@ g_paste_history_get_value (GPasteHistory *self,
 }
 
 /**
- * g_paste_history_get_display_string:
- * @self: a #GPasteHistory instance
- * @index: the index of the #GPasteItem
- *
- * Get the display string of a #GPasteItem from the #GPasteHistory
- *
- * Returns: the read-only display string of the #GPasteItem
- */
-G_PASTE_VISIBLE const gchar *
-g_paste_history_get_display_string (GPasteHistory *self,
-                                    guint64        pos)
-{
-    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
-
-    const GPasteItem *item = g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos);
-    if (!item)
-        return NULL;
-
-    return g_paste_item_get_display_string (item);
-}
-
-/**
  * g_paste_history_select:
  * @self: a #GPasteHistory instance
  * @index: the index of the #GPasteItem to select

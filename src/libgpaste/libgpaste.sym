@@ -118,7 +118,6 @@ global:
     g_paste_history_dup;
     g_paste_history_empty;
     g_paste_history_get;
-    g_paste_history_get_display_string;
     g_paste_history_get_history;
     g_paste_history_get_length;
     g_paste_history_get_password;

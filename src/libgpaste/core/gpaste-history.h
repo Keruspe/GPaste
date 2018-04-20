@@ -28,8 +28,6 @@ const GPasteItem *g_paste_history_get                (GPasteHistory *self,
                                                       guint64        index);
 GPasteItem       *g_paste_history_dup                (GPasteHistory *self,
                                                       guint64        index);
-const gchar      *g_paste_history_get_display_string (GPasteHistory *self,
-                                                      guint64        index);
 const gchar      *g_paste_history_get_value          (GPasteHistory *self,
                                                       guint64        index);
 void              g_paste_history_select             (GPasteHistory *self,
