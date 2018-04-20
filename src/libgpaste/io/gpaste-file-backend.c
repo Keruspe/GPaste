@@ -77,6 +77,7 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
     {
         GPasteItem *item = history->data;
         const gchar *kind = g_paste_item_get_kind (item);
+        const gchar *uuid = g_paste_item_get_uuid (item);
 
         if (g_paste_str_equal (kind, "Password"))
             continue;
@@ -86,6 +87,8 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, "\" uuid=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
+            !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, NULL /* error */) ||
             (_G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, _G_PASTE_IMAGE_ITEM (item))) ||
             !g_output_stream_write_all (stream, "\">\n    <value><![CDATA[", 23, NULL, NULL /*cancellable */, NULL /*error */) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
