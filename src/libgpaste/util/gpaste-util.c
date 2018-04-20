@@ -426,6 +426,24 @@ g_paste_util_get_dbus_au_result (GVariant *variant,
     return ret;
 }
 
+/**
+ * g_paste_util_get_item_result:
+ * @variant: a #GVariant
+ *
+ * Get the "(ss)" GVariant as an item
+ *
+ * Returns: (transfer full): The item
+ */
+G_PASTE_VISIBLE GPasteClientItem *
+g_paste_util_get_dbus_item_result (GVariant *variant)
+{
+    const gchar *uuid, *value;
+
+    g_variant_get (variant, "(ss)", &uuid, &value);
+
+    return g_paste_client_item_new (uuid, value);
+}
+
 static gchar *
 g_paste_util_get_runtime_dir (const gchar *component)
 {

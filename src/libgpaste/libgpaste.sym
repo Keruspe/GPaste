@@ -508,4 +508,6 @@ global:
 
     g_paste_item_get_uuid;
     g_paste_item_set_uuid;
+
+    g_paste_util_get_dbus_item_result;
 } LIBGPASTE_3_28_1;

@@ -11,8 +11,8 @@
 #ifndef __G_PASTE_CLIENT_H__
 #define __G_PASTE_CLIENT_H__
 
+#include <gpaste-client-item.h>
 #include <gpaste-item-enums.h>
-#include <gpaste-macros.h>
 
 G_BEGIN_DECLS
 

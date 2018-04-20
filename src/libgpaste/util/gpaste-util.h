@@ -49,6 +49,8 @@ guint64 *g_paste_util_get_dbus_at_result (GVariant *variant,
 guint32 *g_paste_util_get_dbus_au_result (GVariant *variant,
                                           guint64  *len);
 
+GPasteClientItem *g_paste_util_get_dbus_item_result (GVariant *variant);
+
 void g_paste_util_write_pid_file (const gchar *component);
 GPid g_paste_util_read_pid_file  (const gchar *component);
 
