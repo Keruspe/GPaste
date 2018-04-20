@@ -57,6 +57,7 @@
 
 /* GPasteClient */
 #include <gpaste-client.h>
+#include <gpaste-client-item.h>
 
 /* GPasteGnomeShellClient */
 #include <gpaste-gnome-shell-client.h>

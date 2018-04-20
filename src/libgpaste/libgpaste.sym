@@ -502,6 +502,11 @@ global:
 
 LIBGPASTE_3_30_0 {
 global:
+    g_paste_client_item_get_type;
+    g_paste_client_item_get_uuid;
+    g_paste_client_item_get_value;
+    g_paste_client_item_new;
+
     g_paste_item_get_uuid;
     g_paste_item_set_uuid;
 } LIBGPASTE_3_28_1;

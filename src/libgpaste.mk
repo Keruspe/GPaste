@@ -19,6 +19,7 @@ lib_libgpaste_la_misc_headers =               \
 lib_libgpaste_la_public_headers =                                             \
 	%D%/libgpaste/gpaste.h                                                \
 	%D%/libgpaste/client/gpaste-client.h                                  \
+	%D%/libgpaste/client/gpaste-client-item.h                             \
 	%D%/libgpaste/core/gpaste-clipboard.h                                 \
 	%D%/libgpaste/core/gpaste-clipboards-manager.h                        \
 	%D%/libgpaste/core/gpaste-history.h                                   \
@@ -80,6 +81,7 @@ lib_libgpaste_la_public_headers =                                             \
 
 lib_libgpaste_la_source_files =                                               \
 	%D%/libgpaste/client/gpaste-client.c                                  \
+	%D%/libgpaste/client/gpaste-client-item.c                             \
 	%D%/libgpaste/core/gpaste-clipboard.c                                 \
 	%D%/libgpaste/core/gpaste-clipboards-manager.c                        \
 	%D%/libgpaste/core/gpaste-history.c                                   \
