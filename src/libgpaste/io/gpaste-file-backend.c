@@ -148,6 +148,7 @@ typedef struct
     guint64           current_size;
     guint64           max_size;
     gboolean          images_support;
+    gchar            *uuid;
     gchar            *date;
     gchar            *name;
     gchar            *text;
@@ -165,6 +166,21 @@ typedef struct
 #define SWITCH_STATE(x, y) \
     ASSERT_STATE (x);      \
     data->state = y
+
+static gboolean
+history_contains_uuid (const GList *history,
+                       const gchar *uuid)
+{
+    for (; history; history = g_list_next (history))
+    {
+        const GPasteItem *item = history->data;
+
+        if (g_paste_str_equal (g_paste_item_get_uuid (item), uuid))
+            return TRUE;
+    }
+
+    return FALSE;
+}
 
 static void
 start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
@@ -202,6 +218,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     else if (g_paste_str_equal (element_name, "item"))
     {
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
+        g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->name, g_free);
         g_clear_pointer (&data->text, g_free);
@@ -219,6 +236,11 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                     data->type = PASSWORD;
                 else
                     g_warning ("Unknown item kind: %s", *v);
+            }
+            else if (g_paste_str_equal (*a, "uuid"))
+            {
+                if (g_uuid_string_is_valid (*v) && !history_contains_uuid (data->history, *v))
+                    data->uuid = g_strdup (*v);
             }
             else if (g_paste_str_equal (*a, "date"))
             {
@@ -307,6 +329,10 @@ add_item (Data *data)
 
     if (item)
     {
+        if (!data->uuid)
+            data->uuid = g_uuid_string_random ();
+
+        g_paste_item_set_uuid (item, data->uuid);
         data->mem_size += g_paste_item_get_size (item);
         data->history = g_list_append (data->history, item);
         ++data->current_size;;
@@ -480,6 +506,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             0,
             g_paste_settings_get_max_history_size (settings),
             g_paste_settings_get_images_support (settings),
+            NULL,
             NULL,
             NULL,
             NULL,
