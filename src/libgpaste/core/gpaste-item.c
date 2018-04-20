@@ -10,6 +10,7 @@
 
 typedef struct
 {
+    gchar  *uuid;
     gchar  *value;
     GSList *special_values;
     gchar  *display_string;
@@ -17,6 +18,24 @@ typedef struct
 } GPasteItemPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (Item, item, G_TYPE_OBJECT)
+
+/**
+ * g_paste_item_get_uuid:
+ * @self: a #GPasteItem instance
+ *
+ * Get the uuid of the given item
+ *
+ * Returns: read-only string containing the uuid
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_item_get_uuid (const GPasteItem *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
+
+    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+
+    return priv->uuid;
+}
 
 /**
  * g_paste_item_get_value:
@@ -305,11 +324,32 @@ g_paste_item_set_state (GPasteItem     *self,
     G_PASTE_ITEM_GET_CLASS (self)->set_state (self, state);
 }
 
+/**
+ * g_paste_item_set_uuid:
+ * @self: a #GPasteItem instance
+ * @display_string: the new uuid
+ *
+ * Set the uuid of the item
+ */
+G_PASTE_VISIBLE void
+g_paste_item_set_uuid (GPasteItem  *self,
+                       const gchar *uuid)
+{
+    g_return_if_fail (_G_PASTE_IS_ITEM (self));
+    g_return_if_fail (g_uuid_string_is_valid (uuid));
+
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+
+    g_free (priv->uuid);
+    priv->uuid = g_strdup (uuid);
+}
+
 static void
 g_paste_item_finalize (GObject *object)
 {
     const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (G_PASTE_ITEM (object));
 
+    g_free (priv->uuid);
     g_free (priv->value);
     g_free (priv->display_string);
 
@@ -380,6 +420,7 @@ g_paste_item_new (GType        type,
     GPasteItem *self = g_object_new (type, NULL);
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
+    priv->uuid = g_uuid_string_random ();
     priv->value = g_strdup (value);
     priv->display_string = NULL;
 

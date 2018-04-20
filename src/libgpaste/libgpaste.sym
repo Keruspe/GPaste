@@ -499,3 +499,9 @@ global:
     g_paste_settings_reset_empty_history_confirmation;
     g_paste_settings_set_empty_history_confirmation;
 } LIBGPASTE_3_28_0;
+
+LIBGPASTE_3_30_0 {
+global:
+    g_paste_item_get_uuid;
+    g_paste_item_set_uuid;
+} LIBGPASTE_3_28_1;

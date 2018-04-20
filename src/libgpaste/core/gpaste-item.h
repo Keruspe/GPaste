@@ -44,6 +44,7 @@ struct _GPasteItemClass
     const gchar *(*get_kind) (const GPasteItem *self);
 };
 
+const gchar  *g_paste_item_get_uuid           (const GPasteItem *self);
 const gchar  *g_paste_item_get_value          (const GPasteItem *self);
 const gchar  *g_paste_item_get_real_value     (const GPasteItem *self);
 const GSList *g_paste_item_get_special_values (const GPasteItem *self);
@@ -57,6 +58,8 @@ guint64       g_paste_item_get_size           (const GPasteItem *self);
 
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
+void g_paste_item_set_uuid  (GPasteItem     *self,
+                             const gchar    *uuid);
 
 void g_paste_item_set_display_string (GPasteItem               *self,
                                       const gchar              *display_string);
