@@ -427,13 +427,16 @@ g_paste_daemon_private_get_element (const GPasteDaemonPrivate *priv,
 
     G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
 
-    const gchar *value = g_paste_history_get_display_string (history, index);
+    const GPasteItem *item = g_paste_history_get (history, index);
 
-    G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this index", NULL);
 
-    GVariant *variant = g_variant_new_string (value);
+    GVariant *data[] = {
+        g_variant_new_string (g_paste_item_get_uuid (item)),
+        g_variant_new_string (g_paste_item_get_display_string (item))
+    };
 
-    return g_variant_new_tuple (&variant, 1);
+    return g_variant_new_tuple (data, 2);
 }
 
 static GVariant *
@@ -462,26 +465,27 @@ g_paste_daemon_private_get_elements (const GPasteDaemonPrivate *priv,
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
+    GVariantBuilder builder;
 
     g_variant_iter_init (&parameters_iter, parameters);
+    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
 
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     guint64 len;
     g_autofree guint64 *indexes = g_paste_util_get_dbus_at_result (variant, &len);
-    g_auto (GStrv) ans = g_new0 (gchar *, len + 1);
     guint64 history_length = g_paste_history_get_length (history);
 
     for (guint64 i = 0; i < len; ++i)
     {
         G_PASTE_DBUS_ASSERT_FULL (indexes[i] < history_length, "invalid index received", NULL);
-        const gchar *value = g_paste_history_get_display_string (history, indexes[i]);
-        G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
-        ans[i] = g_strdup (value);
+        const GPasteItem *item = g_paste_history_get (history, indexes[i]);
+        G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this index", NULL);
+        g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
     }
 
-    GVariant *answer = g_variant_new_strv ((const gchar * const *) ans, len);
+    GVariant *ans = g_variant_builder_end (&builder);
 
-    return g_variant_new_tuple (&answer, 1);
+    return g_variant_new_tuple (&ans, 1);
 }
 
 static GVariant *
@@ -489,13 +493,17 @@ g_paste_daemon_private_get_history (const GPasteDaemonPrivate *priv)
 {
     const GList *history = g_paste_history_get_history (priv->history);
     guint64 length = g_list_length ((GList *) history);
-    g_autofree const gchar **displayed_history = g_new (const gchar *, length + 1);
+    GVariantBuilder builder;
+
+    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
 
     for (guint64 i = 0; i < length; ++i, history = g_list_next (history))
-        displayed_history[i] = g_paste_item_get_display_string (history->data);
-    displayed_history[length] = NULL;
+    {
+        const GPasteItem *item = history->data;
+        g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
+    }
 
-    GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
+    GVariant *variant = g_variant_builder_end (&builder);
 
     return g_variant_new_tuple (&variant, 1);
 }
@@ -541,13 +549,16 @@ g_paste_daemon_private_get_raw_element (const GPasteDaemonPrivate *priv,
 
     G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
 
-    const gchar *value = g_paste_history_get_value (priv->history, index);
+    const GPasteItem *item = g_paste_history_get (priv->history, index);
 
-    G_PASTE_DBUS_ASSERT_FULL (value, "received no value for this index", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this index", NULL);
 
-    GVariant *variant = g_variant_new_string (value);
+    GVariant *data[] = {
+        g_variant_new_string (g_paste_item_get_uuid (item)),
+        g_variant_new_string (g_paste_item_get_display_string (item))
+    };
 
-    return g_variant_new_tuple (&variant, 1);
+    return g_variant_new_tuple (data, 2);
 }
 
 static GVariant *
@@ -555,13 +566,17 @@ g_paste_daemon_private_get_raw_history (const GPasteDaemonPrivate *priv)
 {
     const GList *history = g_paste_history_get_history (priv->history);
     guint64 length = g_list_length ((GList *) history);
-    g_autofree const gchar **displayed_history = g_new (const gchar *, length + 1);
+    GVariantBuilder builder;
+
+    g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
 
     for (guint64 i = 0; i < length; ++i, history = g_list_next (history))
-        displayed_history[i] = g_paste_item_get_value (history->data);
-    displayed_history[length] = NULL;
+    {
+        const GPasteItem *item = history->data;
+        g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_value (item));
+    }
 
-    GVariant *variant = g_variant_new_strv ((const gchar * const *) displayed_history, -1);
+    GVariant *variant = g_variant_builder_end (&builder);
 
     return g_variant_new_tuple (&variant, 1);
 }
