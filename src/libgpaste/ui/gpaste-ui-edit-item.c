@@ -34,9 +34,9 @@ on_item_ready (GObject      *source_object,
     g_autofree CallbackData *data = user_data;
     GPasteUiEditItemPrivate *priv = data->priv;
     GPasteClient *client = G_PASTE_CLIENT (source_object);
-    g_autofree gchar *old_txt = g_paste_client_get_raw_element_finish (client, res, NULL);
+    g_autoptr (GPasteClientItem) old_item = g_paste_client_get_raw_element_finish (client, res, NULL);
 
-    if (!old_txt)
+    if (!old_item)
         return;
 
     GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, priv->rootwin,
@@ -52,7 +52,7 @@ on_item_ready (GObject      *source_object,
     GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
 
     gtk_text_view_set_wrap_mode (tv, GTK_WRAP_WORD);
-    gtk_text_buffer_set_text (buf, old_txt, -1);
+    gtk_text_buffer_set_text (buf, g_paste_client_item_get_value (old_item), -1);
     gtk_scrolled_window_set_min_content_height (sw, 300);
     gtk_scrolled_window_set_min_content_width (sw, 600);
     gtk_container_add (GTK_CONTAINER (sw), text);
