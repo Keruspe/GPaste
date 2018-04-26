@@ -512,6 +512,8 @@ global:
     g_paste_client_item_get_value;
     g_paste_client_item_new;
 
+    g_paste_history_get_by_uuid;
+
     g_paste_item_get_uuid;
     g_paste_item_set_uuid;
 

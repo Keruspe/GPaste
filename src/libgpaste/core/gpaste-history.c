@@ -396,10 +396,30 @@ g_paste_history_private_get (const GPasteHistoryPrivate *priv,
 {
     GList *history = priv->history;
 
-    if (pos >= g_list_length (history))
+    if (index >= g_list_length (history))
         return NULL;
 
     return G_PASTE_ITEM (g_list_nth_data (history, index));
+}
+
+static gint
+compare_item_uuid (gconstpointer a,
+                   gconstpointer b)
+{
+    const GPasteItem *item = a;
+    const gchar *uuid = b;
+
+    return g_strcmp0 (g_paste_item_get_uuid (item), uuid);
+}
+
+static GPasteItem *
+g_paste_history_private_get_by_uuid (const GPasteHistoryPrivate *priv,
+                                     const gchar                *uuid)
+{
+    GList *history = priv->history;
+    GList *item = g_list_find_custom (history, uuid, compare_item_uuid);
+
+    return (item) ? item->data : NULL;
 }
 
 /**
@@ -413,11 +433,29 @@ g_paste_history_private_get (const GPasteHistoryPrivate *priv,
  */
 G_PASTE_VISIBLE const GPasteItem *
 g_paste_history_get (GPasteHistory *self,
-                     guint64        pos)
+                     guint64        index)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    return g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos);
+    return g_paste_history_private_get (_g_paste_history_get_instance_private (self), index);
+}
+
+/**
+ * g_paste_history_get_by_uuid:
+ * @self: a #GPasteHistory instance
+ * @uuid: the uuid of the #GPasteItem
+ *
+ * Get a #GPasteItem from the #GPasteHistory
+ *
+ * Returns: a read-only #GPasteItem
+ */
+G_PASTE_VISIBLE const GPasteItem *
+g_paste_history_get_by_uuid (GPasteHistory *self,
+                             const gchar   *uuid)
+{
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
+
+    return g_paste_history_private_get_by_uuid (_g_paste_history_get_instance_private (self), uuid);
 }
 
 /**
