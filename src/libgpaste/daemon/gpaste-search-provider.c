@@ -177,28 +177,31 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_variant_builder_init (&builder, (GVariantType *) "aa{sv}");
 
-    g_auto (GStrv) results = g_paste_client_get_elements_finish (client,
-                                                                 res,
-                                                                 NULL); /* Error */
+    GList *results = g_paste_client_get_elements_finish (client, res, NULL /* Error */);
+    guint64 n = 0;
 
-    for (guint64 i = 0; results[i]; ++i)
+    for (const GList *i = results; i; i = i->next, ++n)
     {
+        const GPasteClientItem *item = i->data;
+        const gchar *value = g_paste_client_item_get_value (item);
         g_auto (GVariantBuilder) dict;
-        g_autofree gchar *index = g_strdup_printf ("%" G_GUINT64_FORMAT, indexes[i]);
-        g_autofree gchar *result = g_paste_util_replace (results[i], "\n", " ");
+        g_autofree gchar *index = g_strdup_printf ("%" G_GUINT64_FORMAT, indexes[n]);
+        g_autofree gchar *result = g_paste_util_replace (value, "\n", " ");
 
         g_variant_builder_init (&dict, G_VARIANT_TYPE_VARDICT);
 
         append_dict_entry (&dict, "id", index);
         append_dict_entry (&dict, "name", result);
         append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
-        append_dict_entry (&dict, "clipboardText", results[i]);
+        append_dict_entry (&dict, "clipboardText", value);
 
         g_variant_builder_add_value (&builder, g_variant_builder_end (&dict));
     }
 
     GVariant *ans = g_variant_builder_end (&builder);
     g_dbus_method_invocation_return_value (data->invocation, g_variant_new_tuple (&ans, 1));
+
+    g_list_free_full (results, g_object_unref);
 }
 
 static gboolean
