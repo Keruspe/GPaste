@@ -74,7 +74,7 @@ G_BEGIN_DECLS
 /*****************************/
 
 #define DBUS_CALL_ASYNC_FULL(TYPE_CHECKER, decl, method, params, n_params) \
-    g_return_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self));                   \
+    g_return_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self));                  \
     decl;                                                                  \
     g_dbus_proxy_call (G_DBUS_PROXY(self),                                 \
                        method,                                             \
@@ -116,7 +116,7 @@ G_BEGIN_DECLS
     DBUS_RETURN (if_fail, extract_and_return_answer)
 
 #define DBUS_ASYNC_FINISH_WITH_RETURN(TYPE_CHECKER, if_fail, extract_and_return_answer)                \
-    DBUS_ASYNC_FINISH_FULL (g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), if_fail);          \
+    DBUS_ASYNC_FINISH_FULL (g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), if_fail);         \
                             g_return_val_if_fail (G_IS_ASYNC_RESULT (result), if_fail);                \
                             g_return_val_if_fail (!error || !(*error), if_fail),                       \
                             if_fail,                                                                   \
@@ -186,9 +186,9 @@ G_BEGIN_DECLS
 /* Methods / Sync / General - With return */
 /******************************************/
 
-#define DBUS_CALL_WITH_RETURN_FULL_BASE(TYPE_CHECKER, decl, method, params, n_params, if_fail, variant_extract, pre_extract)                        \
+#define DBUS_CALL_WITH_RETURN_FULL_BASE(TYPE_CHECKER, decl, method, params, n_params, if_fail, variant_extract, pre_extract)    \
     DBUS_CALL_FULL (g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), if_fail), decl, method, params, n_params, if_fail, \
-                    pre_extract;                                                                                                                    \
+                    pre_extract;                                                                                                \
                     variant_extract)
 
 #define DBUS_CALL_WITH_RETURN_RAW_BASE(TYPE_CHECKER, decl, method, params, n_params, if_fail, variant_extract) \
