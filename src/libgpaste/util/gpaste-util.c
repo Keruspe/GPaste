@@ -427,7 +427,7 @@ g_paste_util_get_dbus_au_result (GVariant *variant,
 }
 
 /**
- * g_paste_util_get_item_result:
+ * g_paste_util_get_dbus_item_result:
  * @variant: a #GVariant
  *
  * Get the "(ss)" GVariant as an item
@@ -442,6 +442,31 @@ g_paste_util_get_dbus_item_result (GVariant *variant)
     g_variant_get (variant, "(ss)", &uuid, &value);
 
     return g_paste_client_item_new (uuid, value);
+}
+
+/**
+ * g_paste_util_get_dbus_items_result:
+ * @variant: a #GVariant
+ *
+ * Get the "a(ss)" GVariant as a list of items
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): The items
+ */
+G_PASTE_VISIBLE GList *
+g_paste_util_get_dbus_items_result (GVariant *variant)
+{
+    GList *items = NULL;
+    GVariantIter iter;
+    g_autoptr (GVariant) v = NULL;
+
+    g_variant_iter_init (&iter, variant);
+    while ((v = g_variant_iter_next_value (&iter)))
+    {
+        items = g_list_append (items, g_paste_util_get_dbus_item_result (v));
+        g_variant_unref (v);
+    }
+
+    return items;
 }
 
 static gchar *
