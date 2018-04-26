@@ -28,6 +28,7 @@ var GPasteItem = new Lang.Class({
         this.parent("");
 
         this._client = client;
+        this._uuid = null;
 
         if (index <= 10) {
             this._indexLabel = new St.Label({
@@ -77,7 +78,9 @@ var GPasteItem = new Lang.Class({
 
         if (index != -1) {
             this._client.get_element(index, (client, result) => {
-                const text = client.get_element_finish(result).replace(/[\t\n\r]/g, ' ');
+                const item = client.get_element_finish(result);
+                const text = item.get_value().replace(/[\t\n\r]/g, ' ');
+                this._uuid = item.get_uuid();
                 if (text == this.label.get_text()) {
                     return;
                 }
