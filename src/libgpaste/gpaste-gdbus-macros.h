@@ -150,6 +150,9 @@ G_BEGIN_DECLS
 #define DBUS_ASYNC_FINISH_RET_STRV_BASE(TYPE_CHECKER) \
     DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, NULL, return g_variant_dup_strv (variant, NULL))
 
+#define DBUS_ASYNC_FINISH_RET_ITEMS_BASE(TYPE_CHECKER) \
+    DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, NULL, return g_paste_util_get_dbus_items_result (variant))
+
 #define DBUS_ASYNC_FINISH_RET_AT_BASE(TYPE_CHECKER, len) \
     DBUS_ASYNC_FINISH_WITH_RETURN (TYPE_CHECKER, NULL, return g_paste_util_get_dbus_at_result (variant, len))
 
@@ -226,14 +229,17 @@ G_BEGIN_DECLS
 #define DBUS_CALL_NO_PARAM_RET_STRV_BASE(TYPE_CHECKER, method) \
     DBUS_CALL_NO_PARAM_BASE(TYPE_CHECKER, method, NULL, return g_variant_dup_strv (variant, NULL))
 
+#define DBUS_CALL_NO_PARAM_RET_ITEMS_BASE(TYPE_CHECKER, method) \
+    DBUS_CALL_NO_PARAM_BASE(TYPE_CHECKER, method, NULL, return g_paste_util_get_dbus_items_result (variant))
+
 #define DBUS_CALL_ONE_PARAMV_RET_AT_BASE(TYPE_CHECKER, method, paramv, len) \
     DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, NULL, return g_paste_util_get_dbus_at_result (variant, len))
 
 #define DBUS_CALL_ONE_PARAMV_RET_AU_BASE(TYPE_CHECKER, method, paramv, len) \
     DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, NULL, return g_paste_util_get_dbus_au_result (variant, len))
 
-#define DBUS_CALL_ONE_PARAMV_RET_STRV_BASE(TYPE_CHECKER, method, paramv) \
-    DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, NULL, return g_variant_dup_strv (variant, NULL))
+#define DBUS_CALL_ONE_PARAMV_RET_ITEMS_BASE(TYPE_CHECKER, method, paramv) \
+    DBUS_CALL_WITH_RETURN_BASE(TYPE_CHECKER, {}, method, &paramv, 1, NULL, return g_paste_util_get_dbus_items_result (variant))
 
 /******************************************************/
 /* Methods / Sync / General - With return - One param */

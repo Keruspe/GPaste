@@ -55,11 +55,11 @@ void     g_paste_client_empty_history_sync              (GPasteClient  *self,
 GPasteClientItem *g_paste_client_get_element_sync       (GPasteClient  *self,
                                                          guint64        index,
                                                          GError       **error);
-GStrv    g_paste_client_get_elements_sync               (GPasteClient  *self,
+GList   *g_paste_client_get_elements_sync               (GPasteClient  *self,
                                                          const guint64 *indexes,
                                                          guint64        n_indexes,
                                                          GError       **error);
-GStrv    g_paste_client_get_history_sync                (GPasteClient  *self,
+GList   *g_paste_client_get_history_sync                (GPasteClient  *self,
                                                          GError       **error);
 gchar   *g_paste_client_get_history_name_sync           (GPasteClient  *self,
                                                          GError       **error);
@@ -69,7 +69,7 @@ guint64  g_paste_client_get_history_size_sync           (GPasteClient  *self,
 GPasteClientItem *g_paste_client_get_raw_element_sync   (GPasteClient  *self,
                                                          guint64        index,
                                                          GError       **error);
-GStrv    g_paste_client_get_raw_history_sync            (GPasteClient  *self,
+GList   *g_paste_client_get_raw_history_sync            (GPasteClient  *self,
                                                          GError       **error);
 GStrv    g_paste_client_list_histories_sync             (GPasteClient  *self,
                                                          GError       **error);
@@ -279,10 +279,10 @@ void     g_paste_client_empty_history_finish              (GPasteClient *self,
 GPasteClientItem *g_paste_client_get_element_finish       (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-GStrv    g_paste_client_get_elements_finish               (GPasteClient *self,
+GList   *g_paste_client_get_elements_finish               (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-GStrv    g_paste_client_get_history_finish                (GPasteClient *self,
+GList   *g_paste_client_get_history_finish                (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 gchar   *g_paste_client_get_history_name_finish           (GPasteClient *self,
@@ -294,7 +294,7 @@ guint64  g_paste_client_get_history_size_finish           (GPasteClient *self,
 GPasteClientItem *g_paste_client_get_raw_element_finish   (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
-GStrv    g_paste_client_get_raw_history_finish            (GPasteClient *self,
+GList   *g_paste_client_get_raw_history_finish            (GPasteClient *self,
                                                            GAsyncResult *result,
                                                            GError      **error);
 GStrv    g_paste_client_list_histories_finish             (GPasteClient *self,

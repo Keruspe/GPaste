@@ -282,17 +282,23 @@ static gint
 g_paste_history (Context *ctx,
                  GError **error)
 {
-    g_auto (GStrv) history = (ctx->raw) ?
+    GList *history = (ctx->raw) ?
         g_paste_client_get_raw_history_sync (ctx->client, error) :
         g_paste_client_get_history_sync (ctx->client, error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    guint length = g_strv_length (history);
+    guint64 n = (ctx->reverse ? g_list_length(history) - 1 : 0);
 
-    for (guint64 i = (ctx->reverse ? (length - 1) : 0); ctx->reverse ? i != ((guint64) -1) : i < length; i += (ctx->reverse ? -1 : 1))
-        print_history_line (history[i], i, ctx);
+    for (const GList *i = (ctx->reverse ? g_list_last (history) : history); i; i = (ctx->reverse ? i->prev : i->next), n += (ctx->reverse ? -1 : 1))
+    {
+        const GPasteClientItem *item = i->data;
+        g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
+        print_history_line (line, n, ctx);
+    }
+
+    g_list_free_full (history, g_object_unref);
 
     return EXIT_SUCCESS;
 }
