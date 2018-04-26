@@ -329,32 +329,32 @@ g_paste_history_add (GPasteHistory *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_remove (GPasteHistory *self,
-                        guint64        pos)
+                        guint64        index)
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GList *history = priv->history;
 
-    g_debug ("history: remove '%" G_GUINT64_FORMAT "'", pos);
+    g_debug ("history: remove '%" G_GUINT64_FORMAT "'", index);
 
-    g_return_if_fail (pos < g_list_length (history));
+    g_return_if_fail (index < g_list_length (history));
 
-    GList *item = g_list_nth (history, pos);
+    GList *item = g_list_nth (history, index);
 
     g_return_if_fail (item);
 
     g_paste_history_private_remove (priv, item, TRUE);
 
-    if (!pos)
+    if (!index)
         g_paste_history_activate_first (self, TRUE);
 
-    if (pos == priv->biggest_index)
+    if (index == priv->biggest_index)
         g_paste_history_private_elect_new_biggest (priv);
-    else if (pos < priv->biggest_index)
+    else if (index < priv->biggest_index)
         --priv->biggest_index;
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, pos);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, index);
 }
 
 /**
@@ -392,14 +392,14 @@ g_paste_history_refresh_item_size (GPasteHistory    *self,
 
 static GPasteItem *
 g_paste_history_private_get (const GPasteHistoryPrivate *priv,
-                             guint64                     pos)
+                             guint64                     index)
 {
     GList *history = priv->history;
 
     if (pos >= g_list_length (history))
         return NULL;
 
-    return G_PASTE_ITEM (g_list_nth_data (history, pos));
+    return G_PASTE_ITEM (g_list_nth_data (history, index));
 }
 
 /**
@@ -432,11 +432,11 @@ g_paste_history_get (GPasteHistory *self,
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_history_dup (GPasteHistory *self,
-                     guint64        pos)
+                     guint64        index)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    return g_object_ref (g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos));
+    return g_object_ref (g_paste_history_private_get (_g_paste_history_get_instance_private (self), index));
 }
 
 /**
@@ -450,11 +450,11 @@ g_paste_history_dup (GPasteHistory *self,
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_history_get_value (GPasteHistory *self,
-                           guint64        pos)
+                           guint64        index)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    const GPasteItem *item = g_paste_history_private_get (_g_paste_history_get_instance_private (self), pos);
+    const GPasteItem *item = g_paste_history_private_get (_g_paste_history_get_instance_private (self), index);
     if (!item)
         return NULL;
 
