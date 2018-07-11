@@ -283,14 +283,18 @@ _keybinding_new (GPasteKeybinding       *binding,
 }
 
 static void
-_keybinding_cleanup_shell_stuff (_Keybinding *k)
+_keybinding_cleanup_shell_stuff (gpointer data,
+                                 gpointer user_data G_GNUC_UNUSED)
 {
+    _Keybinding *k = data;
     k->action = 0;
 }
 
 static void
-_keybinding_free (_Keybinding *k)
+_keybinding_free (gpointer data,
+                  gpointer user_data G_GNUC_UNUSED)
 {
+    _Keybinding *k = data;
     _keybinding_ungrab (k);
     g_signal_handler_disconnect (k->settings, k->c_signals[C_K_REBIND]);
     g_object_unref (k->binding);
@@ -605,7 +609,7 @@ on_shell_appeared (GDBusConnection *connection G_GNUC_UNUSED,
 static void
 g_paste_keybinder_private_cleanup_shell_stuff (GPasteKeybinderPrivate *priv)
 {
-    g_slist_foreach (priv->keybindings, (GFunc) _keybinding_cleanup_shell_stuff, NULL);
+    g_slist_foreach (priv->keybindings, _keybinding_cleanup_shell_stuff, NULL);
 }
 
 static void
@@ -641,7 +645,7 @@ g_paste_keybinder_dispose (GObject *object)
     {
         g_clear_object (&priv->settings);
         g_paste_keybinder_deactivate_all (self);
-        g_slist_foreach (priv->keybindings, (GFunc) _keybinding_free, NULL);
+        g_slist_foreach (priv->keybindings, _keybinding_free, NULL);
         priv->keybindings = NULL;
     }
 
