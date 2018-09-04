@@ -22,7 +22,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UploadKeybinding, upload_keybinding, G_PASTE_T
 static void
 g_paste_upload_keybinding_dispose (GObject *object)
 {
-    const GPasteUploadKeybindingPrivate *priv = _g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (object));
+    GPasteUploadKeybindingPrivate *priv = g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (object));
 
     g_clear_object (&priv->daemon);
 

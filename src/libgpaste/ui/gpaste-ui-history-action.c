@@ -61,7 +61,7 @@ g_paste_ui_history_action_button_press_event (GtkWidget      *widget,
 static void
 g_paste_ui_history_action_dispose (GObject *object)
 {
-    const GPasteUiHistoryActionPrivate *priv = _g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (object));
+    GPasteUiHistoryActionPrivate *priv = g_paste_ui_history_action_get_instance_private (G_PASTE_UI_HISTORY_ACTION (object));
 
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);

@@ -705,7 +705,7 @@ g_paste_clipboard_fake_event (gpointer user_data)
 static void
 g_paste_clipboard_dispose (GObject *object)
 {
-    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (G_PASTE_CLIPBOARD (object));
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (G_PASTE_CLIPBOARD (object));
 
     if (priv->settings)
     {

@@ -163,7 +163,7 @@ g_paste_ui_item_set_index (GPasteUiItem *self,
 static void
 g_paste_ui_item_dispose (GObject *object)
 {
-    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (object));
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (G_PASTE_UI_ITEM (object));
 
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);

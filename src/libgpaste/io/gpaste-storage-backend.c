@@ -69,7 +69,7 @@ g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
 static void
 g_paste_storage_backend_dispose (GObject *object)
 {
-    const GPasteStorageBackendPrivate *priv = _g_paste_storage_backend_get_instance_private (G_PASTE_STORAGE_BACKEND (object));
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (G_PASTE_STORAGE_BACKEND (object));
 
     g_clear_object (&priv->settings);
 

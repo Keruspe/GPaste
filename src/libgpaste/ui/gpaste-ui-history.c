@@ -338,7 +338,7 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
 static void
 g_paste_ui_history_dispose (GObject *object)
 {
-    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
 
     if (priv->settings)
     {

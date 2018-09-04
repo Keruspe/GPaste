@@ -50,7 +50,7 @@ g_paste_ui_item_action_button_press_event (GtkWidget      *widget,
 static void
 g_paste_ui_item_action_dispose (GObject *object)
 {
-    const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (object));
+    GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (object));
 
     g_clear_object (&priv->client);
 

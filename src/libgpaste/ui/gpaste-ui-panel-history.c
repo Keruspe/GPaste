@@ -91,7 +91,7 @@ on_size_ready (GObject      *source_object,
 static void
 g_paste_ui_panel_history_dispose (GObject *object)
 {
-    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
+    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
 
     g_clear_object (&priv->client);
 

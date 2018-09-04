@@ -61,7 +61,7 @@ g_paste_ui_new_item_clicked (GtkButton *self)
 static void
 g_paste_ui_new_item_dispose (GObject *object)
 {
-    const GPasteUiNewItemPrivate *priv = _g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (object));
+    GPasteUiNewItemPrivate *priv = g_paste_ui_new_item_get_instance_private (G_PASTE_UI_NEW_ITEM (object));
 
     g_clear_object (&priv->client);
 

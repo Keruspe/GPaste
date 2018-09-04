@@ -73,7 +73,7 @@ add_action_to_box (gpointer data,
 static void
 g_paste_ui_history_actions_dispose (GObject *object)
 {
-    const GPasteUiHistoryActionsPrivate *priv = _g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (object));
+    GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (object));
 
     g_clear_object (&priv->client);
 

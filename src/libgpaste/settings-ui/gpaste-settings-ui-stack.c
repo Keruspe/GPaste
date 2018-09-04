@@ -398,7 +398,7 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
 static void
 g_paste_settings_ui_stack_dispose (GObject *object)
 {
-    const GPasteSettingsUiStackPrivate *priv = _g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
 
     if (priv->settings) /* first dispose call */
     {
