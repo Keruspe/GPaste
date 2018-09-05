@@ -157,7 +157,7 @@ G_PASTE_ENABLE([zsh-completion],        [Disable the zsh completion],    [yes])
 
 AS_IF([test x${enable_gnome_shell_extension} = xyes], [
     AS_IF([test x${enable_introspection} != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
-    PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-2 gjs-1.0 >= gjs_required])
+    PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-3 gjs-1.0 >= gjs_required])
 ])
 
 AS_IF([test x${enable_x_keybinder} = xyes], [
