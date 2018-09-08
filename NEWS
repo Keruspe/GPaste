@@ -1,3 +1,9 @@
+NEW in 3.30.0 (08/09/2018)
+=============
+
+- silence warnings with gcc 8
+- update dependencies for gnome 3.30
+
 NEW in 3.28.2 (13/04/2018)
 =============
 
