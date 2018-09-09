@@ -343,7 +343,7 @@ var GPasteIndicator = new Lang.Class({
         if (state) {
             this._searchItem.reset();
             this._updatePage(1);
-            let id = GLib.idle_add(GLib.PRIORITY_DEFAULT, Lang.bind(this, this._selectSearch));
+            let id = GLib.idle_add(GLib.PRIORITY_DEFAULT, this._selectSearch.bind(this));
             GLib.Source.set_name_by_id(id, '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);

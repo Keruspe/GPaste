@@ -1041,7 +1041,7 @@ _g_paste_daemon_changed (gpointer data)
 static void
 g_paste_daemon_dispose (GObject *object)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (object));
 
     if (priv->settings)
     {

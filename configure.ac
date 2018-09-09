@@ -2,14 +2,14 @@
 ##
 ## Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
-m4_define([gpaste_version],      [3.28.2])
+m4_define([gpaste_version],      [3.30.0])
 
 # Update gpaste_lt_version before each release (and only then)
 # The format is C:R:A (current revision age)
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-m4_define([gpaste_lt_version],   [11:1:0])
+m4_define([gpaste_lt_version],   [11:2:0])
 
 # Build system requirements
 m4_define([autoconf_required],   [2.69])
@@ -19,23 +19,23 @@ m4_define([pkgconfig_required],  [0.29])
 
 # Glib and Gtk macros and dependencies
 m4_define([glib_major_required], [2])
-m4_define([glib_minor_required], [56])
+m4_define([glib_minor_required], [58])
 m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_minor_required)])
 m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
 m4_define([gtk3_major_required], [3])
-m4_define([gtk3_minor_required], [22])
+m4_define([gtk3_minor_required], [24])
 m4_define([gtk3_api_required],   [G_ENCODE_VERSION(gtk3_major_required, gtk3_minor_required)])
 m4_define([gtk3_required],       [gtk3_major_required.gtk3_minor_required.0])
 m4_define([gtk4_major_required], [3])
-m4_define([gtk4_minor_required], [90])
+m4_define([gtk4_minor_required], [94])
 m4_define([gtk4_api_required],   [G_ENCODE_VERSION(gtk4_major_required, gtk4_minor_required)])
 m4_define([gtk4_required],       [gtk4_major_required.gtk4_minor_required.0])
 
 # Other dependencies
-m4_define([gdk_pixbuf_required], [2.32.0])
-m4_define([gir_required],        [1.52.0])
-m4_define([gjs_required],        [1.50.0])
-m4_define([vala_required],       [0.36])
+m4_define([gdk_pixbuf_required], [2.38.0])
+m4_define([gir_required],        [1.58.0])
+m4_define([gjs_required],        [1.54.0])
+m4_define([vala_required],       [0.42])
 
 AC_PREREQ(autoconf_required)
 AC_INIT([GPaste], [gpaste_version], [Marc-Antoine@Perennou.com], [gpaste])
@@ -157,7 +157,7 @@ G_PASTE_ENABLE([zsh-completion],        [Disable the zsh completion],    [yes])
 
 AS_IF([test x${enable_gnome_shell_extension} = xyes], [
     AS_IF([test x${enable_introspection} != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
-    PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-2 gjs-1.0 >= gjs_required])
+    PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-3 gjs-1.0 >= gjs_required])
 ])
 
 AS_IF([test x${enable_x_keybinder} = xyes], [

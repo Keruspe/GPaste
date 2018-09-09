@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-03-26 17:40+0200\n"
+"POT-Creation-Date: 2018-09-09 13:38+0200\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -167,7 +167,7 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Carregar o item ativo para um serviço de pastebin: "
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
-#: src/libgpaste/ui/gpaste-ui-window.c:311 src/client/gpaste-client.c:803
+#: src/libgpaste/ui/gpaste-ui-window.c:311 src/client/gpaste-client.c:811
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Não foi possível se conectar ao daemon do GPaste"
 
@@ -290,11 +290,11 @@ msgstr "Carregar"
 msgid "Do you really want to empty the history?"
 msgstr "Você quer mesmo esvaziar o histórico?"
 
-#: src/libgpaste/util/gpaste-util.c:620
+#: src/libgpaste/util/gpaste-util.c:663
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 
-#: src/client/gpaste-client.c:137 src/client/gpaste-client.c:427
+#: src/client/gpaste-client.c:137 src/client/gpaste-client.c:433
 msgid "Couldn't spawn"
 msgstr "Não foi possível executar"
 
@@ -565,12 +565,12 @@ msgstr ""
 msgid "add the given separator between each item when merging"
 msgstr "adiciona o separador dado entre cada item durante o merge"
 
-#: src/client/gpaste-client.c:332
+#: src/client/gpaste-client.c:338
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "O daemon foi reiniciado com sucesso\n"
 
-#: src/client/gpaste-client.c:481
+#: src/client/gpaste-client.c:487
 msgid "Cannot add non utf8 data as text."
 msgstr ""
 

@@ -33,7 +33,7 @@ g_paste_ui_reexec_clicked (GtkButton *button)
 static void
 g_paste_ui_reexec_dispose (GObject *object)
 {
-    const GPasteUiReexecPrivate *priv = _g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (object));
+    GPasteUiReexecPrivate *priv = g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (object));
 
     g_clear_object (&priv->client);
 

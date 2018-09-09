@@ -22,7 +22,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (PopKeybinding, pop_keybinding, G_PASTE_TYPE_KE
 static void
 g_paste_pop_keybinding_dispose (GObject *object)
 {
-    const GPastePopKeybindingPrivate *priv = _g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (object));
+    GPastePopKeybindingPrivate *priv = g_paste_pop_keybinding_get_instance_private (G_PASTE_POP_KEYBINDING (object));
 
     g_clear_object (&priv->history);
 

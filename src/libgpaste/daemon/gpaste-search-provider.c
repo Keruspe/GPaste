@@ -305,7 +305,7 @@ g_paste_search_provider_unregister_object (gpointer user_data)
 static void
 g_paste_search_provider_dispose (GObject *object)
 {
-    const GPasteSearchProviderPrivate *priv = _g_paste_search_provider_get_instance_private (G_PASTE_SEARCH_PROVIDER (object));
+    GPasteSearchProviderPrivate *priv = g_paste_search_provider_get_instance_private (G_PASTE_SEARCH_PROVIDER (object));
 
     if (priv->connection)
     {

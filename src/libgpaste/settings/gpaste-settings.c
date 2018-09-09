@@ -911,7 +911,7 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 static void
 g_paste_settings_dispose (GObject *object)
 {
-    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
+    GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
     GSettings *settings = priv->settings;
     GSettings *shell_settings = priv->shell_settings;
 

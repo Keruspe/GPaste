@@ -227,7 +227,7 @@ add_action (gpointer data,
 static void
 g_paste_ui_item_skeleton_dispose (GObject *object)
 {
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (object));
+    GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (object));
 
     if (priv->settings)
     {

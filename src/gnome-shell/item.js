@@ -105,6 +105,10 @@ var GPasteItem = new Lang.Class({
 
     _onKeyPressed: function(actor, event) {
         const symbol = event.get_key_symbol();
+        if (symbol == Clutter.KEY_space || symbol == Clutter.KEY_Return) {
+            this.activate(event);
+            return Clutter.EVENT_STOP;
+        }
         if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
             this._client.delete(this._index, null);
             return Clutter.EVENT_STOP;

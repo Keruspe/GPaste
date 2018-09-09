@@ -833,7 +833,7 @@ static void
 g_paste_history_dispose (GObject *object)
 {
     GPasteHistory *self = G_PASTE_HISTORY (object);
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteSettings *settings = priv->settings;
 
     g_clear_object (&priv->backend);

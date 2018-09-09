@@ -105,7 +105,7 @@ g_paste_bus_get_connection (const GPasteBus *self)
 static void
 g_paste_bus_dispose (GObject *object)
 {
-    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (G_PASTE_BUS (object));
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (G_PASTE_BUS (object));
 
     if (priv->connection)
     {
