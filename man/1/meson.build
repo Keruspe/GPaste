@@ -1,0 +1,1 @@
+install_man('gpaste-client.1')
