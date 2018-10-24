@@ -683,10 +683,11 @@ g_paste_daemon_select (const GPasteDaemon *self,
 {
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     guint64 position = g_paste_daemon_get_dbus_uint64_parameter (parameters);
+    GVariant *variant = g_variant_new_uint64 (position);
 
     g_paste_history_select (priv->history, position);
 
-    G_PASTE_SEND_DBUS_SIGNAL_FULL (ITEM_SELECTED, g_variant_new_uint64 (position), NULL);
+    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (ITEM_SELECTED, variant);
 }
 
 static void
