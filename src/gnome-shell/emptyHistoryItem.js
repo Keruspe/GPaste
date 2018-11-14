@@ -29,10 +29,7 @@ var GPasteEmptyHistoryItem = new Lang.Class({
             client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
 
-                if (settings.get_empty_history_confirmation())
-                    GPaste.util_activate_ui("empty", GLib.Variant.new_string(name));
-                else
-                    client.empty_history(name, null);
+                GPaste.util_empty_with_confirmation (client, settings, name);
             });
         });
     }
