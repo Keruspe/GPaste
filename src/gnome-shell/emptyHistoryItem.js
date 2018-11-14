@@ -15,7 +15,7 @@ const GPaste = imports.gi.GPaste;
 var GPasteEmptyHistoryItem = new Lang.Class({
     Name: 'GPasteEmptyHistoryItem',
 
-    _init: function(client, settings) {
+    _init: function(client, settings, menu) {
         this.actor = new St.Button({
             reactive: true,
             can_focus: true,
@@ -26,6 +26,7 @@ var GPasteEmptyHistoryItem = new Lang.Class({
         this.actor.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
 
         this.actor.connect('clicked', function() {
+            menu.itemActivated();
             client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
 
