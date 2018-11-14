@@ -201,6 +201,8 @@ G_PASTE_VISIBLE void
 g_paste_util_activate_ui (const gchar *action,
                           GVariant    *arg)
 {
+    g_return_if_fail (g_utf8_validate (action, -1, NULL));
+
     gpointer *data = g_new (gpointer, 2);
     data[0] = g_strdup (action);
     data[1] = arg;
@@ -266,6 +268,73 @@ g_paste_util_activate_ui_sync (const gchar *action,
                                                                      error);
 
     return TRUE;
+}
+
+/**
+ * g_paste_util_empty_with_confirmation:
+ * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
+ * @history: the name of the history to empty
+ *
+ * Empty an history after confirmation.
+ * Confirmation is skipped if GPaste is configured to do so.
+ */
+G_PASTE_VISIBLE void
+g_paste_util_empty_with_confirmation (GPasteClient         *client,
+                                      const GPasteSettings *settings,
+                                      const gchar          *history)
+{
+    g_return_if_fail (_G_PASTE_IS_CLIENT (client));
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (g_utf8_validate (history, -1, NULL));
+
+    if (g_paste_settings_get_empty_history_confirmation (settings))
+        g_paste_util_activate_ui ("empty", g_variant_new_string (history));
+    else
+        g_paste_client_empty_history (client, history, NULL, NULL);
+}
+
+/**
+ * g_paste_util_empty_with_confirmation_sync:
+ * @client: a #GPasteClient instance
+ * @settings: a #GPasteSettings instance
+ * @history: the name of the history to empty
+ * @error: a #GError or %NULL
+ *
+ * Empty an history after confirmation.
+ * Confirmation is skipped if GPaste is configured to do so.
+ *
+ * Returns: whether the action was successful
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_util_empty_with_confirmation_sync (GPasteClient         *client,
+                                           const GPasteSettings *settings,
+                                           const gchar          *history,
+                                           GError              **error)
+{
+    g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), FALSE);
+    g_return_val_if_fail (g_utf8_validate (history, -1, NULL), FALSE);
+    g_return_val_if_fail (!error || !(*error), FALSE);
+
+    if (g_paste_settings_get_empty_history_confirmation (settings))
+    {
+        return g_paste_util_activate_ui_sync ("empty", g_variant_new_string (history), error);
+    }
+    else
+    {
+        g_autoptr (GError) _error = NULL;
+
+        g_paste_client_empty_history_sync (client, history, &_error);
+
+        if (error)
+        {
+            *error = _error;
+            _error = NULL;
+        }
+
+        return !_error && !(error && *error);
+    }
 }
 
 /**
