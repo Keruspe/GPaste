@@ -79,7 +79,7 @@ var GPasteIndicator = new Lang.Class({
             this._client = GPaste.Client.new_finish(result);
 
             this._uiItem = new UiItem.GPasteUiItem(this.menu);
-            this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client, this._settings);
+            this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
             this._aboutItem = new AboutItem.GPasteAboutItem(this._client, this.menu);
             this._switch = new StateSwitch.GPasteStateSwitch(this._client);
 
