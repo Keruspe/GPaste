@@ -29,6 +29,13 @@ void     g_paste_util_activate_ui       (const gchar *action,
 gboolean g_paste_util_activate_ui_sync  (const gchar *action,
                                          GVariant    *arg,
                                          GError     **error);
+void     g_paste_util_empty_with_confirmation (GPasteClient         *client,
+                                               const GPasteSettings *settings,
+                                               const gchar          *history);
+gboolean g_paste_util_empty_with_confirmation_sync (GPasteClient         *client,
+                                                    const GPasteSettings *settings,
+                                                    const gchar          *history,
+                                                    GError              **error);
 gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *pattern,
                                          const gchar *substitution);

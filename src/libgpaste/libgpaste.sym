@@ -501,6 +501,12 @@ global:
 
 LIBGPASTE_3_30_0 {
 global:
+    g_paste_util_empty_with_confirmation;
+    g_paste_util_empty_with_confirmation_sync;
+} LIBGPASTE_3_28_1;
+
+LIBGPASTE_3_32_0 {
+global:
     g_paste_client_item_get_type;
     g_paste_client_item_get_uuid;
     g_paste_client_item_get_value;
@@ -511,4 +517,4 @@ global:
 
     g_paste_util_get_dbus_item_result;
     g_paste_util_get_dbus_items_result;
-} LIBGPASTE_3_28_1;
+} LIBGPASTE_3_30_0;
