@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-09-09 13:38+0200\n"
+"POT-Creation-Date: 2018-11-14 23:15+0100\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -227,7 +227,7 @@ msgstr "Editar"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/ui/gpaste-ui-empty-history.c:65
-#: src/libgpaste/util/gpaste-util.c:341
+#: src/libgpaste/util/gpaste-util.c:410
 msgid "Empty"
 msgstr "Vazio"
 
@@ -286,11 +286,11 @@ msgstr ""
 msgid "Upload"
 msgstr "Carregar"
 
-#: src/libgpaste/util/gpaste-util.c:341
+#: src/libgpaste/util/gpaste-util.c:410
 msgid "Do you really want to empty the history?"
 msgstr "Você quer mesmo esvaziar o histórico?"
 
-#: src/libgpaste/util/gpaste-util.c:663
+#: src/libgpaste/util/gpaste-util.c:732
 msgid "Could not create history dir"
 msgstr "Não foi possível criar o diretório do histórico"
 

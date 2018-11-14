@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-09-09 13:38+0200\n"
+"POT-Creation-Date: 2018-11-14 23:15+0100\n"
 "PO-Revision-Date: 2017-03-17 17:38+0100\n"
 "Last-Translator: Heimen Stoffels <vistausss@outlook.com>\n"
 "Language-Team: Vistaus <vistausss@outlook.com>\n"
@@ -218,7 +218,7 @@ msgstr "Bewerken"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/ui/gpaste-ui-empty-history.c:65
-#: src/libgpaste/util/gpaste-util.c:341
+#: src/libgpaste/util/gpaste-util.c:410
 msgid "Empty"
 msgstr "Legen"
 
@@ -275,11 +275,11 @@ msgstr "Weet u zeker dat u het bijhouden van klembordwijzigingen wilt stoppen?"
 msgid "Upload"
 msgstr "Uploaden"
 
-#: src/libgpaste/util/gpaste-util.c:341
+#: src/libgpaste/util/gpaste-util.c:410
 msgid "Do you really want to empty the history?"
 msgstr "Weet u zeker dat u de geschiedenis wilt legen?"
 
-#: src/libgpaste/util/gpaste-util.c:663
+#: src/libgpaste/util/gpaste-util.c:732
 msgid "Could not create history dir"
 msgstr "Het creëren van de geschiedenismap is mislukt"
 
