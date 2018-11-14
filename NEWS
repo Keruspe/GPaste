@@ -1,3 +1,10 @@
+NEW in 3.28.3 (14/11/2018)
+=============
+
+- Fix warnings with gcc 8
+- Fix ItemSelected dbus signal
+- Fix crash with recent gnome-shell when emptying history
+
 NEW in 3.28.2 (13/04/2018)
 =============
 

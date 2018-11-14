@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2018-04-13 22:48+0200\n"
+"POT-Creation-Date: 2018-11-14 23:02+0100\n"
 "PO-Revision-Date: 2018-01-06 08:14+0100\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Svenska Språkfiler <contactform@svenskasprakfiler.se>\n"
@@ -219,7 +219,7 @@ msgstr "Redigera"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/ui/gpaste-ui-empty-history.c:65
-#: src/libgpaste/util/gpaste-util.c:341
+#: src/libgpaste/util/gpaste-util.c:410
 msgid "Empty"
 msgstr "Töm"
 
@@ -276,11 +276,11 @@ msgstr "Vill du verkligen sluta övervaka urklippsändringar?"
 msgid "Upload"
 msgstr "Ladda upp"
 
-#: src/libgpaste/util/gpaste-util.c:341
+#: src/libgpaste/util/gpaste-util.c:410
 msgid "Do you really want to empty the history?"
 msgstr "Vill du verkligen tömma historiken?"
 
-#: src/libgpaste/util/gpaste-util.c:620
+#: src/libgpaste/util/gpaste-util.c:689
 msgid "Could not create history dir"
 msgstr "Kunde inte skapa historikmapp"
 
