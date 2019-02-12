@@ -15,6 +15,7 @@ bindings_GPaste_1_0_gir_FILES =     \
 	$(NULL)
 bindings_GPaste_1_0_gir_CFLAGS = \
 	$(AM_CPPFLAGS)           \
+	-fno-lto                 \
 	$(NULL)
 bindings_GPaste_1_0_gir_LIBS = $(libgpaste_la_file)
 bindings_GPaste_1_0_gir_EXPORT_PACKAGES = libgpaste
