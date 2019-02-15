@@ -7,6 +7,9 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-util.h>
 
+#define G_SETTINGS_ENABLE_BACKEND 1
+#include <gio/gsettingsbackend.h>
+
 struct _GPasteSettings
 {
     GObject parent_instance;
@@ -996,11 +999,29 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
     signals[TRACK]   = NEW_SIGNAL                 ("track"  , BOOLEAN);
 }
 
+static GSettings *
+create_g_settings (void)
+{
+    g_autofree gchar *config_file_path = g_build_filename (g_get_user_config_dir (), PACKAGE, "settings", NULL);
+    g_autoptr (GFile) config_file = g_file_new_for_path (config_file_path);
+
+    if (g_file_query_exists (config_file, NULL /* cancellable */))
+    {
+        g_autoptr (GSettingsBackend) backend = g_keyfile_settings_backend_new (config_file_path, G_PASTE_SETTINGS_PATH, PACKAGE_NAME);
+
+        return g_settings_new_with_backend (G_PASTE_SETTINGS_NAME, backend);
+    }
+    else
+    {
+        return g_settings_new (G_PASTE_SETTINGS_NAME);
+    }
+}
+
 static void
 g_paste_settings_init (GPasteSettings *self)
 {
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
-    GSettings *settings = priv->settings = g_settings_new (G_PASTE_SETTINGS_NAME);
+    GSettings *settings = priv->settings = create_g_settings ();
 
     priv->history_name = NULL;
     priv->launch_ui = NULL;

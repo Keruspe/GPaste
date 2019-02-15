@@ -16,6 +16,7 @@
 G_BEGIN_DECLS
 
 #define G_PASTE_SETTINGS_NAME       "org.gnome.GPaste"
+#define G_PASTE_SETTINGS_PATH       "/org/gnome/GPaste/"
 #define G_PASTE_SHELL_SETTINGS_NAME "org.gnome.shell"
 
 #define G_PASTE_CLOSE_ON_SELECT_SETTING            "close-on-select"
