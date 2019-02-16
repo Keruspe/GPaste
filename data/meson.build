@@ -5,7 +5,7 @@ subdir('dbus')
 subdir('desktop')
 subdir('gsettings')
 
-if get_option('shell-extension')
+if get_option('gnome-shell')
   subdir('search-provider')
 endif
 

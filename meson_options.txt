@@ -2,7 +2,7 @@ option('bash_completion', type: 'boolean', value: true, description: 'install ba
 option('dbus-service-dir', type: 'string', value: '', description: 'path to the dbus service dir')
 option('introspection', type: 'boolean', value: true, description: 'build GIR data')
 option('keys-dir', type: 'string', value: '', description: 'path to where gnome-control-center stores its keybindings')
-option('shell-extension', type: 'boolean', value: true, description: 'install the gnome-shell extension')
+option('gnome-shell', type: 'boolean', value: true, description: 'install the gnome-shell extension')
 option('systemd', type: 'boolean', value: true, description: 'install the systemd unit')
 option('vapi', type: 'boolean', value: true, description: 'build vala bindings')
 option('x-keybinder', type: 'boolean', value: true, description: 'build the x keybinder')

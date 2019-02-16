@@ -3,6 +3,6 @@ subdir('client')
 subdir('daemon')
 subdir('ui')
 
-if get_option('shell-extension')
+if get_option('gnome-shell')
   subdir('gnome-shell')
 endif
