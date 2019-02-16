@@ -1,5 +1,4 @@
 libgpaste_sources = [
-  'client/gpaste-client-item.c',
   'client/gpaste-client.c',
   'core/gpaste-clipboard.c',
   'core/gpaste-clipboards-manager.c',
@@ -62,7 +61,6 @@ libgpaste_sources = [
 ]
 
 libgpaste_headers = [
-  'client/gpaste-client-item.h',
   'client/gpaste-client.h',
   'core/gpaste-clipboard.h',
   'core/gpaste-clipboards-manager.h',
