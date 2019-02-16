@@ -70,7 +70,7 @@ add_project_arguments(
   '-DG_PASTE_ICON_NAME="edit-paste"',
   '-DGDK_DISABLE_DEPRECATED',
   '-DGETTEXT_PACKAGE="GPaste"',
-  '-DGTK_API=3.0',
+  '-DGTK_API=3',
   '-DGTK_DISABLE_DEPRECATED',
   '-DLOCALEDIR="' + join_paths(get_option('prefix'), get_option('datadir'), 'locale') + '"',
   '-DPACKAGE="GPaste"',
