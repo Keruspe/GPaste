@@ -94,6 +94,8 @@ conf.set('localedir', join_paths(get_option('prefix'), get_option('datadir'), 'l
 gnome = import('gnome')
 i18n = import('i18n')
 
+gpaste_po_dir = join_paths(meson.current_source_dir(), 'po')
+
 subdir('man')
 subdir('po')
 subdir('src')
