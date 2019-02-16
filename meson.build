@@ -36,10 +36,6 @@ endif
 
 libgpaste_deps = [ gdk_dep, gdk_pixbuf_dep, glib_dep, gtk_dep ]
 
-if get_option('introspection') and meson.is_cross_build()
-  error('Cant cross-compile GIR data!')
-endif
-
 if get_option('introspection')
   mutter_clutter_dep = dependency('mutter-clutter-3', version: mutter_clutter_req)
   gjs_dep = dependency('gjs-1.0', version: gjs_req)
