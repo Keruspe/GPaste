@@ -5,17 +5,13 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const GLib = imports.gi.GLib;
 const St = imports.gi.St;
 
 const GPaste = imports.gi.GPaste;
 
-var GPasteEmptyHistoryItem = new Lang.Class({
-    Name: 'GPasteEmptyHistoryItem',
-
-    _init: function(client, settings, menu) {
+var GPasteEmptyHistoryItem = class {
+    constructor(client, settings, menu) {
         this.actor = new St.Button({
             reactive: true,
             can_focus: true,
@@ -34,4 +30,4 @@ var GPasteEmptyHistoryItem = new Lang.Class({
             });
         });
     }
-});
+};

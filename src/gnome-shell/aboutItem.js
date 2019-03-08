@@ -5,14 +5,10 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const St = imports.gi.St;
 
-var GPasteAboutItem = new Lang.Class({
-    Name: 'GPasteAboutItem',
-
-    _init: function(client, menu) {
+var GPasteAboutItem = class {
+    constructor(client, menu) {
         this.actor = new St.Button({
             reactive: true,
             can_focus: true,
@@ -27,4 +23,4 @@ var GPasteAboutItem = new Lang.Class({
             client.about(null);
         });
     }
-});
+};

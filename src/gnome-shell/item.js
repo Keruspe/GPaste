@@ -5,8 +5,6 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const PopupMenu = imports.ui.popupMenu;
 
 const Clutter = imports.gi.Clutter;
@@ -20,12 +18,9 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteItemPart = Me.imports.deleteItemPart;
 
-var GPasteItem = new Lang.Class({
-    Name: 'GPasteItem',
-    Extends: PopupMenu.PopupMenuItem,
-
-    _init: function(client, size, index) {
-        this.parent("");
+var GPasteItem = class extends PopupMenu.PopupMenuItem {
+    constructor(client, size, index) {
+        super("");
 
         this._client = client;
 
@@ -46,7 +41,7 @@ var GPasteItem = new Lang.Class({
         this.setTextSize(size);
 
         this.setIndex(index);
-    },
+    }
 
     showIndex: function(state) {
         if (state) {
@@ -57,11 +52,11 @@ var GPasteItem = new Lang.Class({
             this.actor.remove_child(this._indexLabel);
         }
         this._indexLabelVisible = state;
-    },
+    }
 
     refresh: function() {
         this.setIndex(this._index);
-    },
+    }
 
     setIndex: function(index) {
         const oldIndex = this._index || -1;
@@ -90,15 +85,15 @@ var GPasteItem = new Lang.Class({
             this.label.clutter_text.set_text(null);
             this.actor.hide();
         }
-    },
+    }
 
     setTextSize: function(size) {
         this.label.clutter_text.max_length = size;
-    },
+    }
 
     _onActivate: function(actor, event) {
         this._client.select(this._index, null);
-    },
+    }
 
     _onKeyPressed: function(actor, event) {
         const symbol = event.get_key_symbol();
@@ -112,4 +107,4 @@ var GPasteItem = new Lang.Class({
         }
         return Clutter.EVENT_PROPAGATE;
     }
-});
+};

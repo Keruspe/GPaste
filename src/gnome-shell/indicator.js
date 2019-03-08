@@ -6,7 +6,6 @@
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const Gettext = imports.gettext;
-const Lang = imports.lang;
 
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
@@ -31,12 +30,9 @@ const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 const UiItem = Me.imports.uiItem;
 
-var GPasteIndicator = new Lang.Class({
-    Name: 'GPasteIndicator',
-    Extends: PanelMenu.Button,
-
-    _init: function() {
-        this.parent(0.0, "GPaste");
+var GPasteIndicator = class extends PanelMenu.Button {
+    constructor() {
+        super(0.0, "GPaste");
 
         this._statusIcon = new StatusIcon.GPasteStatusIcon();
         this.actor.add_child(this._statusIcon.actor);
@@ -105,13 +101,13 @@ var GPasteIndicator = new Lang.Class({
 
             this.actor.connect('destroy', this._onDestroy.bind(this));
         });
-    },
+    }
 
     shutdown: function() {
         this._onStateChanged (false);
         this._onDestroy();
         this.destroy();
-    },
+    }
 
     _onKeyPressEvent: function(actor, event) {
         if (event.has_control_modifier()) {
@@ -122,32 +118,32 @@ var GPasteIndicator = new Lang.Class({
         } else {
             this._maybeUpdateIndexVisibility(event, true);
         }
-    },
+    }
 
     _onKeyReleaseEvent: function(actor, event) {
         this._updateIndexVisibility(!this._eventIsControlKey(event) && event.has_control_modifier());
-    },
+    }
 
     _maybeUpdateIndexVisibility: function(event, state) {
         if (this._eventIsControlKey(event)) {
             this._updateIndexVisibility(state);
         }
-    },
+    }
 
     _updateIndexVisibility: function(state) {
         this._history.slice(0, 10).forEach(function(i) {
             i.showIndex(state);
         });
-    },
+    }
 
     _eventIsControlKey: function(event) {
         const key = event.get_key_symbol();
         return (key == Clutter.KEY_Control_L || key == Clutter.KEY_Control_R);
-    },
+    }
 
     _hasSearch: function() {
         return this._searchItem.text.length > 0;
-    },
+    }
 
     _onSearch: function(page) {
         if (this._hasSearch()) {
@@ -184,11 +180,11 @@ var GPasteIndicator = new Lang.Class({
             this._searchResults = [];
             this._refresh(0);
         }
-    },
+    }
 
     _onNewSearch: function() {
         this._onSearch(1);
-    },
+    }
 
     _resetElementSize: function() {
         const size = this._settings.get_element_size();
@@ -196,12 +192,12 @@ var GPasteIndicator = new Lang.Class({
         this._history.forEach(function(i) {
             i.setTextSize(size);
         });
-    },
+    }
 
     _updatePage: function(page) {
         this._pageSwitcher.setActive(page);
         this._refresh(0);
-    },
+    }
 
     _resetMaxDisplayedSize: function() {
         const oldSize = this._history.length;
@@ -229,7 +225,7 @@ var GPasteIndicator = new Lang.Class({
         } else {
             this._updatePage((offset / oldSize) + 1);
         }
-    },
+    }
 
     _update: function(client, action, target, position) {
         switch (target) {
@@ -249,7 +245,7 @@ var GPasteIndicator = new Lang.Class({
             }
             break;
         }
-    },
+    }
 
     _refresh: function(resetTextFrom) {
         if (this._searchResults.length > 0) {
@@ -285,7 +281,7 @@ var GPasteIndicator = new Lang.Class({
                 });
             });
         }
-    },
+    }
 
     _updateVisibility: function(empty, search) {
         if (!empty) {
@@ -301,43 +297,43 @@ var GPasteIndicator = new Lang.Class({
             this._emptyHistoryItem.actor.hide();
             this._searchItem.actor.hide();
         }
-    },
+    }
 
     _popup: function() {
         this.menu.open(true);
-    },
+    }
 
     _toggle: function(c, state) {
         this._switch.toggle(state);
-    },
+    }
 
     _selectSearch: function() {
         if (this._history.length > 0) {
             this._searchItem.grabFocus();
         }
-    },
+    }
 
     _addToHeader: function(item) {
         this.menu.addMenuItem(item, this._headerSize++);
-    },
+    }
 
     _addToPostHeader: function(item) {
         this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize++);
-    },
+    }
 
     _addToPreFooter: function(item) {
         this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + this._history.length + this._preFooterSize++);
-    },
+    }
 
     _addToFooter: function(item) {
         this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + this._history.length + this._preFooterSize + this._footerSize++);
-    },
+    }
 
     _onStateChanged: function(state) {
         if (this._client) {
             this._client.on_extension_state_changed(state, null);
         }
-    },
+    }
 
     _onOpenStateChanged: function(menu, state) {
         if (state) {
@@ -348,7 +344,7 @@ var GPasteIndicator = new Lang.Class({
         } else {
             this._updateIndexVisibility(false);
         }
-    },
+    }
 
     _onMenuKeyPress: function(actor, event) {
         const symbol = event.get_key_symbol();
@@ -359,7 +355,7 @@ var GPasteIndicator = new Lang.Class({
             return this._pageSwitcher.next();
         }
         return Clutter.EVENT_PROPAGATE;
-    },
+    }
 
     _onDestroy: function() {
         if (!this._client) {
@@ -372,5 +368,5 @@ var GPasteIndicator = new Lang.Class({
         this._settings.disconnect(this._settingsMaxSizeChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
     }
-});
+};
 
