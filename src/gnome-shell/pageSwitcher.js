@@ -32,11 +32,11 @@ var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
         this._pages = [];
     }
 
-    setMaxDisplayedSize: function(size) {
+    setMaxDisplayedSize(size) {
         this._maxDisplayedSize = size;
     }
 
-    updateForSize: function(size) {
+    updateForSize(size) {
         const pages = Math.min((size === 0) ? 0 : Math.floor((size - 1) / this._maxDisplayedSize + 1), MAX_PAGES);
 
         for (let i = this._pages.length; i < pages; ++i) {
@@ -58,7 +58,7 @@ var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
         }
     }
 
-    _addPage: function() {
+    _addPage() {
         let sw = new PageItem.GPastePageItem(this._pages.length + 1);
         this._pages.push(sw);
         this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
@@ -68,15 +68,15 @@ var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
         });
     }
 
-    getPageOffset: function() {
+    getPageOffset() {
         return (this._active < 0) ? 0 : (this._active * this._maxDisplayedSize);
     }
 
-    getPage: function() {
+    getPage() {
         return this._active + 1;
     }
 
-    setActive: function(page) {
+    setActive(page) {
         if (page !== 0 && page !== (this._active + 1) && page <= this._pages.length) {
             if (this._active !== -1) {
                 this._pages[this._active].setActive(false);
@@ -86,7 +86,7 @@ var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
         }
     }
 
-    previous: function() {
+    previous() {
         const page = this.getPage();
 
         if (page > 1) {
@@ -96,7 +96,7 @@ var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
         return Clutter.EVENT_PROPAGATE;
     }
 
-    next: function() {
+    next() {
         const page = this.getPage();
 
         if (page < this._pages.length) {
@@ -106,7 +106,7 @@ var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
         return Clutter.EVENT_PROPAGATE;
     }
 
-    _switch: function(page) {
+    _switch(page) {
         if (!isNaN(page)) {
             this.emit('switch', page);
         }

@@ -19,7 +19,7 @@ var GPasteDeleteItemPart = class {
         this.actor.child = this._deleteButton.actor;
     }
 
-    setIndex: function(index) {
+    setIndex(index) {
         this._deleteButton.setIndex(index);
     }
 };

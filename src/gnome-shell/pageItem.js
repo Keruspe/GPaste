@@ -27,7 +27,7 @@ var GPastePageItem = class {
         });
     }
 
-    setActive: function(active) {
+    setActive(active) {
       if (active) {
           this.actor.add_style_pseudo_class('active');
           this.actor.set_style("font-weight: bold;");
@@ -37,7 +37,7 @@ var GPastePageItem = class {
       }
     }
 
-    destroy: function() {
+    destroy() {
         this.actor.destroy();
     }
 };

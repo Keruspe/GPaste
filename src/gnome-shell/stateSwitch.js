@@ -20,12 +20,12 @@ var GPasteStateSwitch = class extends PopupMenu.PopupSwitchMenuItem {
         this.connect('toggled', this._onToggle.bind(this));
     }
 
-    toggle: function(state) {
+    toggle(state) {
         if (state !== this.state)
             this.parent();
     }
 
-    _onToggle: function(state) {
+    _onToggle(state) {
         this._client.track(this.state, null);
     }
 };

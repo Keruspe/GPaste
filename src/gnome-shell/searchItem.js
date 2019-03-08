@@ -44,22 +44,22 @@ var GPasteSearchItem = class extends PopupMenu.PopupBaseMenuItem {
         return this._entry.get_text();
     }
 
-    resetSize: function(size) {
+    resetSize(size) {
         this._entry.style = 'width: ' + size + 'em';
     }
 
-    reset: function() {
+    reset() {
         this._entry.text = '';
         let text = this._entry.clutter_text;
         text.set_cursor_visible(true);
         text.set_selection(0, 0);
     }
 
-    grabFocus: function() {
+    grabFocus() {
         this._entry.grab_key_focus();
     }
 
-    _onTextChanged: function(se, prop) {
+    _onTextChanged(se, prop) {
         const dummy = (this.text.length == 0);
         this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
         if (!dummy && this._iconClickedId == 0) {

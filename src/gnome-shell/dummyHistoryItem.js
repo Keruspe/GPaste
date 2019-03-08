@@ -17,12 +17,12 @@ var GPasteDummyHistoryItem = class extends PopupMenu.PopupMenuItem {
         this.setSensitive(false);
     }
 
-    showEmpty: function() {
+    showEmpty() {
         this.label.text = _("(Empty)");
         this.actor.show();
     }
 
-    showNoResult: function() {
+    showNoResult() {
         this.label.text = _("(No result)");
         this.actor.show();
     }

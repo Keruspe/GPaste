@@ -23,11 +23,11 @@ var GPasteDeleteButton = class {
         this.actor.connect('clicked', this._onClick.bind(this));
     }
 
-    setIndex: function(index) {
+    setIndex(index) {
         this._index = index;
     }
 
-    _onClick: function() {
+    _onClick() {
         this._client.delete(this._index, null);
         return Clutter.EVENT_STOP;
     }
