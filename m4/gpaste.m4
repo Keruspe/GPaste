@@ -40,7 +40,6 @@ AC_DEFUN([_G_PASTE_APPEND_CFLAGS], [
 AC_DEFUN([G_PASTE_APPEND_CFLAGS], [
     _G_PASTE_APPEND_CFLAGS([        \
         -pipe                       \
-        -pedantic                   \
         -DANOTHER_BRICK_IN_THE      \
         -Wall                       \
         -W                          \
