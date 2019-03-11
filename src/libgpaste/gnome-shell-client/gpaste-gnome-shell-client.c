@@ -22,12 +22,13 @@
         "<interface  name='" G_PASTE_GNOME_SHELL_INTERFACE_NAME "'>"                                       \
             "<method name='" G_PASTE_GNOME_SHELL_GRAB_ACCELERATOR "'>"                                     \
                 "<arg type='s' direction='in'  name='accelerator' />"                                      \
-                "<arg type='u' direction='in'  name='flags'       />"                                      \
+                "<arg type='u' direction='in'  name='modeFlags'   />"                                      \
+                "<arg type='u' direction='in'  name='grabFlags'   />"                                      \
                 "<arg type='u' direction='out' name='action'      />"                                      \
             "</method>"                                                                                    \
             "<method name='" G_PASTE_GNOME_SHELL_GRAB_ACCELERATORS "'>"                                    \
-                "<arg type='a(su)' direction='in'  name='accelerators' />"                                 \
-                "<arg type='au'    direction='out' name='actions'      />"                                 \
+                "<arg type='a(suu)' direction='in'  name='accelerators' />"                                \
+                "<arg type='au'     direction='out' name='actions'      />"                                \
             "</method>"                                                                                    \
             "<method name='" G_PASTE_GNOME_SHELL_UNGRAB_ACCELERATOR "'>"                                   \
                 "<arg type='u' direction='in'  name='action'  />"                                          \
@@ -116,7 +117,8 @@ g_paste_gnome_shell_client_grab_accelerator_sync (GPasteGnomeShellClient     *se
 {
     GVariant *accel[] = {
         g_variant_new_string (accelerator.accelerator),
-        g_variant_new_uint32 (accelerator.flags)
+        g_variant_new_uint32 (accelerator.mode_flags),
+        g_variant_new_uint32 (accelerator.grab_flags)
     };
     DBUS_CALL_TWO_PARAMS_RET_UINT32 (GRAB_ACCELERATOR, accel);
 }
@@ -145,7 +147,8 @@ g_paste_gnome_shell_client_grab_accelerators_sync (GPasteGnomeShellClient      *
     {
         g_variant_builder_open (&builder, G_VARIANT_TYPE_TUPLE);
         g_variant_builder_add_value (&builder, g_variant_new_string (accelerator->accelerator));
-        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->flags));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->mode_flags));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->grab_flags));
         g_variant_builder_close (&builder);
     }
 
@@ -194,7 +197,8 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
 {
     GVariant *accel[] = {
         g_variant_new_string (accelerator.accelerator),
-        g_variant_new_uint32 (accelerator.flags)
+        g_variant_new_uint32 (accelerator.mode_flags),
+        g_variant_new_uint32 (accelerator.grab_flags)
     };
     DBUS_CALL_TWO_PARAMS_ASYNC (GRAB_ACCELERATOR, accel);
 }
@@ -224,7 +228,8 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
     {
         g_variant_builder_open (&builder, G_VARIANT_TYPE_TUPLE);
         g_variant_builder_add_value (&builder, g_variant_new_string (accelerator->accelerator));
-        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->flags));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->mode_flags));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->grab_flags));
         g_variant_builder_close (&builder);
     }
 

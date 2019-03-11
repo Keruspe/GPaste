@@ -38,7 +38,7 @@ G_BEGIN_DECLS
  *
  * Controls in which GNOME Shell states an action (like keybindings and gestures)
  * should be handled.
-*/
+ */
 typedef enum {
   G_PASTE_GNOME_SHELL_ACTION_MODE_NONE          = 0,
   G_PASTE_GNOME_SHELL_ACTION_MODE_NORMAL        = 1 << 0,
@@ -53,15 +53,35 @@ typedef enum {
   G_PASTE_GNOME_SHELL_ACTION_MODE_ALL = ~0,
 } GPasteGnomeShellActionMode;
 
+/* MetaKeyBindingFlags stolen from mutter */
+/**
+ *  GPasteMetaKeyBindingFlags:
+ *  @G_PASTE_META_KEY_BINDING_NONE: none
+ *  @G_PASTE_META_KEY_BINDING_PER_WINDOW: per-window
+ *  @G_PASTE_META_KEY_BINDING_BUILTIN: built-in
+ *  @G_PASTE_META_KEY_BINDING_IS_REVERSED: is reversed
+ *  @G_PASTE_META_KEY_BINDING_NON_MASKABLE: always active
+ */
+typedef enum
+{
+    G_PASTE_META_KEY_BINDING_NONE              = 0,
+    G_PASTE_META_KEY_BINDING_PER_WINDOW        = 1 << 0,
+    G_PASTE_META_KEY_BINDING_BUILTIN           = 1 << 1,
+    G_PASTE_META_KEY_BINDING_IS_REVERSED       = 1 << 2,
+    G_PASTE_META_KEY_BINDING_NON_MASKABLE      = 1 << 3,
+    G_PASTE_META_KEY_BINDING_IGNORE_AUTOREPEAT = 1 << 4,
+} GPasteMetaKeyBindingFlags;
+
 #define G_PASTE_TYPE_GNOME_SHELL_CLIENT (g_paste_gnome_shell_client_get_type ())
 
 typedef struct
 {
     const gchar               *accelerator;
-    GPasteGnomeShellActionMode flags;
+    GPasteMetaKeyBindingFlags  mode_flags;
+    GPasteGnomeShellActionMode grab_flags;
 } GPasteGnomeShellAccelerator;
 
-#define G_PASTE_GNOME_SHELL_ACCELERATOR(accelerator) ((GPasteGnomeShellAccelerator) {accelerator, G_PASTE_GNOME_SHELL_ACTION_MODE_ALL})
+#define G_PASTE_GNOME_SHELL_ACCELERATOR(accelerator) ((GPasteGnomeShellAccelerator) {accelerator, G_PASTE_META_KEY_BINDING_NONE, G_PASTE_GNOME_SHELL_ACTION_MODE_ALL})
 
 G_PASTE_FINAL_TYPE (GnomeShellClient, gnome_shell_client, GNOME_SHELL_CLIENT, GDBusProxy)
 
