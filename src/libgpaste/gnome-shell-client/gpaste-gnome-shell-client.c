@@ -117,8 +117,8 @@ g_paste_gnome_shell_client_grab_accelerator_sync (GPasteGnomeShellClient     *se
 {
     GVariant *accel[] = {
         g_variant_new_string (accelerator.accelerator),
-        g_variant_new_uint32 (accelerator.mode_flags),
-        g_variant_new_uint32 (accelerator.grab_flags)
+        g_variant_new_uint32 (accelerator.grab_flags),
+        g_variant_new_uint32 (accelerator.mode_flags)
     };
     DBUS_CALL_TWO_PARAMS_RET_UINT32 (GRAB_ACCELERATOR, accel);
 }
@@ -147,8 +147,8 @@ g_paste_gnome_shell_client_grab_accelerators_sync (GPasteGnomeShellClient      *
     {
         g_variant_builder_open (&builder, G_VARIANT_TYPE_TUPLE);
         g_variant_builder_add_value (&builder, g_variant_new_string (accelerator->accelerator));
-        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->mode_flags));
         g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->grab_flags));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->mode_flags));
         g_variant_builder_close (&builder);
     }
 
@@ -197,8 +197,8 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
 {
     GVariant *accel[] = {
         g_variant_new_string (accelerator.accelerator),
-        g_variant_new_uint32 (accelerator.mode_flags),
-        g_variant_new_uint32 (accelerator.grab_flags)
+        g_variant_new_uint32 (accelerator.grab_flags),
+        g_variant_new_uint32 (accelerator.mode_flags)
     };
     DBUS_CALL_TWO_PARAMS_ASYNC (GRAB_ACCELERATOR, accel);
 }
@@ -228,8 +228,8 @@ g_paste_gnome_shell_client_grab_accelerators (GPasteGnomeShellClient      *self,
     {
         g_variant_builder_open (&builder, G_VARIANT_TYPE_TUPLE);
         g_variant_builder_add_value (&builder, g_variant_new_string (accelerator->accelerator));
-        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->mode_flags));
         g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->grab_flags));
+        g_variant_builder_add_value (&builder, g_variant_new_uint32 (accelerator->mode_flags));
         g_variant_builder_close (&builder);
     }
 
