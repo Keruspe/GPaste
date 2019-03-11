@@ -9,7 +9,7 @@ const Gettext = imports.gettext;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
-const { Clutter, GLib, GPaste } = imports.gi;
+const { Clutter, GObject, GLib, GPaste } = imports.gi;
 
 const _ = Gettext.domain('GPaste').gettext;
 
@@ -26,9 +26,10 @@ const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 const UiItem = Me.imports.uiItem;
 
+var GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends PanelMenu.Button {
-    constructor() {
-        super(0.0, "GPaste");
+    _init() {
+        super._init(0.0, "GPaste");
 
         this._statusIcon = new StatusIcon.GPasteStatusIcon();
         this.actor.add_child(this._statusIcon.actor);
@@ -50,6 +51,7 @@ class GPasteIndicator extends PanelMenu.Button {
 
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', this._resetElementSize.bind(this));
         this._resetElementSize();
+
         this.menu.connect('open-state-changed', this._onOpenStateChanged.bind(this));
         this.menu.connect('key-press-event', this._onMenuKeyPress.bind(this));
 
@@ -364,5 +366,5 @@ class GPasteIndicator extends PanelMenu.Button {
         this._settings.disconnect(this._settingsMaxSizeChangedId);
         this._settings.disconnect(this._settingsSizeChangedId);
     }
-};
+});
 
