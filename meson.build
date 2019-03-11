@@ -24,12 +24,12 @@ pango_dep = dependency('pango')
 
 # Don't make dbus/gnome-control-center a build dependency if so desired.
 # They're still required at runtime though.
-dbus_service_dir = get_option('dbus-service-dir')
+dbus_service_dir = get_option('dbus-services-dir')
 if dbus_service_dir == ''
   dbus_service_dir = dependency('dbus-1').get_pkgconfig_variable('session_bus_services_dir')
 endif
 
-keybindings_dir = get_option('keys-dir')
+keybindings_dir = get_option('control-center-keybindings-dir')
 if keybindings_dir == ''
   keybindings_dir = dependency('gnome-keybindings').get_pkgconfig_variable('keysdir')
 endif
@@ -37,12 +37,15 @@ endif
 libgpaste_deps = [ gdk_dep, gdk_pixbuf_dep, glib_dep, gtk_dep ]
 
 if get_option('introspection')
-  mutter_clutter_dep = dependency('mutter-clutter-3', version: mutter_clutter_req)
+  mutter_clutter_dep = dependency('mutter-clutter-4', version: mutter_clutter_req)
   gjs_dep = dependency('gjs-1.0', version: gjs_req)
 endif
 
-if get_option('systemd')
-  unitdir=dependency('systemd').get_pkgconfig_variable('systemduserunitdir')
+userunit_dir = get_option('systemd-user-unit-dir')
+if userunit_dir == ''
+  if get_option('systemd')
+    userunit_dir = dependency('systemd').get_pkgconfig_variable('systemduserunitdir')
+  endif
 endif
 
 if get_option('vapi') and not get_option('introspection')
