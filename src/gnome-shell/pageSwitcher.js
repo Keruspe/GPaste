@@ -1,14 +1,12 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const PopupMenu = imports.ui.popupMenu;
 
-const Clutter = imports.gi.Clutter;
-const St = imports.gi.St;
+const { Clutter, St } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -17,7 +15,7 @@ const PageItem = Me.imports.pageItem;
 
 const MAX_PAGES = 20;
 
-var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
+class GPastePageSwitcher extends PopupMenu.PopupBaseMenuItem {
     constructor() {
         super({
             reactive: false,

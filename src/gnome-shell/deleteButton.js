@@ -1,14 +1,12 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Clutter = imports.gi.Clutter;
-const St = imports.gi.St;
+const { Clutter, St } = imports.gi;
 
-var GPasteDeleteButton = class {
+class GPasteDeleteButton {
     constructor(client, index) {
         this.actor = new St.Button();
 

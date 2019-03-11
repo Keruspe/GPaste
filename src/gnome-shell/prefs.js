@@ -1,13 +1,12 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const Gettext = imports.gettext;
 
-const GPaste = imports.gi.GPaste;
+const { GPaste } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
