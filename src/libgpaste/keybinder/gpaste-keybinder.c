@@ -199,10 +199,7 @@ _keybinding_grab_gnome_shell (_Keybinding *k)
     if (k->action || !k->shell_client)
         return;
 
-    GPasteGnomeShellAccelerator accel = {
-        g_paste_keybinding_get_accelerator (k->binding, k->settings),
-        G_PASTE_GNOME_SHELL_ACTION_MODE_ALL
-    };
+    GPasteGnomeShellAccelerator accel = G_PASTE_GNOME_SHELL_ACCELERATOR (g_paste_keybinding_get_accelerator (k->binding, k->settings));
 
     g_paste_gnome_shell_client_grab_accelerator (k->shell_client, accel, on_key_grabbed, k);
 }
