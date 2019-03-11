@@ -1,19 +1,15 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const Gettext = imports.gettext;
 
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
-const Clutter = imports.gi.Clutter;
-const GLib = imports.gi.GLib;
-
-const GPaste = imports.gi.GPaste;
+const { Clutter, GLib, GPaste } = imports.gi;
 
 const _ = Gettext.domain('GPaste').gettext;
 
@@ -30,7 +26,7 @@ const StateSwitch = Me.imports.stateSwitch;
 const StatusIcon = Me.imports.statusIcon;
 const UiItem = Me.imports.uiItem;
 
-var GPasteIndicator = class extends PanelMenu.Button {
+class GPasteIndicator extends PanelMenu.Button {
     constructor() {
         super(0.0, "GPaste");
 

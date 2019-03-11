@@ -1,15 +1,12 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const GPaste = imports.gi.GPaste;
+const { GPaste, St } = imports.gi;
 
-const St = imports.gi.St;
-
-var GPasteUiItem = class {
+class GPasteUiItem {
     constructor(menu) {
         this.actor = new St.Button({
             reactive: true,

@@ -1,16 +1,12 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const GLib = imports.gi.GLib;
-const St = imports.gi.St;
+const { GLib, GPaste, St } = imports.gi;
 
-const GPaste = imports.gi.GPaste;
-
-var GPasteEmptyHistoryItem = class {
+class GPasteEmptyHistoryItem {
     constructor(client, settings, menu) {
         this.actor = new St.Button({
             reactive: true,
