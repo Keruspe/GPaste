@@ -5,8 +5,6 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const PopupMenu = imports.ui.popupMenu;
 
 const Clutter = imports.gi.Clutter;
@@ -20,12 +18,9 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteItemPart = Me.imports.deleteItemPart;
 
-var GPasteItem = new Lang.Class({
-    Name: 'GPasteItem',
-    Extends: PopupMenu.PopupMenuItem,
-
-    _init: function(client, size, index) {
-        this.parent("");
+var GPasteItem = class extends PopupMenu.PopupMenuItem {
+    constructor(client, size, index) {
+        super("");
 
         this._client = client;
         this._uuid = null;
@@ -47,9 +42,9 @@ var GPasteItem = new Lang.Class({
         this.setTextSize(size);
 
         this.setIndex(index);
-    },
+    }
 
-    showIndex: function(state) {
+    showIndex(state) {
         if (state) {
             if (!this._indexLabelVisible) {
                 this.actor.insert_child_at_index(this._indexLabel, 1);
@@ -58,13 +53,13 @@ var GPasteItem = new Lang.Class({
             this.actor.remove_child(this._indexLabel);
         }
         this._indexLabelVisible = state;
-    },
+    }
 
-    refresh: function() {
+    refresh() {
         this.setIndex(this._index);
-    },
+    }
 
-    setIndex: function(index) {
+    setIndex(index) {
         const oldIndex = this._index || -1;
         this._index = index;
 
@@ -93,17 +88,17 @@ var GPasteItem = new Lang.Class({
             this.label.clutter_text.set_text(null);
             this.actor.hide();
         }
-    },
+    }
 
-    setTextSize: function(size) {
+    setTextSize(size) {
         this.label.clutter_text.max_length = size;
-    },
+    }
 
-    _onActivate: function(actor, event) {
+    _onActivate(actor, event) {
         this._client.select(this._index, null);
-    },
+    }
 
-    _onKeyPressed: function(actor, event) {
+    _onKeyPressed(actor, event) {
         const symbol = event.get_key_symbol();
         if (symbol == Clutter.KEY_space || symbol == Clutter.KEY_Return) {
             this.activate(event);
@@ -115,4 +110,4 @@ var GPasteItem = new Lang.Class({
         }
         return Clutter.EVENT_PROPAGATE;
     }
-});
+};

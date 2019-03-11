@@ -5,15 +5,11 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
 
-var GPasteDeleteButton = new Lang.Class({
-    Name: 'GPasteDeleteButton',
-
-    _init: function(client, index) {
+var GPasteDeleteButton = class {
+    constructor(client, index) {
         this.actor = new St.Button();
 
         this.actor.child = new St.Icon({
@@ -25,14 +21,14 @@ var GPasteDeleteButton = new Lang.Class({
         this.setIndex(index);
 
         this.actor.connect('clicked', this._onClick.bind(this));
-    },
+    }
 
-    setIndex: function(index) {
+    setIndex(index) {
         this._index = index;
-    },
+    }
 
-    _onClick: function() {
+    _onClick() {
         this._client.delete(this._index, null);
         return Clutter.EVENT_STOP;
     }
-});
+};

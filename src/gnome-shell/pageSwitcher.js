@@ -5,8 +5,6 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const PopupMenu = imports.ui.popupMenu;
 
 const Clutter = imports.gi.Clutter;
@@ -19,12 +17,9 @@ const PageItem = Me.imports.pageItem;
 
 const MAX_PAGES = 20;
 
-var GPastePageSwitcher = new Lang.Class({
-    Name: 'GPastePageSwitcher',
-    Extends: PopupMenu.PopupBaseMenuItem,
-
-    _init: function() {
-        this.parent({
+var GPastePageSwitcher = class extends PopupMenu.PopupBaseMenuItem {
+    constructor() {
+        super({
             reactive: false,
             can_focus: false
         });
@@ -35,13 +30,13 @@ var GPastePageSwitcher = new Lang.Class({
         this._active = -1;
         this._maxDisplayedSize = -1;
         this._pages = [];
-    },
+    }
 
-    setMaxDisplayedSize: function(size) {
+    setMaxDisplayedSize(size) {
         this._maxDisplayedSize = size;
-    },
+    }
 
-    updateForSize: function(size) {
+    updateForSize(size) {
         const pages = Math.min((size === 0) ? 0 : Math.floor((size - 1) / this._maxDisplayedSize + 1), MAX_PAGES);
 
         for (let i = this._pages.length; i < pages; ++i) {
@@ -61,9 +56,9 @@ var GPastePageSwitcher = new Lang.Class({
             this._switch(pages);
             return false;
         }
-    },
+    }
 
-    _addPage: function() {
+    _addPage() {
         let sw = new PageItem.GPastePageItem(this._pages.length + 1);
         this._pages.push(sw);
         this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
@@ -71,17 +66,17 @@ var GPastePageSwitcher = new Lang.Class({
         sw.connect('switch', (sw, page) => {
             this._switch(page);
         });
-    },
+    }
 
-    getPageOffset: function() {
+    getPageOffset() {
         return (this._active < 0) ? 0 : (this._active * this._maxDisplayedSize);
-    },
+    }
 
-    getPage: function() {
+    getPage() {
         return this._active + 1;
-    },
+    }
 
-    setActive: function(page) {
+    setActive(page) {
         if (page !== 0 && page !== (this._active + 1) && page <= this._pages.length) {
             if (this._active !== -1) {
                 this._pages[this._active].setActive(false);
@@ -89,9 +84,9 @@ var GPastePageSwitcher = new Lang.Class({
             this._active = page - 1;
             this._pages[this._active].setActive(true);
         }
-    },
+    }
 
-    previous: function() {
+    previous() {
         const page = this.getPage();
 
         if (page > 1) {
@@ -99,9 +94,9 @@ var GPastePageSwitcher = new Lang.Class({
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
-    },
+    }
 
-    next: function() {
+    next() {
         const page = this.getPage();
 
         if (page < this._pages.length) {
@@ -109,11 +104,11 @@ var GPastePageSwitcher = new Lang.Class({
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
-    },
+    }
 
-    _switch: function(page) {
+    _switch(page) {
         if (!isNaN(page)) {
             this.emit('switch', page);
         }
     }
-});
+};

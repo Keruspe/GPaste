@@ -5,16 +5,12 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const PopupMenu = imports.ui.popupMenu;
 
 const St = imports.gi.St;
 
-var GPasteStatusIcon = new Lang.Class({
-    Name: 'GPasteStatusIcon',
-
-    _init: function() {
+var GPasteStatusIcon = class {
+    constructor() {
         this.actor = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
 
         this.actor.add_child(new St.Icon({
@@ -24,4 +20,4 @@ var GPasteStatusIcon = new Lang.Class({
 
         this.actor.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
     }
-});
+};

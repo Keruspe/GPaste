@@ -5,16 +5,12 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-
 const GPaste = imports.gi.GPaste;
 
 const St = imports.gi.St;
 
-var GPasteUiItem = new Lang.Class({
-    Name: 'GPasteUiItem',
-
-    _init: function(menu) {
+var GPasteUiItem = class {
+    constructor(menu) {
         this.actor = new St.Button({
             reactive: true,
             can_focus: true,
@@ -29,4 +25,4 @@ var GPasteUiItem = new Lang.Class({
             GPaste.util_spawn('Ui');
         });
     }
-});
+};

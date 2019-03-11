@@ -5,16 +5,12 @@
  */
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Lang = imports.lang;
-const Signals = imports.signals;
-
 const St = imports.gi.St;
 
-var GPastePageItem = new Lang.Class({
-    Name: 'GPastePageItem',
+var GPastePageItem = class {
     Implements: [Signals.WithSignals],
 
-    _init: function(page) {
+    constructor(page) {
         this.actor = new St.Button({
             reactive: true,
             can_focus: false,
@@ -29,9 +25,9 @@ var GPastePageItem = new Lang.Class({
         this.actor.connect('clicked', () => {
             this.emit('switch', this._page);
         });
-    },
+    }
 
-    setActive: function(active) {
+    setActive(active) {
       if (active) {
           this.actor.add_style_pseudo_class('active');
           this.actor.set_style("font-weight: bold;");
@@ -39,9 +35,10 @@ var GPastePageItem = new Lang.Class({
           this.actor.remove_style_pseudo_class('active');
           this.actor.set_style(null);
       }
-    },
+    }
 
-    destroy: function() {
+    destroy() {
         this.actor.destroy();
     }
-});
+};
+Signals.addSignalMethods(GPastePageItem.prototype);

@@ -1,0 +1,1 @@
+subdir('gnome-shell-client')
