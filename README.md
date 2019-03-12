@@ -39,6 +39,6 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
 
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 3.30 is: [GPaste 3.30.2](https://www.imagination-land.org/posts/2018-11-14-gpaste-3.30.2-released.html).
+Latest release for GNOME 3.30 is: [GPaste 3.32.0](https://www.imagination-land.org/posts/2019-03-12-gpaste-3.32.0-released.html).
 
-Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.30.2.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.32.0.tar.xz>
