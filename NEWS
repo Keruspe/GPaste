@@ -1,3 +1,9 @@
+NEW in 3.32.0 (12/03/2019)
+=============
+
+- Update to gnome-shell 3.32.0
+- Allow loading settings from ~/.config/gpaste/settings
+
 NEW in 3.30.2 (14/11/2018)
 =============
 
