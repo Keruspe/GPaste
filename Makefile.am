@@ -1,6 +1,6 @@
 ## This file is part of GPaste.
 ##
-## Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+## Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
 SUBDIRS = po
 
@@ -96,6 +96,10 @@ include man/1.mk
 # Tests stuff
 
 include tests/gnome-shell-client.mk
+
+# Meson stuff
+
+include meson.mk
 
 # Maintainance stuff
 
