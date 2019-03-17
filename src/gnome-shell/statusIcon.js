@@ -8,7 +8,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const { St } = imports.gi;
 
-class GPasteStatusIcon {
+var GPasteStatusIcon = class {
     constructor() {
         this.actor = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
 

@@ -6,7 +6,7 @@
 
 const { GLib, GPaste, St } = imports.gi;
 
-class GPasteEmptyHistoryItem {
+var GPasteEmptyHistoryItem = class {
     constructor(client, settings, menu) {
         this.actor = new St.Button({
             reactive: true,

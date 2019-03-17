@@ -11,7 +11,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteButton = Me.imports.deleteButton;
 
-class GPasteDeleteItemPart {
+var GPasteDeleteItemPart = class {
     constructor(client, index) {
         this.actor = new St.Bin({ x_align: St.Align.END });
         this._deleteButton = new DeleteButton.GPasteDeleteButton(client, index);

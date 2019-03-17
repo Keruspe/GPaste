@@ -10,7 +10,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const _ = Gettext.domain('GPaste').gettext;
 
-class GPasteDummyHistoryItem extends PopupMenu.PopupMenuItem {
+var GPasteDummyHistoryItem = class extends PopupMenu.PopupMenuItem {
     constructor() {
         super(_("(Couldn't connect to GPaste daemon)"));
         this.setSensitive(false);

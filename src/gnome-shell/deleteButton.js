@@ -6,7 +6,7 @@
 
 const { Clutter, St } = imports.gi;
 
-class GPasteDeleteButton {
+var GPasteDeleteButton = class {
     constructor(client, index) {
         this.actor = new St.Button();
 

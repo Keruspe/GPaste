@@ -13,7 +13,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteItemPart = Me.imports.deleteItemPart;
 
-class GPasteItem extends PopupMenu.PopupMenuItem {
+var GPasteItem = class extends PopupMenu.PopupMenuItem {
     constructor(client, size, index) {
         super("");
 

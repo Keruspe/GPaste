@@ -8,7 +8,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const { St } = imports.gi;
 
-class GPasteSearchItem extends PopupMenu.PopupBaseMenuItem {
+var GPasteSearchItem = class extends PopupMenu.PopupBaseMenuItem {
     constructor() {
         super({
             activate: false,

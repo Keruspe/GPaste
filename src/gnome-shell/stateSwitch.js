@@ -10,7 +10,7 @@ const PopupMenu = imports.ui.popupMenu;
 
 const _ = Gettext.domain('GPaste').gettext;
 
-class GPasteStateSwitch extends PopupMenu.PopupSwitchMenuItem {
+var GPasteStateSwitch = class extends PopupMenu.PopupSwitchMenuItem {
     constructor(client) {
         super(_("Track changes"), client.is_active());
 
