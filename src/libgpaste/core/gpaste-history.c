@@ -214,6 +214,9 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
                                          GPasteItem           *old,
                                          GPasteItem           *new)
 {
+    if (_G_PASTE_IS_IMAGE_ITEM (old) && _G_PASTE_IS_IMAGE_ITEM (new))
+        return g_paste_image_item_is_growing (_G_PASTE_IMAGE_ITEM (new), _G_PASTE_IMAGE_ITEM (old));
+
     if (!(g_paste_settings_get_growing_lines (priv->settings) &&
         _G_PASTE_IS_TEXT_ITEM (old) && _G_PASTE_IS_TEXT_ITEM (new) &&
         !_G_PASTE_IS_PASSWORD_ITEM (old) && !_G_PASTE_IS_PASSWORD_ITEM (new)))
