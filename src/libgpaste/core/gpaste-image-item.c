@@ -80,6 +80,24 @@ g_paste_image_item_get_image (const GPasteImageItem *self)
     return priv->image;
 }
 
+G_PASTE_VISIBLE gboolean
+g_paste_image_item_is_growing (const GPasteImageItem *self,
+                               const GPasteImageItem *other)
+{
+    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (other), FALSE);
+
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
+    const GPasteImageItemPrivate *_priv = _g_paste_image_item_get_instance_private (other);
+
+    if (!priv->image || !_priv->image)
+        return FALSE;
+
+    gsize len = MIN (gdk_pixbuf_get_byte_length (priv->image), gdk_pixbuf_get_byte_length (_priv->image));
+
+    return !memcmp (gdk_pixbuf_read_pixels (priv->image), gdk_pixbuf_read_pixels (_priv->image), len);
+}
+
 static gboolean
 g_paste_image_item_equals (const GPasteItem *self,
                            const GPasteItem *other)

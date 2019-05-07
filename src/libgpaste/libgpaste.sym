@@ -520,3 +520,8 @@ global:
     g_paste_util_get_dbus_item_result;
     g_paste_util_get_dbus_items_result;
 } LIBGPASTE_3_28_3;
+
+LIBGPASTE_3_32_1 {
+global:
+    g_paste_iimage_item_is_growing;
+} LIBGPASTE_3_32_0;

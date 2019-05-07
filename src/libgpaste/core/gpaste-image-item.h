@@ -23,6 +23,9 @@ const gchar     *g_paste_image_item_get_checksum (const GPasteImageItem *self);
 const GDateTime *g_paste_image_item_get_date     (const GPasteImageItem *self);
 GdkPixbuf       *g_paste_image_item_get_image    (const GPasteImageItem *self);
 
+gboolean         g_paste_image_item_is_growing   (const GPasteImageItem *self,
+                                                  const GPasteImageItem *other);
+
 GPasteItem      *g_paste_image_item_new           (GdkPixbuf *img);
 GPasteItem      *g_paste_image_item_new_from_file (const gchar *path,
                                                    GDateTime   *date);
