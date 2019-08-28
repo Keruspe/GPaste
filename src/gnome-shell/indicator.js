@@ -32,7 +32,7 @@ class GPasteIndicator extends PanelMenu.Button {
         super._init(0.0, "GPaste");
 
         this._statusIcon = new StatusIcon.GPasteStatusIcon();
-        this.actor.add_child(this._statusIcon.actor);
+        this.add_child(this._statusIcon.actor);
 
         this._settings = new GPaste.Settings();
 
@@ -81,9 +81,9 @@ class GPasteIndicator extends PanelMenu.Button {
             this._addToHeader(this._searchItem);
             this._addToHeader(this._pageSwitcher);
 
-            this._actions.actor.add(this._uiItem.actor, { expand: true, x_fill: false });
-            this._actions.actor.add(this._emptyHistoryItem.actor, { expand: true, x_fill: false });
-            this._actions.actor.add(this._aboutItem.actor, { expand: true, x_fill: false });
+            this._actions.add(this._uiItem.actor, { expand: true, x_fill: false });
+            this._actions.add(this._emptyHistoryItem.actor, { expand: true, x_fill: false });
+            this._actions.add(this._aboutItem.actor, { expand: true, x_fill: false });
 
             this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', this._resetMaxDisplayedSize.bind(this));
             this._resetMaxDisplayedSize();
@@ -97,7 +97,7 @@ class GPasteIndicator extends PanelMenu.Button {
             this.menu.actor.connect('key-press-event', this._onKeyPressEvent.bind(this));
             this.menu.actor.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
 
-            this.actor.connect('destroy', this._onDestroy.bind(this));
+            this.connect('destroy', this._onDestroy.bind(this));
         });
     }
 
@@ -168,7 +168,7 @@ class GPasteIndicator extends PanelMenu.Button {
                 });
 
                 /* If we had no result, updateForSize would have returned false */
-                this._dummyHistoryItem.actor.hide();
+                this._dummyHistoryItem.hide();
 
                 this._history.slice(results - offset, maxSize).forEach(function(i) {
                     i.setIndex(-1);
@@ -283,17 +283,17 @@ class GPasteIndicator extends PanelMenu.Button {
 
     _updateVisibility(empty, search) {
         if (!empty) {
-            this._dummyHistoryItem.actor.hide();
+            this._dummyHistoryItem.hide();
             this._emptyHistoryItem.actor.show();
-            this._searchItem.actor.show();
+            this._searchItem.show();
         } else if (this._hasSearch()) {
             this._dummyHistoryItem.showNoResult();
             this._emptyHistoryItem.actor.hide();
-            this._searchItem.actor.show();
+            this._searchItem.show();
         } else {
             this._dummyHistoryItem.showEmpty();
             this._emptyHistoryItem.actor.hide();
-            this._searchItem.actor.hide();
+            this._searchItem.hide();
         }
     }
 

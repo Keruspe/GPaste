@@ -6,7 +6,7 @@
 
 const PopupMenu = imports.ui.popupMenu;
 
-const { Clutter, St } = imports.gi;
+const { Clutter, GObject, St } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -15,15 +15,19 @@ const PageItem = Me.imports.pageItem;
 
 const MAX_PAGES = 20;
 
-class GPastePageSwitcher extends PopupMenu.PopupBaseMenuItem {
-    constructor() {
-        super({
+var GPastePageSwitcher = GObject.registerClass({
+    Signals: {
+        'switch': { param_types: [GObject.TYPE_UINT64] },
+    },
+}, class GPastePageSwitcher extends PopupMenu.PopupBaseMenuItem {
+    _init() {
+        super._init({
             reactive: false,
             can_focus: false
         });
 
         this._box = new St.BoxLayout();
-        this.actor.add(this._box, { expand: true, x_fill: false, can_focus: false, reactive: false });
+        this.add(this._box, { expand: true, x_fill: false, can_focus: false, reactive: false });
 
         this._active = -1;
         this._maxDisplayedSize = -1;
@@ -109,4 +113,4 @@ class GPastePageSwitcher extends PopupMenu.PopupBaseMenuItem {
             this.emit('switch', page);
         }
     }
-};
+});

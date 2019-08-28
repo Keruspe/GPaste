@@ -6,16 +6,17 @@
 
 const PopupMenu = imports.ui.popupMenu;
 
-const { Clutter, GPaste, Pango, St } = imports.gi;
+const { Clutter, GObject, GPaste, Pango, St } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
 const DeleteItemPart = Me.imports.deleteItemPart;
 
+var GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenu.PopupMenuItem {
-    constructor(client, size, index) {
-        super("");
+    _init(client, size, index) {
+        super._init("");
 
         this._client = client;
         this._uuid = null;
@@ -28,10 +29,10 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
         }
 
         this.connect('activate', this._onActivate.bind(this));
-        this.actor.connect('key-press-event', this._onKeyPressed.bind(this));
+        this.connect('key-press-event', this._onKeyPressed.bind(this));
 
         this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, index);
-        this.actor.add(this._deleteItem.actor, { expand: true, x_align: St.Align.END });
+        this.add(this._deleteItem.actor, { expand: true, x_align: St.Align.END });
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this.setTextSize(size);
@@ -42,10 +43,10 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
     showIndex(state) {
         if (state) {
             if (!this._indexLabelVisible) {
-                this.actor.insert_child_at_index(this._indexLabel, 1);
+                this.insert_child_at_index(this._indexLabel, 1);
             }
         } else if (this._indexLabelVisible) {
-            this.actor.remove_child(this._indexLabel);
+            this.remove_child(this._indexLabel);
         }
         this._indexLabelVisible = state;
     }
@@ -76,12 +77,12 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
                 }
                 this.label.clutter_text.set_text(text);
                 if (oldIndex == -1) {
-                    this.actor.show();
+                    this.show();
                 }
             });
         } else {
             this.label.clutter_text.set_text(null);
-            this.actor.hide();
+            this.hide();
         }
     }
 
@@ -105,4 +106,4 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
         }
         return Clutter.EVENT_PROPAGATE;
     }
-};
+});

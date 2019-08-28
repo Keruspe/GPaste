@@ -6,13 +6,16 @@
 
 const Gettext = imports.gettext;
 
+const { GObject } = imports.gi;
+
 const PopupMenu = imports.ui.popupMenu;
 
 const _ = Gettext.domain('GPaste').gettext;
 
+var GPasteStateSwitch = GObject.registerClass(
 class GPasteStateSwitch extends PopupMenu.PopupSwitchMenuItem {
-    constructor(client) {
-        super(_("Track changes"), client.is_active());
+    _init(client) {
+        super._init(_("Track changes"), client.is_active());
 
         this._client = client;
 
@@ -27,4 +30,4 @@ class GPasteStateSwitch extends PopupMenu.PopupSwitchMenuItem {
     _onToggle(state) {
         this._client.track(this.state, null);
     }
-};
+});

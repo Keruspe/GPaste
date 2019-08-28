@@ -6,23 +6,26 @@
 
 const Gettext = imports.gettext;
 
+const { GObject } = imports.gi;
+
 const PopupMenu = imports.ui.popupMenu;
 
 const _ = Gettext.domain('GPaste').gettext;
 
+var GPasteDummyHistoryItem = GObject.registerClass(
 class GPasteDummyHistoryItem extends PopupMenu.PopupMenuItem {
-    constructor() {
-        super(_("(Couldn't connect to GPaste daemon)"));
+    _init() {
+        super._init(_("(Couldn't connect to GPaste daemon)"));
         this.setSensitive(false);
     }
 
     showEmpty() {
         this.label.text = _("(Empty)");
-        this.actor.show();
+        this.show();
     }
 
     showNoResult() {
         this.label.text = _("(No result)");
-        this.actor.show();
+        this.show();
     }
-};
+});

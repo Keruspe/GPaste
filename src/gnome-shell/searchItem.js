@@ -6,11 +6,15 @@
 
 const PopupMenu = imports.ui.popupMenu;
 
-const { St } = imports.gi;
+const { GObject, St } = imports.gi;
 
-class GPasteSearchItem extends PopupMenu.PopupBaseMenuItem {
-    constructor() {
-        super({
+var GPasteSearchItem = GObject.registerClass({
+    Signals: {
+        'text-changed': { param_types: [] },
+    },
+}, class GPasteSearchItem extends PopupMenu.PopupBaseMenuItem {
+    _init() {
+        super._init({
             activate: false,
             reactive: true,
             hover: false,
@@ -24,7 +28,7 @@ class GPasteSearchItem extends PopupMenu.PopupBaseMenuItem {
             reactive: true,
             can_focus: true
         });
-        this.actor.add(this._entry, { expand: true });
+        this.add(this._entry, { expand: true });
 
         this._entry.set_primary_icon(new St.Icon({
             style_class:'search-entry-icon',
@@ -66,4 +70,4 @@ class GPasteSearchItem extends PopupMenu.PopupBaseMenuItem {
         }
         this.emit('text-changed');
     }
-};
+});
