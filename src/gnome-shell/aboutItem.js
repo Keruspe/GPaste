@@ -6,7 +6,7 @@
 
 const { St } = imports.gi;
 
-class GPasteAboutItem {
+var GPasteAboutItem = class {
     constructor(client, menu) {
         this.actor = new St.Button({
             reactive: true,

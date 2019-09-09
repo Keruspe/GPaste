@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2019-03-12 09:51+0100\n"
+"POT-Creation-Date: 2019-09-09 15:45+0200\n"
 "PO-Revision-Date: 2017-03-17 17:38+0100\n"
 "Last-Translator: Heimen Stoffels <vistausss@outlook.com>\n"
 "Language-Team: Vistaus <vistausss@outlook.com>\n"
@@ -27,12 +27,12 @@ msgid "is already running."
 msgstr "draait al."
 
 #. This is the date format "month/day/year time"
-#: src/libgpaste/core/gpaste-image-item.c:222
+#: src/libgpaste/core/gpaste-image-item.c:240
 msgid "%m/%d/%y %T"
 msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: src/libgpaste/core/gpaste-image-item.c:224
+#: src/libgpaste/core/gpaste-image-item.c:242
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Afbeelding, %d x %d (%s)]"

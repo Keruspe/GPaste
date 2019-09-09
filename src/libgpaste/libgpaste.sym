@@ -505,7 +505,12 @@ global:
     g_paste_util_empty_with_confirmation_sync;
 } LIBGPASTE_3_28_1;
 
-LIBGPASTE_3_32_0 {
+LIBGPASTE_3_32_1 {
+global:
+    g_paste_iimage_item_is_growing;
+} LIBGPASTE_3_28_3;
+
+LIBGPASTE_3_36_0 {
 global:
     g_paste_client_item_get_type;
     g_paste_client_item_get_uuid;
@@ -519,9 +524,4 @@ global:
 
     g_paste_util_get_dbus_item_result;
     g_paste_util_get_dbus_items_result;
-} LIBGPASTE_3_28_3;
-
-LIBGPASTE_3_32_1 {
-global:
-    g_paste_iimage_item_is_growing;
-} LIBGPASTE_3_32_0;
+} LIBGPASTE_3_32_1;

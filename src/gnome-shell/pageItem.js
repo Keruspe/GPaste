@@ -8,7 +8,7 @@ const { St } = imports.gi;
 
 const Signals = imports.signals;
 
-class GPastePageItem {
+var GPastePageItem = class {
     constructor(page) {
         this.actor = new St.Button({
             reactive: true,
