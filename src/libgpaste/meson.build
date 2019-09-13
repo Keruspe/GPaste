@@ -141,6 +141,8 @@ libgpaste_inc = include_directories(
   'util',
 )
 
+libgpaste_symbols_file = meson.current_source_dir() / 'libgpaste.sym'
+
 libgpaste = library(
   'gpaste',
   sources: libgpaste_sources,
@@ -148,7 +150,8 @@ libgpaste = library(
   dependencies: libgpaste_deps,
   install: true,
   install_dir: get_option('libdir'),
-   include_directories : libgpaste_inc,
+  include_directories : libgpaste_inc,
+  link_args: ['-Wl,--version-script=' + libgpaste_symbols_file],
 )
 
 libgpaste_internal_dep = declare_dependency(
