@@ -1,3 +1,8 @@
+NEW in 3.34.1 (09/10/2019)
+=============
+
+- Compatibility with recent appstream-glib
+
 NEW in 3.34.0 (09/09/2019)
 =============
 

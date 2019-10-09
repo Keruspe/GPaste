@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2019-09-09 15:35+0200\n"
+"POT-Creation-Date: 2019-10-09 10:05+0200\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -596,7 +596,7 @@ msgstr "Gérez l'historique de votre presse-papier"
 msgid "Marc-Antoine Perennou"
 msgstr "Marc-Antoine Perennou"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:12
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -604,7 +604,7 @@ msgstr ""
 "GPaste est un outil de gestion du presse-papier qui vous permet de suivre et "
 "de manipuler votre historique de presse-papier de façon très configurable."
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:15
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
@@ -612,15 +612,31 @@ msgstr ""
 "GPaste vous fournit un outil graphique vous permettant de tout gérer "
 "simplement"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:22
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
 msgstr "L'interface principale"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:26
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:30
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:34
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 msgid "The settings UI"
 msgstr "L'interface de préférences"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+msgid "This is a maintenance release. Changes:"
+msgstr "Ceci est une mise à jour de maintenance. Changements:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+msgid "Compatibility with recent appstream-glib"
+msgstr "Compatibilité avec les verisons récentes d'appstream-glib"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
+msgid "First release for GNOME 3.34. Changes:"
+msgstr "Première version pour GNOME 3.34. Changements:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+msgid "Update to gnome-shell 3.34.0"
+msgstr "Mise à jour pour gnome-shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
