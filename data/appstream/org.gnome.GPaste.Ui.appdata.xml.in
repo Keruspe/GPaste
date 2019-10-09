@@ -8,6 +8,7 @@
   <project_license>BSD-2-Clause</project_license>
   <metadata_license>CC-BY-SA-3.0</metadata_license>
   <project_group>GNOME</project_group>
+  <content_rating type="oars-1.1" />
   <description>
     <p>
       GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
@@ -41,4 +42,22 @@
   <url type="help">https://github.com/Keruspe/GPaste/issues</url>
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
+  <releases>
+      <release version="3.34.1" type="stable" date="2019-10-09">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Compatibility with recent appstream-glib</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.34.0" type="stable" date="2019-09-09">
+          <description>
+              <p>First release for GNOME 3.34. Changes:</p>
+              <ul>
+                  <li>Update to gnome-shell 3.34.0</li>
+              </ul>
+          </description>
+      </release>
+  </releases>
 </component>

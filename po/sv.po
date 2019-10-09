@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2019-09-09 15:45+0200\n"
+"POT-Creation-Date: 2019-10-09 10:10+0200\n"
 "PO-Revision-Date: 2018-01-06 08:14+0100\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Svenska Språkfiler <contactform@svenskasprakfiler.se>\n"
@@ -594,7 +594,7 @@ msgstr "Hantera din urklippshistorik"
 msgid "Marc-Antoine Perennou"
 msgstr "Marc-Antoine Perennou"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:12
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -602,22 +602,38 @@ msgstr ""
 "GPaste är ett system för urklippshantering, som låter dig övervaka och "
 "hantera din urklippshistorik på ett mycket anpassningsbart sätt."
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:15
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
 "GPaste är ett grafiskt verktyg som låter dig hantera allt på ett enkelt sätt."
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:22
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
 msgstr "Primärt UI"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:26
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:30
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:34
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 msgid "The settings UI"
 msgstr "Inställnings-UI"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+msgid "This is a maintenance release. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+msgid "Compatibility with recent appstream-glib"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
+msgid "First release for GNOME 3.34. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+msgid "Update to gnome-shell 3.34.0"
+msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
