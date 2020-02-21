@@ -19,6 +19,7 @@ typedef struct
 
     GtkWindow      *rootwin;
 
+    gchar          *uuid;
     guint64         index;
     gboolean        bold;
 
@@ -75,7 +76,7 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
                                gpointer      user_data)
 {
     GPasteUiItem *self = user_data;
-    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClientItem) txt = g_paste_client_get_element_finish (priv->client, res, &error);
 
@@ -83,6 +84,9 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
 
     g_autofree gchar *oneline = g_paste_util_replace (g_paste_client_item_get_value (txt), "\n", " ");
+    g_autofree gchar *uuid = priv->uuid;
+
+    priv->uuid = g_strdup (g_paste_client_item_get_uuid (txt));
 
     if (priv->bold)
     {
@@ -167,6 +171,7 @@ g_paste_ui_item_dispose (GObject *object)
 
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);
+    g_clear_pointer (&priv->uuid, g_free);
 
     G_OBJECT_CLASS (g_paste_ui_item_parent_class)->dispose (object);
 }
