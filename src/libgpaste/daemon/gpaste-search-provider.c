@@ -49,28 +49,6 @@ _g_paste_dbus_get_as_result (GVariant *parameters)
     return g_paste_dbus_get_as_result (variant);
 }
 
-static guint64 *
-_g_paste_dbus_get_as_result_as_at (GVariant *parameters,
-                                   guint64  *len)
-{
-    GVariantIter parameters_iter;
-
-    g_variant_iter_init (&parameters_iter, parameters);
-
-    g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
-    guint64 _len;
-    g_autofree const gchar **r = g_variant_get_strv (variant, &_len);
-    guint64 *indexes = g_malloc (_len * sizeof (guint64));
-
-    for (guint64 i = 0; i < _len; ++i)
-        indexes[i] = g_ascii_strtoull (r[i], NULL, 0);
-
-    if (len)
-        *len = _len;
-
-    return indexes;
-}
-
 /****************/
 /* DBus Mathods */
 /****************/
@@ -83,18 +61,9 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autofree gpointer *data = (gpointer *) user_data;
     GPasteClient *client = data[0];
     GDBusMethodInvocation *invocation = data[1];
-    guint64 hits;
-    g_autofree guint64 *r = g_paste_client_search_finish (client,
-                                                          res,
-                                                          &hits,
-                                                          NULL); /* Error */
-    g_auto (GStrv) results = g_new (char *, hits + 1);
+    g_auto (GStrv) results = g_paste_client_search_finish (client, res, NULL /* Error */);
 
-    for (guint64 i = 0; i < hits; ++i)
-        results[i] = g_strdup_printf ("%" G_GUINT64_FORMAT, r[i]);
-    results[hits] = NULL;
-
-    GVariant *ans = g_variant_new_strv ((const char * const *) results, hits);
+    GVariant *ans = g_variant_new_strv ((const char * const *) results, -1);
     g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
 }
 
@@ -162,7 +131,7 @@ typedef struct
 {
     GPasteClient          *client;
     GDBusMethodInvocation *invocation;
-    guint64               *indexes;
+    const gchar          **uuids;
 } GetResultMetasData;
 
 static void
@@ -172,7 +141,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     g_autofree GetResultMetasData *data = user_data;
     GPasteClient *client = data->client;
-    g_autofree guint64 *indexes = data->indexes;
+    g_autofree const gchar **uuids = data->uuids;
     g_auto (GVariantBuilder) builder;
 
     g_variant_builder_init (&builder, (GVariantType *) "aa{sv}");
@@ -185,12 +154,11 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
         const GPasteClientItem *item = i->data;
         const gchar *value = g_paste_client_item_get_value (item);
         g_auto (GVariantBuilder) dict;
-        g_autofree gchar *index = g_strdup_printf ("%" G_GUINT64_FORMAT, indexes[n]);
         g_autofree gchar *result = g_paste_util_replace (value, "\n", " ");
 
         g_variant_builder_init (&dict, G_VARIANT_TYPE_VARDICT);
 
-        append_dict_entry (&dict, "id", index);
+        append_dict_entry (&dict, "id", uuids[n]);
         append_dict_entry (&dict, "name", result);
         append_dict_entry (&dict, "gicon", G_PASTE_ICON_NAME);
         append_dict_entry (&dict, "clipboardText", value);
@@ -210,21 +178,19 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
                                                   GVariant                          *parameters)
 {
     guint64 len;
-    guint64 *indexes = _g_paste_dbus_get_as_result_as_at (parameters, &len);
+    g_autofree const gchar **uuids = g_variant_get_strv (parameters, &len);
 
     if (!len)
-    {
-        g_free (indexes);
         return FALSE;
-    }
 
     GetResultMetasData *data = g_new (GetResultMetasData, 1);
 
     data->client = priv->client;
     data->invocation = invocation;
-    data->indexes = indexes;
+    data->uuids = uuids;
+    uuids = NULL; // don't autofree
 
-    g_paste_client_get_elements (priv->client, indexes, len, on_elements_ready, data);
+    g_paste_client_get_elements (priv->client, uuids, len, on_elements_ready, data);
 
     return TRUE;
 }
@@ -240,9 +206,8 @@ g_paste_search_provider_private_activate_result (const GPasteSearchProviderPriva
     g_autoptr (GVariant) indexv = g_variant_iter_next_value (&parameters_iter);
     G_GNUC_UNUSED g_autoptr (GVariant) terms = g_variant_iter_next_value (&parameters_iter);
     G_GNUC_UNUSED g_autoptr (GVariant) timestamp = g_variant_iter_next_value (&parameters_iter);
-    guint64 index = g_ascii_strtoull (g_variant_get_string (indexv, NULL), NULL, 0);
 
-    g_paste_client_select (priv->client, index, NULL, NULL);
+    g_paste_client_select (priv->client, g_variant_get_string (indexv, NULL), NULL, NULL);
 
     return FALSE;
 }

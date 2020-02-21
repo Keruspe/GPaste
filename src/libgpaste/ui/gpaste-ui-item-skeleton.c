@@ -165,34 +165,44 @@ g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
 }
 
 static void
-action_set_index (gpointer data,
-                  gpointer user_data)
+action_set_uuid (gpointer data,
+                 gpointer user_data)
 {
     GPasteUiItemAction *a = data;
-    guint64 *i = user_data;
+    const gchar *uuid = user_data;
 
-    g_paste_ui_item_action_set_index (a, *i);
+    g_paste_ui_item_action_set_uuid (a, uuid);
 }
 
 /**
- * g_paste_ui_item_skeleton_set_index:
+ * g_paste_ui_item_skeleton_set_index_and_uuid:
  * @self: the #GPasteUiItemSkeleton instance
- * @index: the new index to display
+ * @index: the index of the new item to display
+ * @uuid: the uuid of the new item to display
  *
- * Changes the displayed index
+ * Changes the displayed item
  */
 G_PASTE_VISIBLE void
-g_paste_ui_item_skeleton_set_index (GPasteUiItemSkeleton *self,
-                                    guint64               index)
+g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
+                                             guint64               index,
+                                             const gchar          *uuid)
 {
     g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
 
     const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
-    g_autofree gchar *_index = g_strdup_printf("%" G_GUINT64_FORMAT, index);
 
-    gtk_label_set_text (priv->index_label, _index);
+    if (index == (guint64) -1 || index == (guint64) -2)
+    {
+        gtk_label_set_text (priv->index_label, "");
+    }
+    else
+    {
+        g_autofree gchar *_index = g_strdup_printf("%" G_GUINT64_FORMAT, index);
 
-    g_slist_foreach (priv->actions, action_set_index, &index);
+        gtk_label_set_text (priv->index_label, _index);
+    }
+
+    g_slist_foreach (priv->actions, action_set_uuid, (gpointer) uuid);
 }
 
 /**

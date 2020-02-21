@@ -10,27 +10,28 @@ typedef struct
 {
     GPasteClient *client;
 
-    guint64       index;
+    gchar        *uuid;
 } GPasteUiItemActionPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemAction, ui_item_action, GTK_TYPE_BUTTON)
 
 /**
- * g_paste_ui_item_action_set_index:
+ * g_paste_ui_item_action_set_uuid:
  * @self: a #GPasteUiItemAction instance
- * @index: the index of the corresponding item
+ * @uuid: the uuid of the corresponding item
  *
- * Track a new index
+ * Track a new uuid
  */
 G_PASTE_VISIBLE void
-g_paste_ui_item_action_set_index (GPasteUiItemAction *self,
-                             guint64         index)
+g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
+                                 const gchar        *uuid)
 {
     g_return_if_fail (_G_PASTE_IS_UI_ITEM_ACTION (self));
 
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
+    g_autofree gchar *old_uuid = priv->uuid;
 
-    priv->index = index;
+    priv->uuid = g_strdup (uuid);
 }
 
 static gboolean
@@ -42,7 +43,7 @@ g_paste_ui_item_action_button_press_event (GtkWidget      *widget,
     GPasteUiItemActionClass *klass = G_PASTE_UI_ITEM_ACTION_GET_CLASS (self);
 
     if (klass->activate)
-        klass->activate (self, priv->client, priv->index);
+        klass->activate (self, priv->client, priv->uuid);
 
     return TRUE;
 }
@@ -53,6 +54,7 @@ g_paste_ui_item_action_dispose (GObject *object)
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (object));
 
     g_clear_object (&priv->client);
+    g_clear_pointer (&priv->uuid, g_free);
 
     G_OBJECT_CLASS (g_paste_ui_item_action_parent_class)->dispose (object);
 }
@@ -65,11 +67,8 @@ g_paste_ui_item_action_class_init (GPasteUiItemActionClass *klass)
 }
 
 static void
-g_paste_ui_item_action_init (GPasteUiItemAction *self)
+g_paste_ui_item_action_init (GPasteUiItemAction *self G_GNUC_UNUSED)
 {
-    GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
-
-    priv->index = -1;
 }
 
 /**

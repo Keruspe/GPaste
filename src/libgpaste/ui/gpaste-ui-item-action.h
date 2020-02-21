@@ -26,11 +26,11 @@ struct _GPasteUiItemActionClass
     /*< pure virtual >*/
     void (*activate) (GPasteUiItemAction *self,
                       GPasteClient       *client,
-                      guint64             index);
+                      const gchar        *uuid);
 };
 
-void g_paste_ui_item_action_set_index (GPasteUiItemAction *self,
-                                       guint64             index);
+void g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
+                                      const gchar        *uuid);
 
 GtkWidget *g_paste_ui_item_action_new (GType         type,
                                        GPasteClient *client,

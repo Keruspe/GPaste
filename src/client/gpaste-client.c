@@ -118,12 +118,12 @@ strip_newline (gchar *str)
 }
 
 static void
-print_history_line (gchar   *line,
-                    guint64  index,
-                    Context *ctx)
+print_history_line (gchar       *line,
+                    const gchar *uuid,
+                    Context     *ctx)
 {
     if (!ctx->raw)
-        printf ("%" G_GUINT64_FORMAT ": ", index);
+        printf ("%s: ", uuid);
     printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
 }
 
@@ -139,12 +139,6 @@ spawn (const gchar *app)
     }
 
     return EXIT_SUCCESS;
-}
-
-static guint64
-_strtoull (const gchar *str)
-{
-    return g_ascii_strtoull (str, NULL, 0);
 }
 
 static void
@@ -175,10 +169,10 @@ show_help (void)
     printf ("  %s rename-password <%s> <%s>: %s\n", progname, _("old name"), _("new name"), _("rename the password"));
     /* Translators: help for gpaste get <number> */
     printf ("  %s get <%s>: %s\n", progname, _("number"), _("get the <number>th item from the history"));
-    /* Translators: help for gpaste select <number> */
-    printf ("  %s select <%s>: %s\n", progname, _("number"), _("set the <number>th item from the history to the clipboard"));
+    /* Translators: help for gpaste select <uuid> */
+    printf ("  %s select <uuid>: %s\n", progname, _("set the item matching this id from the history to the clipboard"));
     /* Translators: help for gpaste replace <number> <contents> */
-    printf ("  %s replace <%s>  <%s>: %s\n", progname, _("number"), _("contents"), _("replace the contents of the <number>th item from the history with the provided one"));
+    printf ("  %s replace <uuid>  <%s>: %s\n", progname, _("contents"), _("replace the contents of the item matching <uuid> from the history with the provided one"));
     /* Translators: help for gpaste merge <number> … <number> */
     printf ("  %s merge <%s> … <%s>: %s\n", progname, _("number"), _("number"), _("merge the <number>th items from the history and add put the result in the clipboard"));
     /* Translators: help for gpaste set-password <number> <name> */
@@ -208,7 +202,7 @@ show_help (void)
     /* Translators: help for gpaste show-history */
     printf ("  %s show-history: %s\n", progname, _("make the applet or extension display the history"));
     /* Translators: help for gpaste upload */
-    printf ("  %s upload <%s>: %s\n", progname, _("number"), _("upload the <number>th item to a pastebin service"));
+    printf ("  %s upload <uuid>: %s\n", progname, _("upload the item matching <uuid> to a pastebin service"));
     /* Translators: help for gpaste version */
     printf ("  %s version: %s\n", progname, _("display the version"));
     /* Translators: help for gpaste daemon-version */
@@ -289,13 +283,11 @@ g_paste_history (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    guint64 n = (ctx->reverse ? g_list_length(history) - 1 : 0);
-
-    for (const GList *i = (ctx->reverse ? g_list_last (history) : history); i; i = (ctx->reverse ? i->prev : i->next), n += (ctx->reverse ? -1 : 1))
+    for (const GList *i = (ctx->reverse ? g_list_last (history) : history); i; i = ctx->reverse ? i->prev : i->next)
     {
         const GPasteClientItem *item = i->data;
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
-        print_history_line (line, n, ctx);
+        print_history_line (line, g_paste_client_item_get_uuid (item), ctx);
     }
 
     g_list_free_full (history, g_object_unref);
@@ -526,7 +518,7 @@ static gint
 g_paste_delete (Context *ctx,
                 GError **error)
 {
-    g_paste_client_delete_sync (ctx->client, _strtoull (ctx->args[0]), error);
+    g_paste_client_delete_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -553,14 +545,12 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    g_autoptr (GPasteClientItem) item = (!ctx->raw) ?
-        g_paste_client_get_element_sync (ctx->client, _strtoull (ctx->args[0]), error) :
-        g_paste_client_get_raw_element_sync (ctx->client, _strtoull (ctx->args[0]), error);
+    g_autofree gchar *value = ((ctx->raw) ? g_paste_client_get_raw_element_sync : g_paste_client_get_element_sync) (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s", g_paste_client_item_get_value (item));
+    printf ("%s", value);
 
     return EXIT_SUCCESS;
 }
@@ -574,7 +564,7 @@ g_paste_replace (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_paste_client_replace_sync (ctx->client, _strtoull (ctx->args[0]), data, error);
+    g_paste_client_replace_sync (ctx->client, ctx->args[0], data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -583,28 +573,21 @@ static gint
 g_paste_search (Context *ctx,
                 GError **error)
 {
-    guint64 hits;
-    g_autofree guint64 *results = g_paste_client_search_sync (ctx->client, ctx->args[0], &hits, error);
+    g_auto (GStrv) results = g_paste_client_search_sync (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
 
-    if (hits > 0)
+    GList *items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, -1, error);
+
+    for (const GList *i = items; i; i = i->next)
     {
-        for (guint64 i = 0; i < hits; ++i)
-        {
-            guint64 index = results[i];
-            /* FIXME: get_elements */
-            g_autoptr (GPasteClientItem) item = g_paste_client_get_element_sync (ctx->client, index, error);
-
-            if (*error)
-                return EXIT_FAILURE;
-
-            g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
-
-            print_history_line (line, index, ctx);
-        }
+        const GPasteClientItem *item = i->data;
+        g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
+        print_history_line (line, g_paste_client_item_get_uuid (item), ctx);
     }
+
+    g_list_free_full (items, g_object_unref);
 
     return EXIT_SUCCESS;
 }
@@ -613,7 +596,7 @@ static gint
 g_paste_select (Context *ctx,
                 GError **error)
 {
-    g_paste_client_select_sync (ctx->client, _strtoull (ctx->args[0]), error);
+    g_paste_client_select_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -631,7 +614,7 @@ static gint
 g_paste_upload (Context *ctx,
                 GError **error)
 {
-    g_paste_client_upload_sync (ctx->client, _strtoull (ctx->args[0]), error);
+    g_paste_client_upload_sync (ctx->client, ctx->args[0], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -649,7 +632,7 @@ static gint
 g_paste_set_password (Context *ctx,
                       GError **error)
 {
-    g_paste_client_set_password_sync (ctx->client, _strtoull (ctx->args[0]), ctx->args[1], error);
+    g_paste_client_set_password_sync (ctx->client, ctx->args[0], ctx->args[1], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -658,12 +641,7 @@ static gint
 g_paste_merge (Context *ctx,
                GError **error)
 {
-    guint64 *indexes = alloca (ctx->argc * sizeof (guint64));
-
-    for (gint i = 0; i < ctx->argc; ++i)
-        indexes[i] = _strtoull (ctx->args[i]);
-
-    g_paste_client_merge_sync (ctx->client, ctx->decoration, ctx->separator, indexes, ctx->argc, error);
+    g_paste_client_merge_sync (ctx->client, ctx->decoration, ctx->separator, ctx->args, ctx->argc, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }

@@ -20,6 +20,8 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
         this.label.set_x_expand(true);
 
         this._client = client;
+        this._index = -1;
+        this._fakeIndex = false;
         this._uuid = null;
 
         if (index <= 10) {
@@ -32,7 +34,7 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
         this.connect('activate', this._onActivate.bind(this));
         this.connect('key-press-event', this._onKeyPressed.bind(this));
 
-        this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, index);
+        this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, this._uuid);
         this.add_child(this._deleteItem);
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -57,34 +59,59 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
     }
 
     setIndex(index) {
-        const oldIndex = this._index || -1;
+        const oldIndex = this._index;
         this._index = index;
+        this._fakeIndex = false;
 
-        if (index == 0) {
+        if (index == -1) {
+            this._setValue(null, oldIndex);
+        } else {
+            this._client.get_element_at_index(index, (client, result) => {
+                const item = client.get_element_at_index_finish(result);
+                this._uuid = item.get_uuid();
+                this._setValue(item.get_value(), oldIndex);
+            });
+        }
+    }
+
+    setUuid(uuid) {
+        const oldIndex = this._index;
+        this._index = -2;
+        this._fakeIndex = true;
+        this._uuid = uuid;
+
+        if (uuid == null) {
+            this._setValue(null, oldIndex);
+        } else {
+            this._client.get_element(uuid, (client, result) => {
+                const value = client.get_element_finish(result);
+                this._setValue(value, oldIndex);
+            });
+        }
+    }
+
+    _setValue(value, oldIndex) {
+        if (this._index == 0) {
             this.label.set_style("font-weight: bold;");
         } else if (oldIndex == 0) {
             this.label.set_style(null);
         }
 
-        this._deleteItem.setIndex(index);
-
-        if (index != -1) {
-            this._client.get_element(index, (client, result) => {
-                const item = client.get_element_finish(result);
-                const text = item.get_value().replace(/[\t\n\r]/g, ' ');
-                this._uuid = item.get_uuid();
-                if (text == this.label.get_text()) {
-                    return;
-                }
-                this.label.clutter_text.set_text(text);
-                if (oldIndex == -1) {
-                    this.show();
-                }
-            });
-        } else {
-            this.label.clutter_text.set_text(null);
+        if (this._index == -1) {
+            this._uuid = null;
+            this.label.clutter_text.set_text(value);
             this.hide();
+        } else {
+            const text = value.replace(/[\t\n\r]/g, ' ');
+            if (text != this.label.get_text()) {
+                this.label.clutter_text.set_text(text);
+            }
+            if (oldIndex == -1) {
+                this.show();
+            }
         }
+
+        this._deleteItem.setUuid(this._uuid);
     }
 
     setTextSize(size) {
@@ -92,7 +119,7 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
     }
 
     _onActivate(actor, event) {
-        this._client.select(this._index, null);
+        this._client.select(this._uuid, null);
     }
 
     _onKeyPressed(actor, event) {
@@ -102,7 +129,7 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
             return Clutter.EVENT_STOP;
         }
         if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
-            this._client.delete(this._index, null);
+            this._client.delete(this._uuid, null);
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;

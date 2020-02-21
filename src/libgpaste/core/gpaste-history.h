@@ -24,24 +24,24 @@ void              g_paste_history_add                (GPasteHistory *self,
                                                       GPasteItem    *item);
 void              g_paste_history_remove             (GPasteHistory *self,
                                                       guint64        index);
+void              g_paste_history_remove_by_uuid     (GPasteHistory *self,
+                                                      const gchar   *uuid);
 const GPasteItem *g_paste_history_get                (GPasteHistory *self,
                                                       guint64        index);
 const GPasteItem *g_paste_history_get_by_uuid        (GPasteHistory *self,
                                                       const gchar   *uuid);
 GPasteItem       *g_paste_history_dup                (GPasteHistory *self,
                                                       guint64        index);
-const gchar      *g_paste_history_get_value          (GPasteHistory *self,
-                                                      guint64        index);
 void              g_paste_history_select             (GPasteHistory *self,
-                                                      guint64        index);
+                                                      const gchar   *uuid);
 void              g_paste_history_replace            (GPasteHistory *self,
-                                                      guint64        index,
+                                                      const gchar   *uuid,
                                                       const gchar   *contents);
 void              g_paste_history_refresh_item_size  (GPasteHistory    *self,
                                                       const GPasteItem *item,
                                                       guint64           old_size);
 void                      g_paste_history_set_password    (GPasteHistory *self,
-                                                           guint64        index,
+                                                           const gchar   *uuid,
                                                            const gchar   *name);
 const GPastePasswordItem *g_paste_history_get_password    (GPasteHistory *self,
                                                            const gchar   *name);
@@ -64,8 +64,8 @@ const GList *g_paste_history_get_history (const GPasteHistory *self);
 guint64      g_paste_history_get_length  (const GPasteHistory *self);
 const gchar *g_paste_history_get_current (const GPasteHistory *self);
 
-GArray *g_paste_history_search (const GPasteHistory *self,
-                                const gchar         *pattern);
+GStrv g_paste_history_search (const GPasteHistory *self,
+                              const gchar         *pattern);
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 

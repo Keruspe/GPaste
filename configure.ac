@@ -19,7 +19,7 @@ m4_define([pkgconfig_required],  [0.29])
 
 # Glib and Gtk macros and dependencies
 m4_define([glib_major_required], [2])
-m4_define([glib_minor_required], [58])
+m4_define([glib_minor_required], [64])
 m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_minor_required)])
 m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
 m4_define([gtk3_major_required], [3])

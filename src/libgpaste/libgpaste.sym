@@ -1,5 +1,13 @@
-LIBGPASTE_3_16_0 {
+LIBGPASTE_3_38_0 {
 global:
+    g_paste_bus_get_connection;
+    g_paste_bus_get_type;
+    g_paste_bus_new;
+    g_paste_bus_object_get_type;
+    g_paste_bus_object_new;
+    g_paste_bus_object_register_on_connection;
+    g_paste_bus_own_name;
+
     g_paste_client_about;
     g_paste_client_about_finish;
     g_paste_client_about_sync;
@@ -24,11 +32,29 @@ global:
     g_paste_client_delete_password_finish;
     g_paste_client_delete_password_sync;
     g_paste_client_delete_sync;
+    g_paste_client_empty_history;
+    g_paste_client_empty_history_finish;
+    g_paste_client_empty_history_sync;
     g_paste_client_get_element;
+    g_paste_client_get_element_at_index;
+    g_paste_client_get_element_at_index_finish;
+    g_paste_client_get_element_at_index_sync;
     g_paste_client_get_element_finish;
+    g_paste_client_get_element_kind;
+    g_paste_client_get_element_kind_finish;
+    g_paste_client_get_element_kind_sync;
     g_paste_client_get_element_sync;
+    g_paste_client_get_elements;
+    g_paste_client_get_elements_finish;
+    g_paste_client_get_elements_sync;
     g_paste_client_get_history;
     g_paste_client_get_history_finish;
+    g_paste_client_get_history_name;
+    g_paste_client_get_history_name_finish;
+    g_paste_client_get_history_name_sync;
+    g_paste_client_get_history_size;
+    g_paste_client_get_history_size_finish;
+    g_paste_client_get_history_size_sync;
     g_paste_client_get_history_sync;
     g_paste_client_get_raw_element;
     g_paste_client_get_raw_element_finish;
@@ -39,6 +65,10 @@ global:
     g_paste_client_get_type;
     g_paste_client_get_version;
     g_paste_client_is_active;
+    g_paste_client_item_get_type;
+    g_paste_client_item_get_uuid;
+    g_paste_client_item_get_value;
+    g_paste_client_item_new;
     g_paste_client_list_histories;
     g_paste_client_list_histories_finish;
     g_paste_client_list_histories_sync;
@@ -57,6 +87,9 @@ global:
     g_paste_client_rename_password;
     g_paste_client_rename_password_finish;
     g_paste_client_rename_password_sync;
+    g_paste_client_replace;
+    g_paste_client_replace_finish;
+    g_paste_client_replace_sync;
     g_paste_client_search;
     g_paste_client_search_finish;
     g_paste_client_search_sync;
@@ -80,24 +113,35 @@ global:
     g_paste_client_upload_sync;
 
     g_paste_clipboard_bootstrap;
+    g_paste_clipboard_clear;
+    g_paste_clipboard_ensure_not_empty;
     g_paste_clipboard_get_image_checksum;
     g_paste_clipboard_get_real;
     g_paste_clipboard_get_text;
     g_paste_clipboard_get_type;
+    g_paste_clipboard_is_clipboard;
+    g_paste_clipboard_new_clipboard;
+    g_paste_clipboard_new_primary;
     g_paste_clipboard_select_item;
     g_paste_clipboard_select_text;
     g_paste_clipboard_set_image;
     g_paste_clipboard_set_text;
+    g_paste_clipboard_store;
+    g_paste_clipboard_sync_text;
     g_paste_clipboards_manager_activate;
     g_paste_clipboards_manager_add_clipboard;
     g_paste_clipboards_manager_get_type;
     g_paste_clipboards_manager_new;
     g_paste_clipboards_manager_select;
+    g_paste_clipboards_manager_store;
+    g_paste_clipboards_manager_sync_from_to;
 
     g_paste_daemon_get_type;
     g_paste_daemon_new;
     g_paste_daemon_show_history;
     g_paste_daemon_upload;
+
+    g_paste_file_backend_get_type;
 
     g_paste_gnome_shell_client_get_type;
     g_paste_gnome_shell_client_grab_accelerator;
@@ -114,24 +158,32 @@ global:
     g_paste_gnome_shell_client_ungrab_accelerator_sync;
 
     g_paste_history_add;
+    g_paste_history_delete;
     g_paste_history_delete_password;
     g_paste_history_dup;
     g_paste_history_empty;
     g_paste_history_get;
+    g_paste_history_get_by_uuid;
+    g_paste_history_get_current;
     g_paste_history_get_history;
     g_paste_history_get_length;
     g_paste_history_get_password;
     g_paste_history_get_type;
-    g_paste_history_get_value;
     g_paste_history_list;
+    g_paste_history_load;
     g_paste_history_new;
+    g_paste_history_refresh_item_size;
     g_paste_history_remove;
+    g_paste_history_remove_by_uuid;
     g_paste_history_rename_password;
+    g_paste_history_replace;
+    g_paste_history_save;
     g_paste_history_search;
     g_paste_history_select;
     g_paste_history_set_password;
     g_paste_history_switch;
 
+    g_paste_image_item_is_growing;
     g_paste_image_item_get_checksum;
     g_paste_image_item_get_date;
     g_paste_image_item_get_image;
@@ -139,13 +191,24 @@ global:
     g_paste_image_item_new;
     g_paste_image_item_new_from_file;
 
+    g_paste_item_add_size;
+    g_paste_item_add_special_value;
     g_paste_item_equals;
     g_paste_item_get_display_string;
     g_paste_item_get_kind;
     g_paste_item_get_real_value;
     g_paste_item_get_size;
+    g_paste_item_get_special_value;
+    g_paste_item_get_special_values;
     g_paste_item_get_type;
+    g_paste_item_get_uuid;
     g_paste_item_get_value;
+    g_paste_item_kind_get_type;
+    g_paste_item_new;
+    g_paste_item_remove_size;
+    g_paste_item_set_display_string;
+    g_paste_item_set_size;
+    g_paste_item_set_uuid;
 
     g_paste_keybinder_activate_all;
     g_paste_keybinder_add_keybinding;
@@ -161,6 +224,7 @@ global:
     g_paste_keybinding_get_modifiers;
     g_paste_keybinding_get_type;
     g_paste_keybinding_is_active;
+    g_paste_keybinding_new;
     g_paste_keybinding_notify;
     g_paste_keybinding_perform;
 
@@ -180,7 +244,12 @@ global:
     g_paste_screensaver_client_new_finish;
     g_paste_screensaver_client_new_sync;
 
+    g_paste_search_provider_get_type;
+    g_paste_search_provider_new;
+
+    g_paste_settings_get_close_on_select;
     g_paste_settings_get_element_size;
+    g_paste_settings_get_empty_history_confirmation;
     g_paste_settings_get_extension_enabled;
     g_paste_settings_get_growing_lines;
     g_paste_settings_get_history_name;
@@ -203,7 +272,9 @@ global:
     g_paste_settings_get_trim_items;
     g_paste_settings_get_type;
     g_paste_settings_new;
+    g_paste_settings_reset_close_on_select;
     g_paste_settings_reset_element_size;
+    g_paste_settings_reset_empty_history_confirmation;
     g_paste_settings_reset_growing_lines;
     g_paste_settings_reset_history_name;
     g_paste_settings_reset_images_support;
@@ -223,7 +294,9 @@ global:
     g_paste_settings_reset_track_changes;
     g_paste_settings_reset_track_extension_state;
     g_paste_settings_reset_trim_items;
+    g_paste_settings_set_close_on_select;
     g_paste_settings_set_element_size;
+    g_paste_settings_set_empty_history_confirmation;
     g_paste_settings_set_extension_enabled;
     g_paste_settings_set_growing_lines;
     g_paste_settings_set_history_name;
@@ -262,6 +335,14 @@ global:
     g_paste_show_history_keybinding_get_type;
     g_paste_show_history_keybinding_new;
 
+    g_paste_special_atom_get;
+    g_paste_special_atom_get_type;
+
+    g_paste_storage_backend_get_type;
+    g_paste_storage_backend_new;
+    g_paste_storage_backend_read_history;
+    g_paste_storage_backend_write_history;
+
     g_paste_sync_clipboard_to_primary_keybinding_get_type;
     g_paste_sync_clipboard_to_primary_keybinding_new;
 
@@ -273,26 +354,111 @@ global:
 
     g_paste_ui_about_get_type;
     g_paste_ui_about_new;
+
+    g_paste_ui_backup_history_get_type;
+    g_paste_ui_backup_history_new;
+
+    g_paste_ui_delete_history_get_type;
+    g_paste_ui_delete_history_new;
+
+    g_paste_ui_delete_item_get_type;
+    g_paste_ui_delete_item_new;
+
+    g_paste_ui_edit_item_get_type;
+    g_paste_ui_edit_item_new;
+
+    g_paste_ui_empty_history_get_type;
+    g_paste_ui_empty_history_new;
+
     g_paste_ui_empty_item_get_type;
+    g_paste_ui_empty_item_new;
+    g_paste_ui_empty_item_show_empty;
+    g_paste_ui_empty_item_show_no_result;
+
+    g_paste_ui_header_get_search_button;
     g_paste_ui_header_get_type;
     g_paste_ui_header_new;
+    g_paste_ui_header_show_prefs;
+
+    g_paste_ui_history_action_get_type;
+    g_paste_ui_history_action_new;
+    g_paste_ui_history_action_set_history;
+
+    g_paste_ui_history_actions_get_type;
+    g_paste_ui_history_actions_new;
+    g_paste_ui_history_actions_set_relative_to;
+
     g_paste_ui_history_get_type;
+    g_paste_ui_history_new;
+    g_paste_ui_history_search;
+    g_paste_ui_history_select_first;
+
+    g_paste_ui_item_action_get_type;
+    g_paste_ui_item_action_new;
+    g_paste_ui_item_action_set_uuid;
+
     g_paste_ui_item_activate;
     g_paste_ui_item_get_type;
     g_paste_ui_item_new;
     g_paste_ui_item_refresh;
     g_paste_ui_item_set_index;
+    g_paste_ui_item_set_uuid;
+
+    g_paste_ui_item_skeleton_get_label;
+    g_paste_ui_item_skeleton_get_type;
+    g_paste_ui_item_skeleton_new;
+    g_paste_ui_item_skeleton_set_activatable;
+    g_paste_ui_item_skeleton_set_editable;
+    g_paste_ui_item_skeleton_set_index_and_uuid;
+    g_paste_ui_item_skeleton_set_markup;
+    g_paste_ui_item_skeleton_set_text;
+    g_paste_ui_item_skeleton_set_uploadable;
+
     g_paste_ui_keybinding_get_type;
     g_paste_ui_keybinding_new;
+
+    g_paste_ui_new_item_get_type;
+    g_paste_ui_new_item_new;
+
+    g_paste_ui_panel_get_type;
+    g_paste_ui_panel_new;
+    g_paste_ui_panel_update_history_length;
+
+    g_paste_ui_panel_history_activate;
+    g_paste_ui_panel_history_get_history;
+    g_paste_ui_panel_history_get_type;
+    g_paste_ui_panel_history_new;
+    g_paste_ui_panel_history_set_length;
+
+    g_paste_ui_reexec_get_type;
+    g_paste_ui_reexec_new;
+
+    g_paste_ui_search_bar_get_entry;
+    g_paste_ui_search_bar_get_type;
+    g_paste_ui_search_bar_new;
+
+    g_paste_ui_search_get_type;
+    g_paste_ui_search_new;
+
     g_paste_ui_settings_get_type;
     g_paste_ui_settings_new;
+
+    g_paste_ui_shortcuts_window_get_type;
+    g_paste_ui_shortcuts_window_new;
+
     g_paste_ui_switch_get_type;
     g_paste_ui_switch_new;
+
+    g_paste_ui_upload_item_get_type;
+    g_paste_ui_upload_item_new;
+
+    g_paste_ui_window_empty_history;
     g_paste_ui_window_get_type;
     g_paste_ui_window_new;
+    g_paste_ui_window_search;
+    g_paste_ui_window_show_prefs;
 
     g_paste_update_action_get_type;
-
     g_paste_update_target_get_type;
 
     g_paste_upload_keybinding_get_type;
@@ -302,226 +468,30 @@ global:
     g_paste_uris_item_get_uris;
     g_paste_uris_item_new;
 
+    g_paste_util_activate_ui;
+    g_paste_util_activate_ui_sync;
     g_paste_util_compute_checksum;
     g_paste_util_confirm_dialog;
+    g_paste_util_empty_history;
+    g_paste_util_empty_with_confirmation;
+    g_paste_util_empty_with_confirmation_sync;
+    g_paste_util_ensure_history_dir_exists;
+    g_paste_util_get_dbus_au_result;
+    g_paste_util_get_dbus_item_result;
+    g_paste_util_get_dbus_items_result;
+    g_paste_util_get_history_dir;
+    g_paste_util_get_history_dir_path;
+    g_paste_util_get_history_file;
+    g_paste_util_get_history_file_path;
+    g_paste_util_has_gnome_shell;
+    g_paste_util_read_pid_file;
     g_paste_util_replace;
     g_paste_util_show_win;
     g_paste_util_spawn;
     g_paste_util_spawn_sync;
+    g_paste_util_write_pid_file;
+    g_paste_util_xml_decode;
+    g_paste_util_xml_encode;
 local:
     *;
 };
-
-LIBGPASTE_3_18_0 {
-global:
-    g_paste_bus_get_connection;
-    g_paste_bus_get_type;
-    g_paste_bus_new;
-    g_paste_bus_own_name;
-
-    g_paste_bus_object_get_type;
-    g_paste_bus_object_new;
-    g_paste_bus_object_register_on_connection;
-
-    g_paste_client_empty_history;
-    g_paste_client_empty_history_finish;
-    g_paste_client_empty_history_sync;
-    g_paste_client_get_element_kind;
-    g_paste_client_get_element_kind_finish;
-    g_paste_client_get_element_kind_sync;
-    g_paste_client_get_elements;
-    g_paste_client_get_elements_finish;
-    g_paste_client_get_elements_sync;
-    g_paste_client_get_history_name;
-    g_paste_client_get_history_name_finish;
-    g_paste_client_get_history_name_sync;
-    g_paste_client_get_history_size;
-    g_paste_client_get_history_size_finish;
-    g_paste_client_get_history_size_sync;
-    g_paste_client_replace;
-    g_paste_client_replace_finish;
-    g_paste_client_replace_sync;
-
-    g_paste_clipboard_clear;
-    g_paste_clipboard_ensure_not_empty;
-
-    g_paste_history_delete;
-    g_paste_history_get_current;
-    g_paste_history_load;
-    g_paste_history_replace;
-    g_paste_history_save;
-
-    g_paste_item_add_size;
-    g_paste_item_new;
-    g_paste_item_remove_size;
-    g_paste_item_set_display_string;
-    g_paste_item_set_size;
-
-    g_paste_item_kind_get_type;
-
-    g_paste_keybinding_new;
-
-    g_paste_search_provider_get_type;
-    g_paste_search_provider_new;
-
-    g_paste_ui_backup_history_get_type;
-    g_paste_ui_delete_history_get_type;
-    g_paste_ui_delete_item_get_type;
-    g_paste_ui_delete_item_new;
-    g_paste_ui_edit_item_get_type;
-    g_paste_ui_edit_item_new;
-    g_paste_ui_empty_history_get_type;
-    g_paste_ui_empty_item_new;
-    g_paste_ui_header_get_search_button;
-    g_paste_ui_header_show_prefs;
-    g_paste_ui_history_search;
-    g_paste_ui_history_action_get_type;
-    g_paste_ui_history_action_set_history;
-    g_paste_ui_history_actions_get_type;
-    g_paste_ui_history_actions_set_relative_to;
-    g_paste_ui_history_new;
-    g_paste_ui_item_action_get_type;
-    g_paste_ui_item_action_new;
-    g_paste_ui_item_action_set_index;
-    g_paste_ui_item_skeleton_get_label;
-    g_paste_ui_item_skeleton_get_type;
-    g_paste_ui_item_skeleton_new;
-    g_paste_ui_item_skeleton_set_activatable;
-    g_paste_ui_item_skeleton_set_editable;
-    g_paste_ui_item_skeleton_set_index;
-    g_paste_ui_item_skeleton_set_markup;
-    g_paste_ui_item_skeleton_set_text;
-    g_paste_ui_panel_get_type;
-    g_paste_ui_panel_new;
-    g_paste_ui_panel_history_activate;
-    g_paste_ui_panel_history_get_history;
-    g_paste_ui_panel_history_get_type;
-    g_paste_ui_panel_history_new;
-    g_paste_ui_panel_history_set_length;
-    g_paste_ui_panel_update_history_length;
-    g_paste_ui_reexec_get_type;
-    g_paste_ui_reexec_new;
-    g_paste_ui_search_bar_get_entry;
-    g_paste_ui_search_bar_get_type;
-    g_paste_ui_search_bar_new;
-    g_paste_ui_search_get_type;
-    g_paste_ui_search_new;
-    g_paste_ui_upload_item_get_type;
-    g_paste_ui_upload_item_new;
-    g_paste_ui_window_search;
-    g_paste_ui_window_show_prefs;
-
-    g_paste_util_activate_ui;
-    g_paste_util_activate_ui_sync;
-    g_paste_util_get_dbus_at_result;
-    g_paste_util_get_dbus_au_result;
-} LIBGPASTE_3_16_0;
-
-LIBGPASTE_3_20_0 {
-global:
-    g_paste_ui_empty_item_show_empty;
-    g_paste_ui_empty_item_show_no_result;
-    g_paste_ui_item_skeleton_set_uploadable;
-    g_paste_ui_new_item_get_type;
-    g_paste_ui_new_item_new;
-    g_paste_ui_shortcuts_window_get_type;
-    g_paste_ui_shortcuts_window_new;
-
-    g_paste_util_has_gnome_shell;
-    g_paste_util_read_pid_file;
-    g_paste_util_write_pid_file;
-} LIBGPASTE_3_18_0;
-
-LIBGPASTE_3_22_0 {
-global:
-    g_paste_clipboard_store;
-
-    g_paste_clipboards_manager_store;
-} LIBGPASTE_3_20_0;
-
-LIBGPASTE_3_24_0 {
-global:
-    g_paste_file_backend_get_type;
-
-    g_paste_history_refresh_item_size;
-
-    g_paste_item_get_special_values;
-    g_paste_item_get_special_value;
-    g_paste_item_add_special_value;
-
-    g_paste_settings_get_close_on_select;
-    g_paste_settings_reset_close_on_select;
-    g_paste_settings_set_close_on_select;
-
-    g_paste_special_atom_get_type;
-    g_paste_special_atom_get;
-
-    g_paste_storage_backend_get_type;
-    g_paste_storage_backend_read_history;
-    g_paste_storage_backend_write_history;
-    g_paste_storage_backend_new;
-
-    g_paste_ui_history_select_first;
-
-    g_paste_util_ensure_history_dir_exists;
-    g_paste_util_get_history_dir_path;
-    g_paste_util_get_history_dir;
-    g_paste_util_get_history_file_path;
-    g_paste_util_get_history_file;
-    g_paste_util_xml_decode;
-    g_paste_util_xml_encode;
-} LIBGPASTE_3_22_0;
-
-LIBGPASTE_3_28_0 {
-global:
-    g_paste_clipboard_is_clipboard;
-    g_paste_clipboard_new_clipboard;
-    g_paste_clipboard_new_primary;
-    g_paste_clipboard_sync_text;
-
-    g_paste_clipboards_manager_sync_from_to;
-
-    g_paste_ui_window_empty_history;
-} LIBGPASTE_3_24_0;
-
-LIBGPASTE_3_28_1 {
-global:
-    g_paste_ui_backup_history_new;
-    g_paste_ui_delete_history_new;
-    g_paste_ui_empty_history_new;
-    g_paste_ui_history_action_new;
-    g_paste_ui_history_actions_new;
-
-    g_paste_util_empty_history;
-
-    g_paste_settings_get_empty_history_confirmation;
-    g_paste_settings_reset_empty_history_confirmation;
-    g_paste_settings_set_empty_history_confirmation;
-} LIBGPASTE_3_28_0;
-
-LIBGPASTE_3_28_3 {
-global:
-    g_paste_util_empty_with_confirmation;
-    g_paste_util_empty_with_confirmation_sync;
-} LIBGPASTE_3_28_1;
-
-LIBGPASTE_3_32_1 {
-global:
-    g_paste_iimage_item_is_growing;
-} LIBGPASTE_3_28_3;
-
-LIBGPASTE_3_36_0 {
-global:
-    g_paste_client_item_get_type;
-    g_paste_client_item_get_uuid;
-    g_paste_client_item_get_value;
-    g_paste_client_item_new;
-
-    g_paste_history_get_by_uuid;
-
-    g_paste_item_get_uuid;
-    g_paste_item_set_uuid;
-
-    g_paste_util_get_dbus_item_result;
-    g_paste_util_get_dbus_items_result;
-} LIBGPASTE_3_32_1;

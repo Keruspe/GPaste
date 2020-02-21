@@ -22,7 +22,7 @@ G_PASTE_FINAL_TYPE (Daemon, daemon, DAEMON, GPasteBusObject)
 void g_paste_daemon_show_history (GPasteDaemon *self,
                                   GError      **error);
 void g_paste_daemon_upload       (GPasteDaemon *self,
-                                  guint64       index);
+                                  const gchar  *uuid);
 
 GPasteDaemon *g_paste_daemon_new (void);
 

@@ -50,9 +50,6 @@ gboolean g_paste_util_has_gnome_shell (void);
 
 void g_paste_util_show_win (GApplication *application);
 
-guint64 *g_paste_util_get_dbus_at_result (GVariant *variant,
-                                          guint64  *len);
-
 guint32 *g_paste_util_get_dbus_au_result (GVariant *variant,
                                           guint64  *len);
 

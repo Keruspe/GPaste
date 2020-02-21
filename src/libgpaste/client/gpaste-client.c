@@ -19,7 +19,6 @@ enum
 {
     DELETE_HISTORY,
     EMPTY_HISTORY,
-    ITEM_SELECTED,
     SHOW_HISTORY,
     SWITCH_HISTORY,
     TRACKING,
@@ -71,9 +70,6 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define DBUS_ASYNC_FINISH_RET_UINT64 \
     DBUS_ASYNC_FINISH_RET_UINT64_BASE (CLIENT)
 
-#define DBUS_ASYNC_FINISH_RET_AT(len) \
-    DBUS_ASYNC_FINISH_RET_AT_BASE (CLIENT, len)
-
 /******************/
 /* Methods / Sync */
 /******************/
@@ -99,11 +95,11 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
+#define DBUS_CALL_ONE_PARAM_RET_STRV(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_STRV_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+
 #define DBUS_CALL_ONE_PARAM_RET_ITEM(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_ITEM_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
-
-#define DBUS_CALL_ONE_PARAM_RET_AT(method, param_type, param_name, len) \
-    DBUS_CALL_ONE_PARAM_RET_AT_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method, len)
 
 #define DBUS_CALL_ONE_PARAMV_RET_ITEMS(method, paramv) \
     DBUS_CALL_ONE_PARAMV_RET_ITEMS_BASE (CLIENT, G_PASTE_DAEMON_##method, paramv)
@@ -182,13 +178,6 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
                   G_TYPE_NONE,                     \
                   1,                               \
                   G_TYPE_##type)
-
-static GVariant *
-compute_at_param (const guint64 *indexes,
-                  guint64        n_indexes)
-{
-    return g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, indexes, n_indexes, sizeof (guint64));
-}
 
 /******************/
 /* Methods / Sync */
@@ -297,17 +286,17 @@ g_paste_client_backup_history_sync (GPasteClient *self,
 /**
  * g_paste_client_delete_sync:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to delete
+ * @uuid: the uuid of the element we want to delete
  * @error: a #GError
  *
  * Delete an item from the #GPasteDaemon
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_sync (GPasteClient *self,
-                            guint64       index,
+                            const gchar  *uuid,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE, uint64, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (DELETE, string, uuid);
 }
 
 /**
@@ -361,6 +350,24 @@ g_paste_client_empty_history_sync (GPasteClient *self,
 /**
  * g_paste_client_get_element_sync:
  * @self: a #GPasteClient instance
+ * @uuid: the uuid of the element we want to get
+ * @error: a #GError
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a newly allocated string
+ */
+G_PASTE_VISIBLE gchar *
+g_paste_client_get_element_sync (GPasteClient *self,
+                                 const gchar  *uuid,
+                                 GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT, string, uuid);
+}
+
+/**
+ * g_paste_client_get_element_at_index_sync:
+ * @self: a #GPasteClient instance
  * @index: the index of the element we want to get
  * @error: a #GError
  *
@@ -369,25 +376,25 @@ g_paste_client_empty_history_sync (GPasteClient *self,
  * Returns: (transfer full): a new #GPasteClientItem
  */
 G_PASTE_VISIBLE GPasteClientItem *
-g_paste_client_get_element_sync (GPasteClient *self,
-                                 guint64       index,
-                                 GError      **error)
+g_paste_client_get_element_at_index_sync (GPasteClient *self,
+                                          guint64       index,
+                                          GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_ITEM (GET_ELEMENT, uint64, index);
+    DBUS_CALL_ONE_PARAM_RET_ITEM (GET_ELEMENT_AT_INDEX, uint64, index);
 }
 
 static gchar *
 _g_paste_client_get_element_kind_sync (GPasteClient *self,
-                                       guint64       index,
+                                       const gchar  *uuid,
                                        GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, uint64, index);
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_ELEMENT_KIND, string, uuid);
 }
 
 /**
  * g_paste_client_get_element_kind_sync:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to get
+ * @uuid: the uuid of the element we want to get
  * @error: a #GError
  *
  * Get the kind of an item from the #GPasteDaemon
@@ -396,10 +403,10 @@ _g_paste_client_get_element_kind_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE GPasteItemKind
 g_paste_client_get_element_kind_sync (GPasteClient *self,
-                                      guint64       index,
+                                      const gchar  *uuid,
                                       GError      **error)
 {
-    g_autofree gchar *kind = _g_paste_client_get_element_kind_sync (self, index, error);
+    g_autofree gchar *kind = _g_paste_client_get_element_kind_sync (self, uuid, error);
     GEnumValue *k = (kind) ? g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_ITEM_KIND), kind) : NULL;
 
     return (k) ? k->value : G_PASTE_ITEM_KIND_INVALID;
@@ -408,8 +415,8 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
 /**
  * g_paste_client_get_elements_sync:
  * @self: a #GPasteClient instance
- * @indexes: (array length=n_indexes): the indexes of the elements we want to get
- * @n_indexes: the number of indexes
+ * @uuids: (array length=n_uuids): the uuids of the elements we want to get
+ * @n_uuids: the number of uuids
  * @error: a #GError
  *
  * Get some items from the #GPasteDaemon
@@ -418,11 +425,11 @@ g_paste_client_get_element_kind_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE GList *
 g_paste_client_get_elements_sync (GPasteClient  *self,
-                                  const guint64 *indexes,
-                                  guint64        n_indexes,
+                                  const gchar  **uuids,
+                                  guint64        n_uuids,
                                   GError       **error)
 {
-    GVariant *param = compute_at_param (indexes, n_indexes);
+    GVariant *param = g_variant_new_strv (uuids, n_uuids);
     DBUS_CALL_ONE_PARAMV_RET_ITEMS (GET_ELEMENTS, param);
 }
 
@@ -479,19 +486,19 @@ g_paste_client_get_history_size_sync (GPasteClient *self,
 /**
  * g_paste_client_get_raw_element_sync:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to get
+ * @uuid: the uuid of the element we want to get
  * @error: a #GError
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a new #GPasteClientItem
+ * Returns: (transfer full): a newly allocated string
  */
-G_PASTE_VISIBLE GPasteClientItem *
+G_PASTE_VISIBLE gchar *
 g_paste_client_get_raw_element_sync (GPasteClient *self,
-                                     guint64       index,
+                                     const gchar  *uuid,
                                      GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_ITEM (GET_RAW_ELEMENT, uint64, index);
+    DBUS_CALL_ONE_PARAM_RET_STRING (GET_RAW_ELEMENT, string, uuid);
 }
 
 /**
@@ -531,8 +538,8 @@ g_paste_client_list_histories_sync (GPasteClient *self,
  * @self: a #GPasteClient instance
  * @decoration: (nullable): the decoration to apply to each entry
  * @separator: (nullable): the separator to add between each entry
- * @indexes: (array length=n_indexes): the indexes of the entries to merge
- * @n_indexes: the length of @indexes
+ * @uuids: (array length=n_uuids): the uuids of the elements we want to get
+ * @n_uuids: the number of uuids
  * @error: a #GError
  *
  * Merge some history entries
@@ -544,14 +551,14 @@ G_PASTE_VISIBLE void
 g_paste_client_merge_sync (GPasteClient  *self,
                            const gchar   *decoration,
                            const gchar   *separator,
-                           const guint64 *indexes,
-                           guint64        n_indexes,
+                           const gchar  **uuids,
+                           guint64        n_uuids,
                            GError       **error)
 {
     GVariant *params[] = {
         g_variant_new_string (decoration ? decoration : ""),
         g_variant_new_string (separator  ? separator  : ""),
-        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, indexes, n_indexes, sizeof (guint64))
+        g_variant_new_strv (uuids, n_uuids)
     };
 
     DBUS_CALL_THREE_PARAMS_NO_RETURN (MERGE, params);
@@ -613,7 +620,7 @@ g_paste_client_rename_password_sync (GPasteClient *self,
 /**
  * g_paste_client_replace_sync:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to replace
+ * @uuid: the uuid of the element we want to replace
  * @contents: the replacement contents
  * @error: a #GError
  *
@@ -621,12 +628,12 @@ g_paste_client_rename_password_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_replace_sync (GPasteClient *self,
-                             guint64       index,
+                             const gchar  *uuid,
                              const gchar  *contents,
                              GError      **error)
 {
     GVariant *params[] = {
-        g_variant_new_uint64 (index),
+        g_variant_new_string (uuid),
         g_variant_new_string (contents)
     };
 
@@ -637,42 +644,40 @@ g_paste_client_replace_sync (GPasteClient *self,
  * g_paste_client_search_sync:
  * @self: a #GPasteClient instance
  * @pattern: the pattern to look for in history
- * @hits: (out) (optional): number of hits
  * @error: a #GError
  *
  * Search for items matching @pattern in history
  *
- * Returns: (array length=hits): The indexes of the matching items
+ * Returns: (transfer full): The uuids of the matching items
  */
-G_PASTE_VISIBLE guint64 *
+G_PASTE_VISIBLE GStrv
 g_paste_client_search_sync (GPasteClient *self,
                             const gchar  *pattern,
-                            guint64      *hits,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_RET_AT (SEARCH, string, pattern, hits);
+    DBUS_CALL_ONE_PARAM_RET_STRV (SEARCH, string, pattern);
 }
 
 /**
  * g_paste_client_select_sync:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to select
+ * @uuid: the uuid of the element we want to select
  * @error: a #GError
  *
  * Select an item from the #GPasteDaemon
  */
 G_PASTE_VISIBLE void
 g_paste_client_select_sync (GPasteClient *self,
-                            guint64       index,
+                            const gchar  *uuid,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (SELECT, uint64, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (SELECT, string, uuid);
 }
 
 /**
  * g_paste_client_set_password_sync:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to set as password
+ * @uuid: the uuid of the element we want to set as password
  * @name: the name to identify the password
  * @error: a #GError
  *
@@ -680,12 +685,12 @@ g_paste_client_select_sync (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password_sync (GPasteClient *self,
-                                  guint64       index,
+                                  const gchar  *uuid,
                                   const gchar  *name,
                                   GError      **error)
 {
     GVariant *params[] = {
-        g_variant_new_uint64 (index),
+        g_variant_new_string (uuid),
         g_variant_new_string (name)
     };
 
@@ -740,17 +745,17 @@ g_paste_client_track_sync (GPasteClient *self,
 /**
  * g_paste_client_upload_sync:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to upload
+ * @uuid: the uuid of the element we want to upload
  * @error: a #GError
  *
  * Upload an item to a pastebin service
  */
 G_PASTE_VISIBLE void
 g_paste_client_upload_sync (GPasteClient *self,
-                            guint64       index,
+                            const gchar  *uuid,
                             GError      **error)
 {
-    DBUS_CALL_ONE_PARAM_NO_RETURN (UPLOAD, uint64, index);
+    DBUS_CALL_ONE_PARAM_NO_RETURN (UPLOAD, string, uuid);
 }
 
 /*******************/
@@ -875,7 +880,7 @@ g_paste_client_backup_history (GPasteClient       *self,
 /**
  * g_paste_client_delete:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to delete
+ * @uuid: the uuid of the element we want to delete
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -884,11 +889,11 @@ g_paste_client_backup_history (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete (GPasteClient       *self,
-                       guint64             index,
+                       const gchar        *uuid,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (DELETE, uint64, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (DELETE, string, uuid);
 }
 
 /**
@@ -951,7 +956,7 @@ g_paste_client_empty_history (GPasteClient       *self,
 /**
  * g_paste_client_get_element:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to get
+ * @uuid: the uuid of the element we want to get
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -960,17 +965,36 @@ g_paste_client_empty_history (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_element (GPasteClient       *self,
-                            guint64             index,
+                            const gchar        *uuid,
                             GAsyncReadyCallback callback,
                             gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT, uint64, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT, string, uuid);
+}
+
+/**
+ * g_paste_client_get_element_at_index:
+ * @self: a #GPasteClient instance
+ * @index: the index of the element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get an item from the #GPasteDaemon
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_element_at_index (GPasteClient       *self,
+                                     guint64             index,
+                                     GAsyncReadyCallback callback,
+                                     gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_AT_INDEX, uint64, index);
 }
 
 /**
  * g_paste_client_get_element_kind:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to get
+ * @uuid: the uuid of the element we want to get
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -979,18 +1003,18 @@ g_paste_client_get_element (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_element_kind (GPasteClient       *self,
-                                 guint64             index,
+                                 const gchar        *uuid,
                                  GAsyncReadyCallback callback,
                                  gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_KIND, uint64, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_ELEMENT_KIND, string, uuid);
 }
 
 /**
  * g_paste_client_get_elements:
  * @self: a #GPasteClient instance
- * @indexes: (array length=n_indexes): the indexes of the elements we want to get
- * @n_indexes: the number of indexes
+ * @uuids: (array length=n_uuids): the uuids of the elements we want to get
+ * @n_uuids: the number of uuids
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -999,12 +1023,12 @@ g_paste_client_get_element_kind (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_elements (GPasteClient       *self,
-                             const guint64      *indexes,
-                             guint64             n_indexes,
+                             const gchar       **uuids,
+                             guint64             n_uuids,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
-    GVariant *param = compute_at_param (indexes, n_indexes);
+    GVariant *param = g_variant_new_strv (uuids, n_uuids);
     DBUS_CALL_ONE_PARAMV_ASYNC (GET_ELEMENTS, param);
 }
 
@@ -1064,7 +1088,7 @@ g_paste_client_get_history_size (GPasteClient       *self,
 /**
  * g_paste_client_get_raw_element:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to get
+ * @uuid: the uuid of the element we want to get
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -1073,11 +1097,11 @@ g_paste_client_get_history_size (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_get_raw_element (GPasteClient       *self,
-                                guint64             index,
+                                const gchar        *uuid,
                                 GAsyncReadyCallback callback,
                                 gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (GET_RAW_ELEMENT, uint64, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_RAW_ELEMENT, string, uuid);
 }
 
 /**
@@ -1119,8 +1143,8 @@ g_paste_client_list_histories (GPasteClient       *self,
  * @self: a #GPasteClient instance
  * @decoration: (nullable): the decoration to apply to each entry
  * @separator: (nullable): the separator to add between each entry
- * @indexes: (array length=n_indexes): the indexes of the entries to merge
- * @n_indexes: the length of @indexes
+ * @uuids: (array length=n_uuids): the uuids of the elements we want to get
+ * @n_uuids: the number of uuids
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -1134,15 +1158,15 @@ G_PASTE_VISIBLE void
 g_paste_client_merge (GPasteClient       *self,
                       const gchar        *decoration,
                       const gchar        *separator,
-                      const guint64      *indexes,
-                      guint64             n_indexes,
+                      const gchar       **uuids,
+                      guint64             n_uuids,
                       GAsyncReadyCallback callback,
                       gpointer            user_data)
 {
     GVariant *params[] = {
         g_variant_new_string (decoration ? decoration : ""),
         g_variant_new_string (separator  ? separator  : ""),
-        g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, indexes, n_indexes, sizeof (guint64))
+        g_variant_new_strv (uuids, n_uuids)
     };
 
     DBUS_CALL_THREE_PARAMS_ASYNC (MERGE, params);
@@ -1213,7 +1237,7 @@ g_paste_client_rename_password (GPasteClient       *self,
 /**
  * g_paste_client_replace:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to replace
+ * @uuid: the uuid of the element we want to replace
  * @contents: the replacement contents
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
@@ -1223,13 +1247,13 @@ g_paste_client_rename_password (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_replace (GPasteClient       *self,
-                        guint64             index,
+                        const gchar        *uuid,
                         const gchar        *contents,
                         GAsyncReadyCallback callback,
                         gpointer            user_data)
 {
     GVariant *params[] = {
-        g_variant_new_uint64 (index),
+        g_variant_new_string (uuid),
         g_variant_new_string (contents)
     };
 
@@ -1258,7 +1282,7 @@ g_paste_client_search (GPasteClient       *self,
 /**
  * g_paste_client_select:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to select
+ * @uuid: the uuid of the element we want to select
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -1267,17 +1291,17 @@ g_paste_client_search (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_select (GPasteClient       *self,
-                       guint64             index,
+                       const gchar        *uuid,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, uint64, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (SELECT, string, uuid);
 }
 
 /**
  * g_paste_client_set_password:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to set as password
+ * @uuid: the uuid of the element we want to set as password
  * @name: the name to identify the password
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
@@ -1287,13 +1311,13 @@ g_paste_client_select (GPasteClient       *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_set_password (GPasteClient       *self,
-                             guint64             index,
+                             const gchar        *uuid,
                              const gchar        *name,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
     GVariant *params[] = {
-        g_variant_new_uint64 (index),
+        g_variant_new_string (uuid),
         g_variant_new_string (name)
     };
 
@@ -1358,7 +1382,7 @@ g_paste_client_track (GPasteClient *self,
 /**
  * g_paste_client_upload:
  * @self: a #GPasteClient instance
- * @index: the index of the element we want to upload
+ * @uuid: the uuid of the element we want to upload
  * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
@@ -1367,11 +1391,11 @@ g_paste_client_track (GPasteClient *self,
  */
 G_PASTE_VISIBLE void
 g_paste_client_upload (GPasteClient       *self,
-                       guint64             index,
+                       const gchar        *uuid,
                        GAsyncReadyCallback callback,
                        gpointer            user_data)
 {
-    DBUS_CALL_ONE_PARAM_ASYNC (UPLOAD, uint64, index);
+    DBUS_CALL_ONE_PARAM_ASYNC (UPLOAD, string, uuid);
 }
 
 /****************************/
@@ -1530,12 +1554,30 @@ g_paste_client_empty_history_finish (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a new #GPasteClientItem
+ * Returns: (transfer full): a newly allocated string
  */
-G_PASTE_VISIBLE GPasteClientItem *
+G_PASTE_VISIBLE gchar *
 g_paste_client_get_element_finish (GPasteClient *self,
                                    GAsyncResult *result,
                                    GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_STRING;
+}
+
+/**
+ * g_paste_client_get_element_at_index_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Get an item from the #GPasteDaemon
+ *
+ * Returns: (transfer full): a new #GPasteClientItem
+ */
+G_PASTE_VISIBLE GPasteClientItem *
+g_paste_client_get_element_at_index_finish (GPasteClient *self,
+                                            GAsyncResult *result,
+                                            GError      **error)
 {
     DBUS_ASYNC_FINISH_RET_ITEM;
 }
@@ -1613,7 +1655,7 @@ g_paste_client_get_history_finish (GPasteClient *self,
  *
  * Get the name of the history from the #GPasteDaemon
  *
- * Returns: (transfer full): a newly allocated array of string
+ * Returns: (transfer full): a newly allocated string
  */
 G_PASTE_VISIBLE gchar *
 g_paste_client_get_history_name_finish (GPasteClient *self,
@@ -1649,14 +1691,14 @@ g_paste_client_get_history_size_finish (GPasteClient *self,
  *
  * Get an item from the #GPasteDaemon
  *
- * Returns: (transfer full): a new #GPasteClientItem
+ * Returns: (transfer full): a newly allocated string
  */
-G_PASTE_VISIBLE GPasteClientItem *
+G_PASTE_VISIBLE gchar *
 g_paste_client_get_raw_element_finish (GPasteClient *self,
                                        GAsyncResult *result,
                                        GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_ITEM;
+    DBUS_ASYNC_FINISH_RET_STRING;
 }
 
 /**
@@ -1779,20 +1821,18 @@ g_paste_client_replace_finish (GPasteClient *self,
  * g_paste_client_search_finish:
  * @self: a #GPasteClient instance
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
- * @hits: (out) (optional): number of hits
  * @error: a #GError
  *
  * Search for items matching @pattern in history
  *
- * Returns: (array length=hits): The indexes of the matching items
+ * Returns: (transfer full): The indexes of the matching items
  */
-G_PASTE_VISIBLE guint64 *
+G_PASTE_VISIBLE GStrv
 g_paste_client_search_finish (GPasteClient *self,
                               GAsyncResult *result,
-                              guint64      *hits,
                               GError      **error)
 {
-    DBUS_ASYNC_FINISH_RET_AT (hits);
+    DBUS_ASYNC_FINISH_RET_STRV;
 }
 
 /**
@@ -1934,7 +1974,6 @@ g_paste_client_g_signal (GDBusProxy  *proxy,
     HANDLE_SIGNAL (SHOW_HISTORY)
     else HANDLE_SIGNAL_WITH_DATA (DELETE_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
     else HANDLE_SIGNAL_WITH_DATA (EMPTY_HISTORY,  const gchar *, g_variant_get_string (variant, NULL))
-    else HANDLE_SIGNAL_WITH_DATA (ITEM_SELECTED,  guint64      , g_variant_get_uint64 (variant))
     else HANDLE_SIGNAL_WITH_DATA (SWITCH_HISTORY, const gchar *, g_variant_get_string (variant, NULL))
     else if (g_paste_str_equal (signal_name, G_PASTE_DAEMON_SIG_UPDATE))
     {
@@ -2002,16 +2041,6 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * an history.
      */
     signals[EMPTY_HISTORY] = NEW_SIGNAL_WITH_DATA ("empty-history", STRING);
-
-    /**
-     * GPasteClient::item-selected:
-     * @client: the object on which the signal was emitted
-     * @index: the previous index of the item which was selected
-     *
-     * The "item-selected" signal is emitted when we select
-     * an item.
-     */
-    signals[ITEM_SELECTED] = NEW_SIGNAL_WITH_DATA_GENERIC ("item-selected", UINT64);
 
     /**
      * GPasteClient::show-history:

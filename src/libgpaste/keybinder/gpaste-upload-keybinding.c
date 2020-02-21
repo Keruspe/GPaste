@@ -46,7 +46,7 @@ upload (GPasteKeybinding *self,
 {
     const GPasteUploadKeybindingPrivate *priv = _g_paste_upload_keybinding_get_instance_private (G_PASTE_UPLOAD_KEYBINDING (self));
 
-    g_paste_daemon_upload (priv->daemon, 0);
+    g_paste_daemon_upload (priv->daemon, NULL);
 }
 
 /**

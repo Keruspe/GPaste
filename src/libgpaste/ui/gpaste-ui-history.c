@@ -39,8 +39,7 @@ typedef struct
     gint32             item_height;
 
     gchar             *search;
-    guint64           *search_results;
-    guint64            search_results_size;
+    GStrv              search_results;
 
     guint64            c_signals[C_LAST_SIGNAL];
 } GPasteUiHistoryPrivate;
@@ -224,24 +223,25 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
     GSList *item = priv->items;
 
-    priv->search_results = g_paste_client_search_finish (priv->client, res, &priv->search_results_size, NULL /* error */);
+    g_clear_pointer (&priv->search_results, g_strfreev);
+    priv->search_results = g_paste_client_search_finish (priv->client, res, NULL /* error */);
+    guint64 search_results_size = g_strv_length (priv->search_results);
 
     if (priv->search_results)
     {
-        if (priv->search_results_size > priv->size)
-            priv->search_results_size = priv->size;
+        if (search_results_size > priv->size)
+            search_results_size = priv->size;
 
-        for (guint64 i = 0; i < priv->search_results_size; ++i, item = g_slist_next (item))
-            g_paste_ui_item_set_index (item->data, priv->search_results[i]);
+        for (guint64 i = 0; i < search_results_size; ++i, item = g_slist_next (item))
+            g_paste_ui_item_set_uuid (item->data, priv->search_results[i]);
     }
     else
     {
         g_paste_ui_empty_item_show_no_result (priv->dummy_item);
-        priv->search_results_size = 0;
     }
 
-    for (guint64 i = priv->search_results_size; i < priv->size; ++i, item = g_slist_next (item))
-        g_paste_ui_item_set_index (item->data, -1);
+    for (guint64 i = search_results_size; i < priv->size; ++i, item = g_slist_next (item))
+        g_paste_ui_item_set_index (item->data, (guint64) -1);
 }
 
 /**
@@ -262,8 +262,7 @@ g_paste_ui_history_search (GPasteUiHistory *self,
     if (g_paste_str_equal (search, ""))
     {
         g_clear_pointer (&priv->search, g_free);
-        g_clear_pointer (&priv->search_results, g_free);
-        priv->search_results_size = 0;
+        g_clear_pointer (&priv->search_results, g_strfreev);
         g_paste_ui_history_refresh (self, 0);
     }
     else
@@ -361,7 +360,7 @@ g_paste_ui_history_finalize (GObject *object)
     const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (G_PASTE_UI_HISTORY (object));
 
     g_free (priv->search);
-    g_free (priv->search_results);
+    g_strfreev (priv->search_results);
 
     G_OBJECT_CLASS (g_paste_ui_history_parent_class)->finalize (object);
 }

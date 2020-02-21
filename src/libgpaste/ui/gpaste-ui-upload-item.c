@@ -16,9 +16,9 @@ G_PASTE_DEFINE_TYPE (UiUploadItem, ui_upload_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 static void
 g_paste_ui_upload_item_activate (GPasteUiItemAction *self G_GNUC_UNUSED,
                                  GPasteClient       *client,
-                                 guint64             index)
+                                 const gchar        *uuid)
 {
-    g_paste_client_upload (client, index, NULL, NULL);
+    g_paste_client_upload (client, uuid, NULL, NULL);
 }
 
 static void

@@ -16,9 +16,9 @@ G_PASTE_DEFINE_TYPE (UiDeleteItem, ui_delete_item, G_PASTE_TYPE_UI_ITEM_ACTION)
 static void
 g_paste_ui_delete_item_activate (GPasteUiItemAction *self G_GNUC_UNUSED,
                                  GPasteClient       *client,
-                                 guint64             index)
+                                 const gchar        *uuid)
 {
-    g_paste_client_delete (client, index, NULL, NULL);
+    g_paste_client_delete (client, uuid, NULL, NULL);
 }
 
 static void

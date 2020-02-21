@@ -30,6 +30,7 @@ G_BEGIN_DECLS
 #define G_PASTE_DAEMON_DELETE_PASSWORD            "DeletePassword"
 #define G_PASTE_DAEMON_EMPTY_HISTORY              "EmptyHistory"
 #define G_PASTE_DAEMON_GET_ELEMENT                "GetElement"
+#define G_PASTE_DAEMON_GET_ELEMENT_AT_INDEX       "GetElementAtIndex"
 #define G_PASTE_DAEMON_GET_ELEMENT_KIND           "GetElementKind"
 #define G_PASTE_DAEMON_GET_ELEMENTS               "GetElements"
 #define G_PASTE_DAEMON_GET_HISTORY                "GetHistory"
@@ -53,7 +54,6 @@ G_BEGIN_DECLS
 
 #define G_PASTE_DAEMON_SIG_DELETE_HISTORY "DeleteHistory"
 #define G_PASTE_DAEMON_SIG_EMPTY_HISTORY  "EmptyHistory"
-#define G_PASTE_DAEMON_SIG_ITEM_SELECTED  "ItemSelected"
 #define G_PASTE_DAEMON_SIG_SHOW_HISTORY   "ShowHistory"
 #define G_PASTE_DAEMON_SIG_SWITCH_HISTORY "SwitchHistory"
 #define G_PASTE_DAEMON_SIG_UPDATE         "Update"
@@ -80,7 +80,7 @@ G_BEGIN_DECLS
         "   <arg type='s' direction='in' name='backup'  />"               \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_DELETE "'>"                     \
-        "   <arg type='t' direction='in' name='index' />"                 \
+        "   <arg type='s' direction='in' name='uuid' />"                  \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_DELETE_HISTORY "'>"             \
         "   <arg type='s' direction='in' name='name' />"                  \
@@ -92,16 +92,20 @@ G_BEGIN_DECLS
         "   <arg type='s' direction='in' name='name' />"                  \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_GET_ELEMENT "'>"                \
+        "   <arg type='s' direction='in' name='uuid'   />"                \
+        "   <arg type='s' direction='out' name='value' />"                \
+        "  </method>"                                                     \
+        "  <method name='" G_PASTE_DAEMON_GET_ELEMENT_AT_INDEX "'>"       \
         "   <arg type='t' direction='in'  name='index' />"                \
         "   <arg type='s' direction='out' name='uuid'  />"                \
         "   <arg type='s' direction='out' name='value' />"                \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_GET_ELEMENT_KIND "'>"           \
-        "   <arg type='t' direction='in'  name='index' />"                \
-        "   <arg type='s' direction='out' name='kind'  />"                \
+        "   <arg type='s' direction='in'  name='uuid' />"                 \
+        "   <arg type='s' direction='out' name='kind' />"                 \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_GET_ELEMENTS "'>"               \
-        "   <arg type='at' direction='in'  name='index' />"               \
+        "   <arg type='as' direction='in'  name='uuids' />"               \
         "   <arg type='a(ss)' direction='out' name='elements' />"         \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_GET_HISTORY "'>"                \
@@ -115,8 +119,7 @@ G_BEGIN_DECLS
         "   <arg type='t' direction='out' name='size' />"                 \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_GET_RAW_ELEMENT "'>"            \
-        "   <arg type='t' direction='in'  name='index' />"                \
-        "   <arg type='s' direction='out' name='uuid'  />"                \
+        "   <arg type='s' direction='in' name='uuid'   />"                \
         "   <arg type='s' direction='out' name='value' />"                \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_GET_RAW_HISTORY "'>"            \
@@ -128,7 +131,7 @@ G_BEGIN_DECLS
         "  <method name='" G_PASTE_DAEMON_MERGE "'>"                      \
         "   <arg type='s'  direction='in' name='decoration' />"           \
         "   <arg type='s'  direction='in' name='separator'  />"           \
-        "   <arg type='at' direction='in' name='indexes'    />"           \
+        "   <arg type='as' direction='in' name='uuids'      />"           \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED "'>" \
         "   <arg type='b' direction='in' name='extension-state' />"       \
@@ -139,19 +142,19 @@ G_BEGIN_DECLS
         "   <arg type='s' direction='in' name='new-name' />"              \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_REPLACE "'>"                    \
-        "   <arg type='t' direction='in' name='index' />"                 \
+        "   <arg type='s' direction='in' name='uuid' />"                  \
         "   <arg type='s' direction='in' name='contents' />"              \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_SEARCH "'>"                     \
         "   <arg type='s'  direction='in'  name='query'   />"             \
-        "   <arg type='at' direction='out' name='results' />"             \
+        "   <arg type='as' direction='out' name='results' />"             \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_SELECT "'>"                     \
-        "   <arg type='t' direction='in' name='index' />"                 \
+        "   <arg type='s' direction='in' name='uuid' />"                  \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_SET_PASSWORD "'>"               \
-        "   <arg type='t' direction='in' name='index' />"                 \
-        "   <arg type='s' direction='in' name='name'  />"                 \
+        "   <arg type='s' direction='in' name='uuid' />"                  \
+        "   <arg type='s' direction='in' name='name' />"                  \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_SHOW_HISTORY "' />"             \
         "  <method name='" G_PASTE_DAEMON_SWITCH_HISTORY "'>"             \
@@ -161,16 +164,13 @@ G_BEGIN_DECLS
         "   <arg type='b' direction='in' name='tracking-state' />"        \
         "  </method>"                                                     \
         "  <method name='" G_PASTE_DAEMON_UPLOAD "'>"                     \
-        "   <arg type='t' direction='in' name='index' />"                 \
+        "   <arg type='s' direction='in' name='uuid' />"                  \
         "  </method>"                                                     \
         "  <signal name='" G_PASTE_DAEMON_SIG_DELETE_HISTORY "'>"         \
         "   <arg type='s' direction='out' name='history' />"              \
         "  </signal>"                                                     \
         "  <signal name='" G_PASTE_DAEMON_SIG_EMPTY_HISTORY "'>"          \
         "   <arg type='s' direction='out' name='history' />"              \
-        "  </signal>"                                                     \
-        "  <signal name='" G_PASTE_DAEMON_SIG_ITEM_SELECTED "'>"          \
-        "   <arg type='t' direction='out' name='previous-index' />"       \
         "  </signal>"                                                     \
         "  <signal name='" G_PASTE_DAEMON_SIG_SHOW_HISTORY "' />"         \
         "  <signal name='" G_PASTE_DAEMON_SIG_SWITCH_HISTORY "'>"         \

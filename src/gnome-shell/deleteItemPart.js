@@ -13,13 +13,13 @@ const DeleteButton = Me.imports.deleteButton;
 
 var GPasteDeleteItemPart = GObject.registerClass(
 class GPasteDeleteItemPart extends St.Bin {
-    _init(client, index) {
+    _init(client, uuid) {
         super._init({ x_align: St.Align.END });
-        this._deleteButton = new DeleteButton.GPasteDeleteButton(client, index);
+        this._deleteButton = new DeleteButton.GPasteDeleteButton(client, uuid);
         this.child = this._deleteButton;
     }
 
-    setIndex(index) {
-        this._deleteButton.setIndex(index);
+    setUuid(uuid) {
+        this._deleteButton.setIndex(uuid);
     }
 });

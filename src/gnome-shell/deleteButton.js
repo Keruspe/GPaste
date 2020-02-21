@@ -8,7 +8,7 @@ const { Clutter, GObject, St } = imports.gi;
 
 var GPasteDeleteButton = GObject.registerClass(
 class GPasteDeleteButton extends St.Button {
-    _init(client, index) {
+    _init(client, uuid) {
         super._init();
 
         this.child = new St.Icon({
@@ -17,17 +17,17 @@ class GPasteDeleteButton extends St.Button {
         });
 
         this._client = client;
-        this.setIndex(index);
+        this.setUuid(uuid);
 
         this.connect('clicked', this._onClick.bind(this));
     }
 
-    setIndex(index) {
-        this._index = index;
+    setUuid(uuid) {
+        this._uuid = uuid;
     }
 
     _onClick() {
-        this._client.delete(this._index, null);
+        this._client.delete(this._uuid, null);
         return Clutter.EVENT_STOP;
     }
 });

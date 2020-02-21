@@ -363,8 +363,9 @@ static void
 g_paste_daemon_private_delete (const GPasteDaemonPrivate *priv,
                                GVariant                  *parameters)
 {
-    g_paste_history_remove (priv->history,
-                            g_paste_daemon_get_dbus_uint64_parameter (parameters));
+    g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_paste_history_remove_by_uuid (priv->history, uuid);
 }
 
 static void
@@ -422,6 +423,20 @@ g_paste_daemon_private_get_element (const GPasteDaemonPrivate *priv,
                                     GVariant                  *parameters,
                                     GPasteDBusError          **err)
 {
+    g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
+
+    G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this uuid", NULL);
+
+    GVariant *variant = g_variant_new_string (g_paste_item_get_display_string (item));
+    return g_variant_new_tuple (&variant, 1);
+}
+
+static GVariant *
+g_paste_daemon_private_get_element_at_index (const GPasteDaemonPrivate *priv,
+                                             GVariant                  *parameters,
+                                             GPasteDBusError          **err)
+{
     GPasteHistory *history = priv->history;
     guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
 
@@ -445,11 +460,9 @@ g_paste_daemon_private_get_element_kind (const GPasteDaemonPrivate *priv,
                                          GPasteDBusError          **err)
 {
     GPasteHistory *history = priv->history;
-    guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
+    g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
-
-    const GPasteItem *item = g_paste_history_get (history, index);
+    const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
     G_PASTE_DBUS_ASSERT_FULL (item, "received no item for this index", NULL);
 
@@ -472,13 +485,11 @@ g_paste_daemon_private_get_elements (const GPasteDaemonPrivate *priv,
 
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
     guint64 len;
-    g_autofree guint64 *indexes = g_paste_util_get_dbus_at_result (variant, &len);
-    guint64 history_length = g_paste_history_get_length (history);
+    g_autofree const gchar **uuids = g_variant_get_strv (variant, &len);
 
     for (guint64 i = 0; i < len; ++i)
     {
-        G_PASTE_DBUS_ASSERT_FULL (indexes[i] < history_length, "invalid index received", NULL);
-        const GPasteItem *item = g_paste_history_get (history, indexes[i]);
+        const GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
         G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this index", NULL);
         g_variant_builder_add (&builder, "(ss)", g_paste_item_get_uuid (item), g_paste_item_get_display_string (item));
     }
@@ -544,21 +555,13 @@ g_paste_daemon_private_get_raw_element (const GPasteDaemonPrivate *priv,
                                         GVariant                  *parameters,
                                         GPasteDBusError          **err)
 {
-    GPasteHistory *history = priv->history;
-    guint64 index = g_paste_daemon_get_dbus_uint64_parameter (parameters);
+    g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
-    G_PASTE_DBUS_ASSERT_FULL (index < g_paste_history_get_length (history), "invalid index received", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this uuid", NULL);
 
-    const GPasteItem *item = g_paste_history_get (priv->history, index);
-
-    G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this index", NULL);
-
-    GVariant *data[] = {
-        g_variant_new_string (g_paste_item_get_uuid (item)),
-        g_variant_new_string (g_paste_item_get_display_string (item))
-    };
-
-    return g_variant_new_tuple (data, 2);
+    GVariant *variant = g_variant_new_string (g_paste_item_get_value (item));
+    return g_variant_new_tuple (&variant, 1);
 }
 
 static GVariant *
@@ -608,27 +611,25 @@ g_paste_daemon_private_merge (const GPasteDaemonPrivate *priv,
 
     _variant_iter_read_strings_parameter (&parameters_iter, &decoration, &separator);
 
-    g_autoptr (GVariant) v_indexes = g_variant_iter_next_value (&parameters_iter);
+    g_autoptr (GVariant) v_uuids = g_variant_iter_next_value (&parameters_iter);
     guint64 length;
-    const guint64 *indexes = g_variant_get_fixed_array (v_indexes, &length, sizeof (guint64));
-
-    GPasteHistory *history = priv->history;
-    guint64 history_length = g_paste_history_get_length (history);
+    const GStrv uuids = (const GStrv) g_variant_get_strv (v_uuids, &length);
 
     G_PASTE_DBUS_ASSERT (length, "nothing to merge");
-    for (guint64 i = 0; i < length; ++i)
-    {
-        G_PASTE_DBUS_ASSERT (indexes[i] < history_length, "invalid index received");
-    }
 
+    GPasteHistory *history = priv->history;
     g_autoptr (GString) str = g_string_new (NULL);
 
     for (guint64 i = 0; i < length; ++i)
     {
+        const GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
+
+        G_PASTE_DBUS_ASSERT (item, "no item matching this uuid");
+
         g_string_append_printf (str, "%s%s%s%s",
                                 (i) ? separator : "",
                                 decoration,
-                                g_paste_history_get_value (history, indexes[i]),
+                                g_paste_item_get_value (item),
                                 decoration);
     }
 
@@ -694,13 +695,12 @@ g_paste_daemon_private_search (const GPasteDaemonPrivate *priv,
                                GVariant                  *parameters,
                                GPasteDBusError          **err)
 {
-    g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
-    g_autoptr (GArray) results = g_paste_history_search (priv->history, name);
+    g_autofree gchar *search = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+    g_auto (GStrv) results = g_paste_history_search (priv->history, search);
 
     G_PASTE_DBUS_ASSERT_FULL (results, "Error while performing search", NULL);
 
-    GVariant *variant = g_variant_new_fixed_array (G_VARIANT_TYPE_UINT64, results->data, results->len, sizeof (guint64));
-
+    GVariant *variant = g_variant_new_strv ((const gchar * const *) results, -1);
     return g_variant_new_tuple (&variant, 1);
 }
 
@@ -709,12 +709,9 @@ g_paste_daemon_select (const GPasteDaemon *self,
                        GVariant           *parameters)
 {
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-    guint64 position = g_paste_daemon_get_dbus_uint64_parameter (parameters);
-    GVariant *variant = g_variant_new_uint64 (position);
+    g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_paste_history_select (priv->history, position);
-
-    G_PASTE_SEND_DBUS_SIGNAL_WITH_DATA (ITEM_SELECTED, variant);
+    g_paste_history_select (priv->history, uuid);
 }
 
 static void
@@ -729,11 +726,9 @@ g_paste_daemon_private_replace (const GPasteDaemonPrivate *priv,
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
-    guint64 index = g_variant_get_uint64 (variant1);
+    const gchar *uuid = g_variant_get_string (variant1, NULL);
 
-    G_PASTE_DBUS_ASSERT (index < g_paste_history_get_length (history), "invalid index received");
-
-    const GPasteItem *item = g_paste_history_get (history, index);
+    const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
     G_PASTE_DBUS_ASSERT (item, "received no item for this index");
     G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
@@ -743,7 +738,7 @@ g_paste_daemon_private_replace (const GPasteDaemonPrivate *priv,
 
     G_PASTE_DBUS_ASSERT (contents, "no contents given");
 
-    g_paste_history_replace (priv->history, index, contents);
+    g_paste_history_replace (priv->history, uuid, contents);
 }
 
 static void
@@ -758,13 +753,10 @@ g_paste_daemon_private_set_password (const GPasteDaemonPrivate *priv,
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (&parameters_iter);
-    guint64 index = g_variant_get_uint64 (variant1);
+    const gchar *uuid = g_variant_get_string (variant1, NULL);
+    const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
-    G_PASTE_DBUS_ASSERT (index < g_paste_history_get_length (history), "invalid index received");
-
-    const GPasteItem *item = g_paste_history_get (history, index);
-
-    G_PASTE_DBUS_ASSERT (item, "received no item for this index");
+    G_PASTE_DBUS_ASSERT (item, "received no item for this uuid");
     G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
@@ -773,7 +765,7 @@ g_paste_daemon_private_set_password (const GPasteDaemonPrivate *priv,
     G_PASTE_DBUS_ASSERT (name, "no password name given");
     G_PASTE_DBUS_ASSERT (!g_paste_history_get_password (priv->history, name), "a password with tat name already exists");
 
-    g_paste_history_set_password (priv->history, index, name);
+    g_paste_history_set_password (priv->history, uuid, name);
 }
 
 static void
@@ -811,19 +803,24 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
 /**
  * g_paste_daemon_upload:
  * @self: (transfer none): the #GPasteDaemon
- * @index: the index of the item to upload
+ * @uuid: the uuid of the item to upload
  *
  * Upload an item to a pastebin service
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_upload (GPasteDaemon *self,
-                       guint64       index)
+                       const gchar  *uuid)
 {
     g_return_if_fail (_G_PASTE_IS_DAEMON (self));
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    const GPasteItem *item = (uuid) ? g_paste_history_get_by_uuid (priv->history, uuid) : g_paste_history_get (priv->history, 0);
+
+    if (!item)
+        return;
+
     GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, NULL, "wgetpaste", NULL);
-    const gchar *value = g_paste_history_get_value (priv->history, index);
+    const gchar *value = g_paste_item_get_value (item);
 
     g_subprocess_communicate_utf8_async (upload,
                                          value,
@@ -836,7 +833,9 @@ static void
 _g_paste_daemon_upload (GPasteDaemon *self,
                         GVariant     *parameters)
 {
-    g_paste_daemon_upload(self, g_paste_daemon_get_dbus_uint64_parameter (parameters));
+    g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
+
+    g_paste_daemon_upload (self, uuid);
 }
 
 static void
@@ -898,6 +897,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         g_paste_daemon_private_empty_history (priv, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT))
         answer = g_paste_daemon_private_get_element (priv, parameters, &err);
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT_AT_INDEX))
+        answer = g_paste_daemon_private_get_element_at_index (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENT_KIND))
         answer = g_paste_daemon_private_get_element_kind (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_ELEMENTS))

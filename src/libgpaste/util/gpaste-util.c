@@ -450,29 +450,6 @@ g_paste_util_show_win (GApplication *application)
 }
 
 /**
- * g_paste_util_get_at_result:
- * @variant: a #GVariant
- * @len: the length of the resulting array
- *
- * Get the "at" GVariant as an array of guint64
- *
- * Returns: (array length=len): The resulting array
- */
-G_PASTE_VISIBLE guint64 *
-g_paste_util_get_dbus_at_result (GVariant *variant,
-                                 guint64  *len)
-{
-    guint64 _len;
-    const guint64 *r = g_variant_get_fixed_array (variant, &_len, sizeof (guint64));
-    guint64 *ret = g_memdup (r, _len * sizeof (guint64));
-
-    if (len)
-        *len = _len;
-
-    return ret;
-}
-
-/**
  * g_paste_util_get_au_result:
  * @variant: a #GVariant
  * @len: the length of the resulting array
