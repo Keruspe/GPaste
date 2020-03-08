@@ -4,22 +4,25 @@
  * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const { St } = imports.gi;
+const { GObject, St } = imports.gi;
 
-var GPasteAboutItem = class {
-    constructor(client, menu) {
-        this.actor = new St.Button({
+var GPasteAboutItem = GObject.registerClass(
+class GPasteAboutItem extends St.Button {
+    _init(client, menu) {
+        super._init({
+            x_expand: true,
+            x_align: St.Align.MIDDLE,
             reactive: true,
             can_focus: true,
             track_hover: true,
             style_class: 'system-menu-action'
         });
 
-        this.actor.child = new St.Icon({ icon_name: 'dialog-information-symbolic' });
+        this.child = new St.Icon({ icon_name: 'dialog-information-symbolic' });
 
-        this.actor.connect('clicked', function() {
+        this.connect('clicked', function() {
             menu.itemActivated();
             client.about(null);
         });
     }
-};
+});

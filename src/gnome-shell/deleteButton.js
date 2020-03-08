@@ -4,13 +4,14 @@
  * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const { Clutter, St } = imports.gi;
+const { Clutter, GObject, St } = imports.gi;
 
-var GPasteDeleteButton = class {
-    constructor(client, index) {
-        this.actor = new St.Button();
+var GPasteDeleteButton = GObject.registerClass(
+class GPasteDeleteButton extends St.Button {
+    _init(client, index) {
+        super._init();
 
-        this.actor.child = new St.Icon({
+        this.child = new St.Icon({
             icon_name: 'edit-delete-symbolic',
             style_class: 'popup-menu-icon'
         });
@@ -18,7 +19,7 @@ var GPasteDeleteButton = class {
         this._client = client;
         this.setIndex(index);
 
-        this.actor.connect('clicked', this._onClick.bind(this));
+        this.connect('clicked', this._onClick.bind(this));
     }
 
     setIndex(index) {
@@ -29,4 +30,4 @@ var GPasteDeleteButton = class {
         this._client.delete(this._index, null);
         return Clutter.EVENT_STOP;
     }
-};
+});

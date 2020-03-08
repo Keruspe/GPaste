@@ -28,7 +28,7 @@ var GPasteSearchItem = GObject.registerClass({
             reactive: true,
             can_focus: true
         });
-        this.add(this._entry, { expand: true });
+        this.add_child(this._entry);
 
         this._entry.set_primary_icon(new St.Icon({
             style_class:'search-entry-icon',

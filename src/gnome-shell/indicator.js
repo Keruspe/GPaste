@@ -9,7 +9,7 @@ const Gettext = imports.gettext;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
-const { Clutter, GObject, GLib, GPaste } = imports.gi;
+const { Clutter, GObject, GLib, GPaste, St } = imports.gi;
 
 const _ = Gettext.domain('GPaste').gettext;
 
@@ -32,7 +32,7 @@ class GPasteIndicator extends PanelMenu.Button {
         super._init(0.0, "GPaste");
 
         this._statusIcon = new StatusIcon.GPasteStatusIcon();
-        this.add_child(this._statusIcon.actor);
+        this.add_child(this._statusIcon);
 
         this._settings = new GPaste.Settings();
 
@@ -64,6 +64,7 @@ class GPasteIndicator extends PanelMenu.Button {
             reactive: false,
             can_focus: false
         });
+        this._actions._ornamentLabel.set_x_expand(true);
 
         this._addToPostHeader(this._dummyHistoryItem);
         this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
@@ -81,9 +82,9 @@ class GPasteIndicator extends PanelMenu.Button {
             this._addToHeader(this._searchItem);
             this._addToHeader(this._pageSwitcher);
 
-            this._actions.add(this._uiItem.actor, { expand: true, x_fill: false });
-            this._actions.add(this._emptyHistoryItem.actor, { expand: true, x_fill: false });
-            this._actions.add(this._aboutItem.actor, { expand: true, x_fill: false });
+            this._actions.add_child(this._uiItem);
+            this._actions.add_child(this._emptyHistoryItem);
+            this._actions.add_child(this._aboutItem);
 
             this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', this._resetMaxDisplayedSize.bind(this));
             this._resetMaxDisplayedSize();
@@ -284,15 +285,15 @@ class GPasteIndicator extends PanelMenu.Button {
     _updateVisibility(empty, search) {
         if (!empty) {
             this._dummyHistoryItem.hide();
-            this._emptyHistoryItem.actor.show();
+            this._emptyHistoryItem.show();
             this._searchItem.show();
         } else if (this._hasSearch()) {
             this._dummyHistoryItem.showNoResult();
-            this._emptyHistoryItem.actor.hide();
+            this._emptyHistoryItem.hide();
             this._searchItem.show();
         } else {
             this._dummyHistoryItem.showEmpty();
-            this._emptyHistoryItem.actor.hide();
+            this._emptyHistoryItem.hide();
             this._searchItem.hide();
         }
     }

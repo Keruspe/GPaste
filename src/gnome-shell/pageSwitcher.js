@@ -22,12 +22,14 @@ var GPastePageSwitcher = GObject.registerClass({
 }, class GPastePageSwitcher extends PopupMenu.PopupBaseMenuItem {
     _init() {
         super._init({
+            style_class: 'calendar',
             reactive: false,
             can_focus: false
         });
-
-        this._box = new St.BoxLayout();
-        this.add(this._box, { expand: true, x_fill: false, can_focus: false, reactive: false });
+        this._ornamentLabel.set_x_expand(true);
+        // Use to center everything because of ornamentLabel
+        this._dummyLabel = new St.Label({ text: '', x_expand: true });
+        this.add_child(this._dummyLabel);
 
         this._active = -1;
         this._maxDisplayedSize = -1;
@@ -63,7 +65,9 @@ var GPastePageSwitcher = GObject.registerClass({
     _addPage() {
         let sw = new PageItem.GPastePageItem(this._pages.length + 1);
         this._pages.push(sw);
-        this._box.add(sw.actor, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
+        this.remove_child(this._dummyLabel);
+        this.add_child(sw);
+        this.add_child(this._dummyLabel);
 
         sw.connect('switch', (sw, page) => {
             this._switch(page);

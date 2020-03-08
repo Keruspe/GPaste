@@ -4,20 +4,23 @@
  * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const { GLib, GPaste, St } = imports.gi;
+const { GLib, GObject, GPaste, St } = imports.gi;
 
-var GPasteEmptyHistoryItem = class {
-    constructor(client, settings, menu) {
-        this.actor = new St.Button({
+var GPasteEmptyHistoryItem = GObject.registerClass(
+class GPasteEmptyHistoryItem extends St.Button {
+    _init(client, settings, menu) {
+        super._init({
+            x_expand: true,
+            x_align: St.Align.MIDDLE,
             reactive: true,
             can_focus: true,
             track_hover: true,
             style_class: 'system-menu-action'
         });
 
-        this.actor.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
+        this.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
 
-        this.actor.connect('clicked', function() {
+        this.connect('clicked', function() {
             menu.itemActivated();
             client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
@@ -26,4 +29,4 @@ var GPasteEmptyHistoryItem = class {
             });
         });
     }
-};
+});

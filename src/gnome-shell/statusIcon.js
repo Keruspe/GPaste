@@ -6,17 +6,18 @@
 
 const PopupMenu = imports.ui.popupMenu;
 
-const { St } = imports.gi;
+const { GObject, St } = imports.gi;
 
-var GPasteStatusIcon = class {
-    constructor() {
-        this.actor = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
+var GPasteStatusIcon = GObject.registerClass(
+class GPasteStatusIcon extends St.BoxLayout {
+    _init() {
+        super._init({ style_class: 'panel-status-menu-box' });
 
-        this.actor.add_child(new St.Icon({
+        this.add_child(new St.Icon({
             icon_name: 'edit-paste-symbolic',
             style_class: 'system-status-icon'
         }));
 
-        this.actor.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
+        this.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
     }
-};
+});
