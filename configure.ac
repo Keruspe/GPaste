@@ -2,14 +2,14 @@
 ##
 ## Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
-m4_define([gpaste_version],      [3.34.1])
+m4_define([gpaste_version],      [3.36.0])
 
 # Update gpaste_lt_version before each release (and only then)
 # The format is C:R:A (current revision age)
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-m4_define([gpaste_lt_version],   [12:3:1])
+m4_define([gpaste_lt_version],   [12:4:1])
 
 # Build system requirements
 m4_define([autoconf_required],   [2.69])
@@ -157,7 +157,7 @@ G_PASTE_ENABLE([zsh-completion],        [Disable the zsh completion],    [yes])
 
 AS_IF([test x${enable_gnome_shell_extension} = xyes], [
     AS_IF([test x${enable_introspection} != xyes], [AC_MSG_ERROR([*** Introspection support is required to run the gnome-shell extension])])
-    PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-5 gjs-1.0 >= gjs_required])
+    PKG_CHECK_MODULES(JS_EXTENSION, [mutter-clutter-6 gjs-1.0 >= gjs_required])
 ])
 
 AS_IF([test x${enable_x_keybinder} = xyes], [

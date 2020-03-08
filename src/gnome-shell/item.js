@@ -17,6 +17,7 @@ var GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenu.PopupMenuItem {
     _init(client, size, index) {
         super._init("");
+        this.label.set_x_expand(true);
 
         this._client = client;
         this._uuid = null;
@@ -32,7 +33,7 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
         this.connect('key-press-event', this._onKeyPressed.bind(this));
 
         this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, index);
-        this.add(this._deleteItem.actor, { expand: true, x_align: St.Align.END });
+        this.add_child(this._deleteItem);
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this.setTextSize(size);

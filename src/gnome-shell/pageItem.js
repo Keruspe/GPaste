@@ -4,40 +4,35 @@
  * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const { St } = imports.gi;
+const { GObject, St } = imports.gi;
 
-const Signals = imports.signals;
-
-var GPastePageItem = class {
-    constructor(page) {
-        this.actor = new St.Button({
+var GPastePageItem = GObject.registerClass({
+    Signals: {
+        'switch': { param_types: [GObject.TYPE_UINT64] },
+    },
+}, class GPastePageItem extends St.Button {
+    _init(page) {
+        super._init({
+            label: '' + page,
+            x_align: St.Align.MIDDLE,
             reactive: true,
             can_focus: false,
             track_hover: true,
-            style_class: 'calendar-day-base'
+            style_class: 'calendar-day-base calendar-day'
         });
-
-        this.actor.child = new St.Label({ text: '' + page });
 
         this._page = page;
 
-        this.actor.connect('clicked', () => {
+        this.connect('clicked', () => {
             this.emit('switch', this._page);
         });
     }
 
     setActive(active) {
       if (active) {
-          this.actor.add_style_pseudo_class('active');
-          this.actor.set_style("font-weight: bold;");
+          this.add_style_pseudo_class('selected');
       } else {
-          this.actor.remove_style_pseudo_class('active');
-          this.actor.set_style(null);
+          this.remove_style_pseudo_class('selected');
       }
     }
-
-    destroy() {
-        this.actor.destroy();
-    }
-};
-Signals.addSignalMethods(GPastePageItem.prototype);
+});
