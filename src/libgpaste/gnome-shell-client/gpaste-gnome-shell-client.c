@@ -67,8 +67,8 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAMV_ASYNC(method, paramv) \
     DBUS_CALL_ONE_PARAMV_ASYNC_BASE (GNOME_SHELL_CLIENT, paramv, G_PASTE_GNOME_SHELL_##method)
 
-#define DBUS_CALL_TWO_PARAMS_ASYNC(method, params) \
-    DBUS_CALL_TWO_PARAMS_ASYNC_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
+#define DBUS_CALL_THREE_PARAMS_ASYNC(method, params) \
+    DBUS_CALL_THREE_PARAMS_ASYNC_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
 
 /****************************/
 /* Methods / Async - Finish */
@@ -200,7 +200,7 @@ g_paste_gnome_shell_client_grab_accelerator (GPasteGnomeShellClient     *self,
         g_variant_new_uint32 (accelerator.grab_flags),
         g_variant_new_uint32 (accelerator.mode_flags)
     };
-    DBUS_CALL_TWO_PARAMS_ASYNC (GRAB_ACCELERATOR, accel);
+    DBUS_CALL_THREE_PARAMS_ASYNC (GRAB_ACCELERATOR, accel);
 }
 
 /**
