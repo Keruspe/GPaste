@@ -296,15 +296,18 @@ G_BEGIN_DECLS
 #define DBUS_CALL_TWO_PARAMS_RET_UINT64_BASE(TYPE_CHECKER, params, method) \
     DBUS_CALL_TWO_PARAMS_BASE(TYPE_CHECKER, params, method, 0, return g_variant_get_uint64 (variant))
 
-#define DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE(TYPE_CHECKER, params, method) \
-    DBUS_CALL_TWO_PARAMS_BASE(TYPE_CHECKER, params, method, 0, return g_variant_get_uint32 (variant))
+#define DBUS_CALL_THREE_PARAMS_BASE(TYPE_CHECKER, params, method, if_fail, variant_extract) \
+    DBUS_CALL_WITH_RETURN_BASE (TYPE_CHECKER, {}, method, params, 3, if_fail, variant_extract)
+
+#define DBUS_CALL_THREE_PARAMS_RET_UINT32_BASE(TYPE_CHECKER, params, method) \
+    DBUS_CALL_THREE_PARAMS_BASE(TYPE_CHECKER, params, method, 0, return g_variant_get_uint32 (variant))
 
 /************************/
 /* Properties / Getters */
 /************************/
 
 #define DBUS_GET_PROPERTY_INIT(TYPE_CHECKER, property,  _default)                        \
-    g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), _default);                   \
+    g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), _default);                  \
     g_autoptr (GVariant) result = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (self), \
                                                                     property);           \
     if (!result)                                                                         \
@@ -323,7 +326,7 @@ G_BEGIN_DECLS
 /************************/
 
 #define DBUS_SET_GENERIC_PROPERTY_BASE(TYPE_CHECKER, iface, property, value, vtype)              \
-    g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), FALSE);                              \
+    g_return_val_if_fail (_G_PASTE_IS_##TYPE_CHECKER (self), FALSE);                             \
     GVariant *prop[] = {                                                                         \
         g_variant_new_string (iface),                                                            \
         g_variant_new_string (property),                                                         \

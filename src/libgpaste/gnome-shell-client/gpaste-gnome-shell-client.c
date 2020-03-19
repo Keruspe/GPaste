@@ -93,8 +93,8 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define DBUS_CALL_ONE_PARAMV_RET_AU(method, paramv) \
     DBUS_CALL_ONE_PARAMV_RET_AU_BASE (GNOME_SHELL_CLIENT, G_PASTE_GNOME_SHELL_##method, paramv, NULL)
 
-#define DBUS_CALL_TWO_PARAMS_RET_UINT32(method, params) \
-    DBUS_CALL_TWO_PARAMS_RET_UINT32_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
+#define DBUS_CALL_THREE_PARAMS_RET_UINT32(method, params) \
+    DBUS_CALL_THREE_PARAMS_RET_UINT32_BASE (GNOME_SHELL_CLIENT, params, G_PASTE_GNOME_SHELL_##method)
 
 /******************/
 /* Methods / Sync */
@@ -120,7 +120,7 @@ g_paste_gnome_shell_client_grab_accelerator_sync (GPasteGnomeShellClient     *se
         g_variant_new_uint32 (accelerator.grab_flags),
         g_variant_new_uint32 (accelerator.mode_flags)
     };
-    DBUS_CALL_TWO_PARAMS_RET_UINT32 (GRAB_ACCELERATOR, accel);
+    DBUS_CALL_THREE_PARAMS_RET_UINT32 (GRAB_ACCELERATOR, accel);
 }
 
 /**

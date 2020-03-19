@@ -1,7 +1,17 @@
+NEW in 3.36.1 (19/03/2020)
+=============
+
+- Fix keybinding grab with gnome-shell
+
 NEW in 3.36.0 (08/03/2020)
 =============
 
 - Update to gnome-shell 3.36.0
+
+NEW in 3.34.2 (19/03/2020)
+=============
+
+- Fix keybinding grab with gnome-shell
 
 NEW in 3.34.1 (09/10/2019)
 =============
