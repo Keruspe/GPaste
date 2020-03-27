@@ -43,6 +43,62 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.36.3" type="stable" date="2020-03-27">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fix activating items using Ctrl-Number in gnome-shell</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.36.2" type="stable" date="2020-03-19">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fix keybinding regrab with gnome-shell</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.36.1" type="stable" date="2020-03-19">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fix keybinding grab with gnome-shell</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.36.0" type="stable" date="2020-03-08">
+          <description>
+              <p>First release for GNOME 3.36. Changes:</p>
+              <ul>
+                  <li>Update to gnome-shell 3.36.0</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.34.4" type="stable" date="2020-03-27">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fix activating items using Ctrl-Number in gnome-shell</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.34.3" type="stable" date="2020-03-19">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fix keybinding regrab with gnome-shell</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.34.2" type="stable" date="2020-03-19">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fix keybinding grab with gnome-shell</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.34.1" type="stable" date="2019-10-09">
           <description>
               <p>This is a maintenance release. Changes:</p>
@@ -56,6 +112,16 @@
               <p>First release for GNOME 3.34. Changes:</p>
               <ul>
                   <li>Update to gnome-shell 3.34.0</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.32.1" type="stable" date="2020-03-27">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Compatibility with recent appstream-glib</li>
+                  <li>Fix keybinding regrab with gnome-shell</li>
+                  <li>Fix activating items using Ctrl-Number in gnome-shell</li>
               </ul>
           </description>
       </release>

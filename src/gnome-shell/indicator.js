@@ -112,7 +112,7 @@ class GPasteIndicator extends PanelMenu.Button {
         if (event.has_control_modifier()) {
             const nb = parseInt(event.get_key_unicode());
             if (!isNaN(nb) && nb >= 0 && nb <= 9 && nb < this._history.length) {
-                this._history[nb].activate();
+                this._history[nb].activate(event);
             }
         } else {
             this._maybeUpdateIndexVisibility(event, true);

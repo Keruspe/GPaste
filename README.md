@@ -39,6 +39,6 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
 
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 3.36 is: [GPaste 3.36.2](https://www.imagination-land.org/posts/2020-03-19-gpaste-3.36.2-released.html).
+Latest release for GNOME 3.36 is: [GPaste 3.36.3](https://www.imagination-land.org/posts/2020-03-27-gpaste-3.36.3-released.html).
 
-Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.36.2.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.36.3.tar.xz>

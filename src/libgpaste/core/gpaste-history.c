@@ -830,7 +830,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 {
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
-    g_debug ("history: name cahnged to '%s'", priv->name);
+    g_debug ("history: name changed to '%s'", priv->name);
 
     g_paste_history_load (self, NULL);
     g_paste_history_emit_switch (self, priv->name);
