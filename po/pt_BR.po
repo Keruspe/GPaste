@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2019-03-12 09:47+0100\n"
+"POT-Creation-Date: 2020-03-27 09:52+0100\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -26,12 +26,12 @@ msgid "is already running."
 msgstr ""
 
 #. This is the date format "month/day/year time"
-#: src/libgpaste/core/gpaste-image-item.c:222
+#: src/libgpaste/core/gpaste-image-item.c:240
 msgid "%m/%d/%y %T"
 msgstr "%d/%m/%y %T"
 
 #. This gets displayed in history when selecting an image
-#: src/libgpaste/core/gpaste-image-item.c:224
+#: src/libgpaste/core/gpaste-image-item.c:242
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Imagem, %d x %d (%s)]"
@@ -611,7 +611,7 @@ msgstr "Gerencie seu histórico da área de transferência"
 msgid "Marc-Antoine Perennou"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:12
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
@@ -619,23 +619,39 @@ msgstr ""
 "O GPaste é um sistema de gerenciamento de área de transferência que permite "
 "controlar e gerenciar seu histórico de uma maneira altamente personalizável."
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:15
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
 "O GPaste fornece uma ferramenta gráfica que permite gerenciar tudo facilmente"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:22
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:26
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:30
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:34
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 #, fuzzy
 msgid "The settings UI"
 msgstr "Configurações do GPaste"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:42
+msgid "This is a maintenance release. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:44
+msgid "Compatibility with recent appstream-glib"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:45
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:46
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
+msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"

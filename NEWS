@@ -1,3 +1,10 @@
+NEW in 3.32.1 (27/03/2020)
+=============
+
+- Compatibility with recent appstream-glib
+- Fix keybinding regrab with gnome-shell
+- Fix activating items using Ctrl-Number in gnome-shell
+
 NEW in 3.32.0 (12/03/2019)
 =============
 

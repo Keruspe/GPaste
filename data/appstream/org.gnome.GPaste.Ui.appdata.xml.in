@@ -8,6 +8,7 @@
   <project_license>BSD-2-Clause</project_license>
   <metadata_license>CC-BY-SA-3.0</metadata_license>
   <project_group>GNOME</project_group>
+  <content_rating type="oars-1.1" />
   <description>
     <p>
       GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
@@ -35,6 +36,18 @@
       <image width="686" height="610">http://www.imagination-land.org/images/GPaste/3/Ui-4.png</image>
     </screenshot>
   </screenshots>
+  <releases>
+      <release version="3.32.1" type="stable" date="2020-03-27">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Compatibility with recent appstream-glib</li>
+                  <li>Fix keybinding regrab with gnome-shell</li>
+                  <li>Fix activating items using Ctrl-Number in gnome-shell</li>
+              </ul>
+          </description>
+      </release>
+  </releases>
   <update_contact>Marc-Antoine@Perennou.com</update_contact>
   <url type="bugtracker">https://github.com/Keruspe/GPaste/issues</url>
   <url type="donation">https://paypal.me/keruspe/</url>
