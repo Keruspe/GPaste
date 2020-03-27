@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2020-03-19 15:00+0100\n"
+"POT-Creation-Date: 2020-03-27 10:10+0100\n"
 "PO-Revision-Date: 2011-11-20 16:30+0100\n"
 "Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -646,18 +646,37 @@ msgid "The settings UI"
 msgstr "Ajustes del servicio GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:72
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
 msgid "This is a maintenance release. Changes:"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-msgid "Compatibility with recent appstream-glib"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-msgid "First release for GNOME 3.34. Changes:"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:91
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
+msgid "Fix keybinding grab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
+msgid "Compatibility with recent appstream-glib"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
+msgid "First release for GNOME 3.34. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
 msgid "Update to gnome-shell 3.34.0"
 msgstr ""
 
