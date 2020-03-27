@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2020-03-19 15:10+0100\n"
+"POT-Creation-Date: 2020-03-27 10:19+0100\n"
 "PO-Revision-Date: 2011-01-25 16:05+0100\n"
 "Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
 "Language-Team: French\n"
@@ -623,18 +623,55 @@ msgid "The settings UI"
 msgstr "L'interface de préférences"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
 msgid "This is a maintenance release. Changes:"
 msgstr "Ceci est une mise à jour de maintenance. Changements :"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:124
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:123
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
+msgid "Fix keybinding grab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:72
+#, fuzzy
+#| msgid "First release for GNOME 3.34. Changes:"
+msgid "First release for GNOME 3.36. Changes:"
+msgstr "Première mise à jour pour GNOME 3.34. Changements :"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
+#, fuzzy
+#| msgid "Update to gnome-shell 3.34.0"
+msgid "Update to gnome-shell 3.36.0"
+msgstr "Mise à jour de gnome-shell en verison 3.34.0"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:106
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:122
 msgid "Compatibility with recent appstream-glib"
 msgstr "Compatibilité avec les versions récentes d'appstream-glib"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "Première mise à jour pour GNOME 3.34. Changements :"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:114
 msgid "Update to gnome-shell 3.34.0"
 msgstr "Mise à jour de gnome-shell en verison 3.34.0"
 
