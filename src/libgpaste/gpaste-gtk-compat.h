@@ -6,6 +6,7 @@
 
 #ifndef __GPASTE_GTK_COMPAT_H__
 #define __GPASTE_GTK_COMPAT_H__
+#ifndef __GI_SCANNER__
 
 #include <gtk/gtk.h>
 
@@ -22,4 +23,5 @@ G_BEGIN_DECLS
 
 G_END_DECLS
 
+#endif /*__GI_SCANNER__ */
 #endif /*__GPASTE_GTK_COMPAT_H__*/

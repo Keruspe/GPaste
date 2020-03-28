@@ -11,6 +11,8 @@
 #ifndef __G_PASTE_GDBUS_MACROS_H__
 #define __G_PASTE_GDBUS_MACROS_H__
 
+#ifndef __GI_SCANNER__
+
 #include <gpaste-gdbus-defines.h>
 #include <gpaste-util.h>
 
@@ -346,4 +348,5 @@ G_BEGIN_DECLS
 
 G_END_DECLS
 
+#endif /*__GI_SCANNER__ */
 #endif /*__G_PASTE_GDBUS_MACROS_H__*/
