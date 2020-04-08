@@ -43,7 +43,6 @@ CLEANFILES +=                                 \
 SUFFIXES += .json .json.in
 .json.in.json:
 	@ $(MKDIR_P) $(@D)
-	$(AM_V_GEN) $(SED) -e 's,[@]localedir[@],$(localedir),g'             \
-			   -e 's,[@]gettext_package[@],$(GETTEXT_PACKAGE),g' \
+	$(AM_V_GEN) $(SED) -e 's,[@]gettext_domain[@],$(GETTEXT_PACKAGE),g' \
 			   -e 's,[@]version[@],$(VERSION),g'                 \
 			   < $< > $@

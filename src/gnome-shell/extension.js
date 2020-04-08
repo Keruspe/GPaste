@@ -12,8 +12,6 @@ imports.gi.versions.GPaste = '1.0';
 imports.gi.versions.Pango = '1.0';
 imports.gi.versions.St = '1.0';
 
-const Gettext = imports.gettext;
-
 const Main = imports.ui.main;
 
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -21,17 +19,21 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const Indicator = Me.imports.indicator;
 
-function init(extension) {
-    const metadata = extension.metadata;
-    Gettext.bindtextdomain(metadata.gettext_package, metadata.localedir);
+class Extension {
+    constructor() {
+        ExtensionUtils.initTranslations();
+    }
+
+    enable() {
+        Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
+    }
+
+    disable() {
+        Main.panel.statusArea.gpaste.shutdown();
+    }
 }
 
-function disable() {
-    Main.panel.statusArea.gpaste.shutdown();
-}
 
-function enable() {
-    if (Main.panel.statusArea.gpaste)
-        disable();
-    Main.panel.addToStatusArea('gpaste', new Indicator.GPasteIndicator());
+function init() {
+    return new Extension();
 }
