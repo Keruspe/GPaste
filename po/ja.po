@@ -20,11 +20,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-macros.h:98
 msgid "Failed to register the gtk application"
-msgstr "GTK アプリケーションを登録するのを失敗しました"
+msgstr "GTK アプリケーションの登録に失敗しました"
 
 #: src/libgpaste/gpaste-macros.h:110
 msgid "is already running."
-msgstr "既に実行しています。"
+msgstr "はすでに実行しています。"
 
 #. This is the date format "month/day/year time"
 #: src/libgpaste/core/gpaste-image-item.c:240
@@ -54,7 +54,7 @@ msgstr "クリップボードの変更を追跡する"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
 msgid "Close UI on select"
-msgstr "選択際に UI を閉じる"
+msgstr "選択時に UI を閉じる"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
 msgid "Enable the gnome-shell extension"
@@ -66,15 +66,15 @@ msgstr "デーモンの状態を拡張機能の状態と同期する"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
 msgid "Primary selection affects history"
-msgstr "一次選択は履歴に影響する"
+msgstr "プライマリー選択を履歴に反映させる"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
 msgid "Synchronize clipboard with primary selection"
-msgstr "クリップボードを一次選択と同期する"
+msgstr "クリップボードをプライマリー選択と同期する"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
 msgid "Images support"
-msgstr "画像対応"
+msgstr "画像のサポート"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
 msgid "Trim items"
@@ -82,7 +82,7 @@ msgstr "項目をトリムする"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
 msgid "Detect growing lines"
-msgstr "成長する線を検出する"
+msgstr "ハイフンなどの線の増加を検出する"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
 msgid "Save history"
@@ -90,27 +90,27 @@ msgstr "履歴を保存する"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
 msgid "Max element size when displaying"
-msgstr "表示時の最大要素大きさ"
+msgstr "表示時の要素の最大サイズ"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
 msgid "Max displayed history size"
-msgstr "最大表示履歴大きさ"
+msgstr "表示される履歴の最大数"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
 msgid "Max history size"
-msgstr "最大履歴大きさ"
+msgstr "履歴の最大数"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
 msgid "Max memory usage (MB)"
-msgstr "最大メモリ使用 (MB)"
+msgstr "メモリの最大使用量 (MB)"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
 msgid "Max text item length"
-msgstr "最大テキスト項目の長さ"
+msgstr "テキストの最大の長さ"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
 msgid "Min text item length"
-msgstr "最小テキスト項目の長さ"
+msgstr "テキストの最小の長さ"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
@@ -135,17 +135,17 @@ msgstr "履歴を表示する"
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
-msgstr "クリップボードを一次選択に同期する"
+msgstr "クリップボードからプライマリー選択に同期する"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
-msgstr "一次選択をクリップボードに同期する"
+msgstr "プライマリー選択からクリップボードに同期する"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
-msgstr "ペーストビン・サービスにアクティブな項目をアップデートする"
+msgstr "Pastebin にアクティブな項目をアップロードする"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
 #: src/libgpaste/ui/gpaste-ui-window.c:311 src/client/gpaste-client.c:789
@@ -154,7 +154,7 @@ msgstr "GPaste デーモンに接続できませんでした"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
 msgid "General behaviour"
-msgstr "一般行動"
+msgstr "挙動全般"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
 msgid "History settings"
@@ -162,13 +162,13 @@ msgstr "履歴設定"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
 msgid "Keyboard shortcuts"
-msgstr "キーボード・ショートカット"
+msgstr "キーボードショートカット"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
 #: src/libgpaste/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
-msgstr "切り替える"
+msgstr "切り替え"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
@@ -180,7 +180,7 @@ msgstr "削除"
 
 #: src/libgpaste/ui/gpaste-ui-about.c:41
 msgid "About"
-msgstr "このプログラムについて"
+msgstr "GPaste について"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:43
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:140
@@ -195,7 +195,7 @@ msgstr "キャンセル"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:47
 msgid "Under which name do you want to backup this history?"
-msgstr "この履歴をどの名前でバックアップしますか？"
+msgstr "この履歴をどのような名前でバックアップしますか？"
 
 #: src/libgpaste/ui/gpaste-ui-delete-history.c:25
 msgid "Are you sure you want to delete this history?"
@@ -210,7 +210,7 @@ msgstr "編集"
 #: src/libgpaste/ui/gpaste-ui-empty-history.c:65
 #: src/libgpaste/util/gpaste-util.c:410
 msgid "Empty"
-msgstr "履歴は空です"
+msgstr "空にする"
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
@@ -235,7 +235,7 @@ msgstr "再起動"
 
 #: src/libgpaste/ui/gpaste-ui-reexec.c:29
 msgid "Do you really want to restart the daemon?"
-msgstr "本当に、デーモンを再起動しますか？"
+msgstr "本当にデーモンを再起動しますか？"
 
 #: src/libgpaste/ui/gpaste-ui-reexec.c:55
 msgid "Restart the daemon"
@@ -247,11 +247,11 @@ msgstr "検索"
 
 #: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
 msgid "GPaste Settings"
-msgstr "GPaste 設定"
+msgstr "GPaste の設定"
 
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
-msgstr "一般"
+msgstr "全般"
 
 #: src/libgpaste/ui/gpaste-ui-switch.c:54
 msgid "Stop"
@@ -259,15 +259,15 @@ msgstr "停止"
 
 #: src/libgpaste/ui/gpaste-ui-switch.c:54
 msgid "Do you really want to stop tracking clipboard changes?"
-msgstr "本当に、クリップボードの変更の追跡を停止しますか？"
+msgstr "本当にクリップボードの変更の追跡を停止しますか？"
 
 #: src/libgpaste/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
-msgstr "アップデート"
+msgstr "アップロード"
 
 #: src/libgpaste/util/gpaste-util.c:410
 msgid "Do you really want to empty the history?"
-msgstr "本当に、履歴を空にしますか？"
+msgstr "本当に履歴を空にしますか？"
 
 #: src/libgpaste/util/gpaste-util.c:709
 msgid "Could not create history dir"
@@ -275,7 +275,7 @@ msgstr "履歴ディレクトリを作成できませんでした"
 
 #: src/client/gpaste-client.c:137 src/client/gpaste-client.c:425
 msgid "Couldn't spawn"
-msgstr "生成できませんでした"
+msgstr "spawn できませんでした"
 
 #: src/client/gpaste-client.c:149
 #, c-format
@@ -332,7 +332,7 @@ msgstr "テキスト"
 
 #: src/client/gpaste-client.c:165
 msgid "set text to clipboard"
-msgstr "テキストをクリップボードに設定する"
+msgstr "テキストをクリップボードに追加する"
 
 #: src/client/gpaste-client.c:167
 msgid "password"
@@ -340,12 +340,12 @@ msgstr "パスワード"
 
 #: src/client/gpaste-client.c:167
 msgid "add the name - password couple to the clipboard"
-msgstr "クリップボードに名前・パスワードの一組を追加する"
+msgstr "クリップボードに名前とパスワードの組み合わせを追加する"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:169
 msgid "old name"
-msgstr "旧名"
+msgstr "古い名前"
 
 #: src/client/gpaste-client.c:169
 msgid "new name"
@@ -366,7 +366,7 @@ msgstr "数字"
 
 #: src/client/gpaste-client.c:171
 msgid "get the <number>th item from the history"
-msgstr "履歴から<number>番目の項目を取得する"
+msgstr "履歴の <数字> 番目の項目を取得する"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:173
@@ -382,25 +382,25 @@ msgstr "内容"
 msgid ""
 "replace the contents of the item matching <uuid> from the history with the "
 "provided one"
-msgstr "履歴の <uuid> に一致する項目の内容を提供されたもので置き換える"
+msgstr "履歴の <uuid> に一致する項目の内容を指定した項目で置き換える"
 
 #: src/client/gpaste-client.c:177
 msgid ""
 "merge the <number>th items from the history and add put the result in the "
 "clipboard"
-msgstr "履歴から<number>番目の項目をマージして、結果をクリップボードに追加する"
+msgstr "履歴の <数字> 番目の項目をマージして、結果をクリップボードに追加する"
 
 #: src/client/gpaste-client.c:179
 msgid "set the <number>th item from the history as a password named <name>"
-msgstr "履歴から<number>番目の項目を<name>という名前のパスワードとして設定する"
+msgstr "履歴の <数字> 番目の項目を <名前> という名前のパスワードとして設定する"
 
 #: src/client/gpaste-client.c:181
 msgid "delete <number>th item of the history"
-msgstr "履歴から<number>番目の項目を削除する"
+msgstr "履歴の <数字> 番目の項目を削除する"
 
 #: src/client/gpaste-client.c:183
 msgid "delete the password <name> from the history"
-msgstr "履歴からパスワード<name>を削除する"
+msgstr "履歴からパスワード <名前> を削除する"
 
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:185
@@ -409,7 +409,7 @@ msgstr "パス"
 
 #: src/client/gpaste-client.c:185
 msgid "put the content of the file at <path> into the clipboard"
-msgstr "<path>にあるファイルの内容をクリップボードに入れる"
+msgstr "<パス> にあるファイルの内容をクリップボードに追加"
 
 #. Translators: help for whatever | gpaste
 #: src/client/gpaste-client.c:187
@@ -438,7 +438,7 @@ msgstr "クリップボードの変更の追跡を停止する"
 #. Translators: help for gpaste quit
 #: src/client/gpaste-client.c:195
 msgid "alias for stop"
-msgstr "停止の別名"
+msgstr "gpaste stop と同じ"
 
 #. Translators: help for gpaste daemon-reexec
 #: src/client/gpaste-client.c:197
@@ -463,12 +463,12 @@ msgstr "アプレットまたは拡張機能に履歴を表示させる"
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:205
 msgid "upload the item matching <uuid> to a pastebin service"
-msgstr "<uuid> に一致する項目をペーストビン・サービスにアップロードする"
+msgstr "<uuid> に一致する項目を Pastebin にアップロードする"
 
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:207
 msgid "display the version"
-msgstr "バージョン情報を表示する"
+msgstr "バージョンを表示する"
 
 #. Translators: help for gpaste daemon-version
 #: src/client/gpaste-client.c:209
@@ -478,12 +478,12 @@ msgstr "デーモンのバージョンを表示する"
 #. Translators: help for gpaste help
 #: src/client/gpaste-client.c:211
 msgid "display this help"
-msgstr "この使い方を表示する"
+msgstr "ヘルプを表示する"
 
 #. Translators: help for gpaste about
 #: src/client/gpaste-client.c:213
 msgid "display the about dialog"
-msgstr "このプログラムについてを表示する"
+msgstr "GPaste についてのダイアログを表示する"
 
 #: src/client/gpaste-client.c:216
 #, c-format
@@ -493,12 +493,12 @@ msgstr "表示オプション:"
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:219
 msgid "display each item on only one line"
-msgstr "各項目を1行だけで表示する"
+msgstr "各項目を一行に表示する"
 
 #. Translators: help for --raw
 #: src/client/gpaste-client.c:221
 msgid "display each item raw (without line numbers)"
-msgstr "各項目を未加工で表示する (行番号なし)"
+msgstr "各項目を表示する (行番号なし)"
 
 #. Translators: help for --reverse
 #: src/client/gpaste-client.c:223
@@ -508,7 +508,7 @@ msgstr "項目を逆順で表示する"
 #. Translators: help for --zero
 #: src/client/gpaste-client.c:225
 msgid "use a NUL character instead of a new line betweean each item"
-msgstr "各項目の間に改行の代わりにヌル文字を使用する"
+msgstr "各項目の区切りに改行ではなくヌル文字を使用する"
 
 #: src/client/gpaste-client.c:228
 #, c-format
@@ -525,11 +525,11 @@ msgstr "文字列"
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
-msgstr "マージする前に各項目の最初と最後に与えられた装飾を追加する"
+msgstr "マージする前に各項目の最初と最後に指定した文字列を追加する"
 
 #: src/client/gpaste-client.c:233
 msgid "add the given separator between each item when merging"
-msgstr "マージする時に各項目の間に与えられた区切り記号を追加する"
+msgstr "マージする時に各項目の間に指定された区切り記号を追加する"
 
 #: src/client/gpaste-client.c:330
 #, c-format
@@ -538,11 +538,11 @@ msgstr "デーモンを正常に再実行しました\n"
 
 #: src/client/gpaste-client.c:479
 msgid "Cannot add non utf8 data as text."
-msgstr "非 UTF8 データをテキストとして追加する事はできません。"
+msgstr "UTF-8 以外のデータはテキストとして追加できません。"
 
 #: src/daemon/gpaste-daemon.c:33
 msgid "Stop signal received, exiting"
-msgstr "停止信号を受信し、終了します"
+msgstr "停止シグナルを受信し、終了します"
 
 #: src/daemon/gpaste-daemon.c:70
 msgid "Could not acquire DBus name."
@@ -550,7 +550,7 @@ msgstr "DBus 名を取得できませんでした。"
 
 #: src/ui/gpaste-ui.c:106
 msgid "Keyboard Shortcuts"
-msgstr "キーボード・･ショートカット"
+msgstr "キーボードショートカット"
 
 #: src/ui/gpaste-ui.c:107
 msgid "About GPaste"
