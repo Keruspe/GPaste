@@ -177,8 +177,13 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
                                                   GDBusMethodInvocation             *invocation,
                                                   GVariant                          *parameters)
 {
+    GVariantIter parameters_iter;
+
+    g_variant_iter_init (&parameters_iter, parameters);
+
+    g_autoptr (GVariant) results = g_variant_iter_next_value (&parameters_iter);
     guint64 len;
-    g_autofree const gchar **uuids = g_variant_get_strv (parameters, &len);
+    g_autofree const gchar **uuids = g_variant_get_strv (results, &len);
 
     if (!len)
         return FALSE;
