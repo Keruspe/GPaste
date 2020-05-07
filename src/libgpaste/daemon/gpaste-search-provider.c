@@ -190,7 +190,7 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
     data->uuids = uuids;
     uuids = NULL; // don't autofree
 
-    g_paste_client_get_elements (priv->client, uuids, len, on_elements_ready, data);
+    g_paste_client_get_elements (priv->client, data->uuids, len, on_elements_ready, data);
 
     return TRUE;
 }
