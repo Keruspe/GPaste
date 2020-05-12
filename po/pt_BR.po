@@ -229,7 +229,7 @@ msgstr "Editar"
 #: src/libgpaste/ui/gpaste-ui-empty-history.c:65
 #: src/libgpaste/util/gpaste-util.c:410
 msgid "Empty"
-msgstr "Vazio"
+msgstr "Esvaziar"
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
