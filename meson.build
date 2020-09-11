@@ -37,7 +37,7 @@ endif
 libgpaste_deps = [ gdk_dep, gdk_pixbuf_dep, glib_dep, gtk_dep ]
 
 if get_option('introspection')
-  mutter_clutter_dep = dependency('mutter-clutter-6', version: mutter_clutter_req)
+  mutter_clutter_dep = dependency('mutter-clutter-7', version: mutter_clutter_req)
   gjs_dep = dependency('gjs-1.0', version: gjs_req)
 endif
 
