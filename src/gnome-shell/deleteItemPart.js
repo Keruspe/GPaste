@@ -20,6 +20,6 @@ class GPasteDeleteItemPart extends St.Bin {
     }
 
     setUuid(uuid) {
-        this._deleteButton.setIndex(uuid);
+        this._deleteButton.setUuid(uuid);
     }
 });
