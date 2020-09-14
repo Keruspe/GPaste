@@ -174,7 +174,7 @@ show_help (void)
     /* Translators: help for gpaste replace <uuid> <contents> */
     printf ("  %s replace <uuid>  <%s>: %s\n", progname, _("contents"), _("replace the contents of the item matching <uuid> from the history with the provided one"));
     /* Translators: help for gpaste merge <uuid> … <uuid> */
-    printf ("  %s merge <uuid> … <uuid>: %s\n", progname, _("merge the items matchin the uuids from the history and add the result in the clipboard"));
+    printf ("  %s merge <uuid> … <uuid>: %s\n", progname, _("merge the items matchin the uuids from the history and put the result in the clipboard"));
     /* Translators: help for gpaste set-password <uuid> <name> */
     printf ("  %s set-password <uuid> <%s>: %s\n", progname, _("name"), _("set the item matchin <uuid> from the history as a password named <name>"));
     /* Translators: help for gpaste delete <uuid> */
