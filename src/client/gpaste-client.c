@@ -167,18 +167,18 @@ show_help (void)
     printf ("  %s add-password <%s> <%s>: %s\n", progname, _("name"), _("password"), _("add the name - password couple to the clipboard"));
     /* Translators: help for gpaste rename-password <old name> <new name> */
     printf ("  %s rename-password <%s> <%s>: %s\n", progname, _("old name"), _("new name"), _("rename the password"));
-    /* Translators: help for gpaste get <number> */
-    printf ("  %s get <%s>: %s\n", progname, _("number"), _("get the <number>th item from the history"));
+    /* Translators: help for gpaste get <uuid> */
+    printf ("  %s get <uuid>: %s\n", progname, _("get the item matchin <uuid> from the history"));
     /* Translators: help for gpaste select <uuid> */
     printf ("  %s select <uuid>: %s\n", progname, _("set the item matching this id from the history to the clipboard"));
-    /* Translators: help for gpaste replace <number> <contents> */
+    /* Translators: help for gpaste replace <uuid> <contents> */
     printf ("  %s replace <uuid>  <%s>: %s\n", progname, _("contents"), _("replace the contents of the item matching <uuid> from the history with the provided one"));
-    /* Translators: help for gpaste merge <number> … <number> */
-    printf ("  %s merge <%s> … <%s>: %s\n", progname, _("number"), _("number"), _("merge the <number>th items from the history and add put the result in the clipboard"));
-    /* Translators: help for gpaste set-password <number> <name> */
-    printf ("  %s set-password <%s> <%s>: %s\n", progname, _("number"), _("name"), _("set the <number>th item from the history as a password named <name>"));
-    /* Translators: help for gpaste delete <number> */
-    printf ("  %s delete <%s>: %s\n", progname, _("number"), _("delete <number>th item of the history"));
+    /* Translators: help for gpaste merge <uuid> … <uuid> */
+    printf ("  %s merge <uuid> … <uuid>: %s\n", progname, _("merge the items matchin the uuids from the history and add the result in the clipboard"));
+    /* Translators: help for gpaste set-password <uuid> <name> */
+    printf ("  %s set-password <uuid> <%s>: %s\n", progname, _("name"), _("set the item matchin <uuid> from the history as a password named <name>"));
+    /* Translators: help for gpaste delete <uuid> */
+    printf ("  %s delete <uuid>: %s\n", progname, _("delete item matchin <uuid> from the history"));
     /* Translators: help for gpaste delete-passworf <name> */
     printf ("  %s delete-password <%s>: %s\n", progname, _("name"), _("delete the password <name> from the history"));
     /* Translators: help for gpaste file <path> */
