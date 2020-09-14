@@ -168,8 +168,7 @@ class GPasteIndicator extends PanelMenu.Button {
                     i.setUuid(this._searchResults[offset + index]);
                 });
 
-                /* If we had no result, updateForSize would have returned false */
-                this._dummyHistoryItem.hide();
+                this._updateVisiblility(results == 0);
 
                 this._history.slice(results - offset, maxSize).forEach(function(i) {
                     i.setIndex(-1);
@@ -282,7 +281,7 @@ class GPasteIndicator extends PanelMenu.Button {
         }
     }
 
-    _updateVisibility(empty, search) {
+    _updateVisibility(empty) {
         if (!empty) {
             this._dummyHistoryItem.hide();
             this._emptyHistoryItem.show();

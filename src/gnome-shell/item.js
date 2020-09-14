@@ -99,7 +99,7 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
 
         if (this._index == -1) {
             this._uuid = null;
-            this.label.clutter_text.set_text(value);
+            this.label.clutter_text.set_text(value || "");
             this.hide();
         } else {
             const text = value.replace(/[\t\n\r]/g, ' ');
