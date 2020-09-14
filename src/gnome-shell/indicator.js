@@ -168,7 +168,7 @@ class GPasteIndicator extends PanelMenu.Button {
                     i.setUuid(this._searchResults[offset + index]);
                 });
 
-                this._updateVisiblility(results == 0);
+                this._updateVisibility(results == 0);
 
                 this._history.slice(results - offset, maxSize).forEach(function(i) {
                     i.setIndex(-1);
