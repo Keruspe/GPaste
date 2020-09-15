@@ -43,6 +43,17 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.38.0" type="stable" date="2020-09-15">
+          <description>
+              <p>First release for GNOME 3.38. Changes:</p>
+              <ul>
+                  <li>Drop the Tracking DBus signal</li>
+                  <li>Switch to uuids to identify items</li>
+                  <li>Bump DBus interface to org.gnome.GPaste2</li>
+                  <li>Update to gnome-shell 3.38.0</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.36.3" type="stable" date="2020-03-27">
           <description>
               <p>This is a maintenance release. Changes:</p>

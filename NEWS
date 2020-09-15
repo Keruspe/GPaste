@@ -1,3 +1,11 @@
+NEW in 3.38.0 (15/09/2020)
+=============
+
+- Drop the Tracking DBus signal
+- Switch to uuids to identify items
+- Bump DBus interface to org.gnome.GPaste2
+- Update to gnome-shell 3.38.0
+
 NEW in 3.36.3 (27/03/2020)
 =============
 

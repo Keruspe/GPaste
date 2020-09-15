@@ -1,11 +1,11 @@
 project('GPaste',
   'c',
-  version: '3.36.3',
+  version: '3.38.0',
   meson_version: '>=0.46.0',
 )
 
 apiversion = '1.0'
-gpaste_soversion = '11.1.7'
+gpaste_soversion = '13.0.0'
 
 glib_req='>=2.64.0'
 gdk_pixbuf_req='>=2.38.0'
