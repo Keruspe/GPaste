@@ -1084,6 +1084,8 @@ g_paste_history_search (const GPasteHistory *self,
 
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
+        else if (_G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal(pattern, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item))))
+            match = TRUE;
         else if (g_regex_match (regex, g_paste_item_get_value (item), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
             match = TRUE;
 
