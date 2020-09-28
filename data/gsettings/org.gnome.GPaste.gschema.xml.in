@@ -28,10 +28,10 @@
     </key>
 
     <key name="images-support" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Do we save the images copied to history, or only text?</summary>
       <description>
-        By default, we're saving both
+        By default, we're saving only text
       </description>
     </key>
 
