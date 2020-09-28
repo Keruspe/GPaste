@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2020-09-15 09:18+0200\n"
+"POT-Creation-Date: 2020-09-28 13:13+0200\n"
 "PO-Revision-Date: 2018-01-06 08:14+0100\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Svenska Språkfiler <contactform@svenskasprakfiler.se>\n"
@@ -746,7 +746,9 @@ msgid "Do we save the images copied to history, or only text?"
 msgstr "Skall vi spara bilder kopierade till historiken, eller bara text?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
-msgid "By default, we're saving both"
+#, fuzzy
+#| msgid "By default, we're saving both"
+msgid "By default, we're saving only text"
 msgstr "Som standard sparar vi bägge"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
