@@ -43,6 +43,16 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.38.1" type="stable" date="2020-10-01">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Disable images support by default (can be reenabled in preferences)</li>
+                  <li>Search now includes passwords (using their names)</li>
+                  <li>systemd integration enhancements</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.38.0" type="stable" date="2020-09-15">
           <description>
               <p>First release for GNOME 3.38. Changes:</p>
