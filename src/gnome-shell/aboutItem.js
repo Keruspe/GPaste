@@ -18,7 +18,10 @@ class GPasteAboutItem extends St.Button {
             style_class: 'system-menu-action'
         });
 
-        this.child = new St.Icon({ icon_name: 'dialog-information-symbolic' });
+        this.child = new St.Icon({
+            icon_name: 'dialog-information-symbolic',
+            style_class: 'popup-menu-icon'
+        });
 
         this.connect('clicked', function() {
             menu.itemActivated();
