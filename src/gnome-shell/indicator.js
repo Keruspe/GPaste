@@ -336,18 +336,20 @@ class GPasteIndicator extends PanelMenu.Button {
 
     _onOpenStateChanged(menu, state) {
         if (state) {
-            this.add_style_pseudo_class('active');
             this._searchItem.reset();
             this._updatePage(1);
             let id = GLib.idle_add(GLib.PRIORITY_DEFAULT, this._selectSearch.bind(this));
             GLib.Source.set_name_by_id(id, '[GPaste] select search');
         } else {
-            this.remove_style_pseudo_class('active');
             this._updateIndexVisibility(false);
         }
+        super._onOpenStateChanged(menu, state);
     }
 
     _onMenuKeyPress(actor, event) {
+        if(this._switch.active)
+            return super._onMenuKeyPress(actor, event);
+
         const symbol = event.get_key_symbol();
         if (symbol == Clutter.KEY_Left) {
             return this._pageSwitcher.previous();
