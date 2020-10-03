@@ -18,7 +18,10 @@ class GPasteEmptyHistoryItem extends St.Button {
             style_class: 'system-menu-action'
         });
 
-        this.child = new St.Icon({ icon_name: 'edit-clear-all-symbolic' });
+        this.child = new St.Icon({
+            icon_name: 'edit-clear-all-symbolic',
+            style_class: 'popup-menu-icon'
+        });
 
         this.connect('clicked', function() {
             menu.itemActivated();
