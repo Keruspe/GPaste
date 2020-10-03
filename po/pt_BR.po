@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2020-10-01 09:07+0200\n"
+"POT-Creation-Date: 2020-10-03 15:38+0200\n"
 "PO-Revision-Date: 2015-10-10 20:03-0300\n"
 "Last-Translator: Elder Marco <eldermarco@gmail.com>\n"
 "Language-Team: \n"
@@ -646,84 +646,93 @@ msgid "The settings UI"
 msgstr "Configurações do GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "This is a maintenance release. Changes:"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
+#, fuzzy
+#| msgid "Enable the gnome-shell extension"
+msgid "gnome-shell extension cosmetic updates"
+msgstr "Habilitar a extensão do gnome-shell"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 msgid "Search now includes passwords (using their names)"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid "systemd integration enhancements"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
 msgid "First release for GNOME 3.38. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 msgid "Drop the Tracking DBus signal"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "Switch to uuids to identify items"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:62
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:63
-msgid "Update to gnome-shell 3.38.0"
-msgstr ""
-
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:145
-msgid "Fix activating items using Ctrl-Number in gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
-msgid "Fix keybinding regrab with gnome-shell"
+msgid "Update to gnome-shell 3.38.0"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
-msgid "Fix keybinding grab with gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
-msgid "First release for GNOME 3.36. Changes:"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
+msgid "Fix keybinding grab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+msgid "First release for GNOME 3.36. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
 msgid "Update to gnome-shell 3.36.0"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
 msgid "Compatibility with recent appstream-glib"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
 msgid "First release for GNOME 3.34. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
 msgid "Update to gnome-shell 3.34.0"
 msgstr ""
 

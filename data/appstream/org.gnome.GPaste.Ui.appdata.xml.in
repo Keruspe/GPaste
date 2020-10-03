@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.38.2" type="stable" date="2020-10-03">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>gnome-shell extension cosmetic updates</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.38.1" type="stable" date="2020-10-01">
           <description>
               <p>This is a maintenance release. Changes:</p>
@@ -61,6 +69,14 @@
                   <li>Switch to uuids to identify items</li>
                   <li>Bump DBus interface to org.gnome.GPaste2</li>
                   <li>Update to gnome-shell 3.38.0</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.36.4" type="stable" date="2020-10-03">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>gnome-shell extension cosmetic updates</li>
               </ul>
           </description>
       </release>
