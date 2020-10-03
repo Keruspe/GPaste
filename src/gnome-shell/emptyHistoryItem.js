@@ -15,12 +15,11 @@ class GPasteEmptyHistoryItem extends St.Button {
             reactive: true,
             can_focus: true,
             track_hover: true,
-            style_class: 'system-menu-action'
-        });
-
-        this.child = new St.Icon({
-            icon_name: 'edit-clear-all-symbolic',
-            style_class: 'popup-menu-icon'
+            style_class: 'button',
+            child: new St.Icon({
+                icon_name: 'edit-clear-all-symbolic',
+                style_class: 'popup-menu-icon'
+            })
         });
 
         this.connect('clicked', function() {
