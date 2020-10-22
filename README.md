@@ -7,6 +7,8 @@ GPaste is a clipboard management system.
 See <https://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboard
 managers are.
 
+Translators can use [weblate](https://hosted.weblate.org/projects/gpaste/gpaste/) to contribute.
+
 A library is available for development purposes:
 
 * `libgpaste` contains all the basic objects used by GPaste and allows you to manage preferences and the GPaste daemon.
