@@ -8,39 +8,39 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2020-10-22 10:43+0200\n"
-"PO-Revision-Date: 2014-03-27 21:03+0100\n"
-"Last-Translator: Christian Kluge <frakturfreak@gmail.com>\n"
-"Language-Team: \n"
+"PO-Revision-Date: 2020-10-24 17:26+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/>"
+"\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 1.5.5\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.3.2-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
 msgid "GPaste"
-msgstr "GPaste-Applet"
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Verwalten Sie Ihren Zwischenablageverlauf"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
-"GPaste ist ein ein Managementsystem für die Zwischenablage, dass es erlaubt "
-"die Chronik der Zwischenablage auf eine sehr flexible Art zu verfolgen und "
-"zu managen."
+"GPaste ist ein Verwaltungssystem für die Zwischenablage, dass es erlaubt die "
+"Chronik der Zwischenablage auf eine sehr flexible Art zu verfolgen und zu "
+"verwalten."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 #, fuzzy
@@ -53,14 +53,13 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
-msgstr ""
+msgstr "Die Hauptbenutzeroberfläche"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
-#, fuzzy
 msgid "The settings UI"
-msgstr "GPaste-Daemon-Einstellungen"
+msgstr "Die Benutzeroberfläche für Einstellungen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
@@ -74,7 +73,7 @@ msgstr "GPaste-Daemon-Einstellungen"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Dies ist eine Wartungsfreigabe. Änderungen:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
@@ -181,23 +180,20 @@ msgstr "Lösche den <number>ten Eintrag aus der Chronik"
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
-#, fuzzy
 msgid "Display the history"
-msgstr "Chronik anzeigen:"
+msgstr "Chronik anzeigen"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
-#, fuzzy
 msgid "Sync the clipboard to the primary selection"
-msgstr "Zwischenablage mit der Auswahl synchronisieren:"
+msgstr "Zwischenablage mit der Auswahl synchronisieren"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
-#, fuzzy
 msgid "Sync the primary selection to the clipboard"
-msgstr "Auswahl mit der Zwischenablage synchronisieren:"
+msgstr "Auswahl mit der Zwischenablage synchronisieren"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
@@ -232,8 +228,8 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
-"In der Standardeinstellung ergeben \"Dies ist\" und danach \"Dies ist ein "
-"Beispiel\" zwei Einträge in der Chronik. Wenn diese Einstellung aktiviert "
+"In der Standardeinstellung ergeben „Dies ist“ und danach „Dies ist ein "
+"Beispiel“ zwei Einträge in der Chronik. Wenn diese Einstellung aktiviert "
 "ist, wird der erste Eintrag durch den zweiten ersetzt."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
@@ -249,10 +245,8 @@ msgid "Do we save the images copied to history, or only text?"
 msgstr "Werden auch Bilder oder nur Text in die Chronik kopiert?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
-#, fuzzy
-#| msgid "By default, we're saving both"
 msgid "By default, we're saving only text"
-msgstr "Standardmäßig wird beides gespeichert."
+msgstr "Standardmäßig wird nur der Text gespeichert"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
 #, fuzzy
@@ -260,9 +254,8 @@ msgid "Do we close the UI after selecting an item?"
 msgstr "Beeinflusst die Auswahl die Chronik?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
-#, fuzzy
 msgid "By default, we close it"
-msgstr "Der Standard ist ja."
+msgstr "Der Standard ist ja"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
 #, fuzzy
@@ -355,7 +348,7 @@ msgstr "Beeinflusst die Auswahl die Chronik?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr "Standardmäßig beinflusst nur die Zwischenablage (Strg+c) die Chronik"
+msgstr "Standardmäßig beinflusst nur die Zwischenablage (Strg+c) die Chronik."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
 msgid ""
@@ -364,9 +357,8 @@ msgid ""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
-#, fuzzy
 msgid "By default, we're saving all"
-msgstr "Der Standard ist ja."
+msgstr "Der Standard ist ja"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
 msgid "Do we save the history from one session to another?"
@@ -374,7 +366,7 @@ msgstr "Wird die Chronik von einer Sitzung zur anderen gespeichert?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 msgid "By default, we're saving it"
-msgstr "Der Standard ist ja."
+msgstr "Der Standard ist ja"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
@@ -404,7 +396,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
-msgstr "Tastenkürzel um Auswahl mit der Zwischenablage synchronisieren:"
+msgstr "Tastenkürzel um Auswahl mit der Zwischenablage synchronisieren"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
 #, fuzzy
@@ -442,7 +434,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
-msgstr "Standardmäßig bleibt der Daemon unberührt."
+msgstr "Standardmäßig bleibt der Daemon unberührt"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid "Do we trim the textual items before adding them to history?"
@@ -477,14 +469,12 @@ msgid "Do we prompt for confirmation when emptying an history?"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
-#, fuzzy
 msgid "By default, we do as it's a destructive action"
-msgstr "Standardmäßig bleibt der Daemon unberührt."
+msgstr "Standardmäßig bleibt der Daemon unberührt"
 
 #: src/client/gpaste-client.c:137 src/client/gpaste-client.c:425
-#, fuzzy
 msgid "Couldn't spawn"
-msgstr "gpaste-applet konnte nicht gestartet werden.\n"
+msgstr "Konnte nicht gestartet werden"
 
 #: src/client/gpaste-client.c:149
 #, c-format
@@ -551,9 +541,8 @@ msgid "password"
 msgstr ""
 
 #: src/client/gpaste-client.c:167
-#, fuzzy
 msgid "add the name - password couple to the clipboard"
-msgstr "Auswahl mit der Zwischenablage synchronisieren:"
+msgstr "Auswahl mit der Zwischenablage synchronisieren"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:169
@@ -773,9 +762,8 @@ msgid "Couldn't connect to GPaste daemon"
 msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
 
 #: src/daemon/gpaste-daemon.c:33
-#, fuzzy
 msgid "Stop signal received, exiting"
-msgstr "Signal %d wurde empfangen. Programm wird beendet\n"
+msgstr "Stopp-Signal wurde empfangen. Programm wird beendet"
 
 #: src/daemon/gpaste-daemon.c:70
 msgid "Could not acquire DBus name."
@@ -800,7 +788,7 @@ msgstr ""
 #. This is the prefix displayed in history to identify selected files
 #: src/libgpaste/core/gpaste-uris-item.c:104
 msgid "[Files] "
-msgstr "[Dateien]"
+msgstr "[Dateien] "
 
 #: src/libgpaste/gpaste-macros.h:98
 msgid "Failed to register the gtk application"
@@ -852,19 +840,16 @@ msgid "Save history"
 msgstr "Chronik speichern"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
-#, fuzzy
 msgid "Max element size when displaying"
-msgstr "Maximale Größe des anzuzeigenden Eintrages:"
+msgstr "Maximale Größe des anzuzeigenden Eintrages"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
-#, fuzzy
 msgid "Max text item length"
-msgstr "Maximale Textlänge:"
+msgstr "Maximale Textlänge"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
-#, fuzzy
 msgid "Min text item length"
-msgstr "Minimale Textlänge:"
+msgstr "Minimale Textlänge"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
 msgid "General behaviour"
@@ -912,14 +897,13 @@ msgid "Under which name do you want to backup this history?"
 msgstr ""
 
 #: src/libgpaste/ui/gpaste-ui-delete-history.c:25
-#, fuzzy
 msgid "Are you sure you want to delete this history?"
-msgstr "Tastenkürzel um den ersten Eintrag in der Chronik zu löschen"
+msgstr "Möchten Sie diesen Verlauf wirklich löschen?"
 
 #: src/libgpaste/ui/gpaste-ui-edit-item.c:45
 #: src/libgpaste/ui/gpaste-ui-edit-item.c:118
 msgid "Edit"
-msgstr ""
+msgstr "Bearbeiten"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/ui/gpaste-ui-empty-history.c:65
@@ -951,9 +935,8 @@ msgid "Restart"
 msgstr ""
 
 #: src/libgpaste/ui/gpaste-ui-reexec.c:29
-#, fuzzy
 msgid "Do you really want to restart the daemon?"
-msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
+msgstr "Möchten Sie den Daemon wirklich neu starten?"
 
 #: src/libgpaste/ui/gpaste-ui-reexec.c:55
 msgid "Restart the daemon"
@@ -976,9 +959,9 @@ msgid "Stop"
 msgstr ""
 
 #: src/libgpaste/ui/gpaste-ui-switch.c:54
-#, fuzzy
 msgid "Do you really want to stop tracking clipboard changes?"
-msgstr "Stoppt die Verfolgung von Änderungen an der Zwischenablage"
+msgstr ""
+"Möchten Sie wirklich aufhören, Änderungen in der Zwischenablage zu verfolgen?"
 
 #: src/libgpaste/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
