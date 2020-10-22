@@ -206,20 +206,12 @@ class GPasteIndicator extends PanelMenu.Button {
 
         const offset = this._pageSwitcher.getPageOffset();
 
-        if (newSize > oldSize) {
-            this._client.get_history_name((client, result) => {
-                const name = client.get_history_name_finish(result);
-                this._client.get_history_size(name, (client, result) => {
-                    const historySize = client.get_history_size_finish(result);
-                    const realSize = Math.min(newSize, historySize);
-
-                    for (let index = oldSize; index < realSize; ++index) {
-                        let item = new Item.GPasteItem(this._client, elementSize, index + offset);
-                        this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
-                        this._history[index] = item;
-                    }
-                });
-            });
+        if (newSize > oldSize) {                    
+            for (let index = oldSize; index < realSize; ++index) {
+                let item = new Item.GPasteItem(this._client, elementSize, index + offset);
+                this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
+                this._history[index] = item;
+            }
         } else {
             for (let i = newSize; i < oldSize; ++i) {
                 this._history.pop().destroy();
