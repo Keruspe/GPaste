@@ -212,7 +212,6 @@ class GPasteIndicator extends PanelMenu.Button {
 
                 if (newSize > oldSize) {
                     const realSize = client.get_history_size_finish(result);
-                    const size = Math.min(realSize - offset, newSize);
 
                     for (let index = oldSize; index < newSize; ++index) {
                         let realIndex = index + offset;
