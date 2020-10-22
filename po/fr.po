@@ -8,14 +8,16 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2020-10-22 10:43+0200\n"
-"PO-Revision-Date: 2011-01-25 16:05+0100\n"
-"Last-Translator: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>\n"
-"Language-Team: French\n"
+"PO-Revision-Date: 2020-10-22 08:57+0000\n"
+"Last-Translator: Marc-Antoine Perennou <Marc-Antoine@perennou.com>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/>"
+"\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.3.1\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -45,7 +47,7 @@ msgid ""
 "easily."
 msgstr ""
 "GPaste vous fournit un outil graphique vous permettant de tout gérer "
-"simplement"
+"simplement."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
@@ -244,7 +246,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
 msgid "By default, we're saving only text"
-msgstr "Par défaut, on ne sauvegarde que le texte."
+msgstr "Par défaut, on ne sauvegarde que le texte"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
 msgid "Do we close the UI after selecting an item?"
@@ -343,7 +345,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
 msgid "Does the primary selection affects history?"
-msgstr "La selection primaire doit-elle affecter l'historique?"
+msgstr "La selection primaire doit-elle affecter l'historique ?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
 msgid "By default, only clipboard (ctrl+c) affects history."
@@ -359,7 +361,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, we're saving all"
-msgstr "Par défaut, on sauvegarde tout."
+msgstr "Par défaut, on sauvegarde tout"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
 msgid "Do we save the history from one session to another?"
@@ -367,7 +369,7 @@ msgstr "Sauvegarde-t-on l'historique d'une session à l'autre ?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 msgid "By default, we're saving it"
-msgstr "Par défaut, on le sauvegarde."
+msgstr "Par défaut, on le sauvegarde"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
@@ -412,7 +414,7 @@ msgstr ""
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr ""
-"La sélection primaire et le presse-papier doivent-ils être synchronisés?"
+"La sélection primaire et le presse-papier doivent-ils être synchronisés ?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
@@ -421,7 +423,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Do we track the clipboard changes?"
-msgstr "Suit-on les changements du presse-papier?"
+msgstr "Suit-on les changements du presse-papier ?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, we're tracking those changes."
@@ -437,7 +439,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
-msgstr "Par défaut, l'état du démon reste inchangé."
+msgstr "Par défaut, l'état du démon reste inchangé"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid "Do we trim the textual items before adding them to history?"
@@ -450,7 +452,7 @@ msgid ""
 "letting them as-is."
 msgstr ""
 "Tronquer signifie supprimer tous les espaces au début et à la fin. Par "
-"défaut, on laisse les éléments tels-quels"
+"défaut, on laisse les éléments tels-quels."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 msgid ""
@@ -691,7 +693,7 @@ msgstr "affiche le dialogue d'à propos"
 #: src/client/gpaste-client.c:216
 #, c-format
 msgid "Display options:"
-msgstr "Options d'affichage : "
+msgstr "Options d'affichage :"
 
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:219
@@ -717,7 +719,7 @@ msgstr ""
 #: src/client/gpaste-client.c:228
 #, c-format
 msgid "Merge options:"
-msgstr "Options de fusion : "
+msgstr "Options de fusion :"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
