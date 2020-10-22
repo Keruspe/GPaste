@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2020-10-22 10:35+0200\n"
+"POT-Creation-Date: 2020-10-22 10:43+0200\n"
 "PO-Revision-Date: 2018-01-06 08:14+0100\n"
 "Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
 "Language-Team: Svenska Språkfiler <contactform@svenskasprakfiler.se>\n"
@@ -19,270 +19,447 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 1.8.7.1\n"
 
-#: src/libgpaste/gpaste-macros.h:98
-msgid "Failed to register the gtk application"
-msgstr "Kunde inte registrera gtk-applikationen"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
+msgid "GPaste"
+msgstr "GPaste"
 
-#: src/libgpaste/gpaste-macros.h:110
-msgid "is already running."
-msgstr "körs redan."
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
+msgid "Manage your clipboard history"
+msgstr "Hantera din urklippshistorik"
 
-#. This is the date format "month/day/year time"
-#: src/libgpaste/core/gpaste-image-item.c:240
-msgid "%m/%d/%y %T"
-msgstr "%y-%m-%d %T"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+msgid "Marc-Antoine Perennou"
+msgstr "Marc-Antoine Perennou"
 
-#. This gets displayed in history when selecting an image
-#: src/libgpaste/core/gpaste-image-item.c:242
-#, c-format
-msgid "[Image, %d x %d (%s)]"
-msgstr "[Bild, %d x %d (%s)]"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
+msgid ""
+"GPaste is a clipboard managing system allowing you to track and manage your "
+"clipboard history in a highly customizable way."
+msgstr ""
+"GPaste är ett system för urklippshantering, som låter dig övervaka och "
+"hantera din urklippshistorik på ett mycket anpassningsbart sätt."
 
-#. This is the prefix displayed in history to identify a password
-#: src/libgpaste/core/gpaste-password-item.c:67
-msgid "Password"
-msgstr "Lösenord"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
+msgid ""
+"GPaste provides you with a graphical tool allowing you to manage everything "
+"easily."
+msgstr ""
+"GPaste är ett grafiskt verktyg som låter dig hantera allt på ett enkelt sätt."
 
-#. This is the prefix displayed in history to identify selected files
-#: src/libgpaste/core/gpaste-uris-item.c:104
-msgid "[Files] "
-msgstr "[Filer] "
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
+msgid "The main UI"
+msgstr "Primärt UI"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
-#: src/libgpaste/ui/gpaste-ui-switch.c:92
-msgid "Track clipboard changes"
-msgstr "Övervaka urklippsändringar"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
+msgid "The settings UI"
+msgstr "Inställnings-UI"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
-msgid "Close UI on select"
-msgstr "Stäng UI vid markering"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
+msgid "This is a maintenance release. Changes:"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
-msgid "Enable the gnome-shell extension"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
+#, fuzzy
+#| msgid "Enable the gnome-shell extension"
+msgid "gnome-shell extension cosmetic updates"
 msgstr "Aktivera gnome-skaltillägget"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
-msgid "Sync the daemon state with the extension's one"
-msgstr "Synkronisera tjänstens status med tilläggets"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+msgid "Disable images support by default (can be reenabled in preferences)"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
-msgid "Primary selection affects history"
-msgstr "Primär markering påverkar historiken"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+msgid "Search now includes passwords (using their names)"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
-msgid "Synchronize clipboard with primary selection"
-msgstr "Synkronisera urklipp med primär markering"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+msgid "systemd integration enhancements"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
-msgid "Images support"
-msgstr "Bildstöd"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
+msgid "First release for GNOME 3.38. Changes:"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
-msgid "Trim items"
-msgstr "Trimma poster"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
+msgid "Drop the Tracking DBus signal"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
-msgid "Detect growing lines"
-msgstr "Identifiera växande rader"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+msgid "Switch to uuids to identify items"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
-msgid "Save history"
-msgstr "Spara historik"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+msgid "Bump DBus interface to org.gnome.GPaste2"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
-msgid "Max element size when displaying"
-msgstr "Max objektstorlek vid visning"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
+msgid "Update to gnome-shell 3.38.0"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
-msgid "Max displayed history size"
-msgstr "Max visad historikstorlek"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
-msgid "Max history size"
-msgstr "Max historikstorlek"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
-msgid "Max memory usage (MB)"
-msgstr "Max minnesanvändning (MB)"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
+msgid "Fix keybinding grab with gnome-shell"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
-msgid "Max text item length"
-msgstr "Maxlängd för textposter"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+msgid "First release for GNOME 3.36. Changes:"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
-msgid "Min text item length"
-msgstr "Minimumlängd för textposter"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
+msgid "Update to gnome-shell 3.36.0"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
-#: data/control-center/42-gpaste.control-center.xml.in:5
-msgid "Delete the active item from history"
-msgstr "Ta bort aktiv post från historiken"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
+msgid "Compatibility with recent appstream-glib"
+msgstr ""
 
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+msgid "First release for GNOME 3.34. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
+msgid "Update to gnome-shell 3.34.0"
+msgstr ""
+
+#: data/control-center/42-gpaste.control-center.xml.in:2
+msgid "@GETTEXT_PACKAGE@"
+msgstr "@GETTEXT_PACKAGE@"
+
+#: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
-#: data/control-center/42-gpaste.control-center.xml.in:3
 msgid "Launch the graphical tool"
 msgstr "Starta det grafiska verktyget"
 
+#: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
-#: data/control-center/42-gpaste.control-center.xml.in:4
 msgid "Mark the active item as being a password"
 msgstr "Märk den aktiva posten som varande lösenord"
 
+#: data/control-center/42-gpaste.control-center.xml.in:5
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
+msgid "Delete the active item from history"
+msgstr "Ta bort aktiv post från historiken"
+
+#: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
-#: data/control-center/42-gpaste.control-center.xml.in:6
 msgid "Display the history"
 msgstr "Visa historiken"
 
+#: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
-#: data/control-center/42-gpaste.control-center.xml.in:7
 msgid "Sync the clipboard to the primary selection"
 msgstr "Synkronisera urklipp med primär markering"
 
+#: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
-#: data/control-center/42-gpaste.control-center.xml.in:8
 msgid "Sync the primary selection to the clipboard"
 msgstr "Synkronisera primär markering med urklipp"
 
+#: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
-#: data/control-center/42-gpaste.control-center.xml.in:9
 msgid "Upload the active item to a pastebin service"
 msgstr "Ladda upp aktiv post till en pastebin-tjänst"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
-#: src/libgpaste/ui/gpaste-ui-window.c:311 src/client/gpaste-client.c:789
-msgid "Couldn't connect to GPaste daemon"
-msgstr "Kunde inte ansluta till GPaste-tjänsten"
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr "Urklipp;Hanterare;Inställningar;Inställningar;Konfiguration;"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
-msgid "General behaviour"
-msgstr "Allmänt beteende"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
+msgid "Max size of an element when displaying it"
+msgstr "Maxstorlek för ett objekt vid visning"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
-msgid "History settings"
-msgstr "Historikinställningar"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
+msgid ""
+"The extra stuff of that element will be replaced by \"…\", and newlines by "
+"\" \" when displaying from the applet, 0 to disable."
+msgstr ""
+"Överskjutande innehåll från objektet kommer att ersättas av \"…\" och nya "
+"rader av \" \", vid visning i panelprogrammet. 0 för att inaktivera."
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
-msgid "Keyboard shortcuts"
-msgstr "Tangentbordsgenvägar"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
+msgid "Do we detect and replace growing lines in history?"
+msgstr "Skall vi identifiera och ersätta växande rader i historiken?"
 
-#. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
-#: src/libgpaste/ui/gpaste-ui-panel.c:297
-msgid "Switch to"
-msgstr "Växla till"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
+msgid ""
+"By default, selecting \"Here is\", then \"Here is an example\" will create "
+"two entries in the history. With this feature enabled, the first one will be "
+"replaced by the second one."
+msgstr ""
+"Som standard skapas två poster i historiken vid markering av först \"Här är"
+"\" och sedan \"Här är ett exempel\". Med denna funktion aktiverad, kommer "
+"den första posten att ersättas av den andra."
 
-#. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
-#: src/libgpaste/ui/gpaste-ui-delete-item.c:49
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
-msgid "Delete"
-msgstr "Ta bort"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
+msgid "The name of the current history"
+msgstr "Namnet på aktuell historik"
 
-#: src/libgpaste/ui/gpaste-ui-about.c:41
-msgid "About"
-msgstr "Om"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
+msgid "The default name is \"history\""
+msgstr "Standardnamnet är \"historik\""
 
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:43
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
-msgid "Backup"
-msgstr "Säkerhetskopiera"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
+msgid "Do we save the images copied to history, or only text?"
+msgstr "Skall vi spara bilder kopierade till historiken, eller bara text?"
 
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:44
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:46
-#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
-msgid "Cancel"
-msgstr "Avbryt"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
+#, fuzzy
+#| msgid "By default, we're saving both"
+msgid "By default, we're saving only text"
+msgstr "Som standard sparar vi bägge"
 
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:47
-msgid "Under which name do you want to backup this history?"
-msgstr "Under vilket namn vill du säkerhetskopiera historiken?"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
+msgid "Do we close the UI after selecting an item?"
+msgstr "Skall vi stänga UI efter att en post valts?"
 
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
-msgid "Are you sure you want to delete this history?"
-msgstr "Vill du verkligen ta bort denna historik?"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
+msgid "By default, we close it"
+msgstr "Som standard stänger vi den"
 
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:45
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:118
-msgid "Edit"
-msgstr "Redigera"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
+msgid "The keyboard shortcut to launch the graphical interface"
+msgstr "Tangentbordsgenväg för att starta det grafiska gränssnittet"
 
-#. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
-#: src/libgpaste/util/gpaste-util.c:410
-msgid "Empty"
-msgstr "Töm"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
+msgid ""
+"By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Som standard görs detta med Ctrl+Alt+G (\"<Ctrl><Alt>G\"). En tom sträng "
+"här, inaktiverar denna funktion."
 
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:35
-msgid "(No result)"
-msgstr "(Inget resultat)"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
+msgid "The keyboard shortcut to mark the active item as being a password"
+msgstr ""
+"Tangentbordsgenväg för att markera aktivt objekt som varande ett lösenord"
 
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:49
-msgid "(Empty)"
-msgstr "(Tom)"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
+msgid ""
+"By default, hitting ctrl + alt + s will mark the active item as being a "
+"password (\"<Ctrl><Alt>S\"). An empty string here disables this "
+"functionnality."
+msgstr ""
+"Som standard markeras den aktiva posten som varande ett lösenord, med Ctrl"
+"+Alt+S  (\"<Ctrl><Alt>S\"). En tom sträng här, inaktiverar denna funktion."
 
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:60
-msgid "(Couldn't connect to GPaste daemon)"
-msgstr "(Kunde inte ansluta till GPaste-tjänsten)"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
+msgid "Max displayed history size"
+msgstr "Max visad historikstorlek"
 
-#: src/libgpaste/ui/gpaste-ui-new-item.c:31
-#: src/libgpaste/ui/gpaste-ui-new-item.c:83
-msgid "New"
-msgstr "Nytt"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
+msgid "Maximum number of items displayed in the history"
+msgstr "Max antal poster som visas i historiken"
 
-#: src/libgpaste/ui/gpaste-ui-reexec.c:29
-msgid "Restart"
-msgstr "Starta om"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
+msgid "Max history size"
+msgstr "Max historikstorlek"
 
-#: src/libgpaste/ui/gpaste-ui-reexec.c:29
-msgid "Do you really want to restart the daemon?"
-msgstr "Vill du verkligen starta om tjänsten?"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
+msgid "Maximum number of items in history"
+msgstr "Max antal poster i historiken"
 
-#: src/libgpaste/ui/gpaste-ui-reexec.c:55
-msgid "Restart the daemon"
-msgstr "Starta om tjänsten"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
+msgid "Max memory usage (MB)"
+msgstr "Max minnesanvändning (MB)"
 
-#: src/libgpaste/ui/gpaste-ui-search.c:26
-msgid "Search"
-msgstr "Sök"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
+msgid "Maximum amount of memory used to store contents"
+msgstr "Max minnesmängd som kan användas för att lagra innehåll"
 
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
-msgid "GPaste Settings"
-msgstr "GPaste Inställningar"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
+msgid "Max text item size"
+msgstr "Max textobjektstorlek"
 
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
-msgid "General"
-msgstr "Allmänt"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
+msgid "Maximum size of a text item. Anything out of this boundary is ignored."
+msgstr ""
+"Maxstorlek för ett textobjekt. Allt som överskrider denna gräns undantas."
 
-#: src/libgpaste/ui/gpaste-ui-switch.c:54
-msgid "Stop"
-msgstr "Stopp"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
+msgid "Min text item size"
+msgstr "Minsta textobjektstorlek"
 
-#: src/libgpaste/ui/gpaste-ui-switch.c:54
-msgid "Do you really want to stop tracking clipboard changes?"
-msgstr "Vill du verkligen sluta övervaka urklippsändringar?"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
+msgid "Minimum size of a text item. Anything out of this boundary is ignored."
+msgstr "Minsta storlek för en textpost. Allt under denna gräns undantas."
 
-#: src/libgpaste/ui/gpaste-ui-upload-item.c:49
-msgid "Upload"
-msgstr "Ladda upp"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
+msgid "The keyboard shortcut to delete the first element in history"
+msgstr "Tangentbordsgenväg för att ta bort första posten från historiken"
 
-#: src/libgpaste/util/gpaste-util.c:410
-msgid "Do you really want to empty the history?"
-msgstr "Vill du verkligen tömma historiken?"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
+msgid ""
+"By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Som standard görs detta med Ctrl+Alt+V (\"<Ctrl><Alt>V\"). En tom sträng "
+"här, inaktiverar denna funktion."
 
-#: src/libgpaste/util/gpaste-util.c:709
-msgid "Could not create history dir"
-msgstr "Kunde inte skapa historikmapp"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
+msgid "Does the primary selection affects history?"
+msgstr "Skall primär markering påverka historiken?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
+msgid "By default, only clipboard (ctrl+c) affects history."
+msgstr "Som standard påverkas historiken endast av urklipp (Ctrl+C)."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
+msgid ""
+"Do we save all versions of selected rich text (e.g. html) or just the plain "
+"text version?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
+#, fuzzy
+msgid "By default, we're saving all"
+msgstr "Som standard sparar vi den"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+msgid "Do we save the history from one session to another?"
+msgstr "Skall vi spara historiken från en session till en annan?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+msgid "By default, we're saving it"
+msgstr "Som standard sparar vi den"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
+msgid "The keyboard shortcut to display the menu"
+msgstr "Tangentbordsgenväg för att visa menyn"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+msgid ""
+"By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
+"empty string here disables this functionnality."
+msgstr ""
+"Som standard visas menyn med Ctrl+Alt+H  (\"<Ctrl><Alt>H\"). En tom sträng "
+"här, inaktiverar denna funktion."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
+msgid "The keyboard shortcut to sync the clipboard to the primary selection"
+msgstr "Tangentbordsgenväg för att synkronisera urklipp med primär markering"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+msgid ""
+"By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Som standard synkroniseras de med Ctrl+Alt+O  (\"<Ctrl><Alt>O\"). En tom "
+"sträng här, inaktiverar denna funktion."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
+msgid "The keyboard shortcut to sync the primary selection to the clipboard"
+msgstr "Tangentbordsgenväg för att synkronisera primär markering med urklipp"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+msgid ""
+"By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Som standard synkroniseras de med Ctrl+Alt+P  (\"<Ctrl><Alt>P\"). En tom "
+"sträng här, inaktiverar denna funktion."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+msgid "Are the primary selection and the clipboard synchronized?"
+msgstr "Är primär markering och urklipp synkroniserade?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
+msgid "By default, the primary selection and the clipboard are independent."
+msgstr "Som standard är primär markering och urklipp oberoende av varandra."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+msgid "Do we track the clipboard changes?"
+msgstr "Skall vi övervaka urklippsändringar?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+msgid "By default, we're tracking those changes."
+msgstr "Som standard övervakar vi dessa ändringar."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+msgid ""
+"Do we sync the daemon state with the gnome-shell extension's one? (disable "
+"the daemon when disabling the extension)"
+msgstr ""
+"Skall vi synkronisera tjänststatus med status för gnome-skaltillägget "
+"(inaktivera tjänsten när tillägget inaktiveras)?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+msgid "By default, the daemon state keeps unchanged"
+msgstr "Som standard ändras inte tjänstens status"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
+msgid "Do we trim the textual items before adding them to history?"
+msgstr "Skall vi trimma textposter innan de läggs till i historiken?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+msgid ""
+"Trimming means removing all trailing and ending spaces. By default, we're "
+"letting them as-is."
+msgstr ""
+"Trimning innebär att alla efterföljande och avslutande blanksteg tas bort. "
+"Som standard lämnas de kvar."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
+msgid ""
+"The keyboard shortcut to upload the first element in history to a pastebin "
+"service"
+msgstr ""
+"Tangentbordsgenväg för att ladda upp historikens första post, till en "
+"pastebin-tjänst."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
+msgid ""
+"By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Som standard görs detta med Ctrl+Alt+U (\"<Ctrl><Alt>U\"). En tom sträng "
+"här, inaktiverar denna funktion."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+msgid "Do we prompt for confirmation when emptying an history?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
+#, fuzzy
+msgid "By default, we do as it's a destructive action"
+msgstr "Som standard ändras inte tjänstens status"
 
 #: src/client/gpaste-client.c:137 src/client/gpaste-client.c:425
 msgid "Couldn't spawn"
@@ -571,6 +748,12 @@ msgstr "Tjänsten startades om korrekt\n"
 msgid "Cannot add non utf8 data as text."
 msgstr "Kan inte lägga till icke UTF8-data som text."
 
+#: src/client/gpaste-client.c:789
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
+#: src/libgpaste/ui/gpaste-ui-window.c:311
+msgid "Couldn't connect to GPaste daemon"
+msgstr "Kunde inte ansluta till GPaste-tjänsten"
+
 #: src/daemon/gpaste-daemon.c:33
 msgid "Stop signal received, exiting"
 msgstr "Stoppsignal mottagen, avslutar"
@@ -578,6 +761,209 @@ msgstr "Stoppsignal mottagen, avslutar"
 #: src/daemon/gpaste-daemon.c:70
 msgid "Could not acquire DBus name."
 msgstr "Kunde inte hämta DBus-namn."
+
+#. This is the date format "month/day/year time"
+#: src/libgpaste/core/gpaste-image-item.c:240
+msgid "%m/%d/%y %T"
+msgstr "%y-%m-%d %T"
+
+#. This gets displayed in history when selecting an image
+#: src/libgpaste/core/gpaste-image-item.c:242
+#, c-format
+msgid "[Image, %d x %d (%s)]"
+msgstr "[Bild, %d x %d (%s)]"
+
+#. This is the prefix displayed in history to identify a password
+#: src/libgpaste/core/gpaste-password-item.c:67
+msgid "Password"
+msgstr "Lösenord"
+
+#. This is the prefix displayed in history to identify selected files
+#: src/libgpaste/core/gpaste-uris-item.c:104
+msgid "[Files] "
+msgstr "[Filer] "
+
+#: src/libgpaste/gpaste-macros.h:98
+msgid "Failed to register the gtk application"
+msgstr "Kunde inte registrera gtk-applikationen"
+
+#: src/libgpaste/gpaste-macros.h:110
+msgid "is already running."
+msgstr "körs redan."
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
+#: src/libgpaste/ui/gpaste-ui-switch.c:92
+msgid "Track clipboard changes"
+msgstr "Övervaka urklippsändringar"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
+msgid "Close UI on select"
+msgstr "Stäng UI vid markering"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
+msgid "Enable the gnome-shell extension"
+msgstr "Aktivera gnome-skaltillägget"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
+msgid "Sync the daemon state with the extension's one"
+msgstr "Synkronisera tjänstens status med tilläggets"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
+msgid "Primary selection affects history"
+msgstr "Primär markering påverkar historiken"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
+msgid "Synchronize clipboard with primary selection"
+msgstr "Synkronisera urklipp med primär markering"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
+msgid "Images support"
+msgstr "Bildstöd"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
+msgid "Trim items"
+msgstr "Trimma poster"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
+msgid "Detect growing lines"
+msgstr "Identifiera växande rader"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
+msgid "Save history"
+msgstr "Spara historik"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
+msgid "Max element size when displaying"
+msgstr "Max objektstorlek vid visning"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
+msgid "Max text item length"
+msgstr "Maxlängd för textposter"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
+msgid "Min text item length"
+msgstr "Minimumlängd för textposter"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
+msgid "General behaviour"
+msgstr "Allmänt beteende"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
+msgid "History settings"
+msgstr "Historikinställningar"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
+msgid "Keyboard shortcuts"
+msgstr "Tangentbordsgenvägar"
+
+#. translators: This is the name of a multi-history management action
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
+#: src/libgpaste/ui/gpaste-ui-panel.c:297
+msgid "Switch to"
+msgstr "Växla till"
+
+#. translators: This is the name of a multi-history management action
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
+#: src/libgpaste/ui/gpaste-ui-delete-item.c:49
+msgid "Delete"
+msgstr "Ta bort"
+
+#: src/libgpaste/ui/gpaste-ui-about.c:41
+msgid "About"
+msgstr "Om"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:43
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
+msgid "Backup"
+msgstr "Säkerhetskopiera"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:44
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:46
+#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
+msgid "Cancel"
+msgstr "Avbryt"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:47
+msgid "Under which name do you want to backup this history?"
+msgstr "Under vilket namn vill du säkerhetskopiera historiken?"
+
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+msgid "Are you sure you want to delete this history?"
+msgstr "Vill du verkligen ta bort denna historik?"
+
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:45
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:118
+msgid "Edit"
+msgstr "Redigera"
+
+#. Translators: this is the translation for emptying the history
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
+#: src/libgpaste/util/gpaste-util.c:410
+msgid "Empty"
+msgstr "Töm"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:35
+msgid "(No result)"
+msgstr "(Inget resultat)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:49
+msgid "(Empty)"
+msgstr "(Tom)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:60
+msgid "(Couldn't connect to GPaste daemon)"
+msgstr "(Kunde inte ansluta till GPaste-tjänsten)"
+
+#: src/libgpaste/ui/gpaste-ui-new-item.c:31
+#: src/libgpaste/ui/gpaste-ui-new-item.c:83
+msgid "New"
+msgstr "Nytt"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:29
+msgid "Restart"
+msgstr "Starta om"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:29
+msgid "Do you really want to restart the daemon?"
+msgstr "Vill du verkligen starta om tjänsten?"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:55
+msgid "Restart the daemon"
+msgstr "Starta om tjänsten"
+
+#: src/libgpaste/ui/gpaste-ui-search.c:26
+msgid "Search"
+msgstr "Sök"
+
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
+msgid "GPaste Settings"
+msgstr "GPaste Inställningar"
+
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
+msgid "General"
+msgstr "Allmänt"
+
+#: src/libgpaste/ui/gpaste-ui-switch.c:54
+msgid "Stop"
+msgstr "Stopp"
+
+#: src/libgpaste/ui/gpaste-ui-switch.c:54
+msgid "Do you really want to stop tracking clipboard changes?"
+msgstr "Vill du verkligen sluta övervaka urklippsändringar?"
+
+#: src/libgpaste/ui/gpaste-ui-upload-item.c:49
+msgid "Upload"
+msgstr "Ladda upp"
+
+#: src/libgpaste/util/gpaste-util.c:410
+msgid "Do you really want to empty the history?"
+msgstr "Vill du verkligen tömma historiken?"
+
+#: src/libgpaste/util/gpaste-util.c:709
+msgid "Could not create history dir"
+msgstr "Kunde inte skapa historikmapp"
 
 #: src/ui/gpaste-ui.c:106
 msgid "Keyboard Shortcuts"
@@ -590,391 +976,6 @@ msgstr "Om GPaste"
 #: src/ui/gpaste-ui.c:108
 msgid "Quit"
 msgstr "Avsluta"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-msgid "GPaste"
-msgstr "GPaste"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
-msgid "Manage your clipboard history"
-msgstr "Hantera din urklippshistorik"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
-msgid "Marc-Antoine Perennou"
-msgstr "Marc-Antoine Perennou"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
-msgid ""
-"GPaste is a clipboard managing system allowing you to track and manage your "
-"clipboard history in a highly customizable way."
-msgstr ""
-"GPaste är ett system för urklippshantering, som låter dig övervaka och "
-"hantera din urklippshistorik på ett mycket anpassningsbart sätt."
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
-msgid ""
-"GPaste provides you with a graphical tool allowing you to manage everything "
-"easily."
-msgstr ""
-"GPaste är ett grafiskt verktyg som låter dig hantera allt på ett enkelt sätt."
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
-msgid "The main UI"
-msgstr "Primärt UI"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
-msgid "The settings UI"
-msgstr "Inställnings-UI"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
-msgid "This is a maintenance release. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
-#, fuzzy
-#| msgid "Enable the gnome-shell extension"
-msgid "gnome-shell extension cosmetic updates"
-msgstr "Aktivera gnome-skaltillägget"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
-msgid "Disable images support by default (can be reenabled in preferences)"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
-msgid "Search now includes passwords (using their names)"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
-msgid "systemd integration enhancements"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
-msgid "First release for GNOME 3.38. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
-msgid "Drop the Tracking DBus signal"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
-msgid "Switch to uuids to identify items"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
-msgid "Bump DBus interface to org.gnome.GPaste2"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
-msgid "Update to gnome-shell 3.38.0"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
-msgid "Fix activating items using Ctrl-Number in gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
-msgid "Fix keybinding regrab with gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
-msgid "Fix keybinding grab with gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
-msgid "First release for GNOME 3.36. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
-msgid "Update to gnome-shell 3.36.0"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
-msgid "Compatibility with recent appstream-glib"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
-msgid "First release for GNOME 3.34. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
-msgid "Update to gnome-shell 3.34.0"
-msgstr ""
-
-#: data/control-center/42-gpaste.control-center.xml.in:2
-msgid "@GETTEXT_PACKAGE@"
-msgstr "@GETTEXT_PACKAGE@"
-
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
-msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr "Urklipp;Hanterare;Inställningar;Inställningar;Konfiguration;"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
-msgid "Max size of an element when displaying it"
-msgstr "Maxstorlek för ett objekt vid visning"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
-msgid ""
-"The extra stuff of that element will be replaced by \"…\", and newlines by "
-"\" \" when displaying from the applet, 0 to disable."
-msgstr ""
-"Överskjutande innehåll från objektet kommer att ersättas av \"…\" och nya "
-"rader av \" \", vid visning i panelprogrammet. 0 för att inaktivera."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
-msgid "Do we detect and replace growing lines in history?"
-msgstr "Skall vi identifiera och ersätta växande rader i historiken?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
-msgid ""
-"By default, selecting \"Here is\", then \"Here is an example\" will create "
-"two entries in the history. With this feature enabled, the first one will be "
-"replaced by the second one."
-msgstr ""
-"Som standard skapas två poster i historiken vid markering av först \"Här är"
-"\" och sedan \"Här är ett exempel\". Med denna funktion aktiverad, kommer "
-"den första posten att ersättas av den andra."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
-msgid "The name of the current history"
-msgstr "Namnet på aktuell historik"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
-msgid "The default name is \"history\""
-msgstr "Standardnamnet är \"historik\""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
-msgid "Do we save the images copied to history, or only text?"
-msgstr "Skall vi spara bilder kopierade till historiken, eller bara text?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
-#, fuzzy
-#| msgid "By default, we're saving both"
-msgid "By default, we're saving only text"
-msgstr "Som standard sparar vi bägge"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
-msgid "Do we close the UI after selecting an item?"
-msgstr "Skall vi stänga UI efter att en post valts?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
-msgid "By default, we close it"
-msgstr "Som standard stänger vi den"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
-msgid "The keyboard shortcut to launch the graphical interface"
-msgstr "Tangentbordsgenväg för att starta det grafiska gränssnittet"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
-msgid ""
-"By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-"Som standard görs detta med Ctrl+Alt+G (\"<Ctrl><Alt>G\"). En tom sträng "
-"här, inaktiverar denna funktion."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
-msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr ""
-"Tangentbordsgenväg för att markera aktivt objekt som varande ett lösenord"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
-msgid ""
-"By default, hitting ctrl + alt + s will mark the active item as being a "
-"password (\"<Ctrl><Alt>S\"). An empty string here disables this "
-"functionnality."
-msgstr ""
-"Som standard markeras den aktiva posten som varande ett lösenord, med Ctrl"
-"+Alt+S  (\"<Ctrl><Alt>S\"). En tom sträng här, inaktiverar denna funktion."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
-msgid "Maximum number of items displayed in the history"
-msgstr "Max antal poster som visas i historiken"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
-msgid "Maximum number of items in history"
-msgstr "Max antal poster i historiken"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
-msgid "Maximum amount of memory used to store contents"
-msgstr "Max minnesmängd som kan användas för att lagra innehåll"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
-msgid "Max text item size"
-msgstr "Max textobjektstorlek"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
-msgid "Maximum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
-"Maxstorlek för ett textobjekt. Allt som överskrider denna gräns undantas."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
-msgid "Min text item size"
-msgstr "Minsta textobjektstorlek"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
-msgid "Minimum size of a text item. Anything out of this boundary is ignored."
-msgstr "Minsta storlek för en textpost. Allt under denna gräns undantas."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
-msgid "The keyboard shortcut to delete the first element in history"
-msgstr "Tangentbordsgenväg för att ta bort första posten från historiken"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
-msgid ""
-"By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-"Som standard görs detta med Ctrl+Alt+V (\"<Ctrl><Alt>V\"). En tom sträng "
-"här, inaktiverar denna funktion."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
-msgid "Does the primary selection affects history?"
-msgstr "Skall primär markering påverka historiken?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
-msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr "Som standard påverkas historiken endast av urklipp (Ctrl+C)."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
-msgid ""
-"Do we save all versions of selected rich text (e.g. html) or just the plain "
-"text version?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
-#, fuzzy
-msgid "By default, we're saving all"
-msgstr "Som standard sparar vi den"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
-msgid "Do we save the history from one session to another?"
-msgstr "Skall vi spara historiken från en session till en annan?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
-msgid "By default, we're saving it"
-msgstr "Som standard sparar vi den"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
-msgid "The keyboard shortcut to display the menu"
-msgstr "Tangentbordsgenväg för att visa menyn"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
-msgid ""
-"By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
-"empty string here disables this functionnality."
-msgstr ""
-"Som standard visas menyn med Ctrl+Alt+H  (\"<Ctrl><Alt>H\"). En tom sträng "
-"här, inaktiverar denna funktion."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
-msgid "The keyboard shortcut to sync the clipboard to the primary selection"
-msgstr "Tangentbordsgenväg för att synkronisera urklipp med primär markering"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
-msgid ""
-"By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-"Som standard synkroniseras de med Ctrl+Alt+O  (\"<Ctrl><Alt>O\"). En tom "
-"sträng här, inaktiverar denna funktion."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
-msgid "The keyboard shortcut to sync the primary selection to the clipboard"
-msgstr "Tangentbordsgenväg för att synkronisera primär markering med urklipp"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
-msgid ""
-"By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-"Som standard synkroniseras de med Ctrl+Alt+P  (\"<Ctrl><Alt>P\"). En tom "
-"sträng här, inaktiverar denna funktion."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
-msgid "Are the primary selection and the clipboard synchronized?"
-msgstr "Är primär markering och urklipp synkroniserade?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
-msgid "By default, the primary selection and the clipboard are independent."
-msgstr "Som standard är primär markering och urklipp oberoende av varandra."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
-msgid "Do we track the clipboard changes?"
-msgstr "Skall vi övervaka urklippsändringar?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
-msgid "By default, we're tracking those changes."
-msgstr "Som standard övervakar vi dessa ändringar."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
-msgid ""
-"Do we sync the daemon state with the gnome-shell extension's one? (disable "
-"the daemon when disabling the extension)"
-msgstr ""
-"Skall vi synkronisera tjänststatus med status för gnome-skaltillägget "
-"(inaktivera tjänsten när tillägget inaktiveras)?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
-msgid "By default, the daemon state keeps unchanged"
-msgstr "Som standard ändras inte tjänstens status"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
-msgid "Do we trim the textual items before adding them to history?"
-msgstr "Skall vi trimma textposter innan de läggs till i historiken?"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
-msgid ""
-"Trimming means removing all trailing and ending spaces. By default, we're "
-"letting them as-is."
-msgstr ""
-"Trimning innebär att alla efterföljande och avslutande blanksteg tas bort. "
-"Som standard lämnas de kvar."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
-msgid ""
-"The keyboard shortcut to upload the first element in history to a pastebin "
-"service"
-msgstr ""
-"Tangentbordsgenväg för att ladda upp historikens första post, till en "
-"pastebin-tjänst."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
-msgid ""
-"By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-"Som standard görs detta med Ctrl+Alt+U (\"<Ctrl><Alt>U\"). En tom sträng "
-"här, inaktiverar denna funktion."
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
-msgid "Do we prompt for confirmation when emptying an history?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
-#, fuzzy
-msgid "By default, we do as it's a destructive action"
-msgstr "Som standard ändras inte tjänstens status"
 
 #~ msgid "number"
 #~ msgstr "Nummer"

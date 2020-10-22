@@ -1,2 +1,5 @@
+data/appstream/org.gnome.GPaste.Ui.appdata.xml
+data/control-center/42-gpaste.control-center.xml
+data/desktop/org.gnome.GPaste.Ui.desktop
 data/desktop/org.gnome.GPaste.Ui.desktop.in
 data/gsettings/org.gnome.GPaste.gschema.xml

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2020-10-22 10:35+0200\n"
+"POT-Creation-Date: 2020-10-22 10:43+0200\n"
 "PO-Revision-Date: 2020-04-10 21:57-0400\n"
 "Last-Translator: Peniel Vargas <tsuneake.kaemitsu@gmail.com>\n"
 "Language-Team: Japanese\n"
@@ -18,270 +18,447 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: src/libgpaste/gpaste-macros.h:98
-msgid "Failed to register the gtk application"
-msgstr "GTK アプリケーションの登録に失敗しました"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
+#, fuzzy
+#| msgid "About GPaste"
+msgid "GPaste"
+msgstr "GPaste について"
 
-#: src/libgpaste/gpaste-macros.h:110
-msgid "is already running."
-msgstr "はすでに実行しています。"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
+msgid "Manage your clipboard history"
+msgstr ""
 
-#. This is the date format "month/day/year time"
-#: src/libgpaste/core/gpaste-image-item.c:240
-msgid "%m/%d/%y %T"
-msgstr "%y/%m/%d %T"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+msgid "Marc-Antoine Perennou"
+msgstr ""
 
-#. This gets displayed in history when selecting an image
-#: src/libgpaste/core/gpaste-image-item.c:242
-#, c-format
-msgid "[Image, %d x %d (%s)]"
-msgstr "[画像, %d x %d (%s)]"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
+msgid ""
+"GPaste is a clipboard managing system allowing you to track and manage your "
+"clipboard history in a highly customizable way."
+msgstr ""
 
-#. This is the prefix displayed in history to identify a password
-#: src/libgpaste/core/gpaste-password-item.c:67
-msgid "Password"
-msgstr "パスワード"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
+msgid ""
+"GPaste provides you with a graphical tool allowing you to manage everything "
+"easily."
+msgstr ""
 
-#. This is the prefix displayed in history to identify selected files
-#: src/libgpaste/core/gpaste-uris-item.c:104
-msgid "[Files] "
-msgstr "[ファイル] "
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
+msgid "The main UI"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
-#: src/libgpaste/ui/gpaste-ui-switch.c:92
-msgid "Track clipboard changes"
-msgstr "クリップボードの変更を追跡する"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
+#, fuzzy
+#| msgid "GPaste Settings"
+msgid "The settings UI"
+msgstr "GPaste の設定"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
-msgid "Close UI on select"
-msgstr "選択時に UI を閉じる"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
+msgid "This is a maintenance release. Changes:"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
-msgid "Enable the gnome-shell extension"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
+#, fuzzy
+#| msgid "Enable the gnome-shell extension"
+msgid "gnome-shell extension cosmetic updates"
 msgstr "GNOME Shell 拡張機能を有効化する"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
-msgid "Sync the daemon state with the extension's one"
-msgstr "デーモンの状態を拡張機能の状態と同期する"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+msgid "Disable images support by default (can be reenabled in preferences)"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
-msgid "Primary selection affects history"
-msgstr "プライマリー選択を履歴に反映させる"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+msgid "Search now includes passwords (using their names)"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
-msgid "Synchronize clipboard with primary selection"
-msgstr "クリップボードをプライマリー選択と同期する"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+msgid "systemd integration enhancements"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
-msgid "Images support"
-msgstr "画像のサポート"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
+msgid "First release for GNOME 3.38. Changes:"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
-msgid "Trim items"
-msgstr "項目をトリムする"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
+msgid "Drop the Tracking DBus signal"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
-msgid "Detect growing lines"
-msgstr "ハイフンなどの線の増加を検出する"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+msgid "Switch to uuids to identify items"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
-msgid "Save history"
-msgstr "履歴を保存する"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+msgid "Bump DBus interface to org.gnome.GPaste2"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
-msgid "Max element size when displaying"
-msgstr "表示時の要素の最大サイズ"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
+msgid "Update to gnome-shell 3.38.0"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
-msgid "Max displayed history size"
-msgstr "表示される履歴の最大数"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
-msgid "Max history size"
-msgstr "履歴の最大数"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
-msgid "Max memory usage (MB)"
-msgstr "メモリの最大使用量 (MB)"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
+msgid "Fix keybinding grab with gnome-shell"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
-msgid "Max text item length"
-msgstr "テキストの最大の長さ"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+msgid "First release for GNOME 3.36. Changes:"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
-msgid "Min text item length"
-msgstr "テキストの最小の長さ"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
+msgid "Update to gnome-shell 3.36.0"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
-#: data/control-center/42-gpaste.control-center.xml.in:5
-msgid "Delete the active item from history"
-msgstr "履歴からアクティブな項目を削除する"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
+msgid "Compatibility with recent appstream-glib"
+msgstr ""
 
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+msgid "First release for GNOME 3.34. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
+msgid "Update to gnome-shell 3.34.0"
+msgstr ""
+
+#: data/control-center/42-gpaste.control-center.xml.in:2
+msgid "@GETTEXT_PACKAGE@"
+msgstr ""
+
+#: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
-#: data/control-center/42-gpaste.control-center.xml.in:3
 msgid "Launch the graphical tool"
 msgstr "GUI ツールを起動する"
 
+#: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
-#: data/control-center/42-gpaste.control-center.xml.in:4
 msgid "Mark the active item as being a password"
 msgstr "アクティブな項目をパスワードとしてマークする"
 
+#: data/control-center/42-gpaste.control-center.xml.in:5
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
+msgid "Delete the active item from history"
+msgstr "履歴からアクティブな項目を削除する"
+
+#: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
-#: data/control-center/42-gpaste.control-center.xml.in:6
 msgid "Display the history"
 msgstr "履歴を表示する"
 
+#: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
-#: data/control-center/42-gpaste.control-center.xml.in:7
 msgid "Sync the clipboard to the primary selection"
 msgstr "クリップボードからプライマリー選択に同期する"
 
+#: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
-#: data/control-center/42-gpaste.control-center.xml.in:8
 msgid "Sync the primary selection to the clipboard"
 msgstr "プライマリー選択からクリップボードに同期する"
 
+#: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
-#: data/control-center/42-gpaste.control-center.xml.in:9
 msgid "Upload the active item to a pastebin service"
 msgstr "Pastebin にアクティブな項目をアップロードする"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
-#: src/libgpaste/ui/gpaste-ui-window.c:311 src/client/gpaste-client.c:789
-msgid "Couldn't connect to GPaste daemon"
-msgstr "GPaste デーモンに接続できませんでした"
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
-msgid "General behaviour"
-msgstr "挙動全般"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
+#, fuzzy
+#| msgid "Max element size when displaying"
+msgid "Max size of an element when displaying it"
+msgstr "表示時の要素の最大サイズ"
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
-msgid "History settings"
-msgstr "履歴設定"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
+msgid ""
+"The extra stuff of that element will be replaced by \"…\", and newlines by "
+"\" \" when displaying from the applet, 0 to disable."
+msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
-msgid "Keyboard shortcuts"
-msgstr "キーボードショートカット"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
+msgid "Do we detect and replace growing lines in history?"
+msgstr ""
 
-#. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
-#: src/libgpaste/ui/gpaste-ui-panel.c:297
-msgid "Switch to"
-msgstr "切り替え"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
+msgid ""
+"By default, selecting \"Here is\", then \"Here is an example\" will create "
+"two entries in the history. With this feature enabled, the first one will be "
+"replaced by the second one."
+msgstr ""
 
-#. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
-#: src/libgpaste/ui/gpaste-ui-delete-item.c:49
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
-msgid "Delete"
-msgstr "削除"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
+#, fuzzy
+#| msgid "get the name of the current history"
+msgid "The name of the current history"
+msgstr "現在の履歴の名前を取得する"
 
-#: src/libgpaste/ui/gpaste-ui-about.c:41
-msgid "About"
-msgstr "GPaste について"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
+#, fuzzy
+#| msgid "delete a history"
+msgid "The default name is \"history\""
+msgstr "履歴を削除する"
 
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:43
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
-msgid "Backup"
-msgstr "バックアップ"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
+msgid "Do we save the images copied to history, or only text?"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:44
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:46
-#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
-msgid "Cancel"
-msgstr "キャンセル"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
+msgid "By default, we're saving only text"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:47
-msgid "Under which name do you want to backup this history?"
-msgstr "この履歴をどのような名前でバックアップしますか？"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
+msgid "Do we close the UI after selecting an item?"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
-msgid "Are you sure you want to delete this history?"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
+msgid "By default, we close it"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
+msgid "The keyboard shortcut to launch the graphical interface"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
+msgid ""
+"By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
+#, fuzzy
+#| msgid "Mark the active item as being a password"
+msgid "The keyboard shortcut to mark the active item as being a password"
+msgstr "アクティブな項目をパスワードとしてマークする"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
+msgid ""
+"By default, hitting ctrl + alt + s will mark the active item as being a "
+"password (\"<Ctrl><Alt>S\"). An empty string here disables this "
+"functionnality."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
+msgid "Max displayed history size"
+msgstr "表示される履歴の最大数"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
+#, fuzzy
+#| msgid "make the applet or extension display the history"
+msgid "Maximum number of items displayed in the history"
+msgstr "アプレットまたは拡張機能に履歴を表示させる"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
+msgid "Max history size"
+msgstr "履歴の最大数"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
+msgid "Maximum number of items in history"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
+msgid "Max memory usage (MB)"
+msgstr "メモリの最大使用量 (MB)"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
+msgid "Maximum amount of memory used to store contents"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
+#, fuzzy
+#| msgid "Max text item length"
+msgid "Max text item size"
+msgstr "テキストの最大の長さ"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
+msgid "Maximum size of a text item. Anything out of this boundary is ignored."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
+#, fuzzy
+#| msgid "Min text item length"
+msgid "Min text item size"
+msgstr "テキストの最小の長さ"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
+msgid "Minimum size of a text item. Anything out of this boundary is ignored."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
+#, fuzzy
+#| msgid "Are you sure you want to delete this history?"
+msgid "The keyboard shortcut to delete the first element in history"
 msgstr "この履歴を削除してもよろしいですか？"
 
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:45
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:118
-msgid "Edit"
-msgstr "編集"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
+msgid ""
+"By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
+"string here disables this functionnality."
+msgstr ""
 
-#. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
-#: src/libgpaste/util/gpaste-util.c:410
-msgid "Empty"
-msgstr "空にする"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
+#, fuzzy
+#| msgid "Primary selection affects history"
+msgid "Does the primary selection affects history?"
+msgstr "プライマリー選択を履歴に反映させる"
 
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:35
-msgid "(No result)"
-msgstr "(検索結果はありません)"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
+msgid "By default, only clipboard (ctrl+c) affects history."
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:49
-msgid "(Empty)"
-msgstr "(履歴は空です)"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
+msgid ""
+"Do we save all versions of selected rich text (e.g. html) or just the plain "
+"text version?"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:60
-msgid "(Couldn't connect to GPaste daemon)"
-msgstr "(GPaste デーモンに接続できませんでした)"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
+msgid "By default, we're saving all"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-new-item.c:31
-#: src/libgpaste/ui/gpaste-ui-new-item.c:83
-msgid "New"
-msgstr "新規"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+msgid "Do we save the history from one session to another?"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-reexec.c:29
-msgid "Restart"
-msgstr "再起動"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+msgid "By default, we're saving it"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-reexec.c:29
-msgid "Do you really want to restart the daemon?"
-msgstr "本当にデーモンを再起動しますか？"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
+msgid "The keyboard shortcut to display the menu"
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-reexec.c:55
-msgid "Restart the daemon"
-msgstr "デーモンを再起動する"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+msgid ""
+"By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
+"empty string here disables this functionnality."
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-search.c:26
-msgid "Search"
-msgstr "検索"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
+#, fuzzy
+#| msgid "Sync the clipboard to the primary selection"
+msgid "The keyboard shortcut to sync the clipboard to the primary selection"
+msgstr "クリップボードからプライマリー選択に同期する"
 
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
-msgid "GPaste Settings"
-msgstr "GPaste の設定"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+msgid ""
+"By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
-msgid "General"
-msgstr "全般"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
+#, fuzzy
+#| msgid "Sync the primary selection to the clipboard"
+msgid "The keyboard shortcut to sync the primary selection to the clipboard"
+msgstr "プライマリー選択からクリップボードに同期する"
 
-#: src/libgpaste/ui/gpaste-ui-switch.c:54
-msgid "Stop"
-msgstr "停止"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+msgid ""
+"By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
 
-#: src/libgpaste/ui/gpaste-ui-switch.c:54
-msgid "Do you really want to stop tracking clipboard changes?"
-msgstr "本当にクリップボードの変更の追跡を停止しますか？"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+#, fuzzy
+#| msgid "Sync the primary selection to the clipboard"
+msgid "Are the primary selection and the clipboard synchronized?"
+msgstr "プライマリー選択からクリップボードに同期する"
 
-#: src/libgpaste/ui/gpaste-ui-upload-item.c:49
-msgid "Upload"
-msgstr "アップロード"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
+#, fuzzy
+#| msgid "Sync the primary selection to the clipboard"
+msgid "By default, the primary selection and the clipboard are independent."
+msgstr "プライマリー選択からクリップボードに同期する"
 
-#: src/libgpaste/util/gpaste-util.c:410
-msgid "Do you really want to empty the history?"
-msgstr "本当に履歴を空にしますか？"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+#, fuzzy
+#| msgid "Track clipboard changes"
+msgid "Do we track the clipboard changes?"
+msgstr "クリップボードの変更を追跡する"
 
-#: src/libgpaste/util/gpaste-util.c:709
-msgid "Could not create history dir"
-msgstr "履歴ディレクトリを作成できませんでした"
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+msgid "By default, we're tracking those changes."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+msgid ""
+"Do we sync the daemon state with the gnome-shell extension's one? (disable "
+"the daemon when disabling the extension)"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+msgid "By default, the daemon state keeps unchanged"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
+msgid "Do we trim the textual items before adding them to history?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+msgid ""
+"Trimming means removing all trailing and ending spaces. By default, we're "
+"letting them as-is."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
+#, fuzzy
+#| msgid "upload the item matching <uuid> to a pastebin service"
+msgid ""
+"The keyboard shortcut to upload the first element in history to a pastebin "
+"service"
+msgstr "<uuid> に一致する項目を Pastebin にアップロードする"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
+msgid ""
+"By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+msgid "Do we prompt for confirmation when emptying an history?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
+msgid "By default, we do as it's a destructive action"
+msgstr ""
 
 #: src/client/gpaste-client.c:137 src/client/gpaste-client.c:425
 msgid "Couldn't spawn"
@@ -563,6 +740,12 @@ msgstr "デーモンを正常に再実行しました\n"
 msgid "Cannot add non utf8 data as text."
 msgstr "UTF-8 以外のデータはテキストとして追加できません。"
 
+#: src/client/gpaste-client.c:789
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
+#: src/libgpaste/ui/gpaste-ui-window.c:311
+msgid "Couldn't connect to GPaste daemon"
+msgstr "GPaste デーモンに接続できませんでした"
+
 #: src/daemon/gpaste-daemon.c:33
 msgid "Stop signal received, exiting"
 msgstr "停止シグナルを受信し、終了します"
@@ -570,6 +753,209 @@ msgstr "停止シグナルを受信し、終了します"
 #: src/daemon/gpaste-daemon.c:70
 msgid "Could not acquire DBus name."
 msgstr "DBus 名を取得できませんでした。"
+
+#. This is the date format "month/day/year time"
+#: src/libgpaste/core/gpaste-image-item.c:240
+msgid "%m/%d/%y %T"
+msgstr "%y/%m/%d %T"
+
+#. This gets displayed in history when selecting an image
+#: src/libgpaste/core/gpaste-image-item.c:242
+#, c-format
+msgid "[Image, %d x %d (%s)]"
+msgstr "[画像, %d x %d (%s)]"
+
+#. This is the prefix displayed in history to identify a password
+#: src/libgpaste/core/gpaste-password-item.c:67
+msgid "Password"
+msgstr "パスワード"
+
+#. This is the prefix displayed in history to identify selected files
+#: src/libgpaste/core/gpaste-uris-item.c:104
+msgid "[Files] "
+msgstr "[ファイル] "
+
+#: src/libgpaste/gpaste-macros.h:98
+msgid "Failed to register the gtk application"
+msgstr "GTK アプリケーションの登録に失敗しました"
+
+#: src/libgpaste/gpaste-macros.h:110
+msgid "is already running."
+msgstr "はすでに実行しています。"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
+#: src/libgpaste/ui/gpaste-ui-switch.c:92
+msgid "Track clipboard changes"
+msgstr "クリップボードの変更を追跡する"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
+msgid "Close UI on select"
+msgstr "選択時に UI を閉じる"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
+msgid "Enable the gnome-shell extension"
+msgstr "GNOME Shell 拡張機能を有効化する"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
+msgid "Sync the daemon state with the extension's one"
+msgstr "デーモンの状態を拡張機能の状態と同期する"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
+msgid "Primary selection affects history"
+msgstr "プライマリー選択を履歴に反映させる"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
+msgid "Synchronize clipboard with primary selection"
+msgstr "クリップボードをプライマリー選択と同期する"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
+msgid "Images support"
+msgstr "画像のサポート"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
+msgid "Trim items"
+msgstr "項目をトリムする"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
+msgid "Detect growing lines"
+msgstr "ハイフンなどの線の増加を検出する"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
+msgid "Save history"
+msgstr "履歴を保存する"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
+msgid "Max element size when displaying"
+msgstr "表示時の要素の最大サイズ"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
+msgid "Max text item length"
+msgstr "テキストの最大の長さ"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
+msgid "Min text item length"
+msgstr "テキストの最小の長さ"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
+msgid "General behaviour"
+msgstr "挙動全般"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
+msgid "History settings"
+msgstr "履歴設定"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
+msgid "Keyboard shortcuts"
+msgstr "キーボードショートカット"
+
+#. translators: This is the name of a multi-history management action
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
+#: src/libgpaste/ui/gpaste-ui-panel.c:297
+msgid "Switch to"
+msgstr "切り替え"
+
+#. translators: This is the name of a multi-history management action
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
+#: src/libgpaste/ui/gpaste-ui-delete-item.c:49
+msgid "Delete"
+msgstr "削除"
+
+#: src/libgpaste/ui/gpaste-ui-about.c:41
+msgid "About"
+msgstr "GPaste について"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:43
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
+msgid "Backup"
+msgstr "バックアップ"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:44
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:46
+#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:47
+msgid "Under which name do you want to backup this history?"
+msgstr "この履歴をどのような名前でバックアップしますか？"
+
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+msgid "Are you sure you want to delete this history?"
+msgstr "この履歴を削除してもよろしいですか？"
+
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:45
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:118
+msgid "Edit"
+msgstr "編集"
+
+#. Translators: this is the translation for emptying the history
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
+#: src/libgpaste/util/gpaste-util.c:410
+msgid "Empty"
+msgstr "空にする"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:35
+msgid "(No result)"
+msgstr "(検索結果はありません)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:49
+msgid "(Empty)"
+msgstr "(履歴は空です)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:60
+msgid "(Couldn't connect to GPaste daemon)"
+msgstr "(GPaste デーモンに接続できませんでした)"
+
+#: src/libgpaste/ui/gpaste-ui-new-item.c:31
+#: src/libgpaste/ui/gpaste-ui-new-item.c:83
+msgid "New"
+msgstr "新規"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:29
+msgid "Restart"
+msgstr "再起動"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:29
+msgid "Do you really want to restart the daemon?"
+msgstr "本当にデーモンを再起動しますか？"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:55
+msgid "Restart the daemon"
+msgstr "デーモンを再起動する"
+
+#: src/libgpaste/ui/gpaste-ui-search.c:26
+msgid "Search"
+msgstr "検索"
+
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
+msgid "GPaste Settings"
+msgstr "GPaste の設定"
+
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
+msgid "General"
+msgstr "全般"
+
+#: src/libgpaste/ui/gpaste-ui-switch.c:54
+msgid "Stop"
+msgstr "停止"
+
+#: src/libgpaste/ui/gpaste-ui-switch.c:54
+msgid "Do you really want to stop tracking clipboard changes?"
+msgstr "本当にクリップボードの変更の追跡を停止しますか？"
+
+#: src/libgpaste/ui/gpaste-ui-upload-item.c:49
+msgid "Upload"
+msgstr "アップロード"
+
+#: src/libgpaste/util/gpaste-util.c:410
+msgid "Do you really want to empty the history?"
+msgstr "本当に履歴を空にしますか？"
+
+#: src/libgpaste/util/gpaste-util.c:709
+msgid "Could not create history dir"
+msgstr "履歴ディレクトリを作成できませんでした"
 
 #: src/ui/gpaste-ui.c:106
 msgid "Keyboard Shortcuts"
@@ -582,391 +968,6 @@ msgstr "GPaste について"
 #: src/ui/gpaste-ui.c:108
 msgid "Quit"
 msgstr "終了"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
-#| msgid "About GPaste"
-msgid "GPaste"
-msgstr "GPaste について"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
-msgid "Manage your clipboard history"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
-msgid "Marc-Antoine Perennou"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
-msgid ""
-"GPaste is a clipboard managing system allowing you to track and manage your "
-"clipboard history in a highly customizable way."
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
-msgid ""
-"GPaste provides you with a graphical tool allowing you to manage everything "
-"easily."
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
-msgid "The main UI"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
-#, fuzzy
-#| msgid "GPaste Settings"
-msgid "The settings UI"
-msgstr "GPaste の設定"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
-msgid "This is a maintenance release. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
-#, fuzzy
-#| msgid "Enable the gnome-shell extension"
-msgid "gnome-shell extension cosmetic updates"
-msgstr "GNOME Shell 拡張機能を有効化する"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
-msgid "Disable images support by default (can be reenabled in preferences)"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
-msgid "Search now includes passwords (using their names)"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
-msgid "systemd integration enhancements"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
-msgid "First release for GNOME 3.38. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
-msgid "Drop the Tracking DBus signal"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
-msgid "Switch to uuids to identify items"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
-msgid "Bump DBus interface to org.gnome.GPaste2"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
-msgid "Update to gnome-shell 3.38.0"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
-msgid "Fix activating items using Ctrl-Number in gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
-msgid "Fix keybinding regrab with gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
-msgid "Fix keybinding grab with gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
-msgid "First release for GNOME 3.36. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
-msgid "Update to gnome-shell 3.36.0"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
-msgid "Compatibility with recent appstream-glib"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
-msgid "First release for GNOME 3.34. Changes:"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
-msgid "Update to gnome-shell 3.34.0"
-msgstr ""
-
-#: data/control-center/42-gpaste.control-center.xml.in:2
-msgid "@GETTEXT_PACKAGE@"
-msgstr ""
-
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
-msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
-#, fuzzy
-#| msgid "Max element size when displaying"
-msgid "Max size of an element when displaying it"
-msgstr "表示時の要素の最大サイズ"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
-msgid ""
-"The extra stuff of that element will be replaced by \"…\", and newlines by "
-"\" \" when displaying from the applet, 0 to disable."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
-msgid "Do we detect and replace growing lines in history?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
-msgid ""
-"By default, selecting \"Here is\", then \"Here is an example\" will create "
-"two entries in the history. With this feature enabled, the first one will be "
-"replaced by the second one."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
-#, fuzzy
-#| msgid "get the name of the current history"
-msgid "The name of the current history"
-msgstr "現在の履歴の名前を取得する"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
-#, fuzzy
-#| msgid "delete a history"
-msgid "The default name is \"history\""
-msgstr "履歴を削除する"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
-msgid "Do we save the images copied to history, or only text?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
-msgid "By default, we're saving only text"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
-msgid "Do we close the UI after selecting an item?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
-msgid "By default, we close it"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
-msgid "The keyboard shortcut to launch the graphical interface"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
-msgid ""
-"By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
-#, fuzzy
-#| msgid "Mark the active item as being a password"
-msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr "アクティブな項目をパスワードとしてマークする"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
-msgid ""
-"By default, hitting ctrl + alt + s will mark the active item as being a "
-"password (\"<Ctrl><Alt>S\"). An empty string here disables this "
-"functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
-#, fuzzy
-#| msgid "make the applet or extension display the history"
-msgid "Maximum number of items displayed in the history"
-msgstr "アプレットまたは拡張機能に履歴を表示させる"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
-msgid "Maximum number of items in history"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
-msgid "Maximum amount of memory used to store contents"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
-#, fuzzy
-#| msgid "Max text item length"
-msgid "Max text item size"
-msgstr "テキストの最大の長さ"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
-msgid "Maximum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
-#, fuzzy
-#| msgid "Min text item length"
-msgid "Min text item size"
-msgstr "テキストの最小の長さ"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
-msgid "Minimum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
-#, fuzzy
-#| msgid "Are you sure you want to delete this history?"
-msgid "The keyboard shortcut to delete the first element in history"
-msgstr "この履歴を削除してもよろしいですか？"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
-msgid ""
-"By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
-#, fuzzy
-#| msgid "Primary selection affects history"
-msgid "Does the primary selection affects history?"
-msgstr "プライマリー選択を履歴に反映させる"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
-msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
-msgid ""
-"Do we save all versions of selected rich text (e.g. html) or just the plain "
-"text version?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
-msgid "By default, we're saving all"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
-msgid "Do we save the history from one session to another?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
-msgid "By default, we're saving it"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
-msgid "The keyboard shortcut to display the menu"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
-msgid ""
-"By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
-"empty string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
-#, fuzzy
-#| msgid "Sync the clipboard to the primary selection"
-msgid "The keyboard shortcut to sync the clipboard to the primary selection"
-msgstr "クリップボードからプライマリー選択に同期する"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
-msgid ""
-"By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
-#, fuzzy
-#| msgid "Sync the primary selection to the clipboard"
-msgid "The keyboard shortcut to sync the primary selection to the clipboard"
-msgstr "プライマリー選択からクリップボードに同期する"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
-msgid ""
-"By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
-#, fuzzy
-#| msgid "Sync the primary selection to the clipboard"
-msgid "Are the primary selection and the clipboard synchronized?"
-msgstr "プライマリー選択からクリップボードに同期する"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
-#, fuzzy
-#| msgid "Sync the primary selection to the clipboard"
-msgid "By default, the primary selection and the clipboard are independent."
-msgstr "プライマリー選択からクリップボードに同期する"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
-#, fuzzy
-#| msgid "Track clipboard changes"
-msgid "Do we track the clipboard changes?"
-msgstr "クリップボードの変更を追跡する"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
-msgid "By default, we're tracking those changes."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
-msgid ""
-"Do we sync the daemon state with the gnome-shell extension's one? (disable "
-"the daemon when disabling the extension)"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
-msgid "By default, the daemon state keeps unchanged"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
-msgid "Do we trim the textual items before adding them to history?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
-msgid ""
-"Trimming means removing all trailing and ending spaces. By default, we're "
-"letting them as-is."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
-#, fuzzy
-#| msgid "upload the item matching <uuid> to a pastebin service"
-msgid ""
-"The keyboard shortcut to upload the first element in history to a pastebin "
-"service"
-msgstr "<uuid> に一致する項目を Pastebin にアップロードする"
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
-msgid ""
-"By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
-"string here disables this functionnality."
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
-msgid "Do we prompt for confirmation when emptying an history?"
-msgstr ""
-
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
-msgid "By default, we do as it's a destructive action"
-msgstr ""
 
 #~ msgid "number"
 #~ msgstr "数字"
