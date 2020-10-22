@@ -67,9 +67,13 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
             this._setValue(null, oldIndex);
         } else {
             this._client.get_element_at_index(index, (client, result) => {
-                const item = client.get_element_at_index_finish(result);
-                this._uuid = item.get_uuid();
-                this._setValue(item.get_value(), oldIndex);
+                try {
+                    const item = client.get_element_at_index_finish(result);
+                    this._uuid = item.get_uuid();
+                    this._setValue(item.get_value(), oldIndex);
+                } catch(e) {
+                    // ignore `invalid index received` when historySize less than displaySize
+                }
             });
         }
     }
