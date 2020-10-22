@@ -204,25 +204,35 @@ class GPasteIndicator extends PanelMenu.Button {
 
         this._pageSwitcher.setMaxDisplayedSize(newSize);
 
-        const offset = this._pageSwitcher.getPageOffset();
+        this._client.get_history_name((client, result) => {
+            const name = client.get_history_name_finish(result);
 
-        if (newSize > oldSize) {
-            for (let index = oldSize; index < newSize; ++index) {
-                let item = new Item.GPasteItem(this._client, elementSize, index + offset);
-                this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
-                this._history[index] = item;
-            }
-        } else {
-            for (let i = newSize; i < oldSize; ++i) {
-                this._history.pop().destroy();
-            }
-        }
+            this._client.get_history_size(name, (client, result) => {
+                const offset = this._pageSwitcher.getPageOffset();
 
-        if (offset === 0 || oldSize === 0) {
-            this._updatePage(1);
-        } else {
-            this._updatePage((offset / oldSize) + 1);
-        }
+                if (newSize > oldSize) {
+                    const realSize = client.get_history_size_finish(result);
+                    const size = Math.min(realSize - offset, newSize);
+
+                    for (let index = oldSize; index < newSize; ++index) {
+                        let realIndex = index + offset;
+                        let item = new Item.GPasteItem(this._client, elementSize, (realIndex < realSize) ? realIndex : -1);
+                        this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
+                        this._history[index] = item;
+                    }
+                } else {
+                    for (let i = newSize; i < oldSize; ++i) {
+                        this._history.pop().destroy();
+                    }
+                }
+
+                if (offset === 0 || oldSize === 0) {
+                    this._updatePage(1);
+                } else {
+                    this._updatePage((offset / oldSize) + 1);
+                }
+            });
+        });
     }
 
     _update(client, action, target, position) {
