@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2020-10-22 10:43+0200\n"
-"PO-Revision-Date: 2020-10-22 08:57+0000\n"
-"Last-Translator: Marc-Antoine Perennou <Marc-Antoine@perennou.com>\n"
+"PO-Revision-Date: 2020-10-24 17:26+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/>"
 "\n"
 "Language: fr\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.3.1\n"
+"X-Generator: Weblate 4.3.2-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -81,8 +81,8 @@ msgstr "Mises à jour cosmétiques de l'extension gnome-shell"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
-"Désactivation du support des images par défault (peut être réactivé dans les "
-"préférences)"
+"Désactivation de la prise en charge des images par défaut (peut être "
+"réactivée dans les préférences)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 msgid "Search now includes passwords (using their names)"
