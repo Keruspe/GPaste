@@ -8,49 +8,55 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2020-10-22 10:43+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2020-10-23 10:23+0000\n"
+"Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
+"Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/gpaste/"
+"gpaste/nb_NO/>\n"
 "Language: nb_NO\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.3.1\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
 msgid "GPaste"
-msgstr ""
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Håndter din utklippstavlehistorikk"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste er et utklippstavlehåndteringssystem som lar deg holde øye med og "
+"behandle din utklippshistorikk på veldig tilpasset vis."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste gir det et grafisk verktøy som lar deg håndtere alt veldig enkelt."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
-msgstr ""
+msgstr "Hovedgrensesnittet"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 msgid "The settings UI"
-msgstr ""
+msgstr "Innstillingsgrensesnittet"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
@@ -64,387 +70,468 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Dette er en vedlikeholdsutgivelse. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 msgid "gnome-shell extension cosmetic updates"
-msgstr ""
+msgstr "kosmetiske oppdateringer i gnome-shell-utvidelsen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#, fuzzy
 msgid "Disable images support by default (can be reenabled in preferences)"
-msgstr ""
+msgstr "Skru av bildestøtte (kan skrus på igjen i innstillingene)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#, fuzzy
 msgid "Search now includes passwords (using their names)"
-msgstr ""
+msgstr "Søk inneholder nå passord (ved bruk av navnene deres)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid "systemd integration enhancements"
-msgstr ""
+msgstr "forbedringer i systemd-integrasjon"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
 msgid "First release for GNOME 3.38. Changes:"
-msgstr ""
+msgstr "Første utgave for GNOME 3.38. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
+#, fuzzy
 msgid "Drop the Tracking DBus signal"
-msgstr ""
+msgstr "Ikke bruk sporingssymbolet fra D-Bus"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+#, fuzzy
 msgid "Switch to uuids to identify items"
-msgstr ""
+msgstr "Byttet til UUID-er for å identifisere elementer"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+#, fuzzy
 msgid "Bump DBus interface to org.gnome.GPaste2"
-msgstr ""
+msgstr "Oppgradering av D-Bus-grensesnitt til org.gnome.GPaste2"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
 msgid "Update to gnome-shell 3.38.0"
-msgstr ""
+msgstr "Oppgradering til gnome-shell 3.38.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
+#, fuzzy
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
-msgstr ""
+msgstr "Fiks aktivering av elementer ved bruk av Ctrl+nummer i gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+#, fuzzy
 msgid "Fix keybinding regrab with gnome-shell"
-msgstr ""
+msgstr "Fiks av ny opphenting av tastaturhurtigsekvens med gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
+#, fuzzy
 msgid "Fix keybinding grab with gnome-shell"
-msgstr ""
+msgstr "Fiks opphenting av tastaturhurtigsekvens med gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
 msgid "First release for GNOME 3.36. Changes:"
-msgstr ""
+msgstr "Første utgave for GNOME 3.36. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
 msgid "Update to gnome-shell 3.36.0"
-msgstr ""
+msgstr "Oppgradering til gnome-shell 3.36.0."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
 msgid "Compatibility with recent appstream-glib"
-msgstr ""
+msgstr "Kompabilitet med nyere appstream-glib"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
 msgid "First release for GNOME 3.34. Changes:"
-msgstr ""
+msgstr "Første utgave for GNOME 3.34. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
 msgid "Update to gnome-shell 3.34.0"
-msgstr ""
+msgstr "Oppgradering til gnome-shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
-msgstr ""
+msgstr "@GETTEXT_PACKAGE@"
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
-msgstr ""
+msgstr "Start det grafiske verktøyet"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
-msgstr ""
+msgstr "Maker aktivt element som passord"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
-msgstr ""
+msgstr "Slett aktivt element fra historikk"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
-msgstr ""
+msgstr "Vis historikken"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
+#, fuzzy
 msgid "Sync the clipboard to the primary selection"
-msgstr ""
+msgstr "Synkroniser utklippstavle til primærmarkering"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
+#, fuzzy
 msgid "Sync the primary selection to the clipboard"
-msgstr ""
+msgstr "Synkroniser primær markering til utklippstavle"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+#, fuzzy
 msgid "Upload the active item to a pastebin service"
-msgstr ""
+msgstr "Last opp aktivt element til en innlimingsnett-tjeneste"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
+msgstr "Utklippstavle:håndtering;innstillinger;oppsett;clipboard;"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
-msgstr ""
+msgstr "Maks. størrelse for vist element"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
+#, fuzzy
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
 msgstr ""
+"Ekstra del av elementet vil erstatet av \"…\", og linjeskiftet med \" \" ved "
+"visning fra miniprogrammet. 0 for å skru av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
+#, fuzzy
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Oppdag og erstatt voksende linjer i historikken?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
+#, fuzzy
 msgid ""
 "By default, selecting \"Here is\", then \"Here is an example\" will create "
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"Valg av \"Her er\", og så \"Her er det et eksempel\" vil opprette to "
+"oppføringer i historikken som forvalg. Når dette er påslått, vil den første "
+"erstattes av den andre."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
 msgid "The name of the current history"
-msgstr ""
+msgstr "Navn på nåværende historikk"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
+#, fuzzy
 msgid "The default name is \"history\""
-msgstr ""
+msgstr "Forvalgt navn er \"historikk\""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
+#, fuzzy
 msgid "Do we save the images copied to history, or only text?"
-msgstr ""
+msgstr "Lagre bilder kopiert til historikk, eller kun tekst?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
+#, fuzzy
 msgid "By default, we're saving only text"
-msgstr ""
+msgstr "Som forvalg lagres kun tekst"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
 msgid "Do we close the UI after selecting an item?"
-msgstr ""
+msgstr "Lukk grensesnitt etter valg av element?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
+#, fuzzy
 msgid "By default, we close it"
-msgstr ""
+msgstr "Som forvalg lukkes det"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
 msgid "The keyboard shortcut to launch the graphical interface"
-msgstr ""
+msgstr "Tastatursnarvei for å starte grafisk grensesnitt"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
+#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Ctrl+Alt+G gjør dette som forvalg (\"<Ctrl>Alt>G\"). La stå tom for å skru "
+"av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
+#, fuzzy
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr ""
+msgstr "Tastatursnarveien for å markere aktivt element som passord"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
+#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + s will mark the active item as being a "
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
+"Ctrl+Alt+S markerer aktivt element som passord som forvalg (\"<Ctrl><Alt>S\")"
+". La stå tom for å skru av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
 msgid "Max displayed history size"
-msgstr ""
+msgstr "Maks. vist historikkstørrelse"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
 msgid "Maximum number of items displayed in the history"
-msgstr ""
+msgstr "Maksimalt antall viste elementer i historikken"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
 msgid "Max history size"
-msgstr ""
+msgstr "Maks. historikkstørrelse"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
 msgid "Maximum number of items in history"
-msgstr ""
+msgstr "Maksimalt antall elementer i historikken"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
 msgid "Max memory usage (MB)"
-msgstr ""
+msgstr "Maks. minnebruk (MB)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
 msgid "Maximum amount of memory used to store contents"
-msgstr ""
+msgstr "Maksimal mengde minne brukt til lagring av innhold"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Max text item size"
-msgstr ""
+msgstr "Maks. tekstelementstørrelse"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Maksimal størrelse for hvert tekstelement. Alt som overskrider denne grensen "
+"vil overses."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
 msgid "Min text item size"
-msgstr ""
+msgstr "Maks. tekstelementstørrelse"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
+#, fuzzy
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Minimumsstørrelse for hvert tekstelement. Alt som er mindre enn dette vil "
+"bli ignorert."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
 msgid "The keyboard shortcut to delete the first element in history"
-msgstr ""
+msgstr "Tastatursnarvei for å slette første element i historikken"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
+#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Ctrl+Alt+V gjør dette som forvalg (\"<Ctrl><Alt>V\"). La stå tom for å skru "
+"av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
+#, fuzzy
 msgid "Does the primary selection affects history?"
-msgstr ""
+msgstr "Skal det primære utvalget innvirkning på historikken?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
+#, fuzzy
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr ""
+msgstr "Som forvalg har kun utklippstavlen (Ctrl+C) innvirkning på historikken."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
+#, fuzzy
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
 msgstr ""
+"Skal alle versjoner av formatert tekst lagres (f.eks. HTML), eller kun "
+"klartekstversjonen?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, we're saving all"
-msgstr ""
+msgstr "Som forvalg lagres alt"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+#, fuzzy
 msgid "Do we save the history from one session to another?"
-msgstr ""
+msgstr "Skal historikk lagres fra én økt til en annen?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+#, fuzzy
 msgid "By default, we're saving it"
-msgstr ""
+msgstr "Som forvalg lagres det"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
-msgstr ""
+msgstr "Tastatursnarvei for visning av menyen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
 msgstr ""
+"Ctrl+Alt+H skjuler menyen som forvalg (\">Ctrl>Alt>H\". La stå tom for å "
+"skru av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
+"Tastatursnarvei for å synkronisere utklippstavlen til det primære utvalget"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Ctrl+Alt+O synkroniserer dem som forvalg (\"<Ctrl><Alt>P\"). La stå tom for "
+"å skru av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
+#, fuzzy
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
+"Tastatursnarvei for å skru av synkronisering av det primære utvalget til "
+"utklippstavlen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Ctrl+Alt+P synkroniserer dem som forvalg (\"<Ctrl><Alt>P\"). La stå tom for "
+"å skru av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid "Are the primary selection and the clipboard synchronized?"
-msgstr ""
+msgstr "Er det primære utvalget og utklippstavlen synkronisert?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
-msgstr ""
+msgstr "Det primære utvalget og utklippstavlen er uavhengige som forvalg."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+#, fuzzy
 msgid "Do we track the clipboard changes?"
-msgstr ""
+msgstr "Skal endringer i utklippstavlen spores?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+#, fuzzy
 msgid "By default, we're tracking those changes."
-msgstr ""
+msgstr "Disse spores som forvalg."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+#, fuzzy
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
 msgstr ""
+"Skal nissetilstanden synkroniseres med den i gnome-shell-utvidelsen? (skru "
+"av nissen når du skrur av utvidelsen)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+#, fuzzy
 msgid "By default, the daemon state keeps unchanged"
-msgstr ""
+msgstr "Som forvalg endres ikke nissetilstanden"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
+#, fuzzy
 msgid "Do we trim the textual items before adding them to history?"
-msgstr ""
+msgstr "Skal tekstelementer beskjæres før de legges til i historikken?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+#, fuzzy
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
 msgstr ""
+"Beskjæring betyr fjerning av alle etterfølgende og påfølgende mellomrom. Som "
+"forvalg lagres dette som det er."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
+#, fuzzy
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
+"Tastatursnarveien for å laste opp det første elementer i historikken til en "
+"innlimingnett-tjeneste"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
+#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Som forvalg gjør Ctrl+Alt+U dette (\"<Ctrl><Alt>U\"). La stå tom for å skru "
+"av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+#, fuzzy
 msgid "Do we prompt for confirmation when emptying an history?"
-msgstr ""
+msgstr "Sprør om bekreftelse ved tømming av historikk?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
+#, fuzzy
 msgid "By default, we do as it's a destructive action"
 msgstr ""
+"Dette spørsmålet blir stilt som forvalg, siden det er en destruktiv handling"
 
 #: src/client/gpaste-client.c:137 src/client/gpaste-client.c:425
+#, fuzzy
 msgid "Couldn't spawn"
-msgstr ""
+msgstr "Kunne ikke starte"
 
 #: src/client/gpaste-client.c:149
 #, c-format
 msgid "Usage:\n"
-msgstr ""
+msgstr "Bruk:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:151
+#, fuzzy
 msgid "print the history with indexes"
-msgstr ""
+msgstr "skriv ut historikken med indekser"
 
 #. Translators: help for gpaste history-size
 #: src/client/gpaste-client.c:153
+#, fuzzy
 msgid "print the size of the history"
-msgstr ""
+msgstr "skriv ut størrelsen på historikken"
 
 #. Translators: help for gpaste get-history
 #: src/client/gpaste-client.c:155
+#, fuzzy
 msgid "get the name of the current history"
-msgstr ""
+msgstr "hent navnet for nåværende historikk"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -456,347 +543,378 @@ msgstr ""
 #: src/client/gpaste-client.c:161 src/client/gpaste-client.c:167
 #: src/client/gpaste-client.c:179 src/client/gpaste-client.c:183
 msgid "name"
-msgstr ""
+msgstr "navn"
 
 #: src/client/gpaste-client.c:157
 msgid "backup current history"
-msgstr ""
+msgstr "sikkerhetskopier nåværende historikk"
 
 #: src/client/gpaste-client.c:159
 msgid "switch to another history"
-msgstr ""
+msgstr "bytt til annen historikk"
 
 #: src/client/gpaste-client.c:161
 msgid "delete a history"
-msgstr ""
+msgstr "slett en historikk"
 
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:163
+#, fuzzy
 msgid "list available histories"
-msgstr ""
+msgstr "list opp tilgjengelige historikker"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:165
 msgid "text"
-msgstr ""
+msgstr "tekst"
 
 #: src/client/gpaste-client.c:165
+#, fuzzy
 msgid "set text to clipboard"
-msgstr ""
+msgstr "sett tekst til utklippstavle"
 
 #: src/client/gpaste-client.c:167
 msgid "password"
-msgstr ""
+msgstr "passord"
 
 #: src/client/gpaste-client.c:167
+#, fuzzy
 msgid "add the name - password couple to the clipboard"
-msgstr ""
+msgstr "Legg til navnet og passordet i utklippstavlen"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:169
 msgid "old name"
-msgstr ""
+msgstr "gammelt navn"
 
 #: src/client/gpaste-client.c:169
 msgid "new name"
-msgstr ""
+msgstr "nytt navn"
 
 #: src/client/gpaste-client.c:169
 msgid "rename the password"
-msgstr ""
+msgstr "gi passordet et nytt navn"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:171
+#, fuzzy
 msgid "get the item <uuid> from the history"
-msgstr ""
+msgstr "hent elementet <uuid> fra historikken"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:173
+#, fuzzy
 msgid "set the item <uuid> from the history to the clipboard"
-msgstr ""
+msgstr "sett elementet <uuid> fra historikken til utklippstavlen"
 
 #. Translators: help for gpaste replace <uuid> <contents>
 #: src/client/gpaste-client.c:175
 msgid "contents"
-msgstr ""
+msgstr "innhold"
 
 #: src/client/gpaste-client.c:175
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
-msgstr ""
+msgstr "erstatt innholdet av elementet <uuid> fra historikken med det forrige"
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
 #: src/client/gpaste-client.c:177
+#, fuzzy
 msgid ""
 "merge the items matching the uuids from the history and put the result in "
 "the clipboard"
 msgstr ""
+"flett elementene som samsvarer med UUID-ene fra historikken og legg til "
+"resultatet i utklippstavlen"
 
 #: src/client/gpaste-client.c:179
+#, fuzzy
 msgid "set the item <uuid> from the history as a password named <name>"
-msgstr ""
+msgstr "sett elementet <uuid> fra historikken som et passord ved navn <name>"
 
 #. Translators: help for gpaste delete <uuid>
 #: src/client/gpaste-client.c:181
+#, fuzzy
 msgid "delete item <uuid> from the history"
-msgstr ""
+msgstr "slett elementet <uuid> fra historikken"
 
 #: src/client/gpaste-client.c:183
 msgid "delete the password <name> from the history"
-msgstr ""
+msgstr "slett passordet <name> fra historikken"
 
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:185
 msgid "path"
-msgstr ""
+msgstr "sti"
 
 #: src/client/gpaste-client.c:185
 msgid "put the content of the file at <path> into the clipboard"
-msgstr ""
+msgstr "hent innholdet fra filen i <path> til utklippstavlen"
 
 #. Translators: help for whatever | gpaste
 #: src/client/gpaste-client.c:187
 msgid "whatever"
-msgstr ""
+msgstr "hva som helst"
 
 #: src/client/gpaste-client.c:187
+#, fuzzy
 msgid "set the output of whatever to clipboard"
-msgstr ""
+msgstr "sett utdata for hva som helst til utklippstavlen"
 
 #. Translators: help for gpaste empty
 #: src/client/gpaste-client.c:189
+#, fuzzy
 msgid "empty the history"
-msgstr ""
+msgstr "tøm historikk"
 
 #. Translators: help for gpaste start
 #: src/client/gpaste-client.c:191
 msgid "start tracking clipboard changes"
-msgstr ""
+msgstr "begynn å spore endringer i utklippstavlen"
 
 #. Translators: help for gpaste stop
 #: src/client/gpaste-client.c:193
 msgid "stop tracking clipboard changes"
-msgstr ""
+msgstr "stopp sporing av endringer i utklippstavlen"
 
 #. Translators: help for gpaste quit
 #: src/client/gpaste-client.c:195
 msgid "alias for stop"
-msgstr ""
+msgstr "alias for stopp"
 
 #. Translators: help for gpaste daemon-reexec
 #: src/client/gpaste-client.c:197
+#, fuzzy
 msgid "reexecute the daemon (after upgrading...)"
-msgstr ""
+msgstr "kjør nissen igjen (etter oppgradering…)"
 
 #. Translators: help for gpaste settings
 #: src/client/gpaste-client.c:199
 msgid "launch the configuration tool"
-msgstr ""
+msgstr "start oppsettsverktøyet"
 
 #. Translators: help for gpaste ui
 #: src/client/gpaste-client.c:201
 msgid "launch the graphical tool"
-msgstr ""
+msgstr "start det grafiske verktøyet"
 
 #. Translators: help for gpaste show-history
 #: src/client/gpaste-client.c:203
+#, fuzzy
 msgid "make the applet or extension display the history"
-msgstr ""
+msgstr "la miniprogrammet og utvidelsen vise historikken"
 
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:205
+#, fuzzy
 msgid "upload the item <uuid> to a pastebin service"
-msgstr ""
+msgstr "last opp elementet <uuid> til en innlimingsnett-tjeneste"
 
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:207
 msgid "display the version"
-msgstr ""
+msgstr "vis versjonsinfo"
 
 #. Translators: help for gpaste daemon-version
 #: src/client/gpaste-client.c:209
 msgid "display the daemon version"
-msgstr ""
+msgstr "vis nisseversjonen"
 
 #. Translators: help for gpaste help
 #: src/client/gpaste-client.c:211
 msgid "display this help"
-msgstr ""
+msgstr "vis denne hjelpen"
 
 #. Translators: help for gpaste about
 #: src/client/gpaste-client.c:213
+#, fuzzy
 msgid "display the about dialog"
-msgstr ""
+msgstr "Vis \"Om\""
 
 #: src/client/gpaste-client.c:216
 #, c-format
 msgid "Display options:"
-msgstr ""
+msgstr "Visningsvalg:"
 
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:219
 msgid "display each item on only one line"
-msgstr ""
+msgstr "vis hvert element på hver sin linje"
 
 #. Translators: help for --raw
 #: src/client/gpaste-client.c:221
 msgid "display each item raw (without line numbers)"
-msgstr ""
+msgstr "vis hvert element som det er (uten linjenummer)"
 
 #. Translators: help for --reverse
 #: src/client/gpaste-client.c:223
+#, fuzzy
 msgid "display the items in reverse order"
-msgstr ""
+msgstr "vis elementene i omvendt rekkefølge"
 
 #. Translators: help for --zero
 #: src/client/gpaste-client.c:225
+#, fuzzy
 msgid "use a NUL character instead of a new line betweean each item"
-msgstr ""
+msgstr "bruk et NULL-tegn istedenfor linjeskift mellom hvert element"
 
 #: src/client/gpaste-client.c:228
 #, c-format
 msgid "Merge options:"
-msgstr ""
+msgstr "Flettevalg:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
 #: src/client/gpaste-client.c:231 src/client/gpaste-client.c:233
 msgid "string"
-msgstr ""
+msgstr "streng"
 
 #: src/client/gpaste-client.c:231
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
+"legg til gitt dekorasjon i begynnelsen og slutten av hvert element før "
+"fletting"
 
 #: src/client/gpaste-client.c:233
 msgid "add the given separator between each item when merging"
-msgstr ""
+msgstr "legg til gitt inndeler mellom hvert element ved fletting"
 
 #: src/client/gpaste-client.c:330
-#, c-format
+#, c-format, fuzzy
 msgid "Successfully reexecuted the daemon\n"
-msgstr ""
+msgstr "Nisse startet på ny\n"
 
 #: src/client/gpaste-client.c:479
+#, fuzzy
 msgid "Cannot add non utf8 data as text."
-msgstr ""
+msgstr "Kan ikke legge til data som ikke er UTF-8 som tekst."
 
 #: src/client/gpaste-client.c:789
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
 #: src/libgpaste/ui/gpaste-ui-window.c:311
 msgid "Couldn't connect to GPaste daemon"
-msgstr ""
+msgstr "Kunne ikke koble til GPaste-nisse igjen"
 
 #: src/daemon/gpaste-daemon.c:33
 msgid "Stop signal received, exiting"
-msgstr ""
+msgstr "Stopp-signal mottatt, avslutter"
 
 #: src/daemon/gpaste-daemon.c:70
+#, fuzzy
 msgid "Could not acquire DBus name."
-msgstr ""
+msgstr "Fikk ikke tak i D-Bus-navn."
 
 #. This is the date format "month/day/year time"
 #: src/libgpaste/core/gpaste-image-item.c:240
+#, fuzzy
 msgid "%m/%d/%y %T"
-msgstr ""
+msgstr "%d. %m. %y - %T"
 
 #. This gets displayed in history when selecting an image
 #: src/libgpaste/core/gpaste-image-item.c:242
 #, c-format
 msgid "[Image, %d x %d (%s)]"
-msgstr ""
+msgstr "[Bilde, %d x %d (%s)]"
 
 #. This is the prefix displayed in history to identify a password
 #: src/libgpaste/core/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "Passord"
 
 #. This is the prefix displayed in history to identify selected files
 #: src/libgpaste/core/gpaste-uris-item.c:104
 msgid "[Files] "
-msgstr ""
+msgstr "[Filer] "
 
 #: src/libgpaste/gpaste-macros.h:98
+#, fuzzy
 msgid "Failed to register the gtk application"
-msgstr ""
+msgstr "Klarte ikke å registrere GTK-programmet"
 
 #: src/libgpaste/gpaste-macros.h:110
 msgid "is already running."
-msgstr ""
+msgstr "kjører allerede."
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
 #: src/libgpaste/ui/gpaste-ui-switch.c:92
 msgid "Track clipboard changes"
-msgstr ""
+msgstr "Spor endringer i utklippstavlen"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
+#, fuzzy
 msgid "Close UI on select"
-msgstr ""
+msgstr "Lukk grensesnitt ved markering"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
+#, fuzzy
 msgid "Enable the gnome-shell extension"
-msgstr ""
+msgstr "Skru på gnome-shell-utvidelsen"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
+#, fuzzy
 msgid "Sync the daemon state with the extension's one"
-msgstr ""
+msgstr "Synkroniser nissetilstanden med utvidelsens"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
+#, fuzzy
 msgid "Primary selection affects history"
-msgstr ""
+msgstr "Primærutvalget har innvirkning på historikk"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
+#, fuzzy
 msgid "Synchronize clipboard with primary selection"
-msgstr ""
+msgstr "Synkroniser utklippstavle med det primære utvalget"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
+#, fuzzy
 msgid "Images support"
-msgstr ""
+msgstr "Bildestøtte"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
 msgid "Trim items"
-msgstr ""
+msgstr "Beskjær elementer"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
 msgid "Detect growing lines"
-msgstr ""
+msgstr "Oppdag voksende linjer"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
 msgid "Save history"
-msgstr ""
+msgstr "Lagre historikk"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
+#, fuzzy
 msgid "Max element size when displaying"
-msgstr ""
+msgstr "Maks. elementstørrelse ved visning"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
 msgid "Max text item length"
-msgstr ""
+msgstr "Maks. tekstelementslengde"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
 msgid "Min text item length"
-msgstr ""
+msgstr "Min. tekstelementslengde"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
 msgid "General behaviour"
-msgstr ""
+msgstr "Generell oppførsel"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
 msgid "History settings"
-msgstr ""
+msgstr "Historikkinnstillinger"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Tastatursnarveier"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
 #: src/libgpaste/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
-msgstr ""
+msgstr "Bytt til"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
@@ -804,111 +922,119 @@ msgstr ""
 #: src/libgpaste/ui/gpaste-ui-delete-history.c:65
 #: src/libgpaste/ui/gpaste-ui-delete-item.c:49
 msgid "Delete"
-msgstr ""
+msgstr "Slett"
 
 #: src/libgpaste/ui/gpaste-ui-about.c:41
 msgid "About"
-msgstr ""
+msgstr "Om"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:43
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:140
+#, fuzzy
 msgid "Backup"
-msgstr ""
+msgstr "Sikkerhetskopi"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:44
 #: src/libgpaste/ui/gpaste-ui-edit-item.c:46
 #: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
 msgid "Cancel"
-msgstr ""
+msgstr "Avbryt"
 
 #: src/libgpaste/ui/gpaste-ui-backup-history.c:47
+#, fuzzy
 msgid "Under which name do you want to backup this history?"
-msgstr ""
+msgstr "Hvilket navn ønsker du å bruke for sikkerhetskopiering av historikken?"
 
 #: src/libgpaste/ui/gpaste-ui-delete-history.c:25
 msgid "Are you sure you want to delete this history?"
-msgstr ""
+msgstr "Er du sikker på at du ønsker å slette denne historikken?"
 
 #: src/libgpaste/ui/gpaste-ui-edit-item.c:45
 #: src/libgpaste/ui/gpaste-ui-edit-item.c:118
 msgid "Edit"
-msgstr ""
+msgstr "Rediger"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/ui/gpaste-ui-empty-history.c:65
 #: src/libgpaste/util/gpaste-util.c:410
 msgid "Empty"
-msgstr ""
+msgstr "Tom"
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
-msgstr ""
+msgstr "(Resultatløst)"
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
-msgstr ""
+msgstr "(Tom)"
 
 #: src/libgpaste/ui/gpaste-ui-empty-item.c:60
 msgid "(Couldn't connect to GPaste daemon)"
-msgstr ""
+msgstr "(Kunne ikke koble til GPaste-nisse)"
 
 #: src/libgpaste/ui/gpaste-ui-new-item.c:31
 #: src/libgpaste/ui/gpaste-ui-new-item.c:83
 msgid "New"
-msgstr ""
+msgstr "Ny"
 
 #: src/libgpaste/ui/gpaste-ui-reexec.c:29
+#, fuzzy
 msgid "Restart"
-msgstr ""
+msgstr "Start på ny"
 
 #: src/libgpaste/ui/gpaste-ui-reexec.c:29
+#, fuzzy
 msgid "Do you really want to restart the daemon?"
-msgstr ""
+msgstr "Ønsker du virkelig å starte nissen på ny?"
 
 #: src/libgpaste/ui/gpaste-ui-reexec.c:55
+#, fuzzy
 msgid "Restart the daemon"
-msgstr ""
+msgstr "Start nissen på ny"
 
 #: src/libgpaste/ui/gpaste-ui-search.c:26
 msgid "Search"
-msgstr ""
+msgstr "Søk"
 
 #: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
 msgid "GPaste Settings"
-msgstr ""
+msgstr "GPaste-innstillinger"
 
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
-msgstr ""
+msgstr "Generelt"
 
 #: src/libgpaste/ui/gpaste-ui-switch.c:54
 msgid "Stop"
-msgstr ""
+msgstr "Stopp"
 
 #: src/libgpaste/ui/gpaste-ui-switch.c:54
+#, fuzzy
 msgid "Do you really want to stop tracking clipboard changes?"
-msgstr ""
+msgstr "Ønsker du virkelig å slutte å spore utklippstavleendringer?"
 
 #: src/libgpaste/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
-msgstr ""
+msgstr "Last opp"
 
 #: src/libgpaste/util/gpaste-util.c:410
 msgid "Do you really want to empty the history?"
-msgstr ""
+msgstr "Ønsker du virkelig å tømme historikken?"
 
 #: src/libgpaste/util/gpaste-util.c:709
+#, fuzzy
 msgid "Could not create history dir"
-msgstr ""
+msgstr "Kunne ikke opprette historikkmappe"
 
 #: src/ui/gpaste-ui.c:106
 msgid "Keyboard Shortcuts"
-msgstr ""
+msgstr "Tastatursnarveier"
 
 #: src/ui/gpaste-ui.c:107
+#, fuzzy
 msgid "About GPaste"
-msgstr ""
+msgstr "Om"
 
 #: src/ui/gpaste-ui.c:108
 msgid "Quit"
-msgstr ""
+msgstr "Avslutt"
