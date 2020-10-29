@@ -8,52 +8,57 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2020-10-22 10:43+0200\n"
-"PO-Revision-Date: 2011-11-20 16:30+0100\n"
-"Last-Translator: Antonio Trujillo <lunatc@gmail.com>\n"
-"Language-Team: Spanish\n"
+"PO-Revision-Date: 2020-10-30 17:26+0000\n"
+"Last-Translator: Adolfo Jayme Barrientos <fitojb@ubuntu.com>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
+">\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Weblate 4.3.2-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
 msgid "GPaste"
-msgstr "Applet GPaste"
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Gestione el histórico de su portapapeles"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste es un sistema de gestión del portapapeles que le permite dar "
+"seguimiento al histórico del portapapeles de una manera altamente "
+"personalizable."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste le brinda una herramienta gráfica para gestionarlo todo de manera "
+"sencilla."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
-msgstr ""
+msgstr "La interfaz principal"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
-#, fuzzy
 msgid "The settings UI"
-msgstr "Ajustes del servicio GPaste"
+msgstr "La interfaz de configuración"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
@@ -67,82 +72,84 @@ msgstr "Ajustes del servicio GPaste"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Esta es una versión de mantenimiento. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 msgid "gnome-shell extension cosmetic updates"
-msgstr ""
+msgstr "Actualizaciones superficiales a la extensión para GNOME Shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
+"Se desactiva la compatibilidad con imágenes de manera predeterminada (puede "
+"reactivarse en la configuración)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 msgid "Search now includes passwords (using their names)"
-msgstr ""
+msgstr "La búsqueda ahora incluye contraseñas (utilizando sus nombres)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid "systemd integration enhancements"
-msgstr ""
+msgstr "Mejoras en la integración con systemd"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
 msgid "First release for GNOME 3.38. Changes:"
-msgstr ""
+msgstr "Primera versión para GNOME 3.38. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 msgid "Drop the Tracking DBus signal"
-msgstr ""
+msgstr "Se desecha la señal Tracking de DBus"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "Switch to uuids to identify items"
-msgstr ""
+msgstr "Se cambia a utilizar UUID para identificar elementos"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
 msgid "Bump DBus interface to org.gnome.GPaste2"
-msgstr ""
+msgstr "Se actualiza la interfaz de DBus a org.gnome.GPaste2"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
 msgid "Update to gnome-shell 3.38.0"
-msgstr ""
+msgstr "Actualización a gnome-shell 3.38.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
-msgstr ""
+msgstr "Se corrige la activación de elementos con Ctrl+número en GNOME Shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
 msgid "Fix keybinding regrab with gnome-shell"
-msgstr ""
+msgstr "Se arregla la recaptación de los vínculos de teclado en GNOME Shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
 msgid "Fix keybinding grab with gnome-shell"
-msgstr ""
+msgstr "Se arregla la captación de los vínculos de teclado en GNOME Shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
 msgid "First release for GNOME 3.36. Changes:"
-msgstr ""
+msgstr "Primera versión para GNOME 3.36. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
 msgid "Update to gnome-shell 3.36.0"
-msgstr ""
+msgstr "Actualización a gnome-shell 3.36.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
 msgid "Compatibility with recent appstream-glib"
-msgstr ""
+msgstr "Compatibilidad con appstream-glib recientes"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
 msgid "First release for GNOME 3.34. Changes:"
-msgstr ""
+msgstr "Primera versión para GNOME 3.34. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
 msgid "Update to gnome-shell 3.34.0"
-msgstr ""
+msgstr "Actualización a gnome-shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
@@ -151,30 +158,26 @@ msgstr ""
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
-#, fuzzy
 msgid "Launch the graphical tool"
-msgstr "iniciar la herramienta de configuración"
+msgstr "Iniciar la herramienta gráfica"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
-#, fuzzy
 msgid "Mark the active item as being a password"
-msgstr "Atajo de teclado para eliminar la primera entrada del historial"
+msgstr "Marca elemento activo como contraseña"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
-#, fuzzy
 msgid "Delete the active item from history"
-msgstr "Eliminar el primer elemento del historial"
+msgstr "Eliminar el elemento activo del histórico"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
 #: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
-#, fuzzy
 msgid "Display the history"
-msgstr "Mostrar el historial"
+msgstr "Mostrar el histórico"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
@@ -237,39 +240,32 @@ msgid "Do we save the images copied to history, or only text?"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
-#, fuzzy
-#| msgid "By default, we're saving it"
 msgid "By default, we're saving only text"
-msgstr "Por omisión se guarda"
+msgstr "De manera predeterminada se guarda solo el texto"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
-#, fuzzy
 msgid "Do we close the UI after selecting an item?"
-msgstr "¿Afecta la selección principal al historial?"
+msgstr "¿Se debe cerrar la interfaz luego de seleccionar un elemento?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
-#, fuzzy
 msgid "By default, we close it"
-msgstr "Por omisión se guarda"
+msgstr "De manera predeterminada se cierra"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
-#, fuzzy
 msgid "The keyboard shortcut to launch the graphical interface"
-msgstr "Atajo de teclado para mostrar el menú"
+msgstr "El atajo de teclado para iniciar la interfaz gráfica"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
-#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
-"Por omisión, pulsando ctrl + alt + v (\"&lt;Ctrl&gt;&lt;Alt&gt;v\"). Una "
-"cadena vacía desactivaría esta funcionalidad."
+"De manera predeterminada, oprimir Ctrl + Alt + G lo hace («<Ctrl><Alt>G»). "
+"Una cadena vacía desactivaría esta funcionalidad."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
-#, fuzzy
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr "Atajo de teclado para eliminar la primera entrada del historial"
+msgstr "El atajo de teclado para marcar el elemento activo como contraseña"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
 #, fuzzy
@@ -302,11 +298,11 @@ msgstr "Número máximo de elementos en el historial"
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
 msgid "Max memory usage (MB)"
-msgstr ""
+msgstr "Uso de memoria máximo (MB)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
 msgid "Maximum amount of memory used to store contents"
-msgstr ""
+msgstr "Cantidad máxima de memoria utilizada para almacenar contenido"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Max text item size"
@@ -540,7 +536,7 @@ msgstr "enviar <texto> al portapapeles"
 
 #: src/client/gpaste-client.c:167
 msgid "password"
-msgstr ""
+msgstr "contraseña"
 
 #: src/client/gpaste-client.c:167
 #, fuzzy
@@ -549,14 +545,12 @@ msgstr "Sincronizar selección principal con el portapapeles: "
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:169
-#, fuzzy
 msgid "old name"
-msgstr "nombre"
+msgstr "nombre anterior"
 
 #: src/client/gpaste-client.c:169
-#, fuzzy
 msgid "new name"
-msgstr "nombre"
+msgstr "nombre nuevo"
 
 #: src/client/gpaste-client.c:169
 msgid "rename the password"
@@ -564,10 +558,8 @@ msgstr ""
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:171
-#, fuzzy
-#| msgid "get the <number>th item from the history"
 msgid "get the item <uuid> from the history"
-msgstr "obtener el elemento número <número> del historial del portapapeles"
+msgstr "obtener el elemento <uuid> del histórico"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:173
@@ -782,25 +774,25 @@ msgstr "%d/%m/%y %T"
 #: src/libgpaste/core/gpaste-image-item.c:242
 #, c-format
 msgid "[Image, %d x %d (%s)]"
-msgstr "[Imagen, %d x %d (%s)]"
+msgstr "[Imagen, %d × %d (%s)]"
 
 #. This is the prefix displayed in history to identify a password
 #: src/libgpaste/core/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "Contraseña"
 
 #. This is the prefix displayed in history to identify selected files
 #: src/libgpaste/core/gpaste-uris-item.c:104
 msgid "[Files] "
-msgstr "[Ficheros] "
+msgstr "[Archivos] "
 
 #: src/libgpaste/gpaste-macros.h:98
 msgid "Failed to register the gtk application"
-msgstr "Fallo al registrar la aplicación gtk"
+msgstr "No se pudo registrar la aplicación GTK"
 
 #: src/libgpaste/gpaste-macros.h:110
 msgid "is already running."
-msgstr ""
+msgstr "ya está ejecutándose."
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
 #: src/libgpaste/ui/gpaste-ui-switch.c:92
