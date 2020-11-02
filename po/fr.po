@@ -8,10 +8,10 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2020-10-22 10:43+0200\n"
-"PO-Revision-Date: 2020-10-24 17:26+0000\n"
+"PO-Revision-Date: 2020-11-03 18:26+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
-"Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/"
-">\n"
+"Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/>"
+"\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -104,7 +104,7 @@ msgstr "Amélioration de l'intégration avec systemd"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:75
 msgid "First release for GNOME 3.38. Changes:"
-msgstr "Première mise à jour pour GNOME 3.38. Changements :"
+msgstr "Première mise à jour pour GNOME 3.38. Changements :"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
 msgid "Drop the Tracking DBus signal"
