@@ -59,99 +59,110 @@ msgid "The settings UI"
 msgstr "Innstillingsgrensesnittet"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:126
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:134
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:142
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:150
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:166
 msgid "This is a maintenance release. Changes:"
 msgstr "Dette er en vedlikeholdsutgivelse. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
+#, fuzzy
+#| msgid "gnome-shell extension cosmetic updates"
+msgid "gnome-shell extension warning fixes"
+msgstr "kosmetiske oppdateringer i gnome-shell-utvidelsen"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+msgid "updated translations"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
 msgid "gnome-shell extension cosmetic updates"
 msgstr "kosmetiske oppdateringer i gnome-shell-utvidelsen"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
 #, fuzzy
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr "Skru av bildestøtte (kan skrus på igjen i innstillingene)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 #, fuzzy
 msgid "Search now includes passwords (using their names)"
 msgstr "Søk inneholder nå passord (ved bruk av navnene deres)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "systemd integration enhancements"
 msgstr "forbedringer i systemd-integrasjon"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:75
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "Første utgave for GNOME 3.38. Endringer:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
 #, fuzzy
 msgid "Drop the Tracking DBus signal"
 msgstr "Ikke bruk sporingssymbolet fra D-Bus"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:78
 #, fuzzy
 msgid "Switch to uuids to identify items"
 msgstr "Byttet til UUID-er for å identifisere elementer"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 #, fuzzy
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "Oppgradering av D-Bus-grensesnitt til org.gnome.GPaste2"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
 msgid "Update to gnome-shell 3.38.0"
 msgstr "Oppgradering til gnome-shell 3.38.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
 #, fuzzy
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr "Fiks aktivering av elementer ved bruk av Ctrl+nummer i gnome-shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:169
 #, fuzzy
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "Fiks av ny opphenting av tastaturhurtigsekvens med gnome-shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
 #, fuzzy
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "Fiks opphenting av tastaturhurtigsekvens med gnome-shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "Første utgave for GNOME 3.36. Endringer:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
 msgid "Update to gnome-shell 3.36.0"
 msgstr "Oppgradering til gnome-shell 3.36.0."
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
 msgid "Compatibility with recent appstream-glib"
 msgstr "Kompabilitet med nyere appstream-glib"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:158
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "Første utgave for GNOME 3.34. Endringer:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
 msgid "Update to gnome-shell 3.34.0"
 msgstr "Oppgradering til gnome-shell 3.34.0"
 
@@ -290,8 +301,8 @@ msgid ""
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
-"Ctrl+Alt+S markerer aktivt element som passord som forvalg (\"<Ctrl><Alt>S\")"
-". La stå tom for å skru av."
+"Ctrl+Alt+S markerer aktivt element som passord som forvalg (\"<Ctrl><Alt>S"
+"\"). La stå tom for å skru av."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
@@ -362,7 +373,8 @@ msgstr "Skal det primære utvalget innvirkning på historikken?"
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
 #, fuzzy
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr "Som forvalg har kun utklippstavlen (Ctrl+C) innvirkning på historikken."
+msgstr ""
+"Som forvalg har kun utklippstavlen (Ctrl+C) innvirkning på historikken."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
 #, fuzzy
@@ -783,7 +795,7 @@ msgid "add the given separator between each item when merging"
 msgstr "legg til gitt inndeler mellom hvert element ved fletting"
 
 #: src/client/gpaste-client.c:330
-#, c-format, fuzzy
+#, fuzzy, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Nisse startet på ny\n"
 

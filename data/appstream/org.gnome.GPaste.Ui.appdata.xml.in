@@ -43,6 +43,15 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.38.3" type="stable" date="2020-11-02">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>gnome-shell extension warning fixes</li>
+                  <li>updated translations</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.38.2" type="stable" date="2020-10-03">
           <description>
               <p>This is a maintenance release. Changes:</p>
