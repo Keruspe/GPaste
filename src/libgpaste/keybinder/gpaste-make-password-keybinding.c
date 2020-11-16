@@ -29,8 +29,12 @@ g_paste_make_password_keybinding_make_password (GPasteKeybinding *self G_GNUC_UN
                                                 gpointer          data)
 {
     GPasteHistory *history = data;
+    const GPasteItem *first = g_paste_history_get (history, 0);
 
-    g_paste_history_set_password (history, 0, NULL);
+    if (!first)
+        return;
+
+    g_paste_history_set_password (history, g_paste_item_get_uuid (first), NULL);
 }
 
 /**
