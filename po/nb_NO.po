@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2020-10-22 10:43+0200\n"
-"PO-Revision-Date: 2020-10-23 10:23+0000\n"
+"PO-Revision-Date: 2020-11-18 09:28+0000\n"
 "Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/gpaste/"
 "gpaste/nb_NO/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.3.1\n"
+"X-Generator: Weblate 4.4-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -81,7 +81,7 @@ msgstr "kosmetiske oppdateringer i gnome-shell-utvidelsen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "updated translations"
-msgstr ""
+msgstr "oppdaterte oversettelser"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
