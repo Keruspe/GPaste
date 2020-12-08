@@ -22,12 +22,8 @@ m4_define([glib_major_required], [2])
 m4_define([glib_minor_required], [64])
 m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_minor_required)])
 m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
-m4_define([gtk3_major_required], [3])
-m4_define([gtk3_minor_required], [24])
-m4_define([gtk3_api_required],   [G_ENCODE_VERSION(gtk3_major_required, gtk3_minor_required)])
-m4_define([gtk3_required],       [gtk3_major_required.gtk3_minor_required.0])
-m4_define([gtk4_major_required], [3])
-m4_define([gtk4_minor_required], [94])
+m4_define([gtk4_major_required], [4])
+m4_define([gtk4_minor_required], [0])
 m4_define([gtk4_api_required],   [G_ENCODE_VERSION(gtk4_major_required, gtk4_minor_required)])
 m4_define([gtk4_required],       [gtk4_major_required.gtk4_minor_required.0])
 
@@ -49,24 +45,16 @@ AC_SUBST([LIBGPASTE_LT_VERSION])
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MIN_REQUIRED], [glib_api_required], [The lowest GLib API version supported])
 AC_DEFINE_UNQUOTED([GLIB_VERSION_MAX_ALLOWED],  [glib_api_required], [The highest GLib API version supported])
 
-AC_ARG_WITH([gtk], AS_HELP_STRING([--with-gtk=3.0|4.0], [GTK API to user]), [], [with_gtk=3.0])
+AC_ARG_WITH([gtk], AS_HELP_STRING([--with-gtk=4], [GTK API to user]), [], [with_gtk=4])
 case "${with_gtk}" in
-    3.0)
-        AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [gtk3_api_required], [The lowest Gdk API version supported])
-        AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],  [gtk3_api_required], [The highest Gdk API version supported])
-        GTK_REQUIRED=gtk3_required
-        GTK_DEP="gtk+-3.0"
-        GDK_DEP="gdk-3.0"
-        GDK_X11_DEP="gdk-x11-3.0"
+    4)
+        AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [gtk4_api_required], [The lowest Gdk API version supported])
+        AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],  [gtk4_api_required], [The highest Gdk API version supported])
+        GTK_REQUIRED=gtk4_required
+        GTK_DEP="gtk4"
+        GDK_DEP="gtk4"
+        GDK_X11_DEP="gtk4-x11"
         ;;
-#    4.0)
-#        AC_DEFINE_UNQUOTED([GDK_VERSION_MIN_REQUIRED], [gtk4_api_required], [The lowest Gdk API version supported])
-#        AC_DEFINE_UNQUOTED([GDK_VERSION_MAX_ALLOWED],  [gtk4_api_required], [The highest Gdk API version supported])
-#        GTK_REQUIRED=gtk4_required
-#        GTK_DEP="gtk+-4.0"
-#        GDK_DEP="gtk+-4.0"
-#        GDK_X11_DEP="gtk+-x11-4.0"
-#        ;;
     *)
         AC_MSG_ERROR([Wrong gtk+ version specified: ${with_gtk}])
         ;;

@@ -12,7 +12,7 @@ GPASTE_VAPI_DEPS =     \
 	gio-2.0        \
 	glib-2.0       \
 	gobject-2.0    \
-	gtk+-3.0       \
+	gtk4           \
 	$(NULL)
 
 $(libgpaste_vapi_deps_file): $(libgpaste_gir_file)

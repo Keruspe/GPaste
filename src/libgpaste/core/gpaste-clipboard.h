@@ -11,6 +11,7 @@
 #ifndef __G_PASTE_CLIPBOARD_H__
 #define __G_PASTE_CLIPBOARD_H__
 
+#include <gpaste-content-provider.h>
 #include <gpaste-history.h>
 
 G_BEGIN_DECLS
@@ -23,14 +24,28 @@ typedef void (*GPasteClipboardTextCallback)  (GPasteClipboard *self,
                                               const gchar     *text,
                                               gpointer         user_data);
 
+typedef void (*GPasteClipboardUrisCallback)  (GPasteClipboard *self,
+                                              const GSList    *files,
+                                              gpointer         user_data);
+
 typedef void (*GPasteClipboardImageCallback) (GPasteClipboard *self,
-                                              GdkPixbuf       *image,
+                                              GdkTexture      *texture,
+                                              gpointer         user_data);
+
+typedef void (*GPasteClipboardUpdateCallack) (GPasteClipboard *clipboard,
+                                              GPasteItem      *item,
+                                              const gchar     *synchronized_text,
+                                              gboolean         something_in_clipboard,
                                               gpointer         user_data);
 
 void          g_paste_clipboard_bootstrap    (GPasteClipboard *self,
                                               GPasteHistory   *history);
+void          g_paste_clipboard_update       (GPasteClipboard             *self,
+                                              GPasteHistory               *history,
+                                              GPasteClipboardUpdateCallack callback,
+                                              gpointer                     user_data);
 gboolean      g_paste_clipboard_is_clipboard (const GPasteClipboard *self);
-GtkClipboard *g_paste_clipboard_get_real     (const GPasteClipboard *self);
+GdkClipboard *g_paste_clipboard_get_real     (const GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_text     (const GPasteClipboard *self);
 void          g_paste_clipboard_set_text     (GPasteClipboard            *self,
                                               GPasteClipboardTextCallback callback,
@@ -40,7 +55,6 @@ void          g_paste_clipboard_select_text  (GPasteClipboard *self,
 void          g_paste_clipboard_sync_text    (const GPasteClipboard *self,
                                               GPasteClipboard       *other);
 void          g_paste_clipboard_clear        (GPasteClipboard *self);
-void          g_paste_clipboard_store        (GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_image_checksum (const GPasteClipboard *self);
 void          g_paste_clipboard_set_image          (GPasteClipboard             *self,
                                                     GPasteClipboardImageCallback callback,
@@ -50,8 +64,10 @@ gboolean      g_paste_clipboard_select_item        (GPasteClipboard *self,
 void          g_paste_clipboard_ensure_not_empty   (GPasteClipboard *self,
                                                     GPasteHistory   *history);
 
-GPasteClipboard *g_paste_clipboard_new_clipboard (GPasteSettings *settings);
-GPasteClipboard *g_paste_clipboard_new_primary   (GPasteSettings *settings);
+GPasteClipboard *g_paste_clipboard_new_clipboard (GPasteSettings        *settings,
+                                                  GPasteContentProvider *content_provider);
+GPasteClipboard *g_paste_clipboard_new_primary   (GPasteSettings        *settings,
+                                                  GPasteContentProvider *content_provider);
 
 G_END_DECLS
 

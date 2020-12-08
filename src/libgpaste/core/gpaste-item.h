@@ -11,7 +11,7 @@
 #ifndef __G_PASTE_ITEM_H__
 #define __G_PASTE_ITEM_H__
 
-#include <gpaste-special-atom.h>
+#include <gpaste-special-mime.h>
 
 G_BEGIN_DECLS
 
@@ -21,8 +21,8 @@ typedef enum {
 } GPasteItemState;
 
 typedef struct {
-    GPasteSpecialAtom mime;
-    gchar            *data;
+    const gchar *mime;
+    gchar       *data;
 } GPasteSpecialValue;
 
 #define G_PASTE_TYPE_ITEM (g_paste_item_get_type ())
@@ -48,8 +48,8 @@ const gchar  *g_paste_item_get_uuid           (const GPasteItem *self);
 const gchar  *g_paste_item_get_value          (const GPasteItem *self);
 const gchar  *g_paste_item_get_real_value     (const GPasteItem *self);
 const GSList *g_paste_item_get_special_values (const GPasteItem *self);
-const gchar  *g_paste_item_get_special_value  (const GPasteItem *self,
-                                               GPasteSpecialAtom atom);
+const gchar  *g_paste_item_get_special_value  (GPasteItem       *self,
+                                               GPasteSpecialMime mime);
 const gchar  *g_paste_item_get_display_string (const GPasteItem *self);
 gboolean      g_paste_item_equals             (const GPasteItem *self,
                                                const GPasteItem *other);

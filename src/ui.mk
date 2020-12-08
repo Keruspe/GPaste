@@ -78,6 +78,13 @@ bin_gpaste_ui_SOURCES =                     \
 	%D%/ui/tmp/gpaste-item-enums.h \
 	$(NULL)
 
+bin_gpaste_ui_CPPFLAGS = \
+	-include config.h                            \
+	-I$(srcdir)/src/libgpaste                    \
+	-DG_PASTE_COMPILATION                        \
+	-DLOCALEDIR=\"$(localedir)\"                 \
+	$(NULL)
+
 bin_gpaste_ui_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(GTK3_CFLAGS)  \

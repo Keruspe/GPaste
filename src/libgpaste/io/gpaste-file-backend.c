@@ -29,7 +29,7 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
     for (const GSList *val = special_values; val; val = val->next)
     {
         const GPasteSpecialValue *value = val->data;
-        const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), value->mime)->value_nick;
+        const gchar *mime = value->mime;
         g_autofree gchar *text = g_paste_util_xml_encode (value->data);
 
         if (!g_output_stream_write_all (stream, "    <value mime=\"", 17, NULL, NULL /* cancellable */, NULL /* error */) ||
@@ -141,20 +141,20 @@ typedef enum
 
 typedef struct
 {
-    GList            *history;
-    gsize             mem_size;
-    State             state;
-    Type              type;
-    guint64           current_size;
-    guint64           max_size;
-    gboolean          images_support;
-    gchar            *uuid;
-    gchar            *date;
-    gchar            *name;
-    gchar            *text;
-    GSList           *special_values;
-    HistoryVersion    version;
-    GPasteSpecialAtom mime;
+    GList         *history;
+    gsize          mem_size;
+    State          state;
+    Type           type;
+    guint64        current_size;
+    guint64        max_size;
+    gboolean       images_support;
+    gchar         *uuid;
+    gchar         *date;
+    gchar         *name;
+    gchar         *text;
+    GSList        *special_values;
+    HistoryVersion version;
+    const gchar   *mime;
 } Data;
 
 #define ASSERT_STATE(x)                                                                               \
@@ -269,23 +269,29 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     else if (g_paste_str_equal (element_name, "value"))
     {
         SWITCH_STATE (IN_ITEM, IN_VALUE);
-        data->mime = G_PASTE_SPECIAL_ATOM_INVALID;
+        data->mime = NULL;
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (g_paste_str_equal (*a, "mime"))
-            {
-                GEnumValue *gev = g_enum_get_value_by_nick (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), *v);
-                if (gev)
-                    data->mime = gev->value;
-                else
-                    g_warning ("Unknown mime: %s", *v);
-            }
+                data->mime = gdk_intern_mime_type (*v);
         }
     }
     else
     {
         g_warning ("Unknown element: %s", element_name);
     }
+}
+
+static GSList *
+parse_uris (const gchar *text)
+{
+    g_auto (GStrv) uris = g_uri_list_extract_uris (text);
+    GSList *files = NULL;
+
+    for (gsize i = 0; uris[i] != NULL; ++i)
+        files = g_slist_prepend (files, g_file_new_for_uri (uris[i]));
+
+    return g_slist_reverse (files);
 }
 
 static void
@@ -299,7 +305,11 @@ add_item (Data *data)
         item = g_paste_text_item_new (data->text);
         break;
     case URIS:
-        item = g_paste_uris_item_new (data->text);
+        {
+            GSList *uris = parse_uris (data->text);
+            item = g_paste_uris_item_new (uris);
+            g_slist_free_full (uris, g_object_unref);
+        }
         break;
     case PASSWORD:
         item = g_paste_password_item_new (data->name, data->text);
@@ -438,7 +448,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
             if (*g_strstrip (txt))
             {
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
-                if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID)
+                if (data->mime == NULL)
                 {
                     g_free (data->text);
                     data->text = value;
@@ -512,7 +522,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             NULL,
             NULL,
             HISTORY_INVALID,
-            G_PASTE_SPECIAL_ATOM_INVALID
+            NULL
         };
         GMarkupParseContext *ctx = g_markup_parse_context_new (&parser,
                                                                G_MARKUP_TREAT_CDATA_AS_TEXT,

@@ -20,7 +20,6 @@ typedef struct
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiPanel, settings_ui_panel, GTK_TYPE_GRID)
 
 #define CALLBACK_DATA(w)                                                                              \
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);       \
     _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc0 (sizeof (_CallbackDataWrapper)); \
     CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                        \
     priv->callback_data = g_slist_prepend (priv->callback_data, _data);                               \
@@ -73,22 +72,19 @@ static GtkLabel *
 g_paste_settings_ui_panel_add_label (GPasteSettingsUiPanel *self,
                                      const gchar           *label)
 {
-    GtkWidget *button_label = gtk_widget_new (GTK_TYPE_LABEL,
-                                              "label",  label,
-                                              "xalign", 0.0,
-                                              NULL);
-
+    GtkWidget *widget = gtk_label_new (label);
+    GtkLabel *button_label = (GtkLabel *) widget;
     GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
 
-    gtk_widget_set_hexpand (button_label, TRUE);
-    gtk_grid_attach (GTK_GRID (self), button_label, 0, priv->current_line++, 1, 1);
+    gtk_label_set_xalign (button_label, 0.0);
+    gtk_widget_set_hexpand (widget, TRUE);
+    gtk_grid_attach (GTK_GRID (self), widget, 0, priv->current_line++, 1, 1);
 
-    return GTK_LABEL (button_label);
+    return button_label;
 }
 
 static gboolean
 g_paste_settings_ui_panel_on_reset_pressed (GtkWidget       *widget G_GNUC_UNUSED,
-                                            GdkEventButton  *event  G_GNUC_UNUSED,
                                             gpointer         user_data)
 {
     G_PASTE_RESET_CALLBACK () (data->custom_data);
@@ -98,9 +94,9 @@ g_paste_settings_ui_panel_on_reset_pressed (GtkWidget       *widget G_GNUC_UNUSE
 static GtkWidget *
 g_paste_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
 {
-    data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic", GTK_ICON_SIZE_BUTTON);
+    data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic");
     data->c_signals[C_W_RESET] = g_signal_connect (data->reset_widget,
-                                                   "button-press-event",
+                                                   "clicked",
                                                    G_CALLBACK (g_paste_settings_ui_panel_on_reset_pressed),
                                                    data);
     if (!((CallbackDataWrapper *) data)->reset_cb)
@@ -128,6 +124,7 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
                                                GPasteResetCallback    on_reset,
                                                gpointer               user_data)
 {
+    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
     GtkGrid *grid = GTK_GRID (self);
     GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *widget = gtk_switch_new ();
@@ -189,6 +186,7 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
                                              GPasteResetCallback    on_reset,
                                              gpointer               user_data)
 {
+    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
     GtkGrid *grid = GTK_GRID (self);
     GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *button = gtk_spin_button_new_with_range (min, max, step);
@@ -208,7 +206,7 @@ static void
 text_wrapper (GtkEditable *editable,
               gpointer     user_data)
 {
-    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (editable)), data->custom_data);
+    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_buffer_get_text (gtk_entry_get_buffer (GTK_ENTRY (editable))), data->custom_data);
 }
 
 /**
@@ -231,6 +229,7 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
                                             GPasteResetCallback    on_reset,
                                             gpointer               user_data)
 {
+    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
     GtkGrid *grid = GTK_GRID (self);
     GtkLabel *entry_label = g_paste_settings_ui_panel_add_label (self, label);
     GtkWidget *entry = gtk_entry_new ();
@@ -238,9 +237,9 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
     CALLBACK_DATA (entry);
 
     gtk_widget_set_hexpand (entry, TRUE);
-    gtk_entry_set_text (e, value);
+    gtk_entry_buffer_set_text (gtk_entry_get_buffer (e), value, -1);
     _data->c_signals[C_W_ACTION] = g_signal_connect (GTK_EDITABLE (entry), "changed", G_CALLBACK (text_wrapper), data);
-    gtk_grid_attach_next_to (GTK_GRID (self), entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);
+    gtk_grid_attach_next_to (grid, entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);
     if (on_reset)
         gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), entry, GTK_POS_RIGHT, 1, 1);
 
@@ -280,11 +279,10 @@ static void
 g_paste_settings_ui_panel_init (GPasteSettingsUiPanel *self)
 {
     GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
+    GtkGrid *grid = GTK_GRID (self);
 
     priv->callback_data = NULL;
     priv->current_line = 0;
-
-    GtkGrid *grid = GTK_GRID (self);
 
     gtk_grid_set_column_spacing (grid, 10);
     gtk_grid_set_row_spacing (grid, 10);
@@ -300,5 +298,5 @@ g_paste_settings_ui_panel_init (GPasteSettingsUiPanel *self)
  */
 G_PASTE_VISIBLE GPasteSettingsUiPanel *
 g_paste_settings_ui_panel_new (void) {
-    return G_PASTE_SETTINGS_UI_PANEL (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_PANEL, NULL));
+    return G_PASTE_SETTINGS_UI_PANEL (g_object_new (G_PASTE_TYPE_SETTINGS_UI_PANEL, NULL));
 }

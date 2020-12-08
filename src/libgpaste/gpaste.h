@@ -15,11 +15,12 @@
 /* Core GPaste Components */
 #include <gpaste-clipboard.h>
 #include <gpaste-clipboards-manager.h>
+#include <gpaste-content-provider.h>
 #include <gpaste-history.h>
 #include <gpaste-image-item.h>
 #include <gpaste-item.h>
 #include <gpaste-password-item.h>
-#include <gpaste-special-atom.h>
+#include <gpaste-special-mime.h>
 #include <gpaste-text-item.h>
 #include <gpaste-uris-item.h>
 
