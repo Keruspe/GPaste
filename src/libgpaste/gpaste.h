@@ -74,32 +74,6 @@
 #include <gpaste-settings-ui-stack.h>
 #include <gpaste-settings-ui-widget.h>
 
-/* GPasteUi */
-#include <gpaste-ui-about.h>
-#include <gpaste-ui-backup-history.h>
-#include <gpaste-ui-delete-item.h>
-#include <gpaste-ui-delete-history.h>
-#include <gpaste-ui-edit-item.h>
-#include <gpaste-ui-empty-history.h>
-#include <gpaste-ui-empty-item.h>
-#include <gpaste-ui-header.h>
-#include <gpaste-ui-history.h>
-#include <gpaste-ui-history-action.h>
-#include <gpaste-ui-history-actions.h>
-#include <gpaste-ui-item.h>
-#include <gpaste-ui-item-action.h>
-#include <gpaste-ui-item-skeleton.h>
-#include <gpaste-ui-panel.h>
-#include <gpaste-ui-panel-history.h>
-#include <gpaste-ui-reexec.h>
-#include <gpaste-ui-search.h>
-#include <gpaste-ui-search-bar.h>
-#include <gpaste-ui-settings.h>
-#include <gpaste-ui-shortcuts-window.h>
-#include <gpaste-ui-switch.h>
-#include <gpaste-ui-upload-item.h>
-#include <gpaste-ui-window.h>
-
 #undef __G_PASTE_H_INSIDE__
 
 #endif /*__G_PASTE_H__*/

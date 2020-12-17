@@ -52,31 +52,6 @@ lib_libgpaste_la_public_headers =                                             \
 	%D%/libgpaste/settings-ui/gpaste-settings-ui-panel.h                  \
 	%D%/libgpaste/settings-ui/gpaste-settings-ui-stack.h                  \
 	%D%/libgpaste/settings-ui/gpaste-settings-ui-widget.h                 \
-	%D%/libgpaste/ui/gpaste-ui-about.h                                    \
-	%D%/libgpaste/ui/gpaste-ui-backup-history.h                           \
-	%D%/libgpaste/ui/gpaste-ui-delete-history.h                           \
-	%D%/libgpaste/ui/gpaste-ui-delete-item.h                              \
-	%D%/libgpaste/ui/gpaste-ui-edit-item.h                                \
-	%D%/libgpaste/ui/gpaste-ui-empty-history.h                            \
-	%D%/libgpaste/ui/gpaste-ui-empty-item.h                               \
-	%D%/libgpaste/ui/gpaste-ui-header.h                                   \
-	%D%/libgpaste/ui/gpaste-ui-history.h                                  \
-	%D%/libgpaste/ui/gpaste-ui-history-action.h                           \
-	%D%/libgpaste/ui/gpaste-ui-history-actions.h                          \
-	%D%/libgpaste/ui/gpaste-ui-item.h                                     \
-	%D%/libgpaste/ui/gpaste-ui-item-action.h                              \
-	%D%/libgpaste/ui/gpaste-ui-item-skeleton.h                            \
-	%D%/libgpaste/ui/gpaste-ui-new-item.h                                 \
-	%D%/libgpaste/ui/gpaste-ui-panel.h                                    \
-	%D%/libgpaste/ui/gpaste-ui-panel-history.h                            \
-	%D%/libgpaste/ui/gpaste-ui-reexec.h                                   \
-	%D%/libgpaste/ui/gpaste-ui-search.h                                   \
-	%D%/libgpaste/ui/gpaste-ui-search-bar.h                               \
-	%D%/libgpaste/ui/gpaste-ui-settings.h                                 \
-	%D%/libgpaste/ui/gpaste-ui-shortcuts-window.h                         \
-	%D%/libgpaste/ui/gpaste-ui-switch.h                                   \
-	%D%/libgpaste/ui/gpaste-ui-upload-item.h                              \
-	%D%/libgpaste/ui/gpaste-ui-window.h                                   \
 	$(NULL)
 
 lib_libgpaste_la_source_files =                                               \
@@ -114,31 +89,6 @@ lib_libgpaste_la_source_files =                                               \
 	%D%/libgpaste/settings-ui/gpaste-settings-ui-panel.c                  \
 	%D%/libgpaste/settings-ui/gpaste-settings-ui-stack.c                  \
 	%D%/libgpaste/settings-ui/gpaste-settings-ui-widget.c                 \
-	%D%/libgpaste/ui/gpaste-ui-about.c                                    \
-	%D%/libgpaste/ui/gpaste-ui-backup-history.c                           \
-	%D%/libgpaste/ui/gpaste-ui-delete-history.c                           \
-	%D%/libgpaste/ui/gpaste-ui-delete-item.c                              \
-	%D%/libgpaste/ui/gpaste-ui-edit-item.c                                \
-	%D%/libgpaste/ui/gpaste-ui-empty-history.c                            \
-	%D%/libgpaste/ui/gpaste-ui-empty-item.c                               \
-	%D%/libgpaste/ui/gpaste-ui-header.c                                   \
-	%D%/libgpaste/ui/gpaste-ui-history.c                                  \
-	%D%/libgpaste/ui/gpaste-ui-history-action.c                           \
-	%D%/libgpaste/ui/gpaste-ui-history-actions.c                          \
-	%D%/libgpaste/ui/gpaste-ui-item.c                                     \
-	%D%/libgpaste/ui/gpaste-ui-item-action.c                              \
-	%D%/libgpaste/ui/gpaste-ui-item-skeleton.c                            \
-	%D%/libgpaste/ui/gpaste-ui-new-item.c                                 \
-	%D%/libgpaste/ui/gpaste-ui-panel.c                                    \
-	%D%/libgpaste/ui/gpaste-ui-panel-history.c                            \
-	%D%/libgpaste/ui/gpaste-ui-reexec.c                                   \
-	%D%/libgpaste/ui/gpaste-ui-search.c                                   \
-	%D%/libgpaste/ui/gpaste-ui-search-bar.c                               \
-	%D%/libgpaste/ui/gpaste-ui-settings.c                                 \
-	%D%/libgpaste/ui/gpaste-ui-shortcuts-window.c                         \
-	%D%/libgpaste/ui/gpaste-ui-switch.c                                   \
-	%D%/libgpaste/ui/gpaste-ui-upload-item.c                              \
-	%D%/libgpaste/ui/gpaste-ui-window.c                                   \
 	%D%/libgpaste/util/gpaste-util.c                                      \
 	$(NULL)
 
