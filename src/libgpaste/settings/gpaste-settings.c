@@ -377,7 +377,7 @@ UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE)
 /**
  * g_paste_settings_set_max_memory_usage:
  * @self: a #GPasteSettings instance
- * @value: the maximum amout of memory we can use
+ * @value: the maximum amount of memory we can use
  *
  * Change the "max-memory-usage" setting
  */
