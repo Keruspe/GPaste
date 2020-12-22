@@ -2,14 +2,14 @@
 ##
 ## Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
-m4_define([gpaste_version],      [3.38.3])
+m4_define([gpaste_version],      [3.38.4])
 
 # Update gpaste_lt_version before each release (and only then)
 # The format is C:R:A (current revision age)
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-m4_define([gpaste_lt_version],   [13:0:0])
+m4_define([gpaste_lt_version],   [13:1:0])
 
 # Build system requirements
 m4_define([autoconf_required],   [2.69])
