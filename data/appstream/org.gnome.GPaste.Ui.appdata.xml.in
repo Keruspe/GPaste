@@ -43,6 +43,15 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.38.4" type="stable" date="2020-12-22">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix the make-password keybinding</li>
+                  <li>updated translations</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.38.3" type="stable" date="2020-11-02">
           <description>
               <p>This is a maintenance release. Changes:</p>
