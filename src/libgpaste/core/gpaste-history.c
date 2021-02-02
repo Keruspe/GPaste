@@ -525,8 +525,10 @@ g_paste_history_dup (GPasteHistory *self,
  * @uuid: the uuid of the #GPasteItem to select
  *
  * Select a #GPasteItem from the #GPasteHistory
+ *
+ * Returns: whether the item could be selected
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_history_select (GPasteHistory *self,
                         const gchar   *uuid)
 {
@@ -535,11 +537,12 @@ g_paste_history_select (GPasteHistory *self,
 
     GPasteItem *item = g_paste_history_private_get_by_uuid (_g_paste_history_get_instance_private (self), uuid);
 
-    if (item)
-    {
-        _g_paste_history_add (self, item, FALSE);
-        g_paste_history_selected (self, item);
-    }
+    if (!item)
+        return FALSE;
+
+    _g_paste_history_add (self, item, FALSE);
+    g_paste_history_selected (self, item);
+    return TRUE;
 }
 
 static void
