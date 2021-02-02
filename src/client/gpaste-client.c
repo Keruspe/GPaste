@@ -14,11 +14,13 @@ typedef struct {
     gint          argc;
     const gchar **args;
     gchar        *pipe_data;
+    const gchar  *uuid;
     gboolean      help;
     gboolean      version;
     gboolean      oneline;
     gboolean      raw;
     gboolean      reverse;
+    gboolean      use_index;
     gboolean      zero;
     const gchar  *decoration;
     const gchar  *separator;
@@ -40,13 +42,14 @@ parse_cmdline (int     *argc,
         { "raw",        no_argument,       NULL,  'r'  },
         { "reverse",    no_argument,       NULL,  'e'  },
         { "separator",  required_argument, NULL,  's'  },
+        { "use-index",  no_argument,       NULL,  'i'  },
         { "version",    no_argument,       NULL,  'v'  },
         { "zero",       no_argument,       NULL,  'z'  },
         { NULL,         no_argument,       NULL,  '\0' }
     };
     gint64 c;
 
-    while ((c = getopt_long(*argc, *argv, "d:hores:vz", long_options, NULL)) != -1)
+    while ((c = getopt_long(*argc, *argv, "d:hores:ivz", long_options, NULL)) != -1)
     {
         switch (c)
         {
@@ -67,6 +70,9 @@ parse_cmdline (int     *argc,
             break;
         case 's':
             ctx->separator = optarg;
+            break;
+        case 'i':
+            ctx->use_index = TRUE;
             break;
         case 'v':
             ctx->version = TRUE;
@@ -148,7 +154,7 @@ show_help (void)
 
     printf (_("Usage:\n"));
     /* Translators: help for gpaste history */
-    printf ("  %s [history]: %s\n", progname, _("print the history with indexes"));
+    printf ("  %s [history]: %s\n", progname, _("print the history with uuids"));
     /* Translators: help for gpaste history-size */
     printf ("  %s history-size: %s\n", progname, _("print the size of the history"));
     /* Translators: help for gpaste get-history */
@@ -211,6 +217,12 @@ show_help (void)
     printf ("  %s help: %s\n", progname, _("display this help"));
     /* Translators: help for gpaste about */
     printf ("  %s about: %s\n", progname, _("display the about dialog"));
+
+    printf("\n");
+    printf(_("Convenience options:"));
+    printf("\n");
+    /* Translators: help for --use-index */
+    printf("  --index: %s\n", _("use the index of the item instead of its uuid"));
 
     printf("\n");
     printf(_("Display options:"));
@@ -518,7 +530,7 @@ static gint
 g_paste_delete (Context *ctx,
                 GError **error)
 {
-    g_paste_client_delete_sync (ctx->client, ctx->args[0], error);
+    g_paste_client_delete_sync (ctx->client, ctx->uuid, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -545,7 +557,7 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    g_autofree gchar *value = ((ctx->raw) ? g_paste_client_get_raw_element_sync : g_paste_client_get_element_sync) (ctx->client, ctx->args[0], error);
+    g_autofree gchar *value = ((ctx->raw) ? g_paste_client_get_raw_element_sync : g_paste_client_get_element_sync) (ctx->client, ctx->uuid, error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -564,7 +576,7 @@ g_paste_replace (Context *ctx,
     if (!data)
         return EXIT_FAILURE;
 
-    g_paste_client_replace_sync (ctx->client, ctx->args[0], data, error);
+    g_paste_client_replace_sync (ctx->client, ctx->uuid, data, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -596,7 +608,7 @@ static gint
 g_paste_select (Context *ctx,
                 GError **error)
 {
-    g_paste_client_select_sync (ctx->client, ctx->args[0], error);
+    g_paste_client_select_sync (ctx->client, ctx->uuid, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -614,7 +626,7 @@ static gint
 g_paste_upload (Context *ctx,
                 GError **error)
 {
-    g_paste_client_upload_sync (ctx->client, ctx->args[0], error);
+    g_paste_client_upload_sync (ctx->client, ctx->uuid, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -632,7 +644,7 @@ static gint
 g_paste_set_password (Context *ctx,
                       GError **error)
 {
-    g_paste_client_set_password_sync (ctx->client, ctx->args[0], ctx->args[1], error);
+    g_paste_client_set_password_sync (ctx->client, ctx->uuid, ctx->args[1], error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -763,30 +775,43 @@ main (gint argc, gchar *argv[])
     g_set_prgname (argv[0]);
 
     g_autoptr (GError) error = NULL;
-    Context ctx = { NULL, 0, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
-    gint status;
+    Context ctx = { NULL, 0, NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, NULL, NULL };
+    gint status = EXIT_SUCCESS;
 
     if (parse_cmdline (&argc, &argv, &ctx))
     {
         g_autoptr (GPasteClient) client = ctx.client = g_paste_client_new_sync (&error);
         g_autofree gchar *pipe_data = ctx.pipe_data = extract_pipe_data ();
+        g_autofree gchar *uuid = NULL;
 
-        status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
+        if (ctx.use_index && ctx.argc > 0)
+        {
+            g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_sync (ctx.client, g_ascii_strtoull (ctx.args[0], NULL, 10), &error);
+
+            if (!error)
+            {
+                ctx.uuid = uuid = g_strdup (g_paste_client_item_get_uuid (item));
+            }
+        }
+        else
+        {
+            ctx.uuid = ctx.args[0];
+        }
+
+        if (!error)
+        {
+            status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
+        }
+
+        if (error)
+        {
+            g_critical ("%s\n", (error) ? error->message : _("Couldn't connect to GPaste daemon"));
+            status = EXIT_FAILURE;
+        }
     }
     else
     {
-        status = -1;
-    }
-
-    if (status < 0)
-    {
         show_help ();
-        status = EXIT_FAILURE;
-    }
-
-    if (error)
-    {
-        g_critical ("%s\n", (error) ? error->message : _("Couldn't connect to GPaste daemon"));
         status = EXIT_FAILURE;
     }
 
