@@ -532,7 +532,7 @@ G_PASTE_VISIBLE gboolean
 g_paste_history_select (GPasteHistory *self,
                         const gchar   *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
     g_debug ("history: select '%s'", uuid);
 
     GPasteItem *item = g_paste_history_private_get_by_uuid (_g_paste_history_get_instance_private (self), uuid);
