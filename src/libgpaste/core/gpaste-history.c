@@ -535,8 +535,11 @@ g_paste_history_select (GPasteHistory *self,
 
     GPasteItem *item = g_paste_history_private_get_by_uuid (_g_paste_history_get_instance_private (self), uuid);
 
-    _g_paste_history_add (self, item, FALSE);
-    g_paste_history_selected (self, item);
+    if (item)
+    {
+        _g_paste_history_add (self, item, FALSE);
+        g_paste_history_selected (self, item);
+    }
 }
 
 static void
