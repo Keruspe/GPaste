@@ -32,7 +32,7 @@ const GPasteItem *g_paste_history_get_by_uuid        (GPasteHistory *self,
                                                       const gchar   *uuid);
 GPasteItem       *g_paste_history_dup                (GPasteHistory *self,
                                                       guint64        index);
-void              g_paste_history_select             (GPasteHistory *self,
+gboolean          g_paste_history_select             (GPasteHistory *self,
                                                       const gchar   *uuid);
 void              g_paste_history_replace            (GPasteHistory *self,
                                                       const gchar   *uuid,

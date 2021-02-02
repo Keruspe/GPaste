@@ -706,12 +706,13 @@ g_paste_daemon_private_search (const GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_select (const GPasteDaemon *self,
-                       GVariant           *parameters)
+                       GVariant           *parameters,
+                       GPasteDBusError          **err)
 {
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_paste_history_select (priv->history, uuid);
+    G_PASTE_DBUS_ASSERT (g_paste_history_select (priv->history, uuid), "Provided uuid doesn't match any item.");
 }
 
 static void
@@ -928,7 +929,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SEARCH))
         answer = g_paste_daemon_private_search (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SELECT))
-        g_paste_daemon_select (self, parameters);
+        g_paste_daemon_select (self, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SET_PASSWORD))
         g_paste_daemon_private_set_password (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_SHOW_HISTORY))
