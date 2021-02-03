@@ -361,11 +361,12 @@ g_paste_daemon_private_backup_history (const GPasteDaemonPrivate *priv,
 
 static void
 g_paste_daemon_private_delete (const GPasteDaemonPrivate *priv,
-                               GVariant                  *parameters)
+                               GVariant                  *parameters,
+                               GPasteDBusError          **err)
 {
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_paste_history_remove_by_uuid (priv->history, uuid);
+    G_PASTE_DBUS_ASSERT (g_paste_history_remove_by_uuid (priv->history, uuid), "Provided uuid doesn't match any item.");
 }
 
 static void
@@ -426,7 +427,7 @@ g_paste_daemon_private_get_element (const GPasteDaemonPrivate *priv,
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
-    G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this uuid", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (item, "Provided uuid doesn't match any item.", NULL);
 
     GVariant *variant = g_variant_new_string (g_paste_item_get_display_string (item));
     return g_variant_new_tuple (&variant, 1);
@@ -558,7 +559,7 @@ g_paste_daemon_private_get_raw_element (const GPasteDaemonPrivate *priv,
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
     const GPasteItem *item = g_paste_history_get_by_uuid (priv->history, uuid);
 
-    G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this uuid", NULL);
+    G_PASTE_DBUS_ASSERT_FULL (item, "Provided uuid doesn't match any item.", NULL);
 
     GVariant *variant = g_variant_new_string (g_paste_item_get_value (item));
     return g_variant_new_tuple (&variant, 1);
@@ -731,7 +732,7 @@ g_paste_daemon_private_replace (const GPasteDaemonPrivate *priv,
 
     const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
-    G_PASTE_DBUS_ASSERT (item, "received no item for this index");
+    G_PASTE_DBUS_ASSERT (item, "Provided uuid doesn't match any item.");
     G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
@@ -757,7 +758,7 @@ g_paste_daemon_private_set_password (const GPasteDaemonPrivate *priv,
     const gchar *uuid = g_variant_get_string (variant1, NULL);
     const GPasteItem *item = g_paste_history_get_by_uuid (history, uuid);
 
-    G_PASTE_DBUS_ASSERT (item, "received no item for this uuid");
+    G_PASTE_DBUS_ASSERT (item, "Provided uuid doesn't match any item.");
     G_PASTE_DBUS_ASSERT (_G_PASTE_IS_TEXT_ITEM (item) && g_paste_str_equal (g_paste_item_get_kind (item), "Text"), "attempted to replace an item other than GPasteTextItem");
 
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (&parameters_iter);
@@ -807,18 +808,20 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
  * @uuid: the uuid of the item to upload
  *
  * Upload an item to a pastebin service
+ *
+ * Returns: whether there was something to upload
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_daemon_upload (GPasteDaemon *self,
                        const gchar  *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+    g_return_val_if_fail (_G_PASTE_IS_DAEMON (self), FALSE);
 
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     const GPasteItem *item = (uuid) ? g_paste_history_get_by_uuid (priv->history, uuid) : g_paste_history_get (priv->history, 0);
 
     if (!item)
-        return;
+        return FALSE;
 
     GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, NULL, "wgetpaste", NULL);
     const gchar *value = g_paste_item_get_value (item);
@@ -828,15 +831,17 @@ g_paste_daemon_upload (GPasteDaemon *self,
                                          NULL, /* cancellable */
                                          g_paste_daemon_private_upload_finish,
                                          priv);
+    return TRUE;
 }
 
 static void
-_g_paste_daemon_upload (GPasteDaemon *self,
-                        GVariant     *parameters)
+_g_paste_daemon_upload (GPasteDaemon     *self,
+                        GVariant         *parameters,
+                        GPasteDBusError **err)
 {
     g_autofree gchar *uuid = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
-    g_paste_daemon_upload (self, uuid);
+    G_PASTE_DBUS_ASSERT (g_paste_daemon_upload (self, uuid), "Provided uuid doesn't match any item.");
 }
 
 static void
@@ -889,7 +894,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_BACKUP_HISTORY))
         g_paste_daemon_private_backup_history (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE))
-        g_paste_daemon_private_delete (priv, parameters);
+        g_paste_daemon_private_delete (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_HISTORY))
         g_paste_daemon_private_delete_history (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_DELETE_PASSWORD))
@@ -939,7 +944,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_TRACK))
         g_paste_daemon_track (self, parameters);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_UPLOAD))
-        _g_paste_daemon_upload (self, parameters);
+        _g_paste_daemon_upload (self, parameters, &err);
 
     if (error)
         g_dbus_method_invocation_take_error (invocation, error);

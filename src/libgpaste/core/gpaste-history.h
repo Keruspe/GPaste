@@ -24,7 +24,7 @@ void              g_paste_history_add                (GPasteHistory *self,
                                                       GPasteItem    *item);
 void              g_paste_history_remove             (GPasteHistory *self,
                                                       guint64        index);
-void              g_paste_history_remove_by_uuid     (GPasteHistory *self,
+gboolean          g_paste_history_remove_by_uuid     (GPasteHistory *self,
                                                       const gchar   *uuid);
 const GPasteItem *g_paste_history_get                (GPasteHistory *self,
                                                       guint64        index);

@@ -403,12 +403,14 @@ g_paste_history_remove (GPasteHistory *self,
  * @uuid: the uuid of the #GPasteItem to delete
  *
  * Delete a #GPasteItem from the #GPasteHistory
+ *
+ * Returns: whether we removed anything
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE gboolean
 g_paste_history_remove_by_uuid (GPasteHistory *self,
                                 const gchar   *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
@@ -417,7 +419,11 @@ g_paste_history_remove_by_uuid (GPasteHistory *self,
     guint64 index;
     GList *item = g_paste_history_private_get_item_by_uuid (priv, uuid, &index);
 
+    if (!item)
+        return FALSE;
+
     g_paste_history_remove_common (self, priv, item, index);
+    return TRUE;
 }
 /**
  * g_paste_history_refresh_item_size:
