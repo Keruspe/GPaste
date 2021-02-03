@@ -410,7 +410,7 @@ G_PASTE_VISIBLE gboolean
 g_paste_history_remove_by_uuid (GPasteHistory *self,
                                 const gchar   *uuid)
 {
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 

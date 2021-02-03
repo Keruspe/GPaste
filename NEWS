@@ -1,3 +1,9 @@
+NEW in 3.38.5 (03/02/2021)
+=============
+
+- better handling and reporting of invalid uuids passed to gpaste-client
+- gpaste-client now has a --use-index argument for several subcommands to use index instead of uuid
+
 NEW in 3.38.4 (22/12/2020)
 =============
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2020-12-22 21:50+0100\n"
+"POT-Creation-Date: 2021-02-03 13:55+0100\n"
 "PO-Revision-Date: 2020-11-18 09:28+0000\n"
 "Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/gpaste/"
@@ -61,114 +61,125 @@ msgstr "Innstillingsgrensesnittet"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:175
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:75
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
 msgid "This is a maintenance release. Changes:"
 msgstr "Dette er en vedlikeholdsutgivelse. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-msgid "fix the make-password keybinding"
+msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+msgid ""
+"gpaste-client now has a --use-index argument for several subcommands to use "
+"index instead of uuid"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+msgid "fix the make-password keybinding"
+msgstr ""
+
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "updated translations"
 msgstr "oppdaterte oversettelser"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 #, fuzzy
 #| msgid "gnome-shell extension cosmetic updates"
 msgid "gnome-shell extension warning fixes"
 msgstr "kosmetiske oppdateringer i gnome-shell-utvidelsen"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:97
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:106
 msgid "gnome-shell extension cosmetic updates"
 msgstr "kosmetiske oppdateringer i gnome-shell-utvidelsen"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
 #, fuzzy
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr "Skru av bildestøtte (kan skrus på igjen i innstillingene)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 #, fuzzy
 msgid "Search now includes passwords (using their names)"
 msgstr "Søk inneholder nå passord (ved bruk av navnene deres)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:78
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
 msgid "systemd integration enhancements"
 msgstr "forbedringer i systemd-integrasjon"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "Første utgave for GNOME 3.38. Endringer:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
 #, fuzzy
 msgid "Drop the Tracking DBus signal"
 msgstr "Ikke bruk sporingssymbolet fra D-Bus"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
 #, fuzzy
 msgid "Switch to uuids to identify items"
 msgstr "Byttet til UUID-er for å identifisere elementer"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:97
 #, fuzzy
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "Oppgradering av D-Bus-grensesnitt til org.gnome.GPaste2"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:89
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
 msgid "Update to gnome-shell 3.38.0"
 msgstr "Oppgradering til gnome-shell 3.38.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:105
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:137
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:179
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:114
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:188
 #, fuzzy
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr "Fiks aktivering av elementer ved bruk av Ctrl+nummer i gnome-shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:113
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:145
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:122
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
 #, fuzzy
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "Fiks av ny opphenting av tastaturhurtigsekvens med gnome-shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:153
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
 #, fuzzy
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "Fiks opphenting av tastaturhurtigsekvens med gnome-shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "Første utgave for GNOME 3.36. Endringer:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
 msgid "Update to gnome-shell 3.36.0"
 msgstr "Oppgradering til gnome-shell 3.36.0."
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:177
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
 msgid "Compatibility with recent appstream-glib"
 msgstr "Kompabilitet med nyere appstream-glib"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:167
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "Første utgave for GNOME 3.34. Endringer:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:169
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
 msgid "Update to gnome-shell 3.34.0"
 msgstr "Oppgradering til gnome-shell 3.34.0"
 
@@ -523,30 +534,30 @@ msgid "By default, we do as it's a destructive action"
 msgstr ""
 "Dette spørsmålet blir stilt som forvalg, siden det er en destruktiv handling"
 
-#: src/client/gpaste-client.c:137 src/client/gpaste-client.c:425
+#: src/client/gpaste-client.c:143 src/client/gpaste-client.c:437
 #, fuzzy
 msgid "Couldn't spawn"
 msgstr "Kunne ikke starte"
 
-#: src/client/gpaste-client.c:149
+#: src/client/gpaste-client.c:155
 #, c-format
 msgid "Usage:\n"
 msgstr "Bruk:\n"
 
 #. Translators: help for gpaste history
-#: src/client/gpaste-client.c:151
+#: src/client/gpaste-client.c:157
 #, fuzzy
-msgid "print the history with indexes"
+msgid "print the history with uuids"
 msgstr "skriv ut historikken med indekser"
 
 #. Translators: help for gpaste history-size
-#: src/client/gpaste-client.c:153
+#: src/client/gpaste-client.c:159
 #, fuzzy
 msgid "print the size of the history"
 msgstr "skriv ut størrelsen på historikken"
 
 #. Translators: help for gpaste get-history
-#: src/client/gpaste-client.c:155
+#: src/client/gpaste-client.c:161
 #, fuzzy
 msgid "get the name of the current history"
 msgstr "hent navnet for nåværende historikk"
@@ -557,87 +568,87 @@ msgstr "hent navnet for nåværende historikk"
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste set-password <uuid> <name>
 #. Translators: help for gpaste delete-passworf <name>
-#: src/client/gpaste-client.c:157 src/client/gpaste-client.c:159
-#: src/client/gpaste-client.c:161 src/client/gpaste-client.c:167
-#: src/client/gpaste-client.c:179 src/client/gpaste-client.c:183
+#: src/client/gpaste-client.c:163 src/client/gpaste-client.c:165
+#: src/client/gpaste-client.c:167 src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:185 src/client/gpaste-client.c:189
 msgid "name"
 msgstr "navn"
 
-#: src/client/gpaste-client.c:157
+#: src/client/gpaste-client.c:163
 msgid "backup current history"
 msgstr "sikkerhetskopier nåværende historikk"
 
-#: src/client/gpaste-client.c:159
+#: src/client/gpaste-client.c:165
 msgid "switch to another history"
 msgstr "bytt til annen historikk"
 
-#: src/client/gpaste-client.c:161
+#: src/client/gpaste-client.c:167
 msgid "delete a history"
 msgstr "slett en historikk"
 
 #. Translators: help for gpaste list-histories
-#: src/client/gpaste-client.c:163
+#: src/client/gpaste-client.c:169
 #, fuzzy
 msgid "list available histories"
 msgstr "list opp tilgjengelige historikker"
 
 #. Translators: help for gpaste add <text>
-#: src/client/gpaste-client.c:165
+#: src/client/gpaste-client.c:171
 msgid "text"
 msgstr "tekst"
 
-#: src/client/gpaste-client.c:165
+#: src/client/gpaste-client.c:171
 #, fuzzy
 msgid "set text to clipboard"
 msgstr "sett tekst til utklippstavle"
 
-#: src/client/gpaste-client.c:167
+#: src/client/gpaste-client.c:173
 msgid "password"
 msgstr "passord"
 
-#: src/client/gpaste-client.c:167
+#: src/client/gpaste-client.c:173
 #, fuzzy
 msgid "add the name - password couple to the clipboard"
 msgstr "Legg til navnet og passordet i utklippstavlen"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: src/client/gpaste-client.c:169
+#: src/client/gpaste-client.c:175
 msgid "old name"
 msgstr "gammelt navn"
 
-#: src/client/gpaste-client.c:169
+#: src/client/gpaste-client.c:175
 msgid "new name"
 msgstr "nytt navn"
 
-#: src/client/gpaste-client.c:169
+#: src/client/gpaste-client.c:175
 msgid "rename the password"
 msgstr "gi passordet et nytt navn"
 
 #. Translators: help for gpaste get <uuid>
-#: src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:177
 #, fuzzy
 msgid "get the item <uuid> from the history"
 msgstr "hent elementet <uuid> fra historikken"
 
 #. Translators: help for gpaste select <uuid>
-#: src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:179
 #, fuzzy
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "sett elementet <uuid> fra historikken til utklippstavlen"
 
 #. Translators: help for gpaste replace <uuid> <contents>
-#: src/client/gpaste-client.c:175
+#: src/client/gpaste-client.c:181
 msgid "contents"
 msgstr "innhold"
 
-#: src/client/gpaste-client.c:175
+#: src/client/gpaste-client.c:181
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr "erstatt innholdet av elementet <uuid> fra historikken med det forrige"
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
-#: src/client/gpaste-client.c:177
+#: src/client/gpaste-client.c:183
 #, fuzzy
 msgid ""
 "merge the items matching the uuids from the history and put the result in "
@@ -646,149 +657,160 @@ msgstr ""
 "flett elementene som samsvarer med UUID-ene fra historikken og legg til "
 "resultatet i utklippstavlen"
 
-#: src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:185
 #, fuzzy
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr "sett elementet <uuid> fra historikken som et passord ved navn <name>"
 
 #. Translators: help for gpaste delete <uuid>
-#: src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:187
 #, fuzzy
 msgid "delete item <uuid> from the history"
 msgstr "slett elementet <uuid> fra historikken"
 
-#: src/client/gpaste-client.c:183
+#: src/client/gpaste-client.c:189
 msgid "delete the password <name> from the history"
 msgstr "slett passordet <name> fra historikken"
 
 #. Translators: help for gpaste file <path>
-#: src/client/gpaste-client.c:185
+#: src/client/gpaste-client.c:191
 msgid "path"
 msgstr "sti"
 
-#: src/client/gpaste-client.c:185
+#: src/client/gpaste-client.c:191
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "hent innholdet fra filen i <path> til utklippstavlen"
 
 #. Translators: help for whatever | gpaste
-#: src/client/gpaste-client.c:187
+#: src/client/gpaste-client.c:193
 msgid "whatever"
 msgstr "hva som helst"
 
-#: src/client/gpaste-client.c:187
+#: src/client/gpaste-client.c:193
 #, fuzzy
 msgid "set the output of whatever to clipboard"
 msgstr "sett utdata for hva som helst til utklippstavlen"
 
 #. Translators: help for gpaste empty
-#: src/client/gpaste-client.c:189
+#: src/client/gpaste-client.c:195
 #, fuzzy
 msgid "empty the history"
 msgstr "tøm historikk"
 
 #. Translators: help for gpaste start
-#: src/client/gpaste-client.c:191
+#: src/client/gpaste-client.c:197
 msgid "start tracking clipboard changes"
 msgstr "begynn å spore endringer i utklippstavlen"
 
 #. Translators: help for gpaste stop
-#: src/client/gpaste-client.c:193
+#: src/client/gpaste-client.c:199
 msgid "stop tracking clipboard changes"
 msgstr "stopp sporing av endringer i utklippstavlen"
 
 #. Translators: help for gpaste quit
-#: src/client/gpaste-client.c:195
+#: src/client/gpaste-client.c:201
 msgid "alias for stop"
 msgstr "alias for stopp"
 
 #. Translators: help for gpaste daemon-reexec
-#: src/client/gpaste-client.c:197
+#: src/client/gpaste-client.c:203
 #, fuzzy
 msgid "reexecute the daemon (after upgrading...)"
 msgstr "kjør nissen igjen (etter oppgradering…)"
 
 #. Translators: help for gpaste settings
-#: src/client/gpaste-client.c:199
+#: src/client/gpaste-client.c:205
 msgid "launch the configuration tool"
 msgstr "start oppsettsverktøyet"
 
 #. Translators: help for gpaste ui
-#: src/client/gpaste-client.c:201
+#: src/client/gpaste-client.c:207
 msgid "launch the graphical tool"
 msgstr "start det grafiske verktøyet"
 
 #. Translators: help for gpaste show-history
-#: src/client/gpaste-client.c:203
+#: src/client/gpaste-client.c:209
 #, fuzzy
 msgid "make the applet or extension display the history"
 msgstr "la miniprogrammet og utvidelsen vise historikken"
 
 #. Translators: help for gpaste upload
-#: src/client/gpaste-client.c:205
+#: src/client/gpaste-client.c:211
 #, fuzzy
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "last opp elementet <uuid> til en innlimingsnett-tjeneste"
 
 #. Translators: help for gpaste version
-#: src/client/gpaste-client.c:207
+#: src/client/gpaste-client.c:213
 msgid "display the version"
 msgstr "vis versjonsinfo"
 
 #. Translators: help for gpaste daemon-version
-#: src/client/gpaste-client.c:209
+#: src/client/gpaste-client.c:215
 msgid "display the daemon version"
 msgstr "vis nisseversjonen"
 
 #. Translators: help for gpaste help
-#: src/client/gpaste-client.c:211
+#: src/client/gpaste-client.c:217
 msgid "display this help"
 msgstr "vis denne hjelpen"
 
 #. Translators: help for gpaste about
-#: src/client/gpaste-client.c:213
+#: src/client/gpaste-client.c:219
 #, fuzzy
 msgid "display the about dialog"
 msgstr "Vis \"Om\""
 
-#: src/client/gpaste-client.c:216
+#: src/client/gpaste-client.c:222
+#, fuzzy, c-format
+#| msgid "Merge options:"
+msgid "Convenience options:"
+msgstr "Flettevalg:"
+
+#. Translators: help for --use-index
+#: src/client/gpaste-client.c:225
+msgid "use the index of the item instead of its uuid"
+msgstr ""
+
+#: src/client/gpaste-client.c:228
 #, c-format
 msgid "Display options:"
 msgstr "Visningsvalg:"
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:219
+#: src/client/gpaste-client.c:231
 msgid "display each item on only one line"
 msgstr "vis hvert element på hver sin linje"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:221
+#: src/client/gpaste-client.c:233
 msgid "display each item raw (without line numbers)"
 msgstr "vis hvert element som det er (uten linjenummer)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:223
+#: src/client/gpaste-client.c:235
 #, fuzzy
 msgid "display the items in reverse order"
 msgstr "vis elementene i omvendt rekkefølge"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:225
+#: src/client/gpaste-client.c:237
 #, fuzzy
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr "bruk et NULL-tegn istedenfor linjeskift mellom hvert element"
 
-#: src/client/gpaste-client.c:228
+#: src/client/gpaste-client.c:240
 #, c-format
 msgid "Merge options:"
 msgstr "Flettevalg:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:231 src/client/gpaste-client.c:233
+#: src/client/gpaste-client.c:243 src/client/gpaste-client.c:245
 msgid "string"
 msgstr "streng"
 
-#: src/client/gpaste-client.c:231
+#: src/client/gpaste-client.c:243
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
@@ -796,21 +818,21 @@ msgstr ""
 "legg til gitt dekorasjon i begynnelsen og slutten av hvert element før "
 "fletting"
 
-#: src/client/gpaste-client.c:233
+#: src/client/gpaste-client.c:245
 msgid "add the given separator between each item when merging"
 msgstr "legg til gitt inndeler mellom hvert element ved fletting"
 
-#: src/client/gpaste-client.c:330
+#: src/client/gpaste-client.c:342
 #, fuzzy, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr "Nisse startet på ny\n"
 
-#: src/client/gpaste-client.c:479
+#: src/client/gpaste-client.c:491
 #, fuzzy
 msgid "Cannot add non utf8 data as text."
 msgstr "Kan ikke legge til data som ikke er UTF-8 som tekst."
 
-#: src/client/gpaste-client.c:789
+#: src/client/gpaste-client.c:808
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
 #: src/libgpaste/ui/gpaste-ui-window.c:311
 msgid "Couldn't connect to GPaste daemon"

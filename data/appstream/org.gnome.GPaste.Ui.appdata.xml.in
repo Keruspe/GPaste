@@ -43,6 +43,15 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.38.5" type="stable" date="2021-02-03">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>better handling and reporting of invalid uuids passed to gpaste-client</li>
+                  <li>gpaste-client now has a --use-index argument for several subcommands to use index instead of uuid</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.38.4" type="stable" date="2020-12-22">
           <description>
               <p>This is a maintenance release. Changes:</p>
