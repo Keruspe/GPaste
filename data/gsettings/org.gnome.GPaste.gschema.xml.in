@@ -90,7 +90,7 @@
 
     <key name="max-text-item-size" type="t">
       <range min="1" max="2147483647"/>
-      <default>2147483647</default>
+      <default>1048575</default>
       <summary>Max text item size</summary>
       <description>
         Maximum size of a text item. Anything out of this boundary is ignored.
