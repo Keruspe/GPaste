@@ -8,27 +8,31 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-02-03 13:55+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2021-02-18 20:50+0000\n"
+"Last-Translator: Matej U <mateju@svn.gnome.org>\n"
+"Language-Team: Slovenian <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"sl/>\n"
 "Language: sl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n"
+"%100==4 ? 2 : 3;\n"
+"X-Generator: Weblate 4.5\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
 msgid "GPaste"
-msgstr ""
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Upravljanje z zgodovino odložišča"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
@@ -44,13 +48,13 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
-msgstr ""
+msgstr "Glavni vmesnik"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 msgid "The settings UI"
-msgstr ""
+msgstr "Vmesnik nastavitev"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
@@ -67,11 +71,13 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Nameščena je vzdrževalna različica s spremembami:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
+"boljše upravljanje in poročanje o neveljavnih določilih UUID, poslanih na "
+"program gpaste-client"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid ""
@@ -111,7 +117,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
 msgid "First release for GNOME 3.38. Changes:"
-msgstr ""
+msgstr "Prva objava za GNOME 3.38. Spremembe:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
 msgid "Drop the Tracking DBus signal"
@@ -455,22 +461,22 @@ msgstr ""
 #: src/client/gpaste-client.c:155
 #, c-format
 msgid "Usage:\n"
-msgstr ""
+msgstr "Uporaba:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
 msgid "print the history with uuids"
-msgstr ""
+msgstr "izpiši zgodovino z določili UUID"
 
 #. Translators: help for gpaste history-size
 #: src/client/gpaste-client.c:159
 msgid "print the size of the history"
-msgstr ""
+msgstr "izpiši velikost zgodovine"
 
 #. Translators: help for gpaste get-history
 #: src/client/gpaste-client.c:161
 msgid "get the name of the current history"
-msgstr ""
+msgstr "pridobi ime trenutne zgodovine"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -482,54 +488,54 @@ msgstr ""
 #: src/client/gpaste-client.c:167 src/client/gpaste-client.c:173
 #: src/client/gpaste-client.c:185 src/client/gpaste-client.c:189
 msgid "name"
-msgstr ""
+msgstr "ime"
 
 #: src/client/gpaste-client.c:163
 msgid "backup current history"
-msgstr ""
+msgstr "ustvari kopijo trenutne zgodovine"
 
 #: src/client/gpaste-client.c:165
 msgid "switch to another history"
-msgstr ""
+msgstr "preklopi na drugo zgodovino"
 
 #: src/client/gpaste-client.c:167
 msgid "delete a history"
-msgstr ""
+msgstr "izbriši zgodovino"
 
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:169
 msgid "list available histories"
-msgstr ""
+msgstr "izpiši razpoložljive zgodovine"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:171
 msgid "text"
-msgstr ""
+msgstr "besedilo"
 
 #: src/client/gpaste-client.c:171
 msgid "set text to clipboard"
-msgstr ""
+msgstr "nastavi besedilo v odložišče"
 
 #: src/client/gpaste-client.c:173
 msgid "password"
-msgstr ""
+msgstr "geslo"
 
 #: src/client/gpaste-client.c:173
 msgid "add the name - password couple to the clipboard"
-msgstr ""
+msgstr "dodaj par ime/geslo v odložišče"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:175
 msgid "old name"
-msgstr ""
+msgstr "staro ime"
 
 #: src/client/gpaste-client.c:175
 msgid "new name"
-msgstr ""
+msgstr "novo ime"
 
 #: src/client/gpaste-client.c:175
 msgid "rename the password"
-msgstr ""
+msgstr "preimenuj geslo"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:177
@@ -748,12 +754,12 @@ msgstr ""
 #. This is the prefix displayed in history to identify a password
 #: src/libgpaste/core/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "Geslo"
 
 #. This is the prefix displayed in history to identify selected files
 #: src/libgpaste/core/gpaste-uris-item.c:104
 msgid "[Files] "
-msgstr ""
+msgstr "[Datoteke] "
 
 #: src/libgpaste/gpaste-macros.h:98
 msgid "Failed to register the gtk application"
