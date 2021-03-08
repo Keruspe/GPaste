@@ -35,27 +35,41 @@ G_BEGIN_DECLS
                                 "g-interface-name", G_PASTE_##BUS_ID##_INTERFACE_NAME, \
                                 NULL)
 
+#define CUSTOM_PROXY_RET(TYPE) \
+    if (_error)                \
+    {                          \
+        if (error)             \
+        {                      \
+            *error = _error;   \
+            _error = NULL;     \
+            return NULL;       \
+        }                      \
+    }                          \
+    return (self) ? G_PASTE_##TYPE (self) : NULL
+
 #define CUSTOM_PROXY_NEW_FINISH(TYPE)                                       \
     g_return_val_if_fail (G_IS_ASYNC_RESULT (result), NULL);                \
     g_return_val_if_fail (!error || !(*error), NULL);                       \
     g_autoptr (GObject) source = g_async_result_get_source_object (result); \
+    g_autoptr (GError) _error = NULL;                                       \
     g_assert (source);                                                      \
     GObject *self = g_async_initable_new_finish (G_ASYNC_INITABLE (source), \
                                                  result,                    \
-                                                 error);                    \
-    return (self) ? G_PASTE_##TYPE (self) : NULL;
+                                                 &_error);                  \
+    CUSTOM_PROXY_RET (TYPE);
 
 #define CUSTOM_PROXY_NEW(TYPE, BUS_ID, BUS_NAME)                                             \
+    g_autoptr (GError) _error = NULL;                                                        \
     GInitable *self = g_initable_new (G_PASTE_TYPE_##TYPE,                                   \
                                       NULL, /* cancellable */                                \
-                                      error,                                                 \
+                                      &_error,                                               \
                                       "g-bus-type",       G_BUS_TYPE_SESSION,                \
                                       "g-flags",          G_DBUS_PROXY_FLAGS_NONE,           \
                                       "g-name",           BUS_NAME,                          \
                                       "g-object-path",    G_PASTE_##BUS_ID##_OBJECT_PATH,    \
                                       "g-interface-name", G_PASTE_##BUS_ID##_INTERFACE_NAME, \
                                       NULL);                                                 \
-    return (self) ? G_PASTE_##TYPE (self) : NULL;
+    CUSTOM_PROXY_RET (TYPE);
 
 /********************/
 /* Methods / Common */
