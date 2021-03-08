@@ -14,6 +14,7 @@
 /data/pkg-config/*.pc
 /man/*.1
 /ABOUT-NLS
+/po/GPaste.pot
 /po/Makefile
 /po/Makevars.template
 /po/Rules-quot

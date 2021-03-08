@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.36.5" type="stable" date="2020-03-08">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix X11 keybinder outside of GNOME</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.36.4" type="stable" date="2020-10-03">
           <description>
               <p>This is a maintenance release. Changes:</p>
