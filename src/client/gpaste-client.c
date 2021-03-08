@@ -154,7 +154,7 @@ show_help (void)
 
     printf (_("Usage:\n"));
     /* Translators: help for gpaste history */
-    printf ("  %s [history]: %s\n", progname, _("print the history with uuids"));
+    printf ("  %s [history]: %s\n", progname, _("print the history with UUIDs"));
     /* Translators: help for gpaste history-size */
     printf ("  %s history-size: %s\n", progname, _("print the size of the history"));
     /* Translators: help for gpaste get-history */
@@ -180,7 +180,7 @@ show_help (void)
     /* Translators: help for gpaste replace <uuid> <contents> */
     printf ("  %s replace <uuid>  <%s>: %s\n", progname, _("contents"), _("replace the contents of the item <uuid> from the history with the provided one"));
     /* Translators: help for gpaste merge <uuid> … <uuid> */
-    printf ("  %s merge <uuid> … <uuid>: %s\n", progname, _("merge the items matching the uuids from the history and put the result in the clipboard"));
+    printf ("  %s merge <uuid> … <uuid>: %s\n", progname, _("merge the items matching the UUIDs from the history and put the result in the clipboard"));
     /* Translators: help for gpaste set-password <uuid> <name> */
     printf ("  %s set-password <uuid> <%s>: %s\n", progname, _("name"), _("set the item <uuid> from the history as a password named <name>"));
     /* Translators: help for gpaste delete <uuid> */
@@ -222,7 +222,7 @@ show_help (void)
     printf(_("Convenience options:"));
     printf("\n");
     /* Translators: help for --use-index */
-    printf("  --index: %s\n", _("use the index of the item instead of its uuid"));
+    printf("  --index: %s\n", _("use the index of the item instead of its UUID"));
 
     printf("\n");
     printf(_("Display options:"));
