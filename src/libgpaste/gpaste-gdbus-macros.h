@@ -42,8 +42,8 @@ G_BEGIN_DECLS
         {                      \
             *error = _error;   \
             _error = NULL;     \
-            return NULL;       \
         }                      \
+        return NULL;           \
     }                          \
     return (self) ? G_PASTE_##TYPE (self) : NULL
 
