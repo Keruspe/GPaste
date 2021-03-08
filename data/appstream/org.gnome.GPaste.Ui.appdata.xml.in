@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.38.6" type="stable" date="2020-03-08">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix X11 keybinder outside of GNOME</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.38.5" type="stable" date="2021-02-03">
           <description>
               <p>This is a maintenance release. Changes:</p>
@@ -96,6 +104,14 @@
                   <li>Switch to uuids to identify items</li>
                   <li>Bump DBus interface to org.gnome.GPaste2</li>
                   <li>Update to gnome-shell 3.38.0</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.36.5" type="stable" date="2020-03-08">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix X11 keybinder outside of GNOME</li>
               </ul>
           </description>
       </release>

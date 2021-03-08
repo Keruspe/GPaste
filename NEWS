@@ -1,3 +1,8 @@
+NEW in 3.38.6 (08/03/2021)
+=============
+
+- fix X11 keybinder outside of GNOME
+
 NEW in 3.38.5 (03/02/2021)
 =============
 
@@ -35,6 +40,11 @@ NEW in 3.38.0 (15/09/2020)
 - Switch to uuids to identify items
 - Bump DBus interface to org.gnome.GPaste2
 - Update to gnome-shell 3.38.0
+
+NEW in 3.36.5 (08/03/2021)
+=============
+
+- fix X11 keybinder outside of GNOME
 
 NEW in 3.36.4 (03/10/2020)
 =============

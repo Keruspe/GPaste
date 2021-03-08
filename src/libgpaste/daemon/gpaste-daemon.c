@@ -1138,9 +1138,15 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
                              gpointer      user_data)
 {
     GPasteDaemonPrivate *priv = user_data;
-    GPasteScreensaverClient *screensaver = priv->screensaver = g_paste_screensaver_client_new_finish (res, NULL);
+    g_autoptr (GError) error = NULL;
+    GPasteScreensaverClient *screensaver = priv->screensaver = g_paste_screensaver_client_new_finish (res, &error);
 
-    if (screensaver)
+    if (error)
+    {
+        g_warning ("Couldn't watch screensaver state: %s", error->message);
+        g_clear_object (&priv->screensaver);
+    }
+    else if (screensaver)
     {
         priv->c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
                                                                       "active-changed",
@@ -1156,7 +1162,14 @@ on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     GPasteDaemon *self = user_data;
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_finish (res, NULL);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_finish (res, &error);
+
+    if (error)
+    {
+        g_warning ("Couldn't connect to gnome-shell: %s", error->message);
+        g_clear_object (&shell_client);
+    }
 
     g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
 
