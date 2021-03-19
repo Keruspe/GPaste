@@ -1,7 +1,7 @@
 project('GPaste',
   'c',
   version: '3.38.6',
-  meson_version: '>=0.46.0',
+  meson_version: '>=0.50.0',
 )
 
 apiversion = '1.0'
@@ -20,6 +20,7 @@ gio_dep = dependency('gio-2.0', version: glib_req)
 glib_dep = dependency('glib-2.0', version: glib_req)
 gobject_dep = dependency('gobject-2.0', version: glib_req)
 gtk_dep = dependency('gtk+-3.0', version: gtk3_req)
+gtk3_dep = dependency('gtk+-3.0', version: '>=3.24')
 pango_dep = dependency('pango')
 
 # Don't make dbus/gnome-control-center a build dependency if so desired.

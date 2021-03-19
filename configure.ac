@@ -130,6 +130,7 @@ PKG_INSTALLDIR
 
 PKG_CHECK_MODULES(GLIB,       [glib-2.0 >= glib_required gobject-2.0 >= glib_required gio-2.0 >= glib_required])
 PKG_CHECK_MODULES(GTK,        [${GDK_DEP} >= ${GTK_REQUIRED} ${GTK_DEP} >= ${GTK_REQUIRED} pango])
+PKG_CHECK_MODULES(GTK3,       [gtk+-3.0 >= 3.24])
 PKG_CHECK_MODULES(GDK_PIXBUF, [gdk-pixbuf-2.0 >= gdk_pixbuf_required])
 PKG_CHECK_MODULES(X11,        [x11 xi])
 PKG_CHECK_MODULES(APPSTREAM,  [appstream-glib])

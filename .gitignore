@@ -1,6 +1,7 @@
 /.buildconfig
 /Makefile
 /bin/*
+/build
 /tests/bin/*
 /data/appstream/*.appdata.xml
 /data/appstream/*.appdata.valid

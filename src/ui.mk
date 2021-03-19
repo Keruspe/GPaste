@@ -58,16 +58,35 @@ bin_gpaste_ui_SOURCES =                     \
 	%D%/ui/gpaste-ui-window.c           \
 	%D%/ui/gpaste-ui-window.h           \
 	%D%/ui/gpaste-ui.c                  \
+	%D%/ui/tmp/gpaste-client.c \
+	%D%/ui/tmp/gpaste-client.h \
+	%D%/ui/tmp/gpaste-client-item.c \
+	%D%/ui/tmp/gpaste-client-item.h \
+	%D%/ui/tmp/gpaste-util.c \
+	%D%/ui/tmp/gpaste-util.h \
+	%D%/ui/tmp/gpaste-settings.c \
+	%D%/ui/tmp/gpaste-settings.h \
+	%D%/ui/tmp/gpaste-update-enums.c \
+	%D%/ui/tmp/gpaste-update-enums.h \
+	%D%/ui/tmp/gpaste-settings-ui-panel.c \
+	%D%/ui/tmp/gpaste-settings-ui-panel.h \
+	%D%/ui/tmp/gpaste-settings-ui-stack.c \
+	%D%/ui/tmp/gpaste-settings-ui-stack.h \
+	%D%/ui/tmp/gpaste-settings-ui-widget.c \
+	%D%/ui/tmp/gpaste-settings-ui-widget.h \
+	%D%/ui/tmp/gpaste-item-enums.c \
+	%D%/ui/tmp/gpaste-item-enums.h \
 	$(NULL)
 
 bin_gpaste_ui_CFLAGS = \
 	$(GLIB_CFLAGS) \
-	$(GTK_CFLAGS)  \
+	$(GTK3_CFLAGS)  \
 	-I %D%/ui/     \
+	-I %D%/ui/tmp/ \
 	$(NULL)
 
 bin_gpaste_ui_LDADD =                    \
-	$(builddir)/$(libgpaste_la_file) \
 	$(GLIB_LIBS)                     \
-	$(GTK_LIBS)                      \
+	$(GTK3_LIBS)                      \
 	$(NULL)
+# $(builddir)/$(libgpaste_la_file) 
