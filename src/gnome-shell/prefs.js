@@ -19,10 +19,20 @@ function init() {
     Gettext.textdomain(domain);
 }
 
+function GPaste40PlaceHolder() {
+    const Util = imports.misc.util;
+    const { Gtk } = imports.gi;
+    Util.spawnCommandLine("gpaste-client settings");
+    return new Gtk.Label({ label: "Opened the GPaste settings." });
+}
+
 function buildPrefsWidget() {
+    /*
     let widget = new GPaste.SettingsUiWidget({ margin: 12 });
     if (widget) {
         widget.show_all();
     }
+    */
+    let widget = GPaste40PlaceHolder();
     return widget;
 }
