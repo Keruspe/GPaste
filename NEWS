@@ -1,3 +1,9 @@
+NEW in 3.40.0 (09/04/2021)
+=============
+
+- port to gnome-shell 40
+- placeholder for gnome-shell prefs
+
 NEW in 3.38.6 (08/03/2021)
 =============
 

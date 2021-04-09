@@ -80,9 +80,9 @@ bin_gpaste_ui_SOURCES =                     \
 
 bin_gpaste_ui_CFLAGS = \
 	$(GLIB_CFLAGS) \
-	$(GTK3_CFLAGS)  \
-	-I %D%/ui/     \
-	-I %D%/ui/tmp/ \
+	$(GTK3_CFLAGS) \
+	-I $(srcdir)/src/ui/     \
+	-I $(srcdir)/src/ui/tmp/ \
 	$(NULL)
 
 bin_gpaste_ui_LDADD =                    \

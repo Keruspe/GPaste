@@ -28,7 +28,6 @@ AM_CPPFLAGS =                                        \
 	-I$(srcdir)/src/libgpaste/screensaver-client \
 	-I$(srcdir)/src/libgpaste/settings           \
 	-I$(srcdir)/src/libgpaste/settings-ui        \
-	-I$(srcdir)/src/libgpaste/ui                 \
 	-I$(srcdir)/src/libgpaste/util               \
 	-DG_PASTE_COMPILATION                        \
 	-DGTK_API=$(GTK_API)                         \
