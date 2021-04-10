@@ -41,6 +41,6 @@ Steps to install it after cloning (skip the `./autogen.sh` part if you're buildi
 
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 40 is: [GPaste 3.40.0](https://www.imagination-land.org/posts/2021-04-09-gpaste-3.40.0-released.html).
+Latest release for GNOME 40 is: [GPaste 3.40.1](https://www.imagination-land.org/posts/2021-04-10-gpaste-3.40.1-released.html).
 
-Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.40.0.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-3.40.1.tar.xz>

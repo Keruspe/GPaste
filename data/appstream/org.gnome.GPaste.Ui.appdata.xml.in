@@ -43,6 +43,7 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.40.1" type="stable" date="2021-04-10" />
       <release version="3.40.0" type="stable" date="2021-04-09">
           <description>
               <p>First release for GNOME 40. Changes:</p>
