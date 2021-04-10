@@ -89,7 +89,6 @@ libgpaste_inc = include_directories(
   'screensaver-client',
   'settings',
   'settings-ui',
-  'ui',
   'util',
 )
 
