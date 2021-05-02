@@ -17,7 +17,5 @@ class GPasteStatusIcon extends St.BoxLayout {
             icon_name: 'edit-paste-symbolic',
             style_class: 'system-status-icon'
         }));
-
-        this.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
     }
 });
