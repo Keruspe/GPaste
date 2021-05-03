@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-04-30 13:15+0200\n"
-"PO-Revision-Date: 2020-10-30 17:26+0000\n"
+"PO-Revision-Date: 2021-05-04 14:31+0000\n"
 "Last-Translator: Adolfo Jayme Barrientos <fitojb@ubuntu.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Weblate 4.3.2-dev\n"
+"X-Generator: Weblate 4.7-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -82,13 +82,11 @@ msgstr "Esta es una versión de mantenimiento. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "fix a crash in memory usage checking"
-msgstr ""
+msgstr "corrige un cierre inesperado durante la comprobación de uso de memoria"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
-#, fuzzy
-#| msgid "First release for GNOME 3.34. Changes:"
 msgid "First release for GNOME 40. Changes:"
-msgstr "Primera versión para GNOME 3.34. Cambios:"
+msgstr "Primera versión para GNOME 40. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 #, fuzzy
@@ -122,13 +120,11 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
 msgid "updated translations"
-msgstr ""
+msgstr "traducciones actualizadas"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
-#, fuzzy
-#| msgid "gnome-shell extension cosmetic updates"
 msgid "gnome-shell extension warning fixes"
-msgstr "Actualizaciones superficiales a la extensión para GNOME Shell"
+msgstr "arreglos de avisos en la extensión para GNOME Shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
@@ -238,27 +234,24 @@ msgstr "Mostrar el histórico"
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
 #: src/ui/gpaste-ui-shortcuts-window.c:76
-#, fuzzy
 msgid "Sync the clipboard to the primary selection"
-msgstr "Sincronizar el portapapeles con selección principal: "
+msgstr "Sincronizar portapapeles con la selección principal"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
 #: src/ui/gpaste-ui-shortcuts-window.c:77
-#, fuzzy
 msgid "Sync the primary selection to the clipboard"
-msgstr "Sincronizar selección principal con el portapapeles: "
+msgstr "Sincronizar selección principal con el portapapeles"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: src/ui/gpaste-ui-shortcuts-window.c:78
-#, fuzzy
 msgid "Upload the active item to a pastebin service"
-msgstr "Eliminar el primer elemento del historial"
+msgstr "Cargar el elemento activo en un servicio «pastebin»"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
+msgstr "Portapapeles;Gestor;Configuración;Preferencias;Parámetros;"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
@@ -275,6 +268,7 @@ msgstr ""
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
 msgid "Do we detect and replace growing lines in history?"
 msgstr ""
+"¿Cómo se detectan y sustituyen los renglones crecientes en el histórico?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
 msgid ""
@@ -285,7 +279,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
 msgid "The name of the current history"
-msgstr "El nombre del historial actual"
+msgstr "El nombre del histórico actual"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
 msgid "The default name is \"history\""
@@ -438,17 +432,18 @@ msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
-#, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
-"Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
-"Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
+"De manera predeterminada, presionar Ctrl + Alt + O los sincroniza "
+"(«<Ctrl><Alt>P»). Una cadena vacía aquí desactiva esta funcionalidad."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
+"El atajo de teclado para sincronizar la selección primaria con el "
+"portapapeles"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
 #, fuzzy
@@ -486,7 +481,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
-msgstr "Por omisión, el estado del servicio se mantiene sin cambios."
+msgstr "De manera predeterminada, el estado del demonio se mantiene sin cambios"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid "Do we trim the textual items before adding them to history?"
@@ -518,41 +513,35 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
 msgid "Do we prompt for confirmation when emptying an history?"
-msgstr ""
+msgstr "¿Quiere que se solicite confirmación al vaciar un histórico?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
-#, fuzzy
 msgid "By default, we do as it's a destructive action"
-msgstr "Por omisión, el estado del servicio se mantiene sin cambios."
+msgstr "De manera predeterminada se hace, dado que es una acción destructiva"
 
 #: src/client/gpaste-client.c:143 src/client/gpaste-client.c:437
-#, fuzzy
 msgid "Couldn't spawn"
-msgstr "No se pudo iniciar el applet de gpaste.\n"
+msgstr "No se pudo generar"
 
 #: src/client/gpaste-client.c:155
 #, c-format
 msgid "Usage:\n"
-msgstr "Modo de empleo:\n"
+msgstr "Utilización:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
-#, fuzzy
-#| msgid "print the history with indexes"
 msgid "print the history with UUIDs"
-msgstr "imprimir el historial con números de indice"
+msgstr "mostrar el histórico con UUID"
 
 #. Translators: help for gpaste history-size
 #: src/client/gpaste-client.c:159
-#, fuzzy
 msgid "print the size of the history"
-msgstr "suprimir el elemento número <número> del historial"
+msgstr "mostrar el tamaño del histórico"
 
 #. Translators: help for gpaste get-history
 #: src/client/gpaste-client.c:161
-#, fuzzy
 msgid "get the name of the current history"
-msgstr "El nombre del historial actual"
+msgstr "obtener el nombre del histórico actual"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -568,20 +557,20 @@ msgstr "nombre"
 
 #: src/client/gpaste-client.c:163
 msgid "backup current history"
-msgstr "hacer copia de seguridad del historial actual"
+msgstr "hacer copia de respaldo del histórico actual"
 
 #: src/client/gpaste-client.c:165
 msgid "switch to another history"
-msgstr "cambiar a otro historial"
+msgstr "cambiar a otro histórico"
 
 #: src/client/gpaste-client.c:167
 msgid "delete a history"
-msgstr "suprimir el historial"
+msgstr "eliminar un histórico"
 
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:169
 msgid "list available histories"
-msgstr "listar historial disponible"
+msgstr "enumerar los históricos disponibles"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:171
@@ -590,16 +579,15 @@ msgstr "texto"
 
 #: src/client/gpaste-client.c:171
 msgid "set text to clipboard"
-msgstr "enviar <texto> al portapapeles"
+msgstr "enviar texto al portapapeles"
 
 #: src/client/gpaste-client.c:173
 msgid "password"
 msgstr "contraseña"
 
 #: src/client/gpaste-client.c:173
-#, fuzzy
 msgid "add the name - password couple to the clipboard"
-msgstr "Sincronizar selección principal con el portapapeles: "
+msgstr "añadir el par nombre-contraseña al portapapeles"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:175
@@ -612,7 +600,7 @@ msgstr "nombre nuevo"
 
 #: src/client/gpaste-client.c:175
 msgid "rename the password"
-msgstr ""
+msgstr "cambiar el nombre de la contraseña"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:177
