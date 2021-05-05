@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-04-30 13:15+0200\n"
-"PO-Revision-Date: 2020-11-18 09:28+0000\n"
+"PO-Revision-Date: 2021-05-06 00:50+0000\n"
 "Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/gpaste/"
 "gpaste/nb_NO/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.7-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -80,42 +80,42 @@ msgstr "Dette er en vedlikeholdsutgivelse. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "fix a crash in memory usage checking"
-msgstr ""
+msgstr "fikset krasj i sjekk av minnebruk"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
-#, fuzzy
-#| msgid "First release for GNOME 3.34. Changes:"
 msgid "First release for GNOME 40. Changes:"
-msgstr "Første utgave for GNOME 3.34. Endringer:"
+msgstr "Første utgave for GNOME 40. Endringer:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
-#, fuzzy
-#| msgid "Update to gnome-shell 3.34.0"
 msgid "port to gnome-shell 40"
-msgstr "Oppgradering til gnome-shell 3.34.0"
+msgstr "portet til gnome-shell 40"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#, fuzzy
 msgid "placeholder for gnome-shell prefs"
-msgstr ""
+msgstr "plassholder for GNOME-Shell-innstillinger"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:132
 msgid "fix X11 keybinder outside of GNOME"
-msgstr ""
+msgstr "fikset X11-tastaturbindinger utenfor GNOME"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
+"bedre håndtering og rapportering av ugyldige UUID-er sendt til gpaste-client"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
 msgstr ""
+"gpaste-client har nå et --use-index -argument for flere underkommandoer for "
+"bruke av indeks istedenfor UUID"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
 msgid "fix the make-password keybinding"
-msgstr ""
+msgstr "fikset make-password -tastaturbinding"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
@@ -123,10 +123,8 @@ msgid "updated translations"
 msgstr "oppdaterte oversettelser"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
-#, fuzzy
-#| msgid "gnome-shell extension cosmetic updates"
 msgid "gnome-shell extension warning fixes"
-msgstr "kosmetiske oppdateringer i gnome-shell-utvidelsen"
+msgstr "advarselsfikser i gnome-shell-utvidelsen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
@@ -790,15 +788,14 @@ msgid "display the about dialog"
 msgstr "Vis \"Om\""
 
 #: src/client/gpaste-client.c:222
-#, fuzzy, c-format
-#| msgid "Merge options:"
+#, c-format
 msgid "Convenience options:"
-msgstr "Flettevalg:"
+msgstr "Beleilighetsvalg:"
 
 #. Translators: help for --use-index
 #: src/client/gpaste-client.c:225
 msgid "use the index of the item instead of its UUID"
-msgstr ""
+msgstr "bruk indeks for element istedenfor dets UUID"
 
 #: src/client/gpaste-client.c:228
 #, c-format
