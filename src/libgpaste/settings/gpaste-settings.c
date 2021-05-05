@@ -193,7 +193,7 @@ UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
 /**
  * g_paste_settings_set_empty_history_confirmation:
  * @self: a #GPasteSettings instance
- * @value: whether to prompt for confirmation when emptying an history
+ * @value: whether to prompt for confirmation when emptying a history
  *
  * Change the "empty-history-confirmation" setting
  */

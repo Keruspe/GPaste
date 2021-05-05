@@ -210,7 +210,7 @@
 
     <key name="empty-history-confirmation" type="b">
       <default>true</default>
-      <summary>Do we prompt for confirmation when emptying an history?</summary>
+      <summary>Do we prompt for confirmation when emptying a history?</summary>
       <description>
         By default, we do as it's a destructive action
       </description>

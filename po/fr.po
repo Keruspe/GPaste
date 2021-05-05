@@ -525,7 +525,7 @@ msgstr ""
 "chaîne vide désactive cette fonctionnalité."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
-msgid "Do we prompt for confirmation when emptying an history?"
+msgid "Do we prompt for confirmation when emptying a history?"
 msgstr "Faut-il demander confirmation avant de vider un historique ?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214

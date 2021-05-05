@@ -512,7 +512,7 @@ msgstr ""
 "cadena vacía desactivaría esta funcionalidad."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
-msgid "Do we prompt for confirmation when emptying an history?"
+msgid "Do we prompt for confirmation when emptying a history?"
 msgstr "¿Quiere que se solicite confirmación al vaciar un histórico?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214

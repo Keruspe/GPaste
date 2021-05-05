@@ -305,7 +305,7 @@ g_paste_client_delete_sync (GPasteClient *self,
  * @name: the name of the history to delete
  * @error: a #GError
  *
- * Delete an history
+ * Delete a history
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_history_sync (GPasteClient *self,
@@ -904,7 +904,7 @@ g_paste_client_delete (GPasteClient       *self,
  * care about the result of the method invocation.
  * @user_data: (nullable): The data to pass to @callback.
  *
- * Delete an history
+ * Delete a history
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_history (GPasteClient       *self,
@@ -1504,7 +1504,7 @@ g_paste_client_delete_finish (GPasteClient *self,
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
  * @error: a #GError
  *
- * Delete an history
+ * Delete a history
  */
 G_PASTE_VISIBLE void
 g_paste_client_delete_history_finish (GPasteClient *self,
@@ -2028,7 +2028,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * @history: the name of the history we deleted
      *
      * The "delete-history" signal is emitted when we delete
-     * an history.
+     * a history.
      */
     signals[DELETE_HISTORY] = NEW_SIGNAL_WITH_DATA ("delete-history", STRING);
 
@@ -2038,7 +2038,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * @history: the name of the history we emptied
      *
      * The "empty-history" signal is emitted when we empty
-     * an history.
+     * a history.
      */
     signals[EMPTY_HISTORY] = NEW_SIGNAL_WITH_DATA ("empty-history", STRING);
 
@@ -2047,7 +2047,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * @client: the object on which the signal was emitted
      *
      * The "show-history" signal is emitted when we switch
-     * from an history to another.
+     * from a history to another.
      */
     signals[SHOW_HISTORY] = NEW_SIGNAL ("show-history");
 
@@ -2057,7 +2057,7 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * @history: the name of the history we switch to
      *
      * The "switch-history" signal is emitted when we switch
-     * from an history to another.
+     * from a history to another.
      */
     signals[SWITCH_HISTORY] = NEW_SIGNAL_WITH_DATA ("switch-history", STRING);
 

@@ -276,7 +276,7 @@ g_paste_util_activate_ui_sync (const gchar *action,
  * @settings: a #GPasteSettings instance
  * @history: the name of the history to empty
  *
- * Empty an history after confirmation.
+ * Empty a history after confirmation.
  * Confirmation is skipped if GPaste is configured to do so.
  */
 G_PASTE_VISIBLE void
@@ -301,7 +301,7 @@ g_paste_util_empty_with_confirmation (GPasteClient         *client,
  * @history: the name of the history to empty
  * @error: a #GError or %NULL
  *
- * Empty an history after confirmation.
+ * Empty a history after confirmation.
  * Confirmation is skipped if GPaste is configured to do so.
  *
  * Returns: whether the action was successful

@@ -65,7 +65,7 @@ _empty (gpointer user_data)
  * @self: the #GPasteUiWindow
  * @history: the history to empty
  *
- * Empty an history
+ * Empty a history
  */
 G_PASTE_VISIBLE void
 g_paste_ui_window_empty_history (GPasteUiWindow *self,

@@ -515,7 +515,7 @@ msgstr ""
 "stringa vuota qui disabilita questa funzionalità."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
-msgid "Do we prompt for confirmation when emptying an history?"
+msgid "Do we prompt for confirmation when emptying a history?"
 msgstr "Chiediamo conferma prima di svuotare uno storico?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214

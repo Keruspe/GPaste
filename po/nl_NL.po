@@ -515,7 +515,7 @@ msgstr ""
 "leeglaten schakelt de functionaliteit uit."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
-msgid "Do we prompt for confirmation when emptying an history?"
+msgid "Do we prompt for confirmation when emptying a history?"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214

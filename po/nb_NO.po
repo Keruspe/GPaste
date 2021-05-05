@@ -553,7 +553,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
 #, fuzzy
-msgid "Do we prompt for confirmation when emptying an history?"
+msgid "Do we prompt for confirmation when emptying a history?"
 msgstr "Sprør om bekreftelse ved tømming av historikk?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
