@@ -222,7 +222,7 @@ show_help (void)
     printf(_("Convenience options:"));
     printf("\n");
     /* Translators: help for --use-index */
-    printf("  --index: %s\n", _("use the index of the item instead of its UUID"));
+    printf("  --use-index: %s\n", _("use the index of the item instead of its UUID"));
 
     printf("\n");
     printf(_("Display options:"));
