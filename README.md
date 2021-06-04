@@ -1,7 +1,5 @@
-<a href="https://scan.coverity.com/projects/gpaste">
-  <img alt="Coverity Scan Build Status"
-       src="https://scan.coverity.com/projects/6230/badge.svg"/>
-</a>
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/6230/badge.svg)](https://scan.coverity.com/projects/gpaste)
+[![Build Status](https://travis-ci.org/Keruspe/GPaste.svg?branch=master)](https://travis-ci.org/Keruspe/GPaste)
 
 GPaste is a clipboard management system.
 See <https://www.imagination-land.org/posts/2012-12-01-gpaste-released.html> for more information about what clipboard
