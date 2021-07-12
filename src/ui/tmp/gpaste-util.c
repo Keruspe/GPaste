@@ -7,8 +7,6 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-util.h>
 
-#include "gpaste-gtk-compat.h"
-
 /**
  * g_paste_util_confirm_dialog:
  * @parent: (nullable): the parent #GtkWindow
@@ -34,7 +32,7 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
 
     gtk_widget_set_vexpand (label, TRUE);
     gtk_widget_set_valign (label, TRUE);
-    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), label, TRUE, TRUE);
+    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), label, TRUE, TRUE, 0);
     gtk_widget_show (label);
 
     gboolean ret = gtk_dialog_run (d) == GTK_RESPONSE_OK;

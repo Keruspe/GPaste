@@ -6,8 +6,6 @@
 
 #include <gpaste-ui-new-item.h>
 
-#include "gpaste-gtk-compat.h"
-
 struct _GPasteUiNewItem
 {
     GtkButton parent_instance;
@@ -43,7 +41,7 @@ g_paste_ui_new_item_clicked (GtkButton *self)
     gtk_container_add (GTK_CONTAINER (sw), text);
     gtk_widget_set_vexpand (scroll, TRUE);
     gtk_widget_set_valign (scroll, TRUE);
-    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), scroll, TRUE, TRUE);
+    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), scroll, TRUE, TRUE, 0);
     gtk_widget_show_all (scroll);
 
     if (gtk_dialog_run (d) == GTK_RESPONSE_OK)

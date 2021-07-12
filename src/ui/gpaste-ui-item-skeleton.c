@@ -10,8 +10,6 @@
 #include <gpaste-ui-item-skeleton.h>
 #include <gpaste-ui-upload-item.h>
 
-#include "gpaste-gtk-compat.h"
-
 enum
 {
     C_SIZE,
@@ -231,7 +229,7 @@ add_action (gpointer data,
     GtkBox *b =user_data;
 
     gtk_widget_set_halign (w, TRUE);
-    gtk_box_pack_end (b, w);
+    gtk_box_pack_end (b, w, FALSE, TRUE, 0);
 }
 
 static void
@@ -282,10 +280,10 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     gtk_widget_set_margin_start (hbox, 5);
     gtk_widget_set_margin_end (hbox, 5);
     gtk_widget_set_halign (index_label, TRUE);
-    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, TRUE);
+    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, TRUE, 0);
     gtk_widget_set_hexpand (label, TRUE);
     gtk_widget_set_halign (label, TRUE);
-    gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE);
+    gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
 }

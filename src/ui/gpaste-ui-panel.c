@@ -7,8 +7,6 @@
 #include <gpaste-ui-history-actions.h>
 #include <gpaste-ui-panel.h>
 
-#include "gpaste-gtk-compat.h"
-
 struct _GPasteUiPanel
 {
     GtkBox parent_instance;
@@ -317,8 +315,8 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
                                                           priv);
 
     gtk_widget_set_valign (list_box, TRUE);
-    gtk_box_pack_start (box, list_box, FALSE, TRUE);
-    gtk_box_pack_start (box, switch_entry, FALSE, FALSE);
+    gtk_box_pack_start (box, list_box, FALSE, TRUE, 0);
+    gtk_box_pack_start (box, switch_entry, FALSE, FALSE, 0);
 }
 
 /**

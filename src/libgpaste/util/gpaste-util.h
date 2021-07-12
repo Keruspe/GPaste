@@ -18,9 +18,15 @@
 
 G_BEGIN_DECLS
 
-gboolean g_paste_util_confirm_dialog    (GtkWindow   *parent,
-                                         const gchar *action,
-                                         const gchar *msg);
+typedef void (*GPasteConfirmDialogCallback) (gboolean confirmed,
+                                             gpointer user_data);
+
+void g_paste_util_confirm_dialog    (GtkWindow                  *parent,
+                                     const gchar                *action,
+                                     const gchar                *msg,
+                                     GPasteConfirmDialogCallback on_choice,
+                                     gpointer                    user_data);
+
 void     g_paste_util_spawn             (const gchar *app);
 gboolean g_paste_util_spawn_sync        (const gchar *app,
                                          GError     **error);
@@ -39,7 +45,7 @@ gboolean g_paste_util_empty_with_confirmation_sync (GPasteClient         *client
 gchar   *g_paste_util_replace           (const gchar *text,
                                          const gchar *pattern,
                                          const gchar *substitution);
-gchar   *g_paste_util_compute_checksum  (GdkPixbuf   *image);
+gchar   *g_paste_util_compute_checksum  (GdkTexture  *texture);
 
 void     g_paste_util_empty_history     (GtkWindow      *parent_window,
                                          GPasteClient   *client,

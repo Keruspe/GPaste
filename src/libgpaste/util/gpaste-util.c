@@ -7,22 +7,39 @@
 #include <gpaste-gsettings-keys.h>
 #include <gpaste-util.h>
 
-#include "gpaste-gtk-compat.h"
+typedef struct {
+    GPasteConfirmDialogCallback callback;
+    gpointer                    user_data;
+} GPasteConfirmDialogCallbackData;
+
+static void
+on_confirm_dialog_response (GtkDialog      *dialog,
+                            GtkResponseType choice,
+                            gpointer        user_data)
+{
+    g_autofree GPasteConfirmDialogCallbackData *data = user_data;
+
+    gtk_window_destroy (GTK_WINDOW (dialog));
+    data->callback (choice == GTK_RESPONSE_OK, data->user_data);
+}
 
 /**
  * g_paste_util_confirm_dialog:
  * @parent: (nullable): the parent #GtkWindow
  * @msg: the message to display
+ * @on_choice: (closure user_data) (scope notified): handler to invoke when we get a confirmation
  *
  * Show GPaste about dialog
  */
-G_PASTE_VISIBLE gboolean
-g_paste_util_confirm_dialog (GtkWindow   *parent,
-                             const gchar *action,
-                             const gchar *msg)
+G_PASTE_VISIBLE void
+g_paste_util_confirm_dialog (GtkWindow                  *parent,
+                             const gchar                *action,
+                             const gchar                *msg,
+                             GPasteConfirmDialogCallback on_choice,
+                             gpointer                    user_data)
 {
-    g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), FALSE);
-    g_return_val_if_fail (g_utf8_validate (msg, -1, NULL), FALSE);
+    g_return_if_fail (!parent || GTK_IS_WINDOW (parent));
+    g_return_if_fail (g_utf8_validate (msg, -1, NULL));
 
     GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, parent,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
@@ -31,17 +48,20 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
                                                      NULL);
     GtkWidget *label = gtk_label_new (msg);
     GtkDialog *d = GTK_DIALOG (dialog);
+    GPasteConfirmDialogCallbackData *data = g_new (GPasteConfirmDialogCallbackData, 1);
+
+    data->callback = on_choice;
+    data->user_data = user_data;
+
+    g_signal_connect (dialog,
+                      "response",
+                      G_CALLBACK (on_confirm_dialog_response),
+                      data);
 
     gtk_widget_set_vexpand (label, TRUE);
     gtk_widget_set_valign (label, TRUE);
-    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), label, TRUE, TRUE);
+    gtk_box_append (GTK_BOX (gtk_dialog_get_content_area (d)), label);
     gtk_widget_show (label);
-
-    gboolean ret = gtk_dialog_run (d) == GTK_RESPONSE_OK;
-
-    gtk_widget_destroy (dialog);
-
-    return ret;
 }
 
 /* Copied from glib's gio/gapplication-tool.c */
@@ -372,22 +392,51 @@ g_paste_util_replace (const gchar *text,
 
 /**
  * g_paste_util_compute_checksum:
- * @image: the #GdkPixbuf to checksum
+ * @texture: the #GdkTexture to checksum
  *
  * Compute the checksum of an image
  *
  * Returns: the newly allocated checksum
  */
 G_PASTE_VISIBLE gchar *
-g_paste_util_compute_checksum (GdkPixbuf *image)
+g_paste_util_compute_checksum (GdkTexture *texture)
 {
-    if (!image || !GDK_IS_PIXBUF (image))
+    if (!texture || !GDK_IS_TEXTURE (texture))
         return NULL;
 
-    const guint8 *data = gdk_pixbuf_read_pixels (image);
-    gsize length = gdk_pixbuf_get_byte_length (image);
+    cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+                                                           gdk_texture_get_width (texture),
+                                                           gdk_texture_get_height (texture));
 
-    return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
+    gdk_texture_download (texture,
+                          cairo_image_surface_get_data (surface),
+                          cairo_image_surface_get_stride (surface));
+    cairo_surface_mark_dirty (surface);
+
+    guint8 *data = cairo_image_surface_get_data (surface);
+    gsize length = cairo_image_surface_get_height (surface) * cairo_image_surface_get_stride (surface);
+    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
+
+    cairo_surface_destroy (surface);
+
+    return checksum;
+}
+
+typedef struct {
+    GPasteClient *client;
+    gchar        *history;
+} EmptyHistoryCallbackData;
+
+static void
+empty_history_callback (gboolean confirmed,
+                        gpointer user_data)
+{
+    g_autofree EmptyHistoryCallbackData *data = user_data;
+    g_autoptr (GPasteClient) client = data->client;
+    g_autofree gchar *history = data->history;
+
+    if (confirmed)
+        g_paste_client_empty_history (client, history, NULL, NULL);
 }
 
 /**
@@ -405,10 +454,20 @@ g_paste_util_empty_history (GtkWindow      *parent_window,
                             GPasteSettings *settings,
                             const gchar    *history)
 {
-    if (!g_paste_settings_get_empty_history_confirmation (settings) ||
+    if (g_paste_settings_get_empty_history_confirmation (settings))
+    {
+        EmptyHistoryCallbackData *data = g_new (EmptyHistoryCallbackData, 1);
+
+        data->client = g_object_ref (client);
+        data->history = g_strdup (history);
+
         /* Translators: this is the translation for emptying the history */
-        g_paste_util_confirm_dialog (parent_window, _("Empty"), _("Do you really want to empty the history?")))
-            g_paste_client_empty_history (client, history, NULL, NULL);
+        g_paste_util_confirm_dialog (parent_window, _("Empty"), _("Do you really want to empty the history?"), empty_history_callback, data);
+    }
+    else
+    {
+        g_paste_client_empty_history (client, history, NULL, NULL);
+    }
 }
 
 /**

@@ -6,7 +6,6 @@ libgpaste_la_file = lib/libgpaste.la
 
 lib_libgpaste_la_private_headers =          \
 	%D%/libgpaste/gpaste-gdbus-macros.h \
-	%D%/libgpaste/gpaste-gtk-compat.h   \
 	$(NULL)
 
 lib_libgpaste_la_misc_headers =               \
@@ -22,13 +21,14 @@ lib_libgpaste_la_public_headers =                                             \
 	%D%/libgpaste/client/gpaste-client-item.h                             \
 	%D%/libgpaste/core/gpaste-clipboard.h                                 \
 	%D%/libgpaste/core/gpaste-clipboards-manager.h                        \
+	%D%/libgpaste/core/gpaste-content-provider.h                          \
 	%D%/libgpaste/core/gpaste-history.h                                   \
 	%D%/libgpaste/core/gpaste-image-item.h                                \
 	%D%/libgpaste/core/gpaste-item.h                                      \
 	%D%/libgpaste/core/gpaste-password-item.h                             \
 	%D%/libgpaste/core/gpaste-text-item.h                                 \
 	%D%/libgpaste/core/gpaste-item-enums.h                                \
-	%D%/libgpaste/core/gpaste-special-atom.h                              \
+	%D%/libgpaste/core/gpaste-special-mime.h                              \
 	%D%/libgpaste/core/gpaste-update-enums.h                              \
 	%D%/libgpaste/core/gpaste-uris-item.h                                 \
 	%D%/libgpaste/daemon/gpaste-bus.h                                     \
@@ -59,13 +59,14 @@ lib_libgpaste_la_source_files =                                               \
 	%D%/libgpaste/client/gpaste-client-item.c                             \
 	%D%/libgpaste/core/gpaste-clipboard.c                                 \
 	%D%/libgpaste/core/gpaste-clipboards-manager.c                        \
+	%D%/libgpaste/core/gpaste-content-provider.c                          \
 	%D%/libgpaste/core/gpaste-history.c                                   \
 	%D%/libgpaste/core/gpaste-image-item.c                                \
 	%D%/libgpaste/core/gpaste-item.c                                      \
 	%D%/libgpaste/core/gpaste-password-item.c                             \
 	%D%/libgpaste/core/gpaste-text-item.c                                 \
 	%D%/libgpaste/core/gpaste-item-enums.c                                \
-	%D%/libgpaste/core/gpaste-special-atom.c                              \
+	%D%/libgpaste/core/gpaste-special-mime.c                              \
 	%D%/libgpaste/core/gpaste-update-enums.c                              \
 	%D%/libgpaste/core/gpaste-uris-item.c                                 \
 	%D%/libgpaste/daemon/gpaste-bus.c                                     \

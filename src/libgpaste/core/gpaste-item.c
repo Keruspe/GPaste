@@ -10,6 +10,8 @@
 
 typedef struct
 {
+    GMutex  lock;
+
     gchar  *uuid;
     gchar  *value;
     GSList *special_values;
@@ -18,6 +20,24 @@ typedef struct
 } GPasteItemPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (Item, item, G_TYPE_OBJECT)
+
+enum
+{
+    SPECIAL_VALUE_ADDED,
+
+    LAST_SIGNAL
+};
+
+static guint64 signals[LAST_SIGNAL] = { 0 };
+
+static void
+g_paste_item_on_special_value_added (GPasteItem *self)
+{
+    g_signal_emit (self,
+		   signals[SPECIAL_VALUE_ADDED],
+                   0, /* detail */
+                   NULL);
+}
 
 /**
  * g_paste_item_get_uuid:
@@ -93,24 +113,26 @@ g_paste_item_get_special_values (const GPasteItem *self)
 /**
  * g_paste_item_get_special_value:
  * @self: a #GPasteItem instance
- * @atom: the value we want to get
+ * @mime: the value we want to get
  *
  * Get the special value (special mime type) for an item
  *
  * Returns: read-only special value
  */
 G_PASTE_VISIBLE const gchar *
-g_paste_item_get_special_value  (const GPasteItem *self,
-                                 GPasteSpecialAtom atom)
+g_paste_item_get_special_value  (GPasteItem       *self,
+                                 GPasteSpecialMime mime)
 {
     g_return_val_if_fail (_G_PASTE_IS_ITEM (self), NULL);
 
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (self);
+    const gchar *mime_str = g_paste_special_mime_get (mime);
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
 
     for (GSList *sv = priv->special_values; sv; sv = sv->next)
     {
         GPasteSpecialValue *v = sv->data;
-        if (v->mime == atom)
+        if (v->mime == mime_str)
             return v->data;
     }
 
@@ -297,6 +319,7 @@ g_paste_item_add_special_value (GPasteItem               *self,
     g_return_if_fail (_G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&priv->lock);
     GPasteSpecialValue *gsv = g_new (GPasteSpecialValue, 1);
 
     gsv->mime = special_value->mime;
@@ -304,6 +327,8 @@ g_paste_item_add_special_value (GPasteItem               *self,
 
     priv->special_values = g_slist_prepend (priv->special_values, gsv);
     priv->size += strlen (gsv->data);
+
+    g_paste_item_on_special_value_added (self);
 }
 
 /**
@@ -347,7 +372,7 @@ g_paste_item_set_uuid (GPasteItem  *self,
 static void
 g_paste_item_finalize (GObject *object)
 {
-    const GPasteItemPrivate *priv = _g_paste_item_get_instance_private (G_PASTE_ITEM (object));
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (G_PASTE_ITEM (object));
 
     g_free (priv->uuid);
     g_free (priv->value);
@@ -361,6 +386,7 @@ g_paste_item_finalize (GObject *object)
     }
 
     g_slist_free (priv->special_values);
+    g_mutex_clear (&priv->lock);
 
     G_OBJECT_CLASS (g_paste_item_parent_class)->finalize (object);
 }
@@ -393,11 +419,32 @@ g_paste_item_class_init (GPasteItemClass *klass)
     klass->set_state = g_paste_item_default_set_state;
 
     G_OBJECT_CLASS (klass)->finalize = g_paste_item_finalize;
+
+    /**
+     * GPasteItem::special-value-added:
+     * @item: the item to which the special value was added
+     *
+     * The "special-value-added" signal is emitted when a special
+     * value has been added after some supported custom mime type
+     * has been received from the clipboard.
+     */
+    signals[SPECIAL_VALUE_ADDED] = g_signal_new ("special-value-added",
+                                                 G_PASTE_TYPE_ITEM,
+                                                 G_SIGNAL_RUN_FIRST,
+                                                 0,    /* class offset     */
+                                                 NULL, /* accumulator      */
+                                                 NULL, /* accumulator data */
+                                                 g_cclosure_marshal_VOID__VOID,
+                                                 G_TYPE_NONE,
+                                                 0);
 }
 
 static void
-g_paste_item_init (GPasteItem *self G_GNUC_UNUSED)
+g_paste_item_init (GPasteItem *self)
 {
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
+
+    g_mutex_init (&priv->lock);
 }
 
 /**

@@ -115,7 +115,7 @@ g_paste_keybinding_activate (GPasteKeybinding *self,
 
     if (binding)
     {
-        gtk_accelerator_parse_with_keycode (binding, NULL, &priv->keycodes, &priv->modifiers);
+        gtk_accelerator_parse_with_keycode (binding, NULL, NULL, &priv->keycodes, &priv->modifiers);
 
         priv->active = priv->keycodes != NULL;
     }

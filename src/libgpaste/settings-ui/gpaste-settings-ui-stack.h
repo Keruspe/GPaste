@@ -17,7 +17,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_SETTINGS_UI_STACK (g_paste_settings_ui_stack_get_type ())
 
-G_PASTE_FINAL_TYPE (SettingsUiStack, settings_ui_stack, SETTINGS_UI_STACK, GtkStack)
+G_PASTE_FINAL_TYPE (SettingsUiStack, settings_ui_stack, SETTINGS_UI_STACK, GtkWidget)
 
 void g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
                                           const gchar              *name,

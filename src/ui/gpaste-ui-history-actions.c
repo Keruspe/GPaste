@@ -9,8 +9,6 @@
 #include <gpaste-ui-empty-history.h>
 #include <gpaste-ui-history-actions.h>
 
-#include "gpaste-gtk-compat.h"
-
 struct _GPasteUiHistoryActions
 {
     GtkPopover parent_instance;

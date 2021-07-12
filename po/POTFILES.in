@@ -13,6 +13,8 @@ src/libgpaste/core/gpaste-clipboard.c
 src/libgpaste/core/gpaste-clipboard.h
 src/libgpaste/core/gpaste-clipboards-manager.c
 src/libgpaste/core/gpaste-clipboards-manager.h
+src/libgpaste/core/gpaste-content-provider.c
+src/libgpaste/core/gpaste-content-provider.h
 src/libgpaste/core/gpaste-history.c
 src/libgpaste/core/gpaste-history.h
 src/libgpaste/core/gpaste-image-item.c
@@ -23,8 +25,8 @@ src/libgpaste/core/gpaste-item-enums.h
 src/libgpaste/core/gpaste-item.h
 src/libgpaste/core/gpaste-password-item.c
 src/libgpaste/core/gpaste-password-item.h
-src/libgpaste/core/gpaste-special-atom.c
-src/libgpaste/core/gpaste-special-atom.h
+src/libgpaste/core/gpaste-special-mime.c
+src/libgpaste/core/gpaste-special-mime.h
 src/libgpaste/core/gpaste-text-item.c
 src/libgpaste/core/gpaste-text-item.h
 src/libgpaste/core/gpaste-update-enums.c
@@ -44,7 +46,6 @@ src/libgpaste/gnome-shell-client/gpaste-gnome-shell-client.h
 src/libgpaste/gpaste-gdbus-defines.h
 src/libgpaste/gpaste-gdbus-macros.h
 src/libgpaste/gpaste-gsettings-keys.h
-src/libgpaste/gpaste-gtk-compat.h
 src/libgpaste/gpaste.h
 src/libgpaste/gpaste-macros.h
 src/libgpaste/io/gpaste-file-backend.c

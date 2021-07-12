@@ -10,7 +10,7 @@
 
 struct _GPasteSettingsUiStack
 {
-    GtkStack parent_instance;
+    GtkWidget parent_instance;
 };
 
 enum
@@ -22,6 +22,8 @@ enum
 
 typedef struct
 {
+    GtkStack        *stack;
+
     GPasteClient    *client;
     GPasteSettings  *settings;
 
@@ -56,7 +58,7 @@ typedef struct
     guint64          c_signals[C_LAST_SIGNAL];
 } GPasteSettingsUiStackPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_STACK)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_WIDGET)
 
 #define SETTING_CALLBACK_FULL(setting, type, cast)                            \
     static inline void                                                        \
@@ -90,7 +92,9 @@ g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
 {
     g_return_if_fail (_G_PASTE_IS_SETTINGS_UI_STACK (self));
 
-    gtk_stack_add_titled (GTK_STACK (self),
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
+
+    gtk_stack_add_titled (priv->stack,
                           GTK_WIDGET (panel),
                           name, label);
 }
@@ -352,9 +356,9 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     else if (g_paste_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_switch), g_paste_settings_get_images_support (settings));
     else if (g_paste_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
-        gtk_entry_set_text (priv->launch_ui_entry, g_paste_settings_get_launch_ui (settings));
+        gtk_entry_buffer_set_text (gtk_entry_get_buffer (priv->launch_ui_entry), g_paste_settings_get_launch_ui (settings), -1);
     else if (g_paste_str_equal (key, G_PASTE_MAKE_PASSWORD_SETTING))
-        gtk_entry_set_text (priv->make_password_entry, g_paste_settings_get_make_password (settings));
+        gtk_entry_buffer_set_text (gtk_entry_get_buffer (priv->make_password_entry), g_paste_settings_get_make_password (settings), -1);
     else if (g_paste_str_equal (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
         gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
@@ -366,19 +370,19 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
     else if (g_paste_str_equal (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
         gtk_spin_button_set_value (priv->min_text_item_size_button, g_paste_settings_get_min_text_item_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_POP_SETTING))
-        gtk_entry_set_text (priv->pop_entry, g_paste_settings_get_pop (settings));
+        gtk_entry_buffer_set_text (gtk_entry_get_buffer (priv->pop_entry), g_paste_settings_get_pop (settings), -1);
     else if (g_paste_str_equal (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
         gtk_switch_set_active (GTK_SWITCH (priv->primary_to_history_switch), g_paste_settings_get_primary_to_history (settings));
     else if (g_paste_str_equal (key, G_PASTE_SAVE_HISTORY_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->save_history_switch), g_paste_settings_get_save_history (settings));
     else if (g_paste_str_equal (key, G_PASTE_SHOW_HISTORY_SETTING))
-        gtk_entry_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings));
+        gtk_entry_buffer_set_text (gtk_entry_get_buffer (priv->show_history_entry), g_paste_settings_get_show_history (settings), -1);
     else if (g_paste_str_equal (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
-        gtk_entry_set_text (priv->sync_clipboard_to_primary_entry, g_paste_settings_get_sync_clipboard_to_primary (settings));
+        gtk_entry_buffer_set_text (gtk_entry_get_buffer (priv->sync_clipboard_to_primary_entry), g_paste_settings_get_sync_clipboard_to_primary (settings), -1);
     else if (g_paste_str_equal (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
-        gtk_entry_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings));
+        gtk_entry_buffer_set_text (gtk_entry_get_buffer (priv->sync_primary_to_clipboard_entry), g_paste_settings_get_sync_primary_to_clipboard (settings), -1);
     else if (g_paste_str_equal (key, G_PASTE_UPLOAD_SETTING))
-        gtk_entry_set_text (priv->upload_entry, g_paste_settings_get_upload (settings));
+        gtk_entry_buffer_set_text (gtk_entry_get_buffer (priv->upload_entry), g_paste_settings_get_upload (settings), -1);
     else if (g_paste_str_equal (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->synchronize_clipboards_switch), g_paste_settings_get_synchronize_clipboards (settings));
     else if (g_paste_str_equal (key, G_PASTE_TRACK_CHANGES_SETTING))
@@ -471,17 +475,21 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
 G_PASTE_VISIBLE GPasteSettingsUiStack *
 g_paste_settings_ui_stack_new (void)
 {
-    GPasteSettingsUiStack *self = G_PASTE_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_STACK,
-                                                                             "margin",      12,
-                                                                             "homogeneous", TRUE,
-                                                                             NULL));
-    const GPasteSettingsUiStackPrivate *priv = _g_paste_settings_ui_stack_get_instance_private (self);
+    GtkWidget *widget = g_object_new (G_PASTE_TYPE_SETTINGS_UI_STACK, NULL);
+    GtkWidget *stack = gtk_stack_new ();
+    /* FIXME: "margin",      12, "homogeneous", TRUE, */
+    GPasteSettingsUiStack *self = (GPasteSettingsUiStack *) widget;
+    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
+
+    priv->stack = (GtkStack *) stack;
 
     if (g_paste_settings_ui_check_connection_error (priv->init_error))
     {
         g_object_unref (self);
         return NULL;
     }
+
+    gtk_widget_set_parent (stack, widget);
 
     return self;
 }

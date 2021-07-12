@@ -25,7 +25,7 @@ bindings_GPaste_1_0_gir_INCLUDES = \
 	GdkPixbuf-2.0              \
 	Gio-2.0                    \
 	GObject-2.0                \
-	Gtk-3.0                    \
+	Gtk-4.0                    \
 	$(NULL)
 
 if HAVE_INTROSPECTION

@@ -12,6 +12,11 @@
 #include <gpaste-uris-item.h>
 #include <gpaste-util.h>
 
+#define G_PASTE_LOCK_HISTORY                    \
+    g_debug ("%s: Locking history", G_STRFUNC); \
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new (&priv->lock)
+
+
 struct _GPasteHistory
 {
     GObject parent_instance;
@@ -26,6 +31,8 @@ enum
 
 typedef struct
 {
+    GMutex                lock;
+
     GPasteStorageBackend *backend;
     GPasteSettings       *settings;
     GList                *history;
@@ -137,7 +144,9 @@ g_paste_history_update (GPasteHistory     *self,
                         GPasteUpdateTarget target,
                         guint64            position)
 {
-    g_paste_history_save (self, NULL);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+
+    g_paste_storage_backend_write_history (priv->backend, priv->name, priv->history);
 
     g_debug ("history: update");
 
@@ -346,6 +355,9 @@ g_paste_history_add (GPasteHistory *self,
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (_G_PASTE_IS_ITEM (item));
 
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
     _g_paste_history_add (self, item, TRUE);
 }
 
@@ -371,6 +383,23 @@ g_paste_history_remove_common (GPasteHistory        *self,
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, index);
 }
 
+static void
+g_paste_history_remove_locked (GPasteHistory        *self,
+                               GPasteHistoryPrivate *priv,
+                               guint64               index)
+{
+    GList *history = priv->history;
+
+    g_debug ("history: remove '%" G_GUINT64_FORMAT "'", index);
+
+    if (index >= g_list_length (history))
+        return;
+
+    GList *item = g_list_nth (history, index);
+
+    g_paste_history_remove_common (self, priv, item, index);
+}
+
 /**
  * g_paste_history_remove:
  * @self: a #GPasteHistory instance
@@ -385,16 +414,9 @@ g_paste_history_remove (GPasteHistory *self,
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    GList *history = priv->history;
+    G_PASTE_LOCK_HISTORY;
 
-    g_debug ("history: remove '%" G_GUINT64_FORMAT "'", index);
-
-    if (index >= g_list_length (history))
-        return;
-
-    GList *item = g_list_nth (history, index);
-
-    g_paste_history_remove_common (self, priv, item, index);
+    g_paste_history_remove_locked (self, priv, index);
 }
 
 /**
@@ -413,6 +435,7 @@ g_paste_history_remove_by_uuid (GPasteHistory *self,
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     g_debug ("history: remove '%s", uuid);
 
@@ -442,6 +465,7 @@ g_paste_history_refresh_item_size (GPasteHistory    *self,
     g_return_if_fail (_G_PASTE_IS_ITEM (item));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     if (!g_list_find (priv->history, item))
         return;
@@ -485,7 +509,10 @@ g_paste_history_get (GPasteHistory *self,
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    return g_paste_history_private_get (_g_paste_history_get_instance_private (self), index);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    return g_paste_history_private_get (priv, index);
 }
 
 /**
@@ -503,7 +530,10 @@ g_paste_history_get_by_uuid (GPasteHistory *self,
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    return g_paste_history_private_get_by_uuid (_g_paste_history_get_instance_private (self), uuid);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    return g_paste_history_private_get_by_uuid (priv, uuid);
 }
 
 /**
@@ -522,7 +552,10 @@ g_paste_history_dup (GPasteHistory *self,
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
 
-    return g_object_ref (g_paste_history_private_get (_g_paste_history_get_instance_private (self), index));
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    return g_object_ref (g_paste_history_private_get (priv, index));
 }
 
 /**
@@ -541,7 +574,9 @@ g_paste_history_select (GPasteHistory *self,
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), FALSE);
     g_debug ("history: select '%s'", uuid);
 
-    GPasteItem *item = g_paste_history_private_get_by_uuid (_g_paste_history_get_instance_private (self), uuid);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+    GPasteItem *item = g_paste_history_private_get_by_uuid (priv, uuid);
 
     if (!item)
         return FALSE;
@@ -589,7 +624,8 @@ g_paste_history_replace (GPasteHistory *self,
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!contents || g_utf8_validate (contents, -1, NULL));
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
     guint64 index;
     GList *todel = g_paste_history_private_get_item_by_uuid (priv, uuid, &index);
 
@@ -648,7 +684,8 @@ g_paste_history_set_password (GPasteHistory *self,
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
     guint64 index;
     GList *todel = g_paste_history_private_get_item_by_uuid (priv, uuid, &index);
 
@@ -680,7 +717,8 @@ g_paste_history_get_password (GPasteHistory *self,
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (!name || g_utf8_validate (name, -1, NULL), NULL);
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
     GPasteItem *item = _g_paste_history_private_get_password (priv, name, NULL);
 
     return (item) ? G_PASTE_PASSWORD_ITEM (item) : NULL;
@@ -700,11 +738,12 @@ g_paste_history_delete_password (GPasteHistory *self,
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
     guint64 index;
 
     if (_g_paste_history_private_get_password (priv, name, &index))
-        g_paste_history_remove (self, index);
+        g_paste_history_remove_locked (self, priv, index);
 }
 
 /**
@@ -724,7 +763,8 @@ g_paste_history_rename_password (GPasteHistory *self,
     g_return_if_fail (!old_name || g_utf8_validate (old_name, -1, NULL));
     g_return_if_fail (!new_name || g_utf8_validate (new_name, -1, NULL));
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
     guint64 index = 0;
     GPasteItem *item = _g_paste_history_private_get_password (priv, old_name, &index);
     if (item)
@@ -746,6 +786,7 @@ g_paste_history_empty (GPasteHistory *self)
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     g_list_free_full (priv->history, g_object_unref);
     priv->history = NULL;
@@ -768,9 +809,32 @@ g_paste_history_save (GPasteHistory *self,
 {
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, priv->history);
+}
+
+static void
+g_paste_history_load_locked (GPasteHistory        *self,
+                             GPasteHistoryPrivate *priv,
+                             const gchar          *name)
+{
+    g_list_free_full (priv->history,
+                      g_object_unref);
+    priv->history = NULL;
+    priv->size = 0;
+
+    g_free (priv->name);
+    priv->name = g_strdup ((name) ? name : g_paste_settings_get_history_name (priv->settings));
+
+    g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
+
+    if (priv->history)
+    {
+        g_paste_history_activate_first (self, TRUE);
+        g_paste_history_private_elect_new_biggest (priv);
+    }
 }
 
 /**
@@ -788,25 +852,12 @@ g_paste_history_load (GPasteHistory *self,
     g_return_if_fail (!name || g_utf8_validate (name, -1, NULL));
 
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     if (priv->name && g_paste_str_equal(name, priv->name))
         return;
 
-    g_list_free_full (priv->history,
-                      g_object_unref);
-    priv->history = NULL;
-    priv->size = 0;
-
-    g_free (priv->name);
-    priv->name = g_strdup ((name) ? name : g_paste_settings_get_history_name (priv->settings));
-
-    g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
-
-    if (priv->history)
-    {
-        g_paste_history_activate_first (self, TRUE);
-        g_paste_history_private_elect_new_biggest (priv);
-    }
+    g_paste_history_load_locked (self, priv, name);
 }
 
 /**
@@ -863,11 +914,11 @@ g_paste_history_delete (GPasteHistory *self,
 static void
 g_paste_history_history_name_changed (GPasteHistory *self)
 {
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     g_debug ("history: name changed to '%s'", priv->name);
 
-    g_paste_history_load (self, NULL);
+    g_paste_history_load_locked (self, priv, NULL);
     g_paste_history_emit_switch (self, priv->name);
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
@@ -879,6 +930,7 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
 {
     GPasteHistory *self = user_data;
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     /* FIXME: track text item size settings */
     if (g_paste_str_equal(key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
@@ -910,10 +962,11 @@ g_paste_history_dispose (GObject *object)
 static void
 g_paste_history_finalize (GObject *object)
 {
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (G_PASTE_HISTORY (object));
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (G_PASTE_HISTORY (object));
 
     g_free (priv->name);
     g_list_free_full (priv->history, g_object_unref);
+    g_mutex_clear (&priv->lock);
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->finalize (object);
 }
@@ -993,6 +1046,10 @@ g_paste_history_init (GPasteHistory *self)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
+    g_mutex_init (&priv->lock);
+
+    G_PASTE_LOCK_HISTORY;
+
     g_paste_history_private_elect_new_biggest (priv);
 }
 
@@ -1023,11 +1080,12 @@ g_paste_history_get_history (const GPasteHistory *self)
  * Returns: The length of the inner history
  */
 G_PASTE_VISIBLE guint64
-g_paste_history_get_length (const GPasteHistory *self)
+g_paste_history_get_length (GPasteHistory *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), 0);
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
 
     return g_list_length (priv->history);
 }
@@ -1060,15 +1118,16 @@ g_paste_history_get_current (const GPasteHistory *self)
  * Returns: (transfer full): The uuids of the matching elements
  */
 G_PASTE_VISIBLE GStrv
-g_paste_history_search (const GPasteHistory *self,
-                        const gchar         *pattern)
+g_paste_history_search (GPasteHistory *self,
+                        const gchar   *pattern)
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
 
     g_debug ("history: search '%s'", pattern);
 
-    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
     g_autoptr (GError) error = NULL;
     g_autoptr (GRegex) regex = g_regex_new (pattern,
                                             G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,

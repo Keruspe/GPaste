@@ -283,7 +283,8 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
         }
         else
         {
-            g_autoptr (GdkPixbuf) img = gdk_pixbuf_new_from_file (file, NULL /* Error */);
+            g_autoptr (GFile) image_file = g_file_new_for_path (file);
+            g_autoptr (GdkTexture) img = gdk_texture_new_from_file (image_file, NULL /* Error */);
 
             g_paste_daemon_private_do_add_item (priv, g_paste_image_item_new (img));
         }
@@ -666,10 +667,6 @@ g_paste_daemon_on_extension_state_changed (GPasteDaemon *self,
 static void
 g_paste_daemon_reexecute (GPasteDaemon *self)
 {
-    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
-
-    g_paste_clipboards_manager_store (priv->clipboards_manager);
-
     g_signal_emit (self,
                    signals[REEXECUTE_SELF],
                    0, /* detail */
@@ -1195,8 +1192,9 @@ g_paste_daemon_init (GPasteDaemon *self)
     GPasteHistory *history = priv->history = g_paste_history_new (settings);
     GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager = g_paste_clipboards_manager_new (history, settings);
 
-    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new_clipboard (settings);
-    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new_primary (settings);
+    g_autoptr (GPasteContentProvider) content_provider = g_paste_content_provider_new ();
+    g_autoptr (GPasteClipboard) clipboard = g_paste_clipboard_new_clipboard (settings, content_provider);
+    g_autoptr (GPasteClipboard) primary = g_paste_clipboard_new_primary (settings, content_provider);
 
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, clipboard);
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);

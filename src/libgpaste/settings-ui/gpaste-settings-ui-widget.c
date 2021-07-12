@@ -55,10 +55,11 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
 
     g_paste_settings_ui_stack_fill (stack);
 
-    gtk_grid_attach (grid, gtk_widget_new (GTK_TYPE_STACK_SWITCHER,
-                                           "stack",  GTK_STACK (stack),
-                                           "halign", GTK_ALIGN_CENTER,
-                                           NULL), 0, current_line++, 1, 1);
+    GtkWidget *switcher = gtk_stack_switcher_new ();
+    // FIXME: "halign", GTK_ALIGN_CENTER,
+
+    gtk_stack_switcher_set_stack (GTK_STACK_SWITCHER (self), GTK_STACK (stack));
+    gtk_grid_attach (grid, switcher, 0, current_line++, 1, 1);
     gtk_grid_attach (grid, GTK_WIDGET (stack), 0, current_line++, 1, 1);
 }
 
@@ -73,7 +74,7 @@ g_paste_settings_ui_widget_init (GPasteSettingsUiWidget *self)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_settings_ui_widget_new (void)
 {
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET, NULL);
+    GtkWidget *self = g_object_new (G_PASTE_TYPE_SETTINGS_UI_WIDGET, NULL);
     const GPasteSettingsUiWidgetPrivate *priv = _g_paste_settings_ui_widget_get_instance_private (G_PASTE_SETTINGS_UI_WIDGET (self));
 
     if (!priv->stack)

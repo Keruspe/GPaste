@@ -14,27 +14,27 @@ struct _GPasteUrisItem
 
 typedef struct
 {
-    GStrv uris;
+    GSList *files;
 } GPasteUrisItemPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UrisItem, uris_item, G_PASTE_TYPE_TEXT_ITEM)
 
 /**
- * g_paste_uris_item_get_uris:
+ * g_paste_uris_item_get_files:
  * @self: a #GPasteUrisItem instance
  *
- * Get the list of uris contained in the #GPasteUrisItem
+ * Get the list of files contained in the #GPasteUrisItem
  *
- * Returns: (transfer none): read-only array of read-only uris (strings)
+ * Returns: (transfer none) (element-type GFile): #GdkFileList
  */
-G_PASTE_VISIBLE const gchar * const *
-g_paste_uris_item_get_uris (const GPasteUrisItem *self)
+G_PASTE_VISIBLE const GSList *
+g_paste_uris_item_get_files (const GPasteUrisItem *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_URIS_ITEM (self), FALSE);
+    g_return_val_if_fail (_G_PASTE_IS_URIS_ITEM (self), NULL);
 
     const GPasteUrisItemPrivate *priv = _g_paste_uris_item_get_instance_private (self);
 
-    return (const gchar * const *) priv->uris;
+    return priv->files;
 }
 
 static gboolean
@@ -58,7 +58,7 @@ g_paste_uris_item_finalize (GObject *object)
 {
     const GPasteUrisItemPrivate *priv = _g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (object));
 
-    g_strfreev (priv->uris);
+    g_boxed_free (GDK_TYPE_FILE_LIST, (gpointer) priv->files);
 
     G_OBJECT_CLASS (g_paste_uris_item_parent_class)->finalize (object);
 }
@@ -81,7 +81,7 @@ g_paste_uris_item_init (GPasteUrisItem *self G_GNUC_UNUSED)
 
 /**
  * g_paste_uris_item_new:
- * @uris: a string containing the paths separated by "\n" (as returned by gtk_clipboard_wait_for_uris)
+ * @files: (element-type GFile): a #GdkFileList instance
  *
  * Create a new instance of #GPasteUrisItem
  *
@@ -89,34 +89,39 @@ g_paste_uris_item_init (GPasteUrisItem *self G_GNUC_UNUSED)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteItem *
-g_paste_uris_item_new (const gchar *uris)
+g_paste_uris_item_new (const GSList *files)
 {
-    g_return_val_if_fail (uris, NULL);
-    g_return_val_if_fail (g_utf8_validate (uris, -1, NULL), NULL);
+    g_return_val_if_fail (files, NULL);
 
-    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
+    g_autoptr (GString) uris = g_string_new (NULL);
+    // This is the prefix displayed in history to identify selected files
+    g_autoptr (GString) display_string = g_string_new (_("[Files]"));
+    const gchar *home = g_get_home_dir ();
+
+    for (const GSList *f = files; f; f = f->next)
+    {
+        GFile *file = f->data;
+        g_autofree gchar *uri = g_file_get_uri (file);
+        g_autofree gchar *path = g_file_get_path (file);
+        
+        g_string_append_printf (uris, "%s\n", uri);
+
+        if (path)
+        {
+            g_autofree gchar *path_with_home = g_paste_util_replace (path, home, "~");
+            g_string_append_printf (display_string, " %s", path_with_home);
+        }
+        else
+        {
+            g_string_append_printf (display_string, " %s", uri);
+        }
+    }
+
+    GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris->str);
     GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
 
-    g_autofree gchar *display_string_with_newlines = g_paste_util_replace (uris, g_get_home_dir (), "~");
-    g_autofree gchar *display_string = g_paste_util_replace (display_string_with_newlines, "\n", " ");
-
-    // This is the prefix displayed in history to identify selected files
-    g_autofree gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);
-
-    g_paste_item_set_display_string (self, full_display_string);
-
-    g_auto (GStrv) paths = g_strsplit (uris, "\n", 0);
-    guint64 length = g_strv_length (paths);
-
-    g_paste_item_add_size (self, length + 1);
-
-    GStrv _uris = priv->uris = g_new (gchar *, length + 1);
-    for (guint64 i = 0; i < length; ++i)
-    {
-        _uris[i] = g_strconcat ("file://", paths[i], NULL);
-        g_paste_item_add_size (self, strlen (_uris[i]) + 1);
-    }
-    _uris[length] = NULL;
+    g_paste_item_set_display_string (self, display_string->str);
+    priv->files = g_boxed_copy (GDK_TYPE_FILE_LIST, (gconstpointer) files);
 
     return self;
 }

@@ -12,6 +12,7 @@
 #define __G_PASTE_URIS_ITEM_H__
 
 #include <gpaste-text-item.h>
+#include <gdk/gdk.h>
 
 G_BEGIN_DECLS
 
@@ -19,9 +20,9 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (UrisItem, uris_item, URIS_ITEM, GPasteTextItem)
 
-const gchar * const *g_paste_uris_item_get_uris (const GPasteUrisItem *self);
+const GSList *g_paste_uris_item_get_files (const GPasteUrisItem *self);
 
-GPasteItem *g_paste_uris_item_new (const gchar *uris);
+GPasteItem *g_paste_uris_item_new (const GSList *files);
 
 G_END_DECLS
 

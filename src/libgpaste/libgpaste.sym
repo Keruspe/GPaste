@@ -126,15 +126,18 @@ global:
     g_paste_clipboard_select_text;
     g_paste_clipboard_set_image;
     g_paste_clipboard_set_text;
-    g_paste_clipboard_store;
     g_paste_clipboard_sync_text;
+    g_paste_clipboard_update;
     g_paste_clipboards_manager_activate;
     g_paste_clipboards_manager_add_clipboard;
     g_paste_clipboards_manager_get_type;
     g_paste_clipboards_manager_new;
     g_paste_clipboards_manager_select;
-    g_paste_clipboards_manager_store;
     g_paste_clipboards_manager_sync_from_to;
+
+    g_paste_content_provider_get_type;
+    g_paste_content_provider_new;
+    g_paste_content_provider_set_item;
 
     g_paste_daemon_get_type;
     g_paste_daemon_new;
@@ -337,8 +340,8 @@ global:
     g_paste_show_history_keybinding_get_type;
     g_paste_show_history_keybinding_new;
 
-    g_paste_special_atom_get;
-    g_paste_special_atom_get_type;
+    g_paste_special_mime_get;
+    g_paste_special_mime_get_type;
 
     g_paste_storage_backend_get_type;
     g_paste_storage_backend_new;
@@ -363,8 +366,8 @@ global:
     g_paste_upload_keybinding_get_type;
     g_paste_upload_keybinding_new;
 
+    g_paste_uris_item_get_files;
     g_paste_uris_item_get_type;
-    g_paste_uris_item_get_uris;
     g_paste_uris_item_new;
 
     g_paste_util_activate_ui;
