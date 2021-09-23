@@ -26,3 +26,4 @@
 /po/remove-potcdate.sin
 /src/gnome-shell/metadata.json
 /test-suite.log
+*.mo

@@ -1,0 +1,970 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# This file is distributed under the same license as the gpaste package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gpaste 3.38.5\n"
+"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
+"POT-Creation-Date: 2021-02-03 13:55+0100\n"
+"PO-Revision-Date: 2021-09-24 00:08+0800\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Last-Translator: larryw3i <larryw3i@163.com>\n"
+"Language-Team: \n"
+"X-Generator: Poedit 3.0\n"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
+msgid "GPaste"
+msgstr "GPaste"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
+msgid "Manage your clipboard history"
+msgstr "管理你的剪切板记录"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+msgid "Marc-Antoine Perennou"
+msgstr "Marc-Antoine Perennou"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
+msgid ""
+"GPaste is a clipboard managing system allowing you to track and manage your "
+"clipboard history in a highly customizable way."
+msgstr "GPaste是一个可以让你高度定制的剪切板记录管理系统。"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
+msgid ""
+"GPaste provides you with a graphical tool allowing you to manage everything "
+"easily."
+msgstr "GPaste可以让你通过界面轻而易举地管理所有剪切板记录。"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
+msgid "The main UI"
+msgstr "主界面"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
+msgid "The settings UI"
+msgstr "设置界面"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:75
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
+msgid "This is a maintenance release. Changes:"
+msgstr "这是一个维护版本。更改如下："
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+msgid "better handling and reporting of invalid uuids passed to gpaste-client"
+msgstr "无效的uuid被传递到gpaste-client时最佳的处理和反馈"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+msgid ""
+"gpaste-client now has a --use-index argument for several subcommands to use "
+"index instead of uuid"
+msgstr ""
+"当前gpaste-client拥有一个子命令的--use-index参数以方便使用索引来代替uuid"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+msgid "fix the make-password keybinding"
+msgstr "修复make-password快捷键"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+msgid "updated translations"
+msgstr "更新翻译"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
+msgid "gnome-shell extension warning fixes"
+msgstr "gnome-shell扩展的warning被修复"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:106
+msgid "gnome-shell extension cosmetic updates"
+msgstr "gnome-shell扩展cosmetic更新"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+msgid "Disable images support by default (can be reenabled in preferences)"
+msgstr "默认禁用图片(可以在首选项中重新启用)"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
+msgid "Search now includes passwords (using their names)"
+msgstr "搜索现在包括了密码(使用密码名)"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
+msgid "systemd integration enhancements"
+msgstr "systemd集成增强功能"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
+msgid "First release for GNOME 3.38. Changes:"
+msgstr "首次发行GNOME 3.38的更改如下:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
+msgid "Drop the Tracking DBus signal"
+msgstr "去除跟踪DBus的信号"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+msgid "Switch to uuids to identify items"
+msgstr "将标识符项切换到uuid"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:97
+msgid "Bump DBus interface to org.gnome.GPaste2"
+msgstr "将DBus接口连接到org.gnome.GPaste2"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
+msgid "Update to gnome-shell 3.38.0"
+msgstr "更新到gnome-shell 3.38.0"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:114
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:188
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
+msgstr "使用 Ctrl-数字 来修复gnome-shell的激活项"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:122
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr "重新修复gnome-shell的快捷键"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
+msgid "Fix keybinding grab with gnome-shell"
+msgstr "重新修复gnome-shell的快捷键"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
+msgid "First release for GNOME 3.36. Changes:"
+msgstr "首次发行GNOME 3.36。更改如下："
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
+msgid "Update to gnome-shell 3.36.0"
+msgstr "更新到gnome-shell 3.36.0"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
+msgid "Compatibility with recent appstream-glib"
+msgstr "兼容最近的appstream-glib"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
+msgid "First release for GNOME 3.34. Changes:"
+msgstr "首次发行GNOME 3.34。更改如下："
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+msgid "Update to gnome-shell 3.34.0"
+msgstr "更新到gnome-shell 3.34.0"
+
+#: data/control-center/42-gpaste.control-center.xml.in:2
+msgid "@GETTEXT_PACKAGE@"
+msgstr "@GETTEXT_PACKAGE@"
+
+#: data/control-center/42-gpaste.control-center.xml.in:3
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
+msgid "Launch the graphical tool"
+msgstr "启动界面"
+
+#: data/control-center/42-gpaste.control-center.xml.in:4
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
+msgid "Mark the active item as being a password"
+msgstr "标记激活项为密码"
+
+#: data/control-center/42-gpaste.control-center.xml.in:5
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
+msgid "Delete the active item from history"
+msgstr "删除激活项"
+
+#: data/control-center/42-gpaste.control-center.xml.in:6
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
+msgid "Display the history"
+msgstr "禁用记录"
+
+#: data/control-center/42-gpaste.control-center.xml.in:7
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
+msgid "Sync the clipboard to the primary selection"
+msgstr "同步剪切板到主选择项"
+
+#: data/control-center/42-gpaste.control-center.xml.in:8
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
+msgid "Sync the primary selection to the clipboard"
+msgstr "同步主选择项到剪切板"
+
+#: data/control-center/42-gpaste.control-center.xml.in:9
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+msgid "Upload the active item to a pastebin service"
+msgstr "将活动项上传到pastebin服务"
+
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr "剪切板;管理;设置;首选项;配置;"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
+msgid "Max size of an element when displaying it"
+msgstr "显示项的最大尺寸"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
+msgid ""
+"The extra stuff of that element will be replaced by \"…\", and newlines by "
+"\" \" when displaying from the applet, 0 to disable."
+msgstr ""
+"当在applet显示时，项的额外内容会被 \"…\" 替换, 新行会被空格替换，值为0则禁"
+"用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
+msgid "Do we detect and replace growing lines in history?"
+msgstr "如果新项是在前一项的基础上增加,那要以新换旧吗?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
+msgid ""
+"By default, selecting \"Here is\", then \"Here is an example\" will create "
+"two entries in the history. With this feature enabled, the first one will be "
+"replaced by the second one."
+msgstr ""
+"默认时，选择“Here is”和“Here is an example”会在记录里面显示两个项，当这个功能"
+"被启用，第一个会被第二个替换。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
+msgid "The name of the current history"
+msgstr "最经记录名"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
+msgid "The default name is \"history\""
+msgstr "默认名为history"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
+msgid "Do we save the images copied to history, or only text?"
+msgstr "你要保存被剪切板的图片到记录里还是只需要保存文本就行？"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
+msgid "By default, we're saving only text"
+msgstr "默认时，GPaste只会保存文本到记录里"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
+msgid "Do we close the UI after selecting an item?"
+msgstr "选择一项后要关闭GPaste界面吗?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
+msgid "By default, we close it"
+msgstr "默认时，我们会关闭界面"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
+msgid "The keyboard shortcut to launch the graphical interface"
+msgstr "启动界面的快捷键"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
+msgid ""
+"By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"默认时，Ctrl+Alt+g快捷键(即<Ctrl><Alt>G)会启动GPaste界面，如果这里的值为空，"
+"这个功能就被禁用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
+msgid "The keyboard shortcut to mark the active item as being a password"
+msgstr "让激活项变为密码的快捷键"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
+msgid ""
+"By default, hitting ctrl + alt + s will mark the active item as being a "
+"password (\"<Ctrl><Alt>S\"). An empty string here disables this "
+"functionnality."
+msgstr ""
+"默认时，Ctrl+Alt+S快捷键（即<Ctrl><Alt>S）会把当前的激活项变为密码。如果这里"
+"的值为空，这个功能就被禁用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
+msgid "Max displayed history size"
+msgstr "显示记录数"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
+msgid "Maximum number of items displayed in the history"
+msgstr "最多显示几条记录"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
+msgid "Max history size"
+msgstr "最大的记录数"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
+msgid "Maximum number of items in history"
+msgstr "最多记录多少项"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
+msgid "Max memory usage (MB)"
+msgstr "GPaste能够使用的内存大小（MB）。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
+msgid "Maximum amount of memory used to store contents"
+msgstr "GPaste存储记录所能使用的内存大小"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
+msgid "Max text item size"
+msgstr "每项文本的最大长度"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
+msgid "Maximum size of a text item. Anything out of this boundary is ignored."
+msgstr "文本项的最大长度，文本内容超过会不被记录。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
+msgid "Min text item size"
+msgstr "每项文本的最小长度"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
+msgid "Minimum size of a text item. Anything out of this boundary is ignored."
+msgstr "文本项的最小长度，文本内容太少会不被记录。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
+msgid "The keyboard shortcut to delete the first element in history"
+msgstr "“删除第一项”的快捷键"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
+msgid ""
+"By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"默认时Ctrl+Alt+v快捷键（即<Ctrl><Alt>V）会删除第一项，此处内容为空则该功能被"
+"禁用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
+msgid "Does the primary selection affects history?"
+msgstr "将选择的内容添加到记录？"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
+msgid "By default, only clipboard (ctrl+c) affects history."
+msgstr "默认时，你按下Ctrl+C，GPaste才会把选择的内容添加到记录。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
+msgid ""
+"Do we save all versions of selected rich text (e.g. html) or just the plain "
+"text version?"
+msgstr "获取富文本格式（例如html）还是只获取富文本的内容?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
+msgid "By default, we're saving all"
+msgstr "默认时，获取富文本"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+msgid "Do we save the history from one session to another?"
+msgstr "同步session的记录吗？"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+msgid "By default, we're saving it"
+msgstr "默认时，会同步"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
+msgid "The keyboard shortcut to display the menu"
+msgstr "显示记录的快捷键"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+msgid ""
+"By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
+"empty string here disables this functionnality."
+msgstr "默认时，Ctrl+Alt+h快捷键（即<Ctrl><Alt>H）显示记录，此处为空则禁用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
+msgid "The keyboard shortcut to sync the clipboard to the primary selection"
+msgstr "将选中内容替换为剪切板内容的快捷键"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+msgid ""
+"By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"默认时，Ctrl+Alt+o快捷键（即<Ctrl><Alt>P）会将选中内容替换为剪切板内容此处为"
+"空则禁用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
+msgid "The keyboard shortcut to sync the primary selection to the clipboard"
+msgstr "将选中内容放置到剪切板记录的快捷键"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+msgid ""
+"By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"默认时，Ctrl+Alt+p快捷键（即<Ctrl><Alt>P）会将选中内容放置到剪切板记录此处为"
+"空则禁用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+msgid "Are the primary selection and the clipboard synchronized?"
+msgstr "将选中内容放置到剪切板记录？"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
+msgid "By default, the primary selection and the clipboard are independent."
+msgstr "默认时，选中内容不会被放置到记录里。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+msgid "Do we track the clipboard changes?"
+msgstr "跟踪剪切板变化？"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+msgid "By default, we're tracking those changes."
+msgstr "默认时，剪切板的内容都会被放置到记录里。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+msgid ""
+"Do we sync the daemon state with the gnome-shell extension's one? (disable "
+"the daemon when disabling the extension)"
+msgstr ""
+"与gnome-shell的守护进程状态同步？（gnome-shell扩展被禁用时守护进程也会被停"
+"止）"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+msgid "By default, the daemon state keeps unchanged"
+msgstr "默认时，不与gnome-shell扩展的守护进程状态同步"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
+msgid "Do we trim the textual items before adding them to history?"
+msgstr "文本被添加到记录前，要将它的两边空白去除吗？"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+msgid ""
+"Trimming means removing all trailing and ending spaces. By default, we're "
+"letting them as-is."
+msgstr "默认时，添加到记录前会去除首尾空白。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
+msgid ""
+"The keyboard shortcut to upload the first element in history to a pastebin "
+"service"
+msgstr "“上传第一项到pastebin服务”的快捷键"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
+msgid ""
+"By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"默认时，Ctrl+Alt+u快捷键（即<Ctrl><Alt>U）会上传第一项到pastebin服务，此处为"
+"空则禁用。"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+msgid "Do we prompt for confirmation when emptying an history?"
+msgstr "当清空记录时，要弹出提示吗？"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
+msgid "By default, we do as it's a destructive action"
+msgstr "默认时，我们确实留有一手以防止你不小心清空记录"
+
+#: src/client/gpaste-client.c:143 src/client/gpaste-client.c:437
+msgid "Couldn't spawn"
+msgstr "无法自动进行"
+
+#: src/client/gpaste-client.c:155
+#, c-format
+msgid "Usage:\n"
+msgstr "使用:\n"
+
+#. Translators: help for gpaste history
+#: src/client/gpaste-client.c:157
+msgid "print the history with uuids"
+msgstr "输出记录内容（带有uuid）"
+
+#. Translators: help for gpaste history-size
+#: src/client/gpaste-client.c:159
+msgid "print the size of the history"
+msgstr "输出记录的大小"
+
+#. Translators: help for gpaste get-history
+#: src/client/gpaste-client.c:161
+msgid "get the name of the current history"
+msgstr "获取当前记录名"
+
+#. Translators: help for gpaste backup-history <name>
+#. Translators: help for gpaste switch-history <name>
+#. Translators: help for gpaste delete-history <name>
+#. Translators: help for gpaste add-password <name> <text>
+#. Translators: help for gpaste set-password <uuid> <name>
+#. Translators: help for gpaste delete-passworf <name>
+#: src/client/gpaste-client.c:163 src/client/gpaste-client.c:165
+#: src/client/gpaste-client.c:167 src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:185 src/client/gpaste-client.c:189
+msgid "name"
+msgstr "名称（名）"
+
+#: src/client/gpaste-client.c:163
+msgid "backup current history"
+msgstr "备份当前记录"
+
+#: src/client/gpaste-client.c:165
+msgid "switch to another history"
+msgstr "切换到另一个记录"
+
+#: src/client/gpaste-client.c:167
+msgid "delete a history"
+msgstr "删除记录"
+
+#. Translators: help for gpaste list-histories
+#: src/client/gpaste-client.c:169
+msgid "list available histories"
+msgstr "列出可用记录"
+
+#. Translators: help for gpaste add <text>
+#: src/client/gpaste-client.c:171
+msgid "text"
+msgstr "文本"
+
+#: src/client/gpaste-client.c:171
+msgid "set text to clipboard"
+msgstr "保存文本到剪切板"
+
+#: src/client/gpaste-client.c:173
+msgid "password"
+msgstr "密码"
+
+#: src/client/gpaste-client.c:173
+msgid "add the name - password couple to the clipboard"
+msgstr "添加“名称 - 密码”到剪切板"
+
+#. Translators: help for gpaste rename-password <old name> <new name>
+#: src/client/gpaste-client.c:175
+msgid "old name"
+msgstr "旧名称"
+
+#: src/client/gpaste-client.c:175
+msgid "new name"
+msgstr "新名称"
+
+#: src/client/gpaste-client.c:175
+msgid "rename the password"
+msgstr "更改密码名称"
+
+#. Translators: help for gpaste get <uuid>
+#: src/client/gpaste-client.c:177
+msgid "get the item <uuid> from the history"
+msgstr "通过uuid从记录获取项"
+
+#. Translators: help for gpaste select <uuid>
+#: src/client/gpaste-client.c:179
+msgid "set the item <uuid> from the history to the clipboard"
+msgstr "通过uuid将项从记录放置到剪切板"
+
+#. Translators: help for gpaste replace <uuid> <contents>
+#: src/client/gpaste-client.c:181
+msgid "contents"
+msgstr "内容"
+
+#: src/client/gpaste-client.c:181
+msgid ""
+"replace the contents of the item <uuid> from the history with the provided "
+"one"
+msgstr "通过uuid和内容替换记录中的项"
+
+#. Translators: help for gpaste merge <uuid> … <uuid>
+#: src/client/gpaste-client.c:183
+msgid ""
+"merge the items matching the uuids from the history and put the result in "
+"the clipboard"
+msgstr "通过多个uuid来合并记录里的多个项，并将合并后的结果放置到剪切板"
+
+#: src/client/gpaste-client.c:185
+msgid "set the item <uuid> from the history as a password named <name>"
+msgstr "通过uuid来设置记录中的密码名称"
+
+#. Translators: help for gpaste delete <uuid>
+#: src/client/gpaste-client.c:187
+msgid "delete item <uuid> from the history"
+msgstr "通过uuid删除记录中的项"
+
+#: src/client/gpaste-client.c:189
+msgid "delete the password <name> from the history"
+msgstr "删除记录中的密码名称"
+
+#. Translators: help for gpaste file <path>
+#: src/client/gpaste-client.c:191
+msgid "path"
+msgstr "路径"
+
+#: src/client/gpaste-client.c:191
+msgid "put the content of the file at <path> into the clipboard"
+msgstr "将路径的文件内容放置到剪切板"
+
+#. Translators: help for whatever | gpaste
+#: src/client/gpaste-client.c:193
+msgid "whatever"
+msgstr "whatever"
+
+#: src/client/gpaste-client.c:193
+msgid "set the output of whatever to clipboard"
+msgstr "将任何输出内容都放置到剪切板"
+
+#. Translators: help for gpaste empty
+#: src/client/gpaste-client.c:195
+msgid "empty the history"
+msgstr "清空记录"
+
+#. Translators: help for gpaste start
+#: src/client/gpaste-client.c:197
+msgid "start tracking clipboard changes"
+msgstr "开始跟踪剪切板变化"
+
+#. Translators: help for gpaste stop
+#: src/client/gpaste-client.c:199
+msgid "stop tracking clipboard changes"
+msgstr "结束跟踪剪切板变化"
+
+#. Translators: help for gpaste quit
+#: src/client/gpaste-client.c:201
+msgid "alias for stop"
+msgstr "“结束”的别称"
+
+#. Translators: help for gpaste daemon-reexec
+#: src/client/gpaste-client.c:203
+msgid "reexecute the daemon (after upgrading...)"
+msgstr "重启守护进程（更新之后. . .）"
+
+#. Translators: help for gpaste settings
+#: src/client/gpaste-client.c:205
+msgid "launch the configuration tool"
+msgstr "启动配置工具"
+
+#. Translators: help for gpaste ui
+#: src/client/gpaste-client.c:207
+msgid "launch the graphical tool"
+msgstr "启动界面"
+
+#. Translators: help for gpaste show-history
+#: src/client/gpaste-client.c:209
+msgid "make the applet or extension display the history"
+msgstr "让applet或扩展显示历史"
+
+#. Translators: help for gpaste upload
+#: src/client/gpaste-client.c:211
+msgid "upload the item <uuid> to a pastebin service"
+msgstr "上传项<uuid>到pastebin服务"
+
+#. Translators: help for gpaste version
+#: src/client/gpaste-client.c:213
+msgid "display the version"
+msgstr "显示版本"
+
+#. Translators: help for gpaste daemon-version
+#: src/client/gpaste-client.c:215
+msgid "display the daemon version"
+msgstr "显示守护进程版本"
+
+#. Translators: help for gpaste help
+#: src/client/gpaste-client.c:217
+msgid "display this help"
+msgstr "显示“帮助”"
+
+#. Translators: help for gpaste about
+#: src/client/gpaste-client.c:219
+msgid "display the about dialog"
+msgstr "显示“关于”"
+
+#: src/client/gpaste-client.c:222
+#, c-format
+msgid "Convenience options:"
+msgstr "快捷选项："
+
+#. Translators: help for --use-index
+#: src/client/gpaste-client.c:225
+msgid "use the index of the item instead of its uuid"
+msgstr "在项中使用索引代替uuid"
+
+#: src/client/gpaste-client.c:228
+#, c-format
+msgid "Display options:"
+msgstr "显示选项："
+
+#. Translators: help for --oneline
+#: src/client/gpaste-client.c:231
+msgid "display each item on only one line"
+msgstr "每项只显示一行"
+
+#. Translators: help for --raw
+#: src/client/gpaste-client.c:233
+msgid "display each item raw (without line numbers)"
+msgstr "显示每项的原内容（无行号）"
+
+#. Translators: help for --reverse
+#: src/client/gpaste-client.c:235
+msgid "display the items in reverse order"
+msgstr "反序显示"
+
+#. Translators: help for --zero
+#: src/client/gpaste-client.c:237
+msgid "use a NUL character instead of a new line betweean each item"
+msgstr "每项都使用NUL代替换行"
+
+#: src/client/gpaste-client.c:240
+#, c-format
+msgid "Merge options:"
+msgstr "合并选项："
+
+#. Translators: help for --decoration <string>
+#. Translators: help for --separator <string>
+#: src/client/gpaste-client.c:243 src/client/gpaste-client.c:245
+msgid "string"
+msgstr "字符串"
+
+#: src/client/gpaste-client.c:243
+msgid ""
+"add the given decoration to the beginning and the end of each item before "
+"merging"
+msgstr "添加既定内容到每个将合并项"
+
+#: src/client/gpaste-client.c:245
+msgid "add the given separator between each item when merging"
+msgstr "添加既定分割符到每个将合并项"
+
+#: src/client/gpaste-client.c:342
+#, c-format
+msgid "Successfully reexecuted the daemon\n"
+msgstr "重启守护进程成功\n"
+
+#: src/client/gpaste-client.c:491
+msgid "Cannot add non utf8 data as text."
+msgstr "无法添加非utf8内容。"
+
+#: src/client/gpaste-client.c:808
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
+#: src/libgpaste/ui/gpaste-ui-window.c:311
+msgid "Couldn't connect to GPaste daemon"
+msgstr "无法连接GPaste守护进程"
+
+#: src/daemon/gpaste-daemon.c:33
+msgid "Stop signal received, exiting"
+msgstr "收到退出信号，退出中"
+
+#: src/daemon/gpaste-daemon.c:70
+msgid "Could not acquire DBus name."
+msgstr "无法获取DBus名。"
+
+#. This is the date format "month/day/year time"
+#: src/libgpaste/core/gpaste-image-item.c:240
+msgid "%m/%d/%y %T"
+msgstr "%m/%d/%y %T"
+
+#. This gets displayed in history when selecting an image
+#: src/libgpaste/core/gpaste-image-item.c:242
+#, c-format
+msgid "[Image, %d x %d (%s)]"
+msgstr "[Image, %d x %d (%s)]"
+
+#. This is the prefix displayed in history to identify a password
+#: src/libgpaste/core/gpaste-password-item.c:67
+msgid "Password"
+msgstr "密码"
+
+#. This is the prefix displayed in history to identify selected files
+#: src/libgpaste/core/gpaste-uris-item.c:104
+msgid "[Files] "
+msgstr "[Files] "
+
+#: src/libgpaste/gpaste-macros.h:98
+msgid "Failed to register the gtk application"
+msgstr "注册gtk应用失败"
+
+#: src/libgpaste/gpaste-macros.h:110
+msgid "is already running."
+msgstr "准备运行。"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
+#: src/libgpaste/ui/gpaste-ui-switch.c:92
+msgid "Track clipboard changes"
+msgstr "跟踪剪切板变化"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
+msgid "Close UI on select"
+msgstr "选择后关闭界面"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
+msgid "Enable the gnome-shell extension"
+msgstr "启用gnome-shell扩展"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
+msgid "Sync the daemon state with the extension's one"
+msgstr "与gnome-shell扩展的守护进程状态同步"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
+msgid "Primary selection affects history"
+msgstr "将选择的内容放置到记录"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
+msgid "Synchronize clipboard with primary selection"
+msgstr "将选择的内容放置到剪切板"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
+msgid "Images support"
+msgstr "支持图片记录"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
+msgid "Trim items"
+msgstr "去除首尾空白"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
+msgid "Detect growing lines"
+msgstr "检测“在上一个项上添加”的新项"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
+msgid "Save history"
+msgstr "保存记录"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
+msgid "Max element size when displaying"
+msgstr "最多显示项数"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
+msgid "Max text item length"
+msgstr "文本最长长度（过长不记录）"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
+msgid "Min text item length"
+msgstr "文本最短长度（过短不记录）"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
+msgid "General behaviour"
+msgstr "常用"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
+msgid "History settings"
+msgstr "记录设置"
+
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
+msgid "Keyboard shortcuts"
+msgstr "快捷键"
+
+#. translators: This is the name of a multi-history management action
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
+#: src/libgpaste/ui/gpaste-ui-panel.c:297
+msgid "Switch to"
+msgstr "切换到"
+
+#. translators: This is the name of a multi-history management action
+#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
+#: src/libgpaste/ui/gpaste-ui-delete-item.c:49
+msgid "Delete"
+msgstr "删除"
+
+#: src/libgpaste/ui/gpaste-ui-about.c:41
+msgid "About"
+msgstr "关于"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:43
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
+msgid "Backup"
+msgstr "备份"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:44
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:46
+#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
+msgid "Cancel"
+msgstr "取消"
+
+#: src/libgpaste/ui/gpaste-ui-backup-history.c:47
+msgid "Under which name do you want to backup this history?"
+msgstr "要保存哪一个记录？"
+
+#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
+msgid "Are you sure you want to delete this history?"
+msgstr "删除记录？"
+
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:45
+#: src/libgpaste/ui/gpaste-ui-edit-item.c:118
+msgid "Edit"
+msgstr "编辑"
+
+#. Translators: this is the translation for emptying the history
+#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
+#: src/libgpaste/util/gpaste-util.c:410
+msgid "Empty"
+msgstr "清空"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:35
+msgid "(No result)"
+msgstr "(无内容)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:49
+msgid "(Empty)"
+msgstr "(空)"
+
+#: src/libgpaste/ui/gpaste-ui-empty-item.c:60
+msgid "(Couldn't connect to GPaste daemon)"
+msgstr "(无法连接GPaste守护进程)"
+
+#: src/libgpaste/ui/gpaste-ui-new-item.c:31
+#: src/libgpaste/ui/gpaste-ui-new-item.c:83
+msgid "New"
+msgstr "新建"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:29
+msgid "Restart"
+msgstr "重启"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:29
+msgid "Do you really want to restart the daemon?"
+msgstr "重启守护进程？"
+
+#: src/libgpaste/ui/gpaste-ui-reexec.c:55
+msgid "Restart the daemon"
+msgstr "重启守护进程"
+
+#: src/libgpaste/ui/gpaste-ui-search.c:26
+msgid "Search"
+msgstr "搜索"
+
+#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
+msgid "GPaste Settings"
+msgstr "GPaste设置"
+
+#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
+msgid "General"
+msgstr "常用"
+
+#: src/libgpaste/ui/gpaste-ui-switch.c:54
+msgid "Stop"
+msgstr "停止"
+
+#: src/libgpaste/ui/gpaste-ui-switch.c:54
+msgid "Do you really want to stop tracking clipboard changes?"
+msgstr "跟踪剪切板?"
+
+#: src/libgpaste/ui/gpaste-ui-upload-item.c:49
+msgid "Upload"
+msgstr "上传"
+
+#: src/libgpaste/util/gpaste-util.c:410
+msgid "Do you really want to empty the history?"
+msgstr "清空记录?"
+
+#: src/libgpaste/util/gpaste-util.c:709
+msgid "Could not create history dir"
+msgstr "无法新建记录目录"
+
+#: src/ui/gpaste-ui.c:106
+msgid "Keyboard Shortcuts"
+msgstr "快捷键"
+
+#: src/ui/gpaste-ui.c:107
+msgid "About GPaste"
+msgstr "关于GPaste"
+
+#: src/ui/gpaste-ui.c:108
+msgid "Quit"
+msgstr "退出"
