@@ -466,7 +466,7 @@ msgstr "当清空记录时，要弹出提示吗？"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
 msgid "By default, we do as it's a destructive action"
-msgstr "默认时，我们确实留有一手以防止你不小心清空记录"
+msgstr "默认时，做出提示以防止你不小心清空记录"
 
 #: src/client/gpaste-client.c:143 src/client/gpaste-client.c:437
 msgid "Couldn't spawn"
