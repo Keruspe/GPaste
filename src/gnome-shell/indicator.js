@@ -4,16 +4,14 @@
  * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const _ = ExtensionUtils.gettext;
+
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
 const { Clutter, GObject, GLib, GPaste, St } = imports.gi;
-
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-
-const Gettext = imports.gettext;
-const _ = Gettext.domain(Me.metadata['gettext-domain']).gettext;
 
 const AboutItem = Me.imports.aboutItem;
 const DummyHistoryItem = Me.imports.dummyHistoryItem;

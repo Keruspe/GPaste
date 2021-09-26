@@ -4,12 +4,12 @@
  * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+const ExtensionUtils = imports.misc.extensionUtils;
+const _ = ExtensionUtils.gettext;
+
 const { GObject } = imports.gi;
 
 const PopupMenu = imports.ui.popupMenu;
-
-const Gettext = imports.gettext;
-const _ = Gettext.domain(Me.metadata['gettext-domain']).gettext;
 
 var GPasteStateSwitch = GObject.registerClass(
 class GPasteStateSwitch extends PopupMenu.PopupSwitchMenuItem {
