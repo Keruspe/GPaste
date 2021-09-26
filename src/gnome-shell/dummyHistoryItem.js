@@ -4,13 +4,12 @@
  * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const Gettext = imports.gettext;
-
 const { GObject } = imports.gi;
 
 const PopupMenu = imports.ui.popupMenu;
 
-const _ = Gettext.domain('GPaste').gettext;
+const Gettext = imports.gettext;
+const _ = Gettext.domain(Me.metadata['gettext-domain']).gettext;
 
 var GPasteDummyHistoryItem = GObject.registerClass(
 class GPasteDummyHistoryItem extends PopupMenu.PopupMenuItem {
