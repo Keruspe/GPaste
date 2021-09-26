@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-09-26 09:27+0200\n"
-"PO-Revision-Date: 2021-06-25 08:31+0000\n"
-"Last-Translator: Serkan ÖNDER <serkanonder@outlook.com>\n"
+"PO-Revision-Date: 2021-09-27 11:35+0000\n"
+"Last-Translator: Oğuz Ersen <oguzersen@protonmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
 ">\n"
 "Language: tr\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.7.1-dev\n"
+"X-Generator: Weblate 4.9-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -56,7 +56,7 @@ msgstr "Ana kullanıcı arayüzü"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 msgid "The settings UI"
-msgstr "Arayüz seçenekleri"
+msgstr "Ayarlar kullanıcı arayüzü"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
@@ -80,14 +80,12 @@ msgid "This is a maintenance release. Changes:"
 msgstr "Bu bir bakım sürümüdür. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-#, fuzzy
-#| msgid "updated translations"
 msgid "translations update"
-msgstr "güncellenmiş çeviriler"
+msgstr "çeviri güncellemesi"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "fix a crash in memory usage checking"
-msgstr "bellek kullanımı kontrolünde bir kilitlenmeyi düzeltin"
+msgstr "bellek kullanımı denetiminde bir çökmeyi düzelt"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
 msgid "First release for GNOME 40. Changes:"
@@ -605,7 +603,7 @@ msgstr "yeni ad"
 
 #: src/client/gpaste-client.c:175
 msgid "rename the password"
-msgstr "şifreyi yeniden adlandır"
+msgstr "parolayı yeniden adlandır"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:177
@@ -926,11 +924,11 @@ msgstr "İptal Et"
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/util/gpaste-util.c:410 src/ui/gpaste-ui-empty-history.c:65
 msgid "Empty"
-msgstr "Boş"
+msgstr "Temizle"
 
 #: src/libgpaste/util/gpaste-util.c:410
 msgid "Do you really want to empty the history?"
-msgstr "Gerçekten geçmişi boşaltmak istiyor musun?"
+msgstr "Gerçekten geçmişi temizlemek istiyor musunuz?"
 
 #: src/libgpaste/util/gpaste-util.c:709
 msgid "Could not create history dir"
