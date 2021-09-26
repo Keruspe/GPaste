@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2021-04-30 13:15+0200\n"
+"POT-Creation-Date: 2021-09-26 09:27+0200\n"
 "PO-Revision-Date: 2021-06-25 08:31+0000\n"
 "Last-Translator: Serkan ÖNDER <serkanonder@outlook.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
@@ -59,53 +59,60 @@ msgid "The settings UI"
 msgstr "Arayüz seçenekleri"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:91
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:202
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:218
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:210
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:226
 msgid "This is a maintenance release. Changes:"
 msgstr "Bu bir bakım sürümüdür. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+#, fuzzy
+#| msgid "updated translations"
+msgid "translations update"
+msgstr "güncellenmiş çeviriler"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "fix a crash in memory usage checking"
 msgstr "bellek kullanımı kontrolünde bir kilitlenmeyi düzeltin"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
 msgid "First release for GNOME 40. Changes:"
 msgstr "GNOME 40 için ilk sürüm. Değişiklikler:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
 msgid "port to gnome-shell 40"
 msgstr "gnome kabuğuna bağlantı noktası 40"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 msgid "placeholder for gnome-shell prefs"
 msgstr "gnome-shell tercihleri için yer tutucu"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:132
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
 msgid "fix X11 keybinder outside of GNOME"
 msgstr "GNOME dışında X11 tuş bağlayıcısını düzeltin"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 "gpaste istemcisine iletilen geçersiz kullanıcı kimliklerinin daha iyi "
 "işlenmesi ve raporlanması"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
@@ -113,94 +120,94 @@ msgstr ""
 "gpaste istemcisinin artık birkaç alt komutun uuid yerine dizin kullanması "
 "için bir --kullanım dizini argümanı var"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
 msgid "fix the make-password keybinding"
 msgstr "şifre yap tuş bağını düzelt"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
 msgid "updated translations"
 msgstr "güncellenmiş çeviriler"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 msgid "gnome-shell extension warning fixes"
 msgstr "gnome kabuk uzantısı uyarı düzeltmeleri"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:148
 msgid "gnome-shell extension cosmetic updates"
 msgstr "gnome kabuk uzantısı kozmetik güncellemeleri"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 "Görüntü desteğini varsayılan olarak devre dışı bırakın (tercihlerde yeniden "
 "etkinleştirilebilir)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
 msgid "Search now includes passwords (using their names)"
 msgstr "Arama artık şifreleri içeriyor (adlarını kullanarak)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:113
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
 msgid "systemd integration enhancements"
 msgstr "systemd entegrasyon geliştirmeleri"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "GNOME 3.38 için ilk sürüm. Değişiklikler:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
 msgid "Drop the Tracking DBus signal"
 msgstr "İzleme DBus sinyalini bırakın"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:122
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
 msgid "Switch to uuids to identify items"
 msgstr "Öğeleri tanımlamak için kullanıcı kimliklerine geçin"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:123
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:131
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "DBus arabirimini org.gnome.GPaste2'ye aktarın"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:124
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:132
 msgid "Update to gnome-shell 3.38.0"
 msgstr "Gnome-shell 3.38.0 güncellemesi"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:148
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:180
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:222
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:156
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:188
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:230
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
 "Gnome kabuğunda Ctrl-Number kullanarak etkinleştirilen öğeleri düzeltin"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:156
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:188
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:196
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:229
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "Gnome kabuğu ile tuş bağlama yeniden düzenlemesini düzeltin"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:196
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:204
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "Gnome kabuğu ile tuş bağlama tutuşunu düzeltin"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "GNOME 3.36 için ilk sürüm. Değişiklikler:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:180
 msgid "Update to gnome-shell 3.36.0"
 msgstr "Gnome kabuğu 3.36.0'a güncelleme"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:204
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:220
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:212
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:228
 msgid "Compatibility with recent appstream-glib"
 msgstr "En son uygulama akışı-glib ile uyumluluk"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:210
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:218
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "GNOME 3.34 için ilk sürüm. Değişiklikler:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:212
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:220
 msgid "Update to gnome-shell 3.34.0"
 msgstr "Gnome kabuğu 3.34.0 güncellemesi"
 
@@ -327,9 +334,9 @@ msgid ""
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
-"Varsayılan olarak, ctrl + alt + s tuşlarına basmak, etkin öğeyi parola (\""
-"<Ctrl><Alt>S\") olarak işaretler. Burada boş bir dize bu işlevi devre dışı "
-"bırakır."
+"Varsayılan olarak, ctrl + alt + s tuşlarına basmak, etkin öğeyi parola "
+"(\"<Ctrl><Alt>S\") olarak işaretler. Burada boş bir dize bu işlevi devre "
+"dışı bırakır."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
@@ -387,8 +394,8 @@ msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
 msgstr ""
-"Varsayılan olarak, ctrl + alt + v tuşlarına basmak bunu yapar (\"<Ctrl><Alt>"
-"V\"). Burada boş bir dize bu işlevi devre dışı bırakır."
+"Varsayılan olarak, ctrl + alt + v tuşlarına basmak bunu yapar (\"<Ctrl><Alt>V"
+"\"). Burada boş bir dize bu işlevi devre dışı bırakır."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
 msgid "Does the primary selection affects history?"
@@ -427,8 +434,8 @@ msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
 msgstr ""
-"Varsayılan olarak, ctrl + alt + h tuşlarına basıldığında menü görüntülenir ("
-"\"<Ctrl><Alt>H\"). Burada boş bir dize bu işlevi devre dışı bırakır."
+"Varsayılan olarak, ctrl + alt + h tuşlarına basıldığında menü görüntülenir "
+"(\"<Ctrl><Alt>H\"). Burada boş bir dize bu işlevi devre dışı bırakır."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
@@ -439,8 +446,8 @@ msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
-"Varsayılan olarak, ctrl + alt + o tuşlarına basmak onları senkronize eder (\""
-"<Ctrl><Alt>P\"). Burada boş bir dize bu işlevi devre dışı bırakır."
+"Varsayılan olarak, ctrl + alt + o tuşlarına basmak onları senkronize eder "
+"(\"<Ctrl><Alt>P\"). Burada boş bir dize bu işlevi devre dışı bırakır."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
@@ -451,8 +458,8 @@ msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
-"Varsayılan olarak, ctrl + alt + p tuşlarına basmak onları senkronize eder (\""
-"<Ctrl><Alt>P\"). Burada boş bir dize bu işlevi devre dışı bırakır."
+"Varsayılan olarak, ctrl + alt + p tuşlarına basmak onları senkronize eder "
+"(\"<Ctrl><Alt>P\"). Burada boş bir dize bu işlevi devre dışı bırakır."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid "Are the primary selection and the clipboard synchronized?"
@@ -475,8 +482,8 @@ msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
 msgstr ""
-"Daemon durumunu gnome-shell uzantısınınkiyle senkronize ediyor muyuz? ("
-"uzantıyı devre dışı bırakırken arka plan programını devre dışı bırakın)"
+"Daemon durumunu gnome-shell uzantısınınkiyle senkronize ediyor muyuz? "
+"(uzantıyı devre dışı bırakırken arka plan programını devre dışı bırakın)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
@@ -506,8 +513,8 @@ msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
 msgstr ""
-"Varsayılan olarak, ctrl + alt + u tuşlarına basmak bunu yapar (\"<Ctrl><Alt>"
-"U\"). Burada boş bir dize bu işlevi devre dışı bırakır."
+"Varsayılan olarak, ctrl + alt + u tuşlarına basmak bunu yapar (\"<Ctrl><Alt>U"
+"\"). Burada boş bir dize bu işlevi devre dışı bırakır."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
 msgid "Do we prompt for confirmation when emptying a history?"
