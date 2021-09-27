@@ -34,7 +34,6 @@ typedef struct
 
     GPasteSettings         *settings;
     GPasteGnomeShellClient *shell_client;
-    gboolean                use_shell_client;
     gboolean                grabbing;
     guint64                 retries;
 
@@ -158,7 +157,6 @@ typedef struct
     GPasteKeybinding       *binding;
     GPasteSettings         *settings;
     GPasteGnomeShellClient *shell_client;
-    gboolean                use_shell_client;
 
     guint32                 action;
 
@@ -208,7 +206,7 @@ static void
 _keybinding_grab (_Keybinding *k)
 {
     _keybinding_activate (k);
-    if (k->use_shell_client)
+    if (k->shell_client)
         _keybinding_grab_gnome_shell (k);
     else
         g_paste_keybinder_change_grab_internal (k->binding, TRUE);
@@ -240,7 +238,7 @@ _keybinding_ungrab_gnome_shell (_Keybinding *k)
 static void
 _keybinding_ungrab (_Keybinding *k)
 {
-    if (k->use_shell_client)
+    if (k->shell_client)
         _keybinding_ungrab_gnome_shell (k);
     else
         g_paste_keybinder_change_grab_internal (k->binding, FALSE);
@@ -266,7 +264,6 @@ _keybinding_new (GPasteKeybinding       *binding,
     k->binding = binding;
     k->settings = g_object_ref (settings);
     k->shell_client = (shell_client) ? g_object_ref (shell_client) : NULL;
-    k->use_shell_client = !!shell_client;
 
     k->action = 0;
 
@@ -440,7 +437,7 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
-    if (priv->use_shell_client)
+    if (priv->shell_client)
     {
         g_slist_foreach (priv->keybindings,
                          g_paste_keybinder_activate_keybinding_func,
@@ -711,9 +708,7 @@ g_paste_keybinder_new (GPasteSettings         *settings,
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->settings = g_object_ref (settings);
-    priv->shell_client = (shell_client) ? g_object_ref (shell_client) : NULL;
-    priv->use_shell_client = FALSE;
-    //priv->use_shell_client = !!shell_client;
+    priv->shell_client = shell_client = NULL; //(shell_client) ? g_object_ref (shell_client) : NULL;
     priv->grabbing = FALSE;
     priv->retries = 0;
 
