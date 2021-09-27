@@ -712,7 +712,8 @@ g_paste_keybinder_new (GPasteSettings         *settings,
 
     priv->settings = g_object_ref (settings);
     priv->shell_client = (shell_client) ? g_object_ref (shell_client) : NULL;
-    priv->use_shell_client = !!shell_client;
+    priv->use_shell_client = FALSE;
+    //priv->use_shell_client = !!shell_client;
     priv->grabbing = FALSE;
     priv->retries = 0;
 
