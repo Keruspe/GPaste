@@ -228,11 +228,11 @@ on_key_ungrabbed (GObject      *source_object,
 static void
 _keybinding_ungrab_gnome_shell (_Keybinding *k)
 {
-    if (k->action)
-    {
-        g_paste_gnome_shell_client_ungrab_accelerator (k->shell_client, k->action, on_key_ungrabbed, NULL);
-        k->action = 0;
-    }
+    if (!k->action || !k->shell_client)
+        return;
+
+    g_paste_gnome_shell_client_ungrab_accelerator (k->shell_client, k->action, on_key_ungrabbed, NULL);
+    k->action = 0;
 }
 
 static void
