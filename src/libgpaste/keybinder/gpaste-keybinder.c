@@ -329,12 +329,9 @@ g_paste_keybinder_grab_keybinding_func (gpointer data,
 static void
 g_paste_keybinder_private_grab_all (GPasteKeybinderPrivate *priv)
 {
-    if (!priv->grabbing)
-    {
-        g_slist_foreach (priv->keybindings,
-                         g_paste_keybinder_grab_keybinding_func,
-                         NULL);
-    }
+    g_slist_foreach (priv->keybindings,
+                     g_paste_keybinder_grab_keybinding_func,
+                     NULL);
 }
 
 static void
@@ -355,6 +352,19 @@ retry_grab_all_gnome_shell (gpointer user_data)
 }
 
 static void
+release_shell_client (GPasteKeybinderPrivate *priv)
+{
+    g_signal_handler_disconnect (priv->shell_client, priv->c_signals[C_ACCEL]);
+    g_clear_object (&priv->shell_client);
+
+    for (GSList *binding = priv->keybindings; binding; binding = g_slist_next (binding))
+    {
+        _Keybinding *k = binding->data;
+        g_clear_object (&k->shell_client);
+    }
+}
+
+static void
 grab_accelerators_cb (GObject      *source_object,
                       GAsyncResult *res,
                       gpointer      user_data)
@@ -365,10 +375,16 @@ grab_accelerators_cb (GObject      *source_object,
 
     if (error)
     {
-        if (error->code == 19 && priv->retries < 10)
+        if (error->code == G_DBUS_ERROR_UNKNOWN_METHOD && priv->retries < 10)
         {
             ++priv->retries;
             g_source_set_name_by_id (g_timeout_add_seconds (1, retry_grab_all_gnome_shell, priv), "[GPaste] gnome-shell grab");
+        }
+        else if (error->code == G_DBUS_ERROR_ACCESS_DENIED)
+        {
+            g_warning ("Couldn't grab keybindings with gnome-shell, falling back to X11 keybinder: %s", error->message);
+            release_shell_client (priv);
+            g_paste_keybinder_private_grab_all (priv);
         }
         else
         {
@@ -630,10 +646,7 @@ g_paste_keybinder_dispose (GObject *object)
     }
 
     if (priv->shell_client)
-    {
-        g_signal_handler_disconnect (priv->shell_client, priv->c_signals[C_ACCEL]);
-        g_clear_object (&priv->shell_client);
-    }
+        release_shell_client (priv);
 
     if (priv->settings)
     {
@@ -708,7 +721,7 @@ g_paste_keybinder_new (GPasteSettings         *settings,
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
     priv->settings = g_object_ref (settings);
-    priv->shell_client = shell_client = NULL; //(shell_client) ? g_object_ref (shell_client) : NULL;
+    priv->shell_client = shell_client = (shell_client) ? g_object_ref (shell_client) : NULL;
     priv->grabbing = FALSE;
     priv->retries = 0;
 
