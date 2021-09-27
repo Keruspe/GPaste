@@ -9,7 +9,7 @@ m4_define([gpaste_version],      [3.40.3])
 # - If any interface has been added, ‘C:R:A’ becomes ‘C+1:0:A+1’.
 # - If any interface has been removed or modified, ‘C:R:A’ becomes ‘C+1:0:0’.
 # - Otherwise, ‘C:R:A’ becomes ‘C:R+1:A’.
-m4_define([gpaste_lt_version],   [13:4:0])
+m4_define([gpaste_lt_version],   [13:5:0])
 
 # Build system requirements
 m4_define([autoconf_required],   [2.69])
@@ -19,7 +19,7 @@ m4_define([pkgconfig_required],  [0.29])
 
 # Glib and Gtk macros and dependencies
 m4_define([glib_major_required], [2])
-m4_define([glib_minor_required], [64])
+m4_define([glib_minor_required], [70])
 m4_define([glib_api_required],   [G_ENCODE_VERSION(glib_major_required, glib_minor_required)])
 m4_define([glib_required],       [glib_major_required.glib_minor_required.0])
 m4_define([gtk3_major_required], [3])

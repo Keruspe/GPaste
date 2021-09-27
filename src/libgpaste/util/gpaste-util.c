@@ -464,7 +464,7 @@ g_paste_util_get_dbus_au_result (GVariant *variant,
 {
     guint64 _len;
     const guint32 *r = g_variant_get_fixed_array (variant, &_len, sizeof (guint32));
-    guint32 *ret = g_memdup (r, _len * sizeof (guint32));
+    guint32 *ret = g_memdup2 (r, _len * sizeof (guint32));
 
     if (len)
         *len = _len;
