@@ -7,14 +7,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2021-02-03 13:55+0100\n"
+"POT-Creation-Date: 2021-09-28 10:33+0200\n"
 "PO-Revision-Date: 2021-09-24 00:08+0800\n"
+"Last-Translator: larryw3i <larryw3i@163.com>\n"
+"Language-Team: \n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Last-Translator: larryw3i <larryw3i@163.com>\n"
-"Language-Team: \n"
 "X-Generator: Poedit 3.0\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
@@ -54,118 +54,166 @@ msgid "The settings UI"
 msgstr "设置界面"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
+#, fuzzy
+#| msgid "First release for GNOME 3.34. Changes:"
+msgid "First release for GNOME 41. Changes:"
+msgstr "首次发行GNOME 3.34。更改如下："
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+#, fuzzy
+#| msgid "Update to gnome-shell 3.34.0"
+msgid "port to gnome-shell 41"
+msgstr "更新到gnome-shell 3.34.0"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#, fuzzy
+#| msgid "updated translations"
+msgid "translations update"
+msgstr "更新翻译"
+
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:75
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:91
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:126
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:147
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:179
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:195
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:211
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:235
 msgid "This is a maintenance release. Changes:"
 msgstr "这是一个维护版本。更改如下："
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
+msgid "fix a crash in memory usage checking"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
+#, fuzzy
+#| msgid "First release for GNOME 3.34. Changes:"
+msgid "First release for GNOME 40. Changes:"
+msgstr "首次发行GNOME 3.34。更改如下："
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
+#, fuzzy
+#| msgid "Update to gnome-shell 3.34.0"
+msgid "port to gnome-shell 40"
+msgstr "更新到gnome-shell 3.34.0"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+msgid "placeholder for gnome-shell prefs"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+msgid "fix X11 keybinder outside of GNOME"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr "无效的uuid被传递到gpaste-client时最佳的处理和反馈"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
 msgstr ""
 "当前gpaste-client拥有一个子命令的--use-index参数以方便使用索引来代替uuid"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 msgid "fix the make-password keybinding"
 msgstr "修复make-password快捷键"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
 msgid "updated translations"
 msgstr "更新翻译"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
 msgid "gnome-shell extension warning fixes"
 msgstr "gnome-shell扩展的warning被修复"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:106
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "gnome-shell extension cosmetic updates"
 msgstr "gnome-shell扩展cosmetic更新"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr "默认禁用图片(可以在首选项中重新启用)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
 msgid "Search now includes passwords (using their names)"
 msgstr "搜索现在包括了密码(使用密码名)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
 msgid "systemd integration enhancements"
 msgstr "systemd集成增强功能"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "首次发行GNOME 3.38的更改如下:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
 msgid "Drop the Tracking DBus signal"
 msgstr "去除跟踪DBus的信号"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:139
 msgid "Switch to uuids to identify items"
 msgstr "将标识符项切换到uuid"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:97
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "将DBus接口连接到org.gnome.GPaste2"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
 msgid "Update to gnome-shell 3.38.0"
 msgstr "更新到gnome-shell 3.38.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:114
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:188
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:165
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:197
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:239
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr "使用 Ctrl-数字 来修复gnome-shell的激活项"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:122
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:205
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:238
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "重新修复gnome-shell的快捷键"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:181
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:213
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "重新修复gnome-shell的快捷键"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "首次发行GNOME 3.36。更改如下："
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:189
 msgid "Update to gnome-shell 3.36.0"
 msgstr "更新到gnome-shell 3.36.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:237
 msgid "Compatibility with recent appstream-glib"
 msgstr "兼容最近的appstream-glib"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:227
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "首次发行GNOME 3.34。更改如下："
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:229
 msgid "Update to gnome-shell 3.34.0"
 msgstr "更新到gnome-shell 3.34.0"
 
@@ -175,43 +223,43 @@ msgstr "@GETTEXT_PACKAGE@"
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:73
+#: src/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
 msgstr "启动界面"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:74
+#: src/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
 msgstr "标记激活项为密码"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:72
+#: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
 msgstr "删除激活项"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:75
+#: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
 msgstr "禁用记录"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:76
+#: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
 msgstr "同步剪切板到主选择项"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:77
+#: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
 msgstr "同步主选择项到剪切板"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:78
+#: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
 msgstr "将活动项上传到pastebin服务"
 
@@ -461,7 +509,9 @@ msgstr ""
 "空则禁用。"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
-msgid "Do we prompt for confirmation when emptying an history?"
+#, fuzzy
+#| msgid "Do we prompt for confirmation when emptying an history?"
+msgid "Do we prompt for confirmation when emptying a history?"
 msgstr "当清空记录时，要弹出提示吗？"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
@@ -479,7 +529,9 @@ msgstr "使用:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
-msgid "print the history with uuids"
+#, fuzzy
+#| msgid "print the history with uuids"
+msgid "print the history with UUIDs"
 msgstr "输出记录内容（带有uuid）"
 
 #. Translators: help for gpaste history-size
@@ -574,8 +626,12 @@ msgstr "通过uuid和内容替换记录中的项"
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
 #: src/client/gpaste-client.c:183
+#, fuzzy
+#| msgid ""
+#| "merge the items matching the uuids from the history and put the result in "
+#| "the clipboard"
 msgid ""
-"merge the items matching the uuids from the history and put the result in "
+"merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr "通过多个uuid来合并记录里的多个项，并将合并后的结果放置到剪切板"
 
@@ -682,7 +738,9 @@ msgstr "快捷选项："
 
 #. Translators: help for --use-index
 #: src/client/gpaste-client.c:225
-msgid "use the index of the item instead of its uuid"
+#, fuzzy
+#| msgid "use the index of the item instead of its uuid"
+msgid "use the index of the item instead of its UUID"
 msgstr "在项中使用索引代替uuid"
 
 #: src/client/gpaste-client.c:228
@@ -742,7 +800,7 @@ msgstr "无法添加非utf8内容。"
 
 #: src/client/gpaste-client.c:808
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
-#: src/libgpaste/ui/gpaste-ui-window.c:311
+#: src/ui/gpaste-ui-window.c:311
 msgid "Couldn't connect to GPaste daemon"
 msgstr "无法连接GPaste守护进程"
 
@@ -784,7 +842,7 @@ msgid "is already running."
 msgstr "准备运行。"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
-#: src/libgpaste/ui/gpaste-ui-switch.c:92
+#: src/ui/gpaste-ui-switch.c:92
 msgid "Track clipboard changes"
 msgstr "跟踪剪切板变化"
 
@@ -850,104 +908,26 @@ msgstr "快捷键"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
-#: src/libgpaste/ui/gpaste-ui-panel.c:297
+#: src/ui/gpaste-ui-panel.c:297
 msgid "Switch to"
 msgstr "切换到"
 
 #. translators: This is the name of a multi-history management action
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:65
-#: src/libgpaste/ui/gpaste-ui-delete-item.c:49
+#: src/ui/gpaste-ui-delete-history.c:25 src/ui/gpaste-ui-delete-history.c:65
+#: src/ui/gpaste-ui-delete-item.c:49
 msgid "Delete"
 msgstr "删除"
 
-#: src/libgpaste/ui/gpaste-ui-about.c:41
-msgid "About"
-msgstr "关于"
-
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:43
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:140
-msgid "Backup"
-msgstr "备份"
-
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:44
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:46
-#: src/libgpaste/ui/gpaste-ui-new-item.c:32 src/libgpaste/util/gpaste-util.c:30
+#: src/libgpaste/util/gpaste-util.c:30 src/ui/gpaste-ui-backup-history.c:44
+#: src/ui/gpaste-ui-edit-item.c:46 src/ui/gpaste-ui-new-item.c:32
 msgid "Cancel"
 msgstr "取消"
 
-#: src/libgpaste/ui/gpaste-ui-backup-history.c:47
-msgid "Under which name do you want to backup this history?"
-msgstr "要保存哪一个记录？"
-
-#: src/libgpaste/ui/gpaste-ui-delete-history.c:25
-msgid "Are you sure you want to delete this history?"
-msgstr "删除记录？"
-
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:45
-#: src/libgpaste/ui/gpaste-ui-edit-item.c:118
-msgid "Edit"
-msgstr "编辑"
-
 #. Translators: this is the translation for emptying the history
-#: src/libgpaste/ui/gpaste-ui-empty-history.c:65
-#: src/libgpaste/util/gpaste-util.c:410
+#: src/libgpaste/util/gpaste-util.c:410 src/ui/gpaste-ui-empty-history.c:65
 msgid "Empty"
 msgstr "清空"
-
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:35
-msgid "(No result)"
-msgstr "(无内容)"
-
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:49
-msgid "(Empty)"
-msgstr "(空)"
-
-#: src/libgpaste/ui/gpaste-ui-empty-item.c:60
-msgid "(Couldn't connect to GPaste daemon)"
-msgstr "(无法连接GPaste守护进程)"
-
-#: src/libgpaste/ui/gpaste-ui-new-item.c:31
-#: src/libgpaste/ui/gpaste-ui-new-item.c:83
-msgid "New"
-msgstr "新建"
-
-#: src/libgpaste/ui/gpaste-ui-reexec.c:29
-msgid "Restart"
-msgstr "重启"
-
-#: src/libgpaste/ui/gpaste-ui-reexec.c:29
-msgid "Do you really want to restart the daemon?"
-msgstr "重启守护进程？"
-
-#: src/libgpaste/ui/gpaste-ui-reexec.c:55
-msgid "Restart the daemon"
-msgstr "重启守护进程"
-
-#: src/libgpaste/ui/gpaste-ui-search.c:26
-msgid "Search"
-msgstr "搜索"
-
-#: src/libgpaste/ui/gpaste-ui-settings.c:32 src/ui/gpaste-ui.c:105
-msgid "GPaste Settings"
-msgstr "GPaste设置"
-
-#: src/libgpaste/ui/gpaste-ui-shortcuts-window.c:64
-msgid "General"
-msgstr "常用"
-
-#: src/libgpaste/ui/gpaste-ui-switch.c:54
-msgid "Stop"
-msgstr "停止"
-
-#: src/libgpaste/ui/gpaste-ui-switch.c:54
-msgid "Do you really want to stop tracking clipboard changes?"
-msgstr "跟踪剪切板?"
-
-#: src/libgpaste/ui/gpaste-ui-upload-item.c:49
-msgid "Upload"
-msgstr "上传"
 
 #: src/libgpaste/util/gpaste-util.c:410
 msgid "Do you really want to empty the history?"
@@ -956,6 +936,10 @@ msgstr "清空记录?"
 #: src/libgpaste/util/gpaste-util.c:709
 msgid "Could not create history dir"
 msgstr "无法新建记录目录"
+
+#: src/ui/gpaste-ui.c:105 src/ui/gpaste-ui-settings.c:32
+msgid "GPaste Settings"
+msgstr "GPaste设置"
 
 #: src/ui/gpaste-ui.c:106
 msgid "Keyboard Shortcuts"
@@ -968,3 +952,71 @@ msgstr "关于GPaste"
 #: src/ui/gpaste-ui.c:108
 msgid "Quit"
 msgstr "退出"
+
+#: src/ui/gpaste-ui-about.c:41
+msgid "About"
+msgstr "关于"
+
+#: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-backup-history.c:140
+msgid "Backup"
+msgstr "备份"
+
+#: src/ui/gpaste-ui-backup-history.c:47
+msgid "Under which name do you want to backup this history?"
+msgstr "要保存哪一个记录？"
+
+#: src/ui/gpaste-ui-delete-history.c:25
+msgid "Are you sure you want to delete this history?"
+msgstr "删除记录？"
+
+#: src/ui/gpaste-ui-edit-item.c:45 src/ui/gpaste-ui-edit-item.c:118
+msgid "Edit"
+msgstr "编辑"
+
+#: src/ui/gpaste-ui-empty-item.c:35
+msgid "(No result)"
+msgstr "(无内容)"
+
+#: src/ui/gpaste-ui-empty-item.c:49
+msgid "(Empty)"
+msgstr "(空)"
+
+#: src/ui/gpaste-ui-empty-item.c:60
+msgid "(Couldn't connect to GPaste daemon)"
+msgstr "(无法连接GPaste守护进程)"
+
+#: src/ui/gpaste-ui-new-item.c:31 src/ui/gpaste-ui-new-item.c:83
+msgid "New"
+msgstr "新建"
+
+#: src/ui/gpaste-ui-reexec.c:29
+msgid "Restart"
+msgstr "重启"
+
+#: src/ui/gpaste-ui-reexec.c:29
+msgid "Do you really want to restart the daemon?"
+msgstr "重启守护进程？"
+
+#: src/ui/gpaste-ui-reexec.c:55
+msgid "Restart the daemon"
+msgstr "重启守护进程"
+
+#: src/ui/gpaste-ui-search.c:26
+msgid "Search"
+msgstr "搜索"
+
+#: src/ui/gpaste-ui-shortcuts-window.c:64
+msgid "General"
+msgstr "常用"
+
+#: src/ui/gpaste-ui-switch.c:54
+msgid "Stop"
+msgstr "停止"
+
+#: src/ui/gpaste-ui-switch.c:54
+msgid "Do you really want to stop tracking clipboard changes?"
+msgstr "跟踪剪切板?"
+
+#: src/ui/gpaste-ui-upload-item.c:49
+msgid "Upload"
+msgstr "上传"

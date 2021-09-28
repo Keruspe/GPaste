@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.3\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2021-09-26 09:27+0200\n"
+"POT-Creation-Date: 2021-09-28 10:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -53,146 +53,155 @@ msgid "The settings UI"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:91
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:202
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:210
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:226
-msgid "This is a maintenance release. Changes:"
+msgid "First release for GNOME 41. Changes:"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
+msgid "port to gnome-shell 41"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 msgid "translations update"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
-msgid "fix a crash in memory usage checking"
-msgstr ""
-
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
-msgid "First release for GNOME 40. Changes:"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:91
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:126
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:147
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:179
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:195
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:211
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:235
+msgid "This is a maintenance release. Changes:"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
-msgid "port to gnome-shell 40"
+msgid "fix a crash in memory usage checking"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
-msgid "placeholder for gnome-shell prefs"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
+msgid "First release for GNOME 40. Changes:"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
-msgid "fix X11 keybinder outside of GNOME"
+msgid "port to gnome-shell 40"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
-msgid "better handling and reporting of invalid uuids passed to gpaste-client"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+msgid "placeholder for gnome-shell prefs"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+msgid "fix X11 keybinder outside of GNOME"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
+msgid "better handling and reporting of invalid uuids passed to gpaste-client"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 msgid "fix the make-password keybinding"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
 msgid "updated translations"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
 msgid "gnome-shell extension warning fixes"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:148
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "gnome-shell extension cosmetic updates"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
 msgid "Search now includes passwords (using their names)"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
 msgid "systemd integration enhancements"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
 msgid "First release for GNOME 3.38. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
 msgid "Drop the Tracking DBus signal"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:139
 msgid "Switch to uuids to identify items"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:131
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:132
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
 msgid "Update to gnome-shell 3.38.0"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:156
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:188
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:230
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:165
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:197
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:239
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:196
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:229
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:205
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:238
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:204
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:181
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:213
 msgid "Fix keybinding grab with gnome-shell"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
 msgid "First release for GNOME 3.36. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:180
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:189
 msgid "Update to gnome-shell 3.36.0"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:212
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:228
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:237
 msgid "Compatibility with recent appstream-glib"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:218
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:227
 msgid "First release for GNOME 3.34. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:220
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:229
 msgid "Update to gnome-shell 3.34.0"
 msgstr ""
 

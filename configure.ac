@@ -2,7 +2,7 @@
 ##
 ## Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 
-m4_define([gpaste_version],      [3.40.3])
+m4_define([gpaste_version],      [3.42.0])
 
 # Update gpaste_lt_version before each release (and only then)
 # The format is C:R:A (current revision age)
