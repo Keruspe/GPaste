@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-09-28 10:33+0200\n"
-"PO-Revision-Date: 2021-09-27 11:35+0000\n"
+"PO-Revision-Date: 2021-10-02 18:38+0000\n"
 "Last-Translator: Oğuz Ersen <oguzersen@protonmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
 ">\n"
@@ -59,16 +59,12 @@ msgid "The settings UI"
 msgstr "Ayarlar kullanıcı arayüzü"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#, fuzzy
-#| msgid "First release for GNOME 40. Changes:"
 msgid "First release for GNOME 41. Changes:"
-msgstr "GNOME 40 için ilk sürüm. Değişiklikler:"
+msgstr "GNOME 41 için ilk sürüm. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-#, fuzzy
-#| msgid "port to gnome-shell 40"
 msgid "port to gnome-shell 41"
-msgstr "gnome kabuğuna bağlantı noktası 40"
+msgstr "gnome-shell 41 sürümüne uyarla"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
