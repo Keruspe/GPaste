@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-09-28 10:33+0200\n"
-"PO-Revision-Date: 2021-04-13 01:26+0000\n"
+"PO-Revision-Date: 2021-10-04 01:37+0000\n"
 "Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "gpaste/gpaste/pt_BR/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.6-dev\n"
+"X-Generator: Weblate 4.9-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -60,23 +60,17 @@ msgid "The settings UI"
 msgstr "A UI de configurações"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#, fuzzy
-#| msgid "First release for GNOME 40. Changes:"
 msgid "First release for GNOME 41. Changes:"
-msgstr "Primeiro lançamento para o GNOME 40. Alterações:"
+msgstr "Primeiro lançamento para o GNOME 41. Alterações:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-#, fuzzy
-#| msgid "port to gnome-shell 40"
 msgid "port to gnome-shell 41"
-msgstr "port para gnome-shell 40"
+msgstr "port para gnome-shell 41"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
-#, fuzzy
-#| msgid "updated translations"
 msgid "translations update"
-msgstr "traduções atualizadas"
+msgstr "atualização de traduções"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
@@ -101,7 +95,7 @@ msgstr "Este é um lançamento de manutenção. Alterações:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
 msgid "fix a crash in memory usage checking"
-msgstr ""
+msgstr "corrige uma falha na verificação do uso de memória"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
 msgid "First release for GNOME 40. Changes:"
@@ -204,28 +198,28 @@ msgstr "Corrige captura de associação de teclas com gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
 msgid "First release for GNOME 3.36. Changes:"
-msgstr ""
+msgstr "Primeiro lançamento para o GNOME 3.36. Alterações:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:189
 msgid "Update to gnome-shell 3.36.0"
-msgstr ""
+msgstr "Atualização para o gnome-shell 3.36.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:237
 msgid "Compatibility with recent appstream-glib"
-msgstr ""
+msgstr "Compatibilidade com appstream-glib recente"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:227
 msgid "First release for GNOME 3.34. Changes:"
-msgstr ""
+msgstr "Primeiro lançamento para o GNOME 3.34. Alterações:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:229
 msgid "Update to gnome-shell 3.34.0"
-msgstr ""
+msgstr "Atualização para o gnome-shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
-msgstr ""
+msgstr "@GETTEXT_PACKAGE@"
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
