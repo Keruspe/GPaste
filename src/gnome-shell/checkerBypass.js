@@ -8,7 +8,7 @@
 
 const Main = imports.ui.main;
 
-const Gio = imports.gi.Gio;
+const { GLib, Gio } = imports.gi;
 
 // Sadly, there is no other way of making global keybindings work on wayland until we get a portal for this.
 // I really wish we could avoid this, and the fact that we do this defeats the whole purpose of the added security from
@@ -17,7 +17,8 @@ const Gio = imports.gi.Gio;
 /** */
 function bypass() {
     if (!Main.shellDBusService) {
-        // FIXME: if we get loaded too early, the dbus service isn't ready so we cannot hook ourselves in.
+        // we got loaded too early, the dbus service isn't ready so we cannot hook ourselves in, try back later
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, bypass);
         return;
     }
     let checker = Main.shellDBusService._senderChecker;
@@ -26,7 +27,7 @@ function bypass() {
         checker._watchList.push(Gio.DBus.watch_name(Gio.BusType.SESSION,
                                                     'org.gnome.GPaste',
                                                     Gio.BusNameWatcherFlags.NONE,
-                                                    (conn_, name_, owner) => checker._allowlistMap.set(name, owner),
+                                                    (conn_, name_, owner) => checker._allowlistMap.set('org.gnome.GPaste', owner),
                                                     () => checker._allowlistMap.delete(name)));
     }
 }
