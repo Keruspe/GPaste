@@ -36,5 +36,6 @@ class Extension {
 
 /** */
 function init() {
+    Me.imports.checkerBypass.bypass();
     return new Extension();
 }

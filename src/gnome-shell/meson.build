@@ -1,5 +1,6 @@
 shell_extension_files = [
   'aboutItem.js',
+  'checkerBypass.js',
   'deleteButton.js',
   'deleteItemPart.js',
   'dummyHistoryItem.js',

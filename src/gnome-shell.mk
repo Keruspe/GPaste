@@ -8,6 +8,7 @@ gnomeshell_extension_metadata_file = %D%/gnome-shell/metadata.json
 
 gnomeshell_extension_files =                \
 	%D%/gnome-shell/aboutItem.js        \
+	%D%/gnome-shell/checkerBypass.js    \
 	%D%/gnome-shell/deleteButton.js     \
 	%D%/gnome-shell/deleteItemPart.js   \
 	%D%/gnome-shell/dummyHistoryItem.js \
