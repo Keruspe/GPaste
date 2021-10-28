@@ -10,8 +10,16 @@ const Main = imports.ui.main;
 
 const Gio = imports.gi.Gio;
 
+// Sadly, there is no other way of making global keybindings work on wayland until we get a portal for this.
+// I really wish we could avoid this, and the fact that we do this defeats the whole purpose of the added security from
+// gnome-shell which is... really sad.
+
 /** */
 function bypass() {
+    if (!Main.shellDBusService) {
+        // FIXME: if we get loaded too early, the dbus service isn't ready so we cannot hook ourselves in.
+        return;
+    }
     let checker = Main.shellDBusService._senderChecker;
     if (!checker._gpasteEnabled) {
         checker._gpasteEnabled = true;
