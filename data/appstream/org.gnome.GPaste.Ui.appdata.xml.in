@@ -43,6 +43,15 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.42.1" type="stable" date="2020-10-30">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fix keybindings for wayland</li>
+                  <li>translations update</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.42.0" type="stable" date="2020-09-28">
           <description>
               <p>First release for GNOME 41. Changes:</p>
