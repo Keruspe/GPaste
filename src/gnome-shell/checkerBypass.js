@@ -28,6 +28,6 @@ function bypass() {
                                                     'org.gnome.GPaste',
                                                     Gio.BusNameWatcherFlags.NONE,
                                                     (conn_, name_, owner) => checker._allowlistMap.set('org.gnome.GPaste', owner),
-                                                    () => checker._allowlistMap.delete(name)));
+                                                    () => checker._allowlistMap.delete('org.gnome.GPaste')));
     }
 }
