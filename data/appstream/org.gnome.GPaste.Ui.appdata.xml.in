@@ -43,6 +43,15 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.42.2" type="stable" date="2020-11-24">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix gnome-shell exntesion when the daemon restarts</li>
+                  <li>translations update</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.42.1" type="stable" date="2020-10-30">
           <description>
               <p>This is a maintenance release. Changes:</p>

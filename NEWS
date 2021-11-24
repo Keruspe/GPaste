@@ -1,3 +1,9 @@
+NEW in 3.42.2 (24/11/2021)
+=============
+
+- fix gnome-shell exntesion when the daemon restarts
+- translations update
+
 NEW in 3.42.1 (30/10/2021)
 =============
 
