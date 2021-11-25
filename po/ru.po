@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-11-24 20:53+0100\n"
-"PO-Revision-Date: 2021-11-25 22:35+0000\n"
+"PO-Revision-Date: 2021-11-27 10:52+0000\n"
 "Last-Translator: Gankov Andrey <gav@qsolution.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
 ">\n"
@@ -1027,7 +1027,7 @@ msgstr "Поиск"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
-msgstr ""
+msgstr "Общие"
 
 #: src/ui/gpaste-ui-switch.c:54
 msgid "Stop"
@@ -1040,4 +1040,4 @@ msgstr ""
 
 #: src/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
-msgstr ""
+msgstr "Загрузить"
