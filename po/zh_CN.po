@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-11-24 20:53+0100\n"
 "PO-Revision-Date: 2022-01-05 17:54+0000\n"
-"Last-Translator: Starcy <452276725@qq.com>\n"
+"Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "gpaste/gpaste/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -381,7 +381,7 @@ msgstr "最多记录多少项"
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
 msgid "Max memory usage (MB)"
-msgstr "GPaste能够使用的内存大小（MB）。"
+msgstr "GPaste 最多能够使用的内存大小（MB）"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
 msgid "Maximum amount of memory used to store contents"
