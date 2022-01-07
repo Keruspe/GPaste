@@ -1,5 +1,4 @@
 i18n.merge_file(
-  'gpaste-appdata',
   input: 'org.gnome.GPaste.Ui.appdata.xml.in',
   po_dir: gpaste_po_dir,
   output: 'org.gnome.GPaste.Ui.appdata.xml',
