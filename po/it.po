@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2021-11-24 20:53+0100\n"
 "PO-Revision-Date: 2022-02-03 14:58+0000\n"
-"Last-Translator: Andrea Brandi <git@andreabrandi.com>\n"
+"Last-Translator: wiselynx <wiselynx@fastwebnet.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/gpaste/gpaste/it/"
 ">\n"
 "Language: it\n"
@@ -1013,7 +1013,7 @@ msgstr "(Nessun risultato)"
 
 #: src/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
-msgstr ""
+msgstr "(Vuoto)"
 
 #: src/ui/gpaste-ui-empty-item.c:60
 msgid "(Couldn't connect to GPaste daemon)"
