@@ -180,10 +180,18 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     g_autofree HistoriesData *data = user_data;
     GPasteUiPanelPrivate *priv = data->priv;
-    g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, NULL);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, &error);
     g_autofree gchar *current = data->name;
 
     g_paste_ui_panel_add_history (priv, G_PASTE_DEFAULT_HISTORY, g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
+
+    if (error)
+    {
+        g_critical ("Error while listing available histories: %s", error->message);
+        return;
+    }
+
     for (GStrv h = histories; *h; ++h)
         g_paste_ui_panel_add_history (priv, *h, g_paste_str_equal (*h, current));
 }
