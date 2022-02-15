@@ -61,11 +61,11 @@ void         g_paste_history_delete      (GPasteHistory *self,
                                           const gchar   *name,
                                           GError       **error);
 const GList *g_paste_history_get_history (const GPasteHistory *self);
-guint64      g_paste_history_get_length  (const GPasteHistory *self);
+guint64      g_paste_history_get_length  (GPasteHistory *self);
 const gchar *g_paste_history_get_current (const GPasteHistory *self);
 
-GStrv g_paste_history_search (const GPasteHistory *self,
-                              const gchar         *pattern);
+GStrv g_paste_history_search (GPasteHistory *self,
+                              const gchar   *pattern);
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 
