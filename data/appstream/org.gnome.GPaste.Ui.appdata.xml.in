@@ -43,7 +43,16 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
-      <release version="3.42.2" type="stable" date="2020-11-24">
+      <release version="3.42.3" type="stable" date="2022-02-15">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix crash when there is no history yet</li>
+                  <li>translations update</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.42.2" type="stable" date="2021-11-24">
           <description>
               <p>This is a maintenance release. Changes:</p>
               <ul>
@@ -52,7 +61,7 @@
               </ul>
           </description>
       </release>
-      <release version="3.42.1" type="stable" date="2020-10-30">
+      <release version="3.42.1" type="stable" date="2021-10-30">
           <description>
               <p>This is a maintenance release. Changes:</p>
               <ul>
@@ -61,7 +70,7 @@
               </ul>
           </description>
       </release>
-      <release version="3.42.0" type="stable" date="2020-09-28">
+      <release version="3.42.0" type="stable" date="2021-09-28">
           <description>
               <p>First release for GNOME 41. Changes:</p>
               <ul>
@@ -70,7 +79,7 @@
               </ul>
           </description>
       </release>
-      <release version="3.40.3" type="stable" date="2020-09-26">
+      <release version="3.40.3" type="stable" date="2021-09-26">
           <description>
               <p>This is a maintenance release. Changes:</p>
               <ul>
@@ -78,7 +87,7 @@
               </ul>
           </description>
       </release>
-      <release version="3.40.2" type="stable" date="2020-04-30">
+      <release version="3.40.2" type="stable" date="2021-04-30">
           <description>
               <p>This is a maintenance release. Changes:</p>
               <ul>
