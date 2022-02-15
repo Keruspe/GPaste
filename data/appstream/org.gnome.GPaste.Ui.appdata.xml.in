@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.42.4" type="stable" date="2022-02-15">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>better fix crash when there is no history yet</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.42.3" type="stable" date="2022-02-15">
           <description>
               <p>This is a maintenance release. Changes:</p>
