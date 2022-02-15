@@ -184,10 +184,6 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autofree gchar *current = data->name;
 
     g_paste_ui_panel_add_history (priv, G_PASTE_DEFAULT_HISTORY, g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
-
-    if (!histories)
-        return;
-
     for (GStrv h = histories; *h; ++h)
         g_paste_ui_panel_add_history (priv, *h, g_paste_str_equal (*h, current));
 }
