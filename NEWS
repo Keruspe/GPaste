@@ -1,3 +1,8 @@
+NEW in 3.42.5 (15/02/2022)
+=============
+
+- fix some race conditions in history handling
+
 NEW in 3.42.4 (15/02/2022)
 =============
 
