@@ -411,6 +411,9 @@ g_paste_list_histories (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
+    if (!histories)
+        return EXIT_SUCCESS;
+
     for (GStrv h = histories; *h; ++h)
         printf ("%s\n", *h);
 
