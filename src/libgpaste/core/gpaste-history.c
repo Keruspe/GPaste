@@ -1162,7 +1162,11 @@ g_paste_history_list (GError **error)
                                                                        NULL, /* cancellable */
                                                                        error);
     if (error && *error)
+    {
+        if ((*error)->domain == G_FILE_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
+            return g_strdupv ((GStrv) (gpointer) history_names->data);
         return NULL;
+    }
 
     GFileInfo *history;
 
