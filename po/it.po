@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.4\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
 "POT-Creation-Date: 2022-02-15 15:26+0100\n"
-"PO-Revision-Date: 2022-02-03 14:58+0000\n"
-"Last-Translator: wiselynx <wiselynx@fastwebnet.it>\n"
+"PO-Revision-Date: 2022-02-18 14:58+0000\n"
+"Last-Translator: Andrea Brandi <git@andreabrandi.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/gpaste/gpaste/it/"
 ">\n"
 "Language: it\n"
@@ -85,11 +85,11 @@ msgstr "Questa è una versione di manutenzione. Cambiamenti:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "better fix crash when there is no history yet"
-msgstr ""
+msgstr "Miglior correzione per l'arresto anomalo quando la cronologia è vuota"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "fix crash when there is no history yet"
-msgstr ""
+msgstr "Correzione per l'arresto anomalo quando la cronologia è vuota"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
@@ -285,7 +285,7 @@ msgstr "Sincronizza la selezione primaria agli appunti"
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
 #: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
-msgstr "Esegui l'upload dell'elemento attivo ad un servizio pastebin"
+msgstr "Carica l'elemento attivo in un servizio pastebin"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
@@ -930,7 +930,7 @@ msgstr "Salva cronologia"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
 msgid "Max element size when displaying"
-msgstr "Dimensione massima degli elementi in visualizzazione"
+msgstr "Dimensione massima degli elementi visualizzati"
 
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
 msgid "Max text item length"
