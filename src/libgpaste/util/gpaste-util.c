@@ -617,7 +617,17 @@ g_paste_util_xml_encode (const gchar *text)
 G_PASTE_VISIBLE gchar *
 g_paste_util_get_history_dir_path (void)
 {
-    return g_build_filename (g_get_user_data_dir (), PACKAGE, NULL);
+    const gchar *user_data_dir = g_get_user_data_dir ();
+    gchar *meson_bug_history_path = g_build_filename (user_data_dir, PACKAGE_NAME, NULL);
+
+    // meson wrongfully defined PACKAGE as PACKAGE_NAME.
+    // use it if it exists, but otherwise use the correct path.
+    if (g_file_test (meson_bug_history_path, G_FILE_TEST_IS_DIR))
+        return meson_bug_history_path;
+
+    g_free (meson_bug_history_path);
+
+    return g_build_filename (user_data_dir, PACKAGE, NULL);
 }
 
 /**
