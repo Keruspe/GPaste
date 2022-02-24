@@ -1,3 +1,8 @@
+NEW in 3.42.6 (15/02/2022)
+=============
+
+- fix the storage path in meson builds
+
 NEW in 3.42.5 (15/02/2022)
 =============
 
