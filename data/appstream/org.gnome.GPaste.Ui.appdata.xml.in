@@ -43,6 +43,22 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.42.6" type="stable" date="2022-02-24">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix the storage path for meson builds</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.42.5" type="stable" date="2022-02-15">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>fix some race conditions in history handling</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.42.4" type="stable" date="2022-02-15">
           <description>
               <p>This is a maintenance release. Changes:</p>

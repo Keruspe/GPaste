@@ -1,11 +1,11 @@
 project('GPaste',
   'c',
-  version: '3.42.4',
+  version: '3.42.6',
   meson_version: '>=0.50.0',
 )
 
 apiversion = '1.0'
-gpaste_soversion = '13.0.6'
+gpaste_soversion = '13.0.7'
 
 glib_req='>=2.70.0'
 gdk_pixbuf_req='>=2.38.0'
@@ -77,7 +77,7 @@ add_project_arguments(
   '-DGTK_API=3',
   '-DGTK_DISABLE_DEPRECATED',
   '-DLOCALEDIR="' + join_paths(get_option('prefix'), get_option('datadir'), 'locale') + '"',
-  '-DPACKAGE="GPaste"',
+  '-DPACKAGE="gpaste"',
   '-DPACKAGE_NAME="GPaste"',
   '-DPACKAGE_STRING="GPaste ' + meson.project_version() +'"',
   '-DPACKAGE_VERSION="' + meson.project_version() + '"',
