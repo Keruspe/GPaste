@@ -77,7 +77,7 @@ add_project_arguments(
   '-DGTK_API=3',
   '-DGTK_DISABLE_DEPRECATED',
   '-DLOCALEDIR="' + join_paths(get_option('prefix'), get_option('datadir'), 'locale') + '"',
-  '-DPACKAGE="GPaste"',
+  '-DPACKAGE="gpaste"',
   '-DPACKAGE_NAME="GPaste"',
   '-DPACKAGE_STRING="GPaste ' + meson.project_version() +'"',
   '-DPACKAGE_VERSION="' + meson.project_version() + '"',
