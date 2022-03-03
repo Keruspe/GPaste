@@ -27,12 +27,12 @@ pango_dep = dependency('pango')
 # They're still required at runtime though.
 dbus_service_dir = get_option('dbus-services-dir')
 if dbus_service_dir == ''
-  dbus_service_dir = dependency('dbus-1').get_pkgconfig_variable('session_bus_services_dir')
+  dbus_service_dir = dependency('dbus-1').get_variable(pkgconfig: 'session_bus_services_dir')
 endif
 
 keybindings_dir = get_option('control-center-keybindings-dir')
 if keybindings_dir == ''
-  keybindings_dir = dependency('gnome-keybindings').get_pkgconfig_variable('keysdir')
+  keybindings_dir = dependency('gnome-keybindings').get_variable(pkgconfig: 'keysdir')
 endif
 
 libgpaste_deps = [ gdk_dep, gdk_pixbuf_dep, glib_dep, gtk_dep ]
@@ -45,7 +45,7 @@ endif
 userunit_dir = get_option('systemd-user-unit-dir')
 if userunit_dir == ''
   if get_option('systemd')
-    userunit_dir = dependency('systemd').get_pkgconfig_variable('systemduserunitdir')
+    userunit_dir = dependency('systemd').get_variable(pkgconfig: 'systemduserunitdir')
   endif
 endif
 
