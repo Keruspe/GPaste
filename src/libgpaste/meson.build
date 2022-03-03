@@ -131,9 +131,9 @@ endif
 
 if get_option('vapi')
   gnome.generate_vapi(
-  'gpaste-' + apiversion,
-  sources: libgpaste_gir[0],
-  packages: [ 'gdk-pixbuf-2.0', 'gio-2.0', 'glib-2.0', 'gobject-2.0', 'gtk+-3.0' ],
-  install: true,
+    'gpaste-' + apiversion,
+    sources: [libgpaste_gir[0]],
+    packages: [ 'gdk-pixbuf-2.0', 'gio-2.0', 'glib-2.0', 'gobject-2.0', 'gtk+-3.0' ],
+    install: true,
   )
 endif
