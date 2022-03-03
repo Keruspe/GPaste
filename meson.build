@@ -1,7 +1,7 @@
 project('GPaste',
   'c',
   version: '3.42.6',
-  meson_version: '>=0.50.0',
+  meson_version: '>=0.51.0',
 )
 
 apiversion = '1.0'
