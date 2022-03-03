@@ -31,12 +31,13 @@ A native gnome-shell extension is provided.
 
 You can then run `gpaste-client daemon-version` to check the correct daemon is now running.
 
-Steps to install it after cloning (skip the `./autogen.sh` part if you're building it from a tarball):
+Steps to install it after cloning:
 
-    ./autogen.sh
-    ./configure --sysconfdir=/etc
-    make
-    sudo make install
+    mkdir builddir
+    cd builddir
+    meson ..
+    ninja
+    sudo ninja install
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
