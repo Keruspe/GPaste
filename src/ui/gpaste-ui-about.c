@@ -5,7 +5,7 @@
  */
 
 #include <gpaste-ui-about.h>
-#include <gpaste-util.h>
+#include <gpaste/gpaste-util.h>
 
 struct _GPasteUiAbout
 {

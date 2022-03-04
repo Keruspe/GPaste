@@ -4,9 +4,10 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gsettings-keys.h>
+#include <gpaste/gpaste-gsettings-keys.h>
+#include <gpaste/gpaste-util.h>
+
 #include <gpaste-settings-ui-stack.h>
-#include <gpaste-util.h>
 
 struct _GPasteSettingsUiStack
 {

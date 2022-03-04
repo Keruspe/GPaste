@@ -11,8 +11,8 @@
 #ifndef __G_PASTE_UI_PANEL_H__
 #define __G_PASTE_UI_PANEL_H__
 
-#include <gpaste-client.h>
-#include <gpaste-settings.h>
+#include <gpaste/gpaste-client.h>
+#include <gpaste/gpaste-settings.h>
 
 G_BEGIN_DECLS
 

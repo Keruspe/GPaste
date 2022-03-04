@@ -4,13 +4,12 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gsettings-keys.h>
+#include <gpaste/gpaste-gsettings-keys.h>
+#include <gpaste/gpaste-update-enums.h>
+
 #include <gpaste-ui-empty-item.h>
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-item.h>
-#include <gpaste-update-enums.h>
-
-#include "gpaste-gtk-compat.h"
 
 struct _GPasteUiHistory
 {
@@ -176,7 +175,8 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     if (!priv->item_height)
     {
-        gtk_widget_measure (GTK_WIDGET ((priv->items) ? priv->items->data : priv->dummy_item), GTK_ORIENTATION_VERTICAL, -1, NULL, &priv->item_height, NULL, NULL);
+        //gtk_widget_measure (GTK_WIDGET ((priv->items) ? priv->items->data : priv->dummy_item), GTK_ORIENTATION_VERTICAL, -1, NULL, &priv->item_height, NULL, NULL);
+        gtk_widget_get_preferred_height (GTK_WIDGET ((priv->items) ? priv->items->data : priv->dummy_item), NULL, &priv->item_height);
         g_paste_ui_history_update_height_request (priv->settings, NULL, self);
     }
 }

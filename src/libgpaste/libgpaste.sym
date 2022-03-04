@@ -1,13 +1,5 @@
-LIBGPASTE_3_38_0 {
+LIBGPASTE_42 {
 global:
-    g_paste_bus_get_connection;
-    g_paste_bus_get_type;
-    g_paste_bus_new;
-    g_paste_bus_object_get_type;
-    g_paste_bus_object_new;
-    g_paste_bus_object_register_on_connection;
-    g_paste_bus_own_name;
-
     g_paste_client_about;
     g_paste_client_about_finish;
     g_paste_client_about_sync;
@@ -65,10 +57,6 @@ global:
     g_paste_client_get_type;
     g_paste_client_get_version;
     g_paste_client_is_active;
-    g_paste_client_item_get_type;
-    g_paste_client_item_get_uuid;
-    g_paste_client_item_get_value;
-    g_paste_client_item_new;
     g_paste_client_list_histories;
     g_paste_client_list_histories_finish;
     g_paste_client_list_histories_sync;
@@ -112,36 +100,10 @@ global:
     g_paste_client_upload_finish;
     g_paste_client_upload_sync;
 
-    g_paste_clipboard_bootstrap;
-    g_paste_clipboard_clear;
-    g_paste_clipboard_ensure_not_empty;
-    g_paste_clipboard_get_image_checksum;
-    g_paste_clipboard_get_real;
-    g_paste_clipboard_get_text;
-    g_paste_clipboard_get_type;
-    g_paste_clipboard_is_clipboard;
-    g_paste_clipboard_new_clipboard;
-    g_paste_clipboard_new_primary;
-    g_paste_clipboard_select_item;
-    g_paste_clipboard_select_text;
-    g_paste_clipboard_set_image;
-    g_paste_clipboard_set_text;
-    g_paste_clipboard_store;
-    g_paste_clipboard_sync_text;
-    g_paste_clipboards_manager_activate;
-    g_paste_clipboards_manager_add_clipboard;
-    g_paste_clipboards_manager_get_type;
-    g_paste_clipboards_manager_new;
-    g_paste_clipboards_manager_select;
-    g_paste_clipboards_manager_store;
-    g_paste_clipboards_manager_sync_from_to;
-
-    g_paste_daemon_get_type;
-    g_paste_daemon_new;
-    g_paste_daemon_show_history;
-    g_paste_daemon_upload;
-
-    g_paste_file_backend_get_type;
+    g_paste_client_item_get_type;
+    g_paste_client_item_get_uuid;
+    g_paste_client_item_get_value;
+    g_paste_client_item_new;
 
     g_paste_gnome_shell_client_get_type;
     g_paste_gnome_shell_client_grab_accelerator;
@@ -157,95 +119,12 @@ global:
     g_paste_gnome_shell_client_ungrab_accelerator_finish;
     g_paste_gnome_shell_client_ungrab_accelerator_sync;
 
-    g_paste_history_add;
-    g_paste_history_delete;
-    g_paste_history_delete_password;
-    g_paste_history_dup;
-    g_paste_history_empty;
-    g_paste_history_get;
-    g_paste_history_get_by_uuid;
-    g_paste_history_get_current;
-    g_paste_history_get_history;
-    g_paste_history_get_length;
-    g_paste_history_get_password;
-    g_paste_history_get_type;
-    g_paste_history_list;
-    g_paste_history_load;
-    g_paste_history_new;
-    g_paste_history_refresh_item_size;
-    g_paste_history_remove;
-    g_paste_history_remove_by_uuid;
-    g_paste_history_rename_password;
-    g_paste_history_replace;
-    g_paste_history_save;
-    g_paste_history_search;
-    g_paste_history_select;
-    g_paste_history_set_password;
-    g_paste_history_switch;
-
-    g_paste_image_item_is_growing;
-    g_paste_image_item_get_checksum;
-    g_paste_image_item_get_date;
-    g_paste_image_item_get_image;
-    g_paste_image_item_get_type;
-    g_paste_image_item_new;
-    g_paste_image_item_new_from_file;
-
-    g_paste_item_add_size;
-    g_paste_item_add_special_value;
-    g_paste_item_equals;
-    g_paste_item_get_display_string;
-    g_paste_item_get_kind;
-    g_paste_item_get_real_value;
-    g_paste_item_get_size;
-    g_paste_item_get_special_value;
-    g_paste_item_get_special_values;
-    g_paste_item_get_type;
-    g_paste_item_get_uuid;
-    g_paste_item_get_value;
     g_paste_item_kind_get_type;
-    g_paste_item_new;
-    g_paste_item_remove_size;
-    g_paste_item_set_display_string;
-    g_paste_item_set_size;
-    g_paste_item_set_uuid;
-
-    g_paste_keybinder_activate_all;
-    g_paste_keybinder_add_keybinding;
-    g_paste_keybinder_deactivate_all;
-    g_paste_keybinder_get_type;
-    g_paste_keybinder_new;
-
-    g_paste_keybinding_activate;
-    g_paste_keybinding_deactivate;
-    g_paste_keybinding_get_accelerator;
-    g_paste_keybinding_get_dconf_key;
-    g_paste_keybinding_get_keycodes;
-    g_paste_keybinding_get_modifiers;
-    g_paste_keybinding_get_type;
-    g_paste_keybinding_is_active;
-    g_paste_keybinding_new;
-    g_paste_keybinding_notify;
-    g_paste_keybinding_perform;
-
-    g_paste_make_password_keybinding_get_type;
-    g_paste_make_password_keybinding_new;
-
-    g_paste_password_item_get_name;
-    g_paste_password_item_get_type;
-    g_paste_password_item_new;
-    g_paste_password_item_set_name;
-
-    g_paste_pop_keybinding_get_type;
-    g_paste_pop_keybinding_new;
 
     g_paste_screensaver_client_get_type;
     g_paste_screensaver_client_new;
     g_paste_screensaver_client_new_finish;
     g_paste_screensaver_client_new_sync;
-
-    g_paste_search_provider_get_type;
-    g_paste_search_provider_new;
 
     g_paste_settings_get_close_on_select;
     g_paste_settings_get_element_size;
@@ -263,6 +142,7 @@ global:
     g_paste_settings_get_min_text_item_size;
     g_paste_settings_get_pop;
     g_paste_settings_get_primary_to_history;
+    g_paste_settings_get_rich_text_support;
     g_paste_settings_get_save_history;
     g_paste_settings_get_show_history;
     g_paste_settings_get_sync_clipboard_to_primary;
@@ -280,6 +160,7 @@ global:
     g_paste_settings_reset_growing_lines;
     g_paste_settings_reset_history_name;
     g_paste_settings_reset_images_support;
+    g_paste_settings_reset_launch_ui;
     g_paste_settings_reset_make_password;
     g_paste_settings_reset_max_displayed_history_size;
     g_paste_settings_reset_max_history_size;
@@ -288,6 +169,7 @@ global:
     g_paste_settings_reset_min_text_item_size;
     g_paste_settings_reset_pop;
     g_paste_settings_reset_primary_to_history;
+    g_paste_settings_reset_rich_text_support;
     g_paste_settings_reset_save_history;
     g_paste_settings_reset_show_history;
     g_paste_settings_reset_sync_clipboard_to_primary;
@@ -296,6 +178,7 @@ global:
     g_paste_settings_reset_track_changes;
     g_paste_settings_reset_track_extension_state;
     g_paste_settings_reset_trim_items;
+    g_paste_settings_reset_upload;
     g_paste_settings_set_close_on_select;
     g_paste_settings_set_element_size;
     g_paste_settings_set_empty_history_confirmation;
@@ -303,6 +186,7 @@ global:
     g_paste_settings_set_growing_lines;
     g_paste_settings_set_history_name;
     g_paste_settings_set_images_support;
+    g_paste_settings_set_launch_ui;
     g_paste_settings_set_make_password;
     g_paste_settings_set_max_displayed_history_size;
     g_paste_settings_set_max_history_size;
@@ -311,6 +195,7 @@ global:
     g_paste_settings_set_min_text_item_size;
     g_paste_settings_set_pop;
     g_paste_settings_set_primary_to_history;
+    g_paste_settings_set_rich_text_support;
     g_paste_settings_set_save_history;
     g_paste_settings_set_show_history;
     g_paste_settings_set_sync_clipboard_to_primary;
@@ -319,59 +204,13 @@ global:
     g_paste_settings_set_track_changes;
     g_paste_settings_set_track_extension_state;
     g_paste_settings_set_trim_items;
-
-    g_paste_settings_ui_panel_add_boolean_setting;
-    g_paste_settings_ui_panel_add_range_setting;
-    g_paste_settings_ui_panel_add_separator;
-    g_paste_settings_ui_panel_add_text_setting;
-    g_paste_settings_ui_panel_get_type;
-    g_paste_settings_ui_panel_new;
-    g_paste_settings_ui_stack_add_panel;
-    g_paste_settings_ui_stack_fill;
-    g_paste_settings_ui_stack_get_type;
-    g_paste_settings_ui_stack_new;
-    g_paste_settings_ui_widget_get_stack;
-    g_paste_settings_ui_widget_get_type;
-    g_paste_settings_ui_widget_new;
-
-    g_paste_show_history_keybinding_get_type;
-    g_paste_show_history_keybinding_new;
-
-    g_paste_special_atom_get;
-    g_paste_special_atom_get_type;
-
-    g_paste_storage_backend_get_type;
-    g_paste_storage_backend_new;
-    g_paste_storage_backend_read_history;
-    g_paste_storage_backend_write_history;
-
-    g_paste_sync_clipboard_to_primary_keybinding_get_type;
-    g_paste_sync_clipboard_to_primary_keybinding_new;
-
-    g_paste_sync_primary_to_clipboard_keybinding_get_type;
-    g_paste_sync_primary_to_clipboard_keybinding_new;
-
-    g_paste_text_item_get_type;
-    g_paste_text_item_new;
-
-    g_paste_ui_keybinding_get_type;
-    g_paste_ui_keybinding_new;
+    g_paste_settings_set_upload;
 
     g_paste_update_action_get_type;
     g_paste_update_target_get_type;
 
-    g_paste_upload_keybinding_get_type;
-    g_paste_upload_keybinding_new;
-
-    g_paste_uris_item_get_type;
-    g_paste_uris_item_get_uris;
-    g_paste_uris_item_new;
-
     g_paste_util_activate_ui;
     g_paste_util_activate_ui_sync;
-    g_paste_util_compute_checksum;
-    g_paste_util_confirm_dialog;
-    g_paste_util_empty_history;
     g_paste_util_empty_with_confirmation;
     g_paste_util_empty_with_confirmation_sync;
     g_paste_util_ensure_history_dir_exists;
@@ -385,7 +224,6 @@ global:
     g_paste_util_has_gnome_shell;
     g_paste_util_read_pid_file;
     g_paste_util_replace;
-    g_paste_util_show_win;
     g_paste_util_spawn;
     g_paste_util_spawn_sync;
     g_paste_util_write_pid_file;

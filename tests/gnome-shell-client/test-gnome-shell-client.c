@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gnome-shell-client.h>
+#include <gpaste/gpaste-gnome-shell-client.h>
 
 #define EXIT_TEST_SKIP 77
 

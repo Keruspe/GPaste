@@ -4,8 +4,11 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+#include <gpaste/gpaste-util.h>
+
+#include <gpaste-gtk-macros.h>
+#include <gpaste-gtk-util.h>
 #include <gpaste-ui-window.h>
-#include <gpaste-util.h>
 
 static GPasteUiWindow *
 get_ui_window(gpointer user_data)

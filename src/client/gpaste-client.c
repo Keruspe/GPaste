@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-util.h>
+#include <gpaste/gpaste-util.h>
 
 #include <getopt.h>
 #include <stdio.h>

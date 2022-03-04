@@ -4,11 +4,10 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+#include <gpaste/gpaste-util.h>
+
 #include <gpaste-ui-backup-history.h>
 #include <gpaste-ui-history-actions.h>
-#include <gpaste-util.h>
-
-#include "gpaste-gtk-compat.h"
 
 struct _GPasteUiBackupHistory
 {
@@ -56,12 +55,12 @@ g_paste_ui_backup_history_confirm_dialog (GtkWindow   *parent,
 
     gtk_widget_set_vexpand (label, TRUE);
     gtk_widget_set_valign (label, TRUE);
-    gtk_box_pack_start (box, label, TRUE, TRUE);
+    gtk_box_pack_start (box, label, TRUE, TRUE, 0);
     gtk_widget_show (label);
 
     gtk_widget_set_vexpand (entry, TRUE);
     gtk_widget_set_valign (entry, TRUE);
-    gtk_box_pack_start (box, entry, TRUE, TRUE);
+    gtk_box_pack_start (box, entry, TRUE, TRUE, 0);
     gtk_entry_set_text (e, default_name);
     gtk_widget_show (entry);
 

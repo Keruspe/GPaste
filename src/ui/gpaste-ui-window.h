@@ -11,7 +11,9 @@
 #ifndef __G_PASTE_UI_WINDOW_H__
 #define __G_PASTE_UI_WINDOW_H__
 
-#include <gpaste-macros.h>
+#include <gpaste/gpaste-macros.h>
+
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

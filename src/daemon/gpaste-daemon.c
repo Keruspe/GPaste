@@ -4,10 +4,12 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+#include <gpaste/gpaste-daemon.h>
+#include <gpaste/gpaste-util.h>
+#include <gpaste/gpaste-search-provider.h>
+
 #include <gpaste-bus.h>
-#include <gpaste-daemon.h>
-#include <gpaste-util.h>
-#include <gpaste-search-provider.h>
+#include <gpaste-gtk-macros.h>
 
 #ifdef G_OS_UNIX
 #  include <glib-unix.h>
