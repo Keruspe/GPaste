@@ -11,7 +11,9 @@
 #ifndef __G_PASTE_UI_SHORTCUTS_WINDOW_H__
 #define __G_PASTE_UI_SHORTCUTS_WINDOW_H__
 
-#include <gpaste-settings.h>
+#include <gpaste/gpaste-settings.h>
+
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

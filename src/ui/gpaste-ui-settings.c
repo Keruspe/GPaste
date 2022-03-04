@@ -7,8 +7,6 @@
 #include <gpaste-settings-ui-widget.h>
 #include <gpaste-ui-settings.h>
 
-#include "gpaste-gtk-compat.h"
-
 struct _GPasteUiSettings
 {
     GtkMenuButton parent_instance;

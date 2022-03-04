@@ -8,7 +8,7 @@ const Config = imports.misc.config;
 
 imports.gi.versions.Clutter = Config.LIBMUTTER_API_VERSION;
 imports.gi.versions.GLib = '2.0';
-imports.gi.versions.GPaste = '1.0';
+imports.gi.versions.GPaste = '2.0';
 imports.gi.versions.Pango = '1.0';
 imports.gi.versions.St = '1.0';
 

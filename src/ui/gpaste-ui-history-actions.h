@@ -11,7 +11,8 @@
 #ifndef __G_PASTE_UI_HISTORY_ACTIONS_H__
 #define __G_PASTE_UI_HISTORY_ACTIONS_H__
 
-#include <gpaste-settings.h>
+#include <gpaste/gpaste-settings.h>
+
 #include <gpaste-ui-panel-history.h>
 
 G_BEGIN_DECLS

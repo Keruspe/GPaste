@@ -4,14 +4,13 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+#include <gpaste/gpaste-util.h>
+
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
 #include <gpaste-ui-search-bar.h>
 #include <gpaste-ui-window.h>
 #include <gpaste-ui-shortcuts-window.h>
-#include <gpaste-util.h>
-
-#include "gpaste-gtk-compat.h"
 
 struct _GPasteUiWindow
 {
@@ -284,7 +283,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     priv->search_bar = GTK_SEARCH_BAR (search_bar);
 
     gtk_container_add (GTK_CONTAINER (win), vbox);
-    gtk_box_pack_start (GTK_BOX (box), search_bar, FALSE, FALSE);
+    gtk_box_pack_start (GTK_BOX (box), search_bar, FALSE, FALSE, 0);
 
     GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar));
     priv->c_signals[C_SEARCH] = g_signal_connect (entry,
@@ -330,14 +329,14 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     GtkBox *box = GTK_BOX (hbox);
 
     gtk_box_set_spacing (box, 2);
-    gtk_box_pack_start (box, panel, FALSE, FALSE);
-    gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE);
+    gtk_box_pack_start (box, panel, FALSE, FALSE, 0);
+    gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 0);
     gtk_widget_set_hexpand (history, TRUE);
     gtk_widget_set_halign (history, TRUE);
-    gtk_box_pack_start (box, history, TRUE, TRUE);
+    gtk_box_pack_start (box, history, TRUE, TRUE, 0);
     gtk_widget_set_vexpand (hbox, TRUE);
     gtk_widget_set_valign (hbox, TRUE);
-    gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE);
+    gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
                             gtk_container_get_children (vbox)->data, "search-mode-enabled",

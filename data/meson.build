@@ -21,5 +21,5 @@ pkg.generate(
   filebase: 'gpaste-' + apiversion,
   subdirs: 'gpaste',
   description: 'Library to handle and communicate with GPaste',
-  requires: [ gdk_pixbuf_dep, gio_dep, glib_dep, gobject_dep, gtk_dep ],
+  requires: [ gio_dep, glib_dep, gobject_dep ],
 )

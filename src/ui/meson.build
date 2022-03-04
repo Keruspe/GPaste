@@ -25,15 +25,6 @@ gpaste_ui_sources = [
   'gpaste-ui-upload-item.c',
   'gpaste-ui-window.c',
   'gpaste-ui.c',
-  'tmp/gpaste-client.c',
-  'tmp/gpaste-client-item.c',
-  'tmp/gpaste-util.c',
-  'tmp/gpaste-settings.c',
-  'tmp/gpaste-update-enums.c',
-  'tmp/gpaste-settings-ui-panel.c',
-  'tmp/gpaste-settings-ui-stack.c',
-  'tmp/gpaste-settings-ui-widget.c',
-  'tmp/gpaste-item-enums.c'
 ]
 
 gpaste_ui_headers = [
@@ -62,27 +53,17 @@ gpaste_ui_headers = [
   'gpaste-ui-switch.h',
   'gpaste-ui-upload-item.h',
   'gpaste-ui-window.h',
-  'tmp/gpaste-client.h',
-  'tmp/gpaste-client-item.h',
-  'tmp/gpaste-util.h',
-  'tmp/gpaste-settings.h',
-  'tmp/gpaste-update-enums.h',
-  'tmp/gpaste-settings-ui-panel.h',
-  'tmp/gpaste-settings-ui-stack.h',
-  'tmp/gpaste-settings-ui-widget.h',
-  'tmp/gpaste-item-enums.h'
 ]
 
 gpaste_ui_headers_dep = declare_dependency(
-  include_directories: include_directories('tmp', '../libgpaste'),
+  include_directories: include_directories('../libgpaste'),
   sources: gpaste_ui_headers,
 )
 
-tmp_inc = include_directories('tmp')
 executable(
   'gpaste-ui',
   sources: gpaste_ui_sources,
   install: true,
-  dependencies: [ glib_dep, gtk3_dep, gpaste_ui_headers_dep ],
+  dependencies: [ glib_dep, gtk3_dep, libgpaste_internal_dep, gpaste_ui_headers_dep ],
   install_dir: join_paths(get_option('libexecdir'), 'gpaste'),
 )

@@ -4,7 +4,7 @@ project('GPaste',
   meson_version: '>=0.51.0',
 )
 
-apiversion = '1.0'
+apiversion = '2.0'
 gpaste_soversion = '13.0.7'
 
 glib_req='>=2.70.0'
@@ -35,7 +35,7 @@ if keybindings_dir == ''
   keybindings_dir = dependency('gnome-keybindings').get_variable(pkgconfig: 'keysdir')
 endif
 
-libgpaste_deps = [ gdk_dep, gdk_pixbuf_dep, glib_dep, gtk_dep ]
+libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
 
 if get_option('introspection')
   mutter_clutter_dep = dependency('mutter-clutter-9', version: mutter_clutter_req)
@@ -53,6 +53,8 @@ if get_option('vapi') and not get_option('introspection')
   error('GIR generation has to be enabled via -Dintrospection=true to build vala bindings!')
 endif
 
+keybinder_deps = []
+
 if get_option('x-keybinder')
   add_project_arguments(
     '-DENABLE_X_KEYBINDER=1',
@@ -62,7 +64,7 @@ if get_option('x-keybinder')
   gdk_x11_dep = dependency('gdk-x11-3.0', version: gtk3_req)
   x11_dep = dependency('x11')
   xi_dep = dependency('xi')
-  libgpaste_deps += [ gdk_x11_dep, xi_dep, x11_dep ]
+  keybinder_deps += [ gdk_x11_dep, xi_dep, x11_dep ]
 endif
 
 add_project_arguments(

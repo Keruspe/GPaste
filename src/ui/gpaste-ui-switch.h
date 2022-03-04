@@ -11,7 +11,9 @@
 #ifndef __G_PASTE_UI_SWITCH_H__
 #define __G_PASTE_UI_SWITCH_H__
 
-#include <gpaste-client.h>
+#include <gpaste/gpaste-client.h>
+
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

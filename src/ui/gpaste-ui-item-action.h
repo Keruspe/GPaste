@@ -11,7 +11,9 @@
 #ifndef __G_PASTE_UI_ITEM_ACTION_H__
 #define __G_PASTE_UI_ITEM_ACTION_H__
 
-#include <gpaste-client.h>
+#include <gpaste/gpaste-client.h>
+
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
