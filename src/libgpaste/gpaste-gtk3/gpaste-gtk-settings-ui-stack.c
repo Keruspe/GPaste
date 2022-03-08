@@ -7,9 +7,9 @@
 #include <gpaste/gpaste-gsettings-keys.h>
 #include <gpaste/gpaste-util.h>
 
-#include <gpaste-settings-ui-stack.h>
+#include <gpaste-gtk3/gpaste-gtk-settings-ui-stack.h>
 
-struct _GPasteSettingsUiStack
+struct _GPasteGtkSettingsUiStack
 {
     GtkStack parent_instance;
 };
@@ -55,9 +55,9 @@ typedef struct
     GtkSwitch       *track_extension_state_switch;
 
     guint64          c_signals[C_LAST_SIGNAL];
-} GPasteSettingsUiStackPrivate;
+} GPasteGtkSettingsUiStackPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_STACK)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiStack, gtk_settings_ui_stack, GTK_TYPE_STACK)
 
 #define SETTING_CALLBACK_FULL(setting, type, cast)                            \
     static inline void                                                        \
@@ -75,21 +75,21 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_S
 #define UINT64_CALLBACK(setting) SETTING_CALLBACK_FULL (setting, gdouble, uint64)
 
 /**
- * g_paste_settings_ui_stack_add_panel:
- * @self: a #GPasteSettingsUiStack instance
+ * g_paste_gtk_settings_ui_stack_add_panel:
+ * @self: a #GPasteGtkSettingsUiStack instance
  * @name: the name of the panel
  * @label: the label to display
- * @panel: (transfer none): the #GPasteSettingsUiPanel to add
+ * @panel: (transfer none): the #GPasteGtkSettingsUiPanel to add
  *
- * Add a new panel to the #GPasteSettingsUiStack
+ * Add a new panel to the #GPasteGtkSettingsUiStack
  */
 G_PASTE_VISIBLE void
-g_paste_settings_ui_stack_add_panel (GPasteSettingsUiStack *self,
+g_paste_gtk_settings_ui_stack_add_panel (GPasteGtkSettingsUiStack *self,
                                      const gchar           *name,
                                      const gchar           *label,
-                                     GPasteSettingsUiPanel *panel)
+                                     GPasteGtkSettingsUiPanel *panel)
 {
-    g_return_if_fail (_G_PASTE_IS_SETTINGS_UI_STACK (self));
+    g_return_if_fail (_G_PASTE_IS_GTK_SETTINGS_UI_STACK (self));
 
     gtk_stack_add_titled (GTK_STACK (self),
                           GTK_WIDGET (panel),
@@ -107,19 +107,19 @@ BOOLEAN_CALLBACK (track_changes)
 BOOLEAN_CALLBACK (track_extension_state)
 BOOLEAN_CALLBACK (trim_items)
 
-static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPrivate *priv)
+static GPasteGtkSettingsUiPanel *
+g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (GPasteGtkSettingsUiStackPrivate *priv)
 {
     GPasteSettings *settings = priv->settings;
-    GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
+    GPasteGtkSettingsUiPanel *panel = g_paste_gtk_settings_ui_panel_new ();
 
-    priv->track_changes_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->track_changes_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                 _("Track clipboard changes"),
                                                                                 g_paste_settings_get_track_changes (settings),
                                                                                 track_changes_callback,
                                                                                 (GPasteResetCallback) g_paste_settings_reset_track_changes,
                                                                                 settings);
-    priv->close_on_select_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->close_on_select_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                   _("Close UI on select"),
                                                                                   g_paste_settings_get_close_on_select (settings),
                                                                                   close_on_select_callback,
@@ -128,13 +128,13 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
 
     if (g_paste_util_has_gnome_shell ())
     {
-        priv->extension_enabled_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+        priv->extension_enabled_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                         _("Enable the gnome-shell extension"),
                                                                                         g_paste_settings_get_extension_enabled (settings),
                                                                                         extension_enabled_callback,
                                                                                         NULL,
                                                                                         settings);
-        priv->track_extension_state_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+        priv->track_extension_state_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                             _("Sync the daemon state with the extension's one"),
                                                                                             g_paste_settings_get_track_extension_state (settings),
                                                                                             track_extension_state_callback,
@@ -142,40 +142,40 @@ g_paste_settings_ui_stack_private_make_behaviour_panel (GPasteSettingsUiStackPri
                                                                                             settings);
     }
 
-    g_paste_settings_ui_panel_add_separator (panel);
-    priv->primary_to_history_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    g_paste_gtk_settings_ui_panel_add_separator (panel);
+    priv->primary_to_history_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                      _("Primary selection affects history"),
                                                                                      g_paste_settings_get_primary_to_history (settings),
                                                                                      primary_to_history_callback,
                                                                                      (GPasteResetCallback) g_paste_settings_reset_primary_to_history,
                                                                                      settings);
-    priv->synchronize_clipboards_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->synchronize_clipboards_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                          _("Synchronize clipboard with primary selection"),
                                                                                          g_paste_settings_get_synchronize_clipboards (settings),
                                                                                          synchronize_clipboards_callback,
                                                                                          (GPasteResetCallback) g_paste_settings_reset_synchronize_clipboards,
                                                                                          settings);
-    g_paste_settings_ui_panel_add_separator (panel);
-    priv->images_support_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    g_paste_gtk_settings_ui_panel_add_separator (panel);
+    priv->images_support_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                  _("Images support"),
                                                                                  g_paste_settings_get_images_support (settings),
                                                                                  images_support_callback,
                                                                                  (GPasteResetCallback) g_paste_settings_reset_images_support,
                                                                                  settings);
-    priv->trim_items_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->trim_items_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                               _("Trim items"),
                                                                              g_paste_settings_get_trim_items (settings),
                                                                              trim_items_callback,
                                                                              (GPasteResetCallback) g_paste_settings_reset_trim_items,
                                                                              settings);
-    priv->growing_lines_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    priv->growing_lines_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                  _("Detect growing lines"),
                                                                                 g_paste_settings_get_growing_lines (settings),
                                                                                 growing_lines_callback,
                                                                                 (GPasteResetCallback) g_paste_settings_reset_growing_lines,
                                                                                 settings);
-    g_paste_settings_ui_panel_add_separator (panel);
-    priv->save_history_switch = g_paste_settings_ui_panel_add_boolean_setting (panel,
+    g_paste_gtk_settings_ui_panel_add_separator (panel);
+    priv->save_history_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                _("Save history"),
                                                                                g_paste_settings_get_save_history (settings),
                                                                                save_history_callback,
@@ -192,48 +192,48 @@ UINT64_CALLBACK (max_memory_usage)
 UINT64_CALLBACK (max_text_item_size)
 UINT64_CALLBACK (min_text_item_size)
 
-static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_private_make_history_settings_panel (GPasteSettingsUiStackPrivate *priv)
+static GPasteGtkSettingsUiPanel *
+g_paste_gtk_settings_ui_stack_private_make_history_settings_panel (GPasteGtkSettingsUiStackPrivate *priv)
 {
     GPasteSettings *settings = priv->settings;
-    GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
+    GPasteGtkSettingsUiPanel *panel = g_paste_gtk_settings_ui_panel_new ();
 
-    priv->element_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
+    priv->element_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
                                                                              _("Max element size when displaying"),
                                                                              (gdouble) g_paste_settings_get_element_size (settings),
                                                                              0, 511, 5,
                                                                              element_size_callback,
                                                                              (GPasteResetCallback) g_paste_settings_reset_element_size,
                                                                              settings);
-    priv->max_displayed_history_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
+    priv->max_displayed_history_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
                                                                                            _("Max displayed history size"),
                                                                                            (gdouble) g_paste_settings_get_max_displayed_history_size (settings),
                                                                                            10, 255, 5,
                                                                                            max_displayed_history_size_callback,
                                                                                            (GPasteResetCallback) g_paste_settings_reset_max_displayed_history_size,
                                                                                            settings);
-    priv->max_history_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
+    priv->max_history_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
                                                                                  _("Max history size"),
                                                                                  (gdouble) g_paste_settings_get_max_history_size (settings),
                                                                                  100, 65535, 5,
                                                                                  max_history_size_callback,
                                                                                  (GPasteResetCallback) g_paste_settings_reset_max_history_size,
                                                                                  settings);
-    priv->max_memory_usage_button = g_paste_settings_ui_panel_add_range_setting (panel,
+    priv->max_memory_usage_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
                                                                                  _("Max memory usage (MB)"),
                                                                                  (gdouble) g_paste_settings_get_max_memory_usage (settings),
                                                                                  5, 16383, 5,
                                                                                  max_memory_usage_callback,
                                                                                  (GPasteResetCallback) g_paste_settings_reset_max_memory_usage,
                                                                                  settings);
-    priv->max_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
+    priv->max_text_item_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Max text item length"),
                                                                                    (gdouble) g_paste_settings_get_max_text_item_size (settings),
                                                                                    1, G_MAXUINT64, 1,
                                                                                    max_text_item_size_callback,
                                                                                    (GPasteResetCallback) g_paste_settings_reset_max_text_item_size,
                                                                                    settings);
-    priv->min_text_item_size_button = g_paste_settings_ui_panel_add_range_setting (panel,
+    priv->min_text_item_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
                                                                                    _("Min text item length"),
                                                                                    (gdouble) g_paste_settings_get_min_text_item_size (settings),
                                                                                    1, 65535, 1,
@@ -252,56 +252,56 @@ STRING_CALLBACK (sync_clipboard_to_primary)
 STRING_CALLBACK (sync_primary_to_clipboard)
 STRING_CALLBACK (upload)
 
-static GPasteSettingsUiPanel *
-g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackPrivate *priv)
+static GPasteGtkSettingsUiPanel *
+g_paste_gtk_settings_ui_stack_private_make_keybindings_panel (GPasteGtkSettingsUiStackPrivate *priv)
 {
     GPasteSettings *settings = priv->settings;
-    GPasteSettingsUiPanel *panel = g_paste_settings_ui_panel_new ();
+    GPasteGtkSettingsUiPanel *panel = g_paste_gtk_settings_ui_panel_new ();
 
     /* translators: Keyboard shortcut to delete the active item from history */
-    priv->pop_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+    priv->pop_entry = g_paste_gtk_settings_ui_panel_add_text_setting (panel,
                                                                   _("Delete the active item from history"),
                                                                   g_paste_settings_get_pop (settings),
                                                                   pop_callback,
                                                                   (GPasteResetCallback) g_paste_settings_reset_pop,
                                                                   settings);
     /* translators: Keyboard shortcut to launch the graphical tool */
-    priv->launch_ui_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+    priv->launch_ui_entry = g_paste_gtk_settings_ui_panel_add_text_setting (panel,
                                                                         _("Launch the graphical tool"),
                                                                         g_paste_settings_get_launch_ui (settings),
                                                                         launch_ui_callback,
                                                                         (GPasteResetCallback) g_paste_settings_reset_launch_ui,
                                                                         settings);
     /* translators: Keyboard shortcut to mark the active item as being a password */
-    priv->make_password_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+    priv->make_password_entry = g_paste_gtk_settings_ui_panel_add_text_setting (panel,
                                                                             _("Mark the active item as being a password"),
                                                                             g_paste_settings_get_make_password (settings),
                                                                             make_password_callback,
                                                                             (GPasteResetCallback) g_paste_settings_reset_make_password,
                                                                             settings);
     /* translators: Keyboard shortcut to display the history */
-    priv->show_history_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+    priv->show_history_entry = g_paste_gtk_settings_ui_panel_add_text_setting (panel,
                                                                            _("Display the history"),
                                                                            g_paste_settings_get_show_history (settings),
                                                                            show_history_callback,
                                                                            (GPasteResetCallback) g_paste_settings_reset_show_history,
                                                                            settings);
     /* translators: Keyboard shortcut to sync the clipboard to the primary selection */
-    priv->sync_clipboard_to_primary_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+    priv->sync_clipboard_to_primary_entry = g_paste_gtk_settings_ui_panel_add_text_setting (panel,
                                                                                         _("Sync the clipboard to the primary selection"),
                                                                                         g_paste_settings_get_sync_clipboard_to_primary (settings),
                                                                                         sync_clipboard_to_primary_callback,
                                                                                         (GPasteResetCallback) g_paste_settings_reset_sync_clipboard_to_primary,
                                                                                         settings);
     /* translators: Keyboard shortcut to sync the primary selection to the clipboard */
-    priv->sync_primary_to_clipboard_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+    priv->sync_primary_to_clipboard_entry = g_paste_gtk_settings_ui_panel_add_text_setting (panel,
                                                                                         _("Sync the primary selection to the clipboard"),
                                                                                         g_paste_settings_get_sync_primary_to_clipboard (settings),
                                                                                         sync_primary_to_clipboard_callback,
                                                                                         (GPasteResetCallback) g_paste_settings_reset_sync_primary_to_clipboard,
                                                                                         settings);
     /* translators: Keyboard shortcut to upload the active item from history to a pastebin service */
-    priv->upload_entry = g_paste_settings_ui_panel_add_text_setting (panel,
+    priv->upload_entry = g_paste_gtk_settings_ui_panel_add_text_setting (panel,
                                                                      _("Upload the active item to a pastebin service"),
                                                                      g_paste_settings_get_upload (settings),
                                                                      upload_callback,
@@ -312,7 +312,7 @@ g_paste_settings_ui_stack_private_make_keybindings_panel (GPasteSettingsUiStackP
 }
 
 static gboolean
-g_paste_settings_ui_check_connection_error (GError *error)
+g_paste_gtk_settings_ui_check_connection_error (GError *error)
 {
     if (!error)
         return FALSE;
@@ -322,27 +322,27 @@ g_paste_settings_ui_check_connection_error (GError *error)
 }
 
 /**
- * g_paste_settings_ui_stack_fill:
- * @self: a #GPasteSettingsUiStack instance
+ * g_paste_gtk_settings_ui_stack_fill:
+ * @self: a #GPasteGtkSettingsUiStack instance
  *
- * Fill the #GPasteSettingsUiStack with default panels
+ * Fill the #GPasteGtkSettingsUiStack with default panels
  */
 G_PASTE_VISIBLE void
-g_paste_settings_ui_stack_fill (GPasteSettingsUiStack *self)
+g_paste_gtk_settings_ui_stack_fill (GPasteGtkSettingsUiStack *self)
 {
-    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
+    GPasteGtkSettingsUiStackPrivate *priv = g_paste_gtk_settings_ui_stack_get_instance_private (self);
 
-    g_paste_settings_ui_stack_add_panel (self, "general",   _("General behaviour"),  g_paste_settings_ui_stack_private_make_behaviour_panel (priv));
-    g_paste_settings_ui_stack_add_panel (self, "history",   _("History settings"),   g_paste_settings_ui_stack_private_make_history_settings_panel (priv));
-    g_paste_settings_ui_stack_add_panel (self, "keyboard",  _("Keyboard shortcuts"), g_paste_settings_ui_stack_private_make_keybindings_panel (priv));
+    g_paste_gtk_settings_ui_stack_add_panel (self, "general",   _("General behaviour"),  g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (priv));
+    g_paste_gtk_settings_ui_stack_add_panel (self, "history",   _("History settings"),   g_paste_gtk_settings_ui_stack_private_make_history_settings_panel (priv));
+    g_paste_gtk_settings_ui_stack_add_panel (self, "keyboard",  _("Keyboard shortcuts"), g_paste_gtk_settings_ui_stack_private_make_keybindings_panel (priv));
 }
 
 static void
-g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
+g_paste_gtk_settings_ui_stack_settings_changed (GPasteSettings *settings,
                                             const gchar    *key,
                                             gpointer        user_data)
 {
-    GPasteSettingsUiStackPrivate *priv = user_data;
+    GPasteGtkSettingsUiStackPrivate *priv = user_data;
 
     if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->close_on_select_switch), g_paste_settings_get_close_on_select (settings));
@@ -396,9 +396,9 @@ g_paste_settings_ui_stack_settings_changed (GPasteSettings *settings,
 }
 
 static void
-g_paste_settings_ui_stack_dispose (GObject *object)
+g_paste_gtk_settings_ui_stack_dispose (GObject *object)
 {
-    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
+    GPasteGtkSettingsUiStackPrivate *priv = g_paste_gtk_settings_ui_stack_get_instance_private (G_PASTE_GTK_SETTINGS_UI_STACK (object));
 
     if (priv->settings) /* first dispose call */
     {
@@ -407,35 +407,35 @@ g_paste_settings_ui_stack_dispose (GObject *object)
         g_clear_object (&priv->client);
     }
 
-    G_OBJECT_CLASS (g_paste_settings_ui_stack_parent_class)->dispose (object);
+    G_OBJECT_CLASS (g_paste_gtk_settings_ui_stack_parent_class)->dispose (object);
 }
 
 static void
-g_paste_settings_ui_stack_finalize (GObject *object)
+g_paste_gtk_settings_ui_stack_finalize (GObject *object)
 {
-    const GPasteSettingsUiStackPrivate *priv = _g_paste_settings_ui_stack_get_instance_private (G_PASTE_SETTINGS_UI_STACK (object));
+    const GPasteGtkSettingsUiStackPrivate *priv = _g_paste_gtk_settings_ui_stack_get_instance_private (G_PASTE_GTK_SETTINGS_UI_STACK (object));
     GStrv *actions = priv->actions;
 
     for (guint64 i = 0; actions[i]; ++i)
         g_free ((GStrv) actions[i]);
     g_free ((GStrv *) actions);
 
-    G_OBJECT_CLASS (g_paste_settings_ui_stack_parent_class)->finalize (object);
+    G_OBJECT_CLASS (g_paste_gtk_settings_ui_stack_parent_class)->finalize (object);
 }
 
 static void
-g_paste_settings_ui_stack_class_init (GPasteSettingsUiStackClass *klass)
+g_paste_gtk_settings_ui_stack_class_init (GPasteGtkSettingsUiStackClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-    object_class->dispose = g_paste_settings_ui_stack_dispose;
-    object_class->finalize = g_paste_settings_ui_stack_finalize;
+    object_class->dispose = g_paste_gtk_settings_ui_stack_dispose;
+    object_class->finalize = g_paste_gtk_settings_ui_stack_finalize;
 }
 
 static void
-g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
+g_paste_gtk_settings_ui_stack_init (GPasteGtkSettingsUiStack *self)
 {
-    GPasteSettingsUiStackPrivate *priv = g_paste_settings_ui_stack_get_instance_private (self);
+    GPasteGtkSettingsUiStackPrivate *priv = g_paste_gtk_settings_ui_stack_get_instance_private (self);
 
     priv->init_error = NULL;
     priv->client = g_paste_client_new_sync (&priv->init_error);
@@ -443,7 +443,7 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
     priv->settings = g_paste_settings_new ();
     priv->c_signals[C_SETTINGS] = g_signal_connect (priv->settings,
                                                     "changed",
-                                                    G_CALLBACK (g_paste_settings_ui_stack_settings_changed),
+                                                    G_CALLBACK (g_paste_gtk_settings_ui_stack_settings_changed),
                                                     priv);
 
     GStrv *actions = priv->actions = (GStrv *) g_malloc (3 * sizeof (GStrv));
@@ -462,23 +462,23 @@ g_paste_settings_ui_stack_init (GPasteSettingsUiStack *self)
 }
 
 /**
- * g_paste_settings_ui_stack_new:
+ * g_paste_gtk_settings_ui_stack_new:
  *
- * Create a new instance of #GPasteSettingsUiStack
+ * Create a new instance of #GPasteGtkSettingsUiStack
  *
- * Returns: (nullable): a newly allocated #GPasteSettingsUiStack
+ * Returns: (nullable): a newly allocated #GPasteGtkSettingsUiStack
  *                      free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteSettingsUiStack *
-g_paste_settings_ui_stack_new (void)
+G_PASTE_VISIBLE GPasteGtkSettingsUiStack *
+g_paste_gtk_settings_ui_stack_new (void)
 {
-    GPasteSettingsUiStack *self = G_PASTE_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_STACK,
+    GPasteGtkSettingsUiStack *self = G_PASTE_GTK_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_GTK_SETTINGS_UI_STACK,
                                                                              "margin",      12,
                                                                              "homogeneous", TRUE,
                                                                              NULL));
-    const GPasteSettingsUiStackPrivate *priv = _g_paste_settings_ui_stack_get_instance_private (self);
+    const GPasteGtkSettingsUiStackPrivate *priv = _g_paste_gtk_settings_ui_stack_get_instance_private (self);
 
-    if (g_paste_settings_ui_check_connection_error (priv->init_error))
+    if (g_paste_gtk_settings_ui_check_connection_error (priv->init_error))
     {
         g_object_unref (self);
         return NULL;

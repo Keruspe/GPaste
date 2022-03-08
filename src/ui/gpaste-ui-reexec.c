@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-util.h>
+#include <gpaste-gtk3/gpaste-gtk-util.h>
 
 #include <gpaste-ui-reexec.h>
 
@@ -27,7 +27,7 @@ g_paste_ui_reexec_clicked (GtkButton *button)
 {
     const GPasteUiReexecPrivate *priv = _g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (button));
 
-    if (g_paste_util_confirm_dialog (priv->topwin, _("Restart"), _("Do you really want to restart the daemon?")))
+    if (g_paste_gtk_util_confirm_dialog (priv->topwin, _("Restart"), _("Do you really want to restart the daemon?")))
         g_paste_client_reexecute (priv->client, NULL, NULL);
 }
 

@@ -1,3 +1,6 @@
+libgpaste_soversion = '14.0.0'
+libgpaste_gtk3_soversion = '0.0.0'
+
 libgpaste_sources = [
   'gpaste/gpaste-client-item.c',
   'gpaste/gpaste-client.c',
@@ -29,7 +32,7 @@ libgpaste_symbols_file = meson.current_source_dir() / 'libgpaste.sym'
 libgpaste = library(
   'gpaste',
   sources: libgpaste_sources,
-  version: gpaste_soversion,
+  version: libgpaste_soversion,
   dependencies: libgpaste_deps,
   install: true,
   install_dir: get_option('libdir'),
@@ -50,6 +53,49 @@ install_headers(
   subdir: 'gpaste-' + apiversion + '/gpaste',
 )
 
+libgpaste_gtk3_sources = [
+  'gpaste-gtk3/gpaste-gtk-util.c',
+  'gpaste-gtk3/gpaste-gtk-settings-ui-panel.c',
+  'gpaste-gtk3/gpaste-gtk-settings-ui-stack.c',
+  'gpaste-gtk3/gpaste-gtk-settings-ui-widget.c',
+]
+
+libgpaste_gtk3_headers = [
+  'gpaste-gtk3/gpaste-gtk-macros.h',
+  'gpaste-gtk3/gpaste-gtk-util.h',
+  'gpaste-gtk3/gpaste-gtk-settings-ui-panel.h',
+  'gpaste-gtk3/gpaste-gtk-settings-ui-stack.h',
+  'gpaste-gtk3/gpaste-gtk-settings-ui-widget.h',
+]
+
+libgpaste_gtk3_symbols_file = meson.current_source_dir() / 'libgpaste-gtk3.sym'
+
+libgpaste_gtk3_deps = [ libgpaste_internal_dep, gtk3_dep ]
+
+libgpaste_gtk3 = library(
+  'gpaste-gtk3',
+  sources: libgpaste_gtk3_sources,
+  version: libgpaste_gtk3_soversion,
+  dependencies: libgpaste_gtk3_deps,
+  install: true,
+  install_dir: get_option('libdir'),
+  link_args: ['-Wl,--version-script=' + libgpaste_gtk3_symbols_file],
+)
+
+libgpaste_gtk3_internal_dep = declare_dependency(
+  link_with: libgpaste_gtk3,
+  include_directories: include_directories('.'),
+)
+
+install_headers(
+  ['gpaste-gtk3.h'],
+  subdir: 'gpaste-' + apiversion,
+)
+install_headers(
+  libgpaste_gtk3_headers,
+  subdir: 'gpaste-' + apiversion + '/gpaste-gtk3',
+)
+
 if get_option('introspection')
   libgpaste_gir = gnome.generate_gir(
     libgpaste,
@@ -62,6 +108,18 @@ if get_option('introspection')
     install: true,
     extra_args: '--pkg-export=libgpaste',
   )
+
+  libgpaste_gtk3_gir = gnome.generate_gir(
+    libgpaste_gtk3,
+    sources: [ libgpaste_gtk3_sources, libgpaste_gtk3_headers ],
+    includes: [ 'GPaste-' + apiversion, 'Gtk-3.0' ],
+    dependencies: [ libgpaste_gtk3_internal_dep, libgpaste_internal_dep ],
+    header: 'gpaste-gtk3.h',
+    namespace: 'GPasteGtk',
+    nsversion: '3.0',
+    install: true,
+    extra_args: '--pkg-export=libgpaste-gtk3',
+  )
 endif
 
 if get_option('vapi')
@@ -69,6 +127,13 @@ if get_option('vapi')
     'gpaste-' + apiversion,
     sources: [libgpaste_gir[0]],
     packages: [ 'gio-2.0', 'glib-2.0', 'gobject-2.0' ],
+    install: true,
+  )
+
+  gnome.generate_vapi(
+    'gpaste-gtk-3.0',
+    sources: [libgpaste_gtk3_gir[0]],
+    packages: [ 'gpaste-' + apiversion, 'gtk+-3.0' ],
     install: true,
   )
 endif

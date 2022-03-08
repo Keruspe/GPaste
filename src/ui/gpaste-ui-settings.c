@@ -4,7 +4,8 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-settings-ui-widget.h>
+#include <gpaste-gtk3/gpaste-gtk-settings-ui-widget.h>
+
 #include <gpaste-ui-settings.h>
 
 struct _GPasteUiSettings
@@ -25,7 +26,7 @@ g_paste_ui_settings_init (GPasteUiSettings *self)
     GtkWidget *widget = GTK_WIDGET (self);
     GtkMenuButton *menu = GTK_MENU_BUTTON (self);
     GtkWidget *popover = gtk_popover_new (GTK_WIDGET (self));
-    GtkWidget *settings_widget = g_paste_settings_ui_widget_new ();
+    GtkWidget *settings_widget = g_paste_gtk_settings_ui_widget_new ();
 
     gtk_widget_set_tooltip_text (widget, _("GPaste Settings"));
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);

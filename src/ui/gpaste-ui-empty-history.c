@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-util.h>
+#include <gpaste-gtk3/gpaste-gtk-util.h>
 
 #include <gpaste-ui-empty-history.h>
 #include <gpaste-ui-history-actions.h>
@@ -23,7 +23,7 @@ g_paste_ui_empty_history_activate (GPasteUiHistoryAction *self G_GNUC_UNUSED,
                                    GtkWindow             *rootwin,
                                    const gchar           *history)
 {
-    g_paste_util_empty_history (rootwin, client, settings, history);
+    g_paste_gtk_util_empty_history (rootwin, client, settings, history);
 
     return TRUE;
 }

@@ -4,9 +4,9 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-settings-ui-panel.h>
+#include <gpaste-gtk3/gpaste-gtk-settings-ui-panel.h>
 
-struct _GPasteSettingsUiPanel
+struct _GPasteGtkSettingsUiPanel
 {
     GtkGrid parent_instance;
 };
@@ -15,12 +15,12 @@ typedef struct
 {
     GSList *callback_data;
     guint64 current_line;
-} GPasteSettingsUiPanelPrivate;
+} GPasteGtkSettingsUiPanelPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SettingsUiPanel, settings_ui_panel, GTK_TYPE_GRID)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiPanel, gtk_settings_ui_panel, GTK_TYPE_GRID)
 
 #define CALLBACK_DATA(w)                                                                              \
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);       \
+    GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (self);    \
     _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc0 (sizeof (_CallbackDataWrapper)); \
     CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                        \
     priv->callback_data = g_slist_prepend (priv->callback_data, _data);                               \
@@ -70,15 +70,15 @@ boolean_wrapper (GObject    *object,
 }
 
 static GtkLabel *
-g_paste_settings_ui_panel_add_label (GPasteSettingsUiPanel *self,
-                                     const gchar           *label)
+g_paste_gtk_settings_ui_panel_add_label (GPasteGtkSettingsUiPanel *self,
+                                     const gchar              *label)
 {
     GtkWidget *button_label = gtk_widget_new (GTK_TYPE_LABEL,
                                               "label",  label,
                                               "xalign", 0.0,
                                               NULL);
 
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
+    GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (self);
 
     gtk_widget_set_hexpand (button_label, TRUE);
     gtk_grid_attach (GTK_GRID (self), button_label, 0, priv->current_line++, 1, 1);
@@ -87,7 +87,7 @@ g_paste_settings_ui_panel_add_label (GPasteSettingsUiPanel *self,
 }
 
 static gboolean
-g_paste_settings_ui_panel_on_reset_pressed (GtkWidget       *widget G_GNUC_UNUSED,
+g_paste_gtk_settings_ui_panel_on_reset_pressed (GtkWidget       *widget G_GNUC_UNUSED,
                                             GdkEventButton  *event  G_GNUC_UNUSED,
                                             gpointer         user_data)
 {
@@ -96,12 +96,12 @@ g_paste_settings_ui_panel_on_reset_pressed (GtkWidget       *widget G_GNUC_UNUSE
 }
 
 static GtkWidget *
-g_paste_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
+g_paste_gtk_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
 {
     data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic", GTK_ICON_SIZE_BUTTON);
     data->c_signals[C_W_RESET] = g_signal_connect (data->reset_widget,
                                                    "button-press-event",
-                                                   G_CALLBACK (g_paste_settings_ui_panel_on_reset_pressed),
+                                                   G_CALLBACK (g_paste_gtk_settings_ui_panel_on_reset_pressed),
                                                    data);
     if (!((CallbackDataWrapper *) data)->reset_cb)
         gtk_widget_set_sensitive (data->reset_widget, FALSE);
@@ -109,8 +109,8 @@ g_paste_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
 }
 
 /**
- * g_paste_settings_ui_panel_add_boolean_setting:
- * @self: a #GPasteSettingsUiPanel instance
+ * g_paste_gtk_settings_ui_panel_add_boolean_setting:
+ * @self: a #GPasteGtkSettingsUiPanel instance
  * @label: the label to display
  * @value: the deafault value
  * @on_value_changed: (closure user_data) (scope notified): the callback to call when the value changes
@@ -121,7 +121,7 @@ g_paste_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
  * Returns: (transfer none): the #GtkSwitch we just added
  */
 G_PASTE_VISIBLE GtkSwitch *
-g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
+g_paste_gtk_settings_ui_panel_add_boolean_setting (GPasteGtkSettingsUiPanel *self,
                                                const gchar           *label,
                                                gboolean               value,
                                                GPasteBooleanCallback  on_value_changed,
@@ -129,7 +129,7 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
                                                gpointer               user_data)
 {
     GtkGrid *grid = GTK_GRID (self);
-    GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
+    GtkLabel *button_label = g_paste_gtk_settings_ui_panel_add_label (self, label);
     GtkWidget *widget = gtk_switch_new ();
     GtkSwitch *sw = GTK_SWITCH (widget);
     CALLBACK_DATA (widget);
@@ -137,21 +137,21 @@ g_paste_settings_ui_panel_add_boolean_setting (GPasteSettingsUiPanel *self,
     gtk_switch_set_active (sw, value);
     _data->c_signals[C_W_ACTION] = g_signal_connect (widget, "notify::active", G_CALLBACK (boolean_wrapper), data);
     gtk_grid_attach_next_to (grid, widget, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
-    gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), widget, GTK_POS_RIGHT, 1, 1);
+    gtk_grid_attach_next_to (grid, g_paste_gtk_settings_ui_panel_make_reset_button (_data), widget, GTK_POS_RIGHT, 1, 1);
 
     return sw;
 }
 
 /**
- * g_paste_settings_ui_panel_add_separator:
- * @self: a #GPasteSettingsUiPanel instance
+ * g_paste_gtk_settings_ui_panel_add_separator:
+ * @self: a #GPasteGtkSettingsUiPanel instance
  *
  * Add a new separator to the current pane
  */
 G_PASTE_VISIBLE void
-g_paste_settings_ui_panel_add_separator (GPasteSettingsUiPanel *self)
+g_paste_gtk_settings_ui_panel_add_separator (GPasteGtkSettingsUiPanel *self)
 {
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
+    GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (self);
 
     gtk_grid_attach (GTK_GRID (self), gtk_separator_new (GTK_ORIENTATION_HORIZONTAL), 0, priv->current_line++, 3, 1);
 }
@@ -164,8 +164,8 @@ range_wrapper (GtkSpinButton *spinbutton,
 }
 
 /**
- * g_paste_settings_ui_panel_add_range_setting:
- * @self: a #GPasteSettingsUiPanel instance
+ * g_paste_gtk_settings_ui_panel_add_range_setting:
+ * @self: a #GPasteGtkSettingsUiPanel instance
  * @label: the label to display
  * @value: the deafault value
  * @min: the minimal authorized value
@@ -179,7 +179,7 @@ range_wrapper (GtkSpinButton *spinbutton,
  * Returns: (transfer none): the #GtkSpinButton we just added
  */
 G_PASTE_VISIBLE GtkSpinButton *
-g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
+g_paste_gtk_settings_ui_panel_add_range_setting (GPasteGtkSettingsUiPanel *self,
                                              const gchar           *label,
                                              gdouble                value,
                                              gdouble                min,
@@ -190,7 +190,7 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
                                              gpointer               user_data)
 {
     GtkGrid *grid = GTK_GRID (self);
-    GtkLabel *button_label = g_paste_settings_ui_panel_add_label (self, label);
+    GtkLabel *button_label = g_paste_gtk_settings_ui_panel_add_label (self, label);
     GtkWidget *button = gtk_spin_button_new_with_range (min, max, step);
     GtkSpinButton *b = GTK_SPIN_BUTTON (button);
     CALLBACK_DATA (button);
@@ -199,7 +199,7 @@ g_paste_settings_ui_panel_add_range_setting (GPasteSettingsUiPanel *self,
     gtk_spin_button_set_value (b, value);
     _data->c_signals[C_W_ACTION] = g_signal_connect (GTK_SPIN_BUTTON (button), "value-changed", G_CALLBACK (range_wrapper), data);
     gtk_grid_attach_next_to (grid, button, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
-    gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), button, GTK_POS_RIGHT, 1, 1);
+    gtk_grid_attach_next_to (grid, g_paste_gtk_settings_ui_panel_make_reset_button (_data), button, GTK_POS_RIGHT, 1, 1);
 
     return b;
 }
@@ -212,8 +212,8 @@ text_wrapper (GtkEditable *editable,
 }
 
 /**
- * g_paste_settings_ui_panel_add_text_setting:
- * @self: a #GPasteSettingsUiPanel instance
+ * g_paste_gtk_settings_ui_panel_add_text_setting:
+ * @self: a #GPasteGtkSettingsUiPanel instance
  * @label: the label to display
  * @value: the deafault value
  * @on_value_changed: (closure user_data) (scope notified): the callback to call when the value changes
@@ -224,7 +224,7 @@ text_wrapper (GtkEditable *editable,
  * Returns: (transfer none): the #GtkEntry we just added
  */
 G_PASTE_VISIBLE GtkEntry *
-g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
+g_paste_gtk_settings_ui_panel_add_text_setting (GPasteGtkSettingsUiPanel *self,
                                             const gchar           *label,
                                             const gchar           *value,
                                             GPasteTextCallback     on_value_changed,
@@ -232,7 +232,7 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
                                             gpointer               user_data)
 {
     GtkGrid *grid = GTK_GRID (self);
-    GtkLabel *entry_label = g_paste_settings_ui_panel_add_label (self, label);
+    GtkLabel *entry_label = g_paste_gtk_settings_ui_panel_add_label (self, label);
     GtkWidget *entry = gtk_entry_new ();
     GtkEntry *e = GTK_ENTRY (entry);
     CALLBACK_DATA (entry);
@@ -242,7 +242,7 @@ g_paste_settings_ui_panel_add_text_setting (GPasteSettingsUiPanel *self,
     _data->c_signals[C_W_ACTION] = g_signal_connect (GTK_EDITABLE (entry), "changed", G_CALLBACK (text_wrapper), data);
     gtk_grid_attach_next_to (GTK_GRID (self), entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);
     if (on_reset)
-        gtk_grid_attach_next_to (grid, g_paste_settings_ui_panel_make_reset_button (_data), entry, GTK_POS_RIGHT, 1, 1);
+        gtk_grid_attach_next_to (grid, g_paste_gtk_settings_ui_panel_make_reset_button (_data), entry, GTK_POS_RIGHT, 1, 1);
 
     return e;
 }
@@ -259,27 +259,27 @@ clean_callback_data (gpointer data,
 }
 
 static void
-g_paste_settings_ui_panel_dispose (GObject *object)
+g_paste_gtk_settings_ui_panel_dispose (GObject *object)
 {
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (G_PASTE_SETTINGS_UI_PANEL (object));
+    GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (G_PASTE_GTK_SETTINGS_UI_PANEL (object));
 
     g_slist_foreach (priv->callback_data, clean_callback_data, NULL);
     g_slist_free (priv->callback_data);
     priv->callback_data = NULL;
 
-    G_OBJECT_CLASS (g_paste_settings_ui_panel_parent_class)->dispose (object);
+    G_OBJECT_CLASS (g_paste_gtk_settings_ui_panel_parent_class)->dispose (object);
 }
 
 static void
-g_paste_settings_ui_panel_class_init (GPasteSettingsUiPanelClass *klass)
+g_paste_gtk_settings_ui_panel_class_init (GPasteGtkSettingsUiPanelClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_settings_ui_panel_dispose;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_gtk_settings_ui_panel_dispose;
 }
 
 static void
-g_paste_settings_ui_panel_init (GPasteSettingsUiPanel *self)
+g_paste_gtk_settings_ui_panel_init (GPasteGtkSettingsUiPanel *self)
 {
-    GPasteSettingsUiPanelPrivate *priv = g_paste_settings_ui_panel_get_instance_private (self);
+    GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (self);
 
     priv->callback_data = NULL;
     priv->current_line = 0;
@@ -291,14 +291,14 @@ g_paste_settings_ui_panel_init (GPasteSettingsUiPanel *self)
 }
 
 /**
- * g_paste_settings_ui_panel_new:
+ * g_paste_gtk_settings_ui_panel_new:
  *
- * Create a new instance of #GPasteSettingsUiPanel
+ * Create a new instance of #GPasteGtkSettingsUiPanel
  *
- * Returns: a newly allocated #GPasteSettingsUiPanel
+ * Returns: a newly allocated #GPasteGtkSettingsUiPanel
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteSettingsUiPanel *
-g_paste_settings_ui_panel_new (void) {
-    return G_PASTE_SETTINGS_UI_PANEL (gtk_widget_new (G_PASTE_TYPE_SETTINGS_UI_PANEL, NULL));
+G_PASTE_VISIBLE GPasteGtkSettingsUiPanel *
+g_paste_gtk_settings_ui_panel_new (void) {
+    return G_PASTE_GTK_SETTINGS_UI_PANEL (gtk_widget_new (G_PASTE_TYPE_GTK_SETTINGS_UI_PANEL, NULL));
 }

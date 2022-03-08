@@ -1,0 +1,25 @@
+LIBGPASTE_GTK3_42 {
+global:
+    g_paste_gtk_util_confirm_dialog;
+    g_paste_gtk_util_compute_checksum;
+    g_paste_gtk_util_empty_history;
+    g_paste_gtk_util_show_win;
+
+    g_paste_gtk_settings_ui_panel_add_boolean_setting;
+    g_paste_gtk_settings_ui_panel_add_range_setting;
+    g_paste_gtk_settings_ui_panel_add_separator;
+    g_paste_gtk_settings_ui_panel_add_text_setting;
+    g_paste_gtk_settings_ui_panel_get_type;
+    g_paste_gtk_settings_ui_panel_new;
+
+    g_paste_gtk_settings_ui_stack_add_panel;
+    g_paste_gtk_settings_ui_stack_fill;
+    g_paste_gtk_settings_ui_stack_get_type;
+    g_paste_gtk_settings_ui_stack_new;
+
+    g_paste_gtk_settings_ui_widget_get_stack;
+    g_paste_gtk_settings_ui_widget_get_type;
+    g_paste_gtk_settings_ui_widget_new;
+local:
+    *;
+};

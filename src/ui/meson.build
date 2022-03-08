@@ -64,6 +64,6 @@ executable(
   'gpaste-ui',
   sources: gpaste_ui_sources,
   install: true,
-  dependencies: [ glib_dep, gtk3_dep, libgpaste_internal_dep, gpaste_ui_headers_dep ],
+  dependencies: [ glib_dep, gtk3_dep, libgpaste_internal_dep, libgpaste_gtk3_internal_dep, gpaste_ui_headers_dep ],
   install_dir: join_paths(get_option('libexecdir'), 'gpaste'),
 )

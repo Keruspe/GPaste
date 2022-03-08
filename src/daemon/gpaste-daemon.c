@@ -5,10 +5,10 @@
  */
 
 #include <gpaste/gpaste-util.h>
+#include <gpaste-gtk3/gpaste-gtk-macros.h>
 
 #include <gpaste-bus.h>
 #include <gpaste-daemon.h>
-#include <gpaste-gtk-macros.h>
 #include <gpaste-search-provider.h>
 
 #ifdef G_OS_UNIX
@@ -122,7 +122,7 @@ main (gint argc, gchar *argv[])
     /* FIXME: remove this once gtk supports clipboard correctly on wayland */
     gdk_set_allowed_backends ("x11");
 
-    G_PASTE_INIT_APPLICATION ("Daemon");
+    G_PASTE_GTK_INIT_APPLICATION ("Daemon");
 
     /* Keep the gapplication around */
     g_application_hold (gapp);

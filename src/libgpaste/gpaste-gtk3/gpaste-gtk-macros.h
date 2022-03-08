@@ -13,7 +13,7 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_INIT_APPLICATION_FULL(name, activate_cb)                                            \
+#define G_PASTE_GTK_INIT_APPLICATION_FULL(name, activate_cb)                                        \
     G_PASTE_INIT_GETTEXT ();                                                                        \
     GtkApplication *app = gtk_application_new ("org.gnome.GPaste." name, G_APPLICATION_FLAGS_NONE); \
     GApplication *gapp = G_APPLICATION (app);                                                       \
@@ -40,8 +40,8 @@ G_BEGIN_DECLS
     }                                                                                               \
     g_object_set (gtk_settings_get_default (), "gtk-application-prefer-dark-theme", TRUE, NULL)
 
-#define G_PASTE_INIT_APPLICATION(name) \
-    G_PASTE_INIT_APPLICATION_FULL (name, NULL)
+#define G_PASTE_GTK_INIT_APPLICATION(name) \
+    G_PASTE_GTK_INIT_APPLICATION_FULL (name, NULL)
 
 G_END_DECLS
 

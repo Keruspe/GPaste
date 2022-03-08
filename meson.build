@@ -5,7 +5,6 @@ project('GPaste',
 )
 
 apiversion = '2.0'
-gpaste_soversion = '13.0.7'
 
 glib_req='>=2.70.0'
 gdk_pixbuf_req='>=2.38.0'

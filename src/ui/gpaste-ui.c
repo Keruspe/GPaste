@@ -5,9 +5,9 @@
  */
 
 #include <gpaste/gpaste-util.h>
+#include <gpaste-gtk3/gpaste-gtk-macros.h>
+#include <gpaste-gtk3/gpaste-gtk-util.h>
 
-#include <gpaste-gtk-macros.h>
-#include <gpaste-gtk-util.h>
 #include <gpaste-ui-window.h>
 
 static GPasteUiWindow *
@@ -92,7 +92,7 @@ search_activated (GSimpleAction *action    G_GNUC_UNUSED,
 gint
 main (gint argc, gchar *argv[])
 {
-    G_PASTE_INIT_APPLICATION_FULL ("Ui", g_paste_util_show_win);
+    G_PASTE_GTK_INIT_APPLICATION_FULL ("Ui", g_paste_gtk_util_show_win);
 
     GActionEntry app_entries[] = {
         { "about",  about_activated,  NULL, NULL, NULL, { 0 } },

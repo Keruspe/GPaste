@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-util.h>
+#include <gpaste-gtk3/gpaste-gtk-util.h>
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
@@ -54,7 +54,7 @@ _empty (gpointer user_data)
     g_autofree gchar *history = data[1];
     g_free (data);
 
-    g_paste_util_empty_history (GTK_WINDOW (self), priv->client, priv->settings, history);
+    g_paste_gtk_util_empty_history (GTK_WINDOW (self), priv->client, priv->settings, history);
 
     return G_SOURCE_REMOVE;
 }

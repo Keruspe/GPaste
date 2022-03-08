@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-util.h>
+#include <gpaste-gtk3/gpaste-gtk-util.h>
 
 #include <gpaste-image-item.h>
 
@@ -159,7 +159,7 @@ g_paste_image_item_set_state (GPasteItem     *self,
         {
             priv->image = gdk_pixbuf_new_from_file (g_paste_item_get_value (self),
                                                     NULL); /* Error */
-            priv->checksum = g_paste_util_compute_checksum (priv->image);
+            priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
         }
         break;
     }
@@ -227,7 +227,7 @@ _g_paste_image_item_new (const gchar *path,
     priv->image = image;
 
     if (image)
-        priv->checksum = (checksum) ? checksum : g_paste_util_compute_checksum (image);
+        priv->checksum = (checksum) ? checksum : g_paste_gtk_util_compute_checksum (image);
     else
         g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
 
@@ -268,7 +268,7 @@ g_paste_image_item_new (GdkPixbuf *img)
 {
     g_return_val_if_fail (GDK_IS_PIXBUF (img), NULL);
 
-    gchar *checksum = g_paste_util_compute_checksum (img);
+    gchar *checksum = g_paste_gtk_util_compute_checksum (img);
     g_autofree gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
 

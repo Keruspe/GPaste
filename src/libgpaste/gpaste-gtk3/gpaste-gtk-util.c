@@ -6,19 +6,19 @@
 
 #include <gpaste/gpaste-gsettings-keys.h>
 
-#include <gpaste-gtk-util.h>
+#include <gpaste-gtk3/gpaste-gtk-util.h>
 
 /**
- * g_paste_util_confirm_dialog:
+ * g_paste_gtk_util_confirm_dialog:
  * @parent: (nullable): the parent #GtkWindow
  * @msg: the message to display
  *
  * Show GPaste about dialog
  */
 G_PASTE_VISIBLE gboolean
-g_paste_util_confirm_dialog (GtkWindow   *parent,
-                             const gchar *action,
-                             const gchar *msg)
+g_paste_gtk_util_confirm_dialog (GtkWindow   *parent,
+                                 const gchar *action,
+                                 const gchar *msg)
 {
     g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), FALSE);
     g_return_val_if_fail (g_utf8_validate (msg, -1, NULL), FALSE);
@@ -44,7 +44,7 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
 }
 
 /**
- * g_paste_util_compute_checksum:
+ * g_paste_gtk_util_compute_checksum:
  * @image: the #GdkPixbuf to checksum
  *
  * Compute the checksum of an image
@@ -52,7 +52,7 @@ g_paste_util_confirm_dialog (GtkWindow   *parent,
  * Returns: the newly allocated checksum
  */
 G_PASTE_VISIBLE gchar *
-g_paste_util_compute_checksum (GdkPixbuf *image)
+g_paste_gtk_util_compute_checksum (GdkPixbuf *image)
 {
     if (!image || !GDK_IS_PIXBUF (image))
         return NULL;
@@ -64,7 +64,7 @@ g_paste_util_compute_checksum (GdkPixbuf *image)
 }
 
 /**
- * g_paste_util_empty_history:
+ * g_paste_gtk_util_empty_history:
  * @parent_window: (nullable): the parent #GtkWindow
  * @client: a #GPasteClient instance
  * @settings: a #GPasteSettings instance
@@ -73,25 +73,25 @@ g_paste_util_compute_checksum (GdkPixbuf *image)
  * Empty history after prompting user for confirmation
  */
 G_PASTE_VISIBLE void
-g_paste_util_empty_history (GtkWindow      *parent_window,
-                            GPasteClient   *client,
-                            GPasteSettings *settings,
-                            const gchar    *history)
+g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
+                                GPasteClient   *client,
+                                GPasteSettings *settings,
+                                const gchar    *history)
 {
     if (!g_paste_settings_get_empty_history_confirmation (settings) ||
         /* Translators: this is the translation for emptying the history */
-        g_paste_util_confirm_dialog (parent_window, _("Empty"), _("Do you really want to empty the history?")))
+        g_paste_gtk_util_confirm_dialog (parent_window, _("Empty"), _("Do you really want to empty the history?")))
             g_paste_client_empty_history (client, history, NULL, NULL);
 }
 
 /**
- * g_paste_util_show_win:
+ * g_paste_gtk_util_show_win:
  * @application: a #GtkApplication
  *
  * Present the application's window to user
  */
 G_PASTE_VISIBLE void
-g_paste_util_show_win (GApplication *application)
+g_paste_gtk_util_show_win (GApplication *application)
 {
     g_return_if_fail (GTK_IS_APPLICATION (application));
 
