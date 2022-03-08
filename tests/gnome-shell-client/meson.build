@@ -3,7 +3,7 @@
 gnome_shell_client_test_exe = executable(
   'gpaste-gnome-shell-client-test',
   sources: 'test-gnome-shell-client.c',
-  dependencies: [ glib_dep, gtk_dep, libgpaste_internal_dep ],
+  dependencies: [ glib_dep, gobject_dep, libgpaste_internal_dep ],
 )
 
 test('test-gnome-shell-client', gnome_shell_client_test_exe)

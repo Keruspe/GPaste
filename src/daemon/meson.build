@@ -71,6 +71,6 @@ executable(
   'gpaste-daemon',
   sources: gpaste_daemon_sources,
   install: true,
-  dependencies: [ glib_dep, gtk_dep, libgpaste_internal_dep, gpaste_daemon_headers_dep ] + keybinder_deps,
+  dependencies: [ glib_dep, gtk3_dep, libgpaste_internal_dep, gpaste_daemon_headers_dep ] + keybinder_deps,
   install_dir: join_paths(get_option('libexecdir'), 'gpaste'),
 )
