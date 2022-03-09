@@ -1,7 +1,7 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
 #include <gpaste-gtk3/gpaste-gtk-settings-ui-panel.h>
@@ -71,7 +71,7 @@ boolean_wrapper (GObject    *object,
 
 static GtkLabel *
 g_paste_gtk_settings_ui_panel_add_label (GPasteGtkSettingsUiPanel *self,
-                                     const gchar              *label)
+                                         const gchar              *label)
 {
     GtkWidget *button_label = gtk_widget_new (GTK_TYPE_LABEL,
                                               "label",  label,
@@ -88,8 +88,8 @@ g_paste_gtk_settings_ui_panel_add_label (GPasteGtkSettingsUiPanel *self,
 
 static gboolean
 g_paste_gtk_settings_ui_panel_on_reset_pressed (GtkWidget       *widget G_GNUC_UNUSED,
-                                            GdkEventButton  *event  G_GNUC_UNUSED,
-                                            gpointer         user_data)
+                                                GdkEventButton  *event  G_GNUC_UNUSED,
+                                                gpointer         user_data)
 {
     G_PASTE_RESET_CALLBACK () (data->custom_data);
     return FALSE;

@@ -1,15 +1,14 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
 #if !defined (__G_PASTE_GTK3_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste-gtk3.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_GTK_SETTINGS_UI_PANEL_H__
-#define __G_PASTE_GTK_SETTINGS_UI_PANEL_H__
+#pragma once
 
 #include <gpaste/gpaste-macros.h>
 
@@ -55,5 +54,3 @@ GtkEntry *g_paste_gtk_settings_ui_panel_add_text_setting (GPasteGtkSettingsUiPan
 GPasteGtkSettingsUiPanel *g_paste_gtk_settings_ui_panel_new (void);
 
 G_END_DECLS
-
-#endif /*__G_PASTE_GTK_SETTINGS_UI_PANEL_H__*/

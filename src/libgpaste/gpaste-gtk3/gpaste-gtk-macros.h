@@ -4,8 +4,11 @@
  * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#ifndef __GPASTE_GTK_MACROS_H__
-#define __GPASTE_GTK_MACROS_H__
+#if !defined (__G_PASTE_GTK3_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
+#error "Only <gpaste-gtk3.h> can be included directly."
+#endif
+
+#pragma once
 
 #include <gpaste/gpaste-macros.h>
 
@@ -44,5 +47,3 @@ G_BEGIN_DECLS
     G_PASTE_GTK_INIT_APPLICATION_FULL (name, NULL)
 
 G_END_DECLS
-
-#endif /*__GPASTE_MACROS_H__*/

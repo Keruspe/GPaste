@@ -8,8 +8,7 @@
 #error "Only <gpaste-gtk3.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_GTK_UTIL_H__
-#define __G_PASTE_GTK_UTIL_H__
+#pragma once
 
 #include <gpaste/gpaste-settings.h>
 #include <gpaste/gpaste-client.h>
@@ -33,5 +32,3 @@ void     g_paste_gtk_util_empty_history    (GtkWindow      *parent_window,
 void     g_paste_gtk_util_show_win         (GApplication *application);
 
 G_END_DECLS
-
-#endif /*__G_PASTE_GTK_UTIL_H__*/
