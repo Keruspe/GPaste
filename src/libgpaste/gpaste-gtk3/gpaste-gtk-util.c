@@ -13,7 +13,7 @@
  * @parent: (nullable): the parent #GtkWindow
  * @msg: the message to display
  *
- * Show GPaste about dialog
+ * Ask the user for confirmation
  */
 G_PASTE_VISIBLE gboolean
 g_paste_gtk_util_confirm_dialog (GtkWindow   *parent,

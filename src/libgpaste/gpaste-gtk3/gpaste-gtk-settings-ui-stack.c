@@ -23,38 +23,34 @@ enum
 
 typedef struct
 {
-    GPasteClient    *client;
-    GPasteSettings  *settings;
+    GPasteSettings *settings;
 
-    GError          *init_error;
+    GtkSwitch      *close_on_select_switch;
+    GtkSwitch      *images_support_switch;
+    GtkSwitch      *growing_lines_switch;
+    GtkSwitch      *primary_to_history_switch;
+    GtkSwitch      *save_history_switch;
+    GtkSwitch      *synchronize_clipboards_switch;
+    GtkSwitch      *track_changes_switch;
+    GtkSwitch      *trim_items_switch;
+    GtkSpinButton  *element_size_button;
+    GtkSpinButton  *max_displayed_history_size_button;
+    GtkSpinButton  *max_history_size_button;
+    GtkSpinButton  *max_memory_usage_button;
+    GtkSpinButton  *max_text_item_size_button;
+    GtkSpinButton  *min_text_item_size_button;
+    GtkEntry       *launch_ui_entry;
+    GtkEntry       *make_password_entry;
+    GtkEntry       *pop_entry;
+    GtkEntry       *show_history_entry;
+    GtkEntry       *sync_clipboard_to_primary_entry;
+    GtkEntry       *sync_primary_to_clipboard_entry;
+    GtkEntry       *upload_entry;
 
-    GtkSwitch       *close_on_select_switch;
-    GtkSwitch       *images_support_switch;
-    GtkSwitch       *growing_lines_switch;
-    GtkSwitch       *primary_to_history_switch;
-    GtkSwitch       *save_history_switch;
-    GtkSwitch       *synchronize_clipboards_switch;
-    GtkSwitch       *track_changes_switch;
-    GtkSwitch       *trim_items_switch;
-    GtkSpinButton   *element_size_button;
-    GtkSpinButton   *max_displayed_history_size_button;
-    GtkSpinButton   *max_history_size_button;
-    GtkSpinButton   *max_memory_usage_button;
-    GtkSpinButton   *max_text_item_size_button;
-    GtkSpinButton   *min_text_item_size_button;
-    GtkEntry        *launch_ui_entry;
-    GtkEntry        *make_password_entry;
-    GtkEntry        *pop_entry;
-    GtkEntry        *show_history_entry;
-    GtkEntry        *sync_clipboard_to_primary_entry;
-    GtkEntry        *sync_primary_to_clipboard_entry;
-    GtkEntry        *upload_entry;
-    gchar         ***actions;
+    GtkSwitch      *extension_enabled_switch;
+    GtkSwitch      *track_extension_state_switch;
 
-    GtkSwitch       *extension_enabled_switch;
-    GtkSwitch       *track_extension_state_switch;
-
-    guint64          c_signals[C_LAST_SIGNAL];
+    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteGtkSettingsUiStackPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiStack, gtk_settings_ui_stack, GTK_TYPE_STACK)
@@ -311,16 +307,6 @@ g_paste_gtk_settings_ui_stack_private_make_keybindings_panel (GPasteGtkSettingsU
     return panel;
 }
 
-static gboolean
-g_paste_gtk_settings_ui_check_connection_error (GError *error)
-{
-    if (!error)
-        return FALSE;
-
-    fprintf (stderr, "%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
-    return TRUE;
-}
-
 /**
  * g_paste_gtk_settings_ui_stack_fill:
  * @self: a #GPasteGtkSettingsUiStack instance
@@ -404,32 +390,15 @@ g_paste_gtk_settings_ui_stack_dispose (GObject *object)
     {
         g_signal_handler_disconnect (priv->settings, priv->c_signals[C_SETTINGS]);
         g_clear_object (&priv->settings);
-        g_clear_object (&priv->client);
     }
 
     G_OBJECT_CLASS (g_paste_gtk_settings_ui_stack_parent_class)->dispose (object);
 }
 
 static void
-g_paste_gtk_settings_ui_stack_finalize (GObject *object)
-{
-    const GPasteGtkSettingsUiStackPrivate *priv = _g_paste_gtk_settings_ui_stack_get_instance_private (G_PASTE_GTK_SETTINGS_UI_STACK (object));
-    GStrv *actions = priv->actions;
-
-    for (guint64 i = 0; actions[i]; ++i)
-        g_free ((GStrv) actions[i]);
-    g_free ((GStrv *) actions);
-
-    G_OBJECT_CLASS (g_paste_gtk_settings_ui_stack_parent_class)->finalize (object);
-}
-
-static void
 g_paste_gtk_settings_ui_stack_class_init (GPasteGtkSettingsUiStackClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_gtk_settings_ui_stack_dispose;
-    object_class->finalize = g_paste_gtk_settings_ui_stack_finalize;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_gtk_settings_ui_stack_dispose;
 }
 
 static void
@@ -437,28 +406,11 @@ g_paste_gtk_settings_ui_stack_init (GPasteGtkSettingsUiStack *self)
 {
     GPasteGtkSettingsUiStackPrivate *priv = g_paste_gtk_settings_ui_stack_get_instance_private (self);
 
-    priv->init_error = NULL;
-    priv->client = g_paste_client_new_sync (&priv->init_error);
-
     priv->settings = g_paste_settings_new ();
     priv->c_signals[C_SETTINGS] = g_signal_connect (priv->settings,
                                                     "changed",
                                                     G_CALLBACK (g_paste_gtk_settings_ui_stack_settings_changed),
                                                     priv);
-
-    GStrv *actions = priv->actions = (GStrv *) g_malloc (3 * sizeof (GStrv));
-
-    GStrv action = actions[0] = (GStrv) g_malloc (2 * sizeof (gchar *));
-    action[0] = (gchar *) "switch";
-    /* translators: This is the name of a multi-history management action */
-    action[1] = _("Switch to");
-
-    action = actions[1] = (GStrv) g_malloc (2 * sizeof (gchar *));
-    action[0] = (gchar *) "delete";
-    /* translators: This is the name of a multi-history management action */
-    action[1] = _("Delete");
-
-    actions[2] = NULL;
 }
 
 /**
@@ -472,17 +424,8 @@ g_paste_gtk_settings_ui_stack_init (GPasteGtkSettingsUiStack *self)
 G_PASTE_VISIBLE GPasteGtkSettingsUiStack *
 g_paste_gtk_settings_ui_stack_new (void)
 {
-    GPasteGtkSettingsUiStack *self = G_PASTE_GTK_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_GTK_SETTINGS_UI_STACK,
-                                                                                    "margin",      12,
-                                                                                    "homogeneous", TRUE,
-                                                                                    NULL));
-    const GPasteGtkSettingsUiStackPrivate *priv = _g_paste_gtk_settings_ui_stack_get_instance_private (self);
-
-    if (g_paste_gtk_settings_ui_check_connection_error (priv->init_error))
-    {
-        g_object_unref (self);
-        return NULL;
-    }
-
-    return self;
+    return G_PASTE_GTK_SETTINGS_UI_STACK (gtk_widget_new (G_PASTE_TYPE_GTK_SETTINGS_UI_STACK,
+                                                          "margin",      12,
+                                                          "homogeneous", TRUE,
+                                                          NULL));
 }

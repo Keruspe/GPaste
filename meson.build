@@ -21,6 +21,7 @@ gobject_dep = dependency('gobject-2.0', version: glib_req)
 gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gtk3_dep = dependency('gtk+-3.0', version: gtk3_req)
 gtk4_dep = dependency('gtk4', version: gtk4_req)
+libadwaita_dep = dependency('libadwaita-1')
 pango_dep = dependency('pango')
 
 # Don't make dbus/gnome-control-center a build dependency if so desired.
