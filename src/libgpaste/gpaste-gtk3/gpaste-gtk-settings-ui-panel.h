@@ -21,36 +21,36 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (GtkSettingsUiPanel, gtk_settings_ui_panel, GTK_SETTINGS_UI_PANEL, GtkGrid)
 
-typedef void (*GPasteBooleanCallback)     (gboolean data,
-                                           gpointer user_data);
-typedef void (*GPasteRangeCallback)       (gdouble  data,
-                                           gpointer user_data);
-typedef void (*GPasteTextCallback)        (const gchar *data,
-                                           gpointer     user_data);
-typedef void (*GPasteResetCallback)       (gpointer user_data);
+typedef void (*GPasteGtkBooleanCallback)     (gboolean data,
+                                              gpointer user_data);
+typedef void (*GPasteGtkRangeCallback)       (gdouble  data,
+                                              gpointer user_data);
+typedef void (*GPasteGtkTextCallback)        (const gchar *data,
+                                              gpointer     user_data);
+typedef void (*GPasteGtkResetCallback)       (gpointer user_data);
 
 GtkSwitch *g_paste_gtk_settings_ui_panel_add_boolean_setting (GPasteGtkSettingsUiPanel *self,
-                                                          const gchar           *label,
-                                                          gboolean               value,
-                                                          GPasteBooleanCallback  on_value_changed,
-                                                          GPasteResetCallback    on_reset,
-                                                          gpointer               user_data);
+                                                              const gchar              *label,
+                                                              gboolean                  value,
+                                                              GPasteGtkBooleanCallback  on_value_changed,
+                                                              GPasteGtkResetCallback    on_reset,
+                                                              gpointer                  user_data);
 void g_paste_gtk_settings_ui_panel_add_separator (GPasteGtkSettingsUiPanel *self);
 GtkSpinButton *g_paste_gtk_settings_ui_panel_add_range_setting (GPasteGtkSettingsUiPanel *self,
-                                                            const gchar           *label,
-                                                            gdouble                value,
-                                                            gdouble                min,
-                                                            gdouble                max,
-                                                            gdouble                step,
-                                                            GPasteRangeCallback    on_value_changed,
-                                                            GPasteResetCallback    on_reset,
-                                                            gpointer               user_data);
+                                                                const gchar              *label,
+                                                                gdouble                   value,
+                                                                gdouble                   min,
+                                                                gdouble                   max,
+                                                                gdouble                   step,
+                                                                GPasteGtkRangeCallback    on_value_changed,
+                                                                GPasteGtkResetCallback    on_reset,
+                                                                gpointer                  user_data);
 GtkEntry *g_paste_gtk_settings_ui_panel_add_text_setting (GPasteGtkSettingsUiPanel *self,
-                                                      const gchar           *label,
-                                                      const gchar           *value,
-                                                      GPasteTextCallback     on_value_changed,
-                                                      GPasteResetCallback    on_reset,
-                                                      gpointer               user_data);
+                                                          const gchar              *label,
+                                                          const gchar              *value,
+                                                          GPasteGtkTextCallback     on_value_changed,
+                                                          GPasteGtkResetCallback    on_reset,
+                                                          gpointer                  user_data);
 
 GPasteGtkSettingsUiPanel *g_paste_gtk_settings_ui_panel_new (void);
 

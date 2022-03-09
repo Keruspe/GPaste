@@ -19,14 +19,14 @@ typedef struct
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiPanel, gtk_settings_ui_panel, GTK_TYPE_GRID)
 
-#define CALLBACK_DATA(w)                                                                              \
-    GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (self);    \
-    _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc0 (sizeof (_CallbackDataWrapper)); \
-    CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                        \
-    priv->callback_data = g_slist_prepend (priv->callback_data, _data);                               \
-    _data->widget = GTK_WIDGET (w);                                                                   \
-    data->callback = G_CALLBACK (on_value_changed);                                                   \
-    data->reset_cb = on_reset;                                                                        \
+#define CALLBACK_DATA(w)                                                                               \
+    GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (self); \
+    _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc0 (sizeof (_CallbackDataWrapper));  \
+    CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                         \
+    priv->callback_data = g_slist_prepend (priv->callback_data, _data);                                \
+    _data->widget = GTK_WIDGET (w);                                                                    \
+    data->callback = G_CALLBACK (on_value_changed);                                                    \
+    data->reset_cb = on_reset;                                                                         \
     data->custom_data = user_data;
 
 #define G_PASTE_CALLBACK(cb_type)                                  \
@@ -39,9 +39,9 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiPanel, gtk_settings_ui_panel, GTK
 
 typedef struct
 {
-    GCallback           callback;
-    GPasteResetCallback reset_cb;
-    gpointer            custom_data;
+    GCallback              callback;
+    GPasteGtkResetCallback reset_cb;
+    gpointer               custom_data;
 } CallbackDataWrapper;
 
 enum
@@ -66,7 +66,7 @@ boolean_wrapper (GObject    *object,
                  GParamSpec *pspec G_GNUC_UNUSED,
                  gpointer    user_data)
 {
-    G_PASTE_CALLBACK (GPasteBooleanCallback) (gtk_switch_get_active (GTK_SWITCH (object)), data->custom_data);
+    G_PASTE_CALLBACK (GPasteGtkBooleanCallback) (gtk_switch_get_active (GTK_SWITCH (object)), data->custom_data);
 }
 
 static GtkLabel *
@@ -122,11 +122,11 @@ g_paste_gtk_settings_ui_panel_make_reset_button (_CallbackDataWrapper *data)
  */
 G_PASTE_VISIBLE GtkSwitch *
 g_paste_gtk_settings_ui_panel_add_boolean_setting (GPasteGtkSettingsUiPanel *self,
-                                               const gchar           *label,
-                                               gboolean               value,
-                                               GPasteBooleanCallback  on_value_changed,
-                                               GPasteResetCallback    on_reset,
-                                               gpointer               user_data)
+                                                   const gchar              *label,
+                                                   gboolean                  value,
+                                                   GPasteGtkBooleanCallback  on_value_changed,
+                                                   GPasteGtkResetCallback    on_reset,
+                                                   gpointer                  user_data)
 {
     GtkGrid *grid = GTK_GRID (self);
     GtkLabel *button_label = g_paste_gtk_settings_ui_panel_add_label (self, label);
@@ -160,7 +160,7 @@ static void
 range_wrapper (GtkSpinButton *spinbutton,
                gpointer       user_data)
 {
-    G_PASTE_CALLBACK (GPasteRangeCallback) (gtk_spin_button_get_value (spinbutton), data->custom_data);
+    G_PASTE_CALLBACK (GPasteGtkRangeCallback) (gtk_spin_button_get_value (spinbutton), data->custom_data);
 }
 
 /**
@@ -180,14 +180,14 @@ range_wrapper (GtkSpinButton *spinbutton,
  */
 G_PASTE_VISIBLE GtkSpinButton *
 g_paste_gtk_settings_ui_panel_add_range_setting (GPasteGtkSettingsUiPanel *self,
-                                             const gchar           *label,
-                                             gdouble                value,
-                                             gdouble                min,
-                                             gdouble                max,
-                                             gdouble                step,
-                                             GPasteRangeCallback    on_value_changed,
-                                             GPasteResetCallback    on_reset,
-                                             gpointer               user_data)
+                                                 const gchar              *label,
+                                                 gdouble                   value,
+                                                 gdouble                   min,
+                                                 gdouble                   max,
+                                                 gdouble                   step,
+                                                 GPasteGtkRangeCallback    on_value_changed,
+                                                 GPasteGtkResetCallback    on_reset,
+                                                 gpointer                  user_data)
 {
     GtkGrid *grid = GTK_GRID (self);
     GtkLabel *button_label = g_paste_gtk_settings_ui_panel_add_label (self, label);
@@ -208,7 +208,7 @@ static void
 text_wrapper (GtkEditable *editable,
               gpointer     user_data)
 {
-    G_PASTE_CALLBACK (GPasteTextCallback) (gtk_entry_get_text (GTK_ENTRY (editable)), data->custom_data);
+    G_PASTE_CALLBACK (GPasteGtkTextCallback) (gtk_entry_get_text (GTK_ENTRY (editable)), data->custom_data);
 }
 
 /**
@@ -225,11 +225,11 @@ text_wrapper (GtkEditable *editable,
  */
 G_PASTE_VISIBLE GtkEntry *
 g_paste_gtk_settings_ui_panel_add_text_setting (GPasteGtkSettingsUiPanel *self,
-                                            const gchar           *label,
-                                            const gchar           *value,
-                                            GPasteTextCallback     on_value_changed,
-                                            GPasteResetCallback    on_reset,
-                                            gpointer               user_data)
+                                                const gchar              *label,
+                                                const gchar              *value,
+                                                GPasteGtkTextCallback     on_value_changed,
+                                                GPasteGtkResetCallback    on_reset,
+                                                gpointer                  user_data)
 {
     GtkGrid *grid = GTK_GRID (self);
     GtkLabel *entry_label = g_paste_gtk_settings_ui_panel_add_label (self, label);
