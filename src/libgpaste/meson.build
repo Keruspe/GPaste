@@ -131,7 +131,7 @@ if get_option('introspection')
   libgpaste_gtk3_gir = gnome.generate_gir(
     libgpaste_gtk3,
     sources: [ libgpaste_gtk3_sources, libgpaste_gtk3_headers ],
-    includes: [ libgpaste_gir[0], 'Gtk-3.0' ],
+    includes: [ libgpaste_gir[0], 'Gtk-3.0', 'Gdk-3.0' ],
     dependencies: [ ],
     header: 'gpaste-gtk3.h',
     namespace: 'GPasteGtk',
@@ -151,7 +151,7 @@ if get_option('vapi')
   gnome.generate_vapi(
     'gpaste-gtk-3.0',
     sources: [libgpaste_gtk3_gir[0]],
-    packages: [ libgpaste_vapi, 'gtk+-3.0' ],
+    packages: [ libgpaste_vapi, 'gtk+-3.0', 'gdk-3.0' ],
     install: true,
   )
 endif
