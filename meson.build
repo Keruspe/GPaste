@@ -4,22 +4,23 @@ project('GPaste',
   meson_version: '>=0.51.0',
 )
 
-apiversion = '2.0'
+apiversion = '2'
 
 glib_req='>=2.70.0'
 gdk_pixbuf_req='>=2.38.0'
 gjs_req='>=1.54.0'
 gtk3_req='>=3.24.0'
+gtk4_req='>=4.6.0'
 mutter_clutter_req='>=40.0'
 
 appstream_dep = dependency('appstream-glib')
-gdk_dep = dependency('gdk-3.0', version: gtk3_req)
 gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0', version: gdk_pixbuf_req)
 gio_dep = dependency('gio-2.0', version: glib_req)
 glib_dep = dependency('glib-2.0', version: glib_req)
 gobject_dep = dependency('gobject-2.0', version: glib_req)
-gtk_dep = dependency('gtk+-3.0', version: gtk3_req)
-gtk3_dep = dependency('gtk+-3.0', version: '>=3.24')
+gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
+gtk3_dep = dependency('gtk+-3.0', version: gtk3_req)
+gtk4_dep = dependency('gtk4', version: gtk4_req)
 pango_dep = dependency('pango')
 
 # Don't make dbus/gnome-control-center a build dependency if so desired.
