@@ -4,8 +4,7 @@
  * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#ifndef __G_PASTE_H__
-#define __G_PASTE_H__
+#pragma once
 
 #define __G_PASTE_H_INSIDE__
 
@@ -36,5 +35,3 @@
 #include <gpaste/gpaste-screensaver-client.h>
 
 #undef __G_PASTE_H_INSIDE__
-
-#endif /*__G_PASTE_H_INSIDE__H__*/

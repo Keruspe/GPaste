@@ -1,15 +1,14 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
 #if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __GPASTE_MACROS_H__
-#define __GPASTE_MACROS_H__
+#pragma once
 
 #include <gio/gio.h>
 #include <glib/gi18n-lib.h>
@@ -64,17 +63,15 @@ G_BEGIN_DECLS
       return g_paste_##type_name##_get_instance_private ((GPaste##TypeName *) self); \
     }
 
-#define G_PASTE_DEFINE_TYPE(TypeName, type_name, ParentTypeName)          \
-    G_DEFINE_TYPE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
-    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
+#define G_PASTE_DEFINE_TYPE(TypeName, type_name, ParentTypeName) \
+    G_DEFINE_TYPE (GPaste##TypeName, g_paste_##type_name, ParentTypeName)
 
 #define G_PASTE_DEFINE_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName)          \
     G_DEFINE_TYPE_WITH_PRIVATE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
     G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
 
-#define G_PASTE_DEFINE_ABSTRACT_TYPE(TypeName, type_name, ParentTypeName)          \
-    G_DEFINE_ABSTRACT_TYPE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
-    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
+#define G_PASTE_DEFINE_ABSTRACT_TYPE(TypeName, type_name, ParentTypeName) \
+    G_DEFINE_ABSTRACT_TYPE (GPaste##TypeName, g_paste_##type_name, ParentTypeName)
 
 #define G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName)          \
     G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
@@ -86,5 +83,3 @@ G_BEGIN_DECLS
     textdomain (GETTEXT_PACKAGE)
 
 G_END_DECLS
-
-#endif /*__GPASTE_MACROS_H__*/

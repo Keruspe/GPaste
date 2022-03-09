@@ -1,15 +1,14 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
 #if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_GDBUS_MACROS_H__
-#define __G_PASTE_GDBUS_MACROS_H__
+#pragma once
 
 #ifndef __GI_SCANNER__
 
@@ -357,4 +356,3 @@ G_BEGIN_DECLS
 G_END_DECLS
 
 #endif /*__GI_SCANNER__ */
-#endif /*__G_PASTE_GDBUS_MACROS_H__*/
