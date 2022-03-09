@@ -12,14 +12,3 @@ endif
 if get_option('systemd')
   subdir('systemd')
 endif
-
-pkg = import('pkgconfig')
-
-pkg.generate(
-  libgpaste,
-  name: 'libgpaste',
-  filebase: 'gpaste-' + apiversion,
-  subdirs: 'gpaste',
-  description: 'Library to handle and communicate with GPaste',
-  requires: [ gio_dep, glib_dep, gobject_dep ],
-)

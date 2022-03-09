@@ -1,6 +1,8 @@
 libgpaste_soversion = '14.0.0'
 libgpaste_gtk3_soversion = '0.0.0'
 
+pkg = import('pkgconfig')
+
 libgpaste_sources = [
   'gpaste/gpaste-client-item.c',
   'gpaste/gpaste-client.c',
@@ -53,6 +55,15 @@ install_headers(
   subdir: 'gpaste-' + apiversion + '/gpaste',
 )
 
+pkg.generate(
+  libgpaste,
+  name: 'libgpaste',
+  filebase: 'gpaste-' + apiversion,
+  subdirs: 'gpaste-' + apiversion,
+  description: 'Library to handle and communicate with GPaste',
+  requires: libgpaste_deps,
+)
+
 libgpaste_gtk3_sources = [
   'gpaste-gtk3/gpaste-gtk-util.c',
   'gpaste-gtk3/gpaste-gtk-settings-ui-panel.c',
@@ -94,6 +105,15 @@ install_headers(
 install_headers(
   libgpaste_gtk3_headers,
   subdir: 'gpaste-' + apiversion + '/gpaste-gtk3',
+)
+
+pkg.generate(
+  libgpaste_gtk3,
+  name: 'libgpaste-gtk3',
+  filebase: 'gpaste-gtk-3.0',
+  subdirs: 'gpaste-' + apiversion,
+  description: 'Library to manage GPaste settings and perform graphical operations',
+  libraries: libgpaste_gtk3_deps,
 )
 
 if get_option('introspection')
