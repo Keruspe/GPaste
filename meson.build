@@ -38,7 +38,7 @@ endif
 libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
 
 if get_option('introspection')
-  mutter_clutter_dep = dependency('mutter-clutter-9', version: mutter_clutter_req)
+  mutter_clutter_dep = dependency('mutter-clutter-10', version: mutter_clutter_req)
   gjs_dep = dependency('gjs-1.0', version: gjs_req)
 endif
 
