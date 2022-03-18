@@ -177,7 +177,7 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
     gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
     gtk_spin_button_set_value (b, value);
     gtk_editable_set_width_chars (e, 8);
-    gtk_editable_set_alignment (e, 1);
+    gtk_editable_set_alignment (e, 1.0);
 
     _data->c_signals[C_W_ACTION] = g_signal_connect (button, "value-changed", G_CALLBACK (range_wrapper), data);
     adw_action_row_add_suffix (row, button);
@@ -222,7 +222,7 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkEntryBuffer *buffer = gtk_entry_buffer_new (value, -1);
-    GtkWidget *entry = g_object_new (GTK_TYPE_ENTRY, "buffer", buffer, "valign", GTK_ALIGN_CENTER, "width-chars", 10, NULL);
+    GtkWidget *entry = g_object_new (GTK_TYPE_ENTRY, "buffer", buffer, "valign", GTK_ALIGN_CENTER, "width-chars", 10, "xalign", 1.0, NULL);
     AdwActionRow *row = ADW_ACTION_ROW (g_object_new (ADW_TYPE_ACTION_ROW, "title", label, "activatable-widget", entry, NULL));
 
     CALLBACK_DATA (buffer);
