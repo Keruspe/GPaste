@@ -212,7 +212,7 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
 
     CALLBACK_DATA (entry);
 
-    _data->c_signals[C_W_ACTION] = g_signal_connect (buffer, "notify:text", G_CALLBACK (text_wrapper), data);
+    _data->c_signals[C_W_ACTION] = g_signal_connect (buffer, "notify::text", G_CALLBACK (text_wrapper), data);
     adw_action_row_add_suffix (row, entry);
     if (on_reset)
         adw_action_row_add_suffix (row, g_paste_gtk_preferences_group_make_reset_button (_data));
