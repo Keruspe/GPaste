@@ -4,8 +4,6 @@
  * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-gsettings-keys.h>
-
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 typedef struct {

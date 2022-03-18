@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <gpaste/gpaste-macros.h>
+#include <gpaste.h>
 
 #include <gtk/gtk.h>
 

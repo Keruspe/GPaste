@@ -9,8 +9,6 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
 
-#include <adwaita.h>
-
 struct _GPasteGtkPreferencesWidget
 {
     GtkBox parent_instance;

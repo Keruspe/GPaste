@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <gpaste/gpaste-settings.h>
+#include <gpaste.h>
 
 #include <adwaita.h>
 

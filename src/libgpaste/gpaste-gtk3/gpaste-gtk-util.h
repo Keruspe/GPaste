@@ -10,8 +10,7 @@
 
 #pragma once
 
-#include <gpaste/gpaste-settings.h>
-#include <gpaste/gpaste-client.h>
+#include <gpaste.h>
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>

@@ -4,9 +4,6 @@
  * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-gsettings-keys.h>
-#include <gpaste/gpaste-util.h>
-
 #include <gpaste-gtk4/gpaste-gtk-preferences-page.h>
 
 G_PASTE_DEFINE_TYPE (GtkPreferencesPage, gtk_preferences_page, ADW_TYPE_PREFERENCES_PAGE)
