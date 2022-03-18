@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-11-27 10:52+0000\n"
 "Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
@@ -1042,13 +1042,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Configurações do histórico"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "Histories"
 msgid "History access"
 msgstr "Históricos"
 

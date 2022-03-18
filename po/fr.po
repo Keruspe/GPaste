@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-10-23 08:38+0000\n"
 "Last-Translator: Olivier FAURAX <olivier+weblate@faurax.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/"
@@ -112,13 +112,11 @@ msgstr "Mise à jour des traductions"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 #, fuzzy
-#| msgid "gnome-shell extension cosmetic updates"
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "Mises à jour cosmétiques de l'extension gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
 #, fuzzy
-#| msgid "Fix keybinding grab with gnome-shell"
 msgid "Fix keybindings for wayland"
 msgstr "Correction des raccourcis clavier dans gnome-shell"
 
@@ -921,7 +919,6 @@ msgstr "(Aucun résultat)"
 
 #: src/gnome-shell/stateSwitch.js:17
 #, fuzzy
-#| msgid "Track clipboard changes"
 msgid "Track changes"
 msgstr "Suivre les changements du presse-papier"
 
@@ -1059,13 +1056,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Préférences de l'historique"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "History settings"
 msgid "History access"
 msgstr "Préférences de l'historique"
 

@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-05-30 16:32+0000\n"
 "Last-Translator: F4 Developer <skowanski@f4dev.me>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/gpaste/gpaste/pl/"
@@ -109,13 +109,11 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
 #, fuzzy
-#| msgid "updated translations"
 msgid "translations update"
 msgstr "zaktualizowano tłumaczenia"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 #, fuzzy
-#| msgid "gnome-shell extension cosmetic updates"
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "poprawki kosmetyczne rozszerzenia dla gnome-shell"
 
@@ -125,13 +123,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 #, fuzzy
-#| msgid "First release for GNOME 40. Changes:"
 msgid "First release for GNOME 41. Changes:"
 msgstr "Pierwsze wydanie na GNOME 40. Zmiany:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
 #, fuzzy
-#| msgid "port to gnome-shell 40"
 msgid "port to gnome-shell 41"
 msgstr "port na gnome-shell 40"
 
@@ -909,7 +905,6 @@ msgstr "(Brak wyników)"
 
 #: src/gnome-shell/stateSwitch.js:17
 #, fuzzy
-#| msgid "Track clipboard changes"
 msgid "Track changes"
 msgstr "Śledź zmiany schowka"
 
@@ -1047,13 +1042,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Ustawienia historii"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "History settings"
 msgid "History access"
 msgstr "Ustawienia historii"
 

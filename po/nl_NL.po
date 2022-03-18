@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2017-03-17 17:38+0100\n"
 "Last-Translator: Heimen Stoffels <vistausss@outlook.com>\n"
 "Language-Team: Vistaus <vistausss@outlook.com>\n"
@@ -112,7 +112,6 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 #, fuzzy
-#| msgid "Enable the gnome-shell extension"
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "GNOME Shell-extensie inschakelen"
 
@@ -170,14 +169,12 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
 #, fuzzy
-#| msgid "Enable the gnome-shell extension"
 msgid "gnome-shell extension warning fixes"
 msgstr "GNOME Shell-extensie inschakelen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:208
 #, fuzzy
-#| msgid "Enable the gnome-shell extension"
 msgid "gnome-shell extension cosmetic updates"
 msgstr "GNOME Shell-extensie inschakelen"
 
@@ -349,7 +346,6 @@ msgstr "Gekopieerde afbeeldingen opslaan de geschiedenis of alleen tekst?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
 #, fuzzy
-#| msgid "By default, we're saving both"
 msgid "By default, we're saving only text"
 msgstr "Standaard worden beiden opgeslagen"
 
@@ -594,7 +590,6 @@ msgstr "Gebruik:\n"
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
 #, fuzzy
-#| msgid "print the history with indexes"
 msgid "print the history with UUIDs"
 msgstr "geschiedenis met indexen weergeven"
 
@@ -670,14 +665,12 @@ msgstr "wachtwoordnaam wijzigen"
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:177
 #, fuzzy
-#| msgid "get the <number>th item from the history"
 msgid "get the item <uuid> from the history"
 msgstr "verkrijg item <number> uit de geschiedenis"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:179
 #, fuzzy
-#| msgid "set the <number>th item from the history to the clipboard"
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "stelt item <number> uit de geschiedenis in op het klembord"
 
@@ -688,9 +681,6 @@ msgstr "inhoud"
 
 #: src/client/gpaste-client.c:181
 #, fuzzy
-#| msgid ""
-#| "replace the contents of the <number>th item from the history with the "
-#| "provided one"
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
@@ -701,9 +691,6 @@ msgstr ""
 #. Translators: help for gpaste merge <uuid> … <uuid>
 #: src/client/gpaste-client.c:183
 #, fuzzy
-#| msgid ""
-#| "merge the <number>th items from the history and add put the result in the "
-#| "clipboard"
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
@@ -713,7 +700,6 @@ msgstr ""
 
 #: src/client/gpaste-client.c:185
 #, fuzzy
-#| msgid "set the <number>th item from the history as a password named <name>"
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr ""
 "stelt item <number> uit de geschiedenis in als een wachtwoord genaamd <name>"
@@ -721,7 +707,6 @@ msgstr ""
 #. Translators: help for gpaste delete <uuid>
 #: src/client/gpaste-client.c:187
 #, fuzzy
-#| msgid "delete the password <name> from the history"
 msgid "delete item <uuid> from the history"
 msgstr "verwijdert wachtwoord <name> uit de geschiedenis"
 
@@ -791,7 +776,6 @@ msgstr ""
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:211
 #, fuzzy
-#| msgid "Upload the active item to a pastebin service"
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "Actief item uploaden naar een pastebin-dienst"
 
@@ -817,7 +801,6 @@ msgstr "het over-venster weergeven"
 
 #: src/client/gpaste-client.c:222
 #, fuzzy, c-format
-#| msgid "Merge options:"
 msgid "Convenience options:"
 msgstr "Samenvoegingsopties"
 
@@ -1068,13 +1051,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Geschiedenis-instellingen"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "Histories"
 msgid "History access"
 msgstr "Geschiedenissen"
 

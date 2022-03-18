@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.4\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2022-02-18 14:58+0000\n"
 "Last-Translator: Andrea Brandi <git@andreabrandi.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/gpaste/gpaste/it/"
@@ -911,7 +911,6 @@ msgstr "(Nessun risultato)"
 
 #: src/gnome-shell/stateSwitch.js:17
 #, fuzzy
-#| msgid "Track clipboard changes"
 msgid "Track changes"
 msgstr "Traccia i cambiamenti negli appunti"
 
@@ -1049,13 +1048,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Impostazioni cronologia"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "History settings"
 msgid "History access"
 msgstr "Impostazioni cronologia"
 

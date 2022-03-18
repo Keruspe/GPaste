@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2022-02-21 07:58+0000\n"
 "Last-Translator: Oğuz Ersen <oguzersen@protonmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
@@ -895,7 +895,6 @@ msgstr "(Sonuç yok)"
 
 #: src/gnome-shell/stateSwitch.js:17
 #, fuzzy
-#| msgid "Track clipboard changes"
 msgid "Track changes"
 msgstr "Pano değişikliklerini izle"
 
@@ -1033,13 +1032,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Geçmiş ayarları"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "History settings"
 msgid "History access"
 msgstr "Geçmiş ayarları"
 

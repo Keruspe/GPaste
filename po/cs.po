@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-07-31 22:33+0000\n"
 "Last-Translator: MUF cz <muf666@gmail.com>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/gpaste/gpaste/cs/"
@@ -119,13 +119,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 #, fuzzy
-#| msgid "First release for GNOME 40. Changes:"
 msgid "First release for GNOME 41. Changes:"
 msgstr "Prvni vydaní pro GNOME 40. Změny:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
 #, fuzzy
-#| msgid "port to gnome-shell 40"
 msgid "port to gnome-shell 41"
 msgstr "port do gnome-shel 40"
 

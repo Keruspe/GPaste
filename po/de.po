@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2022-01-27 11:55+0000\n"
 "Last-Translator: Jules Kreuer <juleskreuer@gmail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/"
@@ -113,7 +113,6 @@ msgstr "Übersetzungen aktualisiert"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 #, fuzzy
-#| msgid "gnome-shell extension cosmetic updates"
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "kosmetische Aktualisierungen für die Gnome-Shell-Erweiterung"
 
@@ -127,7 +126,6 @@ msgstr "Erstes Release für GNOME 3.38. Änderungen:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
 #, fuzzy
-#| msgid "Update to gnome-shell 3.34.0"
 msgid "port to gnome-shell 41"
 msgstr "Aktualisierung auf gnome-shell 3.34.0"
 
@@ -137,7 +135,6 @@ msgstr "Behebe Absturz bei Überprüfung des Speicherverbrauchs"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
 #, fuzzy
-#| msgid "First release for GNOME 3.38. Changes:"
 msgid "First release for GNOME 40. Changes:"
 msgstr "Erstes Release für GNOME 3.38. Änderungen:"
 
@@ -597,7 +594,6 @@ msgstr "Verwendung:\n"
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
 #, fuzzy
-#| msgid "print the history with indexes"
 msgid "print the history with UUIDs"
 msgstr "Chronik mit Index anzeigen"
 
@@ -677,14 +673,12 @@ msgstr ""
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:177
 #, fuzzy
-#| msgid "get the <number>th item from the history"
 msgid "get the item <uuid> from the history"
 msgstr "Hole den <number>ten Eintrag aus der Chronik"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:179
 #, fuzzy
-#| msgid "set the <number>th item from the history to the clipboard"
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "Setze den <number>ten Eintrag aus der Chronik in die Zwischenablage"
 
@@ -1065,13 +1059,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Einstellungen zur Chronik"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "Histories"
 msgid "History access"
 msgstr "Chroniken"
 

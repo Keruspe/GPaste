@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-08-17 10:34+0000\n"
 "Last-Translator: Luna Jernberg <droidbittin@gmail.com>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/gpaste/gpaste/sv/"
@@ -107,13 +107,11 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
 #, fuzzy
-#| msgid "updated translations"
 msgid "translations update"
 msgstr "uppdaterade översättningar"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 #, fuzzy
-#| msgid "Enable the gnome-shell extension"
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "Aktivera gnome-skaltillägget"
 
@@ -127,7 +125,6 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
 #, fuzzy
-#| msgid "port to gnome-shell 40"
 msgid "port to gnome-shell 41"
 msgstr "port till gnome-shell 40"
 
@@ -173,14 +170,12 @@ msgstr "uppdaterade översättningar"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
 #, fuzzy
-#| msgid "Enable the gnome-shell extension"
 msgid "gnome-shell extension warning fixes"
 msgstr "Aktivera gnome-skaltillägget"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:208
 #, fuzzy
-#| msgid "Enable the gnome-shell extension"
 msgid "gnome-shell extension cosmetic updates"
 msgstr "Aktivera gnome-skaltillägget"
 
@@ -351,7 +346,6 @@ msgstr "Skall vi spara bilder kopierade till historiken, eller bara text?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
 #, fuzzy
-#| msgid "By default, we're saving both"
 msgid "By default, we're saving only text"
 msgstr "Som standard sparar vi bägge"
 
@@ -588,7 +582,6 @@ msgstr "Användning:\n"
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
 #, fuzzy
-#| msgid "print the history with indexes"
 msgid "print the history with UUIDs"
 msgstr "Skriv ut historiken med index"
 
@@ -664,14 +657,12 @@ msgstr "Byt namn på lösenordet"
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:177
 #, fuzzy
-#| msgid "get the <number>th item from the history"
 msgid "get the item <uuid> from the history"
 msgstr "Hämta den <number>:e posten från historiken"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:179
 #, fuzzy
-#| msgid "set the <number>th item from the history to the clipboard"
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "Skicka den <number>:e historikposten till urklipp"
 
@@ -682,9 +673,6 @@ msgstr "Innehåll"
 
 #: src/client/gpaste-client.c:181
 #, fuzzy
-#| msgid ""
-#| "replace the contents of the <number>th item from the history with the "
-#| "provided one"
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
@@ -694,9 +682,6 @@ msgstr ""
 #. Translators: help for gpaste merge <uuid> … <uuid>
 #: src/client/gpaste-client.c:183
 #, fuzzy
-#| msgid ""
-#| "merge the <number>th items from the history and add put the result in the "
-#| "clipboard"
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
@@ -706,7 +691,6 @@ msgstr ""
 
 #: src/client/gpaste-client.c:185
 #, fuzzy
-#| msgid "set the <number>th item from the history as a password named <name>"
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr ""
 "Märk den <number>:e historikposten som varande lösenord med namnet <name>"
@@ -714,7 +698,6 @@ msgstr ""
 #. Translators: help for gpaste delete <uuid>
 #: src/client/gpaste-client.c:187
 #, fuzzy
-#| msgid "delete the password <name> from the history"
 msgid "delete item <uuid> from the history"
 msgstr "Ta bort lösenordet <name> från historiken"
 
@@ -783,7 +766,6 @@ msgstr "Låt panelprogrammet eller tillägget visa historiken"
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:211
 #, fuzzy
-#| msgid "Upload the active item to a pastebin service"
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "Ladda upp aktiv post till en pastebin-tjänst"
 
@@ -809,7 +791,6 @@ msgstr "Visa \"Om\""
 
 #: src/client/gpaste-client.c:222
 #, fuzzy, c-format
-#| msgid "Merge options:"
 msgid "Convenience options:"
 msgstr "Sammanfogningsalternativ:"
 
@@ -923,7 +904,6 @@ msgstr "(Inget resultat)"
 
 #: src/gnome-shell/stateSwitch.js:17
 #, fuzzy
-#| msgid "Track clipboard changes"
 msgid "Track changes"
 msgstr "Övervaka urklippsändringar"
 
@@ -1061,13 +1041,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Historikinställningar"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "History settings"
 msgid "History access"
 msgstr "Historikinställningar"
 

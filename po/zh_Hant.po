@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-06-09 10:33+0000\n"
 "Last-Translator: Yiu Man Ho <yiufamily.hh@gmail.com>\n"
 "Language-Team: Chinese (Traditional) <https://hosted.weblate.org/projects/"
@@ -106,13 +106,11 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
 #, fuzzy
-#| msgid "updated translations"
 msgid "translations update"
 msgstr "更新翻譯"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 #, fuzzy
-#| msgid "gnome-shell extension warning fixes"
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "GNOME Shell 插件警告修復"
 
@@ -122,13 +120,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 #, fuzzy
-#| msgid "First release for GNOME 40. Changes:"
 msgid "First release for GNOME 41. Changes:"
 msgstr "第一個適用於 GNOME 40 的版本。更新內容："
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
 #, fuzzy
-#| msgid "port to gnome-shell 40"
 msgid "port to gnome-shell 41"
 msgstr "讓其可用於 GNOME Shell 40"
 

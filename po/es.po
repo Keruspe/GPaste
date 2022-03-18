@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-11-10 16:51+0000\n"
 "Last-Translator: Carlos Sesma <usarralph@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
@@ -109,13 +109,11 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
 #, fuzzy
-#| msgid "updated translations"
 msgid "translations update"
 msgstr "traducciones actualizadas"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 #, fuzzy
-#| msgid "gnome-shell extension cosmetic updates"
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "Actualizaciones superficiales a la extensión para GNOME Shell"
 
@@ -670,7 +668,6 @@ msgstr "obtener el elemento <uuid> del histórico"
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:179
 #, fuzzy
-#| msgid "set the <number>th item from the history to the clipboard"
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "enviar el elemento número <número> del historial al portapapeles"
 
@@ -1055,13 +1052,11 @@ msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 #, fuzzy
-#| msgid "History settings"
 msgid "Display settings"
 msgstr "Ajustes del historial"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 #, fuzzy
-#| msgid "Histories"
 msgid "History access"
 msgstr "Histórico"
 

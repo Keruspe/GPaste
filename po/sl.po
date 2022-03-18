@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
-"Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-03-18 21:04+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-18 21:17+0100\n"
 "PO-Revision-Date: 2021-02-18 20:50+0000\n"
 "Last-Translator: Matej U <mateju@svn.gnome.org>\n"
 "Language-Team: Slovenian <https://hosted.weblate.org/projects/gpaste/gpaste/"
@@ -117,7 +117,6 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 #, fuzzy
-#| msgid "First release for GNOME 3.38. Changes:"
 msgid "First release for GNOME 41. Changes:"
 msgstr "Prva objava za GNOME 3.38. Spremembe:"
 
@@ -131,7 +130,6 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:125
 #, fuzzy
-#| msgid "First release for GNOME 3.38. Changes:"
 msgid "First release for GNOME 40. Changes:"
 msgstr "Prva objava za GNOME 3.38. Spremembe:"
 
@@ -551,7 +549,6 @@ msgstr "Uporaba:\n"
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
 #, fuzzy
-#| msgid "print the history with uuids"
 msgid "print the history with UUIDs"
 msgstr "izpiši zgodovino z določili UUID"
 
