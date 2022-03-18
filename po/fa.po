@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.42.1\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-02-24 18:01+0100\n"
+"POT-Creation-Date: 2022-03-18 21:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -243,43 +243,50 @@ msgid "@GETTEXT_PACKAGE@"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:269
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:263
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:112
 #: src/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:276
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:270
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:129
 #: src/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:262
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:256
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 #: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:283
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:277
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:290
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:284
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
 #: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:297
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:291
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:304
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:298
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
 #: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
 msgstr ""
@@ -355,7 +362,8 @@ msgid ""
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:208
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:202
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:149
 msgid "Max displayed history size"
 msgstr ""
 
@@ -364,7 +372,8 @@ msgid "Maximum number of items displayed in the history"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:215
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:209
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
 msgid "Max history size"
 msgstr ""
 
@@ -373,7 +382,8 @@ msgid "Maximum number of items in history"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:222
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:216
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
 msgid "Max memory usage (MB)"
 msgstr ""
 
@@ -791,206 +801,257 @@ msgstr ""
 msgid "Cannot add non utf8 data as text."
 msgstr ""
 
-#: src/client/gpaste-client.c:808
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
-#: src/ui/gpaste-ui-window.c:311
+#: src/client/gpaste-client.c:808 src/ui/gpaste-ui-window.c:310
 msgid "Couldn't connect to GPaste daemon"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:33
+#: src/daemon/gpaste-daemon.c:35
 msgid "Stop signal received, exiting"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:70
+#: src/daemon/gpaste-daemon.c:72
 msgid "Could not acquire DBus name."
 msgstr ""
 
 #. This is the date format "month/day/year time"
-#: src/libgpaste/core/gpaste-image-item.c:240
+#: src/daemon/tmp/gpaste-image-item.c:241
 msgid "%m/%d/%y %T"
 msgstr ""
 
 #. This gets displayed in history when selecting an image
-#: src/libgpaste/core/gpaste-image-item.c:242
+#: src/daemon/tmp/gpaste-image-item.c:243
 #, c-format
 msgid "[Image, %d x %d (%s)]"
 msgstr ""
 
 #. This is the prefix displayed in history to identify a password
-#: src/libgpaste/core/gpaste-password-item.c:67
+#: src/daemon/tmp/gpaste-password-item.c:67
 msgid "Password"
 msgstr ""
 
 #. This is the prefix displayed in history to identify selected files
-#: src/libgpaste/core/gpaste-uris-item.c:104
+#: src/daemon/tmp/gpaste-uris-item.c:105
 msgid "[Files] "
 msgstr ""
 
-#: src/libgpaste/gpaste-macros.h:98
+#: src/gnome-shell/dummyHistoryItem.js:17 src/ui/gpaste-ui-empty-item.c:60
+msgid "(Couldn't connect to GPaste daemon)"
+msgstr ""
+
+#: src/gnome-shell/dummyHistoryItem.js:22 src/ui/gpaste-ui-empty-item.c:49
+msgid "(Empty)"
+msgstr ""
+
+#: src/gnome-shell/dummyHistoryItem.js:27 src/ui/gpaste-ui-empty-item.c:35
+msgid "(No result)"
+msgstr ""
+
+#: src/gnome-shell/stateSwitch.js:17
+msgid "Track changes"
+msgstr ""
+
+#: src/libgpaste/gpaste/gpaste-util.c:623
+msgid "Could not create history dir"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:28
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:28
 msgid "Failed to register the gtk application"
 msgstr ""
 
-#: src/libgpaste/gpaste-macros.h:110
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:40
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:40
 msgid "is already running."
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:116
-#: src/ui/gpaste-ui-switch.c:92
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:110
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:124
+#: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:122
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:116
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:130
 msgid "Close UI on select"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:131
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:125
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:147
 msgid "Enable the gnome-shell extension"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:137
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:131
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:153
 msgid "Sync the daemon state with the extension's one"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:146
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:140
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:163
 msgid "Primary selection affects history"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:152
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:146
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:169
 msgid "Synchronize clipboard with primary selection"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:159
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:153
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
 msgid "Images support"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:165
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:159
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:184
 msgid "Trim items"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:171
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:165
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:190
 msgid "Detect growing lines"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:178
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:172
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:136
 msgid "Save history"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:201
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:195
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
 msgid "Max element size when displaying"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:229
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:223
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Max text item length"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:236
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:230
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
 msgid "Min text item length"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:334
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:318
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:111
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:122
 msgid "General behaviour"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:335
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:319
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
 msgid "History settings"
 msgstr ""
 
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:336
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:320
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:98
 msgid "Keyboard shortcuts"
 msgstr ""
 
-#. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:453
-#: src/ui/gpaste-ui-panel.c:305
-msgid "Switch to"
-msgstr ""
-
-#. translators: This is the name of a multi-history management action
-#: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:458
-#: src/ui/gpaste-ui-delete-history.c:25 src/ui/gpaste-ui-delete-history.c:65
-#: src/ui/gpaste-ui-delete-item.c:49
-msgid "Delete"
-msgstr ""
-
-#: src/libgpaste/util/gpaste-util.c:30 src/ui/gpaste-ui-backup-history.c:44
-#: src/ui/gpaste-ui-edit-item.c:46 src/ui/gpaste-ui-new-item.c:32
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:28
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:48
+#: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-edit-item.c:44
+#: src/ui/gpaste-ui-new-item.c:30
 msgid "Cancel"
 msgstr ""
 
 #. Translators: this is the translation for emptying the history
-#: src/libgpaste/util/gpaste-util.c:410 src/ui/gpaste-ui-empty-history.c:65
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:145
+#: src/ui/gpaste-ui-empty-history.c:66
 msgid "Empty"
 msgstr ""
 
-#: src/libgpaste/util/gpaste-util.c:410
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:145
 msgid "Do you really want to empty the history?"
 msgstr ""
 
-#: src/libgpaste/util/gpaste-util.c:719
-msgid "Could not create history dir"
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:161
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
+msgid "Clipboards synchronization"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:105 src/ui/gpaste-ui-settings.c:32
-msgid "GPaste Settings"
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:176
+msgid "Optional features"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:106
-msgid "Keyboard Shortcuts"
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
+msgid "Resources limits"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:107
-msgid "About GPaste"
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
+msgid "Text limits"
 msgstr ""
 
-#: src/ui/gpaste-ui.c:108
-msgid "Quit"
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
+msgid "Display settings"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
+msgid "History access"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
+msgid "Active element manipulation"
 msgstr ""
 
 #: src/ui/gpaste-ui-about.c:41
 msgid "About"
 msgstr ""
 
-#: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-backup-history.c:140
+#: src/ui/gpaste-ui-backup-history.c:42 src/ui/gpaste-ui-backup-history.c:139
 msgid "Backup"
 msgstr ""
 
-#: src/ui/gpaste-ui-backup-history.c:47
+#: src/ui/gpaste-ui-backup-history.c:46
 msgid "Under which name do you want to backup this history?"
 msgstr ""
 
-#: src/ui/gpaste-ui-delete-history.c:25
+#: src/ui/gpaste-ui.c:108 src/ui/gpaste-ui-settings.c:31
+msgid "GPaste Settings"
+msgstr ""
+
+#: src/ui/gpaste-ui.c:109
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+#: src/ui/gpaste-ui.c:110
+msgid "About GPaste"
+msgstr ""
+
+#: src/ui/gpaste-ui.c:111
+msgid "Quit"
+msgstr ""
+
+#: src/ui/gpaste-ui-delete-history.c:26 src/ui/gpaste-ui-delete-history.c:66
+#: src/ui/gpaste-ui-delete-item.c:49
+msgid "Delete"
+msgstr ""
+
+#: src/ui/gpaste-ui-delete-history.c:26
 msgid "Are you sure you want to delete this history?"
 msgstr ""
 
-#: src/ui/gpaste-ui-edit-item.c:45 src/ui/gpaste-ui-edit-item.c:118
+#: src/ui/gpaste-ui-edit-item.c:43 src/ui/gpaste-ui-edit-item.c:116
 msgid "Edit"
 msgstr ""
 
-#: src/ui/gpaste-ui-empty-item.c:35
-msgid "(No result)"
-msgstr ""
-
-#: src/ui/gpaste-ui-empty-item.c:49
-msgid "(Empty)"
-msgstr ""
-
-#: src/ui/gpaste-ui-empty-item.c:60
-msgid "(Couldn't connect to GPaste daemon)"
-msgstr ""
-
-#: src/ui/gpaste-ui-new-item.c:31 src/ui/gpaste-ui-new-item.c:83
+#: src/ui/gpaste-ui-new-item.c:29 src/ui/gpaste-ui-new-item.c:81
 msgid "New"
 msgstr ""
 
-#: src/ui/gpaste-ui-reexec.c:29
+#: src/ui/gpaste-ui-panel.c:303
+msgid "Switch to"
+msgstr ""
+
+#: src/ui/gpaste-ui-reexec.c:30
 msgid "Restart"
 msgstr ""
 
-#: src/ui/gpaste-ui-reexec.c:29
+#: src/ui/gpaste-ui-reexec.c:30
 msgid "Do you really want to restart the daemon?"
 msgstr ""
 
-#: src/ui/gpaste-ui-reexec.c:55
+#: src/ui/gpaste-ui-reexec.c:56
 msgid "Restart the daemon"
 msgstr ""
 
@@ -1002,11 +1063,11 @@ msgstr ""
 msgid "General"
 msgstr ""
 
-#: src/ui/gpaste-ui-switch.c:54
+#: src/ui/gpaste-ui-switch.c:55
 msgid "Stop"
 msgstr ""
 
-#: src/ui/gpaste-ui-switch.c:54
+#: src/ui/gpaste-ui-switch.c:55
 msgid "Do you really want to stop tracking clipboard changes?"
 msgstr ""
 
