@@ -19,6 +19,7 @@ g_paste_gtk_util_confirm_dialog (GtkWindow   *parent,
                                  const gchar *msg)
 {
     g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), FALSE);
+    g_return_val_if_fail (action, FALSE);
     g_return_val_if_fail (g_utf8_validate (msg, -1, NULL), FALSE);
 
     GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, parent,

@@ -38,7 +38,9 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
                                  gpointer                       user_data)
 {
     g_return_if_fail (!parent || GTK_IS_WINDOW (parent));
+    g_return_if_fail (action);
     g_return_if_fail (g_utf8_validate (msg, -1, NULL));
+    g_return_if_fail (on_confirmation);
 
     GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, parent,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
@@ -127,6 +129,11 @@ g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
                                 GPasteSettings *settings,
                                 const gchar    *history)
 {
+    g_return_if_fail (!parent_window || GTK_IS_WINDOW (parent_window));
+    g_return_if_fail (G_PASTE_IS_CLIENT (client));
+    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
+    g_return_if_fail (history);
+
     if (g_paste_settings_get_empty_history_confirmation (settings))
     {
         EmptyHistoryCallbackData *data = g_new (EmptyHistoryCallbackData, 1);

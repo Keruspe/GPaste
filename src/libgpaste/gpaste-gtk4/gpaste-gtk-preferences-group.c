@@ -111,6 +111,9 @@ g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *se
                                                    GPasteSettings            *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
+    g_return_val_if_fail (label, NULL);
+    g_return_val_if_fail (on_value_changed, NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkWidget *sw = g_object_new (GTK_TYPE_SWITCH, "active", value, "valign", GTK_ALIGN_CENTER, NULL);
     AdwActionRow *row = ADW_ACTION_ROW (g_object_new (ADW_TYPE_ACTION_ROW, "title", label, "activatable-widget", sw, NULL));
@@ -160,6 +163,9 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
                                                  GPasteSettings            *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
+    g_return_val_if_fail (label, NULL);
+    g_return_val_if_fail (on_value_changed, NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkWidget *button = gtk_spin_button_new_with_range (min, max, step);
     GtkSpinButton *b = GTK_SPIN_BUTTON (button);
@@ -210,6 +216,10 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
                                                 GPasteSettings            *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
+    g_return_val_if_fail (label, NULL);
+    g_return_val_if_fail (value, NULL);
+    g_return_val_if_fail (on_value_changed, NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     GtkEntryBuffer *buffer = gtk_entry_buffer_new (value, -1);
     GtkWidget *entry = g_object_new (GTK_TYPE_ENTRY, "buffer", buffer, "valign", GTK_ALIGN_CENTER, "width-chars", 10, NULL);
@@ -272,5 +282,7 @@ g_paste_gtk_preferences_group_init (GPasteGtkPreferencesGroup *self G_GNUC_UNUSE
  */
 G_PASTE_VISIBLE GPasteGtkPreferencesGroup *
 g_paste_gtk_preferences_group_new (const gchar *title) {
+    g_return_val_if_fail (title, NULL);
+
     return G_PASTE_GTK_PREFERENCES_GROUP (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_GROUP, "title", title, NULL));
 }
