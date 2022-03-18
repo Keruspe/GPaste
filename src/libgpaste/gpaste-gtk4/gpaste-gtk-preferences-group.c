@@ -79,13 +79,14 @@ g_paste_gtk_preferences_group_on_reset_clicked (GtkWidget *widget G_GNUC_UNUSED,
 static GtkWidget *
 g_paste_gtk_preferences_group_make_reset_button (_CallbackDataWrapper *data)
 {
-    data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic");
-    data->c_signals[C_W_RESET] = g_signal_connect (data->reset_widget,
+    GtkWidget *reset_widget = data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic");
+    data->c_signals[C_W_RESET] = g_signal_connect (reset_widget,
                                                    "clicked",
                                                    G_CALLBACK (g_paste_gtk_preferences_group_on_reset_clicked),
                                                    data);
     if (!((CallbackDataWrapper *) data)->reset_cb)
-        gtk_widget_set_sensitive (data->reset_widget, FALSE);
+        gtk_widget_set_sensitive (reset_widget, FALSE);
+    gtk_widget_set_valign (reset_widget, GTK_ALIGN_CENTER);
     return data->reset_widget;
 }
 

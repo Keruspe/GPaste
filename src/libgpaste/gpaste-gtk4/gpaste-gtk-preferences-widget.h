@@ -12,13 +12,13 @@
 
 #include <gpaste.h>
 
-#include <gtk/gtk.h>
+#include <adwaita.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_WIDGET (g_paste_gtk_preferences_widget_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesWidget, gtk_preferences_widget, GTK_PREFERENCES_WIDGET, GtkBox)
+G_PASTE_FINAL_TYPE (GtkPreferencesWidget, gtk_preferences_widget, GTK_PREFERENCES_WIDGET, AdwBin)
 
 GtkWidget *g_paste_gtk_preferences_widget_new (void);
 
