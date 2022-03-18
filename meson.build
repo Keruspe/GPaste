@@ -6,6 +6,7 @@ project('GPaste',
 
 apiversion = '2'
 
+adwaita_req='>=1.1'
 glib_req='>=2.70.0'
 gdk_pixbuf_req='>=2.38.0'
 gjs_req='>=1.54.0'
@@ -21,7 +22,7 @@ gobject_dep = dependency('gobject-2.0', version: glib_req)
 gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gtk3_dep = dependency('gtk+-3.0', version: gtk3_req)
 gtk4_dep = dependency('gtk4', version: gtk4_req)
-libadwaita_dep = dependency('libadwaita-1')
+libadwaita_dep = dependency('libadwaita-1', version: adwaita_req)
 pango_dep = dependency('pango')
 
 # Don't make dbus/gnome-control-center a build dependency if so desired.
