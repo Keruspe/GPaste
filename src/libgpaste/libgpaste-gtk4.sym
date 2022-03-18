@@ -1,0 +1,36 @@
+LIBGPASTE_GTK4_42 {
+global:
+    g_paste_gtk_util_confirm_dialog;
+    g_paste_gtk_util_compute_checksum;
+    g_paste_gtk_util_empty_history;
+    g_paste_gtk_util_show_win;
+
+    g_paste_gtk_preferences_behaviour_page_get_type;
+    g_paste_gtk_preferences_behaviour_page_new;
+
+    g_paste_gtk_preferences_group_add_boolean_setting;
+    g_paste_gtk_preferences_group_add_range_setting;
+    g_paste_gtk_preferences_group_add_text_setting;
+    g_paste_gtk_preferences_group_get_type;
+    g_paste_gtk_preferences_group_new;
+
+    g_paste_gtk_preferences_history_settings_page_get_type;
+    g_paste_gtk_preferences_history_settings_page_new;
+
+    g_paste_gtk_preferences_manager_get_settings;
+    g_paste_gtk_preferences_manager_get_type;
+    g_paste_gtk_preferences_manager_deregister;
+    g_paste_gtk_preferences_manager_new;
+    g_paste_gtk_preferences_manager_register;
+
+    g_paste_gtk_preferences_page_get_type;
+    g_paste_gtk_preferences_page_setting_changed;
+
+    g_paste_gtk_preferences_shortcuts_page_get_type;
+    g_paste_gtk_preferences_shortcuts_page_new;
+
+    g_paste_gtk_preferences_widget_get_type;
+    g_paste_gtk_preferences_widget_new;
+local:
+    *;
+};
