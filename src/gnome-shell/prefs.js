@@ -19,5 +19,5 @@ function init() {
  * @returns {Gtk.Widget} - the prefs widget
  */
 function buildPrefsWidget() {
-    return GPasteGtk.PreferencesWidget.new ();
+    return new GPasteGtk.PreferencesWidget();
 }
