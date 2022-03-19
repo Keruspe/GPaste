@@ -1,5 +1,6 @@
 data/appstream/org.gnome.GPaste.Ui.appdata.xml.in
 data/control-center/42-gpaste.control-center.xml.in
+data/desktop/org.gnome.GPaste.Preferences.desktop.in.in
 data/desktop/org.gnome.GPaste.Ui.desktop.in.in
 data/gsettings/org.gnome.GPaste.gschema.xml.in
 src/client/gpaste-client.c
@@ -119,6 +120,7 @@ src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-util.h
 src/libgpaste/gpaste-gtk4.h
 src/libgpaste/gpaste.h
+src/preferences/gpaste-preferences.c
 src/ui/gpaste-ui-about.c
 src/ui/gpaste-ui-about.h
 src/ui/gpaste-ui-backup-history.c

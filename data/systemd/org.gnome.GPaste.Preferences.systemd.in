@@ -1,0 +1,7 @@
+[Unit]
+Description=GPaste preferences
+
+[Service]
+Type=dbus
+BusName=org.gnome.GPaste.Preferences
+ExecStart=@pkglibexecdir@/gpaste-preferences --gapplication-service

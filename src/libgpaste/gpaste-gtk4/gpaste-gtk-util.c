@@ -4,6 +4,7 @@
  * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+#include <gpaste-gtk4/gpaste-gtk-preferences-window.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 typedef struct {
@@ -151,13 +152,33 @@ g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
 }
 
 /**
- * g_paste_gtk_util_show_win:
+ * g_paste_gtk_util_show_preferences_win:
  * @application: a #GtkApplication
  *
  * Present the application's window to user
  */
 G_PASTE_VISIBLE void
-g_paste_gtk_util_show_win (GApplication *application)
+g_paste_gtk_util_show_preferences_window (GApplication *application)
+{
+    g_return_if_fail (GTK_IS_APPLICATION (application));
+
+    GtkApplication *app = GTK_APPLICATION (application);
+    GtkWindow *win = g_paste_gtk_preferences_window_new ();
+
+    gtk_widget_show (GTK_WIDGET (win));
+    gtk_application_add_window (app, win);
+
+    g_paste_gtk_util_show_window (application);
+}
+
+/**
+ * g_paste_gtk_util_show_window:
+ * @application: a #GtkApplication
+ *
+ * Present the application's window to user
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_show_window (GApplication *application)
 {
     g_return_if_fail (GTK_IS_APPLICATION (application));
 

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=GPaste
+Comment=Manage your GPaste preferences
+Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
+Icon=edit-paste
+Exec=@pkglibexecdir@/gpaste-preferences
+DBusActivatable=true
+Terminal=false
+Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
+StartupNotify=true
