@@ -43,6 +43,20 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="42.0" type="stable" date="2022-03-19">
+          <description>
+              <p>First release for GNOME 42. Changes:</p>
+              <ul>
+                  <li>Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency</li>
+                  <li>New libgpaste-gtk3 for utils and settings ui</li>
+                  <li>New libgpaste-gtk4 for utils and preferences ui</li>
+                  <li>New gtk4 based gpaste-preferences utility</li>
+                  <li>Autotools are no longer supported</li>
+                  <li>Extension updated for gnome-shell 42</li>
+                  <li>Translations updates</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.42.6" type="stable" date="2022-02-24">
           <description>
               <p>This is a maintenance release. Changes:</p>

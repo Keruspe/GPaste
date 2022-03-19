@@ -1,3 +1,14 @@
+NEW in 42.0 (19/03/2022)
+=============
+
+- Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency
+- New libgpaste-gtk3 for utils and settings ui
+- New libgpaste-gtk4 for utils and preferences ui
+- New gtk4 based gpaste-preferences utility
+- Autotools are no longer supported
+- Extension updated for gnome-shell 42
+- Translations updates
+
 NEW in 3.42.6 (15/02/2022)
 =============
 
