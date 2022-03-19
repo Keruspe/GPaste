@@ -201,8 +201,8 @@ show_help (void)
     printf ("  %s quit: %s\n", progname, _("alias for stop"));
     /* Translators: help for gpaste daemon-reexec */
     printf ("  %s daemon-reexec: %s\n", progname, _("reexecute the daemon (after upgrading...)"));
-    /* Translators: help for gpaste settings */
-    printf ("  %s settings: %s\n", progname, _("launch the configuration tool"));
+    /* Translators: help for gpaste preferences */
+    printf ("  %s preferences: %s\n", progname, _("launch the configuration tool"));
     /* Translators: help for gpaste ui */
     printf ("  %s ui: %s\n", progname, _("launch the graphical tool"));
     /* Translators: help for gpaste show-history */
@@ -429,18 +429,10 @@ g_paste_delete_history (Context *ctx,
 }
 
 static gint
-g_paste_settings (Context *ctx G_GNUC_UNUSED,
-                  GError **error)
+g_paste_preferences (Context *ctx G_GNUC_UNUSED,
+                     GError **error)
 {
-    if (!g_paste_util_activate_ui_sync ("prefs", NULL, error))
-    {
-        g_critical ("%s Ui: %s", _("Couldn't spawn"), (*error)->message);
-        g_clear_error (error);
-
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    return spawn ("Preferences");
 }
 
 static gint
@@ -699,9 +691,9 @@ g_paste_dispatch (gint         argc,
         { 1, "list-histories",  0,        TRUE,  g_paste_list_histories  },
         { 1, "dh",              1,        TRUE,  g_paste_delete_history  },
         { 1, "delete-history",  1,        TRUE,  g_paste_delete_history  },
-        { 1, "settings",        0,        FALSE, g_paste_settings        },
-        { 1, "p",               0,        FALSE, g_paste_settings        },
-        { 1, "preferences",     0,        FALSE, g_paste_settings        },
+        { 1, "settings",        0,        FALSE, g_paste_preferences     },
+        { 1, "p",               0,        FALSE, g_paste_preferences     },
+        { 1, "preferences",     0,        FALSE, g_paste_preferences     },
         { 1, "show-history",    0,        TRUE,  g_paste_show_history    },
         { 1, "start",           0,        TRUE,  g_paste_start           },
         { 1, "d",               0,        TRUE,  g_paste_start           },
