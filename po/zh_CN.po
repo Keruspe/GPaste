@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-03-19 21:23+0100\n"
-"PO-Revision-Date: 2022-02-02 02:56+0000\n"
+"POT-Creation-Date: 2022-03-19 22:06+0100\n"
+"PO-Revision-Date: 2022-03-19 20:33+0000\n"
 "Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "gpaste/gpaste/zh_Hans/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
@@ -121,15 +121,15 @@ msgstr "这是一个维护版本。更改如下："
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
 msgid "fix the storage path for meson builds"
-msgstr ""
+msgstr "修复 meson 构建的存储路径"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:72
 msgid "fix some race conditions in history handling"
-msgstr ""
+msgstr "修复历史记录处理方面的某些竞态条件"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
 msgid "better fix crash when there is no history yet"
-msgstr ""
+msgstr "更好修复尚无历史记录时的崩溃"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
 msgid "fix crash when there is no history yet"
@@ -911,9 +911,8 @@ msgid "(No result)"
 msgstr "(无内容)"
 
 #: src/gnome-shell/stateSwitch.js:17
-#, fuzzy
 msgid "Track changes"
-msgstr "跟踪剪切板变化"
+msgstr "跟踪变化"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
@@ -1033,33 +1032,31 @@ msgstr "清空记录?"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "剪贴板同步"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:176
 msgid "Optional features"
-msgstr ""
+msgstr "可选功能"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
 msgid "Resources limits"
-msgstr ""
+msgstr "资源限制"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
 msgid "Text limits"
-msgstr ""
+msgstr "文本限制"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
-#, fuzzy
 msgid "Display settings"
-msgstr "记录设置"
+msgstr "显示设置"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
-#, fuzzy
 msgid "History access"
-msgstr "记录设置"
+msgstr "记录访问"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
 msgid "Active element manipulation"
-msgstr ""
+msgstr "活跃元素操控"
 
 #: src/ui/gpaste-ui-about.c:41
 msgid "About"
