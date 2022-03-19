@@ -125,6 +125,7 @@ libgpaste_gtk4_sources = [
   'gpaste-gtk4/gpaste-gtk-preferences-page.c',
   'gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c',
   'gpaste-gtk4/gpaste-gtk-preferences-widget.c',
+  'gpaste-gtk4/gpaste-gtk-preferences-window.c',
   'gpaste-gtk4/gpaste-gtk-util.c',
 ]
 
@@ -137,6 +138,7 @@ libgpaste_gtk4_headers = [
   'gpaste-gtk4/gpaste-gtk-preferences-page.h',
   'gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h',
   'gpaste-gtk4/gpaste-gtk-preferences-widget.h',
+  'gpaste-gtk4/gpaste-gtk-preferences-window.h',
   'gpaste-gtk4/gpaste-gtk-util.h',
 ]
 

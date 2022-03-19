@@ -20,5 +20,6 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-window.h>
 
 #undef __G_PASTE_GTK4_H_INSIDE__

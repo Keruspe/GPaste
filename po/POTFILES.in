@@ -113,6 +113,8 @@ src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-widget.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-widget.h
+src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-window.c
+src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-window.h
 src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-util.h
 src/libgpaste/gpaste-gtk4.h
