@@ -44,4 +44,4 @@ You can see everything I'll post about GPaste [there](https://www.imagination-la
 
 Latest release for GNOME 42 is: [GPaste 42.0](https://www.imagination-land.org/posts/2022-03-19-gpaste-42.0-released.html).
 
-Direct link to download: <https://www.imagination-land.org/files/gpaste/gpaste-42.0.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-42.0.tar.xz>
