@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-19 22:06+0100\n"
-"PO-Revision-Date: 2022-03-19 20:33+0000\n"
+"PO-Revision-Date: 2022-03-21 16:57+0000\n"
 "Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "gpaste/gpaste/zh_Hans/>\n"
@@ -57,38 +57,35 @@ msgid "The settings UI"
 msgstr "设置界面"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#, fuzzy
 msgid "First release for GNOME 42. Changes:"
-msgstr "GNOME 41 下发行的首个版本。更改如下："
+msgstr "GNOME 42 下发行的首个版本。更改如下："
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
-msgstr ""
+msgstr "用不依赖 gtk 的新的最小 libgpaste-2 替代了旧的 libgpaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "New libgpaste-gtk3 for utils and settings ui"
-msgstr ""
+msgstr "新的 libgpaste-gtk3 用于 utils 和设置界面"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 msgid "New libgpaste-gtk4 for utils and preferences ui"
-msgstr ""
+msgstr "新的 libgpaste-gtk4 用于 utils 和设置界面"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:53
 msgid "New gtk4 based gpaste-preferences utility"
-msgstr ""
+msgstr "新的基于 gtk4 的 gpaste-preferences 工具"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:54
 msgid "Autotools are no longer supported"
-msgstr ""
+msgstr "不再支持 Autotools"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:55
-#, fuzzy
 msgid "Extension updated for gnome-shell 42"
-msgstr "更新到gnome-shell 3.34.0"
+msgstr "为 gnome-shell 42 更新了扩展"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-#, fuzzy
 msgid "Translations updates"
 msgstr "更新翻译"
 
@@ -334,7 +331,7 @@ msgstr "将活动项上传到pastebin服务"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "管理你的 GPaste 首选项"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
