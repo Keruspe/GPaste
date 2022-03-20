@@ -33,6 +33,7 @@ void     g_paste_gtk_util_empty_history    (GtkWindow      *parent_window,
                                             const gchar    *history);
 
 void     g_paste_gtk_util_show_preferences_window (GApplication *application);
+void     g_paste_gtk_util_add_preferences_window  (GApplication *application);
 void     g_paste_gtk_util_show_window             (GApplication *application);
 
 G_END_DECLS

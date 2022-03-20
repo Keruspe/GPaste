@@ -1,5 +1,6 @@
 LIBGPASTE_GTK4_42 {
 global:
+    g_paste_gtk_util_add_preferences_window;
     g_paste_gtk_util_confirm_dialog;
     g_paste_gtk_util_compute_checksum;
     g_paste_gtk_util_empty_history;

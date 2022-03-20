@@ -19,13 +19,15 @@ quit_activated (GSimpleAction *action    G_GNUC_UNUSED,
 gint
 main (gint argc, gchar *argv[])
 {
-    G_PASTE_GTK_INIT_APPLICATION_FULL ("Preferences", g_paste_gtk_util_show_preferences_window);
+    G_PASTE_GTK_INIT_APPLICATION_FULL ("Preferences", g_paste_gtk_util_show_window);
 
     GActionEntry app_entries[] = {
         { "quit",   quit_activated,   NULL, NULL, NULL, { 0 } },
     };
 
     g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
+
+    g_paste_gtk_util_add_preferences_window (gapp);
 
     return g_application_run (gapp, argc, argv);
 }
