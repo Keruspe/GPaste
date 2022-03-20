@@ -27,7 +27,10 @@ main (gint argc, gchar *argv[])
 
     g_action_map_add_action_entries (G_ACTION_MAP (app), app_entries, G_N_ELEMENTS (app_entries), app);
 
-    g_paste_gtk_util_add_preferences_window (gapp);
+    GtkWindow *win = g_paste_gtk_preferences_window_new ();
+
+    gtk_widget_show (GTK_WIDGET (win));
+    gtk_application_add_window (app, win);
 
     return g_application_run (gapp, argc, argv);
 }

@@ -152,39 +152,6 @@ g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
 }
 
 /**
- * g_paste_gtk_util_show_preferences_window:
- * @application: a #GtkApplication
- *
- * Add the preferences window to the application's and show it
- */
-G_PASTE_VISIBLE void
-g_paste_gtk_util_show_preferences_window (GApplication *application)
-{
-    g_return_if_fail (GTK_IS_APPLICATION (application));
-
-    g_paste_gtk_util_add_preferences_window (application);
-    g_paste_gtk_util_show_window (application);
-}
-
-/**
- * g_paste_gtk_util_add_preferences_window:
- * @application: a #GtkApplication
- *
- * Add the preferences window to the application's
- */
-G_PASTE_VISIBLE void
-g_paste_gtk_util_add_preferences_window (GApplication *application)
-{
-    g_return_if_fail (GTK_IS_APPLICATION (application));
-
-    GtkApplication *app = GTK_APPLICATION (application);
-    GtkWindow *win = g_paste_gtk_preferences_window_new ();
-
-    gtk_widget_show (GTK_WIDGET (win));
-    gtk_application_add_window (app, win);
-}
-
-/**
  * g_paste_gtk_util_show_window:
  * @application: a #GtkApplication
  *
