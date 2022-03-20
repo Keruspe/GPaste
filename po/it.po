@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.4\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-19 22:06+0100\n"
-"PO-Revision-Date: 2022-02-18 14:58+0000\n"
+"PO-Revision-Date: 2022-03-21 16:57+0000\n"
 "Last-Translator: Andrea Brandi <git@andreabrandi.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/gpaste/gpaste/it/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
@@ -60,40 +60,39 @@ msgid "The settings UI"
 msgstr "L'interfaccia utente delle impostazioni"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#, fuzzy
 msgid "First release for GNOME 42. Changes:"
-msgstr "Prima versione per GNOME 41. Cambiamenti:"
+msgstr "Prima versione per GNOME 42. Cambiamenti:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
+"Il vecchio libgpaste è stato sostituito da libgpaste-2 minimale senza "
+"dipendenze a gtk"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "New libgpaste-gtk3 for utils and settings ui"
-msgstr ""
+msgstr "Nuovo libgpaste-gtk3 per utilità e impostazioni dell'interfaccia utente"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 msgid "New libgpaste-gtk4 for utils and preferences ui"
-msgstr ""
+msgstr "Nuovo libgpaste-gtk4 per utilità e impostazioni dell'interfaccia utente"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:53
 msgid "New gtk4 based gpaste-preferences utility"
-msgstr ""
+msgstr "Nuovo gpaste-preferences basato su gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:54
 msgid "Autotools are no longer supported"
-msgstr ""
+msgstr "Gli strumenti automatici non sono più supportati"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:55
-#, fuzzy
 msgid "Extension updated for gnome-shell 42"
-msgstr "Aggiornamento a gnome-shell 3.34.0"
+msgstr "Aggiornamento a gnome-shell 42"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-#, fuzzy
 msgid "Translations updates"
-msgstr "aggiornamento traduzioni"
+msgstr "Aggiornamento traduzioni"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:62
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
@@ -124,11 +123,11 @@ msgstr "Questa è una versione di manutenzione. Cambiamenti:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
 msgid "fix the storage path for meson builds"
-msgstr ""
+msgstr "Correzione per il percorso di archiviazione delle build meson"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:72
 msgid "fix some race conditions in history handling"
-msgstr ""
+msgstr "Corrette alcune condizioni nella gestione della cronologia"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
 msgid "better fix crash when there is no history yet"
@@ -343,7 +342,7 @@ msgstr "Carica l'elemento attivo in un servizio pastebin"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "Gestione preferenze di GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
@@ -952,9 +951,8 @@ msgid "(No result)"
 msgstr "(Nessun risultato)"
 
 #: src/gnome-shell/stateSwitch.js:17
-#, fuzzy
 msgid "Track changes"
-msgstr "Traccia i cambiamenti negli appunti"
+msgstr "Tracciamento modifiche"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
@@ -1074,33 +1072,31 @@ msgstr "Vuoi davvero vuotare la cronologia?"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "Sincronizzazione degli appunti"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:176
 msgid "Optional features"
-msgstr ""
+msgstr "Caratteristiche opzionali"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
 msgid "Resources limits"
-msgstr ""
+msgstr "Limiti delle risorse"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
 msgid "Text limits"
-msgstr ""
+msgstr "Limiti del testo"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
-#, fuzzy
 msgid "Display settings"
-msgstr "Impostazioni cronologia"
+msgstr "Impostazioni visualizzazione"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
-#, fuzzy
 msgid "History access"
-msgstr "Impostazioni cronologia"
+msgstr "Accesso alla cronologia"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
 msgid "Active element manipulation"
-msgstr ""
+msgstr "Manipolazione degli elementi attivi"
 
 #: src/ui/gpaste-ui-about.c:41
 msgid "About"
