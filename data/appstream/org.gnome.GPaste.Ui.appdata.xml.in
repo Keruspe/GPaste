@@ -43,6 +43,16 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="42.1" type="stable" date="2022-03-21">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Fixes to the new preferences tool</li>
+                  <li>Style fixes</li>
+                  <li>Translations updates</li>
+              </ul>
+          </description>
+      </release>
       <release version="42.0" type="stable" date="2022-03-19">
           <description>
               <p>First release for GNOME 42. Changes:</p>
