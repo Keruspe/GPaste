@@ -135,6 +135,7 @@ g_paste_gtk_settings_ui_panel_add_boolean_setting (GPasteGtkSettingsUiPanel *sel
     CALLBACK_DATA (widget);
 
     gtk_switch_set_active (sw, value);
+    gtk_widget_set_valign (sw, GTK_ALIGN_CENTER);
     _data->c_signals[C_W_ACTION] = g_signal_connect (widget, "notify::active", G_CALLBACK (boolean_wrapper), data);
     gtk_grid_attach_next_to (grid, widget, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
     gtk_grid_attach_next_to (grid, g_paste_gtk_settings_ui_panel_make_reset_button (_data), widget, GTK_POS_RIGHT, 1, 1);
