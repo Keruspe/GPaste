@@ -17,7 +17,7 @@ typedef struct
     guint64 current_line;
 } GPasteGtkSettingsUiPanelPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiPanel, gtk_settings_ui_panel, GTK_TYPE_GRID)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (SettingsUiPanel, settings_ui_panel, GTK_TYPE_GRID)
 
 #define CALLBACK_DATA(w)                                                                               \
     GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (self); \

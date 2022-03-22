@@ -50,7 +50,7 @@ typedef struct
     guint64         c_signals[C_LAST_SIGNAL];
 } GPasteGtkSettingsUiStackPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiStack, gtk_settings_ui_stack, GTK_TYPE_STACK)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_STACK)
 
 #define SETTING_CALLBACK_FULL(setting, type, cast)                            \
     static inline void                                                        \
@@ -82,7 +82,7 @@ g_paste_gtk_settings_ui_stack_add_panel (GPasteGtkSettingsUiStack *self,
                                          const gchar              *label,
                                          GPasteGtkSettingsUiPanel *panel)
 {
-    g_return_if_fail (_G_PASTE_IS_GTK_SETTINGS_UI_STACK (self));
+    g_return_if_fail (G_PASTE_IS_GTK_SETTINGS_UI_STACK (self));
 
     gtk_stack_add_titled (GTK_STACK (self),
                           GTK_WIDGET (panel),

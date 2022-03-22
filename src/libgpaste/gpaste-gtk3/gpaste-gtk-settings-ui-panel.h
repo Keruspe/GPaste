@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include <gpaste.h>
-
-#include <gtk/gtk.h>
+#include <gpaste-gtk3/gpaste-gtk-macros.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_SETTINGS_UI_PANEL (g_paste_gtk_settings_ui_panel_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkSettingsUiPanel, gtk_settings_ui_panel, GTK_SETTINGS_UI_PANEL, GtkGrid)
+G_PASTE_GTK_FINAL_TYPE (SettingsUiPanel, settings_ui_panel, SETTINGS_UI_PANEL, GtkGrid)
 
 typedef void (*GPasteGtkBooleanCallback)     (gboolean data,
                                               gpointer user_data);

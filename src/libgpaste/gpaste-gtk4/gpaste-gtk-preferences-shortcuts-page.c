@@ -27,7 +27,7 @@ typedef struct
     GtkEntryBuffer              *sync_primary_to_clipboard_entry;
 } GPasteGtkPreferencesShortcutsPagePrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkPreferencesShortcutsPage, gtk_preferences_shortcuts_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesShortcutsPage, preferences_shortcuts_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
 
 static void
 g_paste_gtk_preferences_shortcuts_page_setting_changed (GPasteGtkPreferencesPage *self,

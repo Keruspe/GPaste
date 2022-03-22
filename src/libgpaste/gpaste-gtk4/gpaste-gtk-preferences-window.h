@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include <gpaste.h>
-
-#include <adwaita.h>
+#include <gpaste-gtk4/gpaste-gtk-macros.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_WINDOW (g_paste_gtk_preferences_window_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesWindow, gtk_preferences_window, GTK_PREFERENCES_WINDOW, AdwPreferencesWindow)
+G_PASTE_GTK_FINAL_TYPE (PreferencesWindow, preferences_window, PREFERENCES_WINDOW, AdwPreferencesWindow)
 
 GtkWindow *g_paste_gtk_preferences_window_new (void);
 

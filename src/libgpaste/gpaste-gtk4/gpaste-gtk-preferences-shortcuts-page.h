@@ -16,7 +16,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_SHORTCUTS_PAGE (g_paste_gtk_preferences_shortcuts_page_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesShortcutsPage, gtk_preferences_shortcuts_page, GTK_PREFERENCES_SHORTCUTS_PAGE, GPasteGtkPreferencesPage)
+G_PASTE_GTK_FINAL_TYPE (PreferencesShortcutsPage, preferences_shortcuts_page, PREFERENCES_SHORTCUTS_PAGE, GPasteGtkPreferencesPage)
 
 GtkWidget *g_paste_gtk_preferences_shortcuts_page_new (GPasteGtkPreferencesManager *manager);
 

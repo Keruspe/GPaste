@@ -16,7 +16,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_HISTORY_SETTINGS_PAGE (g_paste_gtk_preferences_history_settings_page_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesHistorySettingsPage, gtk_preferences_history_settings_page, GTK_PREFERENCES_HISTORY_SETTINGS_PAGE, GPasteGtkPreferencesPage)
+G_PASTE_GTK_FINAL_TYPE (PreferencesHistorySettingsPage, preferences_history_settings_page, PREFERENCES_HISTORY_SETTINGS_PAGE, GPasteGtkPreferencesPage)
 
 GtkWidget *g_paste_gtk_preferences_history_settings_page_new (GPasteGtkPreferencesManager *manager);
 

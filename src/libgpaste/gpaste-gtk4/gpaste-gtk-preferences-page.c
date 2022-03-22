@@ -6,7 +6,7 @@
 
 #include <gpaste-gtk4/gpaste-gtk-preferences-page.h>
 
-G_PASTE_DEFINE_TYPE (GtkPreferencesPage, gtk_preferences_page, ADW_TYPE_PREFERENCES_PAGE)
+G_PASTE_GTK_DEFINE_TYPE (PreferencesPage, preferences_page, ADW_TYPE_PREFERENCES_PAGE)
 
 /**
  * g_paste_gtk_preferences_page_setting_changed:

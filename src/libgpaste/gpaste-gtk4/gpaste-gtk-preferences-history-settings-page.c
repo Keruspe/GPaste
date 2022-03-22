@@ -26,7 +26,7 @@ typedef struct
     GtkSpinButton               *max_displayed_history_size_button;
 } GPasteGtkPreferencesHistorySettingsPagePrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkPreferencesHistorySettingsPage, gtk_preferences_history_settings_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesHistorySettingsPage, preferences_history_settings_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
 
 static void
 g_paste_gtk_preferences_history_settings_page_setting_changed (GPasteGtkPreferencesPage *self,

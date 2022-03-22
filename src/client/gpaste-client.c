@@ -429,8 +429,8 @@ g_paste_delete_history (Context *ctx,
 }
 
 static gint
-g_paste_preferences (Context *ctx G_GNUC_UNUSED,
-                     GError **error)
+g_paste_preferences (Context *ctx   G_GNUC_UNUSED,
+                     GError **error G_GNUC_UNUSED)
 {
     return spawn ("Preferences");
 }

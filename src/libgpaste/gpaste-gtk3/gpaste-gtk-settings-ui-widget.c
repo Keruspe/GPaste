@@ -16,7 +16,7 @@ typedef struct
     GPasteGtkSettingsUiStack *stack;
 } GPasteGtkSettingsUiWidgetPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiWidget, gtk_settings_ui_widget, GTK_TYPE_GRID)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (SettingsUiWidget, settings_ui_widget, GTK_TYPE_GRID)
 
 /**
  * g_paste_gtk_settings_ui_widget_get_stack:
@@ -29,9 +29,9 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkSettingsUiWidget, gtk_settings_ui_widget, G
 G_PASTE_VISIBLE GPasteGtkSettingsUiStack *
 g_paste_gtk_settings_ui_widget_get_stack (GPasteGtkSettingsUiWidget *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_GTK_SETTINGS_UI_WIDGET (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_GTK_SETTINGS_UI_WIDGET (self), NULL);
 
-    const GPasteGtkSettingsUiWidgetPrivate *priv = _g_paste_gtk_settings_ui_widget_get_instance_private (self);
+    GPasteGtkSettingsUiWidgetPrivate *priv = g_paste_gtk_settings_ui_widget_get_instance_private (self);
 
     return priv->stack;
 }
@@ -74,7 +74,7 @@ G_PASTE_VISIBLE GtkWidget *
 g_paste_gtk_settings_ui_widget_new (void)
 {
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_GTK_SETTINGS_UI_WIDGET, NULL);
-    const GPasteGtkSettingsUiWidgetPrivate *priv = _g_paste_gtk_settings_ui_widget_get_instance_private (G_PASTE_GTK_SETTINGS_UI_WIDGET (self));
+    GPasteGtkSettingsUiWidgetPrivate *priv = g_paste_gtk_settings_ui_widget_get_instance_private (G_PASTE_GTK_SETTINGS_UI_WIDGET (self));
 
     if (!priv->stack)
     {

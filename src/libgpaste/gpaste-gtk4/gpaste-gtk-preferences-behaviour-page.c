@@ -31,7 +31,7 @@ typedef struct
     GtkSwitch                   *trim_items_switch;
 } GPasteGtkPreferencesBehaviourPagePrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkPreferencesBehaviourPage, gtk_preferences_behaviour_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesBehaviourPage, preferences_behaviour_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
 
 static void
 g_paste_gtk_preferences_behaviour_page_setting_changed (GPasteGtkPreferencesPage *self,

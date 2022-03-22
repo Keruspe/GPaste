@@ -14,7 +14,7 @@ struct _GPasteGtkPreferencesWindow
     AdwPreferencesWindow parent_instance;
 };
 
-G_PASTE_DEFINE_TYPE (GtkPreferencesWindow, gtk_preferences_window, ADW_TYPE_PREFERENCES_WINDOW)
+G_PASTE_GTK_DEFINE_TYPE (PreferencesWindow, preferences_window, ADW_TYPE_PREFERENCES_WINDOW)
 
 static void
 g_paste_gtk_preferences_window_class_init (GPasteGtkPreferencesWindowClass *klass G_GNUC_UNUSED)

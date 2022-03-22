@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include <gpaste.h>
-
-#include <adwaita.h>
+#include <gpaste-gtk4/gpaste-gtk-macros.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_PAGE (g_paste_gtk_preferences_page_get_type ())
 
-G_PASTE_DERIVABLE_TYPE (GtkPreferencesPage, gtk_preferences_page, GTK_PREFERENCES_PAGE, AdwPreferencesPage)
+G_PASTE_GTK_DERIVABLE_TYPE (PreferencesPage, preferences_page, PREFERENCES_PAGE, AdwPreferencesPage)
 
 struct _GPasteGtkPreferencesPageClass
 {

@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include <gpaste.h>
-
-#include <adwaita.h>
+#include <gpaste-gtk4/gpaste-gtk-macros.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_WIDGET (g_paste_gtk_preferences_widget_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesWidget, gtk_preferences_widget, GTK_PREFERENCES_WIDGET, AdwBin)
+G_PASTE_GTK_FINAL_TYPE (PreferencesWidget, preferences_widget, PREFERENCES_WIDGET, AdwBin)
 
 GtkWidget *g_paste_gtk_preferences_widget_new (void);
 

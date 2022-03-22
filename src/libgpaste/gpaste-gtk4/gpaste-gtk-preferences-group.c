@@ -16,7 +16,7 @@ typedef struct
     GSList *callback_data;
 } GPasteGtkPreferencesGroupPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkPreferencesGroup, gtk_preferences_group, ADW_TYPE_PREFERENCES_GROUP)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesGroup, preferences_group, ADW_TYPE_PREFERENCES_GROUP)
 
 #define CALLBACK_DATA(w)                                                                                \
     GPasteGtkPreferencesGroupPrivate *priv = g_paste_gtk_preferences_group_get_instance_private (self); \

@@ -27,7 +27,7 @@ typedef struct
     guint64         c_signals[C_LAST_SIGNAL];
 } GPasteGtkPreferencesManagerPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkPreferencesManager, gtk_preferences_manager, G_TYPE_OBJECT)
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesManager, preferences_manager, G_TYPE_OBJECT)
 
 /**
  * g_paste_gtk_preferences_manager_get_settings:

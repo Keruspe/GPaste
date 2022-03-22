@@ -4,7 +4,6 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-util.h>
 #include <gpaste-gtk3/gpaste-gtk-macros.h>
 
 #include <gpaste-bus.h>

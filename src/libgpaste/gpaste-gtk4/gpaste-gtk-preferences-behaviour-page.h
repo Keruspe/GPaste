@@ -16,7 +16,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_BEHAVIOUR_PAGE (g_paste_gtk_preferences_behaviour_page_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesBehaviourPage, gtk_preferences_behaviour_page, GTK_PREFERENCES_BEHAVIOUR_PAGE, GPasteGtkPreferencesPage)
+G_PASTE_GTK_FINAL_TYPE (PreferencesBehaviourPage, preferences_behaviour_page, PREFERENCES_BEHAVIOUR_PAGE, GPasteGtkPreferencesPage)
 
 GtkWidget *g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager);
 

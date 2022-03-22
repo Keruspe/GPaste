@@ -14,7 +14,7 @@ struct _GPasteGtkPreferencesWidget
     AdwBin parent_instance;
 };
 
-G_PASTE_DEFINE_TYPE (GtkPreferencesWidget, gtk_preferences_widget, ADW_TYPE_BIN)
+G_PASTE_GTK_DEFINE_TYPE (PreferencesWidget, preferences_widget, ADW_TYPE_BIN)
 
 static void
 g_paste_gtk_preferences_widget_class_init (GPasteGtkPreferencesWidgetClass *klass G_GNUC_UNUSED)

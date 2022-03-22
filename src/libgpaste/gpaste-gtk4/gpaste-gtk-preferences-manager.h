@@ -16,7 +16,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_MANAGER (g_paste_gtk_preferences_manager_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesManager, gtk_preferences_manager, GTK_PREFERENCES_MANAGER, GObject)
+G_PASTE_GTK_FINAL_TYPE (PreferencesManager, preferences_manager, PREFERENCES_MANAGER, GObject)
 
 GPasteSettings *g_paste_gtk_preferences_manager_get_settings (GPasteGtkPreferencesManager *self);
 

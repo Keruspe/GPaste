@@ -16,6 +16,15 @@
 
 G_BEGIN_DECLS
 
+#define G_PASTE_GTK_FINAL_TYPE(TypeName, type_name, TYPE_NAME, ParentTypeName) \
+    G_PASTE_VISIBLE G_DECLARE_FINAL_TYPE (GPasteGtk##TypeName, g_paste_gtk_##type_name, G_PASTE, GTK_##TYPE_NAME, ParentTypeName)
+
+#define G_PASTE_GTK_DEFINE_TYPE(TypeName, type_name, ParentTypeName) \
+    G_DEFINE_TYPE (GPasteGtk##TypeName, g_paste_gtk_##type_name, ParentTypeName)
+
+#define G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName) \
+    G_DEFINE_TYPE_WITH_PRIVATE (GPasteGtk##TypeName, g_paste_gtk_##type_name, ParentTypeName)
+
 #define G_PASTE_GTK_INIT_APPLICATION_FULL(name, activate_cb)                                        \
     G_PASTE_INIT_GETTEXT ();                                                                        \
     GtkApplication *app = gtk_application_new ("org.gnome.GPaste." name, G_APPLICATION_FLAGS_NONE); \

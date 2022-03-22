@@ -13,8 +13,6 @@
 
 #include <gpaste-history.h>
 
-#include <gtk/gtk.h>
-
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_CLIPBOARD (g_paste_clipboard_get_type ())

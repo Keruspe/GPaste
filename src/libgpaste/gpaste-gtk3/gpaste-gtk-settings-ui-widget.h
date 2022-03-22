@@ -16,7 +16,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_SETTINGS_UI_WIDGET (g_paste_gtk_settings_ui_widget_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkSettingsUiWidget, gtk_settings_ui_widget, GTK_SETTINGS_UI_WIDGET, GtkGrid)
+G_PASTE_GTK_FINAL_TYPE (SettingsUiWidget, settings_ui_widget, SETTINGS_UI_WIDGET, GtkGrid)
 
 GPasteGtkSettingsUiStack *g_paste_gtk_settings_ui_widget_get_stack (GPasteGtkSettingsUiWidget *self);
 

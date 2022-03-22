@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include <gpaste.h>
-
-#include <adwaita.h>
+#include <gpaste-gtk4/gpaste-gtk-macros.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_GTK_PREFERENCES_GROUP (g_paste_gtk_preferences_group_get_type ())
 
-G_PASTE_FINAL_TYPE (GtkPreferencesGroup, gtk_preferences_group, GTK_PREFERENCES_GROUP, AdwPreferencesGroup)
+G_PASTE_GTK_FINAL_TYPE (PreferencesGroup, preferences_group, PREFERENCES_GROUP, AdwPreferencesGroup)
 
 typedef void (*GPasteGtkBooleanCallback) (GPasteSettings *settings,
                                           gboolean        data);
