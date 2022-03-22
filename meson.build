@@ -1,31 +1,58 @@
-project('GPaste',
-  'c',
+project('GPaste', 'c',
   version: '42.1',
-  meson_version: '>=0.51.0',
+  meson_version: '>=0.59.1',
+  default_options: [ 'warning_level=2', 'c_std=gnu17' ],
 )
+
+cc = meson.get_compiler('c')
+gnome = import('gnome')
+i18n = import('i18n')
 
 apiversion = '2'
 
-adwaita_req='>=1.1'
-gcr_req='>=3.41.0'
-glib_req='>=2.70.0'
-gdk_pixbuf_req='>=2.38.0'
-gjs_req='>=1.54.0'
-gtk3_req='>=3.24.0'
-gtk4_req='>=4.6.0'
-mutter_clutter_req='>=40.0'
+adwaita_req_version = '1.1'
+gcr_req_version = '3.41.0'
+gdk_pixbuf_req_version = '2.38.0'
+gjs_req_version = '1.54.0'
+glib_req_version = '2.70.0'
+gtk3_req_version = '3.24.0'
+gtk4_req_version = '4.6.0'
+
+adwaita_req = '>= @0@'.format(adwaita_req_version)
+gcr_req = '>= @0@'.format(gcr_req_version)
+gdk_pixbuf_req = '>= @0@'.format(gdk_pixbuf_req_version)
+gjs_req = '>= @0@'.format(gjs_req_version)
+glib_req = '>= @0@'.format(glib_req_version)
+gtk3_req = '>= @0@'.format(gtk3_req_version)
+gtk4_req = '>= @0@'.format(gtk4_req_version)
 
 appstream_dep = dependency('appstream-glib')
 gcr_dep = dependency('gcr-base-3', version: gcr_req)
+gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0', version: gdk_pixbuf_req)
 gio_dep = dependency('gio-2.0', version: glib_req)
 glib_dep = dependency('glib-2.0', version: glib_req)
 gobject_dep = dependency('gobject-2.0', version: glib_req)
-gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gtk3_dep = dependency('gtk+-3.0', version: gtk3_req)
 gtk4_dep = dependency('gtk4', version: gtk4_req)
 libadwaita_dep = dependency('libadwaita-1', version: adwaita_req)
-pango_dep = dependency('pango')
+
+glib_major = glib_req_version.split('.')[0].to_int()
+glib_minor = glib_req_version.split('.')[1].to_int()
+gtk3_major = gtk3_req_version.split('.')[0].to_int()
+gtk3_minor = gtk3_req_version.split('.')[1].to_int()
+gtk4_major = gtk4_req_version.split('.')[0].to_int()
+gtk4_minor = gtk4_req_version.split('.')[1].to_int()
+
+if glib_minor % 2 == 1
+  glib_minor = glib_minor + 1
+endif
+if gtk3_minor % 2 == 1
+  gtk3_minor = gtk3_minor + 1
+endif
+if gtk4_minor % 2 == 1
+  gtk4_minor = gtk4_minor + 1
+endif
 
 # Don't make dbus/gnome-control-center a build dependency if so desired.
 # They're still required at runtime though.
@@ -41,9 +68,10 @@ endif
 
 libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
 
-if get_option('introspection')
-  mutter_clutter_dep = dependency('mutter-clutter-10', version: mutter_clutter_req)
+if get_option('gnome-shell')
   gjs_dep = dependency('gjs-1.0', version: gjs_req)
+  mutter_clutter_dep = dependency('mutter-clutter-10')
+  pango_dep = dependency('pango')
 endif
 
 userunit_dir = get_option('systemd-user-unit-dir')
@@ -74,6 +102,8 @@ endif
 add_project_arguments(
   '-DG_LOG_DOMAIN="GPaste"',
   '-DG_LOG_USE_STRUCTURED=1',
+  '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_@0@_@1@'.format(glib_major, glib_minor),
+  '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_@0@_@1@'.format(glib_major, glib_minor),
   '-DG_PASTE_COMPILATION',
   '-DG_PASTE_DEFAULT_HISTORY="history"',
   '-DG_PASTE_EXTENSION_NAME="GPaste@gnome-shell-extensions.gnome.org"',
@@ -100,9 +130,6 @@ conf.set('pkglibexecdir', join_paths(get_option('prefix'), get_option('libexecdi
 conf.set('version', meson.project_version())
 conf.set('gettext_domain', 'GPaste')
 
-gnome = import('gnome')
-i18n = import('i18n')
-
 gpaste_po_dir = join_paths(meson.current_source_dir(), 'po')
 
 subdir('man')
@@ -110,3 +137,9 @@ subdir('po')
 subdir('src')
 subdir('data')
 subdir('tests')
+
+gnome.post_install(
+  gtk_update_icon_cache: true,
+  glib_compile_schemas: true,
+  update_desktop_database: true,
+)
