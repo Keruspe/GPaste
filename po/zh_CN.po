@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-21 18:20+0100\n"
-"PO-Revision-Date: 2022-03-21 16:57+0000\n"
+"PO-Revision-Date: 2022-03-23 17:54+0000\n"
 "Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "gpaste/gpaste/zh_Hans/>\n"
@@ -85,11 +85,11 @@ msgstr "这是一个维护版本。更改如下："
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Fixes to the new preferences tool"
-msgstr ""
+msgstr "修复新选项工具的问题"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Style fixes"
-msgstr ""
+msgstr "样式修复"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
@@ -339,9 +339,8 @@ msgid "Upload the active item to a pastebin service"
 msgstr "将活动项上传到pastebin服务"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
-#, fuzzy
 msgid "GPaste Preferences"
-msgstr "管理你的 GPaste 首选项"
+msgstr "GPaste 首选项"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
