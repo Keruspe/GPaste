@@ -54,6 +54,7 @@ src/daemon/tmp/gpaste-upload-keybinding.h
 src/daemon/tmp/gpaste-uris-item.c
 src/daemon/tmp/gpaste-uris-item.h
 src/gnome-shell/aboutItem.js
+src/gnome-shell/actionButtonActor.js
 src/gnome-shell/checkerBypass.js
 src/gnome-shell/deleteButton.js
 src/gnome-shell/deleteItemPart.js

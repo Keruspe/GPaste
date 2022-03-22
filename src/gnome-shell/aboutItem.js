@@ -1,10 +1,16 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const _ = ExtensionUtils.gettext;
+
 const { GObject, St } = imports.gi;
+
+const ActionButtonActor = Me.imports.actionButtonActor;
 
 var GPasteAboutItem = GObject.registerClass(
 class GPasteAboutItem extends St.Button {
@@ -16,10 +22,7 @@ class GPasteAboutItem extends St.Button {
             can_focus: true,
             track_hover: true,
             style_class: 'button',
-            child: new St.Icon({
-                icon_name: 'dialog-information-symbolic',
-                style_class: 'popup-menu-icon'
-            })
+            child: new ActionButtonActor.GPasteActionButtonActor('dialog-information-symbolic', _("About"))
         });
 
         this.connect('clicked', function() {
