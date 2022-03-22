@@ -12,10 +12,7 @@ const { GObject, St } = imports.gi;
 var GPasteActionButtonActor = GObject.registerClass(
 class GPasteActionButtonActor extends St.BoxLayout {
     _init(iconName, label) {
-        super._init({
-            x_expand: true,
-            x_align: St.Align.START,
-        });
+        super._init({ style: 'spacing: 10px;' });
 
         this.add_child(new St.Icon({
             icon_name: iconName,
