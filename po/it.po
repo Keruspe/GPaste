@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.4\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-21 18:20+0100\n"
-"PO-Revision-Date: 2022-03-21 16:57+0000\n"
+"PO-Revision-Date: 2022-03-23 17:54+0000\n"
 "Last-Translator: Andrea Brandi <git@andreabrandi.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/gpaste/gpaste/it/"
 ">\n"
@@ -88,11 +88,11 @@ msgstr "Questa è una versione di manutenzione. Cambiamenti:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Fixes to the new preferences tool"
-msgstr ""
+msgstr "Correzioni al nuovo strumento delle preferenze"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Style fixes"
-msgstr ""
+msgstr "Correzioni di stile"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
@@ -352,9 +352,8 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Carica l'elemento attivo in un servizio pastebin"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
-#, fuzzy
 msgid "GPaste Preferences"
-msgstr "Gestione preferenze di GPaste"
+msgstr "Preferenze di GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
@@ -409,7 +408,7 @@ msgstr "Per impostazione predefinita, viene salvato solo il testo"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
 msgid "Do we close the UI after selecting an item?"
-msgstr "Chiudiamo l'interfaccia utente dopo aver selezionato un elemento?"
+msgstr "Chiudere l'interfaccia utente dopo aver selezionato un elemento?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
 msgid "By default, we close it"
@@ -993,7 +992,7 @@ msgstr "Traccia i cambiamenti negli appunti"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:116
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:130
 msgid "Close UI on select"
-msgstr "Chiudi l'interfaccia utente sulla selezione"
+msgstr "Chiudi l'interfaccia utente dopo la selezione"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:125
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:147
@@ -1003,7 +1002,7 @@ msgstr "Abilita l'estensione gnome-shell"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:131
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:153
 msgid "Sync the daemon state with the extension's one"
-msgstr "Sincronizza lo stato del demone con quello dell'estensione"
+msgstr "Sincronizza lo stato del demone con l'estensione"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:140
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:163
