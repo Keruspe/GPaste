@@ -46,7 +46,7 @@ show_about_dialog (gpointer user_data)
                            "logo-icon-name", G_PASTE_ICON_NAME,
                            "license-type",   GTK_LICENSE_BSD,
                            "authors",        authors,
-                           "copyright",      "Copyright (c) 2010-2018, Marc-Antoine Perennou",
+                           "copyright",      "Copyright (c) 2010-2022, Marc-Antoine Perennou",
                            "comments",       "Clipboard management system",
                            "website",        "http://www.imagination-land.org/tags/GPaste.html",
                            "website-label",  "Follow GPaste news",
