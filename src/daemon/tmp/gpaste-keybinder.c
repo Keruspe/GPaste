@@ -73,47 +73,49 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
 
     gdk_x11_display_error_trap_push (display);
 
-    guint64 mod_masks [] = {
-        0, /* modifier only */
-        GDK_MOD2_MASK, /* NumLock */
-        GDK_MOD5_MASK, /* ScrollLock */
-        GDK_LOCK_MASK, /* CapsLock */
-        GDK_MOD2_MASK | GDK_MOD5_MASK,
-        GDK_MOD2_MASK | GDK_LOCK_MASK,
-        GDK_MOD5_MASK | GDK_LOCK_MASK,
-        GDK_MOD2_MASK | GDK_MOD5_MASK | GDK_LOCK_MASK,
-    };
-
-    Window window = GDK_ROOT_WINDOW ();
+    guint64 mod_masks = Mod2Mask /* NumLock */ | LockMask /* CapsLock */;
+    Window window = gdk_x11_get_default_root_xwindow ();
     GdkModifierType modifiers = g_paste_keybinding_get_modifiers (binding);
     const guint32 *keycodes = g_paste_keybinding_get_keycodes (binding);
+    g_autoptr (GArray) mods = g_array_new (FALSE, TRUE, sizeof (XIGrabModifiers));
 
-    for (guint64 i = 0; i < G_N_ELEMENTS (mod_masks); ++i) {
-        XIGrabModifiers mods = { mod_masks[i] | modifiers, 0 };
-        for (const guint32 *keycode = keycodes; *keycode; ++keycode)
+    if (modifiers & XIAnyModifier)
+    {
+        g_array_append_val (mods, ((XIGrabModifiers) { XIAnyModifier, 0 }));
+    }
+    else
+    {
+        g_array_append_val (mods, ((XIGrabModifiers) { modifiers, 0 }));
+
+        for (guint64 i = 0; i < mod_masks; ++i) {
+            if (i & mod_masks)
+                g_array_append_val (mods, ((XIGrabModifiers) { modifiers | i, 0 }));
+        }
+    }
+
+    for (const guint32 *keycode = keycodes; *keycode; ++keycode)
+    {
+        if (grab)
         {
-            if (grab)
-            {
-                XIGrabKeycode (xdisplay,
-                               XIAllMasterDevices,
-                               *keycode,
-                               window,
-                               XIGrabModeSync,
-                               XIGrabModeAsync,
-                               False,
-                               &mask,
-                               1,
-                               &mods);
-            }
-            else
-            {
-                XIUngrabKeycode (xdisplay,
-                                 XIAllMasterDevices,
-                                 *keycode,
-                                 window,
-                                 1,
-                                 &mods);
-            }
+            XIGrabKeycode (xdisplay,
+                           XIAllMasterDevices,
+                           *keycode,
+                           window,
+                           XIGrabModeSync,
+                           XIGrabModeAsync,
+                           False,
+                           &mask,
+                           mods->len,
+                           (XIGrabModifiers *) mods->data);
+        }
+        else
+        {
+            XIUngrabKeycode (xdisplay,
+                             XIAllMasterDevices,
+                             *keycode,
+                             window,
+                             mods->len,
+                             (XIGrabModifiers *) mods->data);
         }
     }
 
@@ -550,17 +552,6 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 {
     GPasteKeybinderPrivate *priv = data;
     GdkDisplay *display = gdk_display_get_default ();
-
-    for (GList *_seat = gdk_display_list_seats (display); _seat; _seat = g_list_next (_seat))
-    {
-        GdkSeat *seat = _seat->data;
-
-        if (gdk_seat_get_keyboard (seat))
-            gdk_seat_ungrab (seat);
-    }
-
-    gdk_display_flush (display);
-
     GdkModifierType modifiers = 0;
     guint64 keycode = 0;
 
