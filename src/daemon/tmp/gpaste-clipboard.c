@@ -1,10 +1,10 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gtk3/gpaste-gtk-util.h>
+#include <gpaste-gtk3.h>
 
 #include <string.h>
 
@@ -46,30 +46,11 @@ enum
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
 static void
-g_paste_clipboard_bootstrap_finish (GPasteClipboard *self,
-                                    GPasteHistory   *history)
-{
-    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
-
-    if (!priv->text && !priv->image_checksum)
-    {
-        const GList *h = g_paste_history_get_history (history);
-        if (h)
-        {
-            GPasteItem *item = h->data;
-
-            if (!g_paste_clipboard_select_item (self, item))
-                g_paste_history_remove (history, 0);
-        }
-    }
-}
-
-static void
 g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
                                          const gchar     *text G_GNUC_UNUSED,
                                          gpointer         user_data)
 {
-    g_paste_clipboard_bootstrap_finish (self, user_data);
+    g_paste_clipboard_ensure_not_empty (self, user_data);
 }
 
 static void
@@ -78,7 +59,7 @@ g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
                                           gpointer         user_data)
 {
     g_object_unref (image);
-    g_paste_clipboard_bootstrap_finish (self, user_data);
+    g_paste_clipboard_ensure_not_empty (self, user_data);
 }
 
 /**
@@ -631,6 +612,11 @@ g_paste_clipboard_ensure_not_empty (GPasteClipboard *self,
 {
     g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
     g_return_if_fail (_G_PASTE_IS_HISTORY (history));
+
+    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+
+    if (priv->text || priv->image_checksum)
+        return;
 
     const GList *hist = g_paste_history_get_history (history);
 
