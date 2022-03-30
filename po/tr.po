@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-21 18:20+0100\n"
-"PO-Revision-Date: 2022-02-21 07:58+0000\n"
-"Last-Translator: Oğuz Ersen <oguzersen@protonmail.com>\n"
+"PO-Revision-Date: 2022-03-31 14:07+0000\n"
+"Last-Translator: Oğuz Ersen <oguz@ersen.moe>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
 ">\n"
 "Language: tr\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -88,56 +88,55 @@ msgstr "Bu bir bakım sürümüdür. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Fixes to the new preferences tool"
-msgstr ""
+msgstr "Yeni tercihler aracı için düzeltmeler"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Style fixes"
-msgstr ""
+msgstr "Görünüm düzeltmeleri"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
-#, fuzzy
 msgid "Translations updates"
-msgstr "çeviri güncellemesi"
+msgstr "Çeviri güncellemeleri"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
-#, fuzzy
 msgid "First release for GNOME 42. Changes:"
-msgstr "GNOME 41 için ilk sürüm. Değişiklikler:"
+msgstr "GNOME 42 için ilk sürüm. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
+"Eski libgpaste, gtk bağımlılığı olmayan yeni bir sade libgpaste-2 ile "
+"değiştirildi"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
 msgid "New libgpaste-gtk3 for utils and settings ui"
-msgstr ""
+msgstr "Araçlar ve ayarlar kullanıcı arayüzü için yeni libgpaste-gtk3"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:62
 msgid "New libgpaste-gtk4 for utils and preferences ui"
-msgstr ""
+msgstr "Araçlar ve tercihler kullanıcı arayüzü için yeni libgpaste-gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:63
 msgid "New gtk4 based gpaste-preferences utility"
-msgstr ""
+msgstr "Yeni gtk4 tabanlı gpaste-preferences programı"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
 msgid "Autotools are no longer supported"
-msgstr ""
+msgstr "Autotools artık desteklenmiyor"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
-#, fuzzy
 msgid "Extension updated for gnome-shell 42"
-msgstr "Gnome kabuğu 3.34.0 güncellemesi"
+msgstr "Uzantı gnome-shell 42 için güncellendi"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
 msgid "fix the storage path for meson builds"
-msgstr ""
+msgstr "meson derlemeleri için depolama yollarını düzelt"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
 msgid "fix some race conditions in history handling"
-msgstr ""
+msgstr "geçmiş işlemedeki bazı yarış durumlarını düzelt"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
 msgid "better fix crash when there is no history yet"
@@ -352,13 +351,12 @@ msgid "Upload the active item to a pastebin service"
 msgstr "Etkin öğeyi bir pastebin hizmetine yükleyin"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
-#, fuzzy
 msgid "GPaste Preferences"
-msgstr "GPaste Ayarları"
+msgstr "GPaste Tercihleri"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "GPaste tercihlerinizi yönetin"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
@@ -950,9 +948,8 @@ msgid "(No result)"
 msgstr "(Sonuç yok)"
 
 #: src/gnome-shell/stateSwitch.js:17
-#, fuzzy
 msgid "Track changes"
-msgstr "Pano değişikliklerini izle"
+msgstr "Değişiklikleri izle"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
@@ -1072,33 +1069,31 @@ msgstr "Gerçekten geçmişi temizlemek istiyor musunuz?"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "Pano eşzamanlaması"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:176
 msgid "Optional features"
-msgstr ""
+msgstr "İsteğe bağlı özellikler"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
 msgid "Resources limits"
-msgstr ""
+msgstr "Kaynak sınırları"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
 msgid "Text limits"
-msgstr ""
+msgstr "Metin sınırları"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
-#, fuzzy
 msgid "Display settings"
-msgstr "Geçmiş ayarları"
+msgstr "Görüntüleme ayarları"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
-#, fuzzy
 msgid "History access"
-msgstr "Geçmiş ayarları"
+msgstr "Geçmiş erişimi"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
 msgid "Active element manipulation"
-msgstr ""
+msgstr "Etkin öge yönetimi"
 
 #: src/ui/gpaste-ui-about.c:41
 msgid "About"
