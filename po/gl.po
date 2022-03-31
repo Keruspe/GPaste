@@ -8,49 +8,55 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-21 18:20+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2022-04-01 15:11+0000\n"
+"Last-Translator: Xosé Calvo <xosecalvo@gmail.com>\n"
+"Language-Team: Galician <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"gl/>\n"
 "Language: gl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
 msgid "GPaste"
-msgstr ""
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Xestione o historial do portapapeis"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:13
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste é un sistema de xestión do portapapeis que permite seguir e xestionar "
+"o historial do portapapeis dunha maneira altamente personalizábel."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste fornece unha ferramenta gráfica que permite xestionar todo facilmente."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
-msgstr ""
+msgstr "A interface gráfica principal"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 msgid "The settings UI"
-msgstr ""
+msgstr "A interface gráfica de configuración"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:72
@@ -78,24 +84,24 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:310
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Esta é unha publicación de mantemento. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Fixes to the new preferences tool"
-msgstr ""
+msgstr "Arranxos na nova ferramenta de preferencias"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Style fixes"
-msgstr ""
+msgstr "Arranxos de estilo"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
 msgid "Translations updates"
-msgstr ""
+msgstr "Actualizacións das traducións"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "First release for GNOME 42. Changes:"
-msgstr ""
+msgstr "Primeira publicación para GNOME 42. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid ""
@@ -290,66 +296,66 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:112
 #: src/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
-msgstr ""
+msgstr "Iniciar a ferramenta gráfica"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:270
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:129
 #: src/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
-msgstr ""
+msgstr "Marcar o elemento activo como contrasinal"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:256
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 #: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
-msgstr ""
+msgstr "Eliminar o elemento activo do historial"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:277
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
-msgstr ""
+msgstr "Mostrar o historial"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:284
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
 #: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
-msgstr ""
+msgstr "Sincronizar o portapapeis coa selección primaria"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:291
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
-msgstr ""
+msgstr "Sincronizar a selección primara co portapapeis"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:298
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
 #: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
-msgstr ""
+msgstr "Actualizar o elemento activo cun servizo tipo pastebin"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
 msgid "GPaste Preferences"
-msgstr ""
+msgstr "Preferencias do GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "Xestione as preferencias do GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
+msgstr "Portapapeis;Xestor;Opcións;Preferencias;Configuración;"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
-msgstr ""
+msgstr "Tamaño máximo dun elemento ao mostralo"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
 msgid ""
@@ -370,11 +376,11 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
 msgid "The name of the current history"
-msgstr ""
+msgstr "O nome do historial actual"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
 msgid "The default name is \"history\""
-msgstr ""
+msgstr "O nome predefinido é «historial»"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
 msgid "Do we save the images copied to history, or only text?"
@@ -588,7 +594,7 @@ msgstr ""
 #: src/client/gpaste-client.c:155
 #, c-format
 msgid "Usage:\n"
-msgstr ""
+msgstr "Uso:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:157
@@ -615,7 +621,7 @@ msgstr ""
 #: src/client/gpaste-client.c:167 src/client/gpaste-client.c:173
 #: src/client/gpaste-client.c:185 src/client/gpaste-client.c:189
 msgid "name"
-msgstr ""
+msgstr "nome"
 
 #: src/client/gpaste-client.c:163
 msgid "backup current history"
@@ -637,7 +643,7 @@ msgstr ""
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:171
 msgid "text"
-msgstr ""
+msgstr "texto"
 
 #: src/client/gpaste-client.c:171
 msgid "set text to clipboard"
@@ -645,7 +651,7 @@ msgstr ""
 
 #: src/client/gpaste-client.c:173
 msgid "password"
-msgstr ""
+msgstr "contrasinal"
 
 #: src/client/gpaste-client.c:173
 msgid "add the name - password couple to the clipboard"
@@ -654,11 +660,11 @@ msgstr ""
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:175
 msgid "old name"
-msgstr ""
+msgstr "nome anterior"
 
 #: src/client/gpaste-client.c:175
 msgid "new name"
-msgstr ""
+msgstr "novo nome"
 
 #: src/client/gpaste-client.c:175
 msgid "rename the password"
@@ -708,7 +714,7 @@ msgstr ""
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:191
 msgid "path"
-msgstr ""
+msgstr "ruta"
 
 #: src/client/gpaste-client.c:191
 msgid "put the content of the file at <path> into the clipboard"
