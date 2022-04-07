@@ -1,0 +1,18 @@
+sudo: true
+language: c
+env:
+  matrix:
+    - DIST: "disco"
+      OPTS: "-Dbash-completion=true -Dintrospection=true -Dgnome-shell=true -Dsystemd=true -Dvapi=true -Dx-keybinder=true -Dzsh-completion=true"
+    - DIST: "disco"
+      OPTS: "-Dbash-completion=false -Dintrospection=false -Dgnome-shell=false -Dsystemd=false -Dvapi=false -Dx-keybinder=false -Dzsh-completion=false"
+before_install:
+  - docker run -d --name ubuntu-test -v $(pwd):/travis ubuntu:$DIST tail -f /dev/null
+  - docker ps
+install:
+  - docker exec -t ubuntu-test bash -c "apt-get update;
+    apt-get install -y libgtk-3-dev gettext libappstream-glib-dev libgjs-dev gnome-control-center-dev gcc g++ curl libsystemd-dev libmutter-3-dev meson valac gobject-introspection;"
+script:
+  - travis_wait 45 docker exec -t ubuntu-test bash -c "cd /travis &&
+    meson $OPTS _build &&
+    ninja -C _build test"
