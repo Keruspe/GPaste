@@ -142,6 +142,7 @@ typedef enum
 
 typedef struct
 {
+    const gchar      *history_file_path;
     GList            *history;
     gsize             mem_size;
     State             state;
@@ -161,7 +162,11 @@ typedef struct
 #define ASSERT_STATE(x)                                                                               \
     if (data->state != x)                                                                             \
     {                                                                                                 \
-        g_warning ("Expected state %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, x, data->state); \
+        gint line_number, char_number;                                                                \
+        g_markup_parse_context_get_position (context, &line_number, &char_number);                    \
+        g_warning ("Expected state %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT                   \
+                   " in file “%s” at line %" G_GINT32_FORMAT ", column %" G_GINT32_FORMAT ".",        \
+                   x, data->state, data->history_file_path, line_number, char_number);                \
         return;                                                                                       \
     }
 #define SWITCH_STATE(x, y) \
@@ -500,6 +505,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             on_error
         };
         Data data = {
+            history_file_path,
             NULL,
             0,
             BEGIN,
