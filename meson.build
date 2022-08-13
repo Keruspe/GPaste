@@ -11,7 +11,7 @@ i18n = import('i18n')
 apiversion = '2'
 
 adwaita_req_version = '1.1'
-gcr_req_version = '3.41.0'
+gcr_req_version = '3.90.0'
 gdk_pixbuf_req_version = '2.38.0'
 gjs_req_version = '1.54.0'
 glib_req_version = '2.70.0'
@@ -27,7 +27,7 @@ gtk3_req = '>= @0@'.format(gtk3_req_version)
 gtk4_req = '>= @0@'.format(gtk4_req_version)
 
 appstream_dep = dependency('appstream-glib')
-gcr_dep = dependency('gcr-base-3', version: gcr_req)
+gcr_dep = dependency('gcr-4', version: gcr_req)
 gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0', version: gdk_pixbuf_req)
 gio_dep = dependency('gio-2.0', version: glib_req)
