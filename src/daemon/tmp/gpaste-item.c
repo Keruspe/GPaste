@@ -9,7 +9,7 @@
 #include <string.h>
 
 #define GCR_API_SUBJECT_TO_CHANGE
-#include <gcr/gcr-base.h>
+#include <gcr/gcr.h>
 
 typedef struct
 {
