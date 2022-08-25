@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-21 18:20+0100\n"
-"PO-Revision-Date: 2021-06-09 10:33+0000\n"
-"Last-Translator: Yiu Man Ho <yiufamily.hh@gmail.com>\n"
+"PO-Revision-Date: 2022-08-26 09:23+0000\n"
+"Last-Translator: Hugel <qihu@nfschina.com>\n"
 "Language-Team: Chinese (Traditional) <https://hosted.weblate.org/projects/"
 "gpaste/gpaste/zh_Hant/>\n"
 "Language: zh_Hant\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.7-dev\n"
+"X-Generator: Weblate 4.14-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -87,11 +87,11 @@ msgstr "這是一個維護更新。更新內容："
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Fixes to the new preferences tool"
-msgstr ""
+msgstr "修復了新的首選工具"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Style fixes"
-msgstr ""
+msgstr "樣式修復"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
@@ -123,7 +123,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
 msgid "Autotools are no longer supported"
-msgstr ""
+msgstr "不再支持自動工具"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:65
 #, fuzzy
@@ -144,7 +144,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
 msgid "fix crash when there is no history yet"
-msgstr ""
+msgstr "修復沒有歷史記錄時的崩潰"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:108
