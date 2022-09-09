@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-03-21 18:20+0100\n"
-"PO-Revision-Date: 2022-09-07 12:21+0000\n"
+"PO-Revision-Date: 2022-09-10 19:19+0000\n"
 "Last-Translator: Vik <xasertop@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
 ">\n"
@@ -39,7 +39,7 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
-"GPaste - это система управления буфером обмена, позволяющая отслеживать и "
+"GPaste — это система управления буфером обмена, позволяющая отслеживать и "
 "управлять историей буфера обмена с широкими возможностями настройки."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
@@ -86,7 +86,7 @@ msgstr "Настройки интерфейса"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:310
 msgid "This is a maintenance release. Changes:"
-msgstr "Это выпуск для обслуживания. Изменения:"
+msgstr "Это обслуживающий выпуск. Изменения:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Fixes to the new preferences tool"
@@ -122,7 +122,7 @@ msgstr "Новая libgpaste-gtk4 для интерфейса утилит и н
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:63
 msgid "New gtk4 based gpaste-preferences utility"
-msgstr ""
+msgstr "Новая утилита настроек gpaste на основе gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
 msgid "Autotools are no longer supported"
@@ -134,19 +134,19 @@ msgstr "Расширение обновлено для gnome-shell 42"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
 msgid "fix the storage path for meson builds"
-msgstr ""
+msgstr "исправлен путь хранения для сборок мезон"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
 msgid "fix some race conditions in history handling"
-msgstr ""
+msgstr "исправлены некоторые условия способа обработки истории"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
 msgid "better fix crash when there is no history yet"
-msgstr ""
+msgstr "улучшено исправление сбоя, когда истории ещё нет"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
 msgid "fix crash when there is no history yet"
-msgstr ""
+msgstr "исправлен сбой, когда истории ещё нет"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:108
@@ -356,7 +356,7 @@ msgstr "Настройки GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "Управляйте настройками GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
@@ -1071,7 +1071,7 @@ msgstr "Вы действительно хотите очистить истор
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "Синхронизация буфера обмена"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:176
 msgid "Optional features"
