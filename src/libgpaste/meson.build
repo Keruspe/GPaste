@@ -1,6 +1,6 @@
-libgpaste_soversion = '0.0.0'
-libgpaste_gtk3_soversion = '0.0.0'
-libgpaste_gtk4_soversion = '0.0.0'
+libgpaste_soversion = '0.0.1'
+libgpaste_gtk3_soversion = '0.0.1'
+libgpaste_gtk4_soversion = '0.0.1'
 
 pkg = import('pkgconfig')
 
