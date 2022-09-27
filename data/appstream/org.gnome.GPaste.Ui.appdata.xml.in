@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2022-09-27" version="42.2">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Open GPaste UI where the mouse pointer is</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2022-03-21" version="42.1">
       <description>
         <p>This is a maintenance release. Changes:</p>
@@ -64,6 +72,14 @@
           <li>Autotools are no longer supported</li>
           <li>Extension updated for gnome-shell 42</li>
           <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2022-09-27" version="3.42.7">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Open GPaste UI where the mouse pointer is</li>
         </ul>
       </description>
     </release>
@@ -124,6 +140,14 @@
         <ul>
           <li>port to gnome-shell 41</li>
           <li>translations update</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2022-09-27" version="3.40.4">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Open GPaste UI where the mouse pointer is</li>
         </ul>
       </description>
     </release>
