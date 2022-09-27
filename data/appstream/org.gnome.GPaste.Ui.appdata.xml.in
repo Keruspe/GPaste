@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.42.7" type="stable" date="2022-09-27">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Open GPaste UI where the mouse pointer is</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.42.6" type="stable" date="2022-02-24">
           <description>
               <p>This is a maintenance release. Changes:</p>
@@ -100,6 +108,14 @@
               <ul>
                   <li>port to gnome-shell 41</li>
                   <li>translations update</li>
+              </ul>
+          </description>
+      </release>
+      <release version="3.40.4" type="stable" date="2022-09-27">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Open GPaste UI where the mouse pointer is</li>
               </ul>
           </description>
       </release>

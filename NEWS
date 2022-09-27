@@ -1,3 +1,8 @@
+NEW in 3.42.7 (27/09/2022)
+=============
+
+- Open GPaste UI where the mouse pointer is
+
 NEW in 3.42.6 (15/02/2022)
 =============
 
@@ -36,6 +41,11 @@ NEW in 3.42.0 (28/09/2021)
 
 - port to gnome-shell 41
 - translations update
+
+NEW in 3.40.4 (27/09/2022)
+=============
+
+- Open GPaste UI where the mouse pointer is
 
 NEW in 3.40.3 (26/09/2021)
 =============

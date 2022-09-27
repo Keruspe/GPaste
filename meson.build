@@ -1,6 +1,6 @@
 project('GPaste',
   'c',
-  version: '3.42.6',
+  version: '3.42.7',
   meson_version: '>=0.50.0',
 )
 
