@@ -11,7 +11,8 @@ i18n = import('i18n')
 apiversion = '2'
 
 adwaita_req_version = '1.1'
-gcr_req_version = '3.41.0'
+gcr3_req_version = '3.41.0'
+gcr_req_version = '3.90.0'
 gdk_pixbuf_req_version = '2.38.0'
 gjs_req_version = '1.54.0'
 glib_req_version = '2.70.0'
@@ -19,6 +20,7 @@ gtk3_req_version = '3.24.0'
 gtk4_req_version = '4.6.0'
 
 adwaita_req = '>= @0@'.format(adwaita_req_version)
+gcr3_req = '>= @0@'.format(gcr3_req_version)
 gcr_req = '>= @0@'.format(gcr_req_version)
 gdk_pixbuf_req = '>= @0@'.format(gdk_pixbuf_req_version)
 gjs_req = '>= @0@'.format(gjs_req_version)
@@ -27,7 +29,11 @@ gtk3_req = '>= @0@'.format(gtk3_req_version)
 gtk4_req = '>= @0@'.format(gtk4_req_version)
 
 appstream_dep = dependency('appstream-glib')
-gcr_dep = dependency('gcr-base-3', version: gcr_req)
+if get_option('gcr3')
+  gcr_dep = dependency('gcr-base-3', version: gcr3_req)
+else
+  gcr_dep = dependency('gcr-4', version: gcr_req)
+endif
 gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0', version: gdk_pixbuf_req)
 gio_dep = dependency('gio-2.0', version: glib_req)
@@ -129,6 +135,9 @@ conf.set('GETTEXT_PACKAGE', 'GPaste')
 conf.set('pkglibexecdir', join_paths(get_option('prefix'), get_option('libexecdir'), 'gpaste'))
 conf.set('version', meson.project_version())
 conf.set('gettext_domain', 'GPaste')
+if get_option('gcr3')
+  conf.set10('HAVE_GCR3', true)
+endif
 
 gpaste_po_dir = join_paths(meson.current_source_dir(), 'po')
 

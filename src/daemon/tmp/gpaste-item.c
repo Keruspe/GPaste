@@ -9,7 +9,11 @@
 #include <string.h>
 
 #define GCR_API_SUBJECT_TO_CHANGE
+#ifdef HAVE_GCR3
 #include <gcr/gcr-base.h>
+#else
+#include <gcr/gcr.h>
+#endif
 
 typedef struct
 {
