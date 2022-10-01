@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.4\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-09-27 15:46+0200\n"
-"PO-Revision-Date: 2022-03-23 17:54+0000\n"
+"PO-Revision-Date: 2022-10-02 13:21+0000\n"
 "Last-Translator: Andrea Brandi <git@andreabrandi.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/gpaste/gpaste/it/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12-dev\n"
+"X-Generator: Weblate 4.14.1\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -59,17 +59,16 @@ msgid "The settings UI"
 msgstr "L'interfaccia utente delle impostazioni"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#, fuzzy
 msgid "First release for GNOME 43. Changes:"
 msgstr "Prima versione per GNOME 42. Cambiamenti:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Port a GNOME 43"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Internal preparation for gtk4 port"
-msgstr ""
+msgstr "Preparazione interna per il passaggio a gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
@@ -112,7 +111,7 @@ msgstr "Questa è una versione di manutenzione. Cambiamenti:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "Apre l'interfaccia di GPaste dove si trova il puntatore del mouse"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 msgid "Fixes to the new preferences tool"
@@ -993,18 +992,16 @@ msgid "(No result)"
 msgstr "(Nessun risultato)"
 
 #: src/gnome-shell/emptyHistoryItem.js:25
-#, fuzzy
 msgid "Empty history"
-msgstr "svuota la cronologia"
+msgstr "Svuota cronologia"
 
 #: src/gnome-shell/stateSwitch.js:17
 msgid "Track changes"
 msgstr "Tracciamento modifiche"
 
 #: src/gnome-shell/uiItem.js:25
-#, fuzzy
 msgid "Graphical tool"
-msgstr "Lancia lo strumento grafico"
+msgstr "Strumento grafico"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
