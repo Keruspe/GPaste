@@ -281,7 +281,7 @@ _g_paste_history_add (GPasteHistory *self,
         return;
 
     GList *history = priv->history;
-    gboolean election_needed = FALSE;
+    gboolean election_needed = !history; // If we don't have an history we want to initalize the biggest
     GPasteUpdateTarget target = G_PASTE_UPDATE_TARGET_ALL;
 
     g_debug ("history: add");
@@ -295,6 +295,8 @@ _g_paste_history_add (GPasteHistory *self,
 
         if (new_selection && g_paste_history_private_is_growing_line (priv, old_first, item))
         {
+            if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (old_first)))
+                election_needed = TRUE;
             target = G_PASTE_UPDATE_TARGET_POSITION;
             g_paste_history_private_remove (priv, history, FALSE);
         }
