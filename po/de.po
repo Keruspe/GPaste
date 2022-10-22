@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-09-27 15:46+0200\n"
-"PO-Revision-Date: 2022-10-20 17:02+0000\n"
+"PO-Revision-Date: 2022-10-23 01:00+0000\n"
 "Last-Translator: Amr Ibrahim <amribrahim1987@hotmail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/>"
 "\n"
@@ -47,8 +47,8 @@ msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
-"GPaste stellt eine grafische Oberfläche bereit, die es eine einfache "
-"Verwaltung ermöglicht."
+"GPaste bietet ein grafisches Programm, mit dem sich alles leicht verwalten "
+"lässt."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
@@ -155,7 +155,7 @@ msgstr "Autotools werden nicht mehr unterstützt"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
 msgid "Extension updated for gnome-shell 42"
-msgstr "Erweiterung aktualisiert für gnome-shell 42"
+msgstr "Erweiterung aktualisiert für Gnome-Shell 42"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
 msgid "fix the storage path for meson builds"
@@ -179,7 +179,7 @@ msgstr "Behebung eines Absturzes, wenn noch keine Chronik vorhanden ist"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
 msgid "translations update"
-msgstr "Übersetzungen aktualisiert"
+msgstr "Aktualisierung der Übersetzungen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:133
 msgid "fix gnome-shell exntesion when the daemon restarts"
@@ -195,7 +195,7 @@ msgstr "Erste Veröffentlichung für GNOME 41. Änderungen:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
 msgid "port to gnome-shell 41"
-msgstr "Portierung auf gnome-shell 41"
+msgstr "Portierung auf Gnome-Shell 41"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
 msgid "fix a crash in memory usage checking"
@@ -211,7 +211,7 @@ msgstr "Portierung auf Gnome-Shell 40"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
 msgid "placeholder for gnome-shell prefs"
-msgstr "Platzhalter für Gnome-Shell-Einstellungen"
+msgstr "Platzhalter für Gnome-Shell-Voreinstellungen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:258
@@ -221,8 +221,8 @@ msgstr "Fixierung des X11-Tastenbinders außerhalb von GNOME"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:202
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
-"Bessere Handhabung von ungültigen UUIDs die dem gpaste-client übergeben "
-"werden"
+"Bessere Behandlung und Meldung von ungültigen UUIDs, die an gpaste-client "
+"übergeben werden"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
 msgid ""
@@ -230,7 +230,7 @@ msgid ""
 "index instead of uuid"
 msgstr ""
 "gpaste-client hat jetzt ein --use-index Argument für mehrere Unterbefehle, "
-"um index statt UUID zu verwenden"
+"um Index statt UUID zu verwenden"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:211
 msgid "fix the make-password keybinding"
@@ -239,7 +239,7 @@ msgstr "Behebung der make-password-Tastenbindung"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:212
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
 msgid "updated translations"
-msgstr "Übersetzungen aktualisiert"
+msgstr "Aktualisierung der Übersetzungen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:220
 msgid "gnome-shell extension warning fixes"
@@ -253,36 +253,36 @@ msgstr "Kosmetische Aktualisierungen für die Gnome-Shell-Erweiterung"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:237
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
-"Standardmäßig ist die Unterstützung von Bildern deaktiviert (kann in den "
+"Standardmäßige Deaktivierung der Bildunterstützung (kann in den "
 "Einstellungen wieder aktiviert werden)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:238
 msgid "Search now includes passwords (using their names)"
-msgstr "Die Suche bezieht nun auch Passwörter ein (über deren Namen)"
+msgstr "Die Suche umfasst jetzt auch Passwörter (unter Verwendung ihrer Namen)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:239
 msgid "systemd integration enhancements"
-msgstr "Verbesserungen hinsichtlich der systemd-Integration"
+msgstr "Verbesserungen bei der systemd-Integration"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:245
 msgid "First release for GNOME 3.38. Changes:"
-msgstr "Erstes Release für GNOME 3.38. Änderungen:"
+msgstr "Erste Veröffentlichung für GNOME 3.38. Änderungen:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:247
 msgid "Drop the Tracking DBus signal"
-msgstr "Verwerfe das Tracking DBus-Signal"
+msgstr "Weglassen des Tracking-DBus-Signals"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:248
 msgid "Switch to uuids to identify items"
-msgstr "Wechsel zu UUIDs zur Identifizierung von Einträgen"
+msgstr "Umstellung auf UUIDs zur Identifizierung von Einträgen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:249
 msgid "Bump DBus interface to org.gnome.GPaste2"
-msgstr "Upgrade DBus-Interface zu org.gnome.GPaste2"
+msgstr "Upgrade des DBus-Interface auf org.gnome.GPaste2"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:250
 msgid "Update to gnome-shell 3.38.0"
-msgstr "Update auf gnome-shell 3.38.0"
+msgstr "Update auf Gnome-Shell 3.38.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:274
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:306
@@ -295,20 +295,20 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:314
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
 msgid "Fix keybinding regrab with gnome-shell"
-msgstr "Repariere die Tastenkürzel-Akquise mit gnome-shell"
+msgstr "Behebung der Wiederaufnahme der Tastenbindung mit Gnome-Shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:290
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:322
 msgid "Fix keybinding grab with gnome-shell"
-msgstr "Repariere die Tastenkürzel-Akquise mit gnome-shell"
+msgstr "Behebung der Tastenbindung mit Gnome-Shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:296
 msgid "First release for GNOME 3.36. Changes:"
-msgstr "Erstes Release für GNOME 3.36. Änderungen:"
+msgstr "Erste Veröffentlichung für GNOME 3.36. Änderungen:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:298
 msgid "Update to gnome-shell 3.36.0"
-msgstr "Update auf gnome-shell 3.36.0"
+msgstr "Update auf Gnome-Shell 3.36.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:330
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:346
@@ -317,11 +317,11 @@ msgstr "Kompatibilität mit der aktuellen appstream-glib"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:336
 msgid "First release for GNOME 3.34. Changes:"
-msgstr "Erstes Release für GNOME 3.34. Änderungen:"
+msgstr "Erste Veröffentlichung für GNOME 3.34. Änderungen:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
 msgid "Update to gnome-shell 3.34.0"
-msgstr "Aktualisierung auf gnome-shell 3.34.0"
+msgstr "Aktualisierung auf Gnome-Shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
@@ -346,7 +346,7 @@ msgstr "Den aktiven Eintrag als Passwort markieren"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 #: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
-msgstr "Aktiven Eintrag aus der Chronik löschen"
+msgstr "Den aktiven Eintrag aus der Chronik löschen"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:277
@@ -360,14 +360,14 @@ msgstr "Die Chronik anzeigen"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
 #: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
-msgstr "Zwischenablage mit der Auswahl synchronisieren"
+msgstr "Die Zwischenablage mit der primären Auswahl synchronisieren"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:291
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
-msgstr "Auswahl mit der Zwischenablage synchronisieren"
+msgstr "Die primäre Auswahl mit der Zwischenablage synchronisieren"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:298
@@ -391,15 +391,16 @@ msgstr "Zwischenablage;Verwaltung;Einstellungen;Voreinstellungen;Konfiguration;"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
-msgstr "Maximale Größe des anzuzeigenden Eintrages"
+msgstr "Maximale Größe eines Eintrags bei dessen Anzeige"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
 msgstr ""
-"Die zusätzlichen Dinge dieses Elementes werden durch \"…\" ersetzt. Das "
-"Aplet stellt Zeilenumbüche als \" \" dar. 0 schaltet das Verhalten ab."
+"Der zusätzliche Inhalt dieses Eintrags wird durch Auslassungspunkte „…“ und "
+"Zeilenumbrüche durch Leerraum „␣“ ersetzt, wenn er vom Applet aus angezeigt "
+"wird, 0 zum Deaktivieren."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
 msgid "Do we detect and replace growing lines in history?"
@@ -439,7 +440,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
 msgid "By default, we close it"
-msgstr "Der Standard ist ja"
+msgstr "Standardmäßig wird geschlossen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
 msgid "The keyboard shortcut to launch the graphical interface"
@@ -450,7 +451,7 @@ msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
-"Standardmäßig wird dies durch die Tastenkombination Strg + Alt + G erreicht "
+"Standardmäßig geschieht dies durch Drücken von Strg + Alt + G "
 "(„<Strg><Alt>G“). Eine leere Zeichenfolge deaktiviert diese Funktion."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
@@ -464,7 +465,7 @@ msgid ""
 "functionnality."
 msgstr ""
 "Standardmäßig wird durch Drücken von Strg + Alt + S der aktive Eintrag als "
-"Kennwort markiert („<Strg><Alt>S“). Eine leere Zeichenfolge deaktiviert "
+"Passwort markiert („<Strg><Alt>S“). Eine leere Zeichenfolge deaktiviert "
 "diese Funktion."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
@@ -491,31 +492,31 @@ msgstr "Maximale Anzahl von Einträgen in der Chronik"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:216
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
 msgid "Max memory usage (MB)"
-msgstr "Maximal zugewiesener Speicher (MB)"
+msgstr "Maximale Speichernutzung (MB)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
 msgid "Maximum amount of memory used to store contents"
-msgstr "Maximaler Speicherverbrauch für Inhalte"
+msgstr "Maximaler Speicherverbrauch für die Speicherung von Inhalten"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Max text item size"
-msgstr "Maximale Textgröße eines Eintrags"
+msgstr "Maximale Größe des Texteintrags"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
-"Maximale Größe eines Texteintrags. Alles, was über diese Grenze hinausgeht, "
-"wird ignoriert."
+"Maximale Größe eines Texteintrags. Alles, was außerhalb dieses Grenzwertes "
+"liegt, wird ignoriert."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
 msgid "Min text item size"
-msgstr "Minimale Textgröße eines Eintrags"
+msgstr "Minimale Größe des Texteintrags"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
-"Mindestgröße für einen Texteintrag. Alles, was über diese Grenze hinausgeht, "
-"wird ignoriert."
+"Minimale Größe eines Texteintrags. Alles, was außerhalb dieses Grenzwertes "
+"liegt, wird ignoriert."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
 msgid "The keyboard shortcut to delete the first element in history"
@@ -548,7 +549,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, we're saving all"
-msgstr "Der Standard ist ja"
+msgstr "Standardmäßig werden alle gespeichert"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
 msgid "Do we save the history from one session to another?"
@@ -556,11 +557,11 @@ msgstr "Wird die Chronik von einer Sitzung zur nächsten gespeichert?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 msgid "By default, we're saving it"
-msgstr "Der Standard ist ja"
+msgstr "Standardmäßig wird gespeichert"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
-msgstr "Tastenkürzel um Menüleisten zu öffnen"
+msgstr "Das Tastaturkürzel zum Anzeigen des Menüs"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 msgid ""
@@ -573,7 +574,9 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
-msgstr "Tastenkürzel um Zwischenablage mit der Auswahl synchronisieren"
+msgstr ""
+"Das Tastaturkürzel zum Synchronisieren der Zwischenablage mit der primären "
+"Auswahl"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
 msgid ""
@@ -586,7 +589,9 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
-msgstr "Tastenkürzel um Auswahl mit der Zwischenablage synchronisieren"
+msgstr ""
+"Das Tastaturkürzel zum Synchronisieren der primären Auswahl mit der "
+"Zwischenablage"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
 msgid ""
@@ -604,40 +609,43 @@ msgstr "Sind die primäre Auswahl und die Zwischenablage synchronisiert?"
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
-"Standardmäßig ist die Auswahl und die Zwischenablage unabhängig voneinander."
+"Standardmäßig sind die primäre Auswahl und die Zwischenablage unabhängig "
+"voneinander."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Do we track the clipboard changes?"
-msgstr "Werden Änderungen an der Zwischenablage verfolgt?"
+msgstr "Werden die Änderungen in der Zwischenablage verfolgt?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, we're tracking those changes."
-msgstr "Standardmäßig werden sie verfolgt."
+msgstr "Standardmäßig werden diese Änderungen verfolgt."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
 msgstr ""
-"Wird der Zustand des Daemons mit der gnome-shell-extension synchronisiert? "
-"(Daemon wird zusammen mit der Erweiterung beendet)"
+"Wird der Status des Daemons mit dem der Gnome-Shell-Erweiterung "
+"synchronisiert? (den Daemon deaktivieren, wenn die Erweiterung deaktiviert "
+"wird)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, the daemon state keeps unchanged"
-msgstr "Standardmäßig bleibt der Daemon unberührt"
+msgstr "Standardmäßig bleibt der Status des Daemons unverändert"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid "Do we trim the textual items before adding them to history?"
 msgstr ""
-"Werden die Texteinträge gekürzt, bevor sie in die Chronik aufgenommen werden?"
+"Werden die Texteinträge getrimmt, bevor sie in die Chronik aufgenommen "
+"werden?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
 msgstr ""
-"Trimmen bedeutet das Entfernen von Leerzeichen am Anfang und Ende. "
-"Standardmäßig werden sie so belassen wie sie sind."
+"Trimmen bedeutet, dass alle Leerzeichen am Anfang und am Ende entfernt "
+"werden. Standardmäßig werden sie so belassen, wie sie sind."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 msgid ""
@@ -661,7 +669,7 @@ msgstr "Wird beim Leeren einer Chronik eine Bestätigung verlangt?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
 msgid "By default, we do as it's a destructive action"
-msgstr "Standardmäßig bleibt der Daemon unberührt"
+msgstr "Standardmäßig wird dies als destruktive Aktion durchgeführt"
 
 #: src/client/gpaste-client.c:143
 msgid "Couldn't spawn"
@@ -714,7 +722,7 @@ msgstr "Eine Chronik löschen"
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:169
 msgid "list available histories"
-msgstr "Verfügbare Chroniken anzeigen"
+msgstr "Verfügbare Chroniken auflisten"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:171
@@ -723,7 +731,7 @@ msgstr "Text"
 
 #: src/client/gpaste-client.c:171
 msgid "set text to clipboard"
-msgstr "Den markierten Text in die Zwischenablage kopieren"
+msgstr "Text in die Zwischenablage legen"
 
 #: src/client/gpaste-client.c:173
 msgid "password"
@@ -731,7 +739,7 @@ msgstr "Passwort"
 
 #: src/client/gpaste-client.c:173
 msgid "add the name - password couple to the clipboard"
-msgstr "Auswahl mit der Zwischenablage synchronisieren"
+msgstr "Das Paar Name – Passwort in die Zwischenablage legen"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:175
@@ -749,12 +757,12 @@ msgstr "Passwort umbenennen"
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:177
 msgid "get the item <uuid> from the history"
-msgstr "Abrufen der <UUID> des Eintrags aus der Chronik"
+msgstr "Den Eintrag <UUID> aus der Chronik abrufen"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:179
 msgid "set the item <uuid> from the history to the clipboard"
-msgstr "Die <UUID> des Eintrags aus der Chronik in die Zwischenablage setzen"
+msgstr "Den Eintrag <UUID> aus der Chronik in die Zwischenablage setzen"
 
 #. Translators: help for gpaste replace <uuid> <contents>
 #: src/client/gpaste-client.c:181
@@ -766,7 +774,7 @@ msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr ""
-"Den Inhalt der <UUID> des Eintrags in der Chronik durch den angegebenen Wert "
+"Den Inhalt des Eintrags <UUID> aus der Chronik durch den angegebenen Eintrag "
 "ersetzen"
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
@@ -775,23 +783,23 @@ msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr ""
-"Zusammenführen der mit den UUIDs übereinstimmenden Einträge aus der Chronik "
-"und Ablegen des Ergebnisses in der Zwischenablage"
+"Die mit den UUIDs übereinstimmenden Einträge aus der Chronik zusammenführen "
+"und das Ergebnis in die Zwischenablage legen"
 
 #: src/client/gpaste-client.c:185
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr ""
-"Die <UUID> des Eintrags aus der Chronik als Kennwort mit dem Namen <Name> "
+"Den Eintrag <UUID> aus der Chronik als Passwort mit dem Namen <Name> "
 "festlegen"
 
 #. Translators: help for gpaste delete <uuid>
 #: src/client/gpaste-client.c:187
 msgid "delete item <uuid> from the history"
-msgstr "Löschen der <UUID> des Eintrags aus der Chronik"
+msgstr "Eintrag <UUID> aus der Chronik löschen"
 
 #: src/client/gpaste-client.c:189
 msgid "delete the password <name> from the history"
-msgstr "Den <Name> des Passworts aus der Chronik löschen"
+msgstr "Das Passwort <Name> aus der Chronik löschen"
 
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:191
@@ -800,16 +808,16 @@ msgstr "Pfad"
 
 #: src/client/gpaste-client.c:191
 msgid "put the content of the file at <path> into the clipboard"
-msgstr "Kopiere den Inhalt der Datei in <path> zur Zwischenablage"
+msgstr "Den Inhalt der Datei unter <Pfad> in die Zwischenablage kopieren"
 
 #. Translators: help for whatever | gpaste
 #: src/client/gpaste-client.c:193
 msgid "whatever"
-msgstr "PROGRAMM"
+msgstr "„Befehl“"
 
 #: src/client/gpaste-client.c:193
 msgid "set the output of whatever to clipboard"
-msgstr "kopiert die Ausgabe von PROGRAMM in die Zwischenablage"
+msgstr "Die Ausgabe des Befehls in die Zwischenablage setzen"
 
 #. Translators: help for gpaste empty
 #: src/client/gpaste-client.c:195
@@ -819,7 +827,7 @@ msgstr "Die Chronik leeren"
 #. Translators: help for gpaste start
 #: src/client/gpaste-client.c:197
 msgid "start tracking clipboard changes"
-msgstr "Startet die Verfolgung von Änderungen an der Zwischenablage"
+msgstr "Änderungen in der Zwischenablage verfolgen"
 
 #. Translators: help for gpaste stop
 #: src/client/gpaste-client.c:199
@@ -834,7 +842,7 @@ msgstr "Alias für „stop“"
 #. Translators: help for gpaste daemon-reexec
 #: src/client/gpaste-client.c:203
 msgid "reexecute the daemon (after upgrading...)"
-msgstr "Startet den Daemon neu (Nach einem Update …)"
+msgstr "Den Daemon erneut ausführen (nach dem Upgrade …)"
 
 #. Translators: help for gpaste preferences
 #: src/client/gpaste-client.c:205
@@ -854,17 +862,17 @@ msgstr "Das Applet oder die Erweiterung soll die Chronik anzeigen"
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:211
 msgid "upload the item <uuid> to a pastebin service"
-msgstr "Hochladen der <UUID> des Eintrags auf einen Pastebin-Dienst"
+msgstr "Den Eintrag <UUID> auf einen Pastebin-Dienst hochladen"
 
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:213
 msgid "display the version"
-msgstr "Programmversion anzeigen"
+msgstr "Die Version anzeigen"
 
 #. Translators: help for gpaste daemon-version
 #: src/client/gpaste-client.c:215
 msgid "display the daemon version"
-msgstr "Anzeige der Daemon-Version"
+msgstr "Die Daemon-Version anzeigen"
 
 #. Translators: help for gpaste help
 #: src/client/gpaste-client.c:217
@@ -874,7 +882,7 @@ msgstr "Diesen Hilfetext anzeigen"
 #. Translators: help for gpaste about
 #: src/client/gpaste-client.c:219
 msgid "display the about dialog"
-msgstr "Anzeigen des Info-Dialogs"
+msgstr "Den Info-Dialog anzeigen"
 
 #: src/client/gpaste-client.c:222
 #, c-format
@@ -894,7 +902,7 @@ msgstr "Anzeigeoptionen:"
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:231
 msgid "display each item on only one line"
-msgstr "Anzeige jedes Eintrags in nur einer Zeile"
+msgstr "Jeden Eintrag in nur einer Zeile anzeigen"
 
 #. Translators: help for --raw
 #: src/client/gpaste-client.c:233
@@ -904,14 +912,13 @@ msgstr "Jeden Eintrag roh anzeigen (ohne Zeilennummern)"
 #. Translators: help for --reverse
 #: src/client/gpaste-client.c:235
 msgid "display the items in reverse order"
-msgstr "Anzeige der Einträge in umgekehrter Reihenfolge"
+msgstr "Die Einträge in umgekehrter Reihenfolge anzeigen"
 
 #. Translators: help for --zero
 #: src/client/gpaste-client.c:237
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
-"Verwendung eines NULL-Zeichens anstelle einer neuen Zeile zwischen jedem "
-"Eintrag"
+"Ein Nullzeichen anstelle einer neuen Zeile zwischen jedem Eintrag verwenden"
 
 #: src/client/gpaste-client.c:240
 #, c-format
@@ -929,8 +936,8 @@ msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
-"Hinzufügen der angegebenen Dekoration am Anfang und am Ende jedes Eintrags "
-"vor dem Zusammenführen"
+"Die angegebene Dekoration am Anfang und am Ende jedes Eintrags vor dem "
+"Zusammenführen hinzufügen"
 
 #: src/client/gpaste-client.c:245
 msgid "add the given separator between each item when merging"
@@ -941,7 +948,7 @@ msgstr ""
 #: src/client/gpaste-client.c:342
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
-msgstr "Daemon wurde erfolgreich neu gestartet\n"
+msgstr "Erfolgreich den Daemon erneut ausgeführt\n"
 
 #: src/client/gpaste-client.c:483
 msgid "Cannot add non utf8 data as text."
@@ -949,7 +956,7 @@ msgstr "Nicht-UTF8-Daten können nicht als Text hinzugefügt werden."
 
 #: src/client/gpaste-client.c:800 src/ui/gpaste-ui-window.c:310
 msgid "Couldn't connect to GPaste daemon"
-msgstr "Verbindung zum GPaste daemon fehlgeschlagen"
+msgstr "Verbindung zum GPaste-Daemon konnte nicht hergestellt werden"
 
 #: src/daemon/gpaste-daemon.c:34
 msgid "Stop signal received, exiting"
@@ -957,12 +964,12 @@ msgstr "Stoppsignal empfangen, Programm beenden"
 
 #: src/daemon/gpaste-daemon.c:71
 msgid "Could not acquire DBus name."
-msgstr "DBus-Name konnte nicht bestimmt werden."
+msgstr "DBus-Name konnte nicht erfasst werden."
 
 #. This is the date format "month/day/year time"
 #: src/daemon/tmp/gpaste-image-item.c:241
 msgid "%m/%d/%y %T"
-msgstr "%d. %m. %y - %T"
+msgstr "%d.%m.%y %T"
 
 #. This gets displayed in history when selecting an image
 #: src/daemon/tmp/gpaste-image-item.c:243
@@ -1002,7 +1009,7 @@ msgstr "Chronik leeren"
 
 #: src/gnome-shell/stateSwitch.js:17
 msgid "Track changes"
-msgstr "Änderungen überwachen"
+msgstr "Änderungen verfolgen"
 
 #: src/gnome-shell/uiItem.js:25
 msgid "Graphical tool"
@@ -1015,7 +1022,7 @@ msgstr "Chronik-Verzeichnis konnte nicht erstellt werden"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:37
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:41
 msgid "Failed to register the gtk application"
-msgstr "Initialisierung der Gtk-Anwendung fehlgeschlagen"
+msgstr "Die GTK-Anwendung konnte nicht registriert werden"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:49
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:53
@@ -1026,7 +1033,7 @@ msgstr "läuft bereits."
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:124
 #: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
-msgstr "Verfolge Änderungen in der Zwischenablage"
+msgstr "Änderungen der Zwischenablage verfolgen"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:116
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:130
@@ -1041,7 +1048,7 @@ msgstr "Die Gnome-Shell-Erweiterung aktivieren"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:131
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:153
 msgid "Sync the daemon state with the extension's one"
-msgstr "Synchronisiere Daemon mit der Erweiterung"
+msgstr "Den Status des Daemons mit dem der Erweiterung synchronisieren"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:140
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:163
@@ -1051,12 +1058,12 @@ msgstr "Die primäre Auswahl beeinflusst die Chronik"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:146
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:169
 msgid "Synchronize clipboard with primary selection"
-msgstr "Synchronisiere Zwischenablage mit Auswahl"
+msgstr "Zwischenablage mit primärer Auswahl synchronisieren"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:153
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
 msgid "Images support"
-msgstr "Bilder unterstützen"
+msgstr "Unterstützung für Bilder"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:159
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:184
@@ -1066,7 +1073,7 @@ msgstr "Einträge trimmen"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:165
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:190
 msgid "Detect growing lines"
-msgstr "Länger werdende Zeilen entdecken"
+msgstr "Wachsende Linien erkennen"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:172
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:136
@@ -1076,23 +1083,23 @@ msgstr "Chronik speichern"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:195
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
 msgid "Max element size when displaying"
-msgstr "Maximale Größe des anzuzeigenden Eintrages"
+msgstr "Maximale Eintragsgröße beim Anzeigen"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:223
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Max text item length"
-msgstr "Maximale Textlänge eines Eintrags"
+msgstr "Maximale Länge des Texteintrags"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:230
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
 msgid "Min text item length"
-msgstr "Minimale Textlänge eines Eintrags"
+msgstr "Minimale Länge des Texteintrags"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:318
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:111
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:122
 msgid "General behaviour"
-msgstr "Allgemeine Optionen"
+msgstr "Allgemeines Verhalten"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:319
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
@@ -1121,7 +1128,7 @@ msgstr "Leeren"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:146
 msgid "Do you really want to empty the history?"
-msgstr "Wollen Sie die Chronik wirklich löschen?"
+msgstr "Wollen Sie die Chronik wirklich leeren?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
@@ -1199,7 +1206,7 @@ msgstr "Suchen"
 
 #: src/ui/gpaste-ui-settings.c:31
 msgid "GPaste Settings"
-msgstr "GPaste-Daemon-Einstellungen"
+msgstr "GPaste-Einstellungen"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
