@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-09-27 15:46+0200\n"
-"PO-Revision-Date: 2022-03-31 14:07+0000\n"
+"PO-Revision-Date: 2022-10-24 08:42+0000\n"
 "Last-Translator: Oğuz Ersen <oguz@ersen.moe>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12-dev\n"
+"X-Generator: Weblate 4.14.2-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -59,17 +59,16 @@ msgid "The settings UI"
 msgstr "Ayarlar kullanıcı arayüzü"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
-#, fuzzy
 msgid "First release for GNOME 43. Changes:"
-msgstr "GNOME 42 için ilk sürüm. Değişiklikler:"
+msgstr "GNOME 43 için ilk sürüm. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "GNOME 43 sürümüne uyarlandı"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Internal preparation for gtk4 port"
-msgstr ""
+msgstr "gtk4 sürümüne uyarlanması için iç hazırlık"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
@@ -112,7 +111,7 @@ msgstr "Bu bir bakım sürümüdür. Değişiklikler:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "GPaste kullanıcı arayüzünü fare işaretçisinin olduğu yerde aç"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 msgid "Fixes to the new preferences tool"
@@ -192,7 +191,7 @@ msgstr "GNOME 41 için ilk sürüm. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:151
 msgid "port to gnome-shell 41"
-msgstr "gnome-shell 41 sürümüne uyarla"
+msgstr "gnome-shell 41 sürümüne uyarlandı"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
 msgid "fix a crash in memory usage checking"
@@ -204,7 +203,7 @@ msgstr "GNOME 40 için ilk sürüm. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:185
 msgid "port to gnome-shell 40"
-msgstr "gnome kabuğuna bağlantı noktası 40"
+msgstr "gnome-shell 40 sürümüne uyarlandı"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
 msgid "placeholder for gnome-shell prefs"
@@ -975,18 +974,16 @@ msgid "(No result)"
 msgstr "(Sonuç yok)"
 
 #: src/gnome-shell/emptyHistoryItem.js:25
-#, fuzzy
 msgid "Empty history"
-msgstr "geçmişi boşalt"
+msgstr "Geçmişi temizle"
 
 #: src/gnome-shell/stateSwitch.js:17
 msgid "Track changes"
 msgstr "Değişiklikleri izle"
 
 #: src/gnome-shell/uiItem.js:25
-#, fuzzy
 msgid "Graphical tool"
-msgstr "Grafik aracını başlatın"
+msgstr "Grafiksel araç"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
