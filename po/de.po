@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-09-27 15:46+0200\n"
-"PO-Revision-Date: 2022-10-23 01:00+0000\n"
+"PO-Revision-Date: 2022-11-15 22:47+0000\n"
 "Last-Translator: Amr Ibrahim <amribrahim1987@hotmail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/>"
 "\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.14.2-dev\n"
+"X-Generator: Weblate 4.15-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -404,7 +404,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
 msgid "Do we detect and replace growing lines in history?"
-msgstr "Werden wachsende Linien in der Chronik erkannt und ersetzt?"
+msgstr "Werden wachsende Zeilen in der Chronik entdeckt und ersetzt?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
 msgid ""
@@ -1073,7 +1073,7 @@ msgstr "Einträge trimmen"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:165
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:190
 msgid "Detect growing lines"
-msgstr "Wachsende Linien erkennen"
+msgstr "Wachsende Zeilen entdecken"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:172
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:136
