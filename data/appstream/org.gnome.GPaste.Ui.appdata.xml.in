@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2023-01-03" version="42.3">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Respect --use-index when displaying history</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2022-09-27" version="42.2">
       <description>
         <p>This is a maintenance release. Changes:</p>
@@ -72,6 +80,14 @@
           <li>Autotools are no longer supported</li>
           <li>Extension updated for gnome-shell 42</li>
           <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2023-01-03" version="3.42.8">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Respect --use-index when displaying history</li>
         </ul>
       </description>
     </release>
@@ -140,6 +156,14 @@
         <ul>
           <li>port to gnome-shell 41</li>
           <li>translations update</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2023-01-03" version="3.40.5">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Respect --use-index when displaying history</li>
         </ul>
       </description>
     </release>
