@@ -1,3 +1,8 @@
+NEW in 3.40.5 (03/01/2023)
+=============
+
+- Respect --use-index when displaying history
+
 NEW in 3.40.4 (27/09/2022)
 =============
 

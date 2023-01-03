@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.40.5" type="stable" date="2023-01-03">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Respect --use-index when displaying history</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.40.4" type="stable" date="2022-09-27">
           <description>
               <p>This is a maintenance release. Changes:</p>
