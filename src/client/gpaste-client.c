@@ -125,11 +125,17 @@ strip_newline (gchar *str)
 
 static void
 print_history_line (gchar       *line,
+                    guint        index,
                     const gchar *uuid,
                     Context     *ctx)
 {
     if (!ctx->raw)
-        printf ("%s: ", uuid);
+    {
+        if (ctx->use_index)
+            printf ("%d: ", index);
+        else
+            printf ("%s: ", uuid);
+    }
     printf ("%s%c", (ctx->oneline) ? strip_newline (line) : line, (ctx->zero) ? '\0' : '\n');
 }
 
@@ -295,11 +301,13 @@ g_paste_history (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
+    guint index = 0;
+
     for (const GList *i = (ctx->reverse ? g_list_last (history) : history); i; i = ctx->reverse ? i->prev : i->next)
     {
         const GPasteClientItem *item = i->data;
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
-        print_history_line (line, g_paste_client_item_get_uuid (item), ctx);
+        print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
     }
 
     g_list_free_full (history, g_object_unref);
@@ -591,12 +599,13 @@ g_paste_search (Context *ctx,
         return EXIT_FAILURE;
 
     GList *items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, -1, error);
+    guint index = 0;
 
     for (const GList *i = items; i; i = i->next)
     {
         const GPasteClientItem *item = i->data;
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
-        print_history_line (line, g_paste_client_item_get_uuid (item), ctx);
+        print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
     }
 
     g_list_free_full (items, g_object_unref);
