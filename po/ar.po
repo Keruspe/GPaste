@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.3\n"
 "Report-Msgid-Bugs-To: Marc-Antoine@Perennou.com\n"
-"POT-Creation-Date: 2022-09-27 15:21+0200\n"
+"POT-Creation-Date: 2023-01-03 22:33+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -57,191 +57,198 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:64
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:72
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:89
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:116
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:97
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:106
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:124
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:132
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:150
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:158
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:167
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:185
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:193
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:214
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:222
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:148
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:166
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:174
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:183
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:201
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:209
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:230
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:238
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:246
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:254
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:262
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:278
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:286
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:302
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:318
 msgid "This is a maintenance release. Changes:"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
-msgid "Open GPaste UI where the mouse pointer is"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:126
+msgid "Respect --use-index when displaying history"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
-msgid "fix the storage path for meson builds"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:134
+msgid "Open GPaste UI where the mouse pointer is"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
-msgid "fix some race conditions in history handling"
+msgid "fix the storage path for meson builds"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
-msgid "better fix crash when there is no history yet"
+msgid "fix some race conditions in history handling"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
+msgid "better fix crash when there is no history yet"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
 msgid "fix crash when there is no history yet"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:83
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:101
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:126
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:91
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:142
 msgid "translations update"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:91
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:108
 msgid "Fix keybindings for wayland"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:107
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:115
 msgid "First release for GNOME 41. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:117
 msgid "port to gnome-shell 41"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:134
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:150
 msgid "fix a crash in memory usage checking"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "First release for GNOME 40. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:143
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
 msgid "port to gnome-shell 40"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
 msgid "placeholder for gnome-shell prefs"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:216
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:232
 msgid "fix X11 keybinder outside of GNOME"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:177
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:169
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:185
 msgid "fix the make-password keybinding"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:179
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:195
 msgid "updated translations"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
 msgid "gnome-shell extension warning fixes"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:224
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:240
 msgid "gnome-shell extension cosmetic updates"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:195
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:211
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:196
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:212
 msgid "Search now includes passwords (using their names)"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:197
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:213
 msgid "systemd integration enhancements"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
 msgid "First release for GNOME 3.38. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:205
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
 msgid "Drop the Tracking DBus signal"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:206
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:222
 msgid "Switch to uuids to identify items"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:207
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:223
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:208
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:224
 msgid "Update to gnome-shell 3.38.0"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:232
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:264
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:306
-msgid "Fix activating items using Ctrl-Number in gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:240
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:272
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:305
-msgid "Fix keybinding regrab with gnome-shell"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:248
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:280
-msgid "Fix keybinding grab with gnome-shell"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:254
-msgid "First release for GNOME 3.36. Changes:"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:322
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:256
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:288
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:321
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:264
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:296
+msgid "Fix keybinding grab with gnome-shell"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
+msgid "First release for GNOME 3.36. Changes:"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:272
 msgid "Update to gnome-shell 3.36.0"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:288
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:304
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:320
 msgid "Compatibility with recent appstream-glib"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:310
 msgid "First release for GNOME 3.34. Changes:"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:296
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:312
 msgid "Update to gnome-shell 3.34.0"
 msgstr ""
 
@@ -526,27 +533,27 @@ msgstr ""
 msgid "By default, we do as it's a destructive action"
 msgstr ""
 
-#: src/client/gpaste-client.c:143 src/client/gpaste-client.c:437
+#: src/client/gpaste-client.c:149 src/client/gpaste-client.c:445
 msgid "Couldn't spawn"
 msgstr ""
 
-#: src/client/gpaste-client.c:155
+#: src/client/gpaste-client.c:161
 #, c-format
 msgid "Usage:\n"
 msgstr ""
 
 #. Translators: help for gpaste history
-#: src/client/gpaste-client.c:157
+#: src/client/gpaste-client.c:163
 msgid "print the history with UUIDs"
 msgstr ""
 
 #. Translators: help for gpaste history-size
-#: src/client/gpaste-client.c:159
+#: src/client/gpaste-client.c:165
 msgid "print the size of the history"
 msgstr ""
 
 #. Translators: help for gpaste get-history
-#: src/client/gpaste-client.c:161
+#: src/client/gpaste-client.c:167
 msgid "get the name of the current history"
 msgstr ""
 
@@ -556,249 +563,249 @@ msgstr ""
 #. Translators: help for gpaste add-password <name> <text>
 #. Translators: help for gpaste set-password <uuid> <name>
 #. Translators: help for gpaste delete-passworf <name>
-#: src/client/gpaste-client.c:163 src/client/gpaste-client.c:165
-#: src/client/gpaste-client.c:167 src/client/gpaste-client.c:173
-#: src/client/gpaste-client.c:185 src/client/gpaste-client.c:189
+#: src/client/gpaste-client.c:169 src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:173 src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:191 src/client/gpaste-client.c:195
 msgid "name"
 msgstr ""
 
-#: src/client/gpaste-client.c:163
+#: src/client/gpaste-client.c:169
 msgid "backup current history"
 msgstr ""
 
-#: src/client/gpaste-client.c:165
+#: src/client/gpaste-client.c:171
 msgid "switch to another history"
 msgstr ""
 
-#: src/client/gpaste-client.c:167
+#: src/client/gpaste-client.c:173
 msgid "delete a history"
 msgstr ""
 
 #. Translators: help for gpaste list-histories
-#: src/client/gpaste-client.c:169
+#: src/client/gpaste-client.c:175
 msgid "list available histories"
 msgstr ""
 
 #. Translators: help for gpaste add <text>
-#: src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:177
 msgid "text"
 msgstr ""
 
-#: src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:177
 msgid "set text to clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:179
 msgid "password"
 msgstr ""
 
-#: src/client/gpaste-client.c:173
+#: src/client/gpaste-client.c:179
 msgid "add the name - password couple to the clipboard"
 msgstr ""
 
 #. Translators: help for gpaste rename-password <old name> <new name>
-#: src/client/gpaste-client.c:175
+#: src/client/gpaste-client.c:181
 msgid "old name"
 msgstr ""
 
-#: src/client/gpaste-client.c:175
+#: src/client/gpaste-client.c:181
 msgid "new name"
 msgstr ""
 
-#: src/client/gpaste-client.c:175
+#: src/client/gpaste-client.c:181
 msgid "rename the password"
 msgstr ""
 
 #. Translators: help for gpaste get <uuid>
-#: src/client/gpaste-client.c:177
+#: src/client/gpaste-client.c:183
 msgid "get the item <uuid> from the history"
 msgstr ""
 
 #. Translators: help for gpaste select <uuid>
-#: src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:185
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr ""
 
 #. Translators: help for gpaste replace <uuid> <contents>
-#: src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:187
 msgid "contents"
 msgstr ""
 
-#: src/client/gpaste-client.c:181
+#: src/client/gpaste-client.c:187
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
 msgstr ""
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
-#: src/client/gpaste-client.c:183
+#: src/client/gpaste-client.c:189
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr ""
 
-#: src/client/gpaste-client.c:185
+#: src/client/gpaste-client.c:191
 msgid "set the item <uuid> from the history as a password named <name>"
 msgstr ""
 
 #. Translators: help for gpaste delete <uuid>
-#: src/client/gpaste-client.c:187
+#: src/client/gpaste-client.c:193
 msgid "delete item <uuid> from the history"
 msgstr ""
 
-#: src/client/gpaste-client.c:189
+#: src/client/gpaste-client.c:195
 msgid "delete the password <name> from the history"
 msgstr ""
 
 #. Translators: help for gpaste file <path>
-#: src/client/gpaste-client.c:191
+#: src/client/gpaste-client.c:197
 msgid "path"
 msgstr ""
 
-#: src/client/gpaste-client.c:191
+#: src/client/gpaste-client.c:197
 msgid "put the content of the file at <path> into the clipboard"
 msgstr ""
 
 #. Translators: help for whatever | gpaste
-#: src/client/gpaste-client.c:193
+#: src/client/gpaste-client.c:199
 msgid "whatever"
 msgstr ""
 
-#: src/client/gpaste-client.c:193
+#: src/client/gpaste-client.c:199
 msgid "set the output of whatever to clipboard"
 msgstr ""
 
 #. Translators: help for gpaste empty
-#: src/client/gpaste-client.c:195
+#: src/client/gpaste-client.c:201
 msgid "empty the history"
 msgstr ""
 
 #. Translators: help for gpaste start
-#: src/client/gpaste-client.c:197
+#: src/client/gpaste-client.c:203
 msgid "start tracking clipboard changes"
 msgstr ""
 
 #. Translators: help for gpaste stop
-#: src/client/gpaste-client.c:199
+#: src/client/gpaste-client.c:205
 msgid "stop tracking clipboard changes"
 msgstr ""
 
 #. Translators: help for gpaste quit
-#: src/client/gpaste-client.c:201
+#: src/client/gpaste-client.c:207
 msgid "alias for stop"
 msgstr ""
 
 #. Translators: help for gpaste daemon-reexec
-#: src/client/gpaste-client.c:203
+#: src/client/gpaste-client.c:209
 msgid "reexecute the daemon (after upgrading...)"
 msgstr ""
 
 #. Translators: help for gpaste settings
-#: src/client/gpaste-client.c:205
+#: src/client/gpaste-client.c:211
 msgid "launch the configuration tool"
 msgstr ""
 
 #. Translators: help for gpaste ui
-#: src/client/gpaste-client.c:207
+#: src/client/gpaste-client.c:213
 msgid "launch the graphical tool"
 msgstr ""
 
 #. Translators: help for gpaste show-history
-#: src/client/gpaste-client.c:209
+#: src/client/gpaste-client.c:215
 msgid "make the applet or extension display the history"
 msgstr ""
 
 #. Translators: help for gpaste upload
-#: src/client/gpaste-client.c:211
+#: src/client/gpaste-client.c:217
 msgid "upload the item <uuid> to a pastebin service"
 msgstr ""
 
 #. Translators: help for gpaste version
-#: src/client/gpaste-client.c:213
+#: src/client/gpaste-client.c:219
 msgid "display the version"
 msgstr ""
 
 #. Translators: help for gpaste daemon-version
-#: src/client/gpaste-client.c:215
+#: src/client/gpaste-client.c:221
 msgid "display the daemon version"
 msgstr ""
 
 #. Translators: help for gpaste help
-#: src/client/gpaste-client.c:217
+#: src/client/gpaste-client.c:223
 msgid "display this help"
 msgstr ""
 
 #. Translators: help for gpaste about
-#: src/client/gpaste-client.c:219
+#: src/client/gpaste-client.c:225
 msgid "display the about dialog"
 msgstr ""
 
-#: src/client/gpaste-client.c:222
+#: src/client/gpaste-client.c:228
 #, c-format
 msgid "Convenience options:"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:225
+#: src/client/gpaste-client.c:231
 msgid "use the index of the item instead of its UUID"
 msgstr ""
 
-#: src/client/gpaste-client.c:228
+#: src/client/gpaste-client.c:234
 #, c-format
 msgid "Display options:"
 msgstr ""
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:231
+#: src/client/gpaste-client.c:237
 msgid "display each item on only one line"
 msgstr ""
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:233
+#: src/client/gpaste-client.c:239
 msgid "display each item raw (without line numbers)"
 msgstr ""
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:235
+#: src/client/gpaste-client.c:241
 msgid "display the items in reverse order"
 msgstr ""
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:237
+#: src/client/gpaste-client.c:243
 msgid "use a NUL character instead of a new line betweean each item"
 msgstr ""
 
-#: src/client/gpaste-client.c:240
+#: src/client/gpaste-client.c:246
 #, c-format
 msgid "Merge options:"
 msgstr ""
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:243 src/client/gpaste-client.c:245
+#: src/client/gpaste-client.c:249 src/client/gpaste-client.c:251
 msgid "string"
 msgstr ""
 
-#: src/client/gpaste-client.c:243
+#: src/client/gpaste-client.c:249
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
 
-#: src/client/gpaste-client.c:245
+#: src/client/gpaste-client.c:251
 msgid "add the given separator between each item when merging"
 msgstr ""
 
-#: src/client/gpaste-client.c:342
+#: src/client/gpaste-client.c:350
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
 msgstr ""
 
-#: src/client/gpaste-client.c:491
+#: src/client/gpaste-client.c:499
 msgid "Cannot add non utf8 data as text."
 msgstr ""
 
-#: src/client/gpaste-client.c:808
+#: src/client/gpaste-client.c:817
 #: src/libgpaste/settings-ui/gpaste-settings-ui-stack.c:319
 #: src/ui/gpaste-ui-window.c:311
 msgid "Couldn't connect to GPaste daemon"
