@@ -8,23 +8,26 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-03 22:48+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2023-02-08 12:37+0000\n"
+"Last-Translator: Nghiêm Nguyễn <punguyen15@gmail.com>\n"
+"Language-Team: Vietnamese <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"vi/>\n"
 "Language: vi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.16-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
 msgid "GPaste"
-msgstr ""
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Quản lý lịch sử bảng tạm cuả bạn"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
@@ -35,22 +38,26 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste là một hệ thống quản lý bảng tạm cho phép bạn theo dõi và quản lý "
+"lịch sử bảng tạm, theo một cách có thể dễ dàng tùy chỉnh."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:16
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste cung cấp cho bạn một giao diện cho phép bạn quản lý mọi thứ một cách "
+"dễ dàng."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:23
 msgid "The main UI"
-msgstr ""
+msgstr "Giao diện chính"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:27
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:31
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:35
 msgid "The settings UI"
-msgstr ""
+msgstr "Giao diện cài đặt"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:48
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
@@ -85,7 +92,7 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:360
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:376
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Đây là một bản phát hành bảo trì với những thay đổi:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:50
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
@@ -96,11 +103,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
 msgid "First release for GNOME 43. Changes:"
-msgstr ""
+msgstr "Bản phát hành đầu tiên cho Gnome 43. Gồm các thay đổi sau:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Biên dịch sang GNOME 43"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 msgid "Internal preparation for gtk4 port"
@@ -109,14 +116,15 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
+#, fuzzy
 msgid "Translations updates"
-msgstr ""
+msgstr "Cập nhật bản dịch"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:116
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "Mở GPaste khi đặt con trỏ chuột ở"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
 msgid "Fixes to the new preferences tool"
@@ -128,7 +136,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
 msgid "First release for GNOME 42. Changes:"
-msgstr ""
+msgstr "Bản phát hành đầu tiên cho GNOME 42. Gồm các thay đổi:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
 msgid ""
@@ -141,7 +149,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
 msgid "New libgpaste-gtk4 for utils and preferences ui"
-msgstr ""
+msgstr "libgpaste-gtk4 mới cho giao diện tiện ích và tùy chỉnh"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:97
 msgid "New gtk4 based gpaste-preferences utility"
@@ -149,15 +157,15 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
 msgid "Autotools are no longer supported"
-msgstr ""
+msgstr "Autotools không còn được hỗ trợ"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:99
 msgid "Extension updated for gnome-shell 42"
-msgstr ""
+msgstr "Đã cập nhật tiện ích mở rộng cho GNOME-shell 42"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:124
 msgid "fix the storage path for meson builds"
-msgstr ""
+msgstr "sửa đường dẫn lưu trữ cho các bản dựng meson"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:132
 msgid "fix some race conditions in history handling"
