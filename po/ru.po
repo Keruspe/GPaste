@@ -8,17 +8,17 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-03 22:48+0100\n"
-"PO-Revision-Date: 2022-09-10 19:19+0000\n"
-"Last-Translator: Vik <xasertop@gmail.com>\n"
+"PO-Revision-Date: 2023-02-27 16:37+0000\n"
+"Last-Translator: Gankov Andrey <gav@qsolution.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
 ">\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.14.1-dev\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.16-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -99,22 +99,20 @@ msgstr "Это обслуживающий выпуск. Изменения:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:108
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
-#, fuzzy
 msgid "Respect --use-index when displaying history"
-msgstr "Максимальный размер элемента при отображении"
+msgstr "Учитываем --use-index при отображении истории"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:56
-#, fuzzy
 msgid "First release for GNOME 43. Changes:"
-msgstr "Первый выпуск для GNOME 42. Изменения:"
+msgstr "Первый выпуск для GNOME 43. Изменения:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Портирован на GNOME 43"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 msgid "Internal preparation for gtk4 port"
-msgstr ""
+msgstr "Внутренняя подготовка к переходу на gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
@@ -127,6 +125,8 @@ msgstr "Обновление переводов"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
 msgid "Open GPaste UI where the mouse pointer is"
 msgstr ""
+"Открытие пользовательского интерфейса GPaste в том месте, где находится "
+"указатель мыши"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
 msgid "Fixes to the new preferences tool"
@@ -989,18 +989,16 @@ msgid "(No result)"
 msgstr "(Нет результата)"
 
 #: src/gnome-shell/emptyHistoryItem.js:25
-#, fuzzy
 msgid "Empty history"
-msgstr "очистить историю"
+msgstr "Очистить историю"
 
 #: src/gnome-shell/stateSwitch.js:17
 msgid "Track changes"
 msgstr "Отслеживать изменения в буфере обмена"
 
 #: src/gnome-shell/uiItem.js:25
-#, fuzzy
 msgid "Graphical tool"
-msgstr "Запустить графический интерфейс"
+msgstr "Графический интерфейс"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
