@@ -28,7 +28,6 @@ glib_req = '>= @0@'.format(glib_req_version)
 gtk3_req = '>= @0@'.format(gtk3_req_version)
 gtk4_req = '>= @0@'.format(gtk4_req_version)
 
-appstream_dep = dependency('appstream-glib')
 if get_option('gcr3')
   gcr_dep = dependency('gcr-base-3', version: gcr3_req)
 else
