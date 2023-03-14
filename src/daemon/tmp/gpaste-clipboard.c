@@ -207,8 +207,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
     guint64 length = strlen (to_add);
 
     if (length < g_paste_settings_get_min_text_item_size (settings) ||
-        length > g_paste_settings_get_max_text_item_size (settings) ||
-        !strlen (stripped))
+        length > g_paste_settings_get_max_text_item_size (settings))
     {
         if (data->callback)
             data->callback (self, NULL, data->user_data);
