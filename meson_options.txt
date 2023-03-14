@@ -2,7 +2,6 @@ option('bash-completion', type: 'boolean', value: true, description: 'install ba
 option('dbus-services-dir', type: 'string', value: '', description: 'path to the dbus services dir')
 option('introspection', type: 'boolean', value: true, description: 'build GIR data')
 option('control-center-keybindings-dir', type: 'string', value: '', description: 'path to where gnome-control-center stores its keybindings')
-option('gcr3', type: 'boolean', value: true, description: 'Use GCR 3 instead of GCR 4 (currently unstable)')
 option('gnome-shell', type: 'boolean', value: true, description: 'install the gnome-shell extension')
 option('systemd', type: 'boolean', value: true, description: 'install the systemd unit')
 option('systemd-user-unit-dir', type: 'string', value: '', description: 'path to where systemd stores its user units')
