@@ -238,14 +238,15 @@ g_paste_daemon_private_do_add (const GPasteDaemonPrivate *priv,
     G_PASTE_DBUS_ASSERT (text && length, "no content to add");
 
     GPasteSettings *settings = priv->settings;
-    g_autofree gchar *stripped = g_strstrip (g_strdup (text));
+    gboolean trim_items = g_paste_settings_get_trim_items (settings);
+    g_autofree gchar *stripped = trim_items ? g_strstrip (g_strdup (text)) : NULL;
+    const gchar *to_add = trim_items ? stripped : text;
 
     if (length >= g_paste_settings_get_min_text_item_size (settings) &&
         length <= g_paste_settings_get_max_text_item_size (settings) &&
-        strlen (stripped) != 0)
+        strlen (to_add) != 0)
     {
-        g_paste_daemon_private_do_add_item (priv,
-                                            g_paste_text_item_new (g_paste_settings_get_trim_items (settings) ? stripped : text));
+        g_paste_daemon_private_do_add_item (priv, g_paste_text_item_new (to_add));
     }
 }
 
