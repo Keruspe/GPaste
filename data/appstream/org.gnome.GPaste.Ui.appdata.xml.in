@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+      <release version="3.42.9" type="stable" date="2023-03-20">
+          <description>
+              <p>This is a maintenance release. Changes:</p>
+              <ul>
+                  <li>Avoid crash under heavy memory load</li>
+              </ul>
+          </description>
+      </release>
       <release version="3.42.8" type="stable" date="2023-01-03">
           <description>
               <p>This is a maintenance release. Changes:</p>
