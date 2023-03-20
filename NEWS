@@ -1,3 +1,8 @@
+NEW in 43.2 (20/03/2023)
+=============
+
+- Avoid crash under heavy memory load
+
 NEW in 43.1 (03/01/2023)
 =============
 
@@ -10,6 +15,11 @@ NEW in 43.0 (27/09/2022)
 - Port to GNOME 43
 - Internal preparation for gtk4 port
 - Translations updates
+
+NEW in 42.4 (20/03/2023)
+=============
+
+- Avoid crash under heavy memory load
 
 NEW in 42.3 (03/01/2023)
 =============
@@ -38,6 +48,11 @@ NEW in 42.0 (19/03/2022)
 - Autotools are no longer supported
 - Extension updated for gnome-shell 42
 - Translations updates
+
+NEW in 3.42.9 (20/03/2023)
+=============
+
+- Avoid crash under heavy memory load
 
 NEW in 3.42.8 (03/01/2023)
 =============
