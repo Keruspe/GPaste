@@ -43,6 +43,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2023-03-20" version="42.4">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Avoid crash under heavy memory load</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2023-01-03" version="42.3">
       <description>
         <p>This is a maintenance release. Changes:</p>
@@ -80,6 +88,14 @@
           <li>Autotools are no longer supported</li>
           <li>Extension updated for gnome-shell 42</li>
           <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2023-03-20" version="3.42.9">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Avoid crash under heavy memory load</li>
         </ul>
       </description>
     </release>
