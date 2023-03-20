@@ -218,9 +218,9 @@ g_paste_history_private_check_memory_usage (GPasteHistoryPrivate *priv)
     {
         GList *biggest = g_paste_history_private_get_item_by_uuid (priv, priv->biggest_uuid, NULL);
 
-        g_return_if_fail (biggest);
+        if (biggest)
+            g_paste_history_private_remove (priv, biggest, TRUE);
 
-        g_paste_history_private_remove (priv, biggest, TRUE);
         g_paste_history_private_elect_new_biggest (priv);
     }
 }
