@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-03-20 14:42+0100\n"
-"PO-Revision-Date: 2023-01-05 04:51+0000\n"
+"PO-Revision-Date: 2023-03-21 19:38+0000\n"
 "Last-Translator: Oğuz Ersen <oguz@ersen.moe>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15.1-dev\n"
+"X-Generator: Weblate 4.16.2-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -100,7 +100,7 @@ msgstr "Bu bir bakım sürümüdür. Değişiklikler:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:124
 msgid "Avoid crash under heavy memory load"
-msgstr ""
+msgstr "Ağır bellek kullanımı altında çökmeyi önle"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
