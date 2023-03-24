@@ -9,6 +9,7 @@
   <metadata_license>CC-BY-SA-3.0</metadata_license>
   <project_group>GNOME</project_group>
   <content_rating type="oars-1.1"/>
+  <launchable type="desktop-id">org.gnome.GPaste.Ui.desktop</launchable>
   <description>
     <p>
       GPaste is a clipboard managing system allowing you to track and manage your clipboard history in a highly customizable way.
@@ -17,23 +18,23 @@
       GPaste provides you with a graphical tool allowing you to manage everything easily.
     </p>
   </description>
-  <url type="homepage">http://www.imagination-land.org/tags/GPaste.html</url>
+  <url type="homepage">https://www.imagination-land.org/tags/GPaste.html</url>
   <screenshots>
     <screenshot type="default">
       <caption>The main UI</caption>
-      <image height="610" width="686">http://www.imagination-land.org/images/GPaste/3/Ui-1.png</image>
+      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-1.png</image>
     </screenshot>
     <screenshot>
       <caption>The settings UI</caption>
-      <image height="610" width="686">http://www.imagination-land.org/images/GPaste/3/Ui-2.png</image>
+      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-2.png</image>
     </screenshot>
     <screenshot>
       <caption>The settings UI</caption>
-      <image height="610" width="686">http://www.imagination-land.org/images/GPaste/3/Ui-3.png</image>
+      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-3.png</image>
     </screenshot>
     <screenshot>
       <caption>The settings UI</caption>
-      <image height="610" width="686">http://www.imagination-land.org/images/GPaste/3/Ui-4.png</image>
+      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-4.png</image>
     </screenshot>
   </screenshots>
   <update_contact>Marc-Antoine@Perennou.com</update_contact>
