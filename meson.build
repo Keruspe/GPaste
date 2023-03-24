@@ -26,7 +26,6 @@ glib_req = '>= @0@'.format(glib_req_version)
 gtk3_req = '>= @0@'.format(gtk3_req_version)
 gtk4_req = '>= @0@'.format(gtk4_req_version)
 
-appstream_dep = dependency('appstream-glib')
 gcr_dep = dependency('gcr-4', version: gcr_req)
 gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0', version: gdk_pixbuf_req)
