@@ -44,6 +44,15 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2023-03-24" version="44.0">
+      <description>
+        <p>First release for GNOME 44. Changes:</p>
+        <ul>
+          <li>gcr 4 is now required</li>
+          <li>Port to gnome 44</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2023-03-20" version="43.2">
       <description>
         <p>This is a maintenance release. Changes:</p>

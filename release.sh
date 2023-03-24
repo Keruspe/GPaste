@@ -8,6 +8,7 @@ run_ninja() {
 
 main() {
     local version="${1}"
+    appstreamcli validate data/appstream/*.xml.in || exit 1
     run_ninja
     run_ninja GPaste-pot
     run_ninja GPaste-update-po
