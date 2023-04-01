@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-03-24 23:43+0100\n"
-"PO-Revision-Date: 2023-02-27 16:37+0000\n"
-"Last-Translator: Gankov Andrey <gav@qsolution.ru>\n"
+"PO-Revision-Date: 2023-04-02 13:40+0000\n"
+"Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
 ">\n"
 "Language: ru\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.16-dev\n"
+"X-Generator: Weblate 4.17-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -61,18 +61,16 @@ msgid "The settings UI"
 msgstr "Настройки интерфейса"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
-#, fuzzy
 msgid "First release for GNOME 44. Changes:"
-msgstr "Первый выпуск для GNOME 43. Изменения:"
+msgstr "Первый выпуск для GNOME 44. Изменения:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "gcr 4 is now required"
-msgstr ""
+msgstr "теперь требуется gcr 4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
-#, fuzzy
 msgid "Port to gnome 44"
-msgstr "переход на gnome-shell 41"
+msgstr "Портирован на gnome 44"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
@@ -116,7 +114,7 @@ msgstr "Это обслуживающий выпуск. Изменения:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:134
 msgid "Avoid crash under heavy memory load"
-msgstr ""
+msgstr "Предотвращение сбоев при большой нагрузке на память"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
