@@ -349,7 +349,13 @@ add_item (Data *data)
         GPasteSpecialValue *v = d->data;
 
         if (item)
+        {
+            guint64 old_size = g_paste_item_get_size (item);
             g_paste_item_add_special_value (item, v);
+            guint64 size = g_paste_item_get_size(item);
+            g_return_if_fail (old_size <= size);
+            data->mem_size += (size - old_size);
+        }
 
         g_free (v->data);
         g_free (v);
