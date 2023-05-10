@@ -333,7 +333,6 @@ add_item (Data *data)
             data->uuid = g_uuid_string_random ();
 
         g_paste_item_set_uuid (item, data->uuid);
-        data->mem_size += g_paste_item_get_size (item);
         data->history = g_list_append (data->history, item);
         ++data->current_size;;
     }
@@ -348,6 +347,10 @@ add_item (Data *data)
         g_free (v->data);
         g_free (v);
     }
+
+    if (item)
+        data->mem_size += g_paste_item_get_size (item);
+
     g_clear_pointer(&data->special_values, g_slist_free);
 }
 
