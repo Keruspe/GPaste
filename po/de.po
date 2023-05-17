@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-03-24 23:43+0100\n"
-"PO-Revision-Date: 2023-04-25 17:48+0000\n"
-"Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
+"PO-Revision-Date: 2023-05-18 16:48+0000\n"
+"Last-Translator: Alex <alexander.simm@posteo.de>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/>"
 "\n"
 "Language: de\n"
@@ -114,7 +114,7 @@ msgstr "Dies ist eine Wartungsfreigabe. Änderungen:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:134
 msgid "Avoid crash under heavy memory load"
-msgstr ""
+msgstr "Absturz durch hohen Speicherverbrauch verhindern"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
@@ -357,7 +357,7 @@ msgstr "Aktualisierung auf Gnome-Shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
-msgstr ""
+msgstr "@GETTEXT_PACKAGE@"
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:263
