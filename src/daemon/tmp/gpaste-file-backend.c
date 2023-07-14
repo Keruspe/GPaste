@@ -353,7 +353,7 @@ add_item (Data *data)
         g_free (v->data);
         g_free (v);
     }
-    
+
     if (item)
         data->mem_size += g_paste_item_get_size (item);
 

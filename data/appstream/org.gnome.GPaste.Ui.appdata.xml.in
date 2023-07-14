@@ -44,12 +44,28 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2023-07-14" version="44.1">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix a bug leading to history with only one item</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2023-03-24" version="44.0">
       <description>
         <p>First release for GNOME 44. Changes:</p>
         <ul>
           <li>gcr 4 is now required</li>
           <li>Port to gnome 44</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2023-07-14" version="43.3">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix a bug leading to history with only one item</li>
         </ul>
       </description>
     </release>
@@ -76,6 +92,14 @@
           <li>Port to GNOME 43</li>
           <li>Internal preparation for gtk4 port</li>
           <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2023-07-14" version="42.5">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix a bug leading to history with only one item</li>
         </ul>
       </description>
     </release>
@@ -124,6 +148,14 @@
           <li>Autotools are no longer supported</li>
           <li>Extension updated for gnome-shell 42</li>
           <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2023-07-14" version="3.42.10">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix a bug leading to history with only one item</li>
         </ul>
       </description>
     </release>
