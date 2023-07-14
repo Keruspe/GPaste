@@ -1,3 +1,8 @@
+NEW in 3.42.10 (14/07/2023)
+=============
+
+- Fix a bug leading to history with only one item
+
 NEW in 3.42.9 (20/03/2023)
 =============
 
