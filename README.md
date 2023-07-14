@@ -42,6 +42,6 @@ Steps to install it after cloning:
 
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 42 is: [GPaste 42.4](https://www.imagination-land.org/posts/2023-03-20-gpaste-42.4-released.html).
+Latest release for GNOME 42 is: [GPaste 42.5](https://www.imagination-land.org/posts/2023-07-14-gpaste-42.5-released.html).
 
-Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-42.4.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-42.5.tar.xz>
