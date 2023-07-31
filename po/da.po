@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-07-14 17:35+0200\n"
-"PO-Revision-Date: 2023-06-22 19:20+0000\n"
+"PO-Revision-Date: 2023-08-02 07:04+0000\n"
 "Last-Translator: Henning Andersen <henning.andersen@gmail.com>\n"
-"Language-Team: Danish <https://hosted.weblate.org/projects/gpaste/gpaste/da/"
-">\n"
+"Language-Team: Danish <https://hosted.weblate.org/projects/gpaste/gpaste/da/>"
+"\n"
 "Language: da\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.18.1\n"
+"X-Generator: Weblate 5.0-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -107,7 +107,7 @@ msgstr "Dette er en vedligeholdelsesversion. Ændringer:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:158
 msgid "Fix a bug leading to history with only one item"
-msgstr ""
+msgstr "Ret en fejl der resulterede i historik med kun et element"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
 msgid "First release for GNOME 44. Changes:"
@@ -439,7 +439,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Opdager og erstatter vi voksende linjer i historikken?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
 msgid ""
@@ -447,44 +447,49 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"Som standard, vælges \"Her er\", vil \"Her er et eksempel\" oprette to "
+"elementer i historikken. Med denne funktion slået til, bliver den første "
+"erstattet med den anden."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
 msgid "The name of the current history"
-msgstr ""
+msgstr "Navnet på den nuværende historik"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
 msgid "The default name is \"history\""
-msgstr ""
+msgstr "Standardnavnet er \"Historik\""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
 msgid "Do we save the images copied to history, or only text?"
-msgstr ""
+msgstr "Gemmes billeder der kopieres til historikken, eller kun tekst?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
 msgid "By default, we're saving only text"
-msgstr ""
+msgstr "Som standard gemmer vi kun tekst"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
 msgid "Do we close the UI after selecting an item?"
-msgstr ""
+msgstr "Skal vinduet lukke efter et element er valgt?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
 msgid "By default, we close it"
-msgstr ""
+msgstr "Som standard lukker vi det"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
 msgid "The keyboard shortcut to launch the graphical interface"
-msgstr ""
+msgstr "Tastaturgenvej til at starte det grafiske interface"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Som standard gør ctrl + alt + g det (\"<Ctrl><Alt>G\"). En tom streng her, "
+"slår denne funktion fra."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr ""
+msgstr "Tastaturgenvej til at markere det aktive element som et kodeord"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
 msgid ""
@@ -492,98 +497,109 @@ msgid ""
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
+"Som standard markerer ctrl + alt + s det aktive element som værende et "
+"kodeord (\"<Ctrl><Alt>S\"). En tom streng her, slår denne funktion fra."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:202
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:149
 msgid "Max displayed history size"
-msgstr ""
+msgstr "Maks. størrelse på historik"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
 msgid "Maximum number of items displayed in the history"
-msgstr ""
+msgstr "Maks. antal elementer vist i historikken"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:209
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
 msgid "Max history size"
-msgstr ""
+msgstr "Maks. historik størrelse"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
 msgid "Maximum number of items in history"
-msgstr ""
+msgstr "Maks. antal elemter i historikken"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:216
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
 msgid "Max memory usage (MB)"
-msgstr ""
+msgstr "Maks. hukommelsesforbrug (MB)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
 msgid "Maximum amount of memory used to store contents"
-msgstr ""
+msgstr "Maks. hukommelsesforbrug til at gemme indhold"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Max text item size"
-msgstr ""
+msgstr "Maks. størrelse på tekst element"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Maks. størrelse på et tekst element. Alt udover denne grænse bliver "
+"ignoreret."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
 msgid "Min text item size"
-msgstr ""
+msgstr "Min. størrelse på tekst element"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Min. størrelse på tekst element. Alt udover denne grænse bliver ignoreret."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
 msgid "The keyboard shortcut to delete the first element in history"
-msgstr ""
+msgstr "Tastaturgenvej til at slette første element i historik"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Som standard gør ctrl + alt + v det (\"<Ctrl><Alt>V\"). En tom streng her, "
+"slår denne funktion fra."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
 msgid "Does the primary selection affects history?"
-msgstr ""
+msgstr "Påvirker det primære valg historikken?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr ""
+msgstr "Som standard er det kun Udklipsholder (Ctrl+C) der påvirker historik."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
 msgstr ""
+"Gemmer vi alle versioner af markeret Rich Text (f.eks. HTML) eller kun den "
+"almindelige tekst version?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, we're saving all"
-msgstr ""
+msgstr "Som standard gemmer vi alle"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
 msgid "Do we save the history from one session to another?"
-msgstr ""
+msgstr "Gemmer vi historikken fra en session til en anden?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 msgid "By default, we're saving it"
-msgstr ""
+msgstr "Som standard gemmer vi den"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "The keyboard shortcut to display the menu"
-msgstr ""
+msgstr "Tastaturgenvej til at vise menu"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
 msgstr ""
+"Som standard viser ctrl + alt + h menuen (\"<Ctrl><Alt>H\"). En tom streng "
+"her, slår denne funktion fra."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
