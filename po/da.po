@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-07-14 17:35+0200\n"
-"PO-Revision-Date: 2023-08-02 07:04+0000\n"
+"PO-Revision-Date: 2023-08-09 07:01+0000\n"
 "Last-Translator: Henning Andersen <henning.andersen@gmail.com>\n"
 "Language-Team: Danish <https://hosted.weblate.org/projects/gpaste/gpaste/da/>"
 "\n"
@@ -563,7 +563,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
 msgid "Does the primary selection affects history?"
-msgstr "Påvirker det primære valg historikken?"
+msgstr "Påvirker det primært markerede historikken?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
 msgid "By default, only clipboard (ctrl+c) affects history."
@@ -604,6 +604,7 @@ msgstr ""
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
+"Tastaturgenvej til at synkronisere udklipsholderen til det primært markerede"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
 msgid ""
