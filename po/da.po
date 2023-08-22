@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-07-14 17:35+0200\n"
-"PO-Revision-Date: 2023-08-09 07:01+0000\n"
+"PO-Revision-Date: 2023-08-23 01:07+0000\n"
 "Last-Translator: Henning Andersen <henning.andersen@gmail.com>\n"
 "Language-Team: Danish <https://hosted.weblate.org/projects/gpaste/gpaste/da/>"
 "\n"
@@ -611,20 +611,24 @@ msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Som standard synkroniseres de ved at trykke Ctrl + Alt + O (\"<Ctrl><Alt>O\")"
+". En tom stren her, slår denne funktion fra."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
-msgstr ""
+msgstr "Tastaturgenvej til at synkronisere det markerede til udklipsholderen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Som standard synkroniseres de med Ctrl + Alt + P (\"<Ctrl><Alt>P\"). En tom "
+"streng her, slår denne funktion fra."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid "Are the primary selection and the clipboard synchronized?"
-msgstr ""
+msgstr "Er det markerede og udklipsholderen synkroniseret?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
