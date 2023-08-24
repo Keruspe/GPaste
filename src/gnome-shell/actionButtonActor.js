@@ -1,15 +1,15 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const _ = ExtensionUtils.gettext;
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const { GObject, St } = imports.gi;
+import GObject from 'gi://GObject';
+import St from 'gi://St';
 
-var GPasteActionButtonActor = GObject.registerClass(
+export const GPasteActionButtonActor = GObject.registerClass(
 class GPasteActionButtonActor extends St.BoxLayout {
     _init(iconName, label) {
         super._init({ style: 'spacing: 10px;' });

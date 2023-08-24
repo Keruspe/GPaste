@@ -1,35 +1,38 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const PopupMenu = imports.ui.popupMenu;
+import { Ornament, PopupBaseMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-const { Clutter, GObject, St } = imports.gi;
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-
-const PageItem = Me.imports.pageItem;
+import { GPastePadding } from './padding.js';
+import { GPastePageItem } from './pageItem.js';
 
 const MAX_PAGES = 20;
 
-var GPastePageSwitcher = GObject.registerClass({
+export const GPastePageSwitcher = GObject.registerClass({
     Signals: {
         'switch': { param_types: [GObject.TYPE_UINT64] },
     },
-}, class GPastePageSwitcher extends PopupMenu.PopupBaseMenuItem {
+}, class GPastePageSwitcher extends PopupBaseMenuItem {
     _init() {
         super._init({
             style_class: 'calendar',
             reactive: false,
             can_focus: false
         });
-        this._ornamentLabel.set_x_expand(true);
-        // Use to center everything because of ornamentLabel
-        this._dummyLabel = new St.Label({ text: '', x_expand: true });
-        this.add_child(this._dummyLabel);
+
+	this.setOrnament(Ornament.NONE);
+	// Add padding at the beginning and end so that our contents is centered
+        this.add_child(new GPastePadding());
+	// We want to keep a reference to the trailing padding to insert elements before it.
+	this._padding = new GPastePadding();
+	this.add_child(this._padding);
 
         this._active = -1;
         this._maxDisplayedSize = -1;
@@ -63,11 +66,12 @@ var GPastePageSwitcher = GObject.registerClass({
     }
 
     _addPage() {
-        let sw = new PageItem.GPastePageItem(this._pages.length + 1);
+        let sw = new GPastePageItem(this._pages.length + 1);
         this._pages.push(sw);
-        this.remove_child(this._dummyLabel);
+	// We pop the trailing padding, and put it back after the page we add
+	this.remove_child(this._padding);
         this.add_child(sw);
-        this.add_child(this._dummyLabel);
+	this.add_child(this._padding);
 
         sw.connect('switch', (sw, page) => {
             this._switch(page);

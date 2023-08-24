@@ -1,18 +1,16 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const _ = ExtensionUtils.gettext;
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { PopupSwitchMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-const { GObject } = imports.gi;
+import GObject from 'gi://GObject';
 
-const PopupMenu = imports.ui.popupMenu;
-
-var GPasteStateSwitch = GObject.registerClass(
-class GPasteStateSwitch extends PopupMenu.PopupSwitchMenuItem {
+export const GPasteStateSwitch = GObject.registerClass(
+class GPasteStateSwitch extends PopupSwitchMenuItem {
     _init(client) {
         super._init(_("Track changes"), client.is_active());
 

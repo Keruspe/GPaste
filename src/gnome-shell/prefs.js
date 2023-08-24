@@ -1,23 +1,15 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-imports.gi.versions.GPasteGtk = '4';
+import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-const ExtensionUtils = imports.misc.extensionUtils;
+import GPasteGtk from 'gi://GPasteGtk?version=4';
 
-const { GPasteGtk } = imports.gi;
-
-/** */
-function init() {
-    ExtensionUtils.initTranslations();
-}
-
-/**
- * @returns {Gtk.Widget} - the prefs widget
- */
-function buildPrefsWidget() {
-    return new GPasteGtk.PreferencesWidget();
+export default class GPastePreferences extends ExtensionPreferences {
+    fillPreferencesWindow(window) {
+        window.add(new GPasteGtk.PreferencesWidget());
+    }
 }

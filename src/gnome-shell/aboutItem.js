@@ -1,18 +1,17 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const _ = ExtensionUtils.gettext;
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const { GObject, St } = imports.gi;
+import GObject from 'gi://GObject';
+import St from 'gi://St';
 
-const ActionButtonActor = Me.imports.actionButtonActor;
+import { GPasteActionButtonActor } from './actionButtonActor.js';
 
-var GPasteAboutItem = GObject.registerClass(
+export const GPasteAboutItem = GObject.registerClass(
 class GPasteAboutItem extends St.Button {
     _init(client, menu) {
         super._init({
@@ -22,7 +21,7 @@ class GPasteAboutItem extends St.Button {
             can_focus: true,
             track_hover: true,
             style_class: 'button',
-            child: new ActionButtonActor.GPasteActionButtonActor('dialog-information-symbolic', _("About"))
+            child: new GPasteActionButtonActor('dialog-information-symbolic', _("About"))
         });
 
         this.connect('clicked', function() {

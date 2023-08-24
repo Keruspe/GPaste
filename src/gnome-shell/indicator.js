@@ -1,34 +1,35 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const _ = ExtensionUtils.gettext;
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Button } from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import { PopupSeparatorMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-const PanelMenu = imports.ui.panelMenu;
-const PopupMenu = imports.ui.popupMenu;
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
+import GLib from 'gi://GLib';
+import GPaste from 'gi://GPaste?version=2';
+import St from 'gi://St';
 
-const { Clutter, GObject, GLib, GPaste, St } = imports.gi;
+import { GPasteActions } from './actions.js';
+import { GPasteDummyHistoryItem } from './dummyHistoryItem.js';
+import { GPasteEmptyHistoryItem } from './emptyHistoryItem.js';
+import { GPasteItem } from './item.js';
+import { GPastePadding } from './padding.js';
+import { GPastePageSwitcher } from './pageSwitcher.js';
+import { GPasteSearchItem } from './searchItem.js';
+import { GPasteStateSwitch } from './stateSwitch.js';
+import { GPasteStatusIcon } from './statusIcon.js';
 
-const AboutItem = Me.imports.aboutItem;
-const DummyHistoryItem = Me.imports.dummyHistoryItem;
-const EmptyHistoryItem = Me.imports.emptyHistoryItem;
-const Item = Me.imports.item;
-const PageSwitcher = Me.imports.pageSwitcher;
-const SearchItem = Me.imports.searchItem;
-const StateSwitch = Me.imports.stateSwitch;
-const StatusIcon = Me.imports.statusIcon;
-const UiItem = Me.imports.uiItem;
-
-var GPasteIndicator = GObject.registerClass(
-class GPasteIndicator extends PanelMenu.Button {
+export const GPasteIndicator = GObject.registerClass(
+class GPasteIndicator extends Button {
     _init() {
         super._init(0.0, "GPaste");
 
-        this._statusIcon = new StatusIcon.GPasteStatusIcon();
+        this._statusIcon = new GPasteStatusIcon();
         this.add_child(this._statusIcon);
 
         this._settings = new GPaste.Settings();
@@ -41,9 +42,9 @@ class GPasteIndicator extends PanelMenu.Button {
 
         this._searchResults = [];
 
-        this._dummyHistoryItem = new DummyHistoryItem.GPasteDummyHistoryItem();
+        this._dummyHistoryItem = new GPasteDummyHistoryItem();
 
-        this._searchItem = new SearchItem.GPasteSearchItem();
+        this._searchItem = new GPasteSearchItem();
         this._searchItem.connect('text-changed', this._onNewSearch.bind(this));
 
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', this._resetElementSize.bind(this));
@@ -52,36 +53,24 @@ class GPasteIndicator extends PanelMenu.Button {
         this.menu.connect('open-state-changed', this._onOpenStateChanged.bind(this));
         this.menu.connect('key-press-event', this._onMenuKeyPress.bind(this));
 
-        this._pageSwitcher = new PageSwitcher.GPastePageSwitcher();
+        this._pageSwitcher = new GPastePageSwitcher();
         this._pageSwitcher.connect('switch', (sw, page) => {
             this._updatePage(page);
         });
 
-        this._actions = new PopupMenu.PopupBaseMenuItem({
-            reactive: false,
-            can_focus: false
-        });
-        this._actions._ornamentLabel.set_x_expand(true);
-
         this._addToPostHeader(this._dummyHistoryItem);
-        this._addToPreFooter(new PopupMenu.PopupSeparatorMenuItem());
-        this._addToFooter(this._actions);
+        this._addToPreFooter(new PopupSeparatorMenuItem());
 
         GPaste.Client.new((obj, result) => {
             this._client = GPaste.Client.new_finish(result);
-
-            this._uiItem = new UiItem.GPasteUiItem(this.menu);
-            this._emptyHistoryItem = new EmptyHistoryItem.GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
-            this._aboutItem = new AboutItem.GPasteAboutItem(this._client, this.menu);
-            this._switch = new StateSwitch.GPasteStateSwitch(this._client);
+            this._switch = new GPasteStateSwitch(this._client);
 
             this._addToHeader(this._switch);
             this._addToHeader(this._searchItem);
             this._addToHeader(this._pageSwitcher);
 
-            this._actions.add_child(this._uiItem);
-            this._actions.add_child(this._emptyHistoryItem);
-            this._actions.add_child(this._aboutItem);
+            this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
+	    this._addToFooter(new GPasteActions(this._client, this.menu, this._emptyHistoryItem));
 
             this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', this._resetMaxDisplayedSize.bind(this));
             this._resetMaxDisplayedSize();
@@ -212,7 +201,7 @@ class GPasteIndicator extends PanelMenu.Button {
 
                     for (let index = oldSize; index < newSize; ++index) {
                         let realIndex = index + offset;
-                        let item = new Item.GPasteItem(this._client, elementSize, (realIndex < realSize) ? realIndex : -1);
+                        let item = new GPasteItem(this._client, elementSize, (realIndex < realSize) ? realIndex : -1);
                         this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
                         this._history[index] = item;
                     }

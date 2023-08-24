@@ -1,12 +1,14 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const { Clutter, GObject, St } = imports.gi;
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
+import St from 'gi://St';
 
-var GPasteDeleteButton = GObject.registerClass(
+export const GPasteDeleteButton = GObject.registerClass(
 class GPasteDeleteButton extends St.Button {
     _init(client, uuid) {
         super._init();

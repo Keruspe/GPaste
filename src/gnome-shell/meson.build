@@ -1,6 +1,7 @@
 shell_extension_files = [
   'aboutItem.js',
   'actionButtonActor.js',
+  'actions.js',
   'checkerBypass.js',
   'deleteButton.js',
   'deleteItemPart.js',
@@ -9,6 +10,7 @@ shell_extension_files = [
   'extension.js',
   'indicator.js',
   'item.js',
+  'padding.js',
   'pageItem.js',
   'pageSwitcher.js',
   'prefs.js',

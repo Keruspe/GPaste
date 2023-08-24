@@ -1,20 +1,21 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const PopupMenu = imports.ui.popupMenu;
+import { PopupMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-const { Clutter, GObject, GPaste, Pango, St } = imports.gi;
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
+import GPaste from 'gi://GPaste?version=2';
+import Pango from 'gi://Pango';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+import { GPasteDeleteItemPart } from './deleteItemPart.js';
 
-const DeleteItemPart = Me.imports.deleteItemPart;
-
-var GPasteItem = GObject.registerClass(
-class GPasteItem extends PopupMenu.PopupMenuItem {
+export const GPasteItem = GObject.registerClass(
+class GPasteItem extends PopupMenuItem {
     _init(client, size, index) {
         super._init("");
         this.label.set_x_expand(true);
@@ -34,7 +35,7 @@ class GPasteItem extends PopupMenu.PopupMenuItem {
         this.connect('activate', this._onActivate.bind(this));
         this.connect('key-press-event', this._onKeyPressed.bind(this));
 
-        this._deleteItem = new DeleteItemPart.GPasteDeleteItemPart(client, this._uuid);
+        this._deleteItem = new GPasteDeleteItemPart(client, this._uuid);
         this.add_child(this._deleteItem);
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;

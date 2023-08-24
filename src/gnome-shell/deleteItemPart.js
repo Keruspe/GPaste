@@ -1,21 +1,19 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const { GObject, St } = imports.gi;
+import GObject from 'gi://GObject';
+import St from 'gi://St';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+import { GPasteDeleteButton } from './deleteButton.js';
 
-const DeleteButton = Me.imports.deleteButton;
-
-var GPasteDeleteItemPart = GObject.registerClass(
+export const GPasteDeleteItemPart = GObject.registerClass(
 class GPasteDeleteItemPart extends St.Bin {
     _init(client, uuid) {
         super._init({ x_align: St.Align.END });
-        this._deleteButton = new DeleteButton.GPasteDeleteButton(client, uuid);
+        this._deleteButton = new GPasteDeleteButton(client, uuid);
         this.child = this._deleteButton;
     }
 

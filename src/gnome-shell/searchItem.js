@@ -1,18 +1,19 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const PopupMenu = imports.ui.popupMenu;
+import { PopupBaseMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-const { GObject, St } = imports.gi;
+import GObject from 'gi://GObject';
+import St from 'gi://St';
 
-var GPasteSearchItem = GObject.registerClass({
+export const GPasteSearchItem = GObject.registerClass({
     Signals: {
         'text-changed': { param_types: [] },
     },
-}, class GPasteSearchItem extends PopupMenu.PopupBaseMenuItem {
+}, class GPasteSearchItem extends PopupBaseMenuItem {
     _init() {
         super._init({
             activate: false,

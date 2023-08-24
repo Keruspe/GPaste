@@ -1,7 +1,6 @@
 {
-    "shell-version": [
-        "44.0"
-    ],
+    "shell-version": [ "45" ],
+    "session-modes": [ "user" ],
     "uuid": "GPaste@gnome-shell-extensions.gnome.org",
     "name": "GPaste",
     "version": "@version@",

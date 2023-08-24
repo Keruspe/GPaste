@@ -1,14 +1,13 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2019, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const PopupMenu = imports.ui.popupMenu;
+import GObject from 'gi://GObject';
+import St from 'gi://St';
 
-const { GObject, St } = imports.gi;
-
-var GPasteStatusIcon = GObject.registerClass(
+export const GPasteStatusIcon = GObject.registerClass(
 class GPasteStatusIcon extends St.BoxLayout {
     _init() {
         super._init({ style_class: 'panel-status-menu-box' });

@@ -1,18 +1,18 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const _ = ExtensionUtils.gettext;
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const { GObject, GPaste, St } = imports.gi;
+import GObject from 'gi://GObject';
+import GPaste from 'gi://GPaste?version=2';
+import St from 'gi://St';
 
-const ActionButtonActor = Me.imports.actionButtonActor;
+import { GPasteActionButtonActor } from './actionButtonActor.js';
 
-var GPasteUiItem = GObject.registerClass(
+export const GPasteUiItem = GObject.registerClass(
 class GPasteUiItem extends St.Button {
     _init(menu) {
         super._init({
@@ -22,7 +22,7 @@ class GPasteUiItem extends St.Button {
             can_focus: true,
             track_hover: true,
             style_class: 'button',
-            child: new ActionButtonActor.GPasteActionButtonActor('go-home-symbolic', _("Graphical tool"))
+            child: new GPasteActionButtonActor('go-home-symbolic', _("Graphical tool"))
         });
 
         this.connect('clicked', function() {
