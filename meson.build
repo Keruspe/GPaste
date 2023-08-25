@@ -69,7 +69,6 @@ libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
 
 if get_option('gnome-shell')
   gjs_dep = dependency('gjs-1.0', version: gjs_req)
-  mutter_clutter_dep = dependency('mutter-clutter-12')
   pango_dep = dependency('pango')
 endif
 
