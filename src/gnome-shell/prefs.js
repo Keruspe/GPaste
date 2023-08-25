@@ -9,7 +9,7 @@ import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/
 import GPasteGtk from 'gi://GPasteGtk?version=4';
 
 export default class GPastePreferences extends ExtensionPreferences {
-    fillPreferencesWindow(window) {
-        window.add(new GPasteGtk.PreferencesWidget());
+    getPreferencesWidget() {
+        return new GPasteGtk.PreferencesWidget();
     }
 }
