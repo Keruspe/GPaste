@@ -63,14 +63,13 @@ class GPasteIndicator extends Button {
 
         GPaste.Client.new((obj, result) => {
             this._client = GPaste.Client.new_finish(result);
+            this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
             this._switch = new GPasteStateSwitch(this._client);
 
             this._addToHeader(this._switch);
             this._addToHeader(this._searchItem);
             this._addToHeader(this._pageSwitcher);
-
-            this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
-	    this._addToFooter(new GPasteActions(this._client, this.menu, this._emptyHistoryItem));
+            this._addToFooter(new GPasteActions(this._client, this.menu, this._emptyHistoryItem));
 
             this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', this._resetMaxDisplayedSize.bind(this));
             this._resetMaxDisplayedSize();

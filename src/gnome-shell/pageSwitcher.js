@@ -27,12 +27,12 @@ export const GPastePageSwitcher = GObject.registerClass({
             can_focus: false
         });
 
-	this.setOrnament(Ornament.NONE);
-	// Add padding at the beginning and end so that our contents is centered
+        this.setOrnament(Ornament.NONE);
+        // Add padding at the beginning and end so that our contents is centered
         this.add_child(new GPastePadding());
-	// We want to keep a reference to the trailing padding to insert elements before it.
-	this._padding = new GPastePadding();
-	this.add_child(this._padding);
+        // We want to keep a reference to the trailing padding to insert elements before it.
+        this._padding = new GPastePadding();
+        this.add_child(this._padding);
 
         this._active = -1;
         this._maxDisplayedSize = -1;
@@ -68,10 +68,10 @@ export const GPastePageSwitcher = GObject.registerClass({
     _addPage() {
         let sw = new GPastePageItem(this._pages.length + 1);
         this._pages.push(sw);
-	// We pop the trailing padding, and put it back after the page we add
-	this.remove_child(this._padding);
+    // We pop the trailing padding, and put it back after the page we add
+    this.remove_child(this._padding);
         this.add_child(sw);
-	this.add_child(this._padding);
+    this.add_child(this._padding);
 
         sw.connect('switch', (sw, page) => {
             this._switch(page);

@@ -20,8 +20,8 @@ class GPasteActions extends PopupBaseMenuItem {
             can_focus: false
         });
 
-	this.setOrnament(Ornament.NONE);
-	// Add padding at the beginning and end so that our contents is centered
+        this.setOrnament(Ornament.NONE);
+        // Add padding at the beginning and end so that our contents is centered
         this.add_child(new GPastePadding());
         this.add_child(new GPasteUiItem(menu));
         this.add_child(emptyHistoryItem);
