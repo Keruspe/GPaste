@@ -4,6 +4,8 @@
  * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+import './dependencies.js'
+
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { Button } from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { PopupSeparatorMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -11,7 +13,7 @@ import { PopupSeparatorMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
-import GPaste from 'gi://GPaste?version=2';
+import GPaste from 'gi://GPaste';
 import St from 'gi://St';
 
 import { GPasteActions } from './actions.js';

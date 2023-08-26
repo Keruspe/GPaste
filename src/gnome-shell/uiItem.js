@@ -7,7 +7,7 @@
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import GObject from 'gi://GObject';
-import GPaste from 'gi://GPaste?version=2';
+import GPaste from 'gi://GPaste';
 import St from 'gi://St';
 
 import { GPasteActionButtonActor } from './actionButtonActor.js';
