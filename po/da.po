@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-07-14 17:35+0200\n"
-"PO-Revision-Date: 2023-08-23 01:07+0000\n"
+"PO-Revision-Date: 2023-08-30 11:56+0000\n"
 "Last-Translator: Henning Andersen <henning.andersen@gmail.com>\n"
 "Language-Team: Danish <https://hosted.weblate.org/projects/gpaste/gpaste/da/>"
 "\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.0-dev\n"
+"X-Generator: Weblate 5.0.1-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -633,6 +633,7 @@ msgstr "Er det markerede og udklipsholderen synkroniseret?"
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
+"Som standard er det markerede og udklipsholderen uafhængige af hinanden."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Do we track the clipboard changes?"
