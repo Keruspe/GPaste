@@ -31,6 +31,7 @@ G_BEGIN_DECLS
 #define G_PASTE_MAX_MEMORY_USAGE_SETTING           "max-memory-usage"
 #define G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING         "max-text-item-size"
 #define G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING         "min-text-item-size"
+#define G_PASTE_OPEN_CENTERED_SETTING              "open-centered"
 #define G_PASTE_POP_SETTING                        "pop"
 #define G_PASTE_PRIMARY_TO_HISTORY_SETTING         "primary-to-history"
 #define G_PASTE_RICH_TEXT_SUPPORT_SETTING          "rich-text-support"

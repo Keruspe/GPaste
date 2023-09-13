@@ -270,19 +270,22 @@ static void
 g_paste_ui_window_init (GPasteUiWindow *self)
 {
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-    GtkWindow *win = GTK_WINDOW (self);
     GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+
+    priv->settings = g_paste_settings_new();
 
     gtk_widget_set_margin_start (vbox, 5);
     gtk_widget_set_margin_end (vbox, 5);
     gtk_widget_set_margin_bottom (vbox, 5);
+    gtk_window_set_position (GTK_WINDOW (self),
+                             g_paste_settings_get_open_centered (priv->settings) ? GTK_WIN_POS_CENTER : GTK_WIN_POS_MOUSE);
 
     GtkWidget *search_bar = g_paste_ui_search_bar_new ();
     GtkContainer *box = GTK_CONTAINER (vbox);
 
     priv->search_bar = GTK_SEARCH_BAR (search_bar);
 
-    gtk_container_add (GTK_CONTAINER (win), vbox);
+    gtk_container_add (GTK_CONTAINER (self), vbox);
     gtk_box_pack_start (GTK_BOX (box), search_bar, FALSE, FALSE, 0);
 
     GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar));
@@ -311,7 +314,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         gtk_window_close (win); /* will exit the application */
     }
 
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GPasteSettings *settings = priv->settings;
     GtkWidget *header = g_paste_ui_header_new (win, client);
     GtkWidget *panel = g_paste_ui_panel_new (client, settings, win, priv->search_entry);
     GtkWidget *history = g_paste_ui_history_new (client, settings, G_PASTE_UI_PANEL (panel), win);
@@ -319,7 +322,6 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     priv->history = G_PASTE_UI_HISTORY (history);
     priv->client = g_object_ref (client);
-    priv->settings = g_paste_settings_new();
 
     gtk_window_set_titlebar (win, header);
     gtk_application_window_set_help_overlay (GTK_APPLICATION_WINDOW (user_data), GTK_SHORTCUTS_WINDOW (g_paste_ui_shortcuts_window_new (settings)));
@@ -361,11 +363,10 @@ g_paste_ui_window_new (GtkApplication *app)
     g_return_val_if_fail (GTK_IS_APPLICATION (app), NULL);
 
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_WINDOW,
-                                      "application",     app,
-                                      "type",            GTK_WINDOW_TOPLEVEL,
-                                      "window-position", GTK_WIN_POS_MOUSE,
-                                      "resizable",       FALSE,
-                                      "icon-name",       G_PASTE_ICON_NAME,
+                                      "application", app,
+                                      "type",        GTK_WINDOW_TOPLEVEL,
+                                      "resizable",   FALSE,
+                                      "icon-name",   G_PASTE_ICON_NAME,
                                       NULL);
 
     g_paste_client_new (on_client_ready, self);

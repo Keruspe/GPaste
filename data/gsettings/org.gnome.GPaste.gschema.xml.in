@@ -43,6 +43,14 @@
       </description>
     </key>
 
+    <key name="open-centered" type="b">
+      <default>false</default>
+      <summary>Do we open the UI window centered?</summary>
+      <description>
+        By default, we open it where the mouse cursor is
+      </description>
+    </key>
+
     <key name="launch-ui" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;G'</default>
       <summary>The keyboard shortcut to launch the graphical interface</summary>

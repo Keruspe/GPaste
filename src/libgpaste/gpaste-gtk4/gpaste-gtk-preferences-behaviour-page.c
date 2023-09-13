@@ -18,6 +18,7 @@ typedef struct
 
     GtkSwitch                   *track_changes_switch;
     GtkSwitch                   *close_on_select_switch;
+    GtkSwitch                   *open_centered_switch;
     GtkSwitch                   *save_history_switch;
 
     GtkSwitch                   *extension_enabled_switch;
@@ -42,6 +43,8 @@ g_paste_gtk_preferences_behaviour_page_setting_changed (GPasteGtkPreferencesPage
 
     if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
         gtk_switch_set_active (priv->close_on_select_switch, g_paste_settings_get_close_on_select (settings));
+    else if (g_paste_str_equal (key, G_PASTE_OPEN_CENTERED_SETTING))
+        gtk_switch_set_active (priv->open_centered_switch, g_paste_settings_get_open_centered (settings));
     else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
         gtk_switch_set_active (priv->growing_lines_switch, g_paste_settings_get_growing_lines (settings));
     else if (g_paste_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
@@ -132,6 +135,12 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager
                                                                                       g_paste_settings_set_close_on_select,
                                                                                       g_paste_settings_reset_close_on_select,
                                                                                       settings);
+    priv->open_centered_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
+                                                                                    _("Open the UI window centered"),
+                                                                                    g_paste_settings_get_open_centered (settings),
+                                                                                    g_paste_settings_set_open_centered,
+                                                                                    g_paste_settings_reset_open_centered,
+                                                                                    settings);
     priv->save_history_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
                                                                                    _("Save history"),
                                                                                    g_paste_settings_get_save_history (settings),

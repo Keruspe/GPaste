@@ -29,6 +29,7 @@ typedef struct
     GSettings *shell_settings;
 
     gboolean   close_on_select;
+    gboolean   open_centered;
     guint64    element_size;
     gboolean   empty_history_confirmation;
     gboolean   growing_lines;
@@ -152,6 +153,29 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
  * Change the "close-on-select" setting
  */
 BOOLEAN_SETTING (close_on_select, CLOSE_ON_SELECT)
+
+/**
+ * g_paste_settings_get_open_centered:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "open-centered" setting
+ *
+ * Returns: the value of the "open-centered" setting
+ */
+/**
+ * g_paste_settings_reset_open_centered:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "open-centered" setting
+ */
+/**
+ * g_paste_settings_set_open_centered:
+ * @self: a #GPasteSettings instance
+ * @value: the new history name
+ *
+ * Change the "open-centered" setting
+ */
+BOOLEAN_SETTING (open_centered, OPEN_CENTERED)
 
 /**
  * g_paste_settings_get_element_size:
@@ -826,6 +850,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
 
     if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
         g_paste_settings_private_set_close_on_select_from_dconf (priv);
+    else if (g_paste_str_equal (key, G_PASTE_OPEN_CENTERED_SETTING))
+        g_paste_settings_private_set_open_centered_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
         g_paste_settings_private_set_element_size_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_EMPTY_HISTORY_CONFIRMATION_SETTING))
@@ -1038,6 +1064,7 @@ g_paste_settings_init (GPasteSettings *self)
                                                    self);
 
     g_paste_settings_private_set_close_on_select_from_dconf (priv);
+    g_paste_settings_private_set_open_centered_from_dconf (priv);
     g_paste_settings_private_set_element_size_from_dconf (priv);
     g_paste_settings_private_set_empty_history_confirmation_from_dconf (priv);
     g_paste_settings_private_set_growing_lines_from_dconf (priv);

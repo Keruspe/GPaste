@@ -23,6 +23,7 @@ typedef struct
     GPasteSettings *settings;
 
     GtkSwitch      *close_on_select_switch;
+    GtkSwitch      *open_centered_switch;
     GtkSwitch      *images_support_switch;
     GtkSwitch      *growing_lines_switch;
     GtkSwitch      *primary_to_history_switch;
@@ -90,6 +91,7 @@ g_paste_gtk_settings_ui_stack_add_panel (GPasteGtkSettingsUiStack *self,
 }
 
 BOOLEAN_CALLBACK (close_on_select)
+BOOLEAN_CALLBACK (open_centered)
 BOOLEAN_CALLBACK (extension_enabled)
 BOOLEAN_CALLBACK (growing_lines)
 BOOLEAN_CALLBACK (images_support)
@@ -118,6 +120,12 @@ g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (GPasteGtkSettingsUiS
                                                                                       close_on_select_callback,
                                                                                       (GPasteGtkResetCallback) g_paste_settings_reset_close_on_select,
                                                                                       settings);
+    priv->open_centered_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
+                                                                                    _("Open UI window centered"),
+                                                                                    g_paste_settings_get_open_centered (settings),
+                                                                                    open_centered_callback,
+                                                                                    (GPasteGtkResetCallback) g_paste_settings_reset_open_centered,
+                                                                                    settings);
 
     if (g_paste_util_has_gnome_shell ())
     {
@@ -329,6 +337,8 @@ g_paste_gtk_settings_ui_stack_settings_changed (GPasteSettings *settings,
 
     if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->close_on_select_switch), g_paste_settings_get_close_on_select (settings));
+    else if (g_paste_str_equal (key, G_PASTE_OPEN_CENTERED_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->open_centered_switch), g_paste_settings_get_open_centered (settings));
     else if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
         gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
