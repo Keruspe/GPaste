@@ -44,6 +44,16 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2023-09-16" version="45.rc">
+      <description>
+        <p>RC release for GNOME 45. Changes:</p>
+        <ul>
+          <li>Port to gnome 45</li>
+          <li>Add setting to open ui window centered</li>
+          <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2023-07-14" version="44.1">
       <description>
         <p>This is a maintenance release. Changes:</p>

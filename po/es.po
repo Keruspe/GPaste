@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-14 17:35+0200\n"
+"POT-Creation-Date: 2023-09-16 22:30+0200\n"
 "PO-Revision-Date: 2021-11-10 16:51+0000\n"
 "Last-Translator: Carlos Sesma <usarralph@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
@@ -61,307 +61,322 @@ msgid "The settings UI"
 msgstr "La interfaz de configuración"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:66
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:74
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:82
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:108
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:116
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:124
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:132
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:156
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:180
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:188
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:196
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:204
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:212
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:230
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:248
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:256
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:264
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:272
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:290
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:298
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:307
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:316
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:325
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:333
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:354
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:362
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:370
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:378
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:386
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:402
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:410
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:418
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:426
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:442
-msgid "This is a maintenance release. Changes:"
-msgstr "Esta es una versión de mantenimiento. Cambios:"
+#, fuzzy
+msgid "RC release for GNOME 45. Changes:"
+msgstr "Primera versión para GNOME 41. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:158
-msgid "Fix a bug leading to history with only one item"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:57
 #, fuzzy
-msgid "First release for GNOME 44. Changes:"
-msgstr "Primera versión para GNOME 41. Cambios:"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
-msgid "gcr 4 is now required"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
-#, fuzzy
-msgid "Port to gnome 44"
+msgid "Port to gnome 45"
 msgstr "Migrado a gnome-shell 41"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:166
-msgid "Avoid crash under heavy memory load"
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
+msgid "Add setting to open ui window centered"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:174
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:250
-#, fuzzy
-msgid "Respect --use-index when displaying history"
-msgstr "Tamaño máximo de los elementos al visualizarlos: "
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
-#, fuzzy
-msgid "First release for GNOME 43. Changes:"
-msgstr "Primera versión para GNOME 41. Cambios:"
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
-msgid "Port to GNOME 43"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:93
-msgid "Internal preparation for gtk4 port"
-msgstr ""
-
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:150
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:53
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
 #, fuzzy
 msgid "Translations updates"
 msgstr "traducciones actualizadas"
 
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:84
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:92
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:126
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:134
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:142
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:166
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:174
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:182
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:190
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:198
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:206
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:214
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:222
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:231
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:240
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:258
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:266
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:274
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:282
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:300
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:308
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:317
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:326
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:335
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:343
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:372
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:380
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:388
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:396
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:412
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:420
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:428
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:436
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:452
+msgid "This is a maintenance release. Changes:"
+msgstr "Esta es una versión de mantenimiento. Cambios:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:78
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
+msgid "Fix a bug leading to history with only one item"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
+#, fuzzy
+msgid "First release for GNOME 44. Changes:"
+msgstr "Primera versión para GNOME 41. Cambios:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+msgid "gcr 4 is now required"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+#, fuzzy
+msgid "Port to gnome 44"
+msgstr "Migrado a gnome-shell 41"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
+msgid "Avoid crash under heavy memory load"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:260
+#, fuzzy
+msgid "Respect --use-index when displaying history"
+msgstr "Tamaño máximo de los elementos al visualizarlos: "
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:100
+#, fuzzy
+msgid "First release for GNOME 43. Changes:"
+msgstr "Primera versión para GNOME 41. Cambios:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
+msgid "Port to GNOME 43"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
+msgid "Internal preparation for gtk4 port"
+msgstr ""
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:268
 msgid "Open GPaste UI where the mouse pointer is"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:134
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
 msgid "Fixes to the new preferences tool"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:135
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:145
 msgid "Style fixes"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:142
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
 #, fuzzy
 msgid "First release for GNOME 42. Changes:"
 msgstr "Primera versión para GNOME 41. Cambios:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:145
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
 msgid "New libgpaste-gtk3 for utils and settings ui"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:156
 msgid "New libgpaste-gtk4 for utils and preferences ui"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:147
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "New gtk4 based gpaste-preferences utility"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:148
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:158
 msgid "Autotools are no longer supported"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
 #, fuzzy
 msgid "Extension updated for gnome-shell 42"
 msgstr "Actualización a gnome-shell 3.34.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:190
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:200
 msgid "fix the storage path for meson builds"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:198
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:208
 msgid "fix some race conditions in history handling"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:206
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:216
 msgid "better fix crash when there is no history yet"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:214
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:224
 msgid "fix crash when there is no history yet"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:215
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:224
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:233
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:242
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:266
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:225
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:234
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:243
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:252
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:276
 #, fuzzy
 msgid "translations update"
 msgstr "traducciones actualizadas"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:223
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:233
 #, fuzzy
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "Actualizaciones superficiales a la extensión para GNOME Shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:232
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:242
 msgid "Fix keybindings for wayland"
 msgstr "Se arregla la captación de los vínculos de teclado para wayland"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:239
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:249
 msgid "First release for GNOME 41. Changes:"
 msgstr "Primera versión para GNOME 41. Cambios:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:241
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:251
 msgid "port to gnome-shell 41"
 msgstr "Migrado a gnome-shell 41"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:274
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:284
 msgid "fix a crash in memory usage checking"
 msgstr "corrige un cierre inesperado durante la comprobación de uso de memoria"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:281
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:291
 msgid "First release for GNOME 40. Changes:"
 msgstr "Primera versión para GNOME 40. Cambios:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:283
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:293
 msgid "port to gnome-shell 40"
 msgstr "Migrado a gnome-shell 40"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:284
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
 msgid "placeholder for gnome-shell prefs"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:292
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:356
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:302
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:366
 msgid "fix X11 keybinder outside of GNOME"
 msgstr "arreglado el bindeo de tecla fuera de GNOME con X11"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:300
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:310
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr "mejorado el reporte de uuids pasados a gpaste-client"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:301
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:311
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
 msgstr ""
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:309
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:319
 msgid "fix the make-password keybinding"
 msgstr "arreglado el enlace de makepassword"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:310
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:319
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:320
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
 msgid "updated translations"
 msgstr "traducciones actualizadas"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:318
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:328
 msgid "gnome-shell extension warning fixes"
 msgstr "arreglos de avisos en la extensión para GNOME Shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:327
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:374
 msgid "gnome-shell extension cosmetic updates"
 msgstr "Actualizaciones superficiales a la extensión para GNOME Shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:335
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:345
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 "Se desactiva la compatibilidad con imágenes de manera predeterminada (puede "
 "reactivarse en la configuración)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:336
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:346
 msgid "Search now includes passwords (using their names)"
 msgstr "La búsqueda ahora incluye contraseñas (utilizando sus nombres)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
 msgid "systemd integration enhancements"
 msgstr "Mejoras en la integración con systemd"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:343
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:353
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "Primera versión para GNOME 3.38. Cambios:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:345
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:355
 msgid "Drop the Tracking DBus signal"
 msgstr "Se desecha la señal Tracking de DBus"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:346
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:356
 msgid "Switch to uuids to identify items"
 msgstr "Se cambia a utilizar UUID para identificar elementos"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:357
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "Se actualiza la interfaz de DBus a org.gnome.GPaste2"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:348
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:358
 msgid "Update to gnome-shell 3.38.0"
 msgstr "Actualización a gnome-shell 3.38.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:372
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:404
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:446
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:382
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:414
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:456
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr "Se corrige la activación de elementos con Ctrl+número en GNOME Shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:380
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:412
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:445
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:390
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:422
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:455
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "Se arregla la recaptación de los vínculos de teclado en GNOME Shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:388
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:420
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:398
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:430
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "Se arregla la captación de los vínculos de teclado en GNOME Shell"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:394
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:404
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "Primera versión para GNOME 3.36. Cambios:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:396
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:406
 msgid "Update to gnome-shell 3.36.0"
 msgstr "Actualización a gnome-shell 3.36.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:428
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:444
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:438
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:454
 msgid "Compatibility with recent appstream-glib"
 msgstr "Compatibilidad con appstream-glib recientes"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:434
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:444
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "Primera versión para GNOME 3.34. Cambios:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:436
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:446
 msgid "Update to gnome-shell 3.34.0"
 msgstr "Actualización a gnome-shell 3.34.0"
 
@@ -370,49 +385,49 @@ msgid "@GETTEXT_PACKAGE@"
 msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:263
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:271
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:112
 #: src/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
 msgstr "Iniciar la herramienta gráfica"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:270
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:278
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:129
 #: src/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
 msgstr "Marca elemento activo como contraseña"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:256
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:264
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 #: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
 msgstr "Eliminar el elemento activo del histórico"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:277
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:285
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
 msgstr "Mostrar el histórico"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:284
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:292
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
 #: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
 msgstr "Sincronizar portapapeles con la selección principal"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:291
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:299
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
 msgstr "Sincronizar selección principal con el portapapeles"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:298
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:306
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
 #: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
@@ -482,10 +497,19 @@ msgid "By default, we close it"
 msgstr "De manera predeterminada se cierra"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
+msgid "Do we open the UI window centered?"
+msgstr ""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
+#, fuzzy
+msgid "By default, we open it where the mouse cursor is"
+msgstr "Por omisión, se siguen esos cambios."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:56
 msgid "The keyboard shortcut to launch the graphical interface"
 msgstr "El atajo de teclado para iniciar la interfaz gráfica"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
@@ -493,11 +517,11 @@ msgstr ""
 "De manera predeterminada, oprimir Ctrl + Alt + G lo hace («<Ctrl><Alt>G»). "
 "Una cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:65
 msgid "The keyboard shortcut to mark the active item as being a password"
 msgstr "El atajo de teclado para marcar el elemento activo como contraseña"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:58
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:66
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + s will mark the active item as being a "
@@ -507,61 +531,61 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:67
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:202
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:75
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:210
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:149
 msgid "Max displayed history size"
 msgstr "Tamaño máximo al mostrar"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:68
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
 msgid "Maximum number of items displayed in the history"
 msgstr "Número máximo de elementos mostrados en el historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:209
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:84
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:217
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
 msgid "Max history size"
 msgstr "Tamaño máximo del historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:77
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 msgid "Maximum number of items in history"
 msgstr "Número máximo de elementos en el historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:216
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:93
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:224
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
 msgid "Max memory usage (MB)"
 msgstr "Uso de memoria máximo (MB)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:86
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Maximum amount of memory used to store contents"
 msgstr "Cantidad máxima de memoria utilizada para almacenar contenido"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:102
 msgid "Max text item size"
 msgstr "Tamaño máximo de los elementos de texto"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:95
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 "Tamaño máxmimo de los elementos de texto. Se ignora lo que sobrepase este "
 "límite."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
 msgid "Min text item size"
 msgstr "Tamaño mínimo de los elementos de texto"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:104
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
 "Tamaño mínimo de los elementos de texto. Se ignora lo que no llegue a este "
 "límite."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:119
 msgid "The keyboard shortcut to delete the first element in history"
 msgstr "Atajo de teclado para eliminar la primera entrada del historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
@@ -570,38 +594,38 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + v (\"&lt;Ctrl&gt;&lt;Alt&gt;v\"). Una "
 "cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
 msgid "Does the primary selection affects history?"
 msgstr "¿Afecta la selección principal al historial?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:121
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr "Por omisión, solo el portapapeles (ctrl+c) afecta al historial."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 #, fuzzy
 msgid "By default, we're saving all"
 msgstr "Por omisión se guarda"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "Do we save the history from one session to another?"
 msgstr "¿Se guarda el historial de una sesión a otra?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 msgid "By default, we're saving it"
 msgstr "Por omisión se guarda"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:152
 msgid "The keyboard shortcut to display the menu"
 msgstr "Atajo de teclado para mostrar el menú"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
@@ -610,11 +634,11 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:161
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:154
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
@@ -622,13 +646,13 @@ msgstr ""
 "De manera predeterminada, presionar Ctrl + Alt + O los sincroniza "
 "(«<Ctrl><Alt>P»). Una cadena vacía aquí desactiva esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:170
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
 "El atajo de teclado para sincronizar la selección primaria con el "
 "portapapeles"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:163
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
@@ -637,24 +661,24 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + h muestra el menú (\"&lt;Ctrl&gt;&lt;"
 "Alt&gt;H\"). Una cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Are the primary selection and the clipboard synchronized?"
 msgstr "¿Están sincronizadas la selección principal y el portapapeles?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:172
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
 "Por omisión, la selección principal y el portapapeles son independientes."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid "Do we track the clipboard changes?"
 msgstr "¿Seguir los cambios en el portapapeles?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, we're tracking those changes."
 msgstr "Por omisión, se siguen esos cambios."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
@@ -662,16 +686,16 @@ msgstr ""
 "¿Sincronizar el estado del servicio con el de la extension? (deshabilitarel "
 "servicio cuando se deshabilite la extension)"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
 msgid "By default, the daemon state keeps unchanged"
 msgstr ""
 "De manera predeterminada, el estado del demonio se mantiene sin cambios"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:203
 msgid "Do we trim the textual items before adding them to history?"
 msgstr "¿Recortar elementos de texto antes de añadirlos al historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
@@ -679,14 +703,14 @@ msgstr ""
 "Recortar quiere decir eliminar los espacios antes del inicio y después del "
 "final. Por omision se dejan como están"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:212
 #, fuzzy
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr "Atajo de teclado para eliminar la primera entrada del historial"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:205
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
 #, fuzzy
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
@@ -695,11 +719,11 @@ msgstr ""
 "Por omisión, pulsando ctrl + alt + v (\"&lt;Ctrl&gt;&lt;Alt&gt;v\"). Una "
 "cadena vacía desactivaría esta funcionalidad."
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:221
 msgid "Do we prompt for confirmation when emptying a history?"
 msgstr "¿Quiere que se solicite confirmación al vaciar un histórico?"
 
-#: data/gsettings/org.gnome.GPaste.gschema.xml.in:214
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:222
 msgid "By default, we do as it's a destructive action"
 msgstr "De manera predeterminada se hace, dado que es una acción destructiva"
 
@@ -989,7 +1013,7 @@ msgstr "Servicio reiniciado con éxito\n"
 msgid "Cannot add non utf8 data as text."
 msgstr ""
 
-#: src/client/gpaste-client.c:809 src/ui/gpaste-ui-window.c:310
+#: src/client/gpaste-client.c:809 src/ui/gpaste-ui-window.c:313
 msgid "Couldn't connect to GPaste daemon"
 msgstr "No se pudo conectar al servicio GPaste"
 
@@ -1023,32 +1047,32 @@ msgstr "Contraseña"
 msgid "[Files] "
 msgstr "[Archivos] "
 
-#: src/gnome-shell/aboutItem.js:25 src/ui/gpaste-ui-about.c:41
+#: src/gnome-shell/aboutItem.js:16 src/ui/gpaste-ui-about.c:41
 msgid "About"
 msgstr ""
 
-#: src/gnome-shell/dummyHistoryItem.js:17 src/ui/gpaste-ui-empty-item.c:60
+#: src/gnome-shell/dummyHistoryItem.js:15 src/ui/gpaste-ui-empty-item.c:60
 #, fuzzy
 msgid "(Couldn't connect to GPaste daemon)"
 msgstr "No se pudo conectar al servicio GPaste"
 
-#: src/gnome-shell/dummyHistoryItem.js:22 src/ui/gpaste-ui-empty-item.c:49
+#: src/gnome-shell/dummyHistoryItem.js:20 src/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
 msgstr "(Vacío)"
 
-#: src/gnome-shell/dummyHistoryItem.js:27 src/ui/gpaste-ui-empty-item.c:35
+#: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
 msgstr ""
 
-#: src/gnome-shell/emptyHistoryItem.js:25
+#: src/gnome-shell/emptyHistoryItem.js:18
 msgid "Empty history"
 msgstr "Vaciar historial"
 
-#: src/gnome-shell/stateSwitch.js:17
+#: src/gnome-shell/stateSwitch.js:15
 msgid "Track changes"
 msgstr "Seguimiento de cambios"
 
-#: src/gnome-shell/uiItem.js:25
+#: src/gnome-shell/uiItem.js:17
 #, fuzzy
 msgid "Graphical tool"
 msgstr "Iniciar la herramienta gráfica"
@@ -1067,87 +1091,91 @@ msgstr "No se pudo registrar la aplicación GTK"
 msgid "is already running."
 msgstr "ya está ejecutándose."
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:110
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:124
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:112
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:127
 #: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
 msgstr "Seguimiento de cambios en el portapapeles"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:116
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:130
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:118
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
 msgid "Close UI on select"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:125
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:147
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:124
+msgid "Open UI window centered"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:133
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:156
 msgid "Enable the gnome-shell extension"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:131
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:153
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:139
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:162
 msgid "Sync the daemon state with the extension's one"
 msgstr "Sincronizar el estado del servicio con el de la _extensión"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:140
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:163
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:148
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:172
 msgid "Primary selection affects history"
 msgstr "Selección principal afecta al historial"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:146
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:169
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:154
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
 msgid "Synchronize clipboard with primary selection"
 msgstr "Sincronizar el portapapeles con selección principal"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:153
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:161
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:187
 msgid "Images support"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:159
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:184
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:167
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:193
 msgid "Trim items"
 msgstr "Recortar elementos"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:165
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:190
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:173
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:199
 msgid "Detect growing lines"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:172
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:136
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:180
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:145
 msgid "Save history"
 msgstr "Guardar historial"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:195
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:203
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
 #, fuzzy
 msgid "Max element size when displaying"
 msgstr "Tamaño máximo de los elementos al visualizarlos: "
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:223
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:231
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 #, fuzzy
 msgid "Max text item length"
 msgstr "Tamaño máximo de texto"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:230
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:238
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
 #, fuzzy
 msgid "Min text item length"
 msgstr "Tamaño mínimo de texto"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:318
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:111
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:122
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:326
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
 msgid "General behaviour"
 msgstr "Comportamiento general"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:319
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:327
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
 msgid "History settings"
 msgstr "Ajustes del historial"
 
-#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:320
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:328
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:98
 msgid "Keyboard shortcuts"
 msgstr "Atajos de teclado "
@@ -1172,12 +1200,16 @@ msgstr "(Vacío)"
 msgid "Do you really want to empty the history?"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:161
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:139
+msgid "Open the UI window centered"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:170
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:176
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:185
 msgid "Optional features"
 msgstr ""
 
