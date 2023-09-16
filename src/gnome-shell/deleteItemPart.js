@@ -4,6 +4,7 @@
  * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -12,7 +13,7 @@ import { GPasteDeleteButton } from './deleteButton.js';
 export const GPasteDeleteItemPart = GObject.registerClass(
 class GPasteDeleteItemPart extends St.Bin {
     _init(client, uuid) {
-        super._init({ x_align: St.Align.END });
+        super._init({ x_align: Clutter.ActorAlign.CENTER });
         this._deleteButton = new GPasteDeleteButton(client, uuid);
         this.child = this._deleteButton;
     }

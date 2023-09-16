@@ -6,6 +6,7 @@
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -22,7 +23,7 @@ class GPasteActionButtonActor extends St.BoxLayout {
         this.add_child(new St.Bin({
             child: new St.Label({
                 text: label,
-                y_align: St.Align.MIDDLE,
+                y_align: Clutter.ActorAlign.START,
             }),
         }));
     }

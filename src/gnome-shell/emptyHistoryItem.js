@@ -6,6 +6,7 @@
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import GPaste from 'gi://GPaste';
 import St from 'gi://St';
@@ -17,7 +18,7 @@ class GPasteEmptyHistoryItem extends St.Button {
     _init(client, settings, menu) {
         super._init({
             x_expand: true,
-            x_align: St.Align.MIDDLE,
+            x_align: Clutter.ActorAlign.START,
             reactive: true,
             can_focus: true,
             track_hover: true,
