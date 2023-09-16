@@ -6,26 +6,14 @@
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
-import St from 'gi://St';
 
-import { GPasteActionButtonActor } from './actionButtonActor.js';
+import { GPasteActionButton } from './actionButton.js';
 
 export const GPasteAboutItem = GObject.registerClass(
-class GPasteAboutItem extends St.Button {
+class GPasteAboutItem extends GPasteActionButton {
     _init(client, menu) {
-        super._init({
-            x_expand: true,
-            x_align: Clutter.ActorAlign.START,
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-            style_class: 'button',
-            child: new GPasteActionButtonActor('dialog-information-symbolic', _("About"))
-        });
-
-        this.connect('clicked', function() {
+        super._init('dialog-information-symbolic', _("About"), function() {
             menu.itemActivated();
             client.about(null);
         });

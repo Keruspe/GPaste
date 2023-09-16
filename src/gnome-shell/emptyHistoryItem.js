@@ -6,27 +6,16 @@
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import GPaste from 'gi://GPaste';
 import St from 'gi://St';
 
-import { GPasteActionButtonActor } from './actionButtonActor.js';
+import { GPasteActionButton } from './actionButton.js';
 
 export const GPasteEmptyHistoryItem = GObject.registerClass(
-class GPasteEmptyHistoryItem extends St.Button {
+class GPasteEmptyHistoryItem extends GPasteActionButton {
     _init(client, settings, menu) {
-        super._init({
-            x_expand: true,
-            x_align: Clutter.ActorAlign.START,
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-            style_class: 'button',
-            child: new GPasteActionButtonActor('edit-clear-all-symbolic', _("Empty history"))
-        });
-
-        this.connect('clicked', function() {
+        super._init('edit-clear-all-symbolic', _("Empty history"), function() {
             menu.itemActivated();
             client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
