@@ -4,7 +4,6 @@
  * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -16,7 +15,6 @@ export const GPastePageItem = GObject.registerClass({
     _init(page) {
         super._init({
             label: '' + page,
-            x_align: Clutter.ActorAlign.START,
             reactive: true,
             can_focus: false,
             track_hover: true,
