@@ -44,7 +44,7 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
-    <release type="stable" date="2023-09-16" version="45.rc">
+    <release type="stable" date="2023-09-16" version="45">
       <description>
         <p>RC release for GNOME 45. Changes:</p>
         <ul>

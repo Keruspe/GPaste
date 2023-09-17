@@ -42,6 +42,6 @@ Steps to install it after cloning:
 
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
-Latest release for GNOME 45 is: [GPaste 45.rc](https://www.imagination-land.org/posts/2023-09-16-gpaste-45.rc-released.html).
+Latest release for GNOME 45 is: [GPaste 45](https://www.imagination-land.org/posts/2023-09-16-gpaste-45-released.html).
 
-Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-45.rc.tar.xz>
+Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-45.tar.xz>
