@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-17 07:31+0200\n"
-"PO-Revision-Date: 2023-05-18 16:48+0000\n"
-"Last-Translator: Alex <alexander.simm@posteo.de>\n"
-"Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/"
-">\n"
+"PO-Revision-Date: 2023-09-23 17:02+0000\n"
+"Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/>"
+"\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.18-dev\n"
+"X-Generator: Weblate 5.1-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -61,18 +61,16 @@ msgid "The settings UI"
 msgstr "Die Benutzeroberfläche für Einstellungen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
-#, fuzzy
 msgid "RC release for GNOME 45. Changes:"
-msgstr "Erste Veröffentlichung für GNOME 44. Änderungen:"
+msgstr "RC-Version für GNOME 45. Änderungen:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#, fuzzy
 msgid "Port to gnome 45"
-msgstr "Portierung auf Gnome 44"
+msgstr "Portierung auf Gnome 45"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 msgid "Add setting to open ui window centered"
-msgstr ""
+msgstr "Einstellung zum zentrierten Öffnen des UI-Fensters hinzufügen"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:53
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
@@ -503,14 +501,11 @@ msgstr "Standardmäßig wird geschlossen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
 msgid "Do we open the UI window centered?"
-msgstr ""
+msgstr "Öffnen wir das UI-Fenster zentriert?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
-#, fuzzy
 msgid "By default, we open it where the mouse cursor is"
-msgstr ""
-"GPaste-Benutzeroberfläche an der Stelle öffnen, an der sich der Mauszeiger "
-"befindet"
+msgstr "Standardmäßig wird es dort geöffnet, wo sich der Mauszeiger befindet"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:56
 msgid "The keyboard shortcut to launch the graphical interface"
@@ -1112,7 +1107,7 @@ msgstr "Benutzeroberfläche bei Auswahl schließen"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:124
 msgid "Open UI window centered"
-msgstr ""
+msgstr "UI-Fenster zentriert öffnen"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:133
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:156
@@ -1206,7 +1201,7 @@ msgstr "Wollen Sie die Chronik wirklich leeren?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:139
 msgid "Open the UI window centered"
-msgstr ""
+msgstr "UI-Fenster zentriert öffnen"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:170
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
