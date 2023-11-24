@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-17 07:31+0200\n"
-"PO-Revision-Date: 2021-11-10 16:51+0000\n"
-"Last-Translator: Carlos Sesma <usarralph@gmail.com>\n"
+"PO-Revision-Date: 2023-11-25 19:03+0000\n"
+"Last-Translator: gallegonovato <fran-carro@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
 ">\n"
 "Language: es\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Weblate 4.9.1-dev\n"
+"X-Generator: Weblate 5.2.1-rc\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -73,6 +73,8 @@ msgstr "Migrado a gnome-shell 41"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 msgid "Add setting to open ui window centered"
 msgstr ""
+"Agregar la configuración para abrir la ventana de la interfaz de usuario "
+"centrada"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:53
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
@@ -130,6 +132,7 @@ msgstr "Esta es una versión de mantenimiento. Cambios:"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
 msgid "Fix a bug leading to history with only one item"
 msgstr ""
+"Se corrigió un error que provocaba que el historial tuviera un solo elemento"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
 #, fuzzy
@@ -138,7 +141,7 @@ msgstr "Primera versión para GNOME 41. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "gcr 4 is now required"
-msgstr ""
+msgstr "Ahora se requiere gcr 4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
 #, fuzzy
@@ -149,7 +152,7 @@ msgstr "Migrado a gnome-shell 41"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
 msgid "Avoid crash under heavy memory load"
-msgstr ""
+msgstr "Evite los fallos con la memoria sometida a una gran carga de trabajo"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
@@ -166,25 +169,25 @@ msgstr "Primera versión para GNOME 41. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Portar a GNOME 43"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
 msgid "Internal preparation for gtk4 port"
-msgstr ""
+msgstr "Preparación interna para el puerto gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:268
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "Abrir GPaste UI donde está el puntero del ratón"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
 msgid "Fixes to the new preferences tool"
-msgstr ""
+msgstr "Correcciones en la nueva herramienta de preferencias"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:145
 msgid "Style fixes"
-msgstr ""
+msgstr "Correcciones del estilo"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
 #, fuzzy
@@ -195,22 +198,27 @@ msgstr "Primera versión para GNOME 41. Cambios:"
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
+"El antiguo libgpaste reemplazado por un nuevo libgpaste-2 mínimo sin "
+"dependencia de gtk"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
 msgid "New libgpaste-gtk3 for utils and settings ui"
 msgstr ""
+"Nuevo libgpaste-gtk3 para utilidades y configuración de la interfaz de "
+"usuario"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:156
 msgid "New libgpaste-gtk4 for utils and preferences ui"
 msgstr ""
+"Nuevo libgpaste-gtk4 para utilidades y preferencias de la interfaz de usuario"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
 msgid "New gtk4 based gpaste-preferences utility"
-msgstr ""
+msgstr "Nueva utilidad de preferencias gpaste basada en gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:158
 msgid "Autotools are no longer supported"
-msgstr ""
+msgstr "Las herramientas automáticas ya no son compatibles"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:159
 #, fuzzy
