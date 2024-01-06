@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-17 07:31+0200\n"
-"PO-Revision-Date: 2023-11-25 19:03+0000\n"
+"PO-Revision-Date: 2024-01-07 12:06+0000\n"
 "Last-Translator: gallegonovato <fran-carro@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Weblate 5.2.1-rc\n"
+"X-Generator: Weblate 5.4-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -61,9 +61,8 @@ msgid "The settings UI"
 msgstr "La interfaz de configuración"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
-#, fuzzy
 msgid "RC release for GNOME 45. Changes:"
-msgstr "Primera versión para GNOME 41. Cambios:"
+msgstr "Lanzamiento RC para GNOME 45. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 #, fuzzy
