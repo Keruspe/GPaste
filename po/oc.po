@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-17 07:31+0200\n"
-"PO-Revision-Date: 2023-02-12 11:46+0000\n"
+"PO-Revision-Date: 2024-01-08 16:06+0000\n"
 "Last-Translator: Quentin PAGÈS <quentinantonin@free.fr>\n"
 "Language-Team: Occitan <https://hosted.weblate.org/projects/gpaste/gpaste/oc/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.16-dev\n"
+"X-Generator: Weblate 5.4-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -47,7 +47,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:24
 msgid "The main UI"
-msgstr ""
+msgstr "L'interfàcia principala"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:28
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:32
