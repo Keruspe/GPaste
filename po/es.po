@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-17 07:31+0200\n"
-"PO-Revision-Date: 2024-01-07 12:06+0000\n"
+"PO-Revision-Date: 2024-02-10 11:02+0000\n"
 "Last-Translator: gallegonovato <fran-carro@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
 ">\n"
@@ -65,9 +65,8 @@ msgid "RC release for GNOME 45. Changes:"
 msgstr "Lanzamiento RC para GNOME 45. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#, fuzzy
 msgid "Port to gnome 45"
-msgstr "Migrado a gnome-shell 41"
+msgstr "Migrado a gnome 45"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 msgid "Add setting to open ui window centered"
@@ -79,9 +78,8 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
-#, fuzzy
 msgid "Translations updates"
-msgstr "traducciones actualizadas"
+msgstr "Traducciones actualizadas"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
@@ -134,18 +132,16 @@ msgstr ""
 "Se corrigió un error que provocaba que el historial tuviera un solo elemento"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
-#, fuzzy
 msgid "First release for GNOME 44. Changes:"
-msgstr "Primera versión para GNOME 41. Cambios:"
+msgstr "Primera versión para GNOME 44. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "gcr 4 is now required"
 msgstr "Ahora se requiere gcr 4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
-#, fuzzy
 msgid "Port to gnome 44"
-msgstr "Migrado a gnome-shell 41"
+msgstr "Migrado a gnome 44"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
