@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-03-21 22:54+0100\n"
-"PO-Revision-Date: 2022-08-26 09:23+0000\n"
-"Last-Translator: Hugel <qihu@nfschina.com>\n"
+"PO-Revision-Date: 2024-06-18 10:09+0000\n"
+"Last-Translator: hugoalh <hugoalh@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Traditional) <https://hosted.weblate.org/projects/"
 "gpaste/gpaste/zh_Hant/>\n"
 "Language: zh_Hant\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 5.6-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -27,19 +27,18 @@ msgstr "GPaste"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr "管理您的剪貼簿歷史"
+msgstr "管理你的剪貼簿歷史記錄"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:14
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
-msgstr ""
-"GPaste 是一個允許您以一個高度可自定的方法追蹤和管理您的剪貼簿歷史的剪貼簿管理"
-"系統。"
+msgstr "GPaste "
+"是一個剪貼簿管理系統，允許你可以高度自訂方式以追蹤和管理你的剪貼簿歷史記錄。"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:17
 msgid ""
@@ -49,13 +48,13 @@ msgstr "GPaste 提供一個簡單易用的界面來讓您容易的管理。"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:24
 msgid "The main UI"
-msgstr "主界面"
+msgstr "主介面"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:28
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:32
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:36
 msgid "The settings UI"
-msgstr "設定界面"
+msgstr "設定介面"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
@@ -110,9 +109,8 @@ msgstr "讓其可用於 GNOME Shell 40"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:113
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:169
-#, fuzzy
 msgid "Translations updates"
-msgstr "更新翻譯"
+msgstr "翻譯更新"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 #, fuzzy
@@ -241,9 +239,8 @@ msgstr "修復沒有歷史記錄時的崩潰"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:252
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:261
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:285
-#, fuzzy
 msgid "translations update"
-msgstr "更新翻譯"
+msgstr "翻譯更新"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:242
 #, fuzzy
@@ -302,7 +299,7 @@ msgstr "修復「建立密碼」快捷鍵"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
 msgid "updated translations"
-msgstr "更新翻譯"
+msgstr "更新了翻譯"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
 msgid "gnome-shell extension warning fixes"
@@ -323,7 +320,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:356
 msgid "systemd integration enhancements"
-msgstr ""
+msgstr "systemd 整合增強"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:362
 msgid "First release for GNOME 3.38. Changes:"
@@ -385,7 +382,7 @@ msgstr ""
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
-msgstr ""
+msgstr "@GETTEXT_PACKAGE@"
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:271
@@ -413,7 +410,7 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
-msgstr ""
+msgstr "顯示歷史記錄"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:292
@@ -438,7 +435,7 @@ msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
 msgid "GPaste Preferences"
-msgstr ""
+msgstr "GPaste 偏好設定"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
@@ -448,6 +445,8 @@ msgstr ""
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr ""
+"Clipboard;Manager;Settings;Preferences;Configuration;剪貼簿;管理器;設定;偏好"
+"設定;配置;"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
@@ -537,7 +536,7 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:217
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
 msgid "Max history size"
-msgstr ""
+msgstr "最大歷史記錄大小"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 msgid "Maximum number of items in history"
@@ -725,11 +724,11 @@ msgstr ""
 #: src/client/gpaste-client.c:173 src/client/gpaste-client.c:179
 #: src/client/gpaste-client.c:191 src/client/gpaste-client.c:195
 msgid "name"
-msgstr ""
+msgstr "名稱"
 
 #: src/client/gpaste-client.c:169
 msgid "backup current history"
-msgstr ""
+msgstr "備份目前歷史記錄"
 
 #: src/client/gpaste-client.c:171
 msgid "switch to another history"
@@ -737,17 +736,17 @@ msgstr ""
 
 #: src/client/gpaste-client.c:173
 msgid "delete a history"
-msgstr ""
+msgstr "刪除一個歷史記錄"
 
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:175
 msgid "list available histories"
-msgstr ""
+msgstr "列出可用的歷史記錄"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:177
 msgid "text"
-msgstr ""
+msgstr "文字"
 
 #: src/client/gpaste-client.c:177
 msgid "set text to clipboard"
@@ -755,7 +754,7 @@ msgstr ""
 
 #: src/client/gpaste-client.c:179
 msgid "password"
-msgstr ""
+msgstr "密碼"
 
 #: src/client/gpaste-client.c:179
 msgid "add the name - password couple to the clipboard"
@@ -764,15 +763,15 @@ msgstr ""
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:181
 msgid "old name"
-msgstr ""
+msgstr "舊名稱"
 
 #: src/client/gpaste-client.c:181
 msgid "new name"
-msgstr ""
+msgstr "新名稱"
 
 #: src/client/gpaste-client.c:181
 msgid "rename the password"
-msgstr ""
+msgstr "重新命名密碼"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:183
@@ -787,7 +786,7 @@ msgstr ""
 #. Translators: help for gpaste replace <uuid> <contents>
 #: src/client/gpaste-client.c:187
 msgid "contents"
-msgstr ""
+msgstr "內容"
 
 #: src/client/gpaste-client.c:187
 msgid ""
@@ -818,7 +817,7 @@ msgstr ""
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:197
 msgid "path"
-msgstr ""
+msgstr "路徑"
 
 #: src/client/gpaste-client.c:197
 msgid "put the content of the file at <path> into the clipboard"
@@ -827,7 +826,7 @@ msgstr ""
 #. Translators: help for whatever | gpaste
 #: src/client/gpaste-client.c:199
 msgid "whatever"
-msgstr ""
+msgstr "任何"
 
 #: src/client/gpaste-client.c:199
 msgid "set the output of whatever to clipboard"
@@ -836,7 +835,7 @@ msgstr ""
 #. Translators: help for gpaste empty
 #: src/client/gpaste-client.c:201
 msgid "empty the history"
-msgstr ""
+msgstr "清空歷史記錄"
 
 #. Translators: help for gpaste start
 #: src/client/gpaste-client.c:203
@@ -851,7 +850,7 @@ msgstr ""
 #. Translators: help for gpaste quit
 #: src/client/gpaste-client.c:207
 msgid "alias for stop"
-msgstr ""
+msgstr "停止的別名"
 
 #. Translators: help for gpaste daemon-reexec
 #: src/client/gpaste-client.c:209
@@ -881,7 +880,7 @@ msgstr ""
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:219
 msgid "display the version"
-msgstr ""
+msgstr "顯示版本"
 
 #. Translators: help for gpaste daemon-version
 #: src/client/gpaste-client.c:221
@@ -891,7 +890,7 @@ msgstr ""
 #. Translators: help for gpaste help
 #: src/client/gpaste-client.c:223
 msgid "display this help"
-msgstr ""
+msgstr "顯示這個幫助"
 
 #. Translators: help for gpaste about
 #: src/client/gpaste-client.c:225
@@ -901,7 +900,7 @@ msgstr ""
 #: src/client/gpaste-client.c:228
 #, c-format
 msgid "Convenience options:"
-msgstr ""
+msgstr "便利選項："
 
 #. Translators: help for --use-index
 #: src/client/gpaste-client.c:231
@@ -911,7 +910,7 @@ msgstr ""
 #: src/client/gpaste-client.c:234
 #, c-format
 msgid "Display options:"
-msgstr ""
+msgstr "顯示選項："
 
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:237
@@ -936,13 +935,13 @@ msgstr ""
 #: src/client/gpaste-client.c:246
 #, c-format
 msgid "Merge options:"
-msgstr ""
+msgstr "合併選項："
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
 #: src/client/gpaste-client.c:249 src/client/gpaste-client.c:251
 msgid "string"
-msgstr ""
+msgstr "字串"
 
 #: src/client/gpaste-client.c:249
 msgid ""
@@ -978,7 +977,7 @@ msgstr ""
 #. This is the date format "month/day/year time"
 #: src/daemon/tmp/gpaste-image-item.c:241
 msgid "%m/%d/%y %T"
-msgstr ""
+msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
 #: src/daemon/tmp/gpaste-image-item.c:243
@@ -989,16 +988,16 @@ msgstr ""
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/tmp/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "密碼"
 
 #. This is the prefix displayed in history to identify selected files
 #: src/daemon/tmp/gpaste-uris-item.c:105
 msgid "[Files] "
-msgstr ""
+msgstr "[檔案] "
 
 #: src/gnome-shell/aboutItem.js:16 src/ui/gpaste-ui-about.c:41
 msgid "About"
-msgstr ""
+msgstr "關於"
 
 #: src/gnome-shell/dummyHistoryItem.js:15 src/ui/gpaste-ui-empty-item.c:60
 msgid "(Couldn't connect to GPaste daemon)"
@@ -1006,23 +1005,23 @@ msgstr ""
 
 #: src/gnome-shell/dummyHistoryItem.js:20 src/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
-msgstr ""
+msgstr "（空）"
 
 #: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
-msgstr ""
+msgstr "（沒有結果）"
 
 #: src/gnome-shell/emptyHistoryItem.js:18
 msgid "Empty history"
-msgstr ""
+msgstr "清空歷史記錄"
 
 #: src/gnome-shell/stateSwitch.js:15
 msgid "Track changes"
-msgstr ""
+msgstr "追蹤變化"
 
 #: src/gnome-shell/uiItem.js:17
 msgid "Graphical tool"
-msgstr ""
+msgstr "圖形化工具"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
@@ -1042,7 +1041,7 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:127
 #: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
-msgstr ""
+msgstr "追蹤剪貼簿變化"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:118
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
@@ -1091,7 +1090,7 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:180
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:145
 msgid "Save history"
-msgstr ""
+msgstr "儲存歷史記錄"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:203
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
@@ -1112,31 +1111,31 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
 msgid "General behaviour"
-msgstr ""
+msgstr "一般行為"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:327
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
 msgid "History settings"
-msgstr ""
+msgstr "歷史記錄設定"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:328
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:98
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "鍵盤快捷鍵"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:28
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:49
 #: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-edit-item.c:44
 #: src/ui/gpaste-ui-new-item.c:30
 msgid "Cancel"
-msgstr ""
+msgstr "取消"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:146
 #: src/ui/gpaste-ui-empty-history.c:66
 msgid "Empty"
-msgstr ""
+msgstr "清空"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:146
@@ -1150,23 +1149,23 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:170
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "剪貼簿同步"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:185
 msgid "Optional features"
-msgstr ""
+msgstr "選用功能"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
 msgid "Resources limits"
-msgstr ""
+msgstr "資源限制"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
 msgid "Text limits"
-msgstr ""
+msgstr "文字限制"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 msgid "Display settings"
-msgstr ""
+msgstr "顯示設定"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 msgid "History access"
@@ -1178,7 +1177,7 @@ msgstr ""
 
 #: src/ui/gpaste-ui-backup-history.c:42 src/ui/gpaste-ui-backup-history.c:139
 msgid "Backup"
-msgstr ""
+msgstr "備份"
 
 #: src/ui/gpaste-ui-backup-history.c:46
 msgid "Under which name do you want to backup this history?"
@@ -1187,7 +1186,7 @@ msgstr ""
 #: src/ui/gpaste-ui-delete-history.c:26 src/ui/gpaste-ui-delete-history.c:66
 #: src/ui/gpaste-ui-delete-item.c:49
 msgid "Delete"
-msgstr ""
+msgstr "刪除"
 
 #: src/ui/gpaste-ui-delete-history.c:26
 msgid "Are you sure you want to delete this history?"
@@ -1195,19 +1194,19 @@ msgstr ""
 
 #: src/ui/gpaste-ui-edit-item.c:43 src/ui/gpaste-ui-edit-item.c:116
 msgid "Edit"
-msgstr ""
+msgstr "編輯"
 
 #: src/ui/gpaste-ui-new-item.c:29 src/ui/gpaste-ui-new-item.c:81
 msgid "New"
-msgstr ""
+msgstr "新"
 
 #: src/ui/gpaste-ui-panel.c:303
 msgid "Switch to"
-msgstr ""
+msgstr "切換至"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Restart"
-msgstr ""
+msgstr "重新啟動"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Do you really want to restart the daemon?"
@@ -1215,23 +1214,23 @@ msgstr ""
 
 #: src/ui/gpaste-ui-reexec.c:56
 msgid "Restart the daemon"
-msgstr ""
+msgstr "重新啟動守護程式"
 
 #: src/ui/gpaste-ui-search.c:26
 msgid "Search"
-msgstr ""
+msgstr "搜尋"
 
 #: src/ui/gpaste-ui-settings.c:31
 msgid "GPaste Settings"
-msgstr ""
+msgstr "GPaste 設定"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
-msgstr ""
+msgstr "一般"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Stop"
-msgstr ""
+msgstr "停止"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Do you really want to stop tracking clipboard changes?"
@@ -1239,4 +1238,4 @@ msgstr ""
 
 #: src/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
-msgstr ""
+msgstr "上載"
