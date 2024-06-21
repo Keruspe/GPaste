@@ -47,6 +47,32 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
 }
 
 static void
+g_paste_file_backend_write_history_item (const GPasteItem *item, GOutputStream *stream) {
+    const gchar *kind = g_paste_item_get_kind (item);
+
+    if (g_paste_str_equal (kind, "Password"))
+        return;
+
+    const gchar *uuid = g_paste_item_get_uuid (item);
+    const GSList *special_values = g_paste_item_get_special_values (item);
+    g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
+
+    if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
+        !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
+        !g_output_stream_write_all (stream, "\" uuid=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
+        !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, NULL /* error */) ||
+        (_G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, _G_PASTE_IMAGE_ITEM (item))) ||
+        !g_output_stream_write_all (stream, "\">\n    <value><![CDATA[", 23, NULL, NULL /*cancellable */, NULL /*error */) ||
+        !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
+        !g_output_stream_write_all (stream, "]]></value>\n", 12, NULL, NULL /* cancellable */, NULL /* error */) ||
+        (special_values && !_g_paste_file_backend_write_special_values (stream, special_values)) ||
+        !g_output_stream_write_all (stream, "  </item>\n", 10, NULL, NULL /* cancellable */, NULL /* error */))
+    {
+        g_warning ("Failed to write an item to history");
+    }
+}
+
+static void
 g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
                                          const gchar                *history_file_path,
                                          const GList                *history)
@@ -76,30 +102,7 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
 
     for (; history; history = g_list_next (history))
     {
-        GPasteItem *item = history->data;
-        const gchar *kind = g_paste_item_get_kind (item);
-        const gchar *uuid = g_paste_item_get_uuid (item);
-
-        if (g_paste_str_equal (kind, "Password"))
-            continue;
-
-        const GSList *special_values = g_paste_item_get_special_values (item);
-        g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
-
-        if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_write_all (stream, "\" uuid=\"", 8, NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, NULL /* error */) ||
-            (_G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, _G_PASTE_IMAGE_ITEM (item))) ||
-            !g_output_stream_write_all (stream, "\">\n    <value><![CDATA[", 23, NULL, NULL /*cancellable */, NULL /*error */) ||
-            !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, NULL /* error */) ||
-            !g_output_stream_write_all (stream, "]]></value>\n", 12, NULL, NULL /* cancellable */, NULL /* error */) ||
-            (special_values && !_g_paste_file_backend_write_special_values (stream, special_values)) ||
-            !g_output_stream_write_all (stream, "  </item>\n", 10, NULL, NULL /* cancellable */, NULL /* error */))
-        {
-            g_warning ("Failed to write an item to history");
-            continue;
-        }
+        g_paste_file_backend_write_history_item(history->data, stream);
     }
 
     if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
