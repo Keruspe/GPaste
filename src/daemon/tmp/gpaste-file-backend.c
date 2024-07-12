@@ -75,7 +75,9 @@ g_paste_file_backend_write_history_item (const GPasteItem *item, GOutputStream *
 static void
 g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
                                          const gchar                *history_file_path,
-                                         const GList                *history)
+                                         const GList                *history,
+                                         const GPasteStorageAction  action,
+                                         const guint64              index)
 {
     const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
 
@@ -559,7 +561,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         g_clear_pointer (&data.text, g_free);
 
         if (data.version != HISTORY_CURRENT)
-            g_paste_file_backend_write_history_file (self, history_file_path, *history);
+            g_paste_file_backend_write_history_file (self, history_file_path, *history, G_PASTE_STORAGE_ACTION_REPLACE, G_PASTE_STORAGE_ALL_ITEMS);
     }
     else
     {
