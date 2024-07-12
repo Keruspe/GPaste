@@ -11,6 +11,8 @@
 #include <gpaste-password-item.h>
 #include <gpaste-uris-item.h>
 
+#define G_PASTE_FILE_FOOT_SIZE 11
+
 G_PASTE_DEFINE_TYPE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
 
 static gboolean
@@ -72,6 +74,35 @@ g_paste_file_backend_write_history_item (const GPasteItem *item, GOutputStream *
     }
 }
 
+static gboolean
+g_paste_file_backend_write_history_last_item (const GFile   *history_file,
+                                              const GList   *history)
+{
+    g_autoptr (GFileIOStream) iostream = g_file_open_readwrite ((GFile *)history_file, NULL /* cancellable */, NULL /* error */);
+
+    if (!iostream)
+        return FALSE;
+
+    GFileIOStreamClass *class = G_FILE_IO_STREAM_GET_CLASS(iostream);
+
+    if (!class || !class->can_seek(iostream) ||
+        !class->seek(iostream, -G_PASTE_FILE_FOOT_SIZE, G_SEEK_END, NULL, NULL))
+            return FALSE;
+
+    g_autoptr (GOutputStream) stream = G_OUTPUT_STREAM (class->parent_class.get_output_stream(&iostream->parent_instance));
+
+    g_paste_file_backend_write_history_item(history->data, stream);
+
+    if (!g_output_stream_write_all (stream, "</history>\n", G_PASTE_FILE_FOOT_SIZE, NULL, NULL /* cancellable */, NULL /* error */) ||
+        !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
+    {
+        g_warning ("Failed to finish writing history");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static void
 g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
                                          const gchar                *history_file_path,
@@ -95,6 +126,12 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
         return;
     }
 
+    if (index == 0 && action == G_PASTE_STORAGE_ACTION_REPLACE &&
+        g_paste_file_backend_write_history_last_item(history_file, history))
+    {
+        return;
+    }
+
     const GPasteFileBackend *real_self = _G_PASTE_FILE_BACKEND (self);
     g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, history_file);
 
@@ -107,7 +144,7 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
         g_paste_file_backend_write_history_item(history->data, stream);
     }
 
-    if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, NULL /* error */) ||
+    if (!g_output_stream_write_all (stream, "</history>\n", G_PASTE_FILE_FOOT_SIZE, NULL, NULL /* cancellable */, NULL /* error */) ||
         !g_output_stream_close (stream, NULL /* cancellable */, NULL /* error */))
     {
         g_warning ("Failed to finish writing history");
