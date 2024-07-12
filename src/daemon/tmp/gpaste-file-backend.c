@@ -97,10 +97,10 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
     g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, history_file);
 
     if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, NULL /* error */) ||
-        !g_output_stream_write_all (stream, "<history version=\"2.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
+        !g_output_stream_write_all (stream, "<history version=\"3.0\">\n", 24, NULL, NULL /* cancellable */, NULL /* error */))
             return;
 
-    for (; history; history = g_list_next (history))
+    for (history = g_list_last((GList *)history); history; history = g_list_previous (history))
     {
         g_paste_file_backend_write_history_item(history->data, stream);
     }
@@ -139,7 +139,8 @@ typedef enum
 {
     HISTORY_1_0,
     HISTORY_2_0,
-    HISTORY_CURRENT = HISTORY_2_0,
+    HISTORY_3_0,
+    HISTORY_CURRENT = HISTORY_3_0,
     HISTORY_INVALID = -1
 } HistoryVersion;
 
@@ -215,6 +216,10 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 else if (g_paste_str_equal (*v, "2.0"))
                 {
                     data->version = HISTORY_2_0;
+                }
+                else if (g_paste_str_equal (*v, "3.0"))
+                {
+                    data->version = HISTORY_3_0;
                 }
                 else
                 {
@@ -342,7 +347,12 @@ add_item (Data *data)
             data->uuid = g_uuid_string_random ();
 
         g_paste_item_set_uuid (item, data->uuid);
-        data->history = g_list_append (data->history, item);
+
+        if (data->version == HISTORY_3_0)
+            data->history = g_list_prepend (data->history, item);
+        else
+            data->history = g_list_append (data->history, item);
+
         ++data->current_size;;
     }
 
@@ -385,6 +395,7 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             SWITCH_STATE (IN_ITEM_WITH_TEXT, IN_HISTORY);
             break;
         case HISTORY_2_0:
+        case HISTORY_3_0:
             SWITCH_STATE (IN_ITEM, IN_HISTORY);
             break;
         case HISTORY_INVALID:
@@ -444,7 +455,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         break;
     }
     case IN_VALUE:
-        if (data->version == HISTORY_2_0)
+        if (data->version == HISTORY_2_0 || data->version == HISTORY_3_0)
         {
             gchar *value = g_paste_util_xml_decode (txt);
             if (*g_strstrip (txt))
