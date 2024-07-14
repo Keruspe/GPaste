@@ -8,27 +8,30 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-03-21 22:54+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2024-07-15 16:09+0000\n"
+"Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
+"Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"is/>\n"
 "Language: is\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n % 10 != 1 || n % 100 == 11;\n"
+"X-Generator: Weblate 5.7-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
 msgid "GPaste"
-msgstr ""
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Sýslaðu með feril klippispjalds"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:14
 msgid ""
@@ -44,13 +47,13 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:24
 msgid "The main UI"
-msgstr ""
+msgstr "Aðalviðmótið"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:28
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:32
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:36
 msgid "The settings UI"
-msgstr ""
+msgstr "Stillingaviðmótið"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
@@ -363,68 +366,68 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:455
 msgid "Update to gnome-shell 3.34.0"
-msgstr ""
+msgstr "Uppfærsla í gnome-shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
-msgstr ""
+msgstr "@GETTEXT_PACKAGE@"
 
 #: data/control-center/42-gpaste.control-center.xml.in:3
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:271
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:112
 #: src/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
-msgstr ""
+msgstr "Ræsa myndræna verkfærið"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:278
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:129
 #: src/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
-msgstr ""
+msgstr "Merkja virka atriðið sem lykilorð"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:264
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 #: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
-msgstr ""
+msgstr "Eyða virka atriðinu úr ferlinum"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:285
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
-msgstr ""
+msgstr "Birta ferilinn"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:292
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
 #: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
-msgstr ""
+msgstr "Samstilla klippispjaldið við aðalval (primary - miðjuhnappur)"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:299
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
-msgstr ""
+msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjaldið"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:306
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
 #: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
-msgstr ""
+msgstr "Senda virkt atriði inn á úrklippuþjónustu (pastebin)"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
 msgid "GPaste Preferences"
-msgstr ""
+msgstr "Kjörstillingar GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "Sýslaðu með kjörstillingar GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
@@ -509,7 +512,7 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:210
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:149
 msgid "Max displayed history size"
-msgstr ""
+msgstr "Hámarksstærð birts ferils"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
 msgid "Maximum number of items displayed in the history"
@@ -519,25 +522,25 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:217
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
 msgid "Max history size"
-msgstr ""
+msgstr "Hámarksstærð ferils"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 msgid "Maximum number of items in history"
-msgstr ""
+msgstr "Hámarksfjöldi atriða í ferli"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:93
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:224
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
 msgid "Max memory usage (MB)"
-msgstr ""
+msgstr "Hámarksnotkun minnis (MB)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Maximum amount of memory used to store contents"
-msgstr ""
+msgstr "Mesta magn minnis sem notað er til að geyma efni"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:102
 msgid "Max text item size"
-msgstr ""
+msgstr "Hámarksstærð textaatriða"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
@@ -563,7 +566,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
 msgid "Does the primary selection affects history?"
-msgstr ""
+msgstr "Hefur aðalval (primary - miðjuhnappur) áhrif á feril?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, only clipboard (ctrl+c) affects history."
@@ -577,7 +580,7 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 msgid "By default, we're saving all"
-msgstr ""
+msgstr "Sjálfgefið vistum við allt"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "Do we save the history from one session to another?"
@@ -600,6 +603,8 @@ msgstr ""
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:161
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
+"Flýtivísun til að samstilla klippispjaldið við aðalval (primary - "
+"miðjuhnappur)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid ""
@@ -610,6 +615,8 @@ msgstr ""
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:170
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
+"Flýtivísun til að samstilla aðalval (primary - miðjuhnappur) við "
+"klippispjaldið"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid ""
@@ -619,19 +626,21 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Are the primary selection and the clipboard synchronized?"
-msgstr ""
+msgstr "Eru aðalval (primary - miðjuhnappur) og klippispjaldið samstillt?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
+"Sjálfgefið eru aðalval (primary - miðjuhnappur) og klippispjaldið óháð hvort "
+"öðru."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid "Do we track the clipboard changes?"
-msgstr ""
+msgstr "Fylgjumst við með breytingum á klippispjaldinu?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, we're tracking those changes."
-msgstr ""
+msgstr "Sjálfgefið erum við að rekja þessar breytingar."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid ""
@@ -680,22 +689,22 @@ msgstr ""
 #: src/client/gpaste-client.c:161
 #, c-format
 msgid "Usage:\n"
-msgstr ""
+msgstr "Notkun:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:163
 msgid "print the history with UUIDs"
-msgstr ""
+msgstr "birta ferilinn með UUID-auðkennum"
 
 #. Translators: help for gpaste history-size
 #: src/client/gpaste-client.c:165
 msgid "print the size of the history"
-msgstr ""
+msgstr "birta stærð ferilsins"
 
 #. Translators: help for gpaste get-history
 #: src/client/gpaste-client.c:167
 msgid "get the name of the current history"
-msgstr ""
+msgstr "sækja heiti fyrirliggjandi ferlis"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -707,54 +716,54 @@ msgstr ""
 #: src/client/gpaste-client.c:173 src/client/gpaste-client.c:179
 #: src/client/gpaste-client.c:191 src/client/gpaste-client.c:195
 msgid "name"
-msgstr ""
+msgstr "heiti"
 
 #: src/client/gpaste-client.c:169
 msgid "backup current history"
-msgstr ""
+msgstr "taka öryggisafrit af fyrirliggjandi ferli"
 
 #: src/client/gpaste-client.c:171
 msgid "switch to another history"
-msgstr ""
+msgstr "skipta í annan feril"
 
 #: src/client/gpaste-client.c:173
 msgid "delete a history"
-msgstr ""
+msgstr "eyða ferli"
 
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:175
 msgid "list available histories"
-msgstr ""
+msgstr "birta tiltæka ferla"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:177
 msgid "text"
-msgstr ""
+msgstr "texti"
 
 #: src/client/gpaste-client.c:177
 msgid "set text to clipboard"
-msgstr ""
+msgstr "setja texta á klippispjald"
 
 #: src/client/gpaste-client.c:179
 msgid "password"
-msgstr ""
+msgstr "lykilorð"
 
 #: src/client/gpaste-client.c:179
 msgid "add the name - password couple to the clipboard"
-msgstr ""
+msgstr "bæta pari af nafni-lykilorði á klippispjaldið"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:181
 msgid "old name"
-msgstr ""
+msgstr "eldra heiti"
 
 #: src/client/gpaste-client.c:181
 msgid "new name"
-msgstr ""
+msgstr "nýtt heiti"
 
 #: src/client/gpaste-client.c:181
 msgid "rename the password"
-msgstr ""
+msgstr "endurnefna lykilorðið"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:183
@@ -769,7 +778,7 @@ msgstr ""
 #. Translators: help for gpaste replace <uuid> <contents>
 #: src/client/gpaste-client.c:187
 msgid "contents"
-msgstr ""
+msgstr "efni"
 
 #: src/client/gpaste-client.c:187
 msgid ""
@@ -791,16 +800,16 @@ msgstr ""
 #. Translators: help for gpaste delete <uuid>
 #: src/client/gpaste-client.c:193
 msgid "delete item <uuid> from the history"
-msgstr ""
+msgstr "eyða atriðinu <uuid> úr ferlinum"
 
 #: src/client/gpaste-client.c:195
 msgid "delete the password <name> from the history"
-msgstr ""
+msgstr "eyða lykilorðinu <name> úr ferlinum"
 
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:197
 msgid "path"
-msgstr ""
+msgstr "slóð"
 
 #: src/client/gpaste-client.c:197
 msgid "put the content of the file at <path> into the clipboard"
@@ -809,7 +818,7 @@ msgstr ""
 #. Translators: help for whatever | gpaste
 #: src/client/gpaste-client.c:199
 msgid "whatever"
-msgstr ""
+msgstr "hvað sem er"
 
 #: src/client/gpaste-client.c:199
 msgid "set the output of whatever to clipboard"
@@ -818,22 +827,22 @@ msgstr ""
 #. Translators: help for gpaste empty
 #: src/client/gpaste-client.c:201
 msgid "empty the history"
-msgstr ""
+msgstr "tæma ferilinn"
 
 #. Translators: help for gpaste start
 #: src/client/gpaste-client.c:203
 msgid "start tracking clipboard changes"
-msgstr ""
+msgstr "byrja að rekja breytingar á klippispjaldi"
 
 #. Translators: help for gpaste stop
 #: src/client/gpaste-client.c:205
 msgid "stop tracking clipboard changes"
-msgstr ""
+msgstr "hætta að rekja breytingar á klippispjaldi"
 
 #. Translators: help for gpaste quit
 #: src/client/gpaste-client.c:207
 msgid "alias for stop"
-msgstr ""
+msgstr "samheiti fyrir stopp"
 
 #. Translators: help for gpaste daemon-reexec
 #: src/client/gpaste-client.c:209
@@ -843,12 +852,12 @@ msgstr ""
 #. Translators: help for gpaste preferences
 #: src/client/gpaste-client.c:211
 msgid "launch the configuration tool"
-msgstr ""
+msgstr "ræsa stillingaverkfærið"
 
 #. Translators: help for gpaste ui
 #: src/client/gpaste-client.c:213
 msgid "launch the graphical tool"
-msgstr ""
+msgstr "ræsa myndræna verkfærið"
 
 #. Translators: help for gpaste show-history
 #: src/client/gpaste-client.c:215
@@ -858,32 +867,32 @@ msgstr ""
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:217
 msgid "upload the item <uuid> to a pastebin service"
-msgstr ""
+msgstr "Senda <uuid> atriðið inn á úrklippuþjónustu (pastebin)"
 
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:219
 msgid "display the version"
-msgstr ""
+msgstr "birta útgáfunúmerið"
 
 #. Translators: help for gpaste daemon-version
 #: src/client/gpaste-client.c:221
 msgid "display the daemon version"
-msgstr ""
+msgstr "birta útgáfu vaktarans"
 
 #. Translators: help for gpaste help
 #: src/client/gpaste-client.c:223
 msgid "display this help"
-msgstr ""
+msgstr "birta þennan hjálpartexta"
 
 #. Translators: help for gpaste about
 #: src/client/gpaste-client.c:225
 msgid "display the about dialog"
-msgstr ""
+msgstr "birta glugga með upplýsingum um forritið"
 
 #: src/client/gpaste-client.c:228
 #, c-format
 msgid "Convenience options:"
-msgstr ""
+msgstr "Valkostir til þæginda:"
 
 #. Translators: help for --use-index
 #: src/client/gpaste-client.c:231
@@ -893,12 +902,12 @@ msgstr ""
 #: src/client/gpaste-client.c:234
 #, c-format
 msgid "Display options:"
-msgstr ""
+msgstr "Valkostir birtingar:"
 
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:237
 msgid "display each item on only one line"
-msgstr ""
+msgstr "birta hvert atriði á aðeins einni línu"
 
 #. Translators: help for --raw
 #: src/client/gpaste-client.c:239
@@ -908,7 +917,7 @@ msgstr ""
 #. Translators: help for --reverse
 #: src/client/gpaste-client.c:241
 msgid "display the items in reverse order"
-msgstr ""
+msgstr "birta atriðin í öfugri röð"
 
 #. Translators: help for --zero
 #: src/client/gpaste-client.c:243
@@ -918,13 +927,13 @@ msgstr ""
 #: src/client/gpaste-client.c:246
 #, c-format
 msgid "Merge options:"
-msgstr ""
+msgstr "Valkostir fyrir sameiningu:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
 #: src/client/gpaste-client.c:249 src/client/gpaste-client.c:251
 msgid "string"
-msgstr ""
+msgstr "strengur"
 
 #: src/client/gpaste-client.c:249
 msgid ""
@@ -947,11 +956,11 @@ msgstr ""
 
 #: src/client/gpaste-client.c:809 src/ui/gpaste-ui-window.c:313
 msgid "Couldn't connect to GPaste daemon"
-msgstr ""
+msgstr "Ekki tókst að tengjast GPaste-vaktaranum"
 
 #: src/daemon/gpaste-daemon.c:34
 msgid "Stop signal received, exiting"
-msgstr ""
+msgstr "Tók við stopp-merki, hætti núna"
 
 #: src/daemon/gpaste-daemon.c:71
 msgid "Could not acquire DBus name."
@@ -960,85 +969,85 @@ msgstr ""
 #. This is the date format "month/day/year time"
 #: src/daemon/tmp/gpaste-image-item.c:241
 msgid "%m/%d/%y %T"
-msgstr ""
+msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
 #: src/daemon/tmp/gpaste-image-item.c:243
 #, c-format
 msgid "[Image, %d x %d (%s)]"
-msgstr ""
+msgstr "[mynd, %d x %d (%s)]"
 
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/tmp/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "Lykilorð"
 
 #. This is the prefix displayed in history to identify selected files
 #: src/daemon/tmp/gpaste-uris-item.c:105
 msgid "[Files] "
-msgstr ""
+msgstr "[Skrár] "
 
 #: src/gnome-shell/aboutItem.js:16 src/ui/gpaste-ui-about.c:41
 msgid "About"
-msgstr ""
+msgstr "Um hugbúnaðinn"
 
 #: src/gnome-shell/dummyHistoryItem.js:15 src/ui/gpaste-ui-empty-item.c:60
 msgid "(Couldn't connect to GPaste daemon)"
-msgstr ""
+msgstr "(Ekki tókst að tengjast GPaste-vaktaranum)"
 
 #: src/gnome-shell/dummyHistoryItem.js:20 src/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
-msgstr ""
+msgstr "(tómt)"
 
 #: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
-msgstr ""
+msgstr "(Engar niðurstöður)"
 
 #: src/gnome-shell/emptyHistoryItem.js:18
 msgid "Empty history"
-msgstr ""
+msgstr "Tæma feril"
 
 #: src/gnome-shell/stateSwitch.js:15
 msgid "Track changes"
-msgstr ""
+msgstr "Rekja breytingar"
 
 #: src/gnome-shell/uiItem.js:17
 msgid "Graphical tool"
-msgstr ""
+msgstr "Myndrænt verkfæri"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
-msgstr ""
+msgstr "Gat ekki búið til möppu undir feril"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:37
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:41
 msgid "Failed to register the gtk application"
-msgstr ""
+msgstr "Gat ekki kerfisskráð gtk-forritið"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:49
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:53
 msgid "is already running."
-msgstr ""
+msgstr "er þegar í gangi."
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:112
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:127
 #: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
-msgstr ""
+msgstr "Rekja breytingar á klippispjaldi"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:118
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
 msgid "Close UI on select"
-msgstr ""
+msgstr "Loka viðmóti við val"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:124
 msgid "Open UI window centered"
-msgstr ""
+msgstr "Opna viðmótsglugga miðjaðan"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:133
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:156
 msgid "Enable the gnome-shell extension"
-msgstr ""
+msgstr "Virkja gnome-shell skeljarviðbótina"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:139
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:162
@@ -1048,32 +1057,32 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:148
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:172
 msgid "Primary selection affects history"
-msgstr ""
+msgstr "Aðalval (primary - miðjuhnappur) hefur áhrif á feril"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:154
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
 msgid "Synchronize clipboard with primary selection"
-msgstr ""
+msgstr "Samræma klippispjald við aðalval (primary - miðjuhnappur)"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:187
 msgid "Images support"
-msgstr ""
+msgstr "Stuðningur við myndir"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:167
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:193
 msgid "Trim items"
-msgstr ""
+msgstr "Stytta atriði"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:173
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:199
 msgid "Detect growing lines"
-msgstr ""
+msgstr "Skynja vaxandi línur"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:180
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:145
 msgid "Save history"
-msgstr ""
+msgstr "Vista feril"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:203
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
@@ -1083,76 +1092,76 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:231
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Max text item length"
-msgstr ""
+msgstr "Hámarkslengd textaatriða"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:238
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
 msgid "Min text item length"
-msgstr ""
+msgstr "Lágmarkslengd textaatriða"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:326
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
 msgid "General behaviour"
-msgstr ""
+msgstr "Almenn hegðun"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:327
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
 msgid "History settings"
-msgstr ""
+msgstr "Stillingar ferils"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:328
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:98
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Flýtileiðir á lyklaborði"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:28
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:49
 #: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-edit-item.c:44
 #: src/ui/gpaste-ui-new-item.c:30
 msgid "Cancel"
-msgstr ""
+msgstr "Hætta við"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:146
 #: src/ui/gpaste-ui-empty-history.c:66
 msgid "Empty"
-msgstr ""
+msgstr "Tómt"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:146
 msgid "Do you really want to empty the history?"
-msgstr ""
+msgstr "Viltu örugglega tæma ferilinn?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:139
 msgid "Open the UI window centered"
-msgstr ""
+msgstr "Opna viðmótsgluggann miðjaðan"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:170
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "Samstilling klippispjalda"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:185
 msgid "Optional features"
-msgstr ""
+msgstr "Valkvæðir eiginleikar"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
 msgid "Resources limits"
-msgstr ""
+msgstr "Takmörk tilfanga"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
 msgid "Text limits"
-msgstr ""
+msgstr "Takmörk texta"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 msgid "Display settings"
-msgstr ""
+msgstr "Birtingarstillingar"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 msgid "History access"
-msgstr ""
+msgstr "Aðgangur að ferli"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
 msgid "Active element manipulation"
@@ -1160,65 +1169,65 @@ msgstr ""
 
 #: src/ui/gpaste-ui-backup-history.c:42 src/ui/gpaste-ui-backup-history.c:139
 msgid "Backup"
-msgstr ""
+msgstr "Öryggisafrit"
 
 #: src/ui/gpaste-ui-backup-history.c:46
 msgid "Under which name do you want to backup this history?"
-msgstr ""
+msgstr "Undir hvaða heiti viltu taka öryggisafrit af þessum ferli?"
 
 #: src/ui/gpaste-ui-delete-history.c:26 src/ui/gpaste-ui-delete-history.c:66
 #: src/ui/gpaste-ui-delete-item.c:49
 msgid "Delete"
-msgstr ""
+msgstr "Eyða"
 
 #: src/ui/gpaste-ui-delete-history.c:26
 msgid "Are you sure you want to delete this history?"
-msgstr ""
+msgstr "Ertu viss um að þú viljir eyða þessum ferli?"
 
 #: src/ui/gpaste-ui-edit-item.c:43 src/ui/gpaste-ui-edit-item.c:116
 msgid "Edit"
-msgstr ""
+msgstr "Breyta"
 
 #: src/ui/gpaste-ui-new-item.c:29 src/ui/gpaste-ui-new-item.c:81
 msgid "New"
-msgstr ""
+msgstr "Nýtt"
 
 #: src/ui/gpaste-ui-panel.c:303
 msgid "Switch to"
-msgstr ""
+msgstr "Skipta í"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Restart"
-msgstr ""
+msgstr "Endurræsa"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Do you really want to restart the daemon?"
-msgstr ""
+msgstr "Viltu í alvörunni endurræsa vaktarann?"
 
 #: src/ui/gpaste-ui-reexec.c:56
 msgid "Restart the daemon"
-msgstr ""
+msgstr "Endurræsa vaktarann"
 
 #: src/ui/gpaste-ui-search.c:26
 msgid "Search"
-msgstr ""
+msgstr "Leita"
 
 #: src/ui/gpaste-ui-settings.c:31
 msgid "GPaste Settings"
-msgstr ""
+msgstr "Stillingar GPaste"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
-msgstr ""
+msgstr "Almennt"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Stop"
-msgstr ""
+msgstr "Stöðva"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Do you really want to stop tracking clipboard changes?"
-msgstr ""
+msgstr "Viltu virkilega hætta að rekja breytingar á klippispjaldi?"
 
 #: src/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
-msgstr ""
+msgstr "Senda inn"
