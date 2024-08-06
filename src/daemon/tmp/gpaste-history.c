@@ -36,7 +36,7 @@ typedef struct
     GPasteStorageBackend *backend;
     GPasteSettings       *settings;
     GList                *history;
-    guint64               size;
+    gsize                 size;
 
     gchar                *name;
 

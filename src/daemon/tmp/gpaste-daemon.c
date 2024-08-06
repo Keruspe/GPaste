@@ -121,7 +121,7 @@ _err (const gchar *name,
 
 static gchar *
 g_paste_daemon_get_dbus_string_parameter (GVariant *parameters,
-                                          guint64  *length)
+                                          gsize    *length)
 {
     GVariantIter parameters_iter;
 
@@ -139,7 +139,7 @@ _variant_iter_read_strings_parameter (GVariantIter *parameters_iter,
 {
     g_autoptr (GVariant) variant1 = g_variant_iter_next_value (parameters_iter);
     g_autoptr (GVariant) variant2 = g_variant_iter_next_value (parameters_iter);
-    guint64 length;
+    gsize length;
 
     *str1 = g_variant_dup_string (variant1, &length);
     *str2 = g_variant_dup_string (variant2, &length);
@@ -255,7 +255,7 @@ g_paste_daemon_private_add (const GPasteDaemonPrivate *priv,
                             GVariant                  *parameters,
                             GPasteDBusError          **err)
 {
-    guint64 length;
+    gsize length;
     g_autofree gchar *text = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
 
     g_paste_daemon_private_do_add (priv, text, length, err);
@@ -267,7 +267,7 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
                                  GError                   **error,
                                  GPasteDBusError          **err)
 {
-    guint64 length;
+    gsize length;
     g_autofree gchar *file = g_paste_daemon_get_dbus_string_parameter (parameters, &length);
     g_autofree gchar *content = NULL;
 
@@ -486,10 +486,10 @@ g_paste_daemon_private_get_elements (const GPasteDaemonPrivate *priv,
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ss)"));
 
     g_autoptr (GVariant) variant = g_variant_iter_next_value (&parameters_iter);
-    guint64 len;
+    gsize len;
     g_autofree const gchar **uuids = g_variant_get_strv (variant, &len);
 
-    for (guint64 i = 0; i < len; ++i)
+    for (gsize i = 0; i < len; ++i)
     {
         const GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
         G_PASTE_DBUS_ASSERT_FULL (item, "received no value for this index", NULL);
@@ -614,7 +614,7 @@ g_paste_daemon_private_merge (const GPasteDaemonPrivate *priv,
     _variant_iter_read_strings_parameter (&parameters_iter, &decoration, &separator);
 
     g_autoptr (GVariant) v_uuids = g_variant_iter_next_value (&parameters_iter);
-    guint64 length;
+    gsize length;
     const GStrv uuids = (const GStrv) g_variant_get_strv (v_uuids, &length);
 
     G_PASTE_DBUS_ASSERT (length, "nothing to merge");
@@ -724,7 +724,7 @@ g_paste_daemon_private_replace (const GPasteDaemonPrivate *priv,
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
-    guint64 length;
+    gsize length;
 
     g_variant_iter_init (&parameters_iter, parameters);
 
@@ -751,7 +751,7 @@ g_paste_daemon_private_set_password (const GPasteDaemonPrivate *priv,
 {
     GPasteHistory *history = priv->history;
     GVariantIter parameters_iter;
-    guint64 length;
+    gsize length;
 
     g_variant_iter_init (&parameters_iter, parameters);
 

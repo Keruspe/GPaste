@@ -366,7 +366,7 @@ G_PASTE_VISIBLE guint32 *
 g_paste_util_get_dbus_au_result (GVariant *variant,
                                  guint64  *len)
 {
-    guint64 _len;
+    gsize _len;
     const guint32 *r = g_variant_get_fixed_array (variant, &_len, sizeof (guint32));
     guint32 *ret = g_memdup2 (r, _len * sizeof (guint32));
 
