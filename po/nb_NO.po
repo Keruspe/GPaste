@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-03-21 22:54+0100\n"
-"PO-Revision-Date: 2023-03-21 19:38+0000\n"
+"PO-Revision-Date: 2024-09-02 20:09+0000\n"
 "Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/gpaste/"
 "gpaste/nb_NO/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -389,7 +389,7 @@ msgstr "Oppgradering til gnome-shell 3.36.0."
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:447
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:463
 msgid "Compatibility with recent appstream-glib"
-msgstr "Kompabilitet med nyere appstream-glib"
+msgstr "Kompatibilitet med nyere appstream-glib"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:453
 msgid "First release for GNOME 3.34. Changes:"
