@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-03-21 22:54+0100\n"
-"PO-Revision-Date: 2024-08-02 09:09+0000\n"
+"PO-Revision-Date: 2024-09-04 15:09+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "is/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n % 10 != 1 || n % 100 == 11;\n"
-"X-Generator: Weblate 5.7-dev\n"
+"X-Generator: Weblate 5.7.2-rc\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -96,11 +96,11 @@ msgstr "Stillingaviðmótið"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:445
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:461
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Þetta er viðhaldsuppfærsla. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Support for gnome 46"
-msgstr ""
+msgstr "Stuðningur við GNOME 46"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:62
@@ -108,15 +108,15 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:169
 msgid "Translations updates"
-msgstr ""
+msgstr "Uppfærslur þýðinga"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
 msgid "Stable release for GNOME 45. Changes:"
-msgstr ""
+msgstr "Þetta er stöðug útgáfa fyrir GNOME 45. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid "Port to gnome 45"
-msgstr ""
+msgstr "Yfirfærsla í GNOME 45"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
 msgid "Add setting to open ui window centered"
@@ -131,15 +131,15 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
 msgid "First release for GNOME 44. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 44. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:78
 msgid "gcr 4 is now required"
-msgstr ""
+msgstr "gcr 4 er núna nauðsynlegt"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 msgid "Port to gnome 44"
-msgstr ""
+msgstr "Yfirfærsla í GNOME 44"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:95
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
@@ -156,11 +156,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:109
 msgid "First release for GNOME 43. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 43. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Yfirfærsla í GNOME 43"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
 msgid "Internal preparation for gtk4 port"
@@ -170,7 +170,7 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:201
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:277
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "Opna viðmót GPaste þar sem músarbendillinn er"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:153
 msgid "Fixes to the new preferences tool"
@@ -178,11 +178,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
 msgid "Style fixes"
-msgstr ""
+msgstr "Lagfæringar á stílum"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
 msgid "First release for GNOME 42. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 42. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
 msgid ""
@@ -207,7 +207,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:168
 msgid "Extension updated for gnome-shell 42"
-msgstr ""
+msgstr "Viðauki uppfærður fyrir gnome-shell 42"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:209
 msgid "fix the storage path for meson builds"
@@ -231,7 +231,7 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:261
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:285
 msgid "translations update"
-msgstr ""
+msgstr "uppfærsla þýðinga"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:242
 msgid "fix gnome-shell exntesion when the daemon restarts"
@@ -243,11 +243,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:258
 msgid "First release for GNOME 41. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 41. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:260
 msgid "port to gnome-shell 41"
-msgstr ""
+msgstr "Yfirfærsla í gnome-shell 41"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:293
 msgid "fix a crash in memory usage checking"
@@ -255,11 +255,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:300
 msgid "First release for GNOME 40. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 40. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:302
 msgid "port to gnome-shell 40"
-msgstr ""
+msgstr "Yfirfærsla í gnome-shell 40"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:303
 msgid "placeholder for gnome-shell prefs"
@@ -287,7 +287,7 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
 msgid "updated translations"
-msgstr ""
+msgstr "uppfærðar þýðingar"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
 msgid "gnome-shell extension warning fixes"
@@ -312,7 +312,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:362
 msgid "First release for GNOME 3.38. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 3.38. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
 msgid "Drop the Tracking DBus signal"
@@ -328,7 +328,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:367
 msgid "Update to gnome-shell 3.38.0"
-msgstr ""
+msgstr "Uppfærsla í gnome-shell 3.38.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:391
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:423
@@ -349,11 +349,11 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:413
 msgid "First release for GNOME 3.36. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 3.36. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:415
 msgid "Update to gnome-shell 3.36.0"
-msgstr ""
+msgstr "Uppfærsla í gnome-shell 3.36.0"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:447
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:463
@@ -362,7 +362,7 @@ msgstr ""
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:453
 msgid "First release for GNOME 3.34. Changes:"
-msgstr ""
+msgstr "Fyrsta útgáfa fyrir GNOME 3.34. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:455
 msgid "Update to gnome-shell 3.34.0"
@@ -592,7 +592,7 @@ msgstr "Sjálfgefið vistum við það"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:152
 msgid "The keyboard shortcut to display the menu"
-msgstr ""
+msgstr "Lyklaborðsvísun til að birta valmyndina"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid ""
@@ -901,7 +901,7 @@ msgstr "Valkostir til þæginda:"
 #. Translators: help for --use-index
 #: src/client/gpaste-client.c:231
 msgid "use the index of the item instead of its UUID"
-msgstr ""
+msgstr "nota atriðisvísi atriða í stað UUID-auðkennis þeirra"
 
 #: src/client/gpaste-client.c:234
 #, c-format
@@ -926,7 +926,7 @@ msgstr "birta atriðin í öfugri röð"
 #. Translators: help for --zero
 #: src/client/gpaste-client.c:243
 msgid "use a NUL character instead of a new line betweean each item"
-msgstr ""
+msgstr "nota NUL-staf í staðinn fyrir nýlínu milli atriða"
 
 #: src/client/gpaste-client.c:246
 #, c-format
