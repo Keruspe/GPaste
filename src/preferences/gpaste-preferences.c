@@ -28,7 +28,7 @@ main (gint argc, gchar *argv[])
 
     GtkWindow *win = g_paste_gtk_preferences_window_new ();
 
-    gtk_widget_show (GTK_WIDGET (win));
+    gtk_window_present (win);
     gtk_application_add_window (app, win);
 
     return g_application_run (gapp, argc, argv);
