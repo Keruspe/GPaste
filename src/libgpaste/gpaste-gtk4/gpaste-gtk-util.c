@@ -7,20 +7,90 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-window.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
+#define CONFIRM_DATA_KEY "gpaste-confirm-dialog-button-ok"
+
 typedef struct {
+    GtkWindow                     *dialog;
     GPasteGtkConfirmDialogCallback callback;
     gpointer                       user_data;
 } GPasteGtkConfirmDialogCallbackData;
 
 static void
-on_confirm_dialog_response (GtkDialog      *dialog,
-                            GtkResponseType choice,
-                            gpointer        user_data)
+on_confirm_button_clicked (GtkButton *button,
+                           gpointer   user_data)
 {
     g_autofree GPasteGtkConfirmDialogCallbackData *data = user_data;
 
-    gtk_window_destroy (GTK_WINDOW (dialog));
-    data->callback (choice == GTK_RESPONSE_OK, data->user_data);
+    gboolean ok = !!g_object_get_data (G_OBJECT (button), CONFIRM_DATA_KEY);
+
+    gtk_window_destroy (GTK_WINDOW (data->dialog));
+    data->callback (ok, data->user_data);
+}
+
+static GtkWidget *
+confirm_button (const gchar                        *action,
+		gboolean                            ok,
+                GPasteGtkConfirmDialogCallbackData *data)
+{
+    GtkWidget *button = gtk_button_new_with_label (action);
+
+    gtk_button_set_use_underline (GTK_BUTTON (button), TRUE);
+    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+    g_object_set_data (G_OBJECT (button), CONFIRM_DATA_KEY, GSIZE_TO_POINTER (ok));
+
+    g_signal_connect (G_OBJECT (button),
+                      "clicked",
+                      G_CALLBACK (on_confirm_button_clicked),
+                      data);
+
+    return button;
+}
+
+static GtkWidget *
+confirm_header_bar (const gchar                        *action,
+                    GPasteGtkConfirmDialogCallbackData *data)
+{
+    GtkWidget *header_bar = gtk_header_bar_new ();
+    GtkHeaderBar *header = GTK_HEADER_BAR (header_bar);
+
+    gtk_header_bar_set_show_title_buttons (header, FALSE);
+    gtk_header_bar_pack_start (header, confirm_button (_("Cancel"), FALSE, data));
+    gtk_header_bar_pack_end (header, confirm_button (action, TRUE, data));
+
+    return header_bar;
+}
+
+static GtkWidget *
+confirm_label (const gchar *msg)
+{
+    GtkWidget *label = gtk_label_new (msg);
+
+    gtk_widget_set_vexpand (label, TRUE);
+    gtk_widget_set_valign (label, TRUE);
+    gtk_widget_set_visible (label, TRUE);
+
+    return label;
+}
+
+static GtkWidget *
+confirm_dialog_window (const gchar                   *action,
+                       GPasteGtkConfirmDialogCallback on_confirmation,
+                       gpointer                       user_data)
+{
+    GtkWidget *dialog = gtk_window_new ();
+    GtkWindow *win = GTK_WINDOW (dialog);
+    GPasteGtkConfirmDialogCallbackData *data = g_new (GPasteGtkConfirmDialogCallbackData, 1);
+
+    data->dialog = win;
+    data->callback = on_confirmation;
+    data->user_data = user_data;
+
+    gtk_window_set_title (win, PACKAGE_STRING);
+    gtk_window_set_titlebar (win, confirm_header_bar (action, data));
+    gtk_window_set_modal (win, TRUE);
+    gtk_window_set_destroy_with_parent (win, TRUE);
+
+    return dialog;
 }
 
 /**
@@ -43,27 +113,14 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
     g_return_if_fail (g_utf8_validate (msg, -1, NULL));
     g_return_if_fail (on_confirmation);
 
-    GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, parent,
-                                                     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
-                                                     action,      GTK_RESPONSE_OK,
-                                                     _("Cancel"), GTK_RESPONSE_CANCEL,
-                                                     NULL);
-    GtkWidget *label = gtk_label_new (msg);
-    GtkDialog *d = GTK_DIALOG (dialog);
-    GPasteGtkConfirmDialogCallbackData *data = g_new (GPasteGtkConfirmDialogCallbackData, 1);
+    GtkWidget *dialog = confirm_dialog_window (action, on_confirmation, user_data);
+    GtkWindow *win = GTK_WINDOW (dialog);
 
-    data->callback = on_confirmation;
-    data->user_data = user_data;
+    if (parent)
+	gtk_window_set_transient_for(win, parent);
 
-    g_signal_connect (dialog,
-                     "response",
-                     G_CALLBACK (on_confirm_dialog_response),
-                     data);
-
-    gtk_widget_set_vexpand (label, TRUE);
-    gtk_widget_set_valign (label, TRUE);
-    gtk_box_append (GTK_BOX (gtk_dialog_get_content_area (d)), label);
-    gtk_widget_show (label);
+    gtk_widget_set_parent (confirm_label (msg), dialog);
+    gtk_window_present (win);
 }
 
 /**
