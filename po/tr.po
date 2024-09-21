@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-21 14:16+0200\n"
-"PO-Revision-Date: 2024-03-23 10:02+0000\n"
+"PO-Revision-Date: 2024-09-22 13:41+0000\n"
 "Last-Translator: Oğuz Ersen <oguz@ersen.moe>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/gpaste/gpaste/tr/"
 ">\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.8-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -103,9 +103,8 @@ msgid "This is a maintenance release. Changes:"
 msgstr "Bu bir bakım sürümüdür. Değişiklikler:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#, fuzzy
 msgid "Support for gnome 47"
-msgstr "gnome 46 desteği"
+msgstr "gnome 47 desteği"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
