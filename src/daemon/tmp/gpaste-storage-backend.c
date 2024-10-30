@@ -52,19 +52,23 @@ g_paste_storage_backend_read_history (const GPasteStorageBackend *self,
  * @self: a #GPasteItem instance
  * @name: the name of the history to save
  * @history: (element-type GPasteItem): the history to write
+ * @action: what do do with element (replace / remove)
+ * @index: which element to act on, G_PASTE_STORAGE_ALL_ITEMS if all of them
  *
  * Save the history by writing it to our storage backend
  */
 G_PASTE_VISIBLE void
 g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
                                        const gchar                *name,
-                                       const GList                *history)
+                                       const GList                *history,
+                                       const GPasteStorageAction  action,
+                                       guint64                    index)
 {
     g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
-    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history);
+    _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history, action, index);
 }
 
 static void

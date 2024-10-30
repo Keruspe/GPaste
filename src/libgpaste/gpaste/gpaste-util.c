@@ -319,18 +319,11 @@ g_paste_util_replace (const gchar *text,
     g_return_val_if_fail (g_utf8_validate (pattern, -1, NULL), NULL);
     g_return_val_if_fail (g_utf8_validate (substitution, -1, NULL), NULL);
 
-    g_autofree gchar *regex_string = g_regex_escape_string (pattern, -1);
-    g_autoptr (GRegex) regex = g_regex_new (regex_string,
-                                            0, /* Compile options */
-                                            0, /* Match options */
-                                            NULL); /* Error */
-    return g_regex_replace_literal (regex,
-                                    text,
-                                    (gssize) -1,
-                                    0, /* Start position */
-                                    substitution,
-                                    0, /* Match options */
-                                    NULL); /* Error */
+    g_autofree GString *gs = g_string_new(text);
+
+    g_string_replace(gs, pattern, substitution, 0);
+
+    return gs->str;
 }
 
 /**

@@ -145,8 +145,23 @@ g_paste_history_update (GPasteHistory     *self,
                         guint64            position)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    GPasteStorageAction s_action;
 
-    g_paste_storage_backend_write_history (priv->backend, priv->name, priv->history);
+    switch(action)
+    {
+    case G_PASTE_UPDATE_ACTION_REPLACE:
+        s_action = G_PASTE_STORAGE_ACTION_REPLACE;
+        break;
+    case G_PASTE_UPDATE_ACTION_REMOVE:
+        s_action = G_PASTE_STORAGE_ACTION_REMOVE;
+        break;
+    default:
+        s_action = G_PASTE_STORAGE_ACTION_INVALID;
+    }
+
+    g_paste_storage_backend_write_history (priv->backend, priv->name, priv->history,
+                                           s_action,
+                                           target == G_PASTE_UPDATE_TARGET_ALL ? G_PASTE_STORAGE_ALL_ITEMS : target);
 
     g_debug ("history: update");
 
@@ -814,7 +829,7 @@ g_paste_history_save (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, priv->history);
+    g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, priv->history, G_PASTE_STORAGE_ACTION_REPLACE, -1);
 }
 
 static void

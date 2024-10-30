@@ -20,6 +20,14 @@ typedef enum {
     G_PASTE_STORAGE_DEFAULT = G_PASTE_STORAGE_FILE
 } GPasteStorage;
 
+typedef enum {
+    G_PASTE_STORAGE_ACTION_REPLACE = 1,
+    G_PASTE_STORAGE_ACTION_REMOVE,
+    G_PASTE_STORAGE_ACTION_INVALID = 0
+} GPasteStorageAction;
+
+#define G_PASTE_STORAGE_ALL_ITEMS    G_MAXUINT64
+
 #define G_PASTE_TYPE_STORAGE_BACKEND (g_paste_storage_backend_get_type ())
 
 G_PASTE_DERIVABLE_TYPE (StorageBackend, storage_backend, STORAGE_BACKEND, GObject)
@@ -35,7 +43,9 @@ struct _GPasteStorageBackendClass
                                 gsize                      *size);
     void (*write_history_file) (const GPasteStorageBackend *self,
                                 const gchar                *history_file_path,
-                                const GList                *history);
+                                const GList                *history,
+                                const GPasteStorageAction  action,
+                                guint64                    index);
 
     /*< protected >*/
     const gchar          *(*get_extension) (const GPasteStorageBackend *self);
@@ -48,7 +58,9 @@ void g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
                                             gsize                      *size);
 void g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
                                             const gchar                *name,
-                                            const GList                *history);
+                                            const GList                *history,
+                                            const GPasteStorageAction  action,
+                                            guint64                    index);
 
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);
