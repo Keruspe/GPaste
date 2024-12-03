@@ -8,13 +8,17 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-21 14:16+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2024-12-04 21:00+0000\n"
+"Last-Translator: volkov <volkov@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Ukrainian <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"uk/>\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.9-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
@@ -24,7 +28,7 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Керуйте історією вашого буферу обміну"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
@@ -35,22 +39,26 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste - це система керування буфером обміну, яка дозволяє вам слідкувати та "
+"керувати історією вашого буферу обміну та має багато налаштувань."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:17
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste забезпечує вас графічними інструментами, які дають вам керувати усім "
+"з легкістю."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:24
 msgid "The main UI"
-msgstr ""
+msgstr "Головний інтерфейс"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:28
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:32
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:36
 msgid "The settings UI"
-msgstr ""
+msgstr "Інтерфейс налаштувань"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
@@ -94,11 +102,11 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:454
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:470
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Випуск з обслуговування. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Support for gnome 47"
-msgstr ""
+msgstr "Підтримка GNOME 47"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
@@ -107,23 +115,23 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
 msgid "Translations updates"
-msgstr ""
+msgstr "Оновлення перекладів"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid "Support for gnome 46"
-msgstr ""
+msgstr "Підтримка GNOME 46"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
 msgid "Stable release for GNOME 45. Changes:"
-msgstr ""
+msgstr "Стабільний випуск для GNOME 45. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "Port to gnome 45"
-msgstr ""
+msgstr "Портування до GNOME 45"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
 msgid "Add setting to open ui window centered"
-msgstr ""
+msgstr "Додано опцію для відкривання вікна інтерфейсу центрованим"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
@@ -131,102 +139,105 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
 msgid "Fix a bug leading to history with only one item"
 msgstr ""
+"Виправлено ваду яка призводила до відкриття історії тільки з одним об'єктом"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
 msgid "First release for GNOME 44. Changes:"
-msgstr ""
+msgstr "Перший випуск для GNOME 44. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
 msgid "gcr 4 is now required"
-msgstr ""
+msgstr "Тепер потребується gcr 4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
 msgid "Port to gnome 44"
-msgstr ""
+msgstr "Портування до GNOME 44"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
 msgid "Avoid crash under heavy memory load"
-msgstr ""
+msgstr "Уникання аварійного завершення при високому навантаженні пам'яті"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:202
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:278
 msgid "Respect --use-index when displaying history"
-msgstr ""
+msgstr "Дотримування --use-index при відображенні історії"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
 msgid "First release for GNOME 43. Changes:"
-msgstr ""
+msgstr "Перший випуск для GNOME 43. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Портування до GNOME 43"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
 msgid "Internal preparation for gtk4 port"
-msgstr ""
+msgstr "Внутрішня підготовка до портування на GTK4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:210
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:286
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "Відкривання інтерфейсу GPaste там де курсор миші"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
 msgid "Fixes to the new preferences tool"
-msgstr ""
+msgstr "Виправлення до нового інструменту налаштувань"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
 msgid "Style fixes"
-msgstr ""
+msgstr "Виправлення стилю"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
 msgid "First release for GNOME 42. Changes:"
-msgstr ""
+msgstr "Перший випуск для GNOME 42. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
+"Стара бібліотека libpaste була замінена на нову мінімалістичну libpaste-2 "
+"без залежностей від GTK"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
 msgid "New libgpaste-gtk3 for utils and settings ui"
-msgstr ""
+msgstr "Нова libpaste-gtk3 бібліотека для утиліт та інтерфейсу налаштувань"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:174
 msgid "New libgpaste-gtk4 for utils and preferences ui"
-msgstr ""
+msgstr "Нова бібліотека libpaste-gtk4 для утиліт та інтерфейсу налаштувань"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:175
 msgid "New gtk4 based gpaste-preferences utility"
-msgstr ""
+msgstr "Нова утиліта gpaste-preferences заснована на GTK4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
 msgid "Autotools are no longer supported"
-msgstr ""
+msgstr "Автоінструменти більше не підтримуються"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:177
 msgid "Extension updated for gnome-shell 42"
-msgstr ""
+msgstr "Розширення оновлено до оболонки GNOME 42 (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:218
 msgid "fix the storage path for meson builds"
-msgstr ""
+msgstr "Виправлено шлях до сховища для meson збірок"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:226
 msgid "fix some race conditions in history handling"
-msgstr ""
+msgstr "виправлено декілька станів гонитви у поводженні з історією"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:234
 msgid "better fix crash when there is no history yet"
-msgstr ""
+msgstr "покращено виправлення аварійного завершення коли історії ще нема"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:242
 msgid "fix crash when there is no history yet"
-msgstr ""
+msgstr "виправлено аварійне завершення коли ще немає історії"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:243
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:252
@@ -234,142 +245,154 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
 msgid "translations update"
-msgstr ""
+msgstr "Оновлення перекладів"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:251
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr ""
+"Виправлено розширення оболонки GNOME (gnome-shell) коли даемон "
+"перезапускається"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:260
 msgid "Fix keybindings for wayland"
-msgstr ""
+msgstr "Виправлено клавіатурні скорочення для Wayland"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:267
 msgid "First release for GNOME 41. Changes:"
-msgstr ""
+msgstr "Перший випуск для GNOME 41. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:269
 msgid "port to gnome-shell 41"
-msgstr ""
+msgstr "Портування до оболонки GNOME 41 (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:302
 msgid "fix a crash in memory usage checking"
-msgstr ""
+msgstr "Виправлено аварійне завершення у перевірці використання пам'яті"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:309
 msgid "First release for GNOME 40. Changes:"
-msgstr ""
+msgstr "Перший випуск для GNOME 40. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:311
 msgid "port to gnome-shell 40"
-msgstr ""
+msgstr "Портування до оболонки GNOME 40 (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:312
 msgid "placeholder for gnome-shell prefs"
-msgstr ""
+msgstr "Заповнювач для налаштувань оболонки GNOME (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:320
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:384
 msgid "fix X11 keybinder outside of GNOME"
-msgstr ""
+msgstr "Виправлено X11 клавіатурні скорочення за межами GNOME"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:328
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
+"Покращена обробка та звітування про неправильні uuid-ри відправлені до "
+"gpaste-client"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
 msgstr ""
+"gpaste-client тепер має --use-index аргумент для декількох підкоманд для "
+"використання індексу замість uuid-ів"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
 msgid "fix the make-password keybinding"
-msgstr ""
+msgstr "Виправленно make-password клавіатурне скорочення"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
 msgid "updated translations"
-msgstr ""
+msgstr "Оновлення перекладів"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:346
 msgid "gnome-shell extension warning fixes"
-msgstr ""
+msgstr "Виправлено застереження розширення оболонки GNOME (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:355
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:392
 msgid "gnome-shell extension cosmetic updates"
-msgstr ""
+msgstr "Візуальні покращення до розширення оболонки GNOME (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:363
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
+"Вимкнена підтримка зображень за замовченням (можна ввімкнути назад у "
+"налаштуваннях)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
 msgid "Search now includes passwords (using their names)"
-msgstr ""
+msgstr "Тепер пошук включає паролі (використовуючи їхні назви)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:365
 msgid "systemd integration enhancements"
-msgstr ""
+msgstr "Покращення до інтеграції з systemd"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:371
 msgid "First release for GNOME 3.38. Changes:"
-msgstr ""
+msgstr "Перший випуск до GNOME 3.38. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:373
 msgid "Drop the Tracking DBus signal"
-msgstr ""
+msgstr "Скидання сигналу слідкування DBus"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:374
 msgid "Switch to uuids to identify items"
-msgstr ""
+msgstr "Переключення на uuid-ри для ідентифікації об'єктів"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:375
 msgid "Bump DBus interface to org.gnome.GPaste2"
-msgstr ""
+msgstr "Піднята версія DBus інтерфейсу до org.gnome.GPaste2"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:376
 msgid "Update to gnome-shell 3.38.0"
-msgstr ""
+msgstr "Оновлено до оболонки GNOME 3.38.0 (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:400
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:432
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:474
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
+"Виправлення активація об'єктів за допомогою Ctrl + цифра у оболонці GNOME "
+"(gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:408
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:440
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:473
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr ""
+"Виправлено захоплення клавіатурних скорочень з оболонкою GNOME (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:416
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:448
 msgid "Fix keybinding grab with gnome-shell"
 msgstr ""
+"Виправлено захоплення клавіатурних скорочень з оболонкою GNOME (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:422
 msgid "First release for GNOME 3.36. Changes:"
-msgstr ""
+msgstr "Перший випуск для GNOME 3.36. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:424
 msgid "Update to gnome-shell 3.36.0"
-msgstr ""
+msgstr "Оновлено до оболонки GNOME 3.36.0 (gnome-shell)"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:456
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:472
 msgid "Compatibility with recent appstream-glib"
-msgstr ""
+msgstr "Сумісність з нещодавнім appsteam-glib"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:462
 msgid "First release for GNOME 3.34. Changes:"
-msgstr ""
+msgstr "Перший випуск для GNOME 3.34. Зміни:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:464
 msgid "Update to gnome-shell 3.34.0"
-msgstr ""
+msgstr "Оновлено до оболонки GNOME 3.34.0 (gnome-shell)"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
@@ -380,76 +403,80 @@ msgstr ""
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:112
 #: src/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
-msgstr ""
+msgstr "Запустити графічний інструмент"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:278
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:129
 #: src/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
-msgstr ""
+msgstr "Позначити активний об'єкт як пароль"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:264
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 #: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
-msgstr ""
+msgstr "Видалити активний об'єкт із історії"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:285
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
-msgstr ""
+msgstr "Показати історію"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:292
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
 #: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
-msgstr ""
+msgstr "Синхронізувати буфер обміну з головним виділенням"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:299
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
-msgstr ""
+msgstr "Синзронізувати головне виділення з буфером обміну"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:306
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
 #: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
-msgstr ""
+msgstr "Вивантажити активний об'єкт до сервісу pastebin"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
 msgid "GPaste Preferences"
-msgstr ""
+msgstr "Налаштування GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "Керуйте налаштуваннями GPaste"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr ""
+"Clipboard;Manager;Settings;Preferences;Configuration;буфер;обміну;менеджер;на"
+"лаштування;конфігурація;"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
-msgstr ""
+msgstr "Максимальний розмір об'єкту при його відображенні"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
 msgstr ""
+"Зайве в об'єкті буде замінено на \"…\", а нові рядки будуть замінені на \" \""
+" при відображенні з аплету, 0 для вимкнення."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Чи виявляємо і заміняємо зростаючи рядки у історії?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
 msgid ""
@@ -457,52 +484,56 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"За замовченням, обирання \"Ось тут\", а потім \"Ось тут є приклад\" створить "
+"два записи у історії. Коли ця опція активна, перший буде замінений на другий."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
 msgid "The name of the current history"
-msgstr ""
+msgstr "Назва поточної історії"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
 msgid "The default name is \"history\""
-msgstr ""
+msgstr "Назва за замовченням - \"історія\""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
 msgid "Do we save the images copied to history, or only text?"
-msgstr ""
+msgstr "Чи зберігаємо скопійовані зображення у історію, чи тільки текст?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
 msgid "By default, we're saving only text"
-msgstr ""
+msgstr "За замовченням, ми зберігаємо тільки текст"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
 msgid "Do we close the UI after selecting an item?"
-msgstr ""
+msgstr "Чи закриваємо інтерфейс після обирання об'єкту?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
 msgid "By default, we close it"
-msgstr ""
+msgstr "За замовченням, зачиняємо його"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
 msgid "Do we open the UI window centered?"
-msgstr ""
+msgstr "Чи відкриваємо вікно інтерфейсу центрованим?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
 msgid "By default, we open it where the mouse cursor is"
-msgstr ""
+msgstr "За замовченням, відкриваємо там де курсор миші"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:56
 msgid "The keyboard shortcut to launch the graphical interface"
-msgstr ""
+msgstr "Клавіатурне скорочення для запуску графічного інтерфейсу"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"За замовченням, ctrl + alt + g виконає це (\"<Ctrl><Alt>G\"). Порожній рядок "
+"тут вимкне цю функцію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:65
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr ""
+msgstr "Клавіатурне скорочення для позначення активного об'єкту як пароль"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:66
 msgid ""
@@ -510,198 +541,223 @@ msgid ""
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
+"За замовченням, ctrl + alt + s позначить активний об'єкт як пароль (\""
+"<Ctrl><Alt>S\"). Порожній рядок тут вимкне цю функцію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:75
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:210
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:149
 msgid "Max displayed history size"
-msgstr ""
+msgstr "Максимальний розмір відображення історії"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
 msgid "Maximum number of items displayed in the history"
-msgstr ""
+msgstr "Максимальна кількість об'єктів для відображення у історії"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:84
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:217
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
 msgid "Max history size"
-msgstr ""
+msgstr "Максимальний розмір історії"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 msgid "Maximum number of items in history"
-msgstr ""
+msgstr "Максимальна кількість об'єктів у історії"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:93
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:224
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
 msgid "Max memory usage (MB)"
-msgstr ""
+msgstr "Максимальне споживання оперативної пам'яті (МБ)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Maximum amount of memory used to store contents"
-msgstr ""
+msgstr "Максимальна кількість оперативної пам'яті для зберігання вмісту"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:102
 msgid "Max text item size"
-msgstr ""
+msgstr "Максимальний розмір текстового об'єкту"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Максимальний розмір текстового об'єкту. Все що буде виходити за його межі - "
+"буде проігноровано."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
 msgid "Min text item size"
-msgstr ""
+msgstr "Мінімальний розмір текстового об'кту"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Мінімальний розмір текстового об'кту. Все що буде за його межами - буде "
+"проігноровано."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:119
 msgid "The keyboard shortcut to delete the first element in history"
-msgstr ""
+msgstr "Клавіатурне скорочення, щоб видалити перший елемент у історії"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"За замовченням, ctrl + alt + v виконає це ((\"<Ctrl><Alt>V\"). Порожній "
+"рядок тут вимкне цю функцію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
 msgid "Does the primary selection affects history?"
-msgstr ""
+msgstr "Чи буде головне виділення впливати на історію?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr ""
+msgstr "За замовченням, тільки буфер обміну (ctrl + c) впливає на історію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
 msgstr ""
+"Чи будемо ми зберігати усі версії форматованого тексту (наприклад, html) або "
+"тільки просту текстову версію?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 msgid "By default, we're saving all"
-msgstr ""
+msgstr "За замовченням, мі зберігаємо усі"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "Do we save the history from one session to another?"
-msgstr ""
+msgstr "Чи будемо ми зберігати історію однієї сесії в іншій?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 msgid "By default, we're saving it"
-msgstr ""
+msgstr "За замовченням, ми зберігаємо її"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:152
 msgid "The keyboard shortcut to display the menu"
-msgstr ""
+msgstr "Клавіатурне скорочення щоб відобразити меню"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
 msgstr ""
+"За замовченням, ctrl + alt + h відобразить меню (\"<Ctrl><Alt>H\"). Порожній "
+"рядок тут вимкне цю функцію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:161
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
-msgstr ""
+msgstr "Клавіатурне скорочення для синхронізації головного виділення"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"За замовченням, ctrl + alt + o синхронізує їх (\"<Ctrl><Alt>P\"). Порожній "
+"рядок тут вимкне цю функцію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:170
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
+"Клавіатурне скорочення для сихронізації головного виділення до буферу обміну"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"За замовченням, ctrl + alt + p синхронізує їх (\"<Ctrl><Alt>P\"). Порожній "
+"рядок тут вимкне цю функцію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Are the primary selection and the clipboard synchronized?"
-msgstr ""
+msgstr "Чи головне виділення та буфер обміну синхронізовані?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, the primary selection and the clipboard are independent."
-msgstr ""
+msgstr "За замовченням, головне виділення та буфер обміну незалежні."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid "Do we track the clipboard changes?"
-msgstr ""
+msgstr "Чи слідкуємо за змінами у буфері обміну?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, we're tracking those changes."
-msgstr ""
+msgstr "За замовченням, ми слідкуємо за цими змінами."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
 msgstr ""
+"Чи синхронізуємо стан даемону з розширенням оболонки? (вимкнення даемону при "
+"вимкненні розширення)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
 msgid "By default, the daemon state keeps unchanged"
-msgstr ""
+msgstr "За замовченням, стан даемону залишається незмінним"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:203
 msgid "Do we trim the textual items before adding them to history?"
-msgstr ""
+msgstr "Чи будемо обрізати текстові об'єкти перед додавання їх до історії?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
 msgstr ""
+"Обрізання означає видалення усіх зайвих пробілів та символів переводу рядку. "
+"За замовченням, ми залишаємо їх як є."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:212
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
+"Клавіатурне скорочення для завантаження першого елементу історії до сервісу "
+"pastebin"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"За замовченням, ctrl + alt + u виконає це (\"<Ctrl><Alt>U\"). Порожній рядок "
+"тут вимкне цю функцію."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:221
 msgid "Do we prompt for confirmation when emptying a history?"
-msgstr ""
+msgstr "Чи будемо ми питати про підтвердження при очищенні історії?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:222
 msgid "By default, we do as it's a destructive action"
-msgstr ""
+msgstr "За замовченням, ми виконуємо це як деструктивну дію"
 
 #: src/client/gpaste-client.c:149
 msgid "Couldn't spawn"
-msgstr ""
+msgstr "Не вдалося створити"
 
 #: src/client/gpaste-client.c:161
 #, c-format
 msgid "Usage:\n"
-msgstr ""
+msgstr "Використання:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:163
 msgid "print the history with UUIDs"
-msgstr ""
+msgstr "вивести історію з UUID-ми"
 
 #. Translators: help for gpaste history-size
 #: src/client/gpaste-client.c:165
 msgid "print the size of the history"
-msgstr ""
+msgstr "вивести розмір історії"
 
 #. Translators: help for gpaste get-history
 #: src/client/gpaste-client.c:167
 msgid "get the name of the current history"
-msgstr ""
+msgstr "отримати назву поточної історії"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -713,75 +769,75 @@ msgstr ""
 #: src/client/gpaste-client.c:173 src/client/gpaste-client.c:179
 #: src/client/gpaste-client.c:191 src/client/gpaste-client.c:195
 msgid "name"
-msgstr ""
+msgstr "назва"
 
 #: src/client/gpaste-client.c:169
 msgid "backup current history"
-msgstr ""
+msgstr "зробити резервну копію поточної історії"
 
 #: src/client/gpaste-client.c:171
 msgid "switch to another history"
-msgstr ""
+msgstr "перемикнутися на іншу історію"
 
 #: src/client/gpaste-client.c:173
 msgid "delete a history"
-msgstr ""
+msgstr "видалити історію"
 
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:175
 msgid "list available histories"
-msgstr ""
+msgstr "список доступних історій"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:177
 msgid "text"
-msgstr ""
+msgstr "текст"
 
 #: src/client/gpaste-client.c:177
 msgid "set text to clipboard"
-msgstr ""
+msgstr "встановити текст у буфер обміну"
 
 #: src/client/gpaste-client.c:179
 msgid "password"
-msgstr ""
+msgstr "пароль"
 
 #: src/client/gpaste-client.c:179
 msgid "add the name - password couple to the clipboard"
-msgstr ""
+msgstr "додати пару \"назва - пароль\" у буфер обміну"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:181
 msgid "old name"
-msgstr ""
+msgstr "стара назва"
 
 #: src/client/gpaste-client.c:181
 msgid "new name"
-msgstr ""
+msgstr "нова назва"
 
 #: src/client/gpaste-client.c:181
 msgid "rename the password"
-msgstr ""
+msgstr "перейменувати пароль"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:183
 msgid "get the item <uuid> from the history"
-msgstr ""
+msgstr "отримати об'єкт <uuid> із історії"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:185
 msgid "set the item <uuid> from the history to the clipboard"
-msgstr ""
+msgstr "встановити об'єкт <uuid> із історії у буфер обміну"
 
 #. Translators: help for gpaste replace <uuid> <contents>
 #: src/client/gpaste-client.c:187
 msgid "contents"
-msgstr ""
+msgstr "вміст"
 
 #: src/client/gpaste-client.c:187
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
-msgstr ""
+msgstr "замінити вміст об'єкту <uuid> з історії на представлений об'єкт"
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
 #: src/client/gpaste-client.c:189
@@ -789,442 +845,445 @@ msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr ""
+"злити об'єкти з однаковими UUID-ми з історії та відправити результат у буфер "
+"обміну"
 
 #: src/client/gpaste-client.c:191
 msgid "set the item <uuid> from the history as a password named <name>"
-msgstr ""
+msgstr "встановити об'єкт <uuid> з історії як пароль який називається <name>"
 
 #. Translators: help for gpaste delete <uuid>
 #: src/client/gpaste-client.c:193
 msgid "delete item <uuid> from the history"
-msgstr ""
+msgstr "видалити об'єкт <uuid> з історії"
 
 #: src/client/gpaste-client.c:195
 msgid "delete the password <name> from the history"
-msgstr ""
+msgstr "видалити пароль <name> з історії"
 
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:197
 msgid "path"
-msgstr ""
+msgstr "шлях"
 
 #: src/client/gpaste-client.c:197
 msgid "put the content of the file at <path> into the clipboard"
-msgstr ""
+msgstr "вставити вміст файлу за шляхом <path> у буфер обміну"
 
 #. Translators: help for whatever | gpaste
 #: src/client/gpaste-client.c:199
 msgid "whatever"
-msgstr ""
+msgstr "будь-що"
 
 #: src/client/gpaste-client.c:199
 msgid "set the output of whatever to clipboard"
-msgstr ""
+msgstr "вставити вивід будь-чого у буфер обміну"
 
 #. Translators: help for gpaste empty
 #: src/client/gpaste-client.c:201
 msgid "empty the history"
-msgstr ""
+msgstr "очистити історію"
 
 #. Translators: help for gpaste start
 #: src/client/gpaste-client.c:203
 msgid "start tracking clipboard changes"
-msgstr ""
+msgstr "почати слідкувати за змінами у буфері обміну"
 
 #. Translators: help for gpaste stop
 #: src/client/gpaste-client.c:205
 msgid "stop tracking clipboard changes"
-msgstr ""
+msgstr "зупинити слідкування за змінами у буфері обміну"
 
 #. Translators: help for gpaste quit
 #: src/client/gpaste-client.c:207
 msgid "alias for stop"
-msgstr ""
+msgstr "псевдонім (alias) для зупинки"
 
 #. Translators: help for gpaste daemon-reexec
 #: src/client/gpaste-client.c:209
 msgid "reexecute the daemon (after upgrading...)"
-msgstr ""
+msgstr "перезапустити даемон (після оновлення...)"
 
 #. Translators: help for gpaste preferences
 #: src/client/gpaste-client.c:211
 msgid "launch the configuration tool"
-msgstr ""
+msgstr "запустити інструмент конфігурації"
 
 #. Translators: help for gpaste ui
 #: src/client/gpaste-client.c:213
 msgid "launch the graphical tool"
-msgstr ""
+msgstr "запустити графічний інструмент"
 
 #. Translators: help for gpaste show-history
 #: src/client/gpaste-client.c:215
 msgid "make the applet or extension display the history"
-msgstr ""
+msgstr "змусити щоб аплет або розширення відображало історію"
 
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:217
 msgid "upload the item <uuid> to a pastebin service"
-msgstr ""
+msgstr "завантажити об'єкт <uuid> до сервісу pastebin"
 
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:219
 msgid "display the version"
-msgstr ""
+msgstr "відображає версію"
 
 #. Translators: help for gpaste daemon-version
 #: src/client/gpaste-client.c:221
 msgid "display the daemon version"
-msgstr ""
+msgstr "відобразити версію даемона"
 
 #. Translators: help for gpaste help
 #: src/client/gpaste-client.c:223
 msgid "display this help"
-msgstr ""
+msgstr "відобразити цю довідку"
 
 #. Translators: help for gpaste about
 #: src/client/gpaste-client.c:225
 msgid "display the about dialog"
-msgstr ""
+msgstr "відобразити діалогове вікно \"Про GPaste\""
 
 #: src/client/gpaste-client.c:228
 #, c-format
 msgid "Convenience options:"
-msgstr ""
+msgstr "Опції для зручності:"
 
 #. Translators: help for --use-index
 #: src/client/gpaste-client.c:231
 msgid "use the index of the item instead of its UUID"
-msgstr ""
+msgstr "використовувати індекс об'єкту замість його UUID"
 
 #: src/client/gpaste-client.c:234
 #, c-format
 msgid "Display options:"
-msgstr ""
+msgstr "Опції відображення:"
 
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:237
 msgid "display each item on only one line"
-msgstr ""
+msgstr "відображати кожний об'єкт тільки на одному рядку"
 
 #. Translators: help for --raw
 #: src/client/gpaste-client.c:239
 msgid "display each item raw (without line numbers)"
-msgstr ""
+msgstr "відображати кожний об'єкт без обробки (без номеру рядку)"
 
 #. Translators: help for --reverse
 #: src/client/gpaste-client.c:241
 msgid "display the items in reverse order"
-msgstr ""
+msgstr "відображати об'єкти у зворотньому порядку"
 
 #. Translators: help for --zero
 #: src/client/gpaste-client.c:243
 msgid "use a NUL character instead of a new line betweean each item"
-msgstr ""
+msgstr "використовувати NUL символ замість нових рядків поміж кожного об'єкту"
 
 #: src/client/gpaste-client.c:246
 #, c-format
 msgid "Merge options:"
-msgstr ""
+msgstr "Опції злиття:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
 #: src/client/gpaste-client.c:249 src/client/gpaste-client.c:251
 msgid "string"
-msgstr ""
+msgstr "рядок"
 
 #: src/client/gpaste-client.c:249
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
+"додати вказані декорації на початок та кінець кожного об'єкту перед зливанням"
 
 #: src/client/gpaste-client.c:251
 msgid "add the given separator between each item when merging"
-msgstr ""
+msgstr "додати наданий роздільник поміж кожним об'єктом перед злиттям"
 
 #: src/client/gpaste-client.c:350
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
-msgstr ""
+msgstr "Вдало перезапущено даемон\n"
 
 #: src/client/gpaste-client.c:491
 msgid "Cannot add non utf8 data as text."
-msgstr ""
+msgstr "Не можна додати не utf8 дані як текст."
 
 #: src/client/gpaste-client.c:809 src/ui/gpaste-ui-window.c:313
 msgid "Couldn't connect to GPaste daemon"
-msgstr ""
+msgstr "Не вдалося під'єднатися до GPaste даемону"
 
 #: src/daemon/gpaste-daemon.c:34
 msgid "Stop signal received, exiting"
-msgstr ""
+msgstr "Отримано сигнал зупинки, виходимо"
 
 #: src/daemon/gpaste-daemon.c:71
 msgid "Could not acquire DBus name."
-msgstr ""
+msgstr "Не вдалося отримати назву DBus."
 
 #. This is the date format "month/day/year time"
 #: src/daemon/tmp/gpaste-image-item.c:241
 msgid "%m/%d/%y %T"
-msgstr ""
+msgstr "%d. %m. %y %T"
 
 #. This gets displayed in history when selecting an image
 #: src/daemon/tmp/gpaste-image-item.c:243
 #, c-format
 msgid "[Image, %d x %d (%s)]"
-msgstr ""
+msgstr "[Зображення, %d x %d (%s)]"
 
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/tmp/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "Пароль"
 
 #. This is the prefix displayed in history to identify selected files
 #: src/daemon/tmp/gpaste-uris-item.c:105
 msgid "[Files] "
-msgstr ""
+msgstr "[Файли] "
 
 #: src/gnome-shell/aboutItem.js:16 src/ui/gpaste-ui-about.c:41
 msgid "About"
-msgstr ""
+msgstr "Про GPaste"
 
 #: src/gnome-shell/dummyHistoryItem.js:15 src/ui/gpaste-ui-empty-item.c:60
 msgid "(Couldn't connect to GPaste daemon)"
-msgstr ""
+msgstr "(Не вдалося під'єднатися до GPaste даемона)"
 
 #: src/gnome-shell/dummyHistoryItem.js:20 src/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
-msgstr ""
+msgstr "(Порожньо)"
 
 #: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
-msgstr ""
+msgstr "(Немає результатів)"
 
 #: src/gnome-shell/emptyHistoryItem.js:18
 msgid "Empty history"
-msgstr ""
+msgstr "Очистити історію"
 
 #: src/gnome-shell/stateSwitch.js:15
 msgid "Track changes"
-msgstr ""
+msgstr "Слідкувати за змінами"
 
 #: src/gnome-shell/uiItem.js:17
 msgid "Graphical tool"
-msgstr ""
+msgstr "Графічний інструмент"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
-msgstr ""
+msgstr "Не вдалося створити теку для історії"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:37
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:41
 msgid "Failed to register the gtk application"
-msgstr ""
+msgstr "Не вдалося зареєструвати GTK додаток"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:49
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:53
 msgid "is already running."
-msgstr ""
+msgstr "вже запущено."
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:112
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:127
 #: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
-msgstr ""
+msgstr "Слідкувати за змінами буфера обміну"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:118
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
 msgid "Close UI on select"
-msgstr ""
+msgstr "Зачиняти інтерфейс при обиранні"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:124
 msgid "Open UI window centered"
-msgstr ""
+msgstr "Центрувати вікно інтерфейсу"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:133
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:156
 msgid "Enable the gnome-shell extension"
-msgstr ""
+msgstr "Активувати розширення для оболонки"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:139
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:162
 msgid "Sync the daemon state with the extension's one"
-msgstr ""
+msgstr "Синхронізувати стан даемону з розширенням"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:148
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:172
 msgid "Primary selection affects history"
-msgstr ""
+msgstr "Головне виділення впливає на історію"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:154
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
 msgid "Synchronize clipboard with primary selection"
-msgstr ""
+msgstr "Синхронізувати буфер обміну з головним виділенням"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:187
 msgid "Images support"
-msgstr ""
+msgstr "Підтримка зображень"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:167
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:193
 msgid "Trim items"
-msgstr ""
+msgstr "Обрізати об'єкти"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:173
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:199
 msgid "Detect growing lines"
-msgstr ""
+msgstr "Виявляти зростаючи рядки"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:180
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:145
 msgid "Save history"
-msgstr ""
+msgstr "Зберігати історію"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:203
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
 msgid "Max element size when displaying"
-msgstr ""
+msgstr "Максимальна кількість об'єктів для відображення"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:231
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Max text item length"
-msgstr ""
+msgstr "Максимальна довжина текстового об'єкту"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:238
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
 msgid "Min text item length"
-msgstr ""
+msgstr "Мінімальна довжина текстового об'єкту"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:326
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
 msgid "General behaviour"
-msgstr ""
+msgstr "Загальна поведінка"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:327
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
 msgid "History settings"
-msgstr ""
+msgstr "Налаштування історії"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:328
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:98
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Клавіатурні скорочення"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:28
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:57
 #: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-edit-item.c:44
 #: src/ui/gpaste-ui-new-item.c:30
 msgid "Cancel"
-msgstr ""
+msgstr "Закрити"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:203
 #: src/ui/gpaste-ui-empty-history.c:66
 msgid "Empty"
-msgstr ""
+msgstr "Очистити"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:203
 msgid "Do you really want to empty the history?"
-msgstr ""
+msgstr "Ви дійсно хочете очистити історію?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:139
 msgid "Open the UI window centered"
-msgstr ""
+msgstr "Відкривати вікно інтерфейсу центрованим"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:170
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "Синхронізація буферу обміну"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:185
 msgid "Optional features"
-msgstr ""
+msgstr "Додаткові функції"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
 msgid "Resources limits"
-msgstr ""
+msgstr "Обмеження ресурсів"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
 msgid "Text limits"
-msgstr ""
+msgstr "Ліміти тексту"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 msgid "Display settings"
-msgstr ""
+msgstr "Налаштування відображення"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 msgid "History access"
-msgstr ""
+msgstr "Доступ до історії"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
 msgid "Active element manipulation"
-msgstr ""
+msgstr "Маніпулювання активними об'єктами"
 
 #: src/ui/gpaste-ui-backup-history.c:42 src/ui/gpaste-ui-backup-history.c:139
 msgid "Backup"
-msgstr ""
+msgstr "Резервна копія"
 
 #: src/ui/gpaste-ui-backup-history.c:46
 msgid "Under which name do you want to backup this history?"
-msgstr ""
+msgstr "Яку назви ви хочете дати резервній копії цієї історії?"
 
 #: src/ui/gpaste-ui-delete-history.c:26 src/ui/gpaste-ui-delete-history.c:66
 #: src/ui/gpaste-ui-delete-item.c:49
 msgid "Delete"
-msgstr ""
+msgstr "Видалити"
 
 #: src/ui/gpaste-ui-delete-history.c:26
 msgid "Are you sure you want to delete this history?"
-msgstr ""
+msgstr "Ви впевнені, що бажаєте видалити цю історію?"
 
 #: src/ui/gpaste-ui-edit-item.c:43 src/ui/gpaste-ui-edit-item.c:116
 msgid "Edit"
-msgstr ""
+msgstr "Редагувати"
 
 #: src/ui/gpaste-ui-new-item.c:29 src/ui/gpaste-ui-new-item.c:81
 msgid "New"
-msgstr ""
+msgstr "Новий об'єкт"
 
 #: src/ui/gpaste-ui-panel.c:303
 msgid "Switch to"
-msgstr ""
+msgstr "Перемикнутися на"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Restart"
-msgstr ""
+msgstr "Перезавантажити"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Do you really want to restart the daemon?"
-msgstr ""
+msgstr "Ви дійсно хочете перезавантажити даемон?"
 
 #: src/ui/gpaste-ui-reexec.c:56
 msgid "Restart the daemon"
-msgstr ""
+msgstr "Перезавантажити даемон"
 
 #: src/ui/gpaste-ui-search.c:26
 msgid "Search"
-msgstr ""
+msgstr "Пошук"
 
 #: src/ui/gpaste-ui-settings.c:31
 msgid "GPaste Settings"
-msgstr ""
+msgstr "Налаштування GPaste"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
-msgstr ""
+msgstr "Загальні"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Stop"
-msgstr ""
+msgstr "Зупинити"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Do you really want to stop tracking clipboard changes?"
-msgstr ""
+msgstr "Ви дійсно хочете припинити слідкування за змінами буферу обміну?"
 
 #: src/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
-msgstr ""
+msgstr "Вивантажити"
