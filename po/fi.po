@@ -8,49 +8,58 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-09-21 14:16+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2024-12-08 12:50+0000\n"
+"Last-Translator: \"Tinde (Joke)\" <jouko.tiilikainen@gmail.com>\n"
+"Language-Team: Finnish <https://hosted.weblate.org/projects/gpaste/gpaste/fi/"
+">\n"
 "Language: fi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.9-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
+#, fuzzy
 msgid "GPaste"
-msgstr ""
+msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "Hallitse leikepöydän historiaasi"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+#, fuzzy
 msgid "Marc-Antoine Perennou"
-msgstr ""
+msgstr "Marc-Antoine Perennou"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:14
 msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste on leikepöydän hallintajärjestelmä, jonka avulla voit seurata ja "
+"hallita leikepöydän historiaasi erittäin muokattavissa olevalla tavalla."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:17
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste tarjoaa sinulle graafisen työkalun, jonka avulla voit hallita kaikkea "
+"helposti."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:24
 msgid "The main UI"
-msgstr ""
+msgstr "Pääkäyttöliittymä"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:28
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:32
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:36
 msgid "The settings UI"
-msgstr ""
+msgstr "Asetukset"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
@@ -94,11 +103,11 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:454
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:470
 msgid "This is a maintenance release. Changes:"
-msgstr ""
+msgstr "Tämä on ylläpitojulkaisu. Muutokset:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
 msgid "Support for gnome 47"
-msgstr ""
+msgstr "Tukee Gnome 47"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
@@ -107,34 +116,34 @@ msgstr ""
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
 msgid "Translations updates"
-msgstr ""
+msgstr "Käännöksien päivitykset"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
 msgid "Support for gnome 46"
-msgstr ""
+msgstr "Tukee Gnome 46"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
 msgid "Stable release for GNOME 45. Changes:"
-msgstr ""
+msgstr "Vakaa julkaisu GNOME 45: lle. Muutokset:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
 msgid "Port to gnome 45"
-msgstr ""
+msgstr "Portti Gnome 45:een"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
 msgid "Add setting to open ui window centered"
-msgstr ""
+msgstr "Lisää asetus avaamaan ikkuna keskitetysti"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
 msgid "Fix a bug leading to history with only one item"
-msgstr ""
+msgstr "Korjaa historia, joka johtaa historiaan vain yhdellä kohteella"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
 msgid "First release for GNOME 44. Changes:"
-msgstr ""
+msgstr "Ensimmäinen julkaisu GNOME 44: lle. Muutokset:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
 msgid "gcr 4 is now required"
