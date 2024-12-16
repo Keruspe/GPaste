@@ -402,7 +402,7 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
 static void
 on_text (GMarkupParseContext *context G_GNUC_UNUSED,
          const gchar         *text,
-         guint64              text_len,
+         gsize                text_len,
          gpointer             user_data,
          GError             **error G_GNUC_UNUSED)
 {
@@ -528,7 +528,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
                                                                G_MARKUP_TREAT_CDATA_AS_TEXT,
                                                                &data,
                                                                NULL);
-        guint64 text_length;
+        gsize text_length;
 
         g_file_get_contents (history_file_path, &text, &text_length, NULL);
         g_markup_parse_context_parse (ctx, text, text_length, NULL);
