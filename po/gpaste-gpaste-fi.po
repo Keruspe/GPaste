@@ -1,0 +1,1278 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the GPaste package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: GPaste\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-21 14:16+0200\n"
+"PO-Revision-Date: 2024-12-19 19:29+0200\n"
+"Last-Translator: JTi65 <jtiilikainen@protonmail.com>\n"
+"Language-Team: Finnish <https://hosted.weblate.org/projects/gpaste/gpaste/fi/"
+">\n"
+"Language: fi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Poedit 3.5\n"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
+msgid "GPaste"
+msgstr "GPaste"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
+msgid "Manage your clipboard history"
+msgstr "Hallitse leikepöydän historiaasi"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
+msgid "Marc-Antoine Perennou"
+msgstr "Marc-Antoine Perennou"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:14
+msgid ""
+"GPaste is a clipboard managing system allowing you to track and manage your "
+"clipboard history in a highly customizable way."
+msgstr ""
+"GPaste on leikepöydän hallintajärjestelmä, jonka avulla voit seurata ja "
+"hallita leikepöydän historiaasi erittäin muokattavissa olevalla tavalla."
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:17
+msgid ""
+"GPaste provides you with a graphical tool allowing you to manage everything "
+"easily."
+msgstr ""
+"GPaste tarjoaa sinulle graafisen työkalun, jonka avulla voit hallita kaikkea "
+"helposti."
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:24
+msgid "The main UI"
+msgstr "Pääkäyttöliittymä"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:28
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:32
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:36
+msgid "The settings UI"
+msgstr "Asetukset"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:200
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:208
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:216
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:224
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:232
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:240
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:249
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:258
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:276
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:284
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:292
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:300
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:318
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:326
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:335
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:344
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:353
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:361
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:382
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:390
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:398
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:406
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:414
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:430
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:438
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:446
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:454
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:470
+msgid "This is a maintenance release. Changes:"
+msgstr "Tämä on ylläpitojulkaisu. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
+msgid "Support for gnome 47"
+msgstr "Tukee Gnome 47"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:122
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+msgid "Translations updates"
+msgstr "Käännöksien päivitykset"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+msgid "Support for gnome 46"
+msgstr "Tukee Gnome 46"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
+msgid "Stable release for GNOME 45. Changes:"
+msgstr "Vakaa julkaisu GNOME 45: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+msgid "Port to gnome 45"
+msgstr "Portti Gnome 45:een"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+msgid "Add setting to open ui window centered"
+msgstr "Lisää asetus avaamaan ikkuna keskitetysti"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
+msgid "Fix a bug leading to history with only one item"
+msgstr "Korjaa historia, joka johtaa historiaan vain yhdellä kohteella"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+msgid "First release for GNOME 44. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 44: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
+msgid "gcr 4 is now required"
+msgstr "gcr 4 vaaditaan nyt"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
+msgid "Port to gnome 44"
+msgstr "Portti Gnome 44:n"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
+msgid "Avoid crash under heavy memory load"
+msgstr "Vältä kaatumista raskaan muistin kuormituksen alla"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:202
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:278
+msgid "Respect --use-index when displaying history"
+msgstr "Käytä -ole-indeksi historiaa näytettäessä"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
+msgid "First release for GNOME 43. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 43: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+msgid "Port to GNOME 43"
+msgstr "Portti Gnome 43:een"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
+msgid "Internal preparation for gtk4 port"
+msgstr "Gtk4 -portin sisäinen valmistelu"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:210
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:286
+msgid "Open GPaste UI where the mouse pointer is"
+msgstr "Avaa GPaste -käyttöliittymä, missä hiiren osoitin on"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
+msgid "Fixes to the new preferences tool"
+msgstr "Korjaa uuteen asetustyökaluun"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
+msgid "Style fixes"
+msgstr "Tyylin korjaus"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
+msgid "First release for GNOME 42. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 42: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
+msgid ""
+"Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
+msgstr ""
+"Vanha libgpaste korvasi uudella minimaalisella libgpaste-2: lla ilman GTK-"
+"riippuvuutta"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
+msgid "New libgpaste-gtk3 for utils and settings ui"
+msgstr "Uusi libgpaste-gtk3 käyttöliiketoiminnalle"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:174
+msgid "New libgpaste-gtk4 for utils and preferences ui"
+msgstr "Uusi libgpaste-gtk4 utileille ja mieltymyksille käyttöliittymä"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:175
+msgid "New gtk4 based gpaste-preferences utility"
+msgstr "Uusi Gtk4-pohjainen GPaste-Asetukset apuohjelma"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
+msgid "Autotools are no longer supported"
+msgstr "Autotyökalut ei ole enää tuettuja"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:177
+msgid "Extension updated for gnome-shell 42"
+msgstr "Laajennus päivitetty Gnome-kuorelle 42"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:218
+msgid "fix the storage path for meson builds"
+msgstr "korjaa Meson -tiedostojen tallennuspolku"
+
+# Vaatii parempaa käännöstä
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:226
+msgid "fix some race conditions in history handling"
+msgstr "korjaa joitain kilpailuolosuhteita historian käsittelyssä"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:234
+msgid "better fix crash when there is no history yet"
+msgstr "parempi korjata kaatuminen, kun historiaa ei ole vielä"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:242
+msgid "fix crash when there is no history yet"
+msgstr "korjaa kaatuminen, kun historiaa ei ole vielä"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:243
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:252
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:261
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
+msgid "translations update"
+msgstr "käännöspäivitys"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:251
+msgid "fix gnome-shell exntesion when the daemon restarts"
+msgstr "kiinnitä gnome-kuoren exnesion, kun daemoni käynnistyy uudelleen"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:260
+msgid "Fix keybindings for wayland"
+msgstr "Korjaa Waylandin Keybindings"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:267
+msgid "First release for GNOME 41. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 41: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:269
+msgid "port to gnome-shell 41"
+msgstr "portti Gnome-kuoreen 41"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:302
+msgid "fix a crash in memory usage checking"
+msgstr "korjaa kaatumisen muistin käytön tarkistus"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:309
+msgid "First release for GNOME 40. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 40: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:311
+msgid "port to gnome-shell 40"
+msgstr "satama Gnome-kuoreen 40"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:312
+msgid "placeholder for gnome-shell prefs"
+msgstr "paikkamerkki gnome-shell-prefersiin"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:320
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:384
+msgid "fix X11 keybinder outside of GNOME"
+msgstr "korjaa X11 KeyBinder Gnomen ulkopuolella"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:328
+msgid "better handling and reporting of invalid uuids passed to gpaste-client"
+msgstr ""
+"parempi käsittely ja ilmoittaminen virheellisistä uuideista siirtyivät "
+"Gpaste-asiakkaaseen"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
+msgid ""
+"gpaste-client now has a --use-index argument for several subcommands to use "
+"index instead of uuid"
+msgstr ""
+"gpaste-Clillä on nyt-ole-indeksin argumentti useille alakomennoille käyttää "
+"hakemistoa UUID: n sijasta"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
+msgid "fix the make-password keybinding"
+msgstr "korjaa Make-password avaimensuojaus"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
+msgid "updated translations"
+msgstr "päivitetyt käännökset"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:346
+msgid "gnome-shell extension warning fixes"
+msgstr "gnome-kuoren laajennusvaroituskorjaukset"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:355
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:392
+msgid "gnome-shell extension cosmetic updates"
+msgstr "gnome-kuoren laajennus kosmeettiset päivitykset"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:363
+msgid "Disable images support by default (can be reenabled in preferences)"
+msgstr ""
+"Poista kuvat tukevat käytöstä oletuksena (voidaan käyttää uudelleen "
+"mieltymyksissä)"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
+msgid "Search now includes passwords (using their names)"
+msgstr "Haku sisältää nyt salasanoja (niiden nimien avulla)"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:365
+msgid "systemd integration enhancements"
+msgstr "systemd integraation parannukset"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:371
+msgid "First release for GNOME 3.38. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 3.38: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:373
+msgid "Drop the Tracking DBus signal"
+msgstr "Pudota seurannan dbus -signaali"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:374
+msgid "Switch to uuids to identify items"
+msgstr "Vaihda UUID: iin kohteiden tunnistamiseksi"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:375
+msgid "Bump DBus interface to org.gnome.GPaste2"
+msgstr "Bump dbus -rajapinta org.gnome.gpaste2"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:376
+msgid "Update to gnome-shell 3.38.0"
+msgstr "Päivitys Gnome-Shell 3.38.0"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:400
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:432
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:474
+msgid "Fix activating items using Ctrl-Number in gnome-shell"
+msgstr "Korjaa kohteiden aktivointi Ctrl-Dumber -sovelluksella Gnome-kuoressa"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:408
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:440
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:473
+msgid "Fix keybinding regrab with gnome-shell"
+msgstr "Kiinnitä avaimensuojaus reagabilla gnome-kuorella"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:416
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:448
+msgid "Fix keybinding grab with gnome-shell"
+msgstr "Korjaa Keybinding Grab gnome-kuorella"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:422
+msgid "First release for GNOME 3.36. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 3.36: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:424
+msgid "Update to gnome-shell 3.36.0"
+msgstr "Päivitys Gnome-Shell 3.36.0"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:456
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:472
+msgid "Compatibility with recent appstream-glib"
+msgstr "Yhteensopivuus viimeaikaisen AppStream-Glibin kanssa"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:462
+msgid "First release for GNOME 3.34. Changes:"
+msgstr "Ensimmäinen julkaisu GNOME 3.34: lle. Muutokset:"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:464
+msgid "Update to gnome-shell 3.34.0"
+msgstr "Päivitys Gnome-kuoreen 3.34.0"
+
+#: data/control-center/42-gpaste.control-center.xml.in:2
+msgid "@GETTEXT_PACKAGE@"
+msgstr "@GETTEXT_PACKAGE@"
+
+#: data/control-center/42-gpaste.control-center.xml.in:3
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:271
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:112
+#: src/ui/gpaste-ui-shortcuts-window.c:73
+msgid "Launch the graphical tool"
+msgstr "Käynnistä graafinen työkalu"
+
+#: data/control-center/42-gpaste.control-center.xml.in:4
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:278
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:129
+#: src/ui/gpaste-ui-shortcuts-window.c:74
+msgid "Mark the active item as being a password"
+msgstr "Merkitse aktiivinen kohde salasanaksi"
+
+#: data/control-center/42-gpaste.control-center.xml.in:5
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:264
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
+#: src/ui/gpaste-ui-shortcuts-window.c:72
+msgid "Delete the active item from history"
+msgstr "Poista aktiivinen kohde historiasta"
+
+#: data/control-center/42-gpaste.control-center.xml.in:6
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:285
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
+#: src/ui/gpaste-ui-shortcuts-window.c:75
+msgid "Display the history"
+msgstr "Näytä historia"
+
+#: data/control-center/42-gpaste.control-center.xml.in:7
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:292
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
+#: src/ui/gpaste-ui-shortcuts-window.c:76
+msgid "Sync the clipboard to the primary selection"
+msgstr "Synkronoi leikepöytä ensisijaiseen valintaan"
+
+#: data/control-center/42-gpaste.control-center.xml.in:8
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:299
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
+#: src/ui/gpaste-ui-shortcuts-window.c:77
+msgid "Sync the primary selection to the clipboard"
+msgstr "Synkronoi ensisijainen valinta leikepöydälle"
+
+#: data/control-center/42-gpaste.control-center.xml.in:9
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:306
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
+#: src/ui/gpaste-ui-shortcuts-window.c:78
+msgid "Upload the active item to a pastebin service"
+msgstr "Lataa aktiivinen kohde Pastebin -palveluun"
+
+#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
+msgid "GPaste Preferences"
+msgstr "GPaste asetukset"
+
+#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
+msgid "Manage your GPaste preferences"
+msgstr "Muokkaa GPaste asetuksia"
+
+#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
+msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
+msgstr "Leikepöytä; manager; asetukset; asetukset; kokoonpano;"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
+msgid "Max size of an element when displaying it"
+msgstr "Elementin enimmäiskoko näytettäessä sitä"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
+msgid ""
+"The extra stuff of that element will be replaced by \"…\", and newlines by "
+"\" \" when displaying from the applet, 0 to disable."
+msgstr ""
+"Tämän elementin ylimääräiset tavarat korvataan \"…\" ja uutiset \"\" "
+"näytettäessä sovelta, 0 poistaa käytöstä."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
+msgid "Do we detect and replace growing lines in history?"
+msgstr "Tunnistammeko ja korvaamme kasvavat linjat historiassa?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
+msgid ""
+"By default, selecting \"Here is\", then \"Here is an example\" will create "
+"two entries in the history. With this feature enabled, the first one will be "
+"replaced by the second one."
+msgstr ""
+"Oletuksena \"täällä on\", sitten \"tässä on esimerkki\", joka luo kaksi "
+"merkintää historiaan. Tämän ominaisuuden ollessa käytössä ensimmäinen "
+"korvataan toisella."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
+msgid "The name of the current history"
+msgstr "Nykyisen historian nimi"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
+msgid "The default name is \"history\""
+msgstr "Oletusnimi on \"historia\""
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
+msgid "Do we save the images copied to history, or only text?"
+msgstr "Tallennammeko historiaan kopioidut kuvat vai vain tekstiin?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
+msgid "By default, we're saving only text"
+msgstr "Oletusarvoisesti tallennamme vain tekstiä"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
+msgid "Do we close the UI after selecting an item?"
+msgstr "Suljemmeko käyttöliittymän kohteen valinnan jälkeen?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
+msgid "By default, we close it"
+msgstr "Oletuksena suljamme sen"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
+msgid "Do we open the UI window centered?"
+msgstr "Avaammeko käyttöliittymän ikkunan keskellä?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
+msgid "By default, we open it where the mouse cursor is"
+msgstr "Oletuksena avaamme sen missä hiiren kohdistin on"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:56
+msgid "The keyboard shortcut to launch the graphical interface"
+msgstr "Graafisen käyttöliittymän käynnistäminen pikanäppäin"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
+msgid ""
+"By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Oletuksena Ctrl Alt G: n lyöminen tekee sen (\"<Ctrl> <lt> g\"). Tyhjä "
+"merkkijono poistaa tämän funktionaalisuuden käytöstä."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:65
+msgid "The keyboard shortcut to mark the active item as being a password"
+msgstr "Aktiivisen kohteen merkitsemiseksi pikanäppäimistön salasanaksi"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:66
+msgid ""
+"By default, hitting ctrl + alt + s will mark the active item as being a "
+"password (\"<Ctrl><Alt>S\"). An empty string here disables this "
+"functionnality."
+msgstr ""
+"Oletusarvoisesti Ctrl Alt S: n lyöminen merkitsee aktiivisen kohteen "
+"salasanaksi (\"<Ctrl> <LL> s\"). Tyhjä merkkijono poistaa tämän "
+"funktionaalisuuden käytöstä."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:75
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:210
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:149
+msgid "Max displayed history size"
+msgstr "Max näytti historian kokoa"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
+msgid "Maximum number of items displayed in the history"
+msgstr "Historiassa näkyvien esineiden enimmäismäärä"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:84
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:217
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
+msgid "Max history size"
+msgstr "Enimmäishistorian koko"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
+msgid "Maximum number of items in history"
+msgstr "Suurimpi esineiden lukumäärä historiassa"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:93
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:224
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
+msgid "Max memory usage (MB)"
+msgstr "Max -muistin käyttö (MB)"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
+msgid "Maximum amount of memory used to store contents"
+msgstr "Sisällön tallentamiseen käytetyn muistin enimmäismäärä"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:102
+msgid "Max text item size"
+msgstr "Max Tekstin koko"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
+msgid "Maximum size of a text item. Anything out of this boundary is ignored."
+msgstr "Tekstikohteen enimmäiskoko. Mitään tästä rajasta jätetään huomiotta."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
+msgid "Min text item size"
+msgstr "Min -tekstin koko"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
+msgid "Minimum size of a text item. Anything out of this boundary is ignored."
+msgstr "Tekstin vähimmäiskoko. Mitään tästä rajasta jätetään huomiotta."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:119
+msgid "The keyboard shortcut to delete the first element in history"
+msgstr "Pakkauksen pikakuvake poistaa ensimmäinen elementti historiassa"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
+msgid ""
+"By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Oletuksena Ctrl ALT V: n lyöminen tekee sen (\"<Ctrl> <ltl> V\"). Tyhjä "
+"merkkijono poistaa tämän funktionaalisuuden käytöstä."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
+msgid "Does the primary selection affects history?"
+msgstr "Vaikuttaako ensisijainen valinta historiaan?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
+msgid "By default, only clipboard (ctrl+c) affects history."
+msgstr "By default, only clipboard (ctrl+c) affects history."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
+msgid ""
+"Do we save all versions of selected rich text (e.g. html) or just the plain "
+"text version?"
+msgstr ""
+"Tallennammeko kaikki valitun rikkaan tekstin (esim. HTML) tai vain "
+"tavallisen tekstiversion versiot?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
+msgid "By default, we're saving all"
+msgstr "Oletusarvoisesti säästämme kaikki"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
+msgid "Do we save the history from one session to another?"
+msgstr "Säästämmekö historian istunnosta toiseen?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
+msgid "By default, we're saving it"
+msgstr "Oletuksena olemme tallentamassa sitä"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:152
+msgid "The keyboard shortcut to display the menu"
+msgstr "Näyttää pikanäppäimen pikakuvakkeen"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
+msgid ""
+"By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
+"empty string here disables this functionnality."
+msgstr ""
+"Oletuksena Ctrl ALT H: n lyöminen näyttää valikon (\"<Ctrl> <ltl> H\"). "
+"Tyhjä merkkijono poistaa tämän funktionaalisuuden käytöstä."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:161
+msgid "The keyboard shortcut to sync the clipboard to the primary selection"
+msgstr "Synkronointi leikepöydälle ensisijaiseen valintaan pikanäppäin"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
+msgid ""
+"By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Oletuksena Ctrl alt O: n lyöminen synkronoi ne (\"<ctrl> <alt> p\"). Tyhjä "
+"merkkijono poistaa tämän funktionaalisuuden käytöstä."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:170
+msgid "The keyboard shortcut to sync the primary selection to the clipboard"
+msgstr "Pakkauksen pikakuvake leikepöydän ensisijainen valinta"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
+msgid ""
+"By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Oletuksena Ctrl+ALT+ P: n painaminen synkronoi ne (\"<Ctrl> <ltl> p\"). "
+"Tyhjä merkkijono poistaa tämän funktionaalisuuden käytöstä. "
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
+msgid "Are the primary selection and the clipboard synchronized?"
+msgstr "Ovatko ensisijainen valinta ja leikepöytä synkronoitu?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
+msgid "By default, the primary selection and the clipboard are independent."
+msgstr "Oletuksena ensisijainen valinta ja leikepöytä ovat riippumattomia."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
+msgid "Do we track the clipboard changes?"
+msgstr "Seuraammeko leikepöydän muutoksia?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
+msgid "By default, we're tracking those changes."
+msgstr "Oletuksena seuraamme näitä muutoksia."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
+msgid ""
+"Do we sync the daemon state with the gnome-shell extension's one? (disable "
+"the daemon when disabling the extension)"
+msgstr ""
+"Synkronisemmeko daemoni-tilaa Gnome-kuoren laajennuksen kanssa? (Poista "
+"daemoni käytöstä poistaessasi laajennusta käytöstä)"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
+msgid "By default, the daemon state keeps unchanged"
+msgstr "Oletuksena Daemon -tila pitää ennallaan"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:203
+msgid "Do we trim the textual items before adding them to history?"
+msgstr "Leikkaammeko tekstikohteet ennen niiden lisäämistä historiaan?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
+msgid ""
+"Trimming means removing all trailing and ending spaces. By default, we're "
+"letting them as-is."
+msgstr ""
+"Leikkaus tarkoittaa kaikkien taka- ja päätetilojen poistamista. Oletuksena "
+"annamme niiden olla sellaisenaan."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:212
+msgid ""
+"The keyboard shortcut to upload the first element in history to a pastebin "
+"service"
+msgstr ""
+"Näppäimistö pikanäppäin  lähettää historian ensimmäisen elementtin Pastebin -"
+"palveluun"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
+msgid ""
+"By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
+"string here disables this functionnality."
+msgstr ""
+"Oletusarvoisesti painamalla Ctrl+alt+u tekee sen (\"<ctrl> <alt> u\"). Tyhjä "
+"merkkijono poistaa tämän funktionaalisuuden käytöstä."
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:221
+msgid "Do we prompt for confirmation when emptying a history?"
+msgstr "Kohdennetaanko vahvistamista historiaa tyhjentäessä?"
+
+#: data/gsettings/org.gnome.GPaste.gschema.xml.in:222
+msgid "By default, we do as it's a destructive action"
+msgstr "Oletuksena teemme niin, kun se on tuhoava toiminta"
+
+# Vaatii parempaa suomennosta
+#: src/client/gpaste-client.c:149
+msgid "Couldn't spawn"
+msgstr "Ei voinut kutua"
+
+#: src/client/gpaste-client.c:161
+#, c-format
+msgid "Usage:\n"
+msgstr "Käyttö:\n"
+
+#. Translators: help for gpaste history
+#: src/client/gpaste-client.c:163
+msgid "print the history with UUIDs"
+msgstr "tTulosta historia UUID: llä"
+
+#. Translators: help for gpaste history-size
+#: src/client/gpaste-client.c:165
+msgid "print the size of the history"
+msgstr "tulosta historian koko"
+
+#. Translators: help for gpaste get-history
+#: src/client/gpaste-client.c:167
+msgid "get the name of the current history"
+msgstr "hanki nykyisen historian nimi"
+
+#. Translators: help for gpaste backup-history <name>
+#. Translators: help for gpaste switch-history <name>
+#. Translators: help for gpaste delete-history <name>
+#. Translators: help for gpaste add-password <name> <text>
+#. Translators: help for gpaste set-password <uuid> <name>
+#. Translators: help for gpaste delete-passworf <name>
+#: src/client/gpaste-client.c:169 src/client/gpaste-client.c:171
+#: src/client/gpaste-client.c:173 src/client/gpaste-client.c:179
+#: src/client/gpaste-client.c:191 src/client/gpaste-client.c:195
+msgid "name"
+msgstr "nimi"
+
+#: src/client/gpaste-client.c:169
+msgid "backup current history"
+msgstr "varmuuskopioi nykyinen historia"
+
+#: src/client/gpaste-client.c:171
+msgid "switch to another history"
+msgstr "siirtyä toiseen historiaan"
+
+#: src/client/gpaste-client.c:173
+msgid "delete a history"
+msgstr "poista historia"
+
+#. Translators: help for gpaste list-histories
+#: src/client/gpaste-client.c:175
+msgid "list available histories"
+msgstr "listaa saatavilla olevat historiat"
+
+#. Translators: help for gpaste add <text>
+#: src/client/gpaste-client.c:177
+msgid "text"
+msgstr "teksti"
+
+#: src/client/gpaste-client.c:177
+msgid "set text to clipboard"
+msgstr "aseta teksti leikepöydälle"
+
+#: src/client/gpaste-client.c:179
+msgid "password"
+msgstr "salasana"
+
+#: src/client/gpaste-client.c:179
+msgid "add the name - password couple to the clipboard"
+msgstr "lisää nimi - salasanapari leikepöydälle"
+
+#. Translators: help for gpaste rename-password <old name> <new name>
+#: src/client/gpaste-client.c:181
+msgid "old name"
+msgstr "vanha nimi"
+
+#: src/client/gpaste-client.c:181
+msgid "new name"
+msgstr "uusi nimi"
+
+#: src/client/gpaste-client.c:181
+msgid "rename the password"
+msgstr "nimeä uudelleen salasana"
+
+#. Translators: help for gpaste get <uuid>
+#: src/client/gpaste-client.c:183
+msgid "get the item <uuid> from the history"
+msgstr "hanki kohde <uUid> historiasta"
+
+#. Translators: help for gpaste select <uuid>
+#: src/client/gpaste-client.c:185
+msgid "set the item <uuid> from the history to the clipboard"
+msgstr "Aseta kohde <uUid> historiasta leikepöydälle"
+
+#. Translators: help for gpaste replace <uuid> <contents>
+#: src/client/gpaste-client.c:187
+msgid "contents"
+msgstr "sisällys"
+
+#: src/client/gpaste-client.c:187
+msgid ""
+"replace the contents of the item <uuid> from the history with the provided "
+"one"
+msgstr "Vaihda kohteen <uUID> sisältö historiasta toimitetulla tavalla"
+
+#. Translators: help for gpaste merge <uuid> … <uuid>
+#: src/client/gpaste-client.c:189
+msgid ""
+"merge the items matching the UUIDs from the history and put the result in "
+"the clipboard"
+msgstr "Yhdistä historiasta vastaavat kohteet ja aseta tulos leikepöydälle"
+
+# vaatii parempaa suomennosta
+#: src/client/gpaste-client.c:191
+msgid "set the item <uuid> from the history as a password named <name>"
+msgstr "aseta aihe <uUid> historiasta salasana nimeltä <Nimi>"
+
+#. Translators: help for gpaste delete <uuid>
+#: src/client/gpaste-client.c:193
+msgid "delete item <uuid> from the history"
+msgstr "Poista kohde <uUid> historiasta"
+
+#: src/client/gpaste-client.c:195
+msgid "delete the password <name> from the history"
+msgstr "Poista salasana <nimi> historiasta"
+
+#. Translators: help for gpaste file <path>
+#: src/client/gpaste-client.c:197
+msgid "path"
+msgstr "polku"
+
+#: src/client/gpaste-client.c:197
+msgid "put the content of the file at <path> into the clipboard"
+msgstr "Laita tiedoston sisältö <Path> -leikepöydälle"
+
+#. Translators: help for whatever | gpaste
+#: src/client/gpaste-client.c:199
+msgid "whatever"
+msgstr "mikä tahansa"
+
+#: src/client/gpaste-client.c:199
+msgid "set the output of whatever to clipboard"
+msgstr "Aseta leikepöydän lähtö"
+
+#. Translators: help for gpaste empty
+#: src/client/gpaste-client.c:201
+msgid "empty the history"
+msgstr "tyhjennä historia"
+
+#. Translators: help for gpaste start
+#: src/client/gpaste-client.c:203
+msgid "start tracking clipboard changes"
+msgstr "Aloita leikepöydän muutosten seuranta"
+
+#. Translators: help for gpaste stop
+#: src/client/gpaste-client.c:205
+msgid "stop tracking clipboard changes"
+msgstr "Lopeta leikepöydän muutosten seuraaminen"
+
+#. Translators: help for gpaste quit
+#: src/client/gpaste-client.c:207
+msgid "alias for stop"
+msgstr "alias pysäytykseen"
+
+#. Translators: help for gpaste daemon-reexec
+#: src/client/gpaste-client.c:209
+msgid "reexecute the daemon (after upgrading...)"
+msgstr "Suorita daemoni uudelleen (päivityksen jälkeen ...)"
+
+#. Translators: help for gpaste preferences
+#: src/client/gpaste-client.c:211
+msgid "launch the configuration tool"
+msgstr "Käynnistä kokoonpanotyökalu"
+
+#. Translators: help for gpaste ui
+#: src/client/gpaste-client.c:213
+msgid "launch the graphical tool"
+msgstr "Käynnistä graafinen työkalu"
+
+#. Translators: help for gpaste show-history
+#: src/client/gpaste-client.c:215
+msgid "make the applet or extension display the history"
+msgstr "laita sovelma tai laajennus näyttämään historia"
+
+#. Translators: help for gpaste upload
+#: src/client/gpaste-client.c:217
+msgid "upload the item <uuid> to a pastebin service"
+msgstr "Lataa kohde <uUid> Pastebin -palveluun"
+
+#. Translators: help for gpaste version
+#: src/client/gpaste-client.c:219
+msgid "display the version"
+msgstr "näytä versio"
+
+#. Translators: help for gpaste daemon-version
+#: src/client/gpaste-client.c:221
+msgid "display the daemon version"
+msgstr "näytä daemonin versio"
+
+#. Translators: help for gpaste help
+#: src/client/gpaste-client.c:223
+msgid "display this help"
+msgstr "näytä tämä opas"
+
+#. Translators: help for gpaste about
+#: src/client/gpaste-client.c:225
+msgid "display the about dialog"
+msgstr "näytä tietoja dialogi"
+
+#: src/client/gpaste-client.c:228
+#, c-format
+msgid "Convenience options:"
+msgstr "Mukavuusvaihtoehdot:"
+
+#. Translators: help for --use-index
+#: src/client/gpaste-client.c:231
+msgid "use the index of the item instead of its UUID"
+msgstr "Käytä tuotteen hakemistoa sen UUID: n sijasta"
+
+#: src/client/gpaste-client.c:234
+#, c-format
+msgid "Display options:"
+msgstr "Näyttövaihtoehdot:"
+
+#. Translators: help for --oneline
+#: src/client/gpaste-client.c:237
+msgid "display each item on only one line"
+msgstr "Näytä jokainen kohde vain yhdellä rivillä"
+
+#. Translators: help for --raw
+#: src/client/gpaste-client.c:239
+msgid "display each item raw (without line numbers)"
+msgstr "Näytä jokainen kohde raa'ana (ilman rivinumeroita)"
+
+#. Translators: help for --reverse
+#: src/client/gpaste-client.c:241
+msgid "display the items in reverse order"
+msgstr "Näytä kohteet päinvastaisessa järjestyksessä"
+
+#. Translators: help for --zero
+#: src/client/gpaste-client.c:243
+msgid "use a NUL character instead of a new line betweean each item"
+msgstr "Käytä nul -merkkiä uuden kohteen välillä uuden rivin sijasta"
+
+#: src/client/gpaste-client.c:246
+#, c-format
+msgid "Merge options:"
+msgstr "Yhdistä vaihtoehdot:"
+
+#. Translators: help for --decoration <string>
+#. Translators: help for --separator <string>
+#: src/client/gpaste-client.c:249 src/client/gpaste-client.c:251
+msgid "string"
+msgstr "string"
+
+#: src/client/gpaste-client.c:249
+msgid ""
+"add the given decoration to the beginning and the end of each item before "
+"merging"
+msgstr ""
+"Lisää annettu kuvaus kunkin kohteen alkuun ja loppuun ennen sulautumista"
+
+#: src/client/gpaste-client.c:251
+msgid "add the given separator between each item when merging"
+msgstr "Lisää annettu erotin kunkin kohteen välillä sulautuessa"
+
+#: src/client/gpaste-client.c:350
+#, c-format
+msgid "Successfully reexecuted the daemon\n"
+msgstr "Onnistuneesti toteutti daemonin uudelleen\n"
+
+#: src/client/gpaste-client.c:491
+msgid "Cannot add non utf8 data as text."
+msgstr "Ei -UTF8 -tietoja ei voi lisätä tekstiksi."
+
+#: src/client/gpaste-client.c:809 src/ui/gpaste-ui-window.c:313
+msgid "Couldn't connect to GPaste daemon"
+msgstr "Gpaste Daemoniin ei voitu muodostaa yhteyttä"
+
+#: src/daemon/gpaste-daemon.c:34
+msgid "Stop signal received, exiting"
+msgstr "Pysäytyssignaali vastaanotettu, poistuu"
+
+#: src/daemon/gpaste-daemon.c:71
+msgid "Could not acquire DBus name."
+msgstr "DBUS -nimeä ei voitu hakea."
+
+#. This is the date format "month/day/year time"
+#: src/daemon/tmp/gpaste-image-item.c:241
+msgid "%m/%d/%y %T"
+msgstr "%m/%d/%y %T"
+
+#. This gets displayed in history when selecting an image
+#: src/daemon/tmp/gpaste-image-item.c:243
+#, c-format
+msgid "[Image, %d x %d (%s)]"
+msgstr "[Image, %d x %d (%s)]"
+
+#. This is the prefix displayed in history to identify a password
+#: src/daemon/tmp/gpaste-password-item.c:67
+msgid "Password"
+msgstr "Salasana"
+
+#. This is the prefix displayed in history to identify selected files
+#: src/daemon/tmp/gpaste-uris-item.c:105
+msgid "[Files] "
+msgstr "[Tiedostot] "
+
+#: src/gnome-shell/aboutItem.js:16 src/ui/gpaste-ui-about.c:41
+msgid "About"
+msgstr "Tietoja"
+
+#: src/gnome-shell/dummyHistoryItem.js:15 src/ui/gpaste-ui-empty-item.c:60
+msgid "(Couldn't connect to GPaste daemon)"
+msgstr "(Ei voinut muodostaa yhteyttä Gpaste Daemoniin)"
+
+#: src/gnome-shell/dummyHistoryItem.js:20 src/ui/gpaste-ui-empty-item.c:49
+msgid "(Empty)"
+msgstr "(Tyhjä)"
+
+#: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-empty-item.c:35
+msgid "(No result)"
+msgstr "(Ei tulosta)"
+
+#: src/gnome-shell/emptyHistoryItem.js:18
+msgid "Empty history"
+msgstr "Tyhjä historia"
+
+#: src/gnome-shell/stateSwitch.js:15
+msgid "Track changes"
+msgstr "Seurata muutoksia"
+
+#: src/gnome-shell/uiItem.js:17
+msgid "Graphical tool"
+msgstr "Graafinen työkalu"
+
+#: src/libgpaste/gpaste/gpaste-util.c:623
+msgid "Could not create history dir"
+msgstr "Historia listaa ei voinut luoda"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:37
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:41
+msgid "Failed to register the gtk application"
+msgstr "GTK -sovelluksen rekisteröinti epäonnistui"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:49
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:53
+msgid "is already running."
+msgstr "on jo käynnissä."
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:112
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:127
+#: src/ui/gpaste-ui-switch.c:93
+msgid "Track clipboard changes"
+msgstr "Seuraa leikepöydän muutoksia"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:118
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
+msgid "Close UI on select"
+msgstr "Sulje käyttöliittymä valitaksesi"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:124
+msgid "Open UI window centered"
+msgstr "Avaa käyttöliittimen ikkuna keskitetysti"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:133
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:156
+msgid "Enable the gnome-shell extension"
+msgstr "Ota Gnome-kuoren lisäosa käyttöön"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:139
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:162
+msgid "Sync the daemon state with the extension's one"
+msgstr "Synkronoi daemoni -tila laajennuksen kanssa"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:148
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:172
+msgid "Primary selection affects history"
+msgstr "Ensisijainen valinta vaikuttaa historiaan"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:154
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
+msgid "Synchronize clipboard with primary selection"
+msgstr "Synkronoi leikepöytä ensisijaisella valinnalla"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:161
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:187
+msgid "Images support"
+msgstr "Kuville tuki"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:167
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:193
+msgid "Trim items"
+msgstr "leikkaa kohteet"
+
+# Vaatii parempaa suomennosta
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:173
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:199
+msgid "Detect growing lines"
+msgstr "Havaita kasvavat linjat"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:180
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:145
+msgid "Save history"
+msgstr "Tallenna historia"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:203
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
+msgid "Max element size when displaying"
+msgstr "Maksimi ementin koko näytettäessä"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:231
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
+msgid "Max text item length"
+msgstr "Maksimi tekstin pituus"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:238
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
+msgid "Min text item length"
+msgstr "Minnimi tekstin pituus"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:326
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
+msgid "General behaviour"
+msgstr "Yleinen käyttäytyminen"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:327
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
+msgid "History settings"
+msgstr "Historian asetukset"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:328
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:98
+msgid "Keyboard shortcuts"
+msgstr "Näppäimistön oikotiet"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:28
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:57
+#: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-edit-item.c:44
+#: src/ui/gpaste-ui-new-item.c:30
+msgid "Cancel"
+msgstr "Peruuta"
+
+#. Translators: this is the translation for emptying the history
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:203
+#: src/ui/gpaste-ui-empty-history.c:66
+msgid "Empty"
+msgstr "tyhjä"
+
+#: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:203
+msgid "Do you really want to empty the history?"
+msgstr "Haluatko todella tyhjentää historian?"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:139
+msgid "Open the UI window centered"
+msgstr "Avaa käyttöliittymän ikkuna keskitettynä"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:170
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
+msgid "Clipboards synchronization"
+msgstr "Leikepöytien synkronointi"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:185
+msgid "Optional features"
+msgstr "Valinnaiset ominaisuudet"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
+msgid "Resources limits"
+msgstr "Resurssirajat"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
+msgid "Text limits"
+msgstr "Tekstirajat"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
+msgid "Display settings"
+msgstr "Näyttöasetukset"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
+msgid "History access"
+msgstr "Pääsy historiaan"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
+msgid "Active element manipulation"
+msgstr "Aktiivisen elementin manipulointi"
+
+#: src/ui/gpaste-ui-backup-history.c:42 src/ui/gpaste-ui-backup-history.c:139
+msgid "Backup"
+msgstr "Varmuuskopioi"
+
+#: src/ui/gpaste-ui-backup-history.c:46
+msgid "Under which name do you want to backup this history?"
+msgstr "Millä nimellä haluat varmuuskopioida tämän historian?"
+
+#: src/ui/gpaste-ui-delete-history.c:26 src/ui/gpaste-ui-delete-history.c:66
+#: src/ui/gpaste-ui-delete-item.c:49
+msgid "Delete"
+msgstr "Poista"
+
+#: src/ui/gpaste-ui-delete-history.c:26
+msgid "Are you sure you want to delete this history?"
+msgstr "Haluatko varmasti poistaa tämän historian?"
+
+#: src/ui/gpaste-ui-edit-item.c:43 src/ui/gpaste-ui-edit-item.c:116
+msgid "Edit"
+msgstr "Muokkaa"
+
+#: src/ui/gpaste-ui-new-item.c:29 src/ui/gpaste-ui-new-item.c:81
+msgid "New"
+msgstr "Uusi"
+
+#: src/ui/gpaste-ui-panel.c:303
+msgid "Switch to"
+msgstr "Vaihda"
+
+#: src/ui/gpaste-ui-reexec.c:30
+msgid "Restart"
+msgstr "Käynnistä uudelleen"
+
+#: src/ui/gpaste-ui-reexec.c:30
+msgid "Do you really want to restart the daemon?"
+msgstr "Haluatko todella käynnistää daemonin uudelleen?"
+
+#: src/ui/gpaste-ui-reexec.c:56
+msgid "Restart the daemon"
+msgstr "Uudelleen käynnistä daemoni"
+
+#: src/ui/gpaste-ui-search.c:26
+msgid "Search"
+msgstr "Etsi"
+
+#: src/ui/gpaste-ui-settings.c:31
+msgid "GPaste Settings"
+msgstr "GPaste Asetukset"
+
+#: src/ui/gpaste-ui-shortcuts-window.c:64
+msgid "General"
+msgstr "Ominaisuudet"
+
+#: src/ui/gpaste-ui-switch.c:55
+msgid "Stop"
+msgstr "Stop"
+
+#: src/ui/gpaste-ui-switch.c:55
+msgid "Do you really want to stop tracking clipboard changes?"
+msgstr "Haluatko todella lopettaa leikepöydän muutosten seuraamisen?"
+
+#: src/ui/gpaste-ui-upload-item.c:49
+msgid "Upload"
+msgstr "Päivitä"
