@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gtk4/gpaste-gtk-preferences-window.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #define CONFIRM_DATA_KEY "gpaste-confirm-dialog-button-ok"

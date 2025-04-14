@@ -14,10 +14,10 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_GTK_PREFERENCES_WINDOW (g_paste_gtk_preferences_window_get_type ())
+#define G_PASTE_TYPE_GTK_PREFERENCES_DIALOG (g_paste_gtk_preferences_dialog_get_type ())
 
-G_PASTE_GTK_FINAL_TYPE (PreferencesWindow, preferences_window, PREFERENCES_WINDOW, AdwPreferencesWindow)
+G_PASTE_GTK_FINAL_TYPE (PreferencesDialog, preferences_dialog, PREFERENCES_DIALOG, AdwPreferencesDialog)
 
-GtkWindow *g_paste_gtk_preferences_window_new (void);
+AdwDialog *g_paste_gtk_preferences_dialog_new (GApplication *gapp);
 
 G_END_DECLS

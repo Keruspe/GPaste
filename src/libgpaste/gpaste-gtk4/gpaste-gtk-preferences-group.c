@@ -95,8 +95,9 @@ g_paste_gtk_preferences_group_make_reset_button (_CallbackDataWrapper *data)
  * @self: a #GPasteGtkPreferencesGroup instance
  * @label: the label to display
  * @value: the deafault value
- * @on_value_changed: (closure settings) (scope notified): the callback to call when the value changes
- * @on_reset: (closure settings) (scope notified): the callback to call when the value is reset
+ * @on_value_changed: (scope notified): the callback to call when the value changes
+ * @on_reset: (scope notified): the callback to call when the value is reset
+ * @settings: a #GPasteSettings instance
  *
  * Add a new boolean settings to the current pane
  *
@@ -144,8 +145,9 @@ range_wrapper (GtkSpinButton *spinbutton,
  * @min: the minimal authorized value
  * @max: the maximal authorized value
  * @step: the step between proposed values
- * @on_value_changed: (closure settings) (scope notified): the callback to call when the value changes
- * @on_reset: (closure settings) (scope notified): the callback to call when the value is reset
+ * @on_value_changed: (scope notified): the callback to call when the value changes
+ * @on_reset: (scope notified): the callback to call when the value is reset
+ * @settings: a #GPasteSettings instance
  *
  * Add a new boolean settings to the current pane
  *
@@ -200,8 +202,9 @@ text_wrapper (GObject *buffer,
  * @self: a #GPasteGtkPreferencesGroup instance
  * @label: the label to display
  * @value: the deafault value
- * @on_value_changed: (closure settings) (scope notified): the callback to call when the value changes
- * @on_reset: (closure settings) (scope notified): the callback to call when the value is reset
+ * @on_value_changed: (scope notified): the callback to call when the value changes
+ * @on_reset: (scope notified): the callback to call when the value is reset
+ * @settings: a #GPasteSettings instance
  *
  * Add a new text settings to the current pane
  *

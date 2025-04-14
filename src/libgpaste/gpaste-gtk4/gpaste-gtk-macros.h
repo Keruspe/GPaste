@@ -28,13 +28,13 @@ G_BEGIN_DECLS
 #define G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName) \
     G_DEFINE_TYPE_WITH_PRIVATE (GPasteGtk##TypeName, g_paste_gtk_##type_name, ParentTypeName)
 
-#define G_PASTE_GTK_INIT_APPLICATION_FULL(name, activate_cb)                                        \
+#define G_PASTE_GTK_INIT_APPLICATION(name)                                                          \
     G_PASTE_INIT_GETTEXT ();                                                                        \
     AdwApplication *adw = adw_application_new ("org.gnome.GPaste." name, G_APPLICATION_FLAGS_NONE); \
     GtkApplication *app = GTK_APPLICATION (adw);                                                    \
     GApplication *gapp = G_APPLICATION (app);                                                       \
     g_autoptr (GError) error = NULL;                                                                \
-    G_APPLICATION_GET_CLASS (gapp)->activate = activate_cb;                                         \
+    G_APPLICATION_GET_CLASS (gapp)->activate = g_paste_gtk_util_show_window;                                         \
     g_application_register (gapp, NULL, &error);                                                    \
     if (error)                                                                                      \
     {                                                                                               \
@@ -43,19 +43,8 @@ G_BEGIN_DECLS
     }                                                                                               \
     if (g_application_get_is_remote (gapp))                                                         \
     {                                                                                               \
-        if (activate_cb)                                                                            \
-        {                                                                                           \
-            g_application_activate (gapp);                                                          \
-            return g_application_run (gapp, argc, argv);                                            \
-        }                                                                                           \
-        else                                                                                        \
-        {                                                                                           \
-            fprintf (stderr, "GPaste " name " %s\n", _("is already running."));                     \
-            exit (EXIT_FAILURE);                                                                    \
-        }                                                                                           \
+        g_application_activate (gapp);                                                              \
+        return g_application_run (gapp, argc, argv);                                                \
     }
-
-#define G_PASTE_GTK_INIT_APPLICATION(name) \
-    G_PASTE_GTK_INIT_APPLICATION_FULL (name, NULL)
 
 G_END_DECLS
