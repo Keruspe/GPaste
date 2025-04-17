@@ -1,8 +1,9 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
- */
+ * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com> 
+ * modified by: j0bot (José Gasser) <jose.gasser@pm.me> (info@j0bot.ch) 
+*/
 
 #include <gtk/gtk.h>
 #include <sys/stat.h> 
