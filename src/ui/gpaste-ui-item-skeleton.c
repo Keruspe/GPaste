@@ -28,6 +28,7 @@ typedef struct
 
     GtkLabel       *index_label;
     GtkLabel       *label;
+    GtkImage       *thumbnail;
 
     gboolean        editable;
     gboolean        uploadable;
@@ -205,12 +206,58 @@ g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
 }
 
 /**
+ * g_paste_ui_item_skeleton_set_thumbnail:
+ * @self: a #GPasteUiItemSkeleton
+ * @pixbuf: (transfer none): the #GdkPixbuf to set as thumbnail or %NULL
+ *
+ * Set the thumbnail for this item if it's an image
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
+                                       GdkPixbuf            *pixbuf)
+{
+    g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
+
+    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+
+    if (pixbuf) {
+        /* Create a small thumbnail (max 64x64) while preserving aspect ratio */
+        gint width = gdk_pixbuf_get_width (pixbuf);
+        gint height = gdk_pixbuf_get_height (pixbuf);
+        gint target_size = 64;
+        gdouble scale;
+
+        if (width > height) {
+            scale = (gdouble) target_size / width;
+        } else {
+            scale = (gdouble) target_size / height;
+        }
+
+        gint scaled_width = (gint) (width * scale);
+        gint scaled_height = (gint) (height * scale);
+
+        GdkPixbuf *scaled = gdk_pixbuf_scale_simple(pixbuf, 
+                                                   scaled_width, 
+                                                   scaled_height, 
+                                                   GDK_INTERP_BILINEAR);
+
+        gtk_image_set_from_pixbuf (priv->thumbnail, scaled);
+        gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), TRUE);
+
+        g_object_unref (scaled); /* Free the scaled pixbuf */
+    } else {
+        gtk_image_clear (priv->thumbnail);
+        gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), FALSE);
+    }
+}
+
+/**
  * g_paste_ui_item_skeleton_get_label:
- * @self: the #GPasteUiItemSkeleton instance
+ * @self: a #GPasteUiItemSkeleton
  *
- * Get the inner label
+ * Get the item's label
  *
- * Returns: (transfer none): The inner #GtkLabel
+ * Returns: (transfer none): the label
  */
 G_PASTE_VISIBLE GtkLabel *
 g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self)
@@ -277,6 +324,11 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_label_set_xalign (priv->label, 0.0);
 
+    /* Create thumbnail image */
+    GtkWidget *thumbnail = gtk_image_new ();
+    priv->thumbnail = GTK_IMAGE (thumbnail);
+    gtk_widget_set_visible (thumbnail, FALSE);
+
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_widget_set_margin_start (hbox, 5);
     gtk_widget_set_margin_end (hbox, 5);
@@ -285,6 +337,7 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     gtk_widget_set_hexpand (label, TRUE);
     gtk_widget_set_halign (label, TRUE);
     gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), thumbnail, FALSE, TRUE, 0);
 
     gtk_container_add (GTK_CONTAINER (self), hbox);
 }
