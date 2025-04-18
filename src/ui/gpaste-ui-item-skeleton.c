@@ -14,6 +14,8 @@
 enum
 {
     C_SIZE,
+    C_IMAGES_PREVIEW,
+    C_IMAGES_PREVIEW_SIZE,
 
     C_LAST_SIGNAL
 };
@@ -48,6 +50,78 @@ g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
 
     gtk_label_set_width_chars (priv->label, size);
     gtk_label_set_max_width_chars (priv->label, size);
+}
+
+/* Called when the 'images-preview' setting changes */
+static void
+g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
+                                                     const gchar    *key G_GNUC_UNUSED,
+                                                     gpointer        user_data)
+{
+    GPasteUiItemSkeletonPrivate *priv = user_data;
+    gboolean preview_enabled = g_paste_settings_get_images_preview (settings);
+    
+    /* If previews are disabled, hide existing thumbnails */
+    if (!preview_enabled && priv->thumbnail) {
+        gtk_widget_hide (GTK_WIDGET (priv->thumbnail));
+    } else if (preview_enabled && priv->thumbnail) {
+        /* Show thumbnails that were hidden */
+        gtk_widget_show (GTK_WIDGET (priv->thumbnail));
+    }
+}
+
+/* Called when the 'images-preview-size' setting changes */
+static void
+g_paste_ui_item_skeleton_on_images_preview_size_changed (GPasteSettings *settings,
+                                                          const gchar    *key G_GNUC_UNUSED,
+                                                          gpointer        user_data)
+{
+    GPasteUiItemSkeletonPrivate *priv = user_data;
+    guint64 size = g_paste_settings_get_images_preview_size (settings);
+    
+    /* Update the size constraints for the thumbnail */
+    if (priv->thumbnail) {
+        GtkWidget *thumbnail_widget = GTK_WIDGET (priv->thumbnail);
+        GdkPixbuf *pixbuf;
+        
+        /* Get the current pixbuf if it exists */
+        pixbuf = gtk_image_get_pixbuf (priv->thumbnail);
+        
+        if (pixbuf) {
+            /* Scale the existing pixbuf to the new size while maintaining aspect ratio */
+            int orig_width = gdk_pixbuf_get_width (pixbuf);
+            int orig_height = gdk_pixbuf_get_height (pixbuf);
+            double scale_factor;
+            
+            /* Calculate scaling to fit within the size while preserving aspect ratio */
+            if (orig_width > orig_height) {
+                scale_factor = (double)size / orig_width;
+            } else {
+                scale_factor = (double)size / orig_height;
+            }
+            
+            int new_width = (int)(orig_width * scale_factor);
+            int new_height = (int)(orig_height * scale_factor);
+            
+            /* Create scaled pixbuf */
+            GdkPixbuf *scaled = gdk_pixbuf_scale_simple (pixbuf, 
+                                                          new_width,
+                                                          new_height,
+                                                          GDK_INTERP_BILINEAR);
+            
+            /* Set the scaled pixbuf to the image */
+            if (scaled) {
+                gtk_image_set_from_pixbuf (priv->thumbnail, scaled);
+                g_object_unref (scaled);
+            }
+        }
+        
+        /* Store the size for future image loading */
+        g_object_set_data (G_OBJECT (thumbnail_widget), "preview-size", GUINT_TO_POINTER (size));
+        
+        /* Force a redraw */
+        gtk_widget_queue_draw (thumbnail_widget);
+    }
 }
 
 static void
@@ -221,10 +295,18 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
     const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
 
     if (pixbuf) {
-        /* Create a small thumbnail (max 64x64) while preserving aspect ratio */
+        /* Create a thumbnail with the size from settings while preserving aspect ratio */
         gint width = gdk_pixbuf_get_width (pixbuf);
         gint height = gdk_pixbuf_get_height (pixbuf);
-        gint target_size = 64;
+        
+        /* Get the target size from the widget's stored data */
+        gint target_size = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(priv->thumbnail), "preview-size"));
+        
+        /* Use a default size of 100 if not set */
+        if (target_size <= 0) {
+            target_size = 100;
+        }
+        
         gdouble scale;
 
         if (width > height) {
@@ -287,7 +369,11 @@ g_paste_ui_item_skeleton_dispose (GObject *object)
 
     if (priv->settings)
     {
+        /* Disconnect all our signal handlers */
         g_signal_handler_disconnect (priv->settings, priv->c_signals[C_SIZE]);
+        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_IMAGES_PREVIEW]);
+        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_IMAGES_PREVIEW_SIZE]);
+        
         g_clear_object (&priv->settings);
     }
 
@@ -328,6 +414,8 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     GtkWidget *thumbnail = gtk_image_new ();
     priv->thumbnail = GTK_IMAGE (thumbnail);
     gtk_widget_set_visible (thumbnail, FALSE);
+    
+    /* We'll set the proper size in g_paste_ui_item_skeleton_new when we have access to settings */
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_widget_set_margin_start (hbox, 5);
@@ -382,10 +470,29 @@ g_paste_ui_item_skeleton_new (GType           type,
     g_slist_foreach (priv->actions, add_action, gtk_bin_get_child (GTK_BIN (self)));
 
     priv->c_signals[C_SIZE] = g_signal_connect (settings,
-                                                "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
-                                                G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
-                                                priv);
+                                                 "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
+                                                 G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
+                                                 priv);
     g_paste_ui_item_skeleton_set_text_size (settings, NULL, priv);
+    
+    /* Connecter les signaux pour les paramètres de prévisualisation d'images */
+    priv->c_signals[C_IMAGES_PREVIEW] = g_signal_connect (settings,
+                                                        "changed::" G_PASTE_IMAGES_PREVIEW_SETTING,
+                                                        G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
+                                                        priv);
+    g_paste_ui_item_skeleton_on_images_preview_changed (settings, NULL, priv);
+    
+    priv->c_signals[C_IMAGES_PREVIEW_SIZE] = g_signal_connect (settings,
+                                                             "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
+                                                             G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_size_changed),
+                                                             priv);
+    
+    /* Initialize thumbnail size by storing it for future use */
+    if (priv->thumbnail) {
+        GtkWidget *thumbnail_widget = GTK_WIDGET (priv->thumbnail);
+        guint64 size = g_paste_settings_get_images_preview_size (settings);
+        g_object_set_data (G_OBJECT (thumbnail_widget), "preview-size", GUINT_TO_POINTER (size));
+    }
 
     return self;
 }
