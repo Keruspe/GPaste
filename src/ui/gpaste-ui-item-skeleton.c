@@ -103,11 +103,26 @@ g_paste_ui_item_skeleton_on_images_preview_size_changed (GPasteSettings *setting
             int new_width = (int)(orig_width * scale_factor);
             int new_height = (int)(orig_height * scale_factor);
             
-            /* Create scaled pixbuf */
-            GdkPixbuf *scaled = gdk_pixbuf_scale_simple (pixbuf, 
-                                                          new_width,
-                                                          new_height,
-                                                          GDK_INTERP_BILINEAR);
+            /* Create scaled pixbuf with high quality interpolation */
+            GdkPixbuf *scaled;
+            
+            /* For small thumbnail sizes, use higher quality interpolation */
+            GdkInterpType interp_type;
+            if (size <= 150) {
+                /* Use the highest quality interpolation for small images */
+                interp_type = GDK_INTERP_HYPER;
+            } else if (size <= 300) {
+                /* Use very good quality for medium sized images */
+                interp_type = GDK_INTERP_TILES; 
+            } else {
+                /* For larger sizes, use a slightly faster method */
+                interp_type = GDK_INTERP_BILINEAR;
+            }
+            
+            scaled = gdk_pixbuf_scale_simple (pixbuf, 
+                                          new_width,
+                                          new_height,
+                                          interp_type);
             
             /* Set the scaled pixbuf to the image */
             if (scaled) {
@@ -318,10 +333,27 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
         gint scaled_width = (gint) (width * scale);
         gint scaled_height = (gint) (height * scale);
 
-        GdkPixbuf *scaled = gdk_pixbuf_scale_simple(pixbuf, 
-                                                   scaled_width, 
-                                                   scaled_height, 
-                                                   GDK_INTERP_BILINEAR);
+        /* Create scaled pixbuf with high quality interpolation */
+        GdkPixbuf *scaled;
+        
+        /* For small thumbnail sizes, use higher quality interpolation */
+        GdkInterpType interp_type;
+        if (target_size <= 150) {
+            /* Use the highest quality interpolation for small images */
+            interp_type = GDK_INTERP_HYPER;
+        } else if (target_size <= 300) {
+            /* Use very good quality for medium sized images */
+            interp_type = GDK_INTERP_TILES; 
+        } else {
+            /* For larger sizes, use a slightly faster method since 
+             * the difference is less noticeable */
+            interp_type = GDK_INTERP_BILINEAR;
+        }
+        
+        scaled = gdk_pixbuf_scale_simple(pixbuf, 
+                                      scaled_width, 
+                                      scaled_height, 
+                                      interp_type);
 
         gtk_image_set_from_pixbuf (priv->thumbnail, scaled);
         gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), TRUE);
