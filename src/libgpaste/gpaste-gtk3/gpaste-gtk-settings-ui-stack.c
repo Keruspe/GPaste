@@ -25,6 +25,8 @@ typedef struct
     GtkSwitch      *close_on_select_switch;
     GtkSwitch      *open_centered_switch;
     GtkSwitch      *images_support_switch;
+    GtkSwitch      *images_preview_switch;
+    GtkSpinButton  *images_preview_size_button;
     GtkSwitch      *growing_lines_switch;
     GtkSwitch      *primary_to_history_switch;
     GtkSwitch      *save_history_switch;
@@ -95,6 +97,8 @@ BOOLEAN_CALLBACK (open_centered)
 BOOLEAN_CALLBACK (extension_enabled)
 BOOLEAN_CALLBACK (growing_lines)
 BOOLEAN_CALLBACK (images_support)
+BOOLEAN_CALLBACK (images_preview)
+UINT64_CALLBACK (images_preview_size)
 BOOLEAN_CALLBACK (primary_to_history)
 BOOLEAN_CALLBACK (save_history)
 BOOLEAN_CALLBACK (synchronize_clipboards)
@@ -163,6 +167,26 @@ g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (GPasteGtkSettingsUiS
                                                                                      images_support_callback,
                                                                                      (GPasteGtkResetCallback) g_paste_settings_reset_images_support,
                                                                                      settings);
+
+    /* Ajout des options pour les prévisualisations d'images */
+    priv->images_preview_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
+                                                                                     _("Image previews"),
+                                                                                     g_paste_settings_get_images_preview (settings),
+                                                                                     images_preview_callback,
+                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_images_preview,
+                                                                                     settings);
+
+    priv->images_preview_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
+                                                                                     _("Preview size"),
+                                                                                     (gdouble) g_paste_settings_get_images_preview_size (settings),
+                                                                                     50.0,   /* min */
+                                                                                     400.0,  /* max */
+                                                                                     10.0,   /* step */
+                                                                                     images_preview_size_callback,
+                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_images_preview_size,
+                                                                                     settings);
+    g_paste_gtk_settings_ui_panel_add_separator (panel);
+
     priv->trim_items_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                   _("Trim items"),
                                                                                  g_paste_settings_get_trim_items (settings),
@@ -345,6 +369,10 @@ g_paste_gtk_settings_ui_stack_settings_changed (GPasteSettings *settings,
         gtk_switch_set_active (GTK_SWITCH (priv->growing_lines_switch), g_paste_settings_get_growing_lines (settings));
     else if (g_paste_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         gtk_switch_set_active (GTK_SWITCH (priv->images_support_switch), g_paste_settings_get_images_support (settings));
+    else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SETTING))
+        gtk_switch_set_active (GTK_SWITCH (priv->images_preview_switch), g_paste_settings_get_images_preview (settings));
+    else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING))
+        gtk_spin_button_set_value (priv->images_preview_size_button, (gdouble) g_paste_settings_get_images_preview_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
         gtk_entry_set_text (priv->launch_ui_entry, g_paste_settings_get_launch_ui (settings));
     else if (g_paste_str_equal (key, G_PASTE_MAKE_PASSWORD_SETTING))

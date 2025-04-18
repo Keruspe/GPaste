@@ -259,12 +259,21 @@ g_paste_ui_item_try_load_image (GPasteUiItem *self, const gchar *data)
     if (!data || !*data)
         return;
 
+    GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
+    
+    /* Vérifie si les prévisualisations d'images sont activées dans les paramètres */
+    gboolean preview_enabled = g_paste_settings_get_images_preview(priv->settings);
+    
+    if (!preview_enabled)
+        return;
+        
     GPasteUiItemSkeleton *sk = G_PASTE_UI_ITEM_SKELETON (self);
     
     /* Handle standard GPaste image items ([Image, ...]) */
     if (g_str_has_prefix(data, "[Image, ") && g_str_has_suffix(data, ")]")) {
-        /* Extract dimensions */
-        int width = 0, height = 0;
+        /* Récupère la taille des prévisualisations depuis les paramètres */
+        gint preview_size = (gint)g_paste_settings_get_images_preview_size(priv->settings);
+        gint width = preview_size, height = preview_size;
         int date_year = 0, date_month = 0, date_day = 0;
         int hour = 0, minute = 0, second = 0;
         

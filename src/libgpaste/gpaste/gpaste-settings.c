@@ -35,6 +35,8 @@ typedef struct
     gboolean   growing_lines;
     gchar     *history_name;
     gboolean   images_support;
+    gboolean   images_preview;
+    guint64    images_preview_size;
     gchar     *launch_ui;
     gchar     *make_password;
     guint64    max_displayed_history_size;
@@ -291,6 +293,52 @@ STRING_SETTING (history_name, HISTORY_NAME)
  * Change the "images-support" setting
  */
 BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
+
+/**
+ * g_paste_settings_get_images_preview:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "images-preview" setting
+ *
+ * Returns: the value of the "images-preview" setting
+ */
+/**
+ * g_paste_settings_reset_images_preview:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "images-preview" setting
+ */
+/**
+ * g_paste_settings_set_images_preview:
+ * @self: a #GPasteSettings instance
+ * @value: whether to enable or not image previews
+ *
+ * Change the "images-preview" setting
+ */
+BOOLEAN_SETTING (images_preview, IMAGES_PREVIEW)
+
+/**
+ * g_paste_settings_get_images_preview_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "images-preview-size" setting
+ *
+ * Returns: the value of the "images-preview-size" setting
+ */
+/**
+ * g_paste_settings_reset_images_preview_size:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "images-preview-size" setting
+ */
+/**
+ * g_paste_settings_set_images_preview_size:
+ * @self: a #GPasteSettings instance
+ * @value: the size of image previews in pixels
+ *
+ * Change the "images-preview-size" setting
+ */
+UNSIGNED_SETTING (images_preview_size, IMAGES_PREVIEW_SIZE)
 
 /**
  * g_paste_settings_get_launch_ui:
@@ -862,6 +910,10 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
         g_paste_settings_private_set_history_name_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
         g_paste_settings_private_set_images_support_from_dconf (priv);
+    else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SETTING))
+        g_paste_settings_private_set_images_preview_from_dconf (priv);
+    else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING))
+        g_paste_settings_private_set_images_preview_size_from_dconf (priv);
     else if (g_paste_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
     {
         g_paste_settings_private_set_launch_ui_from_dconf (priv);
@@ -1070,6 +1122,17 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_growing_lines_from_dconf (priv);
     g_paste_settings_private_set_history_name_from_dconf (priv);
     g_paste_settings_private_set_images_support_from_dconf (priv);
+    g_paste_settings_private_set_images_preview_from_dconf (priv);
+    g_paste_settings_private_set_images_preview_size_from_dconf (priv);
+    
+    /* Initialisation avec valeurs par défaut pour les nouveaux paramètres */
+    /* Ils seront ensuite remplacés par les valeurs dconf si existantes */
+    priv->images_preview = TRUE;
+    priv->images_preview_size = 100;
+    
+    /* On essaie de charger depuis dconf, mais ça peut échouer la première fois */
+    g_settings_get_boolean (priv->settings, G_PASTE_IMAGES_PREVIEW_SETTING);
+    g_settings_get_uint64 (priv->settings, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING);
     g_paste_settings_private_set_launch_ui_from_dconf (priv);
     g_paste_settings_private_set_make_password_from_dconf (priv);
     g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
