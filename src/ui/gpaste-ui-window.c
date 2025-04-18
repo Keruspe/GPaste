@@ -274,9 +274,15 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     priv->settings = g_paste_settings_new();
 
+    /* Configure the main vertical box to fill the window */
     gtk_widget_set_margin_start (vbox, 5);
     gtk_widget_set_margin_end (vbox, 5);
     gtk_widget_set_margin_bottom (vbox, 5);
+    gtk_widget_set_hexpand (vbox, TRUE);
+    gtk_widget_set_vexpand (vbox, TRUE);
+    gtk_widget_set_halign (vbox, GTK_ALIGN_FILL);
+    gtk_widget_set_valign (vbox, GTK_ALIGN_FILL);
+    
     gtk_window_set_position (GTK_WINDOW (self),
                              g_paste_settings_get_open_centered (priv->settings) ? GTK_WIN_POS_CENTER : GTK_WIN_POS_MOUSE);
 
@@ -330,14 +336,52 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     GtkBox *box = GTK_BOX (hbox);
 
+    /* Configure the main horizontal box */
     gtk_box_set_spacing (box, 2);
     gtk_box_pack_start (box, panel, FALSE, FALSE, 0);
     gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 0);
+    
+    /* Create an external container for the history that will take all available space */
+    GtkWidget *history_container = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_hexpand (history_container, TRUE);
+    gtk_widget_set_vexpand (history_container, TRUE);
+    gtk_widget_set_halign (history_container, GTK_ALIGN_FILL);
+    gtk_widget_set_valign (history_container, GTK_ALIGN_FILL);
+    
+    /* Add a scrolling container inside the history container */
+    GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
+    GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
+    
+    /* Configure the scrolling container */
+    gtk_scrolled_window_set_policy (sw, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_shadow_type (sw, GTK_SHADOW_NONE);
+    
+    /* Ensure the scrolled window takes all available space */
+    gtk_widget_set_hexpand (scroll, TRUE);
+    gtk_widget_set_vexpand (scroll, TRUE);
+    gtk_widget_set_halign (scroll, GTK_ALIGN_FILL);
+    gtk_widget_set_valign (scroll, GTK_ALIGN_FILL);
+    
+    /* Configure the history to take all available space */
     gtk_widget_set_hexpand (history, TRUE);
-    gtk_widget_set_halign (history, TRUE);
-    gtk_box_pack_start (box, history, TRUE, TRUE, 0);
+    gtk_widget_set_vexpand (history, TRUE);
+    
+    /* Add the history to the scrolling container */
+    gtk_container_add (GTK_CONTAINER (scroll), history);
+    
+    /* Add the scroll to the history container */
+    gtk_container_add (GTK_CONTAINER (history_container), scroll);
+    
+    /* Add the history container to the main horizontal box */
+    gtk_box_pack_start (box, history_container, TRUE, TRUE, 0);
+    
+    /* Configure the main horizontal box to take all available space */
+    gtk_widget_set_hexpand (hbox, TRUE);
     gtk_widget_set_vexpand (hbox, TRUE);
-    gtk_widget_set_valign (hbox, TRUE);
+    gtk_widget_set_halign (hbox, GTK_ALIGN_FILL);
+    gtk_widget_set_valign (hbox, GTK_ALIGN_FILL);
+    
+    /* Add the horizontal box to the main container */
     gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
@@ -365,9 +409,18 @@ g_paste_ui_window_new (GtkApplication *app)
     GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_WINDOW,
                                       "application", app,
                                       "type",        GTK_WINDOW_TOPLEVEL,
-                                      "resizable",   FALSE,
+                                      "resizable",   TRUE,
                                       "icon-name",   G_PASTE_ICON_NAME,
                                       NULL);
+    
+    /* Set default and minimum window size - use larger default size */
+    gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
+    
+    /* Define minimum size constraints */
+    GdkGeometry geometry;
+    geometry.min_width = 600;
+    geometry.min_height = 400;
+    gtk_window_set_geometry_hints (GTK_WINDOW (self), NULL, &geometry, GDK_HINT_MIN_SIZE);
 
     g_paste_client_new (on_client_ready, self);
 
