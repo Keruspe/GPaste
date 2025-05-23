@@ -34,6 +34,23 @@
         By default, we're saving only text
       </description>
     </key>
+    
+    <key name="images-preview" type="b">
+      <default>true</default>
+      <summary>Show image previews in the history?</summary>
+      <description>
+        By default, we show previews of images in the history
+      </description>
+    </key>
+    
+    <key name="images-preview-size" type="t">
+      <range min="50" max="400"/>
+      <default>100</default>
+      <summary>Size of image previews in pixels</summary>
+      <description>
+        Default size is 100 pixels
+      </description>
+    </key>
 
     <key name="close-on-select" type="b">
       <default>true</default>
