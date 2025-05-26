@@ -33,7 +33,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (SearchProvider, search_provider, G_PASTE_TYPE_
 static char *
 g_paste_dbus_get_as_result (GVariant *variant)
 {
-    guint64 _len;
+    gsize _len;
     g_autofree const gchar **r = g_variant_get_strv (variant, &_len);
 
     return g_strjoinv (" ", (gchar **) r);
@@ -183,7 +183,7 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
     g_variant_iter_init (&parameters_iter, parameters);
 
     g_autoptr (GVariant) results = g_variant_iter_next_value (&parameters_iter);
-    guint64 len;
+    gsize len;
     g_autofree const gchar **uuids = g_variant_get_strv (results, &len);
 
     if (!len)
