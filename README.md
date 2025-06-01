@@ -31,17 +31,34 @@ A native gnome-shell extension is provided.
 
 You can then run `gpaste-client daemon-version` to check the correct daemon is now running.
 
-Steps to install it after cloning:
-
-    mkdir builddir
-    cd builddir
-    meson ..
-    ninja
-    sudo ninja install
-    sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
-
 You can see everything I'll post about GPaste [there](https://www.imagination-land.org/tags/GPaste.html).
 
 Latest release for GNOME 45 to 48 is: [GPaste 45.3](https://www.imagination-land.org/posts/2025-04-14-gpaste-45.3-released.html).
 
 Direct link to download: <https://www.imagination-land.org/files/gpaste/GPaste-45.3.tar.xz>
+
+## Installation
+
+### `dnf` on Fedora
+
+```bash
+sudo dnf install gpaste-ui gpaste
+```
+
+### Building from Source
+
+```bash
+# Install build dependencies
+# Fedora 42
+$ sudo dnf install meson ninja-build glib2-devel gtk3-devel cmake libgdk* gcr libadwaita-devel gjs-devel
+
+# General build instructions
+$ git clone git@github.com:Keruspe/GPaste.git
+$ cd GPaste
+$ mkdir builddir
+$ cd builddir
+$ meson ..
+$ ninja
+$ sudo ninja install
+$ sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
+```
