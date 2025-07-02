@@ -24,6 +24,8 @@ G_BEGIN_DECLS
 #define G_PASTE_GROWING_LINES_SETTING              "growing-lines"
 #define G_PASTE_HISTORY_NAME_SETTING               "history-name"
 #define G_PASTE_IMAGES_SUPPORT_SETTING             "images-support"
+#define G_PASTE_IMAGES_PREVIEW_SETTING            "images-preview"
+#define G_PASTE_IMAGES_PREVIEW_SIZE_SETTING       "images-preview-size"
 #define G_PASTE_LAUNCH_UI_SETTING                  "launch-ui"
 #define G_PASTE_MAKE_PASSWORD_SETTING              "make-password"
 #define G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING "max-displayed-history-size"
