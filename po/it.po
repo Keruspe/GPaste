@@ -131,7 +131,7 @@ msgstr "Versione stabile per GNOME 45. Cambiamenti:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:78
 msgid "Port to gnome 45"
-msgstr "Supporto per gnome 45"
+msgstr "Aggiunto supporto per gnome 45"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 msgid "Add setting to open ui window centered"
