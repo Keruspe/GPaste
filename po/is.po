@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-14 22:26+0200\n"
-"PO-Revision-Date: 2024-11-12 14:00+0000\n"
+"PO-Revision-Date: 2025-07-19 18:02+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "is/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n % 10 != 1 || n % 100 == 11;\n"
-"X-Generator: Weblate 5.8.2\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -101,9 +101,8 @@ msgid "This is a maintenance release. Changes:"
 msgstr "Þetta er viðhaldsuppfærsla. Helstu breytingar:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#, fuzzy
 msgid "Support for gnome 48"
-msgstr "Stuðningur við GNOME 47"
+msgstr "Stuðningur við GNOME 48"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
