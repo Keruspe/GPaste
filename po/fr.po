@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-14 22:26+0200\n"
-"PO-Revision-Date: 2021-10-23 08:38+0000\n"
-"Last-Translator: Olivier FAURAX <olivier+weblate@faurax.fr>\n"
-"Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/"
-">\n"
+"PO-Revision-Date: 2025-08-17 12:02+0000\n"
+"Last-Translator: J0bot <me@j0bot.ch>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/gpaste/gpaste/fr/>"
+"\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.9-dev\n"
+"X-Generator: Weblate 5.13\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -105,9 +105,8 @@ msgid "This is a maintenance release. Changes:"
 msgstr "Ceci est une mise à jour de maintenance. Changements :"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#, fuzzy
 msgid "Support for gnome 48"
-msgstr "port vers gnome-shell version 41"
+msgstr "Support pour gnome 48"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
@@ -121,14 +120,12 @@ msgid "Translations updates"
 msgstr "Mise à jour des traductions"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
-#, fuzzy
 msgid "Support for gnome 47"
-msgstr "port vers gnome-shell version 41"
+msgstr "Support pour gnome 47"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
-#, fuzzy
 msgid "Support for gnome 46"
-msgstr "port vers gnome-shell version 41"
+msgstr "Support pour gnome 46"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
 #, fuzzy
@@ -136,13 +133,12 @@ msgid "Stable release for GNOME 45. Changes:"
 msgstr "Première mise à jour pour GNOME 41. Changements :"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:78
-#, fuzzy
 msgid "Port to gnome 45"
-msgstr "port vers gnome-shell version 41"
+msgstr "port vers gnome version 41"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 msgid "Add setting to open ui window centered"
-msgstr ""
+msgstr "Ajouter le réglage pour ouvrir la fenêtre ui centrée"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:105
@@ -186,17 +182,17 @@ msgstr "Première mise à jour pour GNOME 41. Changements :"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Port vers GNOME 43"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
 msgid "Internal preparation for gtk4 port"
-msgstr ""
+msgstr "Préparation interne pour le port gtk4"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:295
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "Ouvrir GPaste UI à la position du pointeur de la souris"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
 msgid "Fixes to the new preferences tool"
