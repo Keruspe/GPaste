@@ -328,7 +328,7 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
     if (atom >= G_PASTE_SPECIAL_ATOM_FIRST && atom < G_PASTE_SPECIAL_ATOM_LAST)
     {
         g_autofree guchar *data = NULL;
-        guint64 length = 0;
+        gsize length = 0;
         const gchar *str = g_paste_item_get_special_value (item, atom);
 
         if (str)
