@@ -8,23 +8,26 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-14 22:26+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2025-10-24 21:04+0000\n"
+"Last-Translator: Shiba <theonlyshiba.ir@gmail.com>\n"
+"Language-Team: Persian <https://hosted.weblate.org/projects/gpaste/gpaste/fa/"
+">\n"
 "Language: fa\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 5.14.1-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
 msgid "GPaste"
-msgstr ""
+msgstr "جی پیست"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
 msgid "Manage your clipboard history"
-msgstr ""
+msgstr "حافظه کلیپبوردتو مدیریت کن"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
 msgid "Marc-Antoine Perennou"
@@ -35,6 +38,8 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"جی پیست یه ابزاره که باهاش میتونی تاریخچه کلیپبوردتو مدیریت کنی و به حد "
+"Crazy اون رو کاستومایز کنی."
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:17
 msgid ""
