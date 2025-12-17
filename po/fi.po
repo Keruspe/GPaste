@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-14 22:26+0200\n"
-"PO-Revision-Date: 2025-12-12 19:00+0000\n"
+"PO-Revision-Date: 2025-12-17 18:00+0000\n"
 "Last-Translator: \"Tinde (Joke)\" <jouko.tiilikainen@gmail.com>\n"
 "Language-Team: Finnish <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "fi/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.15-dev\n"
+"X-Generator: Weblate 5.15.1-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -406,76 +406,78 @@ msgstr "@GETTEXT_PACKAGE@"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:112
 #: src/ui/gpaste-ui-shortcuts-window.c:73
 msgid "Launch the graphical tool"
-msgstr ""
+msgstr "Käynnistä graafinen työkalu"
 
 #: data/control-center/42-gpaste.control-center.xml.in:4
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:278
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:129
 #: src/ui/gpaste-ui-shortcuts-window.c:74
 msgid "Mark the active item as being a password"
-msgstr ""
+msgstr "Merkitse aktiivinen kohde salasanalla suojatuksi"
 
 #: data/control-center/42-gpaste.control-center.xml.in:5
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:264
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
 #: src/ui/gpaste-ui-shortcuts-window.c:72
 msgid "Delete the active item from history"
-msgstr ""
+msgstr "Poista aktiivinen kohde historiasta"
 
 #: data/control-center/42-gpaste.control-center.xml.in:6
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:285
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
 msgid "Display the history"
-msgstr ""
+msgstr "Näytä historia"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:292
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
 #: src/ui/gpaste-ui-shortcuts-window.c:76
 msgid "Sync the clipboard to the primary selection"
-msgstr ""
+msgstr "Synkronoi leikepöytä ensisijaiseen valintaan"
 
 #: data/control-center/42-gpaste.control-center.xml.in:8
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:299
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:77
 msgid "Sync the primary selection to the clipboard"
-msgstr ""
+msgstr "Synkronoi ensisijainen valinta leikepöydälle"
 
 #: data/control-center/42-gpaste.control-center.xml.in:9
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:306
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
 #: src/ui/gpaste-ui-shortcuts-window.c:78
 msgid "Upload the active item to a pastebin service"
-msgstr ""
+msgstr "Lataa aktiivinen kohde pastebin-palveluun"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:3
 msgid "GPaste Preferences"
-msgstr ""
+msgstr "GPaste-asetukset"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
 msgid "Manage your GPaste preferences"
-msgstr ""
+msgstr "Hallinnoi GPaste-asetuksiasi"
 
 #: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
-msgstr ""
+msgstr "Leikepöytä; Hallinta; Asetukset; Määritykset; Kokoonpano;"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:7
 msgid "Max size of an element when displaying it"
-msgstr ""
+msgstr "Elementin maksimikoko näytettäessä"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:8
 msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
 msgstr ""
+"Elementin ylimääräinen osa korvataan merkeillä \"…\" ja rivinvaihdot "
+"merkeillä \" \", kun niitä näytetään sovelmassa. 0 poistaa käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:15
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Havaitsemmeko ja korvaammeko kasvavia viivoja historiassa?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:16
 msgid ""
@@ -483,52 +485,57 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"Oletusarvoisesti \"Tässä on\" ja sitten \"Tässä on esimerkki\" -"
+"vaihtoehtojen valitseminen luo historiaan kaksi merkintää. Kun tämä "
+"ominaisuus on käytössä, ensimmäinen korvataan toisella."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:24
 msgid "The name of the current history"
-msgstr ""
+msgstr "Nykyisen historian nimi"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:25
 msgid "The default name is \"history\""
-msgstr ""
+msgstr "Oletusnimi on \"historia\""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:32
 msgid "Do we save the images copied to history, or only text?"
-msgstr ""
+msgstr "Tallennetaanko kopioidut kuvat historiaan vai vain teksti?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:33
 msgid "By default, we're saving only text"
-msgstr ""
+msgstr "Oletusarvoisesti tallennamme vain tekstiä"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:40
 msgid "Do we close the UI after selecting an item?"
-msgstr ""
+msgstr "Suljetaanko käyttöliittymä kohteen valitsemisen jälkeen?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:41
 msgid "By default, we close it"
-msgstr ""
+msgstr "Oletusarvoisesti suljemme sen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:48
 msgid "Do we open the UI window centered?"
-msgstr ""
+msgstr "Avataanko käyttöliittymäikkuna keskitetysti?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:49
 msgid "By default, we open it where the mouse cursor is"
-msgstr ""
+msgstr "Oletusarvoisesti avaamme sen hiiren kursorin kohdalle"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:56
 msgid "The keyboard shortcut to launch the graphical interface"
-msgstr ""
+msgstr "Pikanäppäin graafisen käyttöliittymän käynnistämiseksi"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:57
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Oletusarvoisesti Ctrl + Alt + G -näppäinyhdistelmä tekee tämän (\"<Ctrl><Alt>"
+"G\"). Tyhjä merkkijono tässä poistaa tämän toiminnon käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:65
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr ""
+msgstr "Pikanäppäin aktiivisen kohteen merkitsemiseksi salasanalla suojatuksi"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:66
 msgid ""
@@ -536,112 +543,128 @@ msgid ""
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
+"Oletusarvoisesti ctrl + alt + s -näppäinyhdistelmän painaminen merkitsee "
+"aktiivisen kohteen salasanalla suojatuksi (\"<Ctrl><Alt>S\"). Tyhjä "
+"merkkijono tässä poistaa tämän toiminnon käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:75
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:210
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:149
 msgid "Max displayed history size"
-msgstr ""
+msgstr "Näytettävän historian enimmäiskoko"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:76
 msgid "Maximum number of items displayed in the history"
-msgstr ""
+msgstr "Historiassa näytettävien kohteiden enimmäismäärä"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:84
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:217
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:108
 msgid "Max history size"
-msgstr ""
+msgstr "Historian enimmäiskoko"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:85
 msgid "Maximum number of items in history"
-msgstr ""
+msgstr "Historiassa olevien kohteiden enimmäismäärä"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:93
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:224
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:115
 msgid "Max memory usage (MB)"
-msgstr ""
+msgstr "Muistin enimmäiskäyttö (MB)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:94
 msgid "Maximum amount of memory used to store contents"
-msgstr ""
+msgstr "Sisällön tallentamiseen käytetyn muistin enimmäismäärä"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:102
 msgid "Max text item size"
-msgstr ""
+msgstr "Tekstikohteen enimmäiskoko"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:103
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Tekstikohteen enimmäiskoko. Kaikki tämän rajan ulkopuolella oleva jätetään "
+"huomiotta."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:111
 msgid "Min text item size"
-msgstr ""
+msgstr "Tekstikohteen vähimmäiskoko"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:112
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
 msgstr ""
+"Tekstikohteen vähimmäiskoko. Kaikki tämän rajan ulkopuolella oleva jätetään "
+"huomiotta."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:119
 msgid "The keyboard shortcut to delete the first element in history"
-msgstr ""
+msgstr "Pikanäppäin historian ensimmäisen elementin poistamiseen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:120
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Oletusarvoisesti näppäinyhdistelmällä ctrl + alt + v tehdään tämä (\"<Ctrl>"
+"<Alt>V\"). Tyhjä merkkijono tässä poistaa tämän toiminnon käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:128
 msgid "Does the primary selection affects history?"
-msgstr ""
+msgstr "Vaikuttaako esivaali historiaan?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:129
 msgid "By default, only clipboard (ctrl+c) affects history."
-msgstr ""
+msgstr "Oletusarvoisesti vain leikepöytä (ctrl+c) vaikuttaa historiaan."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:136
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
 msgstr ""
+"Tallennetaanko kaikki valitun rich text -tiedoston (esim. html) versiot vai "
+"vain pelkkä tekstiversio?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:137
 msgid "By default, we're saving all"
-msgstr ""
+msgstr "Oletusarvoisesti tallennamme kaikki"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:144
 msgid "Do we save the history from one session to another?"
-msgstr ""
+msgstr "Tallennammeko historian istunnosta toiseen?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:145
 msgid "By default, we're saving it"
-msgstr ""
+msgstr "Oletusarvoisesti tallennamme sen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:152
 msgid "The keyboard shortcut to display the menu"
-msgstr ""
+msgstr "Pikanäppäin valikon näyttämiseen"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:153
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
 msgstr ""
+"Oletusarvoisesti Ctrl + Alt + H -näppäinyhdistelmän painaminen näyttää "
+"valikon (\"<Ctrl><Alt>H\"). Tyhjä merkkijono tässä poistaa tämän toiminnon "
+"käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:161
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
-msgstr ""
+msgstr "Pikanäppäin leikepöydän synkronoimiseksi ensisijaiseen valintaan"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:162
 msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Oletusarvoisesti ctrl + alt + o -näppäinyhdistelmä synkronoi ne (\"<Ctrl>"
+"<Alt>P\"). Tyhjä merkkijono tässä poisti tämän toiminnon käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:170
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
-msgstr ""
+msgstr "Pikanäppäin ensisijaisen valinnan synkronoimiseksi leikepöydälle"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:171
 msgid ""
@@ -663,71 +686,78 @@ msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, we're tracking those changes."
-msgstr ""
+msgstr "Oletusarvoisesti seuraamme näitä muutoksia."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:195
 msgid ""
 "Do we sync the daemon state with the gnome-shell extension's one? (disable "
 "the daemon when disabling the extension)"
 msgstr ""
+"Synkronoimmeko daemonin tilan gnome-shell-laajennusten tilan kanssa? (poista "
+"daemon käytöstä laajennuksen poistamisen yhteydessä)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:196
 msgid "By default, the daemon state keeps unchanged"
-msgstr ""
+msgstr "Oletusarvoisesti daemonin tila pysyy muuttumattomana"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:203
 msgid "Do we trim the textual items before adding them to history?"
-msgstr ""
+msgstr "Karsitaanko tekstielementtejä ennen niiden lisäämistä historiaan?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:204
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
 msgstr ""
+"Leikkaaminen tarkoittaa kaikkien loppu- ja loppuvälilyöntien poistamista. "
+"Oletusarvoisesti annamme niiden olla sellaisenaan."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:212
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
+"Pikanäppäin historian ensimmäisen elementin lataamiseen pastin-palveluun"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Oletusarvoisesti Ctrl + Alt + U -näppäinyhdistelmä tekee tämän (\"<Ctrl><Alt>"
+"U\"). Tyhjä merkkijono tässä poistaa tämän toiminnon käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:221
 msgid "Do we prompt for confirmation when emptying a history?"
-msgstr ""
+msgstr "Kysytäänkö vahvistusta historian tyhjennyksen yhteydessä?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:222
 msgid "By default, we do as it's a destructive action"
-msgstr ""
+msgstr "Oletusarvoisesti teemme niin, koska se on tuhoisa teko"
 
 #: src/client/gpaste-client.c:149
 msgid "Couldn't spawn"
-msgstr ""
+msgstr "Ei voitu luoda"
 
 #: src/client/gpaste-client.c:161
 #, c-format
 msgid "Usage:\n"
-msgstr ""
+msgstr "Käyttö:\n"
 
 #. Translators: help for gpaste history
 #: src/client/gpaste-client.c:163
 msgid "print the history with UUIDs"
-msgstr ""
+msgstr "tulosta historia UUID-tunnuksilla"
 
 #. Translators: help for gpaste history-size
 #: src/client/gpaste-client.c:165
 msgid "print the size of the history"
-msgstr ""
+msgstr "tulosta historian koko"
 
 #. Translators: help for gpaste get-history
 #: src/client/gpaste-client.c:167
 msgid "get the name of the current history"
-msgstr ""
+msgstr "hanki nykyisen historian nimi"
 
 #. Translators: help for gpaste backup-history <name>
 #. Translators: help for gpaste switch-history <name>
@@ -739,75 +769,75 @@ msgstr ""
 #: src/client/gpaste-client.c:173 src/client/gpaste-client.c:179
 #: src/client/gpaste-client.c:191 src/client/gpaste-client.c:195
 msgid "name"
-msgstr ""
+msgstr "nimi"
 
 #: src/client/gpaste-client.c:169
 msgid "backup current history"
-msgstr ""
+msgstr "varmuuskopioi nykyinen historia"
 
 #: src/client/gpaste-client.c:171
 msgid "switch to another history"
-msgstr ""
+msgstr "vaihda toiseen historiaan"
 
 #: src/client/gpaste-client.c:173
 msgid "delete a history"
-msgstr ""
+msgstr "poista historia"
 
 #. Translators: help for gpaste list-histories
 #: src/client/gpaste-client.c:175
 msgid "list available histories"
-msgstr ""
+msgstr "listaa saatavilla olevat historiat"
 
 #. Translators: help for gpaste add <text>
 #: src/client/gpaste-client.c:177
 msgid "text"
-msgstr ""
+msgstr "teksti"
 
 #: src/client/gpaste-client.c:177
 msgid "set text to clipboard"
-msgstr ""
+msgstr "aseta teksti leikepöydälle"
 
 #: src/client/gpaste-client.c:179
 msgid "password"
-msgstr ""
+msgstr "salasana"
 
 #: src/client/gpaste-client.c:179
 msgid "add the name - password couple to the clipboard"
-msgstr ""
+msgstr "lisää nimi-salasana-pari leikepöydälle"
 
 #. Translators: help for gpaste rename-password <old name> <new name>
 #: src/client/gpaste-client.c:181
 msgid "old name"
-msgstr ""
+msgstr "vanha nimi"
 
 #: src/client/gpaste-client.c:181
 msgid "new name"
-msgstr ""
+msgstr "uusi nimi"
 
 #: src/client/gpaste-client.c:181
 msgid "rename the password"
-msgstr ""
+msgstr "uudelleen nimeä salasana"
 
 #. Translators: help for gpaste get <uuid>
 #: src/client/gpaste-client.c:183
 msgid "get the item <uuid> from the history"
-msgstr ""
+msgstr "hae kohde <uuid> historiasta"
 
 #. Translators: help for gpaste select <uuid>
 #: src/client/gpaste-client.c:185
 msgid "set the item <uuid> from the history to the clipboard"
-msgstr ""
+msgstr "aseta kohde <uuid> historiasta leikepöydälle"
 
 #. Translators: help for gpaste replace <uuid> <contents>
 #: src/client/gpaste-client.c:187
 msgid "contents"
-msgstr ""
+msgstr "sisällys"
 
 #: src/client/gpaste-client.c:187
 msgid ""
 "replace the contents of the item <uuid> from the history with the provided "
 "one"
-msgstr ""
+msgstr "korvaa historiassa olevan <uuid>-kohteen sisältö annetulla sisällöllä"
 
 #. Translators: help for gpaste merge <uuid> … <uuid>
 #: src/client/gpaste-client.c:189
@@ -815,37 +845,39 @@ msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
 "the clipboard"
 msgstr ""
+"Yhdistä historiasta UUID-tunnuksia vastaavat kohteet ja lisää tulos "
+"leikepöydälle"
 
 #: src/client/gpaste-client.c:191
 msgid "set the item <uuid> from the history as a password named <name>"
-msgstr ""
+msgstr "aseta historiasta <uuid>-kohde salasanaksi nimeltä <nimi>"
 
 #. Translators: help for gpaste delete <uuid>
 #: src/client/gpaste-client.c:193
 msgid "delete item <uuid> from the history"
-msgstr ""
+msgstr "poista kohde <uuid> historiasta"
 
 #: src/client/gpaste-client.c:195
 msgid "delete the password <name> from the history"
-msgstr ""
+msgstr "poista salasana <nimi> historiasta"
 
 #. Translators: help for gpaste file <path>
 #: src/client/gpaste-client.c:197
 msgid "path"
-msgstr ""
+msgstr "polku"
 
 #: src/client/gpaste-client.c:197
 msgid "put the content of the file at <path> into the clipboard"
-msgstr ""
+msgstr "siirrä tiedoston <polku> sisältö leikepöydälle"
 
 #. Translators: help for whatever | gpaste
 #: src/client/gpaste-client.c:199
 msgid "whatever"
-msgstr ""
+msgstr "mitä tahansa"
 
 #: src/client/gpaste-client.c:199
 msgid "set the output of whatever to clipboard"
-msgstr ""
+msgstr "aseta minkä tahansa tulosteen leikepöydälle"
 
 #. Translators: help for gpaste empty
 #: src/client/gpaste-client.c:201
