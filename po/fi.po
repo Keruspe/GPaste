@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-14 22:26+0200\n"
-"PO-Revision-Date: 2025-12-17 18:00+0000\n"
+"PO-Revision-Date: 2025-12-20 19:00+0000\n"
 "Last-Translator: \"Tinde (Joke)\" <jouko.tiilikainen@gmail.com>\n"
 "Language-Team: Finnish <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "fi/>\n"
@@ -17,11 +17,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.15.1-dev\n"
+"X-Generator: Weblate 5.15.1\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
-#, fuzzy
 msgid "GPaste"
 msgstr "GPaste"
 
@@ -31,7 +30,6 @@ msgid "Manage your clipboard history"
 msgstr "Hallitse leikepöydän historiaasi"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:7
-#, fuzzy
 msgid "Marc-Antoine Perennou"
 msgstr "Marc-Antoine Perennou"
 
@@ -107,9 +105,8 @@ msgid "This is a maintenance release. Changes:"
 msgstr "Tämä on ylläpitojulkaisu. Muutokset:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#, fuzzy
 msgid "Support for gnome 48"
-msgstr "Tukee Gnome 47"
+msgstr "Tukee Gnome 48"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
@@ -175,21 +172,21 @@ msgstr "Noudata --use-index-ominaisuutta historiaa näytettäessä"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
 msgid "First release for GNOME 43. Changes:"
-msgstr ""
+msgstr "Ensimmäinen julkaisu GNOME 43:lle. Muutokset:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
 msgid "Port to GNOME 43"
-msgstr ""
+msgstr "Porttaus GNOME 43:een"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
 msgid "Internal preparation for gtk4 port"
-msgstr ""
+msgstr "Sisäinen valmistelu gtk4-porttia varten"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:295
 msgid "Open GPaste UI where the mouse pointer is"
-msgstr ""
+msgstr "Avaa GPaste-käyttöliittymä hiiren osoittimen kohdalla"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
 msgid "Fixes to the new preferences tool"
@@ -397,7 +394,6 @@ msgid "Update to gnome-shell 3.34.0"
 msgstr "Päivitys versioon gnome-shell 3.34.0"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
-#, fuzzy
 msgid "@GETTEXT_PACKAGE@"
 msgstr "@GETTEXT_PACKAGE@"
 
@@ -671,18 +667,22 @@ msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Oletusarvoisesti ctrl + alt + p -näppäinyhdistelmä synkronoi ne (\"<Ctrl>"
+"<Alt>P\"). Tyhjä merkkijono tässä poistaa toiminnon käytöstä."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:179
 msgid "Are the primary selection and the clipboard synchronized?"
-msgstr ""
+msgstr "Ovatko ensisijainen valinta ja leikepöytä synkronoituja?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:180
 msgid "By default, the primary selection and the clipboard are independent."
 msgstr ""
+"Oletusarvoisesti ensisijainen valinta ja leikepöytä ovat toisistaan "
+"riippumattomia."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:187
 msgid "Do we track the clipboard changes?"
-msgstr ""
+msgstr "Seurataanko leikepöydän muutoksia?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:188
 msgid "By default, we're tracking those changes."
@@ -882,406 +882,407 @@ msgstr "aseta minkä tahansa tulosteen leikepöydälle"
 #. Translators: help for gpaste empty
 #: src/client/gpaste-client.c:201
 msgid "empty the history"
-msgstr ""
+msgstr "tyhjä historia"
 
 #. Translators: help for gpaste start
 #: src/client/gpaste-client.c:203
 msgid "start tracking clipboard changes"
-msgstr ""
+msgstr "aloita leikepöydän muutosten seuranta"
 
 #. Translators: help for gpaste stop
 #: src/client/gpaste-client.c:205
 msgid "stop tracking clipboard changes"
-msgstr ""
+msgstr "lopeta leikepöydän muutosten seuranta"
 
 #. Translators: help for gpaste quit
 #: src/client/gpaste-client.c:207
 msgid "alias for stop"
-msgstr ""
+msgstr "alias sanalle stop"
 
 #. Translators: help for gpaste daemon-reexec
 #: src/client/gpaste-client.c:209
 msgid "reexecute the daemon (after upgrading...)"
-msgstr ""
+msgstr "suorita daemon uudelleen (päivityksen jälkeen...)"
 
 #. Translators: help for gpaste preferences
 #: src/client/gpaste-client.c:211
 msgid "launch the configuration tool"
-msgstr ""
+msgstr "käynnistä määritystyökalu"
 
 #. Translators: help for gpaste ui
 #: src/client/gpaste-client.c:213
 msgid "launch the graphical tool"
-msgstr ""
+msgstr "käynnistä graafinen työkalu"
 
 #. Translators: help for gpaste show-history
 #: src/client/gpaste-client.c:215
 msgid "make the applet or extension display the history"
-msgstr ""
+msgstr "anna sovelman tai laajennuksen näyttää historia"
 
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:217
 msgid "upload the item <uuid> to a pastebin service"
-msgstr ""
+msgstr "lataa kohde <uuid> pastinbin-palveluun"
 
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:219
 msgid "display the version"
-msgstr ""
+msgstr "näytä versio"
 
 #. Translators: help for gpaste daemon-version
 #: src/client/gpaste-client.c:221
 msgid "display the daemon version"
-msgstr ""
+msgstr "näytä daemonin versio"
 
 #. Translators: help for gpaste help
 #: src/client/gpaste-client.c:223
 msgid "display this help"
-msgstr ""
+msgstr "näytä tämä ohje"
 
 #. Translators: help for gpaste about
 #: src/client/gpaste-client.c:225
 msgid "display the about dialog"
-msgstr ""
+msgstr "näytä Tietoja-valintaikkuna"
 
 #: src/client/gpaste-client.c:228
 #, c-format
 msgid "Convenience options:"
-msgstr ""
+msgstr "Mukavuusvaihtoehdot:"
 
 #. Translators: help for --use-index
 #: src/client/gpaste-client.c:231
 msgid "use the index of the item instead of its UUID"
-msgstr ""
+msgstr "käytä kohteen indeksiä sen UUID:n sijaan"
 
 #: src/client/gpaste-client.c:234
 #, c-format
 msgid "Display options:"
-msgstr ""
+msgstr "Näytä vaihtoehdot:"
 
 #. Translators: help for --oneline
 #: src/client/gpaste-client.c:237
 msgid "display each item on only one line"
-msgstr ""
+msgstr "näytä jokainen kohde vain yhdellä rivillä"
 
 #. Translators: help for --raw
 #: src/client/gpaste-client.c:239
 msgid "display each item raw (without line numbers)"
-msgstr ""
+msgstr "näytä jokainen kohta raakana (ilman rivinumeroita)"
 
 #. Translators: help for --reverse
 #: src/client/gpaste-client.c:241
 msgid "display the items in reverse order"
-msgstr ""
+msgstr "näytä kohteet käänteisessä järjestyksessä"
 
 #. Translators: help for --zero
 #: src/client/gpaste-client.c:243
 msgid "use a NUL character instead of a new line betweean each item"
-msgstr ""
+msgstr "käytä NUL-merkkiä uuden rivin sijaan jokaisen kohteen välissä"
 
 #: src/client/gpaste-client.c:246
 #, c-format
 msgid "Merge options:"
-msgstr ""
+msgstr "Yhdistämisvaihtoehdot:"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
 #: src/client/gpaste-client.c:249 src/client/gpaste-client.c:251
 msgid "string"
-msgstr ""
+msgstr "jono"
 
 #: src/client/gpaste-client.c:249
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
 msgstr ""
+"lisää annettu koriste jokaisen kohteen alkuun ja loppuun ennen yhdistämistä"
 
 #: src/client/gpaste-client.c:251
 msgid "add the given separator between each item when merging"
-msgstr ""
+msgstr "lisää annettu erotin jokaisen kohteen väliin yhdistämisen yhteydessä"
 
 #: src/client/gpaste-client.c:350
 #, c-format
 msgid "Successfully reexecuted the daemon\n"
-msgstr ""
+msgstr "Daemonin uudelleensuoritus onnistui\n"
 
 #: src/client/gpaste-client.c:491
 msgid "Cannot add non utf8 data as text."
-msgstr ""
+msgstr "Ei voi lisätä muuta kuin utf8-muotoista dataa tekstinä."
 
 #: src/client/gpaste-client.c:809 src/ui/gpaste-ui-window.c:313
 msgid "Couldn't connect to GPaste daemon"
-msgstr ""
+msgstr "Yhteyden muodostaminen GPaste-daemoniin ei onnistunut"
 
 #: src/daemon/gpaste-daemon.c:34
 msgid "Stop signal received, exiting"
-msgstr ""
+msgstr "Pysäytysmerkki vastaanotettu, poistutaan"
 
 #: src/daemon/gpaste-daemon.c:71
 msgid "Could not acquire DBus name."
-msgstr ""
+msgstr "DBus-nimeä ei voitu hakea."
 
 #. This is the date format "month/day/year time"
 #: src/daemon/tmp/gpaste-image-item.c:241
 msgid "%m/%d/%y %T"
-msgstr ""
+msgstr "%m/%d/%y %T"
 
 #. This gets displayed in history when selecting an image
 #: src/daemon/tmp/gpaste-image-item.c:243
 #, c-format
 msgid "[Image, %d x %d (%s)]"
-msgstr ""
+msgstr "[Image, %d x %d (%s)]"
 
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/tmp/gpaste-password-item.c:67
 msgid "Password"
-msgstr ""
+msgstr "Salasana"
 
 #. This is the prefix displayed in history to identify selected files
 #: src/daemon/tmp/gpaste-uris-item.c:105
 msgid "[Files] "
-msgstr ""
+msgstr "[Tiedostot] "
 
 #: src/gnome-shell/aboutItem.js:16 src/ui/gpaste-ui-about.c:41
 msgid "About"
-msgstr ""
+msgstr "Tietoja"
 
 #: src/gnome-shell/dummyHistoryItem.js:15 src/ui/gpaste-ui-empty-item.c:60
 msgid "(Couldn't connect to GPaste daemon)"
-msgstr ""
+msgstr "(GPaste-daemoniin ei saatu yhteyttä)"
 
 #: src/gnome-shell/dummyHistoryItem.js:20 src/ui/gpaste-ui-empty-item.c:49
 msgid "(Empty)"
-msgstr ""
+msgstr "(Tyhjä)"
 
 #: src/gnome-shell/dummyHistoryItem.js:25 src/ui/gpaste-ui-empty-item.c:35
 msgid "(No result)"
-msgstr ""
+msgstr "(Ei tulosta)"
 
 #: src/gnome-shell/emptyHistoryItem.js:18
 msgid "Empty history"
-msgstr ""
+msgstr "Tyhjä historia"
 
 #: src/gnome-shell/stateSwitch.js:15
 msgid "Track changes"
-msgstr ""
+msgstr "Seuraa muutoksia"
 
 #: src/gnome-shell/uiItem.js:17
 msgid "Graphical tool"
-msgstr ""
+msgstr "Graafinen työkalu"
 
 #: src/libgpaste/gpaste/gpaste-util.c:623
 msgid "Could not create history dir"
-msgstr ""
+msgstr "Historiahakemistoa ei voitu luoda"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:37
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:41
 msgid "Failed to register the gtk application"
-msgstr ""
+msgstr "gtk-sovelluksen rekisteröinti epäonnistui"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:49
 msgid "is already running."
-msgstr ""
+msgstr "on jo käynnissä."
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:112
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:127
 #: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
-msgstr ""
+msgstr "Seuraa leikepöydän muutoksia"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:118
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
 msgid "Close UI on select"
-msgstr ""
+msgstr "Sulje käyttöliittymä valinnan yhteydessä"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:124
 msgid "Open UI window centered"
-msgstr ""
+msgstr "Avaa käyttöliittymäikkuna keskitetysti"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:133
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:156
 msgid "Enable the gnome-shell extension"
-msgstr ""
+msgstr "Ota gnome-shell-laajennus käyttöön"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:139
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:162
 msgid "Sync the daemon state with the extension's one"
-msgstr ""
+msgstr "Synkronoi daemonin tila laajennuksen tilan kanssa"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:148
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:172
 msgid "Primary selection affects history"
-msgstr ""
+msgstr "Ensisijainen valinta vaikuttaa historiaan"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:154
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:178
 msgid "Synchronize clipboard with primary selection"
-msgstr ""
+msgstr "Synkronoi leikepöytä ensisijaisen valinnan kanssa"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:161
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:187
 msgid "Images support"
-msgstr ""
+msgstr "Kuvien tuki"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:167
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:193
 msgid "Trim items"
-msgstr ""
+msgstr "Leikkaa kohteita"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:173
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:199
 msgid "Detect growing lines"
-msgstr ""
+msgstr "Kasvuviivojen havaitseminen"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:180
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:145
 msgid "Save history"
-msgstr ""
+msgstr "Tallenna historia"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:203
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:142
 msgid "Max element size when displaying"
-msgstr ""
+msgstr "Elementin enimmäiskoko näytettäessä"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:231
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:132
 msgid "Max text item length"
-msgstr ""
+msgstr "Tekstikohdan enimmäispituus"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:238
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:125
 msgid "Min text item length"
-msgstr ""
+msgstr "Tekstikohdan vähimmäispituus"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:326
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:114
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:125
 msgid "General behaviour"
-msgstr ""
+msgstr "Yleinen käyttäytyminen"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:327
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:95
 msgid "History settings"
-msgstr ""
+msgstr "Historian asetukset"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:328
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:98
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Pikanäppäimet"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:28
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:57
 #: src/ui/gpaste-ui-backup-history.c:43 src/ui/gpaste-ui-edit-item.c:44
 #: src/ui/gpaste-ui-new-item.c:30
 msgid "Cancel"
-msgstr ""
+msgstr "Peruuta"
 
 #. Translators: this is the translation for emptying the history
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:203
 #: src/ui/gpaste-ui-empty-history.c:66
 msgid "Empty"
-msgstr ""
+msgstr "Tyhjä"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-util.c:82
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:203
 msgid "Do you really want to empty the history?"
-msgstr ""
+msgstr "Haluatko todella tyhjentää historian?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:139
 msgid "Open the UI window centered"
-msgstr ""
+msgstr "Avaa käyttöliittymäikkuna keskitettynä"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:170
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Clipboards synchronization"
-msgstr ""
+msgstr "Leikepöydän synkronointi"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:185
 msgid "Optional features"
-msgstr ""
+msgstr "Valinnaiset ominaisuudet"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:106
 msgid "Resources limits"
-msgstr ""
+msgstr "Resurssirajat"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:123
 msgid "Text limits"
-msgstr ""
+msgstr "Tekstirajoitukset"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:140
 msgid "Display settings"
-msgstr ""
+msgstr "Näyttöasetukset"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:109
 msgid "History access"
-msgstr ""
+msgstr "Historian käyttöoikeus"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:126
 msgid "Active element manipulation"
-msgstr ""
+msgstr "Aktiivisen elementin manipulointi"
 
 #: src/ui/gpaste-ui-backup-history.c:42 src/ui/gpaste-ui-backup-history.c:139
 msgid "Backup"
-msgstr ""
+msgstr "Varmuuskopio"
 
 #: src/ui/gpaste-ui-backup-history.c:46
 msgid "Under which name do you want to backup this history?"
-msgstr ""
+msgstr "Millä nimellä haluat varmuuskopioida tämän historian?"
 
 #: src/ui/gpaste-ui-delete-history.c:26 src/ui/gpaste-ui-delete-history.c:66
 #: src/ui/gpaste-ui-delete-item.c:49
 msgid "Delete"
-msgstr ""
+msgstr "Poista"
 
 #: src/ui/gpaste-ui-delete-history.c:26
 msgid "Are you sure you want to delete this history?"
-msgstr ""
+msgstr "Haluatko varmasti poistaa tämän historian?"
 
 #: src/ui/gpaste-ui-edit-item.c:43 src/ui/gpaste-ui-edit-item.c:116
 msgid "Edit"
-msgstr ""
+msgstr "Muokkaa"
 
 #: src/ui/gpaste-ui-new-item.c:29 src/ui/gpaste-ui-new-item.c:81
 msgid "New"
-msgstr ""
+msgstr "Uusi"
 
 #: src/ui/gpaste-ui-panel.c:303
 msgid "Switch to"
-msgstr ""
+msgstr "Vaihda"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Restart"
-msgstr ""
+msgstr "Uudelleen käynnistä"
 
 #: src/ui/gpaste-ui-reexec.c:30
 msgid "Do you really want to restart the daemon?"
-msgstr ""
+msgstr "Haluatko todella käynnistää daemonin uudelleen?"
 
 #: src/ui/gpaste-ui-reexec.c:56
 msgid "Restart the daemon"
-msgstr ""
+msgstr "Käynnistä daemon uudelleen"
 
 #: src/ui/gpaste-ui-search.c:26
 msgid "Search"
-msgstr ""
+msgstr "Etsi"
 
 #: src/ui/gpaste-ui-settings.c:31
 msgid "GPaste Settings"
-msgstr ""
+msgstr "GPaste asetukset"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:64
 msgid "General"
-msgstr ""
+msgstr "Yleistä"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Stop"
-msgstr ""
+msgstr "Pysäytä"
 
 #: src/ui/gpaste-ui-switch.c:55
 msgid "Do you really want to stop tracking clipboard changes?"
-msgstr ""
+msgstr "Haluatko todella lopettaa leikepöydän muutosten seurannan?"
 
 #: src/ui/gpaste-ui-upload-item.c:49
 msgid "Upload"
-msgstr ""
+msgstr "Lataa"
