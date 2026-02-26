@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-14 22:26+0200\n"
-"PO-Revision-Date: 2026-02-21 17:09+0000\n"
+"PO-Revision-Date: 2026-02-27 19:09+0000\n"
 "Last-Translator: ayasa520 <ayasa0520@gmail.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
 "projects/gpaste/gpaste/zh_Hans/>\n"
@@ -412,9 +412,8 @@ msgstr "删除激活项"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:285
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:119
 #: src/ui/gpaste-ui-shortcuts-window.c:75
-#, fuzzy
 msgid "Display the history"
-msgstr "显示历史记录"
+msgstr "显示记录"
 
 #: data/control-center/42-gpaste.control-center.xml.in:7
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-settings-ui-stack.c:292
