@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-14 22:26+0200\n"
-"PO-Revision-Date: 2024-09-22 13:41+0000\n"
-"Last-Translator: gallegonovato <fran-carro@hotmail.es>\n"
-"Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
-">\n"
+"PO-Revision-Date: 2026-03-12 11:09+0000\n"
+"Last-Translator: Lucas Vieites <lucas.vieites@gmail.com>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.17-dev\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -106,9 +106,8 @@ msgid "This is a maintenance release. Changes:"
 msgstr "Esta es una versión de mantenimiento. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-#, fuzzy
 msgid "Support for gnome 48"
-msgstr "Admite gnome 47"
+msgstr "Admite gnome 48"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
@@ -258,11 +257,11 @@ msgstr "arreglar el fallo cuando aún no hay historial"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:279
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:303
 msgid "translations update"
-msgstr "Actualizar traducciones"
+msgstr "actualización de traducciones"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:260
 msgid "fix gnome-shell exntesion when the daemon restarts"
-msgstr "arreglar la exntesion de gnome-shell cuando se reinicia el demonio"
+msgstr "arreglar la extensión de gnome-shell cuando se reinicia el demonio"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:269
 msgid "Fix keybindings for wayland"
@@ -286,7 +285,7 @@ msgstr "Primera versión para GNOME 40. Cambios:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:320
 msgid "port to gnome-shell 40"
-msgstr "Migrado a gnome-shell 40"
+msgstr "Port a gnome-shell 40"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:321
 msgid "placeholder for gnome-shell prefs"
@@ -295,11 +294,11 @@ msgstr "marcador de posición para las preferencias de gnome-shell"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:393
 msgid "fix X11 keybinder outside of GNOME"
-msgstr "arreglado el bindeo de tecla fuera de GNOME con X11"
+msgstr "Arreglar los atajos de X11 fuera de GNOME"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
-msgstr "mejorado el reporte de uuids pasados a gpaste-client"
+msgstr "mejor gestión e informe de uuids inválidos pasados a gpaste-client"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
 msgid ""
@@ -320,12 +319,12 @@ msgstr "traducciones actualizadas"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:355
 msgid "gnome-shell extension warning fixes"
-msgstr "arreglos de avisos en la extensión para GNOME Shell"
+msgstr "arreglos de avisos en la extensión para gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:401
 msgid "gnome-shell extension cosmetic updates"
-msgstr "Actualizaciones superficiales a la extensión para GNOME Shell"
+msgstr "actualizaciones superficiales a la extensión para gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:372
 msgid "Disable images support by default (can be reenabled in preferences)"
@@ -351,7 +350,7 @@ msgstr "Se desecha la señal Tracking de DBus"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:383
 msgid "Switch to uuids to identify items"
-msgstr "Se cambia a utilizar UUID para identificar elementos"
+msgstr "Cambio a uuids para identificar elementos"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:384
 msgid "Bump DBus interface to org.gnome.GPaste2"
@@ -365,18 +364,18 @@ msgstr "Actualización a gnome-shell 3.38.0"
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:441
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:483
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
-msgstr "Se corrige la activación de elementos con Ctrl+número en GNOME Shell"
+msgstr "Se corrige la activación de elementos con Ctrl+número en gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:417
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:449
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:482
 msgid "Fix keybinding regrab with gnome-shell"
-msgstr "Se arregla la recaptación de los vínculos de teclado en GNOME Shell"
+msgstr "Se arregla la recaptación de los vínculos de teclado en gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:425
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:457
 msgid "Fix keybinding grab with gnome-shell"
-msgstr "Se arregla la captación de los vínculos de teclado en GNOME Shell"
+msgstr "Se arregla la captación de los vínculos de teclado en gnome-shell"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:431
 msgid "First release for GNOME 3.36. Changes:"
@@ -1094,7 +1093,7 @@ msgstr "No se pudo crear directorio de historial"
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:37
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:41
 msgid "Failed to register the gtk application"
-msgstr "No se pudo registrar la aplicación GTK"
+msgstr "No se pudo registrar la aplicación gtk"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:49
 msgid "is already running."
