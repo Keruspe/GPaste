@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-21 14:16+0200\n"
+"POT-Creation-Date: 2025-09-11 22:02+0200\n"
 "PO-Revision-Date: 2024-12-19 19:29+0200\n"
 "Last-Translator: JTi65 <jtiilikainen@protonmail.com>\n"
 "Language-Team: Finnish <https://hosted.weblate.org/projects/gpaste/gpaste/fi/"
@@ -20,12 +20,12 @@ msgstr ""
 "X-Generator: Poedit 3.5\n"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:5
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
 msgid "GPaste"
 msgstr "GPaste"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:6
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
 msgid "Manage your clipboard history"
 msgstr "Hallitse leikepöydän historiaasi"
 
@@ -60,236 +60,255 @@ msgid "The settings UI"
 msgstr "Asetukset"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:102
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:110
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:128
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:136
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:144
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:152
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:160
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:200
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:208
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:216
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:224
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:232
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:240
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:249
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:258
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:276
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:284
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:292
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:300
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:318
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:326
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:335
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:344
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:353
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:361
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:382
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:390
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:398
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:406
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:414
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:430
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:438
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:446
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:454
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:470
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:113
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:147
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:179
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:211
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:227
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:235
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:243
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:251
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:259
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:268
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:277
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:295
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:303
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:311
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:319
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:345
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:354
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:363
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:372
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:380
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:401
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:409
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:417
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:425
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:433
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:449
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:457
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:465
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:473
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:489
 msgid "This is a maintenance release. Changes:"
 msgstr "Tämä on ylläpitojulkaisu. Muutokset:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-msgid "Support for gnome 47"
+#, fuzzy
+msgid "Support for gnome 50"
 msgstr "Tukee Gnome 47"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
+#, fuzzy
+msgid "Support for gnome 49"
+msgstr "Tukee Gnome 47"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:53
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:62
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:122
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:164
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:178
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:183
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:197
 msgid "Translations updates"
 msgstr "Käännöksien päivitykset"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
+#, fuzzy
+msgid "Support for gnome 48"
+msgstr "Tukee Gnome 47"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+msgid "Support for gnome 47"
+msgstr "Tukee Gnome 47"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 msgid "Support for gnome 46"
 msgstr "Tukee Gnome 46"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 msgid "Stable release for GNOME 45. Changes:"
 msgstr "Vakaa julkaisu GNOME 45: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
 msgid "Port to gnome 45"
 msgstr "Portti Gnome 45:een"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:89
 msgid "Add setting to open ui window centered"
 msgstr "Lisää asetus avaamaan ikkuna keskitetysti"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:115
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:205
 msgid "Fix a bug leading to history with only one item"
 msgstr "Korjaa historia, joka johtaa historiaan vain yhdellä kohteella"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:85
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
 msgid "First release for GNOME 44. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 44: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:87
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:106
 msgid "gcr 4 is now required"
 msgstr "gcr 4 vaaditaan nyt"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:107
 msgid "Port to gnome 44"
 msgstr "Portti Gnome 44:n"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:138
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:123
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:213
 msgid "Avoid crash under heavy memory load"
 msgstr "Vältä kaatumista raskaan muistin kuormituksen alla"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:112
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:146
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:202
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:278
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:131
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:165
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:297
 msgid "Respect --use-index when displaying history"
 msgstr "Käytä -ole-indeksi historiaa näytettäessä"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:118
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:137
 msgid "First release for GNOME 43. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 43: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:120
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:139
 msgid "Port to GNOME 43"
 msgstr "Portti Gnome 43:een"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
 msgid "Internal preparation for gtk4 port"
 msgstr "Gtk4 -portin sisäinen valmistelu"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:154
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:210
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:286
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:229
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:305
 msgid "Open GPaste UI where the mouse pointer is"
 msgstr "Avaa GPaste -käyttöliittymä, missä hiiren osoitin on"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:162
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:181
 msgid "Fixes to the new preferences tool"
 msgstr "Korjaa uuteen asetustyökaluun"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:182
 msgid "Style fixes"
 msgstr "Tyylin korjaus"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:170
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:189
 msgid "First release for GNOME 42. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 42: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:191
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
 "Vanha libgpaste korvasi uudella minimaalisella libgpaste-2: lla ilman GTK-"
 "riippuvuutta"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
 msgid "New libgpaste-gtk3 for utils and settings ui"
 msgstr "Uusi libgpaste-gtk3 käyttöliiketoiminnalle"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:174
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:193
 msgid "New libgpaste-gtk4 for utils and preferences ui"
 msgstr "Uusi libgpaste-gtk4 utileille ja mieltymyksille käyttöliittymä"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:175
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
 msgid "New gtk4 based gpaste-preferences utility"
 msgstr "Uusi Gtk4-pohjainen GPaste-Asetukset apuohjelma"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:176
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:195
 msgid "Autotools are no longer supported"
 msgstr "Autotyökalut ei ole enää tuettuja"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:177
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:196
 msgid "Extension updated for gnome-shell 42"
 msgstr "Laajennus päivitetty Gnome-kuorelle 42"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:218
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:237
 msgid "fix the storage path for meson builds"
 msgstr "korjaa Meson -tiedostojen tallennuspolku"
 
 # Vaatii parempaa käännöstä
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:226
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:245
 msgid "fix some race conditions in history handling"
 msgstr "korjaa joitain kilpailuolosuhteita historian käsittelyssä"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:234
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:253
 msgid "better fix crash when there is no history yet"
 msgstr "parempi korjata kaatuminen, kun historiaa ei ole vielä"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:242
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:261
 msgid "fix crash when there is no history yet"
 msgstr "korjaa kaatuminen, kun historiaa ei ole vielä"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:243
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:252
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:261
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:294
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:262
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:271
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:280
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:289
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:313
 msgid "translations update"
 msgstr "käännöspäivitys"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:251
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "kiinnitä gnome-kuoren exnesion, kun daemoni käynnistyy uudelleen"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:260
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:279
 msgid "Fix keybindings for wayland"
 msgstr "Korjaa Waylandin Keybindings"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:267
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:286
 msgid "First release for GNOME 41. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 41: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:269
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:288
 msgid "port to gnome-shell 41"
 msgstr "portti Gnome-kuoreen 41"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:302
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:321
 msgid "fix a crash in memory usage checking"
 msgstr "korjaa kaatumisen muistin käytön tarkistus"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:309
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:328
 msgid "First release for GNOME 40. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 40: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:311
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:330
 msgid "port to gnome-shell 40"
 msgstr "satama Gnome-kuoreen 40"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:312
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:331
 msgid "placeholder for gnome-shell prefs"
 msgstr "paikkamerkki gnome-shell-prefersiin"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:320
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:384
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:339
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:403
 msgid "fix X11 keybinder outside of GNOME"
 msgstr "korjaa X11 KeyBinder Gnomen ulkopuolella"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:328
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 "parempi käsittely ja ilmoittaminen virheellisistä uuideista siirtyivät "
 "Gpaste-asiakkaaseen"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:348
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
@@ -297,93 +316,93 @@ msgstr ""
 "gpaste-Clillä on nyt-ole-indeksin argumentti useille alakomennoille käyttää "
 "hakemistoa UUID: n sijasta"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:356
 msgid "fix the make-password keybinding"
 msgstr "korjaa Make-password avaimensuojaus"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:357
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:366
 msgid "updated translations"
 msgstr "päivitetyt käännökset"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:346
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:365
 msgid "gnome-shell extension warning fixes"
 msgstr "gnome-kuoren laajennusvaroituskorjaukset"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:355
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:392
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:374
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:411
 msgid "gnome-shell extension cosmetic updates"
 msgstr "gnome-kuoren laajennus kosmeettiset päivitykset"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:363
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:382
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 "Poista kuvat tukevat käytöstä oletuksena (voidaan käyttää uudelleen "
 "mieltymyksissä)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:383
 msgid "Search now includes passwords (using their names)"
 msgstr "Haku sisältää nyt salasanoja (niiden nimien avulla)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:365
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:384
 msgid "systemd integration enhancements"
 msgstr "systemd integraation parannukset"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:371
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:390
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 3.38: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:373
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:392
 msgid "Drop the Tracking DBus signal"
 msgstr "Pudota seurannan dbus -signaali"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:374
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:393
 msgid "Switch to uuids to identify items"
 msgstr "Vaihda UUID: iin kohteiden tunnistamiseksi"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:375
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:394
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "Bump dbus -rajapinta org.gnome.gpaste2"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:376
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:395
 msgid "Update to gnome-shell 3.38.0"
 msgstr "Päivitys Gnome-Shell 3.38.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:400
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:432
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:474
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:419
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:451
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:493
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr "Korjaa kohteiden aktivointi Ctrl-Dumber -sovelluksella Gnome-kuoressa"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:408
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:440
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:473
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:427
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:459
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:492
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "Kiinnitä avaimensuojaus reagabilla gnome-kuorella"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:416
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:448
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:435
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:467
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "Korjaa Keybinding Grab gnome-kuorella"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:422
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:441
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 3.36: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:424
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:443
 msgid "Update to gnome-shell 3.36.0"
 msgstr "Päivitys Gnome-Shell 3.36.0"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:456
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:472
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:475
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:491
 msgid "Compatibility with recent appstream-glib"
 msgstr "Yhteensopivuus viimeaikaisen AppStream-Glibin kanssa"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:462
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:481
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "Ensimmäinen julkaisu GNOME 3.34: lle. Muutokset:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:464
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:483
 msgid "Update to gnome-shell 3.34.0"
 msgstr "Päivitys Gnome-kuoreen 3.34.0"
 
@@ -440,16 +459,16 @@ msgstr "Synkronoi ensisijainen valinta leikepöydälle"
 msgid "Upload the active item to a pastebin service"
 msgstr "Lataa aktiivinen kohde Pastebin -palveluun"
 
-#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
+#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:3
 msgid "GPaste Preferences"
 msgstr "GPaste asetukset"
 
-#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
+#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:4
 msgid "Manage your GPaste preferences"
 msgstr "Muokkaa GPaste asetuksia"
 
-#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:6
-#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:6
+#: data/desktop/org.gnome.GPaste.Preferences.desktop.in.in:5
+#: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr "Leikepöytä; manager; asetukset; asetukset; kokoonpano;"
 
@@ -704,8 +723,8 @@ msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
-"Näppäimistö pikanäppäin  lähettää historian ensimmäisen elementtin Pastebin -"
-"palveluun"
+"Näppäimistö pikanäppäin  lähettää historian ensimmäisen elementtin Pastebin "
+"-palveluun"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml.in:213
 msgid ""
@@ -1069,7 +1088,6 @@ msgid "Failed to register the gtk application"
 msgstr "GTK -sovelluksen rekisteröinti epäonnistui"
 
 #: src/libgpaste/gpaste-gtk3/gpaste-gtk-macros.h:49
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-macros.h:53
 msgid "is already running."
 msgstr "on jo käynnissä."
 

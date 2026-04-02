@@ -44,6 +44,16 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-04-02" version="45.4">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Support for gnome 50</li>
+          <li>Support for gnome 49</li>
+          <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2025-04-14" version="45.3">
       <description>
         <p>This is a maintenance release. Changes:</p>

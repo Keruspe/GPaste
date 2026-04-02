@@ -7,11 +7,11 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-14 22:26+0200\n"
+"POT-Creation-Date: 2025-09-11 22:02+0200\n"
 "PO-Revision-Date: 2025-06-30 00:01+0000\n"
 "Last-Translator: தமிழ்நேரம் <anishprabu.t@gmail.com>\n"
-"Language-Team: Tamil <https://hosted.weblate.org/projects/gpaste/gpaste/ta/>"
-"\n"
+"Language-Team: Tamil <https://hosted.weblate.org/projects/gpaste/gpaste/ta/"
+">\n"
 "Language: ta\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -60,239 +60,251 @@ msgid "The settings UI"
 msgstr "அமைப்புகள் இடைமுகம்"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:49
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:58
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:67
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:103
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:111
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:119
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:137
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:145
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:153
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:161
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:169
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:193
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:201
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:209
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:217
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:225
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:233
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:241
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:249
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:258
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:267
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:285
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:293
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:301
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:309
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:327
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:335
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:344
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:353
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:362
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:370
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:391
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:399
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:407
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:415
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:423
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:439
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:447
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:455
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:463
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:479
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:59
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:68
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:77
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:113
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:147
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:179
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:211
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:227
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:235
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:243
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:251
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:259
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:268
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:277
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:295
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:303
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:311
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:319
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:345
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:354
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:363
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:372
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:380
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:401
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:409
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:417
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:425
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:433
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:449
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:457
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:465
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:473
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:489
 msgid "This is a maintenance release. Changes:"
 msgstr "இது ஒரு பராமரிப்பு வெளியீடு. மாற்றங்கள்:"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:51
-msgid "Support for gnome 48"
+#, fuzzy
+msgid "Support for gnome 50"
 msgstr "க்னோம் 48 க்கான உதவி"
 
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:52
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
+#, fuzzy
+msgid "Support for gnome 49"
+msgstr "க்னோம் 48 க்கான உதவி"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:53
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:62
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:71
 #: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:80
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:131
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:187
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:90
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:141
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:183
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:197
 msgid "Translations updates"
 msgstr "மொழிபெயர்ப்பு புதுப்பிப்புகள்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:60
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:61
+msgid "Support for gnome 48"
+msgstr "க்னோம் 48 க்கான உதவி"
+
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:70
 msgid "Support for gnome 47"
 msgstr "க்னோம் 47 க்கான உதவி"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:69
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
 msgid "Support for gnome 46"
 msgstr "க்னோம் 46 க்கான உதவி"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:76
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:86
 msgid "Stable release for GNOME 45. Changes:"
 msgstr "க்னோம் 45 க்கான நிலையான வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:78
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
 msgid "Port to gnome 45"
 msgstr "க்னோம் 45 க்கு துறைமுகம்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:79
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:89
 msgid "Add setting to open ui window centered"
 msgstr "இடைமுகம் சாளரத்தை மையமாகக் கொண்ட அமைப்பைச் சேர்க்கவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:88
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:105
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:139
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:195
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:98
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:115
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:149
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:205
 msgid "Fix a bug leading to history with only one item"
 msgstr "ஒரே ஒரு உருப்படியுடன் வரலாற்றுக்கு வழிவகுக்கும் பிழையை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:94
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:104
 msgid "First release for GNOME 44. Changes:"
 msgstr "க்னோம் 44 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:96
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:106
 msgid "gcr 4 is now required"
 msgstr "சி.சி.ஆர் 4 இப்போது தேவை"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:97
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:107
 msgid "Port to gnome 44"
 msgstr "க்னோம் 44 க்கு துறைமுகம்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:113
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:147
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:203
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:123
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:157
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:213
 msgid "Avoid crash under heavy memory load"
 msgstr "கனமான நினைவக சுமைகளின் கீழ் செயலிழப்பைத் தவிர்க்கவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:121
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:155
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:211
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:287
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:131
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:165
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:221
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:297
 msgid "Respect --use-index when displaying history"
 msgstr "வரலாற்றைக் காண்பிக்கும் போது மரியாதை-use-index"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:127
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:137
 msgid "First release for GNOME 43. Changes:"
 msgstr "க்னோம் 43 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:129
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:139
 msgid "Port to GNOME 43"
 msgstr "க்னோம் 43 க்கு துறைமுகம்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:130
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:140
 msgid "Internal preparation for gtk4 port"
 msgstr "சி.டி.கே 4 போர்ட்டுக்கான உள் தயாரிப்பு"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:163
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:219
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:295
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:173
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:229
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:305
 msgid "Open GPaste UI where the mouse pointer is"
 msgstr "மவுச் சுட்டிக்காட்டி இருக்கும் இடத்தில் gpaste இடைமுகம் ஐத் திறக்கவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:171
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:181
 msgid "Fixes to the new preferences tool"
 msgstr "புதிய விருப்பத்தேர்வுகள் கருவியை சரிசெய்கிறது"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:172
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:182
 msgid "Style fixes"
 msgstr "பாணி திருத்தங்கள்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:179
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:189
 msgid "First release for GNOME 42. Changes:"
 msgstr "க்னோம் 42 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:181
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:191
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
 "சி.டி.கே சார்பு இல்லாத புதிய குறைந்தபட்ச லிப்க்பேச்ட் -2 ஆல் மாற்றப்பட்ட பழைய லிப்க்பேச்ட்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:182
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:192
 msgid "New libgpaste-gtk3 for utils and settings ui"
 msgstr "பயன்பாடுகள் மற்றும் அமைப்புகளுக்கு இடைமுகம் க்கான புதிய libgpaste-gtk3"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:183
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:193
 msgid "New libgpaste-gtk4 for utils and preferences ui"
 msgstr "பயன்பாடுகள் மற்றும் விருப்பங்களுக்கான புதிய libgpaste-gtk4 இடைமுகம்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:184
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:194
 msgid "New gtk4 based gpaste-preferences utility"
 msgstr "புதிய சி.டி.கே 4 அடிப்படையிலான சிஒட்டு-முன்னுரிமைகள் பயன்பாடு"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:185
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:195
 msgid "Autotools are no longer supported"
 msgstr "ஆட்டோடூல்கள் இனி ஆதரிக்கப்படாது"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:186
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:196
 msgid "Extension updated for gnome-shell 42"
 msgstr "க்னோம்-செல் 42 க்கு நீட்டிப்பு புதுப்பிக்கப்பட்டது"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:227
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:237
 msgid "fix the storage path for meson builds"
 msgstr "மீசன் கட்டமைப்பிற்கான சேமிப்பக பாதையை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:235
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:245
 msgid "fix some race conditions in history handling"
 msgstr "வரலாற்று கையாளுதலில் சில இன நிலைமைகளை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:243
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:253
 msgid "better fix crash when there is no history yet"
 msgstr "இதுவரை வரலாறு இல்லாதபோது செயலிழப்பை சரிசெய்ய சிறந்தது"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:251
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:261
 msgid "fix crash when there is no history yet"
 msgstr "இதுவரை வரலாறு இல்லாதபோது செயலிழப்பை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:252
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:261
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:279
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:303
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:262
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:271
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:280
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:289
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:313
 msgid "translations update"
 msgstr "மொழிபெயர்ப்பு புதுப்பிப்பு"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:260
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:270
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "டீமான் மறுதொடக்கம் செய்யும் போது க்னோம்-செல் எக்சன்டீனை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:269
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:279
 msgid "Fix keybindings for wayland"
 msgstr "வேலண்டிற்கான விசைப்பலகைகளை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:276
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:286
 msgid "First release for GNOME 41. Changes:"
 msgstr "க்னோம் 41 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:278
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:288
 msgid "port to gnome-shell 41"
 msgstr "க்னோம்-செல் 41 க்கு துறைமுகம்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:311
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:321
 msgid "fix a crash in memory usage checking"
 msgstr "நினைவக பயன்பாட்டு சோதனையில் விபத்தை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:318
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:328
 msgid "First release for GNOME 40. Changes:"
 msgstr "க்னோம் 40 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:320
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:330
 msgid "port to gnome-shell 40"
 msgstr "க்னோம்-செல் 40 க்கு துறைமுகம்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:321
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:331
 msgid "placeholder for gnome-shell prefs"
 msgstr "க்னோம்-செல் முன்னுரிமைகளுக்கான ஒதுக்கிடர்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:329
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:393
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:339
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:403
 msgid "fix X11 keybinder outside of GNOME"
 msgstr "க்னோமுக்கு வெளியே x11 கீபிண்டரை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:337
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 "GPASTE-Client க்கு அனுப்பப்பட்ட தவறான UUID களின் சிறந்த கையாளுதல் மற்றும் அறிக்கையிடல்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:338
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:348
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
@@ -300,91 +312,91 @@ msgstr ""
 "gpaste-client இப்போது UUID க்கு பதிலாக குறியீட்டைப் பயன்படுத்த பல துணைக் "
 "கமாண்டுகளுக்கு-use-index உரையாடல் உள்ளது"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:346
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:356
 msgid "fix the make-password keybinding"
 msgstr "மேக்-பாச்வேர்ட் கீபிங்கை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:347
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:356
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:357
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:366
 msgid "updated translations"
 msgstr "புதுப்பிக்கப்பட்ட மொழிபெயர்ப்புகள்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:355
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:365
 msgid "gnome-shell extension warning fixes"
 msgstr "க்னோம்-செல் நீட்டிப்பு எச்சரிக்கை திருத்தங்கள்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:364
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:401
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:374
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:411
 msgid "gnome-shell extension cosmetic updates"
 msgstr "க்னோம்-செல் நீட்டிப்பு ஒப்பனை புதுப்பிப்புகள்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:372
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:382
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr "முன்னிருப்பாக படங்களின் ஆதரவை முடக்கு (விருப்பங்களில் மீண்டும் உருவாக்கப்படலாம்)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:373
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:383
 msgid "Search now includes passwords (using their names)"
 msgstr "இப்போது தேடலில் கடவுச்சொற்கள் உள்ளன (அவற்றின் பெயர்களைப் பயன்படுத்தி)"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:374
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:384
 msgid "systemd integration enhancements"
 msgstr "SystemD ஒருங்கிணைப்பு மேம்பாடுகள்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:380
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:390
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "க்னோம் 3.38 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:382
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:392
 msgid "Drop the Tracking DBus signal"
 msgstr "கண்காணிப்பு DBUS சமிக்ஞையை கைவிடவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:383
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:393
 msgid "Switch to uuids to identify items"
 msgstr "உருப்படிகளை அடையாளம் காண UUIDS க்கு மாறவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:384
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:394
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "Org.gnome.gpasat2 க்கு பம்ப் டிபிஎச் இடைமுகம்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:385
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:395
 msgid "Update to gnome-shell 3.38.0"
 msgstr "க்னோம்-செல் 3.38.0 க்கு புதுப்பிக்கவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:409
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:441
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:483
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:419
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:451
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:493
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr "க்னோம்-செல்லில் Ctrl- எண் பயன்படுத்தி செயல்படுத்தும் உருப்படிகளை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:417
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:449
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:482
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:427
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:459
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:492
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "க்னோம்-செல் உடன் கீபிண்டிங் ரெட்ராபை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:425
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:457
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:435
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:467
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "க்னோம்-செல் மூலம் கீபிங் கிராப்பை சரிசெய்யவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:431
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:441
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "க்னோம் 3.36 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:433
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:443
 msgid "Update to gnome-shell 3.36.0"
 msgstr "க்னோம்-செல் 3.36.0 க்கு புதுப்பிக்கவும்"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:465
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:481
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:475
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:491
 msgid "Compatibility with recent appstream-glib"
 msgstr "அண்மைக் கால ஆப்ச்ட்ரீம்-க்ளிபுடன் பொருந்தக்கூடிய தன்மை"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:471
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:481
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "க்னோம் 3.34 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:473
+#: data/appstream/org.gnome.GPaste.Ui.appdata.xml.in:483
 msgid "Update to gnome-shell 3.34.0"
 msgstr "க்னோம்-செல் 3.34.0 க்கு புதுப்பிக்கவும்"
 
