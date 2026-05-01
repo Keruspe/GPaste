@@ -1124,15 +1124,6 @@ g_paste_settings_init (GPasteSettings *self)
     g_paste_settings_private_set_images_support_from_dconf (priv);
     g_paste_settings_private_set_images_preview_from_dconf (priv);
     g_paste_settings_private_set_images_preview_size_from_dconf (priv);
-    
-    /* Initialisation avec valeurs par défaut pour les nouveaux paramètres */
-    /* Ils seront ensuite remplacés par les valeurs dconf si existantes */
-    priv->images_preview = TRUE;
-    priv->images_preview_size = 100;
-    
-    /* On essaie de charger depuis dconf, mais ça peut échouer la première fois */
-    g_settings_get_boolean (priv->settings, G_PASTE_IMAGES_PREVIEW_SETTING);
-    g_settings_get_uint64 (priv->settings, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING);
     g_paste_settings_private_set_launch_ui_from_dconf (priv);
     g_paste_settings_private_set_make_password_from_dconf (priv);
     g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);

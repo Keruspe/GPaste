@@ -170,7 +170,7 @@ g_paste_daemon_get_dbus_uint64_parameter (GVariant *parameters)
 /****************/
 /* DBus Signals */
 /****************/
-    
+
 static void
 g_paste_daemon_update (GPasteDaemon      *self,
                        GPasteUpdateAction action,

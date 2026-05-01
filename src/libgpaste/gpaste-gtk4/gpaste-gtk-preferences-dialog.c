@@ -41,7 +41,7 @@ g_paste_gtk_preferences_dialog_init (GPasteGtkPreferencesDialog *self)
 {
     AdwPreferencesDialog *win = ADW_PREFERENCES_DIALOG (self);
     g_autoptr (GPasteGtkPreferencesManager) manager = g_paste_gtk_preferences_manager_new ();
-    
+
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_behaviour_page_new (manager)));
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_history_settings_page_new (manager)));
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_shortcuts_page_new (manager)));

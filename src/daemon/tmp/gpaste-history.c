@@ -1147,9 +1147,7 @@ g_paste_history_search (GPasteHistory *self,
     g_autoptr (GArray) results = g_array_new (TRUE, /* zero-terminated */
                                               TRUE, /* clear */
                                               sizeof (gchar *));
-    guint64 index = 0;
-
-    for (GList *history = priv->history; history; history = g_list_next (history), ++index)
+    for (GList *history = priv->history; history; history = g_list_next (history))
     {
         const GPasteItem *item = (GPasteItem *) history->data;
         const gchar *uuid = g_paste_item_get_uuid (item);

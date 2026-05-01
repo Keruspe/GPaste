@@ -135,6 +135,7 @@ g_paste_gtk_settings_ui_panel_add_boolean_setting (GPasteGtkSettingsUiPanel *sel
     CALLBACK_DATA (widget);
 
     gtk_switch_set_active (sw, value);
+    gtk_widget_set_halign (widget, GTK_ALIGN_END);
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
     _data->c_signals[C_W_ACTION] = g_signal_connect (widget, "notify::active", G_CALLBACK (boolean_wrapper), data);
     gtk_grid_attach_next_to (grid, widget, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
@@ -197,6 +198,8 @@ g_paste_gtk_settings_ui_panel_add_range_setting (GPasteGtkSettingsUiPanel *self,
     CALLBACK_DATA (button);
 
     gtk_widget_set_hexpand (button, TRUE);
+    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+    gtk_entry_set_alignment (GTK_ENTRY(b), 1);
     gtk_spin_button_set_value (b, value);
     _data->c_signals[C_W_ACTION] = g_signal_connect (GTK_SPIN_BUTTON (button), "value-changed", G_CALLBACK (range_wrapper), data);
     gtk_grid_attach_next_to (grid, button, GTK_WIDGET (button_label), GTK_POS_RIGHT, 1, 1);
@@ -238,7 +241,9 @@ g_paste_gtk_settings_ui_panel_add_text_setting (GPasteGtkSettingsUiPanel *self,
     GtkEntry *e = GTK_ENTRY (entry);
     CALLBACK_DATA (entry);
 
-    gtk_widget_set_hexpand (entry, TRUE);
+    gtk_widget_set_halign (entry, GTK_ALIGN_END);
+    gtk_widget_set_valign (entry, GTK_ALIGN_CENTER);
+    gtk_entry_set_alignment (e, 1);
     gtk_entry_set_text (e, value);
     _data->c_signals[C_W_ACTION] = g_signal_connect (GTK_EDITABLE (entry), "changed", G_CALLBACK (text_wrapper), data);
     gtk_grid_attach_next_to (GTK_GRID (self), entry, GTK_WIDGET (entry_label), GTK_POS_RIGHT, 1, 1);

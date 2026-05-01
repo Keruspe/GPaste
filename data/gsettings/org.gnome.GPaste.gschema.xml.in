@@ -34,7 +34,7 @@
         By default, we're saving only text
       </description>
     </key>
-    
+
     <key name="images-preview" type="b">
       <default>true</default>
       <summary>Show image previews in the history?</summary>
@@ -42,7 +42,7 @@
         By default, we show previews of images in the history
       </description>
     </key>
-    
+
     <key name="images-preview-size" type="t">
       <range min="50" max="400"/>
       <default>100</default>

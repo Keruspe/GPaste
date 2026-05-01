@@ -55,7 +55,7 @@ typedef struct
 
 G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TYPE_STACK)
 
-#define SETTING_CALLBACK_FULL(setting, type, cast)                            \
+#define SETTING_CALLBACK(setting, type)                                       \
     static inline void                                                        \
     setting##_callback (type value,                                           \
                         gpointer user_data)                                   \
@@ -63,12 +63,9 @@ G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (SettingsUiStack, settings_ui_stack, GTK_TY
         g_paste_settings_set_##setting (G_PASTE_SETTINGS (user_data), value); \
     }
 
-#define SETTING_CALLBACK(setting, type) SETTING_CALLBACK_FULL (setting, type, type)
-
 #define BOOLEAN_CALLBACK(setting) SETTING_CALLBACK (setting, gboolean)
 #define STRING_CALLBACK(setting)  SETTING_CALLBACK (setting, const gchar *)
-
-#define UINT64_CALLBACK(setting) SETTING_CALLBACK_FULL (setting, gdouble, uint64)
+#define UINT64_CALLBACK(setting)  SETTING_CALLBACK (setting, gdouble)
 
 /**
  * g_paste_gtk_settings_ui_stack_add_panel:
@@ -96,9 +93,6 @@ BOOLEAN_CALLBACK (close_on_select)
 BOOLEAN_CALLBACK (open_centered)
 BOOLEAN_CALLBACK (extension_enabled)
 BOOLEAN_CALLBACK (growing_lines)
-BOOLEAN_CALLBACK (images_support)
-BOOLEAN_CALLBACK (images_preview)
-UINT64_CALLBACK (images_preview_size)
 BOOLEAN_CALLBACK (primary_to_history)
 BOOLEAN_CALLBACK (save_history)
 BOOLEAN_CALLBACK (synchronize_clipboards)
@@ -161,32 +155,6 @@ g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (GPasteGtkSettingsUiS
                                                                                              (GPasteGtkResetCallback) g_paste_settings_reset_synchronize_clipboards,
                                                                                              settings);
     g_paste_gtk_settings_ui_panel_add_separator (panel);
-    priv->images_support_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
-                                                                                     _("Images support"),
-                                                                                     g_paste_settings_get_images_support (settings),
-                                                                                     images_support_callback,
-                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_images_support,
-                                                                                     settings);
-
-    /* Ajout des options pour les prévisualisations d'images */
-    priv->images_preview_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
-                                                                                     _("Image previews"),
-                                                                                     g_paste_settings_get_images_preview (settings),
-                                                                                     images_preview_callback,
-                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_images_preview,
-                                                                                     settings);
-
-    priv->images_preview_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
-                                                                                     _("Preview size"),
-                                                                                     (gdouble) g_paste_settings_get_images_preview_size (settings),
-                                                                                     50.0,   /* min */
-                                                                                     400.0,  /* max */
-                                                                                     10.0,   /* step */
-                                                                                     images_preview_size_callback,
-                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_images_preview_size,
-                                                                                     settings);
-    g_paste_gtk_settings_ui_panel_add_separator (panel);
-
     priv->trim_items_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                   _("Trim items"),
                                                                                  g_paste_settings_get_trim_items (settings),
@@ -207,6 +175,38 @@ g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (GPasteGtkSettingsUiS
                                                                                    (GPasteGtkResetCallback) g_paste_settings_reset_save_history,
                                                                                    settings);
 
+    return panel;
+}
+
+BOOLEAN_CALLBACK (images_support)
+BOOLEAN_CALLBACK (images_preview)
+UINT64_CALLBACK  (images_preview_size)
+
+static GPasteGtkSettingsUiPanel *
+g_paste_gtk_settings_ui_stack_private_make_images_panel (GPasteGtkSettingsUiStackPrivate *priv)
+{
+    GPasteSettings *settings = priv->settings;
+    GPasteGtkSettingsUiPanel *panel = g_paste_gtk_settings_ui_panel_new ();
+
+    priv->images_support_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
+                                                                                     _("Images support"),
+                                                                                     g_paste_settings_get_images_support (settings),
+                                                                                     images_support_callback,
+                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_images_support,
+                                                                                     settings);
+    priv->images_preview_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
+                                                                                     _("Image previews"),
+                                                                                     g_paste_settings_get_images_preview (settings),
+                                                                                     images_preview_callback,
+                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_images_preview,
+                                                                                     settings);
+    priv->images_preview_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
+                                                                                        _("Preview size"),
+                                                                                        (gdouble) g_paste_settings_get_images_preview_size (settings),
+                                                                                        50, 400, 10,
+                                                                                        images_preview_size_callback,
+                                                                                        (GPasteGtkResetCallback) g_paste_settings_reset_images_preview_size,
+                                                                                        settings);
     return panel;
 }
 
@@ -349,6 +349,7 @@ g_paste_gtk_settings_ui_stack_fill (GPasteGtkSettingsUiStack *self)
 
     g_paste_gtk_settings_ui_stack_add_panel (self, "general",   _("General behaviour"),  g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (priv));
     g_paste_gtk_settings_ui_stack_add_panel (self, "history",   _("History settings"),   g_paste_gtk_settings_ui_stack_private_make_history_settings_panel (priv));
+    g_paste_gtk_settings_ui_stack_add_panel (self, "images",    _("Images settings"),    g_paste_gtk_settings_ui_stack_private_make_images_panel (priv));
     g_paste_gtk_settings_ui_stack_add_panel (self, "keyboard",  _("Keyboard shortcuts"), g_paste_gtk_settings_ui_stack_private_make_keybindings_panel (priv));
 }
 
