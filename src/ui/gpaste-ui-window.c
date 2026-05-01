@@ -46,6 +46,14 @@ _empty (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
+
+    if (!GTK_IS_WIDGET (self))
+    {
+        g_free (data[1]);
+        g_free (data);
+        return G_SOURCE_REMOVE;
+    }
+
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
@@ -84,7 +92,16 @@ static gboolean
 _search (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
-    GPasteUiWindowPrivate *priv = data[0];
+    GPasteUiWindow *self = data[0];
+
+    if (!GTK_IS_WIDGET (self))
+    {
+        g_free (data[1]);
+        g_free (data);
+        return G_SOURCE_REMOVE;
+    }
+
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
         return G_SOURCE_CONTINUE;
@@ -112,10 +129,8 @@ g_paste_ui_window_search (GPasteUiWindow *self,
     g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
     g_return_if_fail (g_utf8_validate (search, -1, NULL));
 
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-
     gpointer *data = g_new (gpointer, 2);
-    data[0] = priv;
+    data[0] = self;
     data[1] = g_strdup (search);
 
     g_source_set_name_by_id (g_idle_add (_search, data), "[GPaste] search");
@@ -124,7 +139,12 @@ g_paste_ui_window_search (GPasteUiWindow *self,
 static gboolean
 _show_prefs (gpointer user_data)
 {
-    GPasteUiWindowPrivate *priv = user_data;
+    GPasteUiWindow *self = user_data;
+
+    if (!GTK_IS_WIDGET (self))
+        return G_SOURCE_REMOVE;
+
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
         return G_SOURCE_CONTINUE;
@@ -145,9 +165,7 @@ g_paste_ui_window_show_prefs (GPasteUiWindow *self)
 {
     g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
 
-    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-
-    g_source_set_name_by_id (g_idle_add (_show_prefs, priv), "[GPaste] show_prefs");
+    g_source_set_name_by_id (g_idle_add (_show_prefs, self), "[GPaste] show_prefs");
 }
 
 static gboolean

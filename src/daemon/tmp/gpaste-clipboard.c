@@ -31,6 +31,7 @@ typedef struct
     gchar          *text;
     gchar          *image_checksum;
 
+    guint32         fake_event_source;
     guint64         c_signals[C_LAST_SIGNAL];
 } GPasteClipboardPrivate;
 
@@ -661,6 +662,9 @@ g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED
                                            GdkPixbuf    *image,
                                            gpointer      user_data)
 {
+    if (!image)
+        return;
+
     GPasteClipboard *self = user_data;
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (image);
@@ -692,6 +696,11 @@ g_paste_clipboard_dispose (GObject *object)
 
     if (priv->settings)
     {
+        if (priv->fake_event_source)
+        {
+            g_source_remove (priv->fake_event_source);
+            priv->fake_event_source = 0;
+        }
         g_signal_handler_disconnect (priv->real, priv->c_signals[C_OWNER_CHANGE]);
         g_clear_object (&priv->settings);
     }
@@ -761,7 +770,8 @@ _g_paste_clipboard_new (GPasteSettings *settings,
     if (!gdk_display_request_selection_notification (gdk_display_get_default (), target))
     {
         g_warning ("Selection notification not supported, using active poll");
-        g_source_set_name_by_id (g_timeout_add_seconds (1, g_paste_clipboard_fake_event, self), "[GPaste] clipboard fake events");
+        priv->fake_event_source = g_timeout_add_seconds (1, g_paste_clipboard_fake_event, self);
+        g_source_set_name_by_id (priv->fake_event_source, "[GPaste] clipboard fake events");
     }
 
     return self;

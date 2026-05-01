@@ -39,6 +39,7 @@ typedef struct
     guint64                 retries;
 
     guint64                 shell_watch;
+    guint32                 retry_source;
 
     guint64                 c_signals[C_LAST_SIGNAL];
 } GPasteKeybinderPrivate;
@@ -351,7 +352,10 @@ static void g_paste_keybinder_private_grab_all_gnome_shell (GPasteKeybinderPriva
 static gboolean
 retry_grab_all_gnome_shell (gpointer user_data)
 {
-    g_paste_keybinder_private_grab_all_gnome_shell (user_data);
+    GPasteKeybinderPrivate *priv = user_data;
+
+    priv->retry_source = 0;
+    g_paste_keybinder_private_grab_all_gnome_shell (priv);
 
     return G_SOURCE_REMOVE;
 }
@@ -383,7 +387,8 @@ grab_accelerators_cb (GObject      *source_object,
         if (error->code == G_DBUS_ERROR_UNKNOWN_METHOD && priv->retries < 10)
         {
             ++priv->retries;
-            g_source_set_name_by_id (g_timeout_add_seconds (1, retry_grab_all_gnome_shell, priv), "[GPaste] gnome-shell grab");
+            priv->retry_source = g_timeout_add_seconds (1, retry_grab_all_gnome_shell, priv);
+            g_source_set_name_by_id (priv->retry_source, "[GPaste] gnome-shell grab");
         }
         else if (error->code == G_DBUS_ERROR_ACCESS_DENIED)
         {
@@ -631,6 +636,12 @@ g_paste_keybinder_dispose (GObject *object)
 {
     GPasteKeybinder *self = G_PASTE_KEYBINDER (object);
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
+
+    if (priv->retry_source)
+    {
+        g_source_remove (priv->retry_source);
+        priv->retry_source = 0;
+    }
 
     if (priv->shell_watch)
     {
