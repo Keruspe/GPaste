@@ -176,8 +176,7 @@ g_paste_image_item_dispose (GObject *object)
     if (date)
     {
         g_date_time_unref (date);
-        if (priv->image)
-            g_object_unref (priv->image);
+        g_clear_object (&priv->image);
         priv->date = NULL;
     }
 
