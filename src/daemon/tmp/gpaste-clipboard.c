@@ -55,10 +55,9 @@ g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
 
 static void
 g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
-                                          GdkPixbuf       *image,
+                                          GdkPixbuf       *image G_GNUC_UNUSED,
                                           gpointer         user_data)
 {
-    g_object_unref (image);
     g_paste_clipboard_ensure_not_empty (self, user_data);
 }
 
@@ -668,8 +667,6 @@ g_paste_clipboard_fake_event_finish_image (GtkClipboard *clipboard G_GNUC_UNUSED
 
     if (!g_paste_str_equal (checksum, priv->image_checksum))
         g_paste_clipboard_owner_change (NULL, NULL, self);
-
-    g_object_unref (image);
 }
 
 static gboolean
