@@ -201,7 +201,7 @@ g_paste_gtk_settings_ui_stack_private_make_images_panel (GPasteGtkSettingsUiStac
                                                                                      (GPasteGtkResetCallback) g_paste_settings_reset_images_preview,
                                                                                      settings);
     priv->images_preview_size_button = g_paste_gtk_settings_ui_panel_add_range_setting (panel,
-                                                                                        _("Preview size"),
+                                                                                        _("Images preview size"),
                                                                                         (gdouble) g_paste_settings_get_images_preview_size (settings),
                                                                                         50, 400, 10,
                                                                                         images_preview_size_callback,
