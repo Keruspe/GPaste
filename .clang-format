@@ -1,13 +1,28 @@
 ---
-AlignAfterOpenBracket: true
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Left
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: false
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignEscapedNewlines: Right
 AlignOperands: true
-AlignTrailingComments: true
+AlignTrailingComments:
+  Kind: Leave
 AlwaysBreakAfterDefinitionReturnType: All
 BinPackArguments: false
 BreakBeforeBraces: Allman
 ColumnLimit: 0
+Cpp11BracedListStyle: false
 IndentWidth: 4
 MaxEmptyLinesToKeep: 1
+PointerAlignment: Right
+SortIncludes: Never
+SpaceAfterCStyleCast: true
 SpaceBeforeParens: Always
 UseTab: Never
 ...
