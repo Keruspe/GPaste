@@ -64,58 +64,19 @@ g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
 }
 
 static void
-g_paste_ui_item_skeleton_on_images_preview_size_changed (GPasteSettings *settings,
+g_paste_ui_item_skeleton_on_images_preview_size_changed (GPasteSettings *settings G_GNUC_UNUSED,
                                                           const gchar    *key G_GNUC_UNUSED,
                                                           gpointer        user_data)
 {
-    GPasteUiItemSkeletonPrivate *priv = user_data;
-    guint64 size = g_paste_settings_get_images_preview_size (settings);
+    GPasteUiItemSkeleton *self = user_data;
+    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
 
     if (!priv->thumbnail)
         return;
 
-    GtkWidget *thumbnail_widget = GTK_WIDGET (priv->thumbnail);
     GdkPixbuf *pixbuf = gtk_image_get_pixbuf (priv->thumbnail);
 
-    if (pixbuf)
-    {
-        int orig_width = gdk_pixbuf_get_width (pixbuf);
-        int orig_height = gdk_pixbuf_get_height (pixbuf);
-        double scale_factor;
-
-        if (orig_width > orig_height)
-            scale_factor = (double) size / orig_width;
-        else
-            scale_factor = (double) size / orig_height;
-
-        int new_width = MAX ((int) (orig_width * scale_factor), 10);
-        int new_height = MAX ((int) (orig_height * scale_factor), 10);
-
-        GdkInterpType interp_type;
-        if (size <= 150)
-            interp_type = GDK_INTERP_HYPER;
-        else if (size <= 300)
-            interp_type = GDK_INTERP_TILES;
-        else
-            interp_type = GDK_INTERP_BILINEAR;
-
-        GdkPixbuf *scaled = gdk_pixbuf_scale_simple (pixbuf, new_width, new_height, interp_type);
-
-        if (scaled)
-        {
-            gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), TRUE);
-            gtk_widget_set_size_request (GTK_WIDGET (priv->thumbnail), new_width, new_height);
-            gtk_image_set_from_pixbuf (priv->thumbnail, scaled);
-            g_object_set_data (G_OBJECT (thumbnail_widget), "preview-size", GUINT_TO_POINTER (size));
-            g_object_unref (scaled);
-            GtkWidget *parent = gtk_widget_get_parent (thumbnail_widget);
-            if (parent)
-                gtk_widget_queue_resize (parent);
-        }
-    }
-
-    g_object_set_data (G_OBJECT (thumbnail_widget), "preview-size", GUINT_TO_POINTER (size));
-    gtk_widget_queue_draw (thumbnail_widget);
+    g_paste_ui_item_skeleton_set_thumbnail (self, pixbuf);
 }
 
 static void
@@ -297,32 +258,26 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
 
     gint width = gdk_pixbuf_get_width (pixbuf);
     gint height = gdk_pixbuf_get_height (pixbuf);
-    gint target_size = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (priv->thumbnail), "preview-size"));
-
-    if (target_size <= 0)
-    {
-        target_size = 100;
-        g_object_set_data (G_OBJECT (priv->thumbnail), "preview-size", GUINT_TO_POINTER (target_size));
-    }
+    guint64 target_size = g_paste_settings_get_images_preview_size (priv->settings);
 
     gdouble scale = (width > height) ? (gdouble) target_size / width : (gdouble) target_size / height;
-    gint scaled_width = (gint) (width * scale);
-    gint scaled_height = (gint) (height * scale);
+    gint scaled_width = MAX ((gint) (width * scale), 10);
+    gint scaled_height = MAX ((gint) (height * scale), 10);
 
-    GdkInterpType interp_type;
-    if (target_size <= 150)
-        interp_type = GDK_INTERP_HYPER;
-    else if (target_size <= 300)
-        interp_type = GDK_INTERP_TILES;
-    else
-        interp_type = GDK_INTERP_BILINEAR;
+    g_autoptr (GdkPixbuf) scaled = gdk_pixbuf_scale_simple (pixbuf, scaled_width, scaled_height, GDK_INTERP_BILINEAR);
 
-    GdkPixbuf *scaled = gdk_pixbuf_scale_simple (pixbuf, scaled_width, scaled_height, interp_type);
+    if (!scaled)
+        return;
 
-    gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), TRUE);
     gtk_image_set_from_pixbuf (priv->thumbnail, scaled);
     gtk_widget_set_size_request (GTK_WIDGET (priv->thumbnail), scaled_width, scaled_height);
-    g_object_unref (scaled);
+    gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), TRUE);
+
+    GtkWidget *thumbnail_widget = GTK_WIDGET (priv->thumbnail);
+    GtkWidget *parent = gtk_widget_get_parent (thumbnail_widget);
+    if (parent)
+        gtk_widget_queue_resize (parent);
+    gtk_widget_queue_draw (thumbnail_widget);
 }
 
 /**
@@ -482,9 +437,7 @@ g_paste_ui_item_skeleton_new (GType           type,
     priv->c_signals[C_IMAGES_PREVIEW_SIZE] = g_signal_connect (settings,
                                                                 "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
                                                                 G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_size_changed),
-                                                                priv);
-    g_object_set_data (G_OBJECT (priv->thumbnail), "preview-size",
-                       GUINT_TO_POINTER (g_paste_settings_get_images_preview_size (settings)));
+                                                                self);
 
     return self;
 }
