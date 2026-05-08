@@ -46,14 +46,6 @@ _empty (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
-
-    if (!GTK_IS_WIDGET (self))
-    {
-        g_free (data[1]);
-        g_free (data);
-        return G_SOURCE_REMOVE;
-    }
-
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
@@ -93,14 +85,6 @@ _search (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
-
-    if (!GTK_IS_WIDGET (self))
-    {
-        g_free (data[1]);
-        g_free (data);
-        return G_SOURCE_REMOVE;
-    }
-
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
@@ -140,10 +124,6 @@ static gboolean
 _show_prefs (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
-
-    if (!GTK_IS_WIDGET (self))
-        return G_SOURCE_REMOVE;
-
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
@@ -359,14 +339,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     gtk_box_pack_start (box, panel, FALSE, FALSE, 0);
     gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 0);
 
-    /* Create an external container for the history that will take all available space */
-    GtkWidget *history_container = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-    gtk_widget_set_hexpand (history_container, TRUE);
-    gtk_widget_set_vexpand (history_container, TRUE);
-    gtk_widget_set_halign (history_container, GTK_ALIGN_FILL);
-    gtk_widget_set_valign (history_container, GTK_ALIGN_FILL);
-
-    /* Add a scrolling container inside the history container */
+    /* Add a scrolling container for the history */
     GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
     GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
 
@@ -387,11 +360,8 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     /* Add the history to the scrolling container */
     gtk_container_add (GTK_CONTAINER (scroll), history);
 
-    /* Add the scroll to the history container */
-    gtk_container_add (GTK_CONTAINER (history_container), scroll);
-
-    /* Add the history container to the main horizontal box */
-    gtk_box_pack_start (box, history_container, TRUE, TRUE, 0);
+    /* Add the scroll to the main horizontal box */
+    gtk_box_pack_start (box, scroll, TRUE, TRUE, 0);
 
     /* Configure the main horizontal box to take all available space */
     gtk_widget_set_hexpand (hbox, TRUE);
@@ -433,12 +403,6 @@ g_paste_ui_window_new (GtkApplication *app)
 
     /* Set default and minimum window size - use larger default size */
     gtk_window_set_default_size (GTK_WINDOW (self), 800, 600);
-
-    /* Define minimum size constraints */
-    GdkGeometry geometry;
-    geometry.min_width = 600;
-    geometry.min_height = 400;
-    gtk_window_set_geometry_hints (GTK_WINDOW (self), NULL, &geometry, GDK_HINT_MIN_SIZE);
 
     g_paste_client_new (on_client_ready, self);
 

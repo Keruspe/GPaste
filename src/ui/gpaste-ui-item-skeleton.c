@@ -54,8 +54,8 @@ g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
 
 static void
 g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
-                                                     const gchar    *key G_GNUC_UNUSED,
-                                                     gpointer        user_data)
+                                                    const gchar    *key G_GNUC_UNUSED,
+                                                    gpointer        user_data)
 {
     GPasteUiItemSkeletonPrivate *priv = user_data;
 
@@ -65,8 +65,8 @@ g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
 
 static void
 g_paste_ui_item_skeleton_on_images_preview_size_changed (GPasteSettings *settings G_GNUC_UNUSED,
-                                                          const gchar    *key G_GNUC_UNUSED,
-                                                          gpointer        user_data)
+                                                         const gchar    *key G_GNUC_UNUSED,
+                                                         gpointer        user_data)
 {
     GPasteUiItemSkeleton *self = user_data;
     const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
@@ -260,9 +260,17 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
     gint height = gdk_pixbuf_get_height (pixbuf);
     guint64 target_size = g_paste_settings_get_images_preview_size (priv->settings);
 
-    gdouble scale = (width > height) ? (gdouble) target_size / width : (gdouble) target_size / height;
-    gint scaled_width = MAX ((gint) (width * scale), 10);
-    gint scaled_height = MAX ((gint) (height * scale), 10);
+    gint scaled_width, scaled_height;
+    if (width > height)
+    {
+        scaled_width = MAX ((gint) target_size, 10);
+        scaled_height = MAX ((gint) ((gdouble) height * scaled_width / width), 10);
+    }
+    else
+    {
+        scaled_height = MAX ((gint) target_size, 10);
+        scaled_width = MAX ((gint) ((gdouble) width * scaled_height / height), 10);
+    }
 
     g_autoptr (GdkPixbuf) scaled = gdk_pixbuf_scale_simple (pixbuf, scaled_width, scaled_height, GDK_INTERP_BILINEAR);
 
@@ -271,7 +279,7 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
 
     gtk_image_set_from_pixbuf (priv->thumbnail, scaled);
     gtk_widget_set_size_request (GTK_WIDGET (priv->thumbnail), scaled_width, scaled_height);
-    gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), TRUE);
+    gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), g_paste_settings_get_images_preview (priv->settings));
 
     GtkWidget *thumbnail_widget = GTK_WIDGET (priv->thumbnail);
     GtkWidget *parent = gtk_widget_get_parent (thumbnail_widget);
@@ -355,27 +363,25 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
     gtk_label_set_xalign (priv->label, 0.0);
 
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+    gtk_widget_set_margin_start (hbox, 5);
+    gtk_widget_set_margin_end (hbox, 5);
+
+    gtk_widget_set_halign (index_label, GTK_ALIGN_START);
+    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, TRUE, 0);
+
+    gtk_widget_set_hexpand (label, TRUE);
+    gtk_widget_set_halign (label, GTK_ALIGN_START);
+    gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
+
     GtkWidget *thumbnail = gtk_image_new ();
     priv->thumbnail = GTK_IMAGE (thumbnail);
     gtk_widget_set_visible (thumbnail, FALSE);
     gtk_widget_set_hexpand (thumbnail, TRUE);
     gtk_widget_set_halign (thumbnail, GTK_ALIGN_FILL);
 
-    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 5);
-    gtk_widget_set_margin_start (hbox, 5);
-    gtk_widget_set_margin_end (hbox, 5);
-    gtk_widget_set_hexpand (hbox, TRUE);
-
-    gtk_widget_set_halign (index_label, TRUE);
-    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, FALSE, 0);
-
-    gtk_widget_set_hexpand (label, TRUE);
-    gtk_widget_set_halign (label, GTK_ALIGN_START);
-    gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
-
     GtkWidget *thumbnail_container = gtk_frame_new (NULL);
     gtk_frame_set_shadow_type (GTK_FRAME (thumbnail_container), GTK_SHADOW_NONE);
-    gtk_widget_set_margin_end (thumbnail_container, 10);
     gtk_widget_set_hexpand (thumbnail_container, FALSE);
     gtk_widget_set_halign (thumbnail_container, GTK_ALIGN_CENTER);
 
@@ -425,19 +431,20 @@ g_paste_ui_item_skeleton_new (GType           type,
     g_slist_foreach (priv->actions, add_action, gtk_bin_get_child (GTK_BIN (self)));
 
     priv->c_signals[C_SIZE] = g_signal_connect (settings,
-                                                 "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
-                                                 G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
-                                                 priv);
+                                                "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
+                                                G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
+                                                priv);
     g_paste_ui_item_skeleton_set_text_size (settings, NULL, priv);
     priv->c_signals[C_IMAGES_PREVIEW] = g_signal_connect (settings,
-                                                           "changed::" G_PASTE_IMAGES_PREVIEW_SETTING,
-                                                           G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
-                                                           priv);
+                                                          "changed::" G_PASTE_IMAGES_PREVIEW_SETTING,
+                                                          G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
+                                                          priv);
     g_paste_ui_item_skeleton_on_images_preview_changed (settings, NULL, priv);
     priv->c_signals[C_IMAGES_PREVIEW_SIZE] = g_signal_connect (settings,
-                                                                "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
-                                                                G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_size_changed),
-                                                                self);
+                                                               "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
+                                                               G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_size_changed),
+                                                               self);
+    g_paste_ui_item_skeleton_on_images_preview_size_changed (settings, NULL, self);
 
     return self;
 }

@@ -45,7 +45,7 @@
 
     <key name="images-preview-size" type="t">
       <range min="50" max="400"/>
-      <default>100</default>
+      <default>50</default>
       <summary>Size of image previews in pixels</summary>
       <description>
         Default size is 100 pixels
