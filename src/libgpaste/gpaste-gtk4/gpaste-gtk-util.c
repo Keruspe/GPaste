@@ -125,34 +125,22 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
 
 /**
  * g_paste_gtk_util_compute_checksum:
- * @texture: the #GdkTexture to checksum
+ * @image: the #GdkPixbuf to checksum
  *
  * Compute the checksum of an image
  *
  * Returns: the newly allocated checksum
  */
 G_PASTE_VISIBLE gchar *
-g_paste_gtk_util_compute_checksum (GdkTexture *texture)
+g_paste_gtk_util_compute_checksum (GdkPixbuf *image)
 {
-    if (!texture || !GDK_IS_TEXTURE (texture))
+    if (!image || !GDK_IS_PIXBUF (image))
         return NULL;
 
-    cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                                           gdk_texture_get_width (texture),
-                                                           gdk_texture_get_height (texture));
+    const guint8 *data = gdk_pixbuf_read_pixels (image);
+    gsize length = gdk_pixbuf_get_byte_length (image);
 
-    gdk_texture_download (texture,
-                          cairo_image_surface_get_data (surface),
-                          cairo_image_surface_get_stride (surface));
-    cairo_surface_mark_dirty (surface);
-
-    guint8 *data = cairo_image_surface_get_data (surface);
-    gsize length = cairo_image_surface_get_height (surface) * cairo_image_surface_get_stride (surface);
-    gchar *checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
-
-    cairo_surface_destroy (surface);
-
-    return checksum;
+    return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
 }
 
 typedef struct {

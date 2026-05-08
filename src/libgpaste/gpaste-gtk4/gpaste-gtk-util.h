@@ -12,6 +12,7 @@
 
 #include <gpaste.h>
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
@@ -25,7 +26,7 @@ void     g_paste_gtk_util_confirm_dialog   (GtkWindow                     *paren
                                             GPasteGtkConfirmDialogCallback on_confirmation,
                                             gpointer                       user_data);
 
-gchar   *g_paste_gtk_util_compute_checksum (GdkTexture *texture);
+gchar   *g_paste_gtk_util_compute_checksum (GdkPixbuf *image);
 
 void     g_paste_gtk_util_empty_history    (GtkWindow      *parent_window,
                                             GPasteClient   *client,
