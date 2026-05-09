@@ -55,6 +55,7 @@ _empty (gpointer user_data)
     g_free (data);
 
     g_paste_gtk_util_empty_history (GTK_WINDOW (self), priv->client, priv->settings, history);
+    g_object_unref (self);
 
     return G_SOURCE_REMOVE;
 }
@@ -74,7 +75,7 @@ g_paste_ui_window_empty_history (GPasteUiWindow *self,
     g_return_if_fail (g_utf8_validate (history, -1, NULL));
 
     gpointer *data = g_new (gpointer, 2);
-    data[0] = self;
+    data[0] = g_object_ref (self);
     data[1] = g_strdup (history);
 
     g_source_set_name_by_id (g_idle_add (_empty, data), "[GPaste] empty");
@@ -95,6 +96,7 @@ _search (gpointer user_data)
 
     gtk_button_clicked (g_paste_ui_header_get_search_button (priv->header));
     gtk_entry_set_text (GTK_ENTRY (priv->search_entry), search);
+    g_object_unref (self);
 
     return G_SOURCE_REMOVE;
 }
@@ -114,7 +116,7 @@ g_paste_ui_window_search (GPasteUiWindow *self,
     g_return_if_fail (g_utf8_validate (search, -1, NULL));
 
     gpointer *data = g_new (gpointer, 2);
-    data[0] = self;
+    data[0] = g_object_ref (self);
     data[1] = g_strdup (search);
 
     g_source_set_name_by_id (g_idle_add (_search, data), "[GPaste] search");
@@ -130,6 +132,7 @@ _show_prefs (gpointer user_data)
         return G_SOURCE_CONTINUE;
 
     g_paste_ui_header_show_prefs (priv->header);
+    g_object_unref (self);
 
     return G_SOURCE_REMOVE;
 }
@@ -145,7 +148,7 @@ g_paste_ui_window_show_prefs (GPasteUiWindow *self)
 {
     g_return_if_fail (_G_PASTE_IS_UI_WINDOW (self));
 
-    g_source_set_name_by_id (g_idle_add (_show_prefs, self), "[GPaste] show_prefs");
+    g_source_set_name_by_id (g_idle_add (_show_prefs, g_object_ref (self)), "[GPaste] show_prefs");
 }
 
 static gboolean
