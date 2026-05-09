@@ -281,11 +281,9 @@ g_paste_image_item_new (GdkPixbuf *img)
                                                 g_object_ref (img),
                                                 checksum);
 
-    gdk_pixbuf_save (img,
-                     g_paste_item_get_value (self),
-                     "png",
-                     NULL, /* Error */
-                     NULL); /* Params */
+    g_autoptr (GError) error = NULL;
+    if (!gdk_pixbuf_save (img, g_paste_item_get_value (self), "png", &error, NULL))
+        g_warning ("Failed to save image: %s", error->message);
 
     return self;
 }

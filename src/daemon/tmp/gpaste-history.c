@@ -103,9 +103,9 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
         if (_G_PASTE_IS_IMAGE_ITEM (item))
         {
             g_autoptr (GFile) image = g_file_new_for_path (g_paste_item_get_value (item));
-            g_file_delete (image,
-                           NULL, /* cancellable */
-                           NULL); /* error */
+            g_autoptr (GError) error = NULL;
+            if (!g_file_delete (image, NULL, &error))
+                g_warning ("Failed to delete image file: %s", error->message);
         }
         g_object_unref (item);
     }
