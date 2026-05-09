@@ -46,57 +46,13 @@ enum
 
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
-static void
-g_paste_clipboard_bootstrap_finish_text (GPasteClipboard *self,
-                                         const gchar     *text G_GNUC_UNUSED,
-                                         gpointer         user_data)
-{
-    g_paste_clipboard_ensure_not_empty (self, user_data);
-}
+typedef void (*GPasteClipboardTextCallback)  (GPasteClipboard *self,
+                                              const gchar     *text,
+                                              gpointer         user_data);
 
-static void
-g_paste_clipboard_bootstrap_finish_image (GPasteClipboard *self,
-                                          GdkPixbuf       *image G_GNUC_UNUSED,
-                                          gpointer         user_data)
-{
-    g_paste_clipboard_ensure_not_empty (self, user_data);
-}
-
-/**
- * g_paste_clipboard_bootstrap:
- * @self: a #GPasteClipboard instance
- * @history: a #GPasteHistory instance
- *
- * Bootstrap a #GPasteClipboard with an initial value
- */
-G_PASTE_VISIBLE void
-g_paste_clipboard_bootstrap (GPasteClipboard *self,
-                             GPasteHistory   *history)
-{
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
-    g_return_if_fail (_G_PASTE_IS_HISTORY (history));
-
-    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
-    GtkClipboard *real = priv->real;
-
-    if (gtk_clipboard_wait_is_uris_available (real) ||
-        gtk_clipboard_wait_is_text_available (real))
-    {
-        g_paste_clipboard_set_text (self,
-                                    g_paste_clipboard_bootstrap_finish_text,
-                                    history);
-    }
-    else if (g_paste_settings_get_images_support (priv->settings) && gtk_clipboard_wait_is_image_available (real))
-    {
-        g_paste_clipboard_set_image (self,
-                                     g_paste_clipboard_bootstrap_finish_image,
-                                     history);
-    }
-    else
-    {
-        g_paste_clipboard_ensure_not_empty (self, history);
-    }
-}
+typedef void (*GPasteClipboardImageCallback) (GPasteClipboard *self,
+                                              GdkPixbuf       *image,
+                                              gpointer         user_data);
 
 /**
  * g_paste_clipboard_is_clipboard:
@@ -231,15 +187,7 @@ g_paste_clipboard_on_text_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
         data->callback (self, priv->text, data->user_data);
 }
 
-/**
- * g_paste_clipboard_set_text:
- * @self: a #GPasteClipboard instance
- * @callback: (scope async): the callback to be called when text is received
- * @user_data: user data to pass to @callback
- *
- * Put the text from the intern GtkClipboard in the #GPasteClipboard
- */
-G_PASTE_VISIBLE void
+static void
 g_paste_clipboard_set_text (GPasteClipboard            *self,
                             GPasteClipboardTextCallback callback,
                             gpointer                    user_data)
@@ -517,15 +465,7 @@ g_paste_clipboard_on_image_ready (GtkClipboard *clipboard G_GNUC_UNUSED,
         data->callback (self, image, data->user_data);
 }
 
-/**
- * g_paste_clipboard_set_image:
- * @self: a #GPasteClipboard instance
- * @callback: (scope async): the callback to be called when text is received
- * @user_data: user data to pass to @callback
- *
- * Put the image from the intern GtkClipboard in the #GPasteClipboard
- */
-G_PASTE_VISIBLE void
+static void
 g_paste_clipboard_set_image (GPasteClipboard             *self,
                              GPasteClipboardImageCallback callback,
                              gpointer                     user_data)
@@ -542,6 +482,239 @@ g_paste_clipboard_set_image (GPasteClipboard             *self,
     gtk_clipboard_request_image (priv->real,
                                  g_paste_clipboard_on_image_ready,
                                  data);
+}
+
+typedef void (*GPasteClipboardSpecialAtomCallback) (GPasteClipboard  *self,
+                                                    GPasteSpecialAtom atom,
+                                                    const guchar     *data,
+                                                    gsize             length,
+                                                    gpointer          user_data);
+
+typedef struct {
+    GPasteClipboard                   *self;
+    GPasteSpecialAtom                  atom;
+    GPasteClipboardSpecialAtomCallback callback;
+    gpointer                           user_data;
+} GPasteClipboardSpecialAtomData;
+
+static void
+g_paste_clipboard_on_special_atom_ready (GtkClipboard     *clipboard G_GNUC_UNUSED,
+                                         GtkSelectionData *selection_data,
+                                         gpointer          user_data)
+{
+    g_autofree GPasteClipboardSpecialAtomData *data = user_data;
+    gint length;
+    const guchar *raw = gtk_selection_data_get_data_with_length (selection_data, &length);
+
+    if (data->callback)
+        data->callback (data->self, data->atom, raw, (gsize) (length > 0 ? length : 0), data->user_data);
+}
+
+static void
+g_paste_clipboard_fetch_special_atom (GPasteClipboard                   *self,
+                                      GPasteSpecialAtom                  atom,
+                                      GPasteClipboardSpecialAtomCallback callback,
+                                      gpointer                           user_data)
+{
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
+
+    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardSpecialAtomData *data = g_new (GPasteClipboardSpecialAtomData, 1);
+
+    data->self = self;
+    data->atom = atom;
+    data->callback = callback;
+    data->user_data = user_data;
+
+    gtk_clipboard_request_contents (priv->real,
+                                    g_paste_special_atom_get (atom),
+                                    g_paste_clipboard_on_special_atom_ready,
+                                    data);
+}
+
+typedef struct {
+    GPasteClipboard              *self;
+    GPasteClipboardUpdateCallback callback;
+    gpointer                      user_data;
+    gint                          pending;
+    const gchar                  *text;
+    GdkPixbuf                    *image;
+    gboolean                      uris_available;
+    gboolean                      fallback;
+    guchar                       *special_atom_data[G_PASTE_SPECIAL_ATOM_LAST];
+    gsize                         special_atom_size[G_PASTE_SPECIAL_ATOM_LAST];
+} GPasteClipboardUpdateData;
+
+static void
+g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
+{
+    if (--data->pending > 0)
+        return;
+
+    GPasteItem *item = NULL;
+
+    if (data->text)
+    {
+        if (data->uris_available)
+            item = G_PASTE_ITEM (g_paste_uris_item_new (data->text));
+        else
+            item = G_PASTE_ITEM (g_paste_text_item_new (data->text));
+
+        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        {
+            if (data->special_atom_data[atom])
+            {
+                g_autofree gchar *val = g_base64_encode (data->special_atom_data[atom], data->special_atom_size[atom]);
+                g_autofree GPasteSpecialValue *v = g_new (GPasteSpecialValue, 1);
+                v->mime = atom;
+                v->data = val;
+                g_paste_item_add_special_value (item, v);
+            }
+        }
+    }
+    else if (data->image)
+    {
+        item = G_PASTE_ITEM (g_paste_image_item_new (data->image));
+    }
+
+    if (data->callback)
+        data->callback (data->self, item, data->fallback, data->user_data);
+
+    for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        g_free (data->special_atom_data[atom]);
+    g_free (data);
+}
+
+static void
+g_paste_clipboard_update_on_text_ready (GPasteClipboard *self G_GNUC_UNUSED,
+                                        const gchar     *text,
+                                        gpointer         user_data)
+{
+    GPasteClipboardUpdateData *data = user_data;
+    data->text = text;
+    g_paste_clipboard_update_maybe_done (data);
+}
+
+static void
+g_paste_clipboard_update_on_image_ready (GPasteClipboard *self G_GNUC_UNUSED,
+                                         GdkPixbuf       *image,
+                                         gpointer         user_data)
+{
+    GPasteClipboardUpdateData *data = user_data;
+    data->image = image;
+    g_paste_clipboard_update_maybe_done (data);
+}
+
+static void
+g_paste_clipboard_update_on_special_atom_ready (GPasteClipboard  *self G_GNUC_UNUSED,
+                                                GPasteSpecialAtom atom,
+                                                const guchar     *raw,
+                                                gsize             length,
+                                                gpointer          user_data)
+{
+    GPasteClipboardUpdateData *data = user_data;
+
+    if (raw && length > 0)
+    {
+        data->special_atom_data[atom] = g_memdup2 (raw, length);
+        data->special_atom_size[atom] = length;
+    }
+
+    g_paste_clipboard_update_maybe_done (data);
+}
+
+static void
+g_paste_clipboard_update_targets_ready (GtkClipboard     *real G_GNUC_UNUSED,
+                                        GtkSelectionData *_targets,
+                                        gpointer          user_data)
+{
+    GPasteClipboardUpdateData *data = user_data;
+    GPasteClipboard *self = data->self;
+    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+
+    if (gtk_selection_data_get_length (_targets) >= 0)
+    {
+        g_autofree GdkAtom *targets = NULL;
+        gint n_targets;
+
+        gtk_selection_data_get_targets (_targets, &targets, &n_targets);
+        data->uris_available = gtk_targets_include_uri (targets, n_targets);
+
+        gboolean has_text = data->uris_available || gtk_targets_include_text (targets, n_targets);
+        gboolean has_image = !has_text &&
+                             g_paste_settings_get_images_support (priv->settings) &&
+                             gtk_targets_include_image (targets, n_targets, FALSE);
+        gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
+
+        if (has_text && g_paste_settings_get_rich_text_support (priv->settings))
+        {
+            for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+            {
+                for (gint i = 0; i < n_targets; ++i)
+                {
+                    if (targets[i] == g_paste_special_atom_get (atom))
+                    {
+                        atom_available[atom] = TRUE;
+                        ++data->pending;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (has_text || has_image)
+            ++data->pending;
+
+        if (has_text)
+            g_paste_clipboard_set_text (self, g_paste_clipboard_update_on_text_ready, data);
+        else if (has_image)
+            g_paste_clipboard_set_image (self, g_paste_clipboard_update_on_image_ready, data);
+
+        for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+        {
+            if (atom_available[atom])
+                g_paste_clipboard_fetch_special_atom (self, atom, g_paste_clipboard_update_on_special_atom_ready, data);
+        }
+    }
+    else
+    {
+        data->fallback = TRUE;
+        ++data->pending;
+        g_paste_clipboard_set_text (self, g_paste_clipboard_update_on_text_ready, data);
+    }
+
+    g_paste_clipboard_update_maybe_done (data);
+}
+
+/**
+ * g_paste_clipboard_update:
+ * @self: a #GPasteClipboard instance
+ * @callback: (scope async): the callback to be called when the clipboard content is ready
+ * @user_data: user data to pass to @callback
+ *
+ * Read the current clipboard content and update the internal cache.
+ * The callback receives a newly created #GPasteItem (or NULL if unchanged or empty)
+ * and a fallback flag that is TRUE when the clipboard was empty and no content could be retrieved.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update (GPasteClipboard              *self,
+                          GPasteClipboardUpdateCallback callback,
+                          gpointer                      user_data)
+{
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
+
+    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardUpdateData *data = g_new0 (GPasteClipboardUpdateData, 1);
+
+    data->self = self;
+    data->callback = callback;
+    data->user_data = user_data;
+    data->pending = 1;
+
+    gtk_clipboard_request_contents (priv->real,
+                                    gdk_atom_intern_static_string ("TARGETS"),
+                                    g_paste_clipboard_update_targets_ready,
+                                    data);
 }
 
 /**
