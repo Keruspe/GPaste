@@ -10,6 +10,7 @@ main() {
     local version="${1}"
     appstreamcli validate data/appstream/*.xml.in || exit 1
     run_ninja
+    ls po/*.po | sed 's|po/||; s|\.po$||' | sort > po/LINGUAS
     run_ninja GPaste-pot
     run_ninja GPaste-update-po
     git commit -asm "Release GPaste ${version}"
