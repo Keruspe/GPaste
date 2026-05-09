@@ -825,6 +825,10 @@ g_paste_daemon_upload (GPasteDaemon *self,
         return FALSE;
 
     GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, NULL, "wgetpaste", NULL);
+
+    if (!upload)
+        return FALSE;
+
     const gchar *value = g_paste_item_get_value (item);
 
     g_subprocess_communicate_utf8_async (upload,
