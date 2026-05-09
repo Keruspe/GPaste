@@ -793,11 +793,9 @@ g_paste_daemon_private_upload_finish (GObject      *source_object,
     g_autofree GPasteDBusError *err = NULL;
     GPasteDaemonPrivate *priv = user_data;
 
-    g_subprocess_communicate_utf8_finish (upload,
-                                          res,
-                                          &url,
-                                          NULL, /* stderr */
-                                          NULL); /* error */
+    g_autoptr (GError) error = NULL;
+    if (!g_subprocess_communicate_utf8_finish (upload, res, &url, NULL, &error))
+        g_warning ("Upload failed: %s", error->message);
 
     if (url)
         g_paste_daemon_private_do_add (priv, url, strlen (url), &err);
@@ -824,10 +822,14 @@ g_paste_daemon_upload (GPasteDaemon *self,
     if (!item)
         return FALSE;
 
-    GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, NULL, "wgetpaste", NULL);
+    g_autoptr (GError) error = NULL;
+    GSubprocess *upload = g_subprocess_new (G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDOUT_PIPE, &error, "wgetpaste", NULL);
 
     if (!upload)
+    {
+        g_warning ("Failed to spawn wgetpaste: %s", error->message);
         return FALSE;
+    }
 
     const gchar *value = g_paste_item_get_value (item);
 

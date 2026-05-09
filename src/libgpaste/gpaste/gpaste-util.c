@@ -27,19 +27,23 @@ g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
                                    GAsyncResult *res,
                                    gpointer      user_data G_GNUC_UNUSED)
 {
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
 
-    if (proxy)
+    if (!proxy)
     {
-        g_dbus_proxy_call (proxy,
-                           "Activate",
-                           g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                           G_DBUS_CALL_FLAGS_NONE,
-                           -1,
-                           NULL, /* cancellable */
-                           NULL, /* callback */
-                           NULL); /* user_data */
+        g_warning ("Failed to get D-Bus proxy: %s", error->message);
+        return;
     }
+
+    g_dbus_proxy_call (proxy,
+                       "Activate",
+                       g_variant_new ("(@a{sv})", app_get_platform_data ()),
+                       G_DBUS_CALL_FLAGS_NONE,
+                       -1,
+                       NULL, /* cancellable */
+                       NULL, /* callback */
+                       NULL); /* user_data */
 }
 
 /**
@@ -131,10 +135,12 @@ g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUS
     g_autofree gpointer *data = (gpointer *) user_data;
     g_autofree gchar *action = data[0];
     GVariant *arg = data[1];
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
 
     if (!proxy)
     {
+        g_warning ("Failed to get D-Bus proxy: %s", error->message);
         if (arg)
             g_variant_unref (g_variant_ref_sink (arg));
         return;
@@ -449,7 +455,9 @@ g_paste_util_write_pid_file (const gchar *component)
     g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
     g_autofree gchar *contents = g_strdup_printf ("%" G_PID_FORMAT, getpid ());
 
-    g_file_set_contents (pidfile, contents, -1, NULL);
+    g_autoptr (GError) error = NULL;
+    if (!g_file_set_contents (pidfile, contents, -1, &error))
+        g_warning ("Failed to write pid file: %s", error->message);
 }
 
 /**
@@ -470,8 +478,12 @@ g_paste_util_read_pid_file (const gchar *component)
     g_autofree gchar *pidfile = g_strdup_printf ("%s/pid", dir);
     g_autofree gchar *contents = NULL;
 
-    if (!g_file_get_contents (pidfile, &contents, NULL, NULL))
+    g_autoptr (GError) error = NULL;
+    if (!g_file_get_contents (pidfile, &contents, NULL, &error))
+    {
+        g_warning ("Failed to read pid file: %s", error->message);
         return (GPid) -1;
+    }
 
     return (GPid) g_ascii_strtoll (contents, NULL, 0);
 #else
