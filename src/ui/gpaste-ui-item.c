@@ -60,7 +60,7 @@ g_paste_ui_item_on_kind_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-    GPasteUiItem *self = user_data;
+    g_autoptr (GPasteUiItem) self = user_data;
     const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     GPasteItemKind kind = g_paste_client_get_element_kind_finish (priv->client, res, &error);
@@ -81,8 +81,8 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autofree gchar *oneline = g_paste_util_replace (txt, "\n", " ");
 
-    g_paste_client_get_element_kind (priv->client, priv->uuid, g_paste_ui_item_on_kind_ready, self);
     g_paste_ui_item_skeleton_set_index_and_uuid (G_PASTE_UI_ITEM_SKELETON (self), priv->index, priv->uuid);
+    g_paste_client_get_element_kind (priv->client, priv->uuid, g_paste_ui_item_on_kind_ready, g_object_ref (self));
 
     if (!priv->index)
     {
@@ -100,7 +100,7 @@ g_paste_ui_item_on_text_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-    GPasteUiItem *self = user_data;
+    g_autoptr (GPasteUiItem) self = user_data;
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autofree gchar *txt = g_paste_client_get_element_finish (priv->client, res, &error);
@@ -116,7 +116,7 @@ g_paste_ui_item_on_item_ready (GObject      *source_object G_GNUC_UNUSED,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-    GPasteUiItem *self = user_data;
+    g_autoptr (GPasteUiItem) self = user_data;
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClientItem) txt = g_paste_client_get_element_at_index_finish (priv->client, res, &error);
@@ -138,9 +138,9 @@ g_paste_ui_item_reset_text (GPasteUiItem *self)
     const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
 
     if (priv->fake_index)
-        g_paste_client_get_element (priv->client, priv->uuid, g_paste_ui_item_on_text_ready, self);
+        g_paste_client_get_element (priv->client, priv->uuid, g_paste_ui_item_on_text_ready, g_object_ref (self));
     else
-        g_paste_client_get_element_at_index (priv->client, priv->index, g_paste_ui_item_on_item_ready, self);
+        g_paste_client_get_element_at_index (priv->client, priv->index, g_paste_ui_item_on_item_ready, g_object_ref (self));
 }
 
 /**
