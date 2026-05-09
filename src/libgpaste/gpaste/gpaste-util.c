@@ -133,24 +133,28 @@ g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUS
     GVariant *arg = data[1];
     g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, NULL /* error */);
 
-    if (proxy)
+    if (!proxy)
     {
-        g_auto (GVariantBuilder) params;
-
-        g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
-
         if (arg)
-            g_variant_builder_add (&params, "v", arg);
-
-        g_dbus_proxy_call (proxy,
-                           "ActivateAction",
-                           g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ()),
-                           G_DBUS_CALL_FLAGS_NONE,
-                           -1,
-                           NULL, /* cancellable */
-                           NULL, /* callback */
-                           NULL); /* user_data */
+            g_variant_unref (g_variant_ref_sink (arg));
+        return;
     }
+
+    g_auto (GVariantBuilder) params;
+
+    g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
+
+    if (arg)
+        g_variant_builder_add (&params, "v", arg);
+
+    g_dbus_proxy_call (proxy,
+                       "ActivateAction",
+                       g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ()),
+                       G_DBUS_CALL_FLAGS_NONE,
+                       -1,
+                       NULL, /* cancellable */
+                       NULL, /* callback */
+                       NULL); /* user_data */
 }
 
 /**
