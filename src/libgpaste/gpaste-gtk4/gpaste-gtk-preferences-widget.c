@@ -6,6 +6,7 @@
 
 #include <gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-images-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
 
@@ -44,6 +45,7 @@ g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
 
     add_page (s, g_paste_gtk_preferences_behaviour_page_new (manager));
     add_page (s, g_paste_gtk_preferences_history_settings_page_new (manager));
+    add_page (s, g_paste_gtk_preferences_images_page_new (manager));
     add_page (s, g_paste_gtk_preferences_shortcuts_page_new (manager));
 
     gtk_box_append (b, switcher);

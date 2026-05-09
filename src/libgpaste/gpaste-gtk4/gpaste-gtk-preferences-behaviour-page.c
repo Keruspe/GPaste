@@ -27,7 +27,6 @@ typedef struct
     GtkSwitch                   *primary_to_history_switch;
     GtkSwitch                   *synchronize_clipboards_switch;
 
-    GtkSwitch                   *images_support_switch;
     GtkSwitch                   *growing_lines_switch;
     GtkSwitch                   *trim_items_switch;
 } GPasteGtkPreferencesBehaviourPagePrivate;
@@ -47,8 +46,6 @@ g_paste_gtk_preferences_behaviour_page_setting_changed (GPasteGtkPreferencesPage
         gtk_switch_set_active (priv->open_centered_switch, g_paste_settings_get_open_centered (settings));
     else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
         gtk_switch_set_active (priv->growing_lines_switch, g_paste_settings_get_growing_lines (settings));
-    else if (g_paste_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
-        gtk_switch_set_active (priv->images_support_switch, g_paste_settings_get_images_support (settings));
     else if (g_paste_str_equal (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
         gtk_switch_set_active (priv->primary_to_history_switch, g_paste_settings_get_primary_to_history (settings));
     else if (g_paste_str_equal (key, G_PASTE_SAVE_HISTORY_SETTING))
@@ -183,12 +180,6 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager
     adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
 
     group = g_paste_gtk_preferences_group_new (_("Optional features"));
-    priv->images_support_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
-                                                                                     _("Images support"),
-                                                                                     g_paste_settings_get_images_support (settings),
-                                                                                     g_paste_settings_set_images_support,
-                                                                                     g_paste_settings_reset_images_support,
-                                                                                     settings);
     priv->trim_items_switch = g_paste_gtk_preferences_group_add_boolean_setting (group,
                                                                                   _("Trim items"),
                                                                                  g_paste_settings_get_trim_items (settings),

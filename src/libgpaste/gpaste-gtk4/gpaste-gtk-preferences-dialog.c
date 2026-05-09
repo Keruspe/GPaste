@@ -7,6 +7,7 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-images-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h>
 
 struct _GPasteGtkPreferencesDialog
@@ -44,6 +45,7 @@ g_paste_gtk_preferences_dialog_init (GPasteGtkPreferencesDialog *self)
 
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_behaviour_page_new (manager)));
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_history_settings_page_new (manager)));
+    adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_images_page_new (manager)));
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_shortcuts_page_new (manager)));
 }
 

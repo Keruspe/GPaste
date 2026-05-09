@@ -19,6 +19,7 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-images-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
 
