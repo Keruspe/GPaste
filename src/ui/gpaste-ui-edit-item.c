@@ -20,8 +20,8 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiEditItem, ui_edit_item, G_PASTE_TYPE_UI_ITEM
 
 typedef struct
 {
-    GPasteUiEditItemPrivate *priv;
-    gchar                   *uuid;
+    GtkWindow *rootwin;
+    gchar     *uuid;
 } CallbackData;
 
 static void
@@ -31,14 +31,14 @@ on_item_ready (GObject      *source_object,
 {
     g_autofree CallbackData *data = user_data;
     g_autofree gchar *uuid = data->uuid;
-    GPasteUiEditItemPrivate *priv = data->priv;
+    g_autoptr (GtkWindow) rootwin = data->rootwin;
     GPasteClient *client = G_PASTE_CLIENT (source_object);
     g_autofree gchar *old_item = g_paste_client_get_raw_element_finish (client, res, NULL);
 
     if (!old_item)
         return;
 
-    GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, priv->rootwin,
+    GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, rootwin,
                                                      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
                                                      _("Edit"),   GTK_RESPONSE_OK,
                                                      _("Cancel"), GTK_RESPONSE_CANCEL,
@@ -78,8 +78,9 @@ g_paste_ui_edit_item_activate (GPasteUiItemAction *self,
                                const gchar        *uuid)
 {
     CallbackData *data = g_malloc (sizeof (CallbackData));
+    GPasteUiEditItemPrivate *priv = g_paste_ui_edit_item_get_instance_private (G_PASTE_UI_EDIT_ITEM (self));
 
-    data->priv = g_paste_ui_edit_item_get_instance_private (G_PASTE_UI_EDIT_ITEM (self));
+    data->rootwin = g_object_ref (priv->rootwin);
     data->uuid = g_strdup (uuid);
 
     g_paste_client_get_raw_element (client, uuid, on_item_ready, data);
