@@ -74,6 +74,7 @@ g_paste_ui_history_actions_dispose (GObject *object)
     GPasteUiHistoryActionsPrivate *priv = g_paste_ui_history_actions_get_instance_private (G_PASTE_UI_HISTORY_ACTIONS (object));
 
     g_clear_object (&priv->client);
+    g_clear_pointer (&priv->actions, g_slist_free);
 
     G_OBJECT_CLASS (g_paste_ui_history_actions_parent_class)->dispose (object);
 }

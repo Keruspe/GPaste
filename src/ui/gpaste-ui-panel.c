@@ -99,6 +99,8 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
 
     priv->histories = g_list_remove_link (priv->histories, h);
     gtk_container_remove (GTK_CONTAINER (priv->list_box), h->data);
+    g_object_unref (h->data);
+    g_list_free_1 (h);
 }
 
 static void
@@ -167,8 +169,8 @@ g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
 
 typedef struct
 {
-    GPasteUiPanelPrivate *priv;
-    gchar                *name;
+    GPasteUiPanel *self;
+    gchar         *name;
 } HistoriesData;
 
 static void
@@ -177,10 +179,14 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
                     gpointer      user_data)
 {
     g_autofree HistoriesData *data = user_data;
-    GPasteUiPanelPrivate *priv = data->priv;
+    g_autofree gchar *current = data->name;
+
+    if (!GTK_IS_WIDGET (data->self))
+        return;
+
+    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (data->self);
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, &error);
-    g_autofree gchar *current = data->name;
 
     g_paste_ui_panel_add_history (priv, G_PASTE_DEFAULT_HISTORY, g_paste_str_equal (G_PASTE_DEFAULT_HISTORY, current));
 
@@ -199,11 +205,15 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
                GAsyncResult *res,
                gpointer      user_data)
 {
-    GPasteUiPanelPrivate *priv = user_data;
+    if (!GTK_IS_WIDGET (user_data))
+        return;
+
+    GPasteUiPanel *self = user_data;
+    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
     gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
     HistoriesData *data = g_malloc (sizeof (HistoriesData));
 
-    data->priv = priv;
+    data->self = self;
     data->name = name;
 
     g_paste_client_list_histories (priv->client, on_histories_ready, data);
@@ -277,6 +287,7 @@ g_paste_ui_panel_dispose (GObject *object)
     }
 
     g_clear_object (&priv->settings);
+    g_list_free_full (g_steal_pointer (&priv->histories), g_object_unref);
 
     G_OBJECT_CLASS (g_paste_ui_panel_parent_class)->dispose (object);
 }
@@ -373,7 +384,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
                                                           G_CALLBACK (on_history_switched),
                                                           priv);
 
-    g_paste_client_get_history_name (client, on_name_ready, priv);
+    g_paste_client_get_history_name (client, on_name_ready, self);
 
     return self;
 }
