@@ -898,19 +898,12 @@ g_paste_history_delete (GPasteHistory *self,
     g_return_if_fail (_G_PASTE_IS_HISTORY (self));
 
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
-
-    g_autoptr (GFile) history_file = g_paste_util_get_history_file ((name) ? name : priv->name, "xml");
+    const gchar *history_name = (name) ? name : priv->name;
 
     if (g_paste_str_equal (name, priv->name))
         g_paste_history_empty (self);
 
-    if (g_file_query_exists (history_file,
-                             NULL)) /* cancellable */
-    {
-        g_file_delete (history_file,
-                       NULL, /* cancellable */
-                       error);
-    }
+    g_paste_storage_backend_delete_history (priv->backend, history_name, error);
 }
 
 static void
@@ -1199,6 +1192,7 @@ g_paste_history_new (GPasteSettings *settings)
 
 /**
  * g_paste_history_list:
+ * @self: a #GPasteHistory instance
  * @error: a #GError
  *
  * Get the list of available histories
@@ -1207,50 +1201,13 @@ g_paste_history_new (GPasteSettings *settings)
  *                           free it with g_array_unref
  */
 G_PASTE_VISIBLE GStrv
-g_paste_history_list (GError **error)
+g_paste_history_list (GPasteHistory *self,
+                      GError       **error)
 {
+    g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (!error || !(*error), NULL);
 
-    g_autoptr (GArray) history_names = g_array_new (TRUE, /* zero-terminated */
-                                                    TRUE, /* clear */
-                                                    sizeof (gchar *));
-    g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
-    g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
-                                                                       G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                                                                       G_FILE_QUERY_INFO_NONE,
-                                                                       NULL, /* cancellable */
-                                                                       error);
-    if (error && *error)
-    {
-        if ((*error)->domain == G_FILE_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
-            return g_strdupv ((GStrv) (gpointer) history_names->data);
-        return NULL;
-    }
+    const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
 
-    GFileInfo *history;
-
-    while ((history = g_file_enumerator_next_file (histories,
-                                                   NULL, /* cancellable */
-                                                   error))) /* error */
-    {
-        g_autoptr (GFileInfo) h = history;
-
-        if (error && *error)
-        {
-            g_array_unref (history_names);
-            return NULL;
-        }
-
-        const gchar *raw_name = g_file_info_get_display_name (h);
-
-        if (g_str_has_suffix (raw_name, ".xml"))
-        {
-            gchar *name = g_strdup (raw_name);
-
-            name[strlen (name) - 4] = '\0';
-            g_array_append_val (history_names, name);
-        }
-    }
-
-    return g_strdupv ((GStrv) (gpointer) history_names->data);
+    return g_paste_storage_backend_list_histories (priv->backend, error);
 }

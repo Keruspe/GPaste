@@ -38,8 +38,13 @@ struct _GPasteStorageBackendClass
                                 const GList                *history);
 
     /*< protected >*/
-    const gchar          *(*get_extension) (const GPasteStorageBackend *self);
-    const GPasteSettings *(*get_settings)  (const GPasteStorageBackend *self);
+    const gchar          *(*get_extension)  (const GPasteStorageBackend *self);
+    const GPasteSettings *(*get_settings)   (const GPasteStorageBackend *self);
+    void                  (*delete_history) (const GPasteStorageBackend *self,
+                                             const gchar                *name,
+                                             GError                   **error);
+    GStrv                 (*list_histories) (const GPasteStorageBackend *self,
+                                             GError                   **error);
 };
 
 void g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
@@ -49,6 +54,11 @@ void g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
 void g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
                                             const gchar                *name,
                                             const GList                *history);
+void g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
+                                             const gchar                *name,
+                                             GError                   **error);
+GStrv g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
+                                              GError                   **error);
 
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);
