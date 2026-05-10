@@ -44,7 +44,7 @@ void g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
                                                   const gchar          *uuid);
 
 void g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
-                                             GdkPixbuf            *pixbuf);
+                                             GtkImage             *image);
 
 GtkLabel *g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self);
 

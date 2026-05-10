@@ -71,12 +71,8 @@ g_paste_ui_item_on_image_path_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    g_autoptr (GdkPixbuf) pixbuf = gdk_pixbuf_new_from_file (path, &error);
-
-    if (error)
-        g_warning ("Failed to load image thumbnail from %s: %s", path, error->message);
-
-    g_paste_ui_item_skeleton_set_thumbnail (G_PASTE_UI_ITEM_SKELETON (self), pixbuf);
+    g_autoptr (GtkWidget) image = gtk_image_new_from_file (path);
+    g_paste_ui_item_skeleton_set_thumbnail (G_PASTE_UI_ITEM_SKELETON (self), GTK_IMAGE (image));
 }
 
 static void

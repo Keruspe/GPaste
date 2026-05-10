@@ -71,12 +71,7 @@ g_paste_ui_item_skeleton_on_images_preview_size_changed (GPasteSettings *setting
     GPasteUiItemSkeleton *self = user_data;
     const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
 
-    if (!priv->thumbnail)
-        return;
-
-    GdkPixbuf *pixbuf = gtk_image_get_pixbuf (priv->thumbnail);
-
-    g_paste_ui_item_skeleton_set_thumbnail (self, pixbuf);
+    g_paste_ui_item_skeleton_set_thumbnail (self, priv->thumbnail);
 }
 
 static void
@@ -237,17 +232,26 @@ g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
 /**
  * g_paste_ui_item_skeleton_set_thumbnail:
  * @self: a #GPasteUiItemSkeleton
- * @pixbuf: (transfer none): the #GdkPixbuf to set as thumbnail or %NULL
+ * @image: (transfer none) (nullable): a #GtkImage to use as thumbnail, or %NULL to clear
  *
  * Set the thumbnail for this item if it's an image
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
-                                        GdkPixbuf            *pixbuf)
+                                        GtkImage             *image)
 {
     g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
 
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+    GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
+
+    if (!image)
+    {
+        gtk_image_clear (priv->thumbnail);
+        gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), FALSE);
+        return;
+    }
+
+    GdkPixbuf *pixbuf = gtk_image_get_pixbuf (image);
 
     if (!pixbuf)
     {
