@@ -67,13 +67,16 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
  * Returns: the newly allocated checksum
  */
 G_PASTE_VISIBLE gchar *
-g_paste_gtk_util_compute_checksum (GdkPixbuf *image)
+g_paste_gtk_util_compute_checksum (GdkTexture *image)
 {
-    if (!image || !GDK_IS_PIXBUF (image))
+    if (!image || !GDK_IS_TEXTURE (image))
         return NULL;
 
-    const guint8 *data = gdk_pixbuf_read_pixels (image);
-    gsize length = gdk_pixbuf_get_byte_length (image);
+    gsize stride = (gsize) gdk_texture_get_width (image) * 4;
+    gsize length = stride * gdk_texture_get_height (image);
+    g_autofree guchar *data = g_malloc (length);
+
+    gdk_texture_download (image, data, stride);
 
     return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
 }

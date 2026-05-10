@@ -18,9 +18,9 @@ struct _GPasteImageItem
 
 typedef struct _GPasteImageItemPrivate
 {
-    gchar     *checksum;
-    GDateTime *date;
-    GdkPixbuf *image;
+    gchar      *checksum;
+    GDateTime  *date;
+    GdkTexture *image;
 
     guint64    additional_size;
 } GPasteImageItemPrivate;
@@ -69,9 +69,9 @@ g_paste_image_item_get_date (const GPasteImageItem *self)
  *
  * Get the image contained in the #GPasteImageItem
  *
- * Returns: (transfer none): the GdkPixbuf of the image
+ * Returns: (transfer none): the GdkTexture of the image
  */
-G_PASTE_VISIBLE GdkPixbuf *
+G_PASTE_VISIBLE GdkTexture *
 g_paste_image_item_get_image (const GPasteImageItem *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
@@ -79,24 +79,6 @@ g_paste_image_item_get_image (const GPasteImageItem *self)
     const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
 
     return priv->image;
-}
-
-G_PASTE_VISIBLE gboolean
-g_paste_image_item_is_growing (const GPasteImageItem *self,
-                               const GPasteImageItem *other)
-{
-    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), FALSE);
-    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (other), FALSE);
-
-    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
-    const GPasteImageItemPrivate *_priv = _g_paste_image_item_get_instance_private (other);
-
-    if (!priv->image || !_priv->image)
-        return FALSE;
-
-    gsize len = MIN (gdk_pixbuf_get_byte_length (priv->image), gdk_pixbuf_get_byte_length (_priv->image));
-
-    return !memcmp (gdk_pixbuf_read_pixels (priv->image), gdk_pixbuf_read_pixels (_priv->image), len);
 }
 
 static gboolean
@@ -122,7 +104,7 @@ g_paste_image_item_set_size (GPasteItem *self)
     {
         if (!priv->additional_size)
         {
-            priv->additional_size += strlen (priv->checksum) + 1 + gdk_pixbuf_get_byte_length (image);
+            priv->additional_size += strlen (priv->checksum) + 1 + (gsize) gdk_texture_get_width (image) * gdk_texture_get_height (image) * 4;
             g_paste_item_add_size (self, priv->additional_size);
         }
     }
@@ -157,8 +139,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
     case G_PASTE_ITEM_STATE_ACTIVE:
         if (!priv->image)
         {
-            priv->image = gdk_pixbuf_new_from_file (g_paste_item_get_value (self),
-                                                    NULL); /* Error */
+            priv->image = gdk_texture_new_from_filename (g_paste_item_get_value (self),
+                                                         NULL); /* Error */
             priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
         }
         break;
@@ -216,7 +198,7 @@ g_paste_image_item_init (GPasteImageItem *self G_GNUC_UNUSED)
 static GPasteItem *
 _g_paste_image_item_new (const gchar *path,
                          GDateTime   *date,
-                         GdkPixbuf   *image,
+                         GdkTexture  *image,
                          gchar       *checksum)
 {
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_IMAGE_ITEM, path);
@@ -230,7 +212,7 @@ _g_paste_image_item_new (const gchar *path,
     else
         g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
 
-    if (!priv->image || !GDK_IS_PIXBUF (priv->image))
+    if (!priv->image || !GDK_IS_TEXTURE (priv->image))
     {
         g_object_unref (self);
         return NULL;
@@ -240,8 +222,8 @@ _g_paste_image_item_new (const gchar *path,
     g_autofree gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
     /* This gets displayed in history when selecting an image */
     g_autofree gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
-                                                                  gdk_pixbuf_get_width (priv->image),
-                                                                  gdk_pixbuf_get_height (priv->image),
+                                                                  gdk_texture_get_width (priv->image),
+                                                                  gdk_texture_get_height (priv->image),
                                                                   formatted_date);
     g_paste_item_set_display_string (self, display_string);
 
@@ -267,12 +249,7 @@ g_paste_image_item_new (GdkTexture *texture)
 {
     g_return_val_if_fail (GDK_IS_TEXTURE (texture), NULL);
 
-    GdkPixbuf *img = gdk_pixbuf_get_from_texture (texture);
-
-    if (!img)
-        return NULL;
-
-    gchar *checksum = g_paste_gtk_util_compute_checksum (img);
+    gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
     g_autofree gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
 
@@ -283,12 +260,11 @@ g_paste_image_item_new (GdkTexture *texture)
     g_autofree gchar *path = g_build_filename (images_dir_path, filename, NULL);
     GPasteItem *self = _g_paste_image_item_new (path,
                                                 g_date_time_new_now_local (),
-                                                img,
+                                                g_object_ref (texture),
                                                 checksum);
 
-    g_autoptr (GError) error = NULL;
-    if (!gdk_pixbuf_save (img, g_paste_item_get_value (self), "png", &error, NULL))
-        g_warning ("Failed to save image: %s", error->message);
+    if (!gdk_texture_save_to_png (texture, g_paste_item_get_value (self)))
+        g_warning ("Failed to save image to %s", g_paste_item_get_value (self));
 
     return self;
 }
@@ -313,6 +289,6 @@ g_paste_image_item_new_from_file (const gchar *path,
 
     return _g_paste_image_item_new (path,
                                     g_date_time_ref (date),
-                                    NULL, /* GdkPixbuf */
+                                    NULL, /* GdkTexture */
                                     NULL); /* Checksum */
 }

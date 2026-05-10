@@ -8,7 +8,6 @@
 
 #include <gpaste-item.h>
 
-#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
@@ -19,10 +18,7 @@ G_PASTE_FINAL_TYPE (ImageItem, image_item, IMAGE_ITEM, GPasteItem)
 
 const gchar     *g_paste_image_item_get_checksum (const GPasteImageItem *self);
 const GDateTime *g_paste_image_item_get_date     (const GPasteImageItem *self);
-GdkPixbuf       *g_paste_image_item_get_image    (const GPasteImageItem *self);
-
-gboolean         g_paste_image_item_is_growing   (const GPasteImageItem *self,
-                                                  const GPasteImageItem *other);
+GdkTexture      *g_paste_image_item_get_image    (const GPasteImageItem *self);
 
 GPasteItem      *g_paste_image_item_new           (GdkTexture  *texture);
 GPasteItem      *g_paste_image_item_new_from_file (const gchar *path,
