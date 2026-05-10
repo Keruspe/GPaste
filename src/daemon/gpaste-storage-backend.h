@@ -4,12 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#if !defined (__G_PASTE_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
-#error "Only <gpaste.h> can be included directly."
-#endif
-
-#ifndef __G_PASTE_STORAGE_BACKEND_H__
-#define __G_PASTE_STORAGE_BACKEND_H__
+#pragma once
 
 #include <gpaste/gpaste-settings.h>
 
@@ -64,5 +59,3 @@ GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);
 
 G_END_DECLS
-
-#endif /*__G_PASTE_STORAGE_BACKEND_H__*/
