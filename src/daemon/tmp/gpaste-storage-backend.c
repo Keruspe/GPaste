@@ -67,6 +67,48 @@ g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
     _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, history_file_path, history);
 }
 
+/**
+ * g_paste_storage_backend_delete_history:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of the history to delete
+ * @error: a #GError
+ *
+ * Delete a history from our storage backend
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
+                                         const gchar                *name,
+                                         GError                   **error)
+{
+    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (name);
+
+    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history)
+        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->delete_history (self, name, error);
+}
+
+/**
+ * g_paste_storage_backend_list_histories:
+ * @self: a #GPasteStorageBackend instance
+ * @error: a #GError
+ *
+ * Get the list of available histories from our storage backend
+ *
+ * Returns: (transfer full): The list of history names
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
+                                         GError                   **error)
+{
+    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), NULL);
+    g_return_val_if_fail (!error || !(*error), NULL);
+
+    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories)
+        return _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->list_histories (self, error);
+
+    return NULL;
+}
+
 static void
 g_paste_storage_backend_dispose (GObject *object)
 {
@@ -92,6 +134,8 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
     klass->write_history_file = NULL;
     klass->get_extension = NULL;
     klass->get_settings = g_paste_storage_backend_get_settings;
+    klass->delete_history = NULL;
+    klass->list_histories = NULL;
 
     G_OBJECT_CLASS (klass)->dispose = g_paste_storage_backend_dispose;
 }

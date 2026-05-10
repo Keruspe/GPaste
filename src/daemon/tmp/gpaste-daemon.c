@@ -587,9 +587,10 @@ g_paste_daemon_private_get_raw_history (const GPasteDaemonPrivate *priv)
 }
 
 static GVariant *
-g_paste_daemon_list_histories (GError **error)
+g_paste_daemon_list_histories (const GPasteDaemonPrivate *priv,
+                               GError                   **error)
 {
-    g_auto (GStrv) history_names = g_paste_history_list (error);
+    g_auto (GStrv) history_names = g_paste_history_list (priv->history, error);
 
     if (!history_names)
         return NULL;
@@ -927,7 +928,7 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
         answer = g_paste_daemon_private_get_raw_history (priv);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_LIST_HISTORIES))
-        answer = g_paste_daemon_list_histories (&error);
+        answer = g_paste_daemon_list_histories (priv, &error);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_MERGE))
         g_paste_daemon_private_merge (priv, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_ON_EXTENSION_STATE_CHANGED))

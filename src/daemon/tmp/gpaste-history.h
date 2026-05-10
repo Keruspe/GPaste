@@ -70,7 +70,8 @@ GStrv g_paste_history_search (GPasteHistory *self,
 
 GPasteHistory *g_paste_history_new (GPasteSettings *settings);
 
-GStrv g_paste_history_list (GError **error);
+GStrv g_paste_history_list (GPasteHistory *self,
+                             GError       **error);
 
 G_END_DECLS
 
