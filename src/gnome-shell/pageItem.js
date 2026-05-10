@@ -22,10 +22,10 @@ export const GPastePageItem = GObject.registerClass({
         });
 
         this._page = page;
+    }
 
-        this.connect('clicked', () => {
-            this.emit('switch', this._page);
-        });
+    vfunc_clicked(_clickedButton) {
+        this.emit('switch', this._page);
     }
 
     setActive(active) {

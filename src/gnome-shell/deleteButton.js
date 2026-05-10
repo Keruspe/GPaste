@@ -4,7 +4,6 @@
  * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject?version=2.0';
 import St from 'gi://St';
 
@@ -20,16 +19,13 @@ class GPasteDeleteButton extends St.Button {
 
         this._client = client;
         this.setUuid(uuid);
-
-        this.connect('clicked', this._onClick.bind(this));
     }
 
     setUuid(uuid) {
         this._uuid = uuid;
     }
 
-    _onClick() {
+    vfunc_clicked(_clickedButton) {
         this._client.delete(this._uuid, null);
-        return Clutter.EVENT_STOP;
     }
 });

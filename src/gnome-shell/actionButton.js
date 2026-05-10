@@ -23,6 +23,10 @@ class GPasteActionButton extends St.Button {
             child: new GPasteActionButtonActor(iconName, label)
         });
 
-        this.connect('clicked', action);
+        this._action = action;
+    }
+
+    vfunc_clicked(_clickedButton) {
+        this._action();
     }
 });

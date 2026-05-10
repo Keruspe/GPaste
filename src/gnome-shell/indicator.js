@@ -52,7 +52,6 @@ class GPasteIndicator extends Button {
         this._settingsSizeChangedId = this._settings.connect('changed::element-size', this._resetElementSize.bind(this));
         this._resetElementSize();
 
-        this.menu.connect('open-state-changed', this._onOpenStateChanged.bind(this));
         this.menu.connect('key-press-event', this._onMenuKeyPress.bind(this));
 
         this._pageSwitcher = new GPastePageSwitcher();

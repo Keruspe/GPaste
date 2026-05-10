@@ -32,9 +32,6 @@ class GPasteItem extends PopupMenuItem {
             this._indexLabelVisible = false;
         }
 
-        this.connect('activate', this._onActivate.bind(this));
-        this.connect('key-press-event', this._onKeyPressed.bind(this));
-
         this._deleteItem = new GPasteDeleteItemPart(client, this._uuid);
         this.add_child(this._deleteItem);
 
@@ -115,11 +112,12 @@ class GPasteItem extends PopupMenuItem {
         this.label.clutter_text.max_length = size;
     }
 
-    _onActivate(actor, event) {
+    activate(event) {
         this._client.select(this._uuid, null);
+        super.activate(event);
     }
 
-    _onKeyPressed(actor, event) {
+    vfunc_key_press_event(event) {
         const symbol = event.get_key_symbol();
         if (symbol == Clutter.KEY_space || symbol == Clutter.KEY_Return) {
             this.activate(event);
