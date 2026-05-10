@@ -139,8 +139,10 @@ g_paste_image_item_set_state (GPasteItem     *self,
     case G_PASTE_ITEM_STATE_ACTIVE:
         if (!priv->image)
         {
-            priv->image = gdk_texture_new_from_filename (g_paste_item_get_value (self),
-                                                         NULL); /* Error */
+            g_autoptr (GError) error = NULL;
+            priv->image = gdk_texture_new_from_filename (g_paste_item_get_value (self), &error);
+            if (error)
+                g_warning ("Failed to load image from %s: %s", g_paste_item_get_value (self), error->message);
             priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
         }
         break;

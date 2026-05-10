@@ -284,7 +284,10 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
         }
         else
         {
-            g_autoptr (GdkPixbuf) img = gdk_pixbuf_new_from_file (file, NULL /* Error */);
+            g_autoptr (GError) img_error = NULL;
+            g_autoptr (GdkPixbuf) img = gdk_pixbuf_new_from_file (file, &img_error);
+            if (img_error)
+                g_warning ("Failed to load image from %s: %s", file, img_error->message);
 
             g_paste_daemon_private_do_add_item (priv, g_paste_image_item_new (img));
         }
