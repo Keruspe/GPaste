@@ -16,7 +16,7 @@ import { GPasteDeleteItemPart } from './deleteItemPart.js';
 
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
-    _init(client, size, index) {
+    _init(client, size, slotIndex, index) {
         super._init("");
         this.label.set_x_expand(true);
 
@@ -25,9 +25,9 @@ class GPasteItem extends PopupMenuItem {
         this._fakeIndex = false;
         this._uuid = null;
 
-        if (index <= 10) {
+        if (slotIndex <= 9) {
             this._indexLabel = new St.Label({
-                text: index + ': '
+                text: slotIndex + ': '
             });
             this._indexLabelVisible = false;
         }

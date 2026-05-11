@@ -202,7 +202,7 @@ class GPasteIndicator extends Button {
 
                     for (let index = oldSize; index < newSize; ++index) {
                         let realIndex = index + offset;
-                        let item = new GPasteItem(this._client, elementSize, (realIndex < realSize) ? realIndex : -1);
+                        let item = new GPasteItem(this._client, elementSize, index, (realIndex < realSize) ? realIndex : -1);
                         this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
                         this._history[index] = item;
                     }
