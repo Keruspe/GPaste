@@ -102,7 +102,7 @@ g_paste_item_get_special_values (const GPasteItem *self)
  *
  * Returns: read-only special value
  */
-G_PASTE_VISIBLE const gchar *
+G_PASTE_VISIBLE const GPasteBinaryData *
 g_paste_item_get_special_value  (const GPasteItem *self,
                                  GPasteSpecialAtom atom)
 {
@@ -112,9 +112,9 @@ g_paste_item_get_special_value  (const GPasteItem *self,
 
     for (GSList *sv = priv->special_values; sv; sv = sv->next)
     {
-        GPasteSpecialValue *v = sv->data;
-        if (v->mime == atom)
-            return v->data;
+        GPasteBinaryData *v = sv->data;
+        if (g_paste_binary_data_get_mime (v) == atom)
+            return v;
     }
 
     return NULL;
@@ -289,24 +289,21 @@ g_paste_item_set_display_string (GPasteItem  *self,
 /**
  * g_paste_item_add_special_value:
  * @self: a #GPasteItem instance
- * @special_value: the special value
+ * @binary_data: (transfer full): the binary data to add
  *
- * Add the special values (special mime types) for an item
+ * Add the special value (special mime type) for an item, taking full ownership
+ * of the #GPasteBinaryData reference.
  */
 G_PASTE_VISIBLE void
-g_paste_item_add_special_value (GPasteItem               *self,
-                                const GPasteSpecialValue *special_value)
+g_paste_item_add_special_value (GPasteItem       *self,
+                                GPasteBinaryData *binary_data)
 {
     g_return_if_fail (_G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
-    GPasteSpecialValue *gsv = g_new (GPasteSpecialValue, 1);
 
-    gsv->mime = special_value->mime;
-    gsv->data = g_strdup (special_value->data);
-
-    priv->special_values = g_slist_prepend (priv->special_values, gsv);
-    priv->size += strlen (gsv->data);
+    priv->size += g_paste_binary_data_get_length (binary_data);
+    priv->special_values = g_slist_prepend (priv->special_values, binary_data);
 }
 
 /**
@@ -360,14 +357,7 @@ g_paste_item_finalize (GObject *object)
         g_free (priv->value);
     g_free (priv->display_string);
 
-    for (GSList *sv = priv->special_values; sv; sv = sv->next)
-    {
-        GPasteSpecialValue *gsv = sv->data;
-        g_free (gsv->data);
-        g_free (gsv);
-    }
-
-    g_slist_free (priv->special_values);
+    g_slist_free_full (priv->special_values, g_object_unref);
 
     G_OBJECT_CLASS (g_paste_item_parent_class)->finalize (object);
 }

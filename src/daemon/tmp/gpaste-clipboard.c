@@ -277,15 +277,16 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
     {
         g_autofree guchar *data = NULL;
         gsize length = 0;
-        const gchar *str = g_paste_item_get_special_value (item, atom);
+        const GPasteBinaryData *binary = g_paste_item_get_special_value (item, atom);
 
-        if (str)
+        if (binary)
         {
-            data = g_base64_decode (str, &length);
+            length = g_paste_binary_data_get_length (binary);
+            data = g_memdup2 (g_paste_binary_data_get_data (binary), length);
         }
         else
         {
-            str = g_paste_item_get_value (item);
+            const gchar *str = g_paste_item_get_value (item);
             length = strlen (str);
             data = copy_str_as_uchars (str, length);
         }
@@ -541,8 +542,7 @@ typedef struct {
     GdkPixbuf                    *image;
     gboolean                      uris_available;
     gboolean                      fallback;
-    guchar                       *special_atom_data[G_PASTE_SPECIAL_ATOM_LAST];
-    gsize                         special_atom_size[G_PASTE_SPECIAL_ATOM_LAST];
+    GPasteBinaryData             *special_atom[G_PASTE_SPECIAL_ATOM_LAST];
 } GPasteClipboardUpdateData;
 
 static void
@@ -562,14 +562,8 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
 
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
-            if (data->special_atom_data[atom])
-            {
-                g_autofree gchar *val = g_base64_encode (data->special_atom_data[atom], data->special_atom_size[atom]);
-                g_autofree GPasteSpecialValue *v = g_new (GPasteSpecialValue, 1);
-                v->mime = atom;
-                v->data = val;
-                g_paste_item_add_special_value (item, v);
-            }
+            if (data->special_atom[atom])
+                g_paste_item_add_special_value (item, g_steal_pointer (&data->special_atom[atom]));
         }
     }
     else if (data->image)
@@ -581,7 +575,7 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
         data->callback (data->self, item, data->fallback, data->user_data);
 
     for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
-        g_free (data->special_atom_data[atom]);
+        g_clear_object (&data->special_atom[atom]);
     g_free (data);
 }
 
@@ -615,10 +609,7 @@ g_paste_clipboard_update_on_special_atom_ready (GPasteClipboard  *self G_GNUC_UN
     GPasteClipboardUpdateData *data = user_data;
 
     if (raw && length > 0)
-    {
-        data->special_atom_data[atom] = g_memdup2 (raw, length);
-        data->special_atom_size[atom] = length;
-    }
+        data->special_atom[atom] = g_paste_binary_data_new (atom, raw, length);
 
     g_paste_clipboard_update_maybe_done (data);
 }
@@ -754,8 +745,8 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
 
     for (const GSList *sv = g_paste_item_get_special_values (item); sv; sv = sv->next)
     {
-        const GPasteSpecialValue *v = sv->data;
-        gtk_target_list_add (target_list, g_paste_special_atom_get (v->mime), 0, 0);
+        const GPasteBinaryData *v = sv->data;
+        gtk_target_list_add (target_list, g_paste_special_atom_get (g_paste_binary_data_get_mime (v)), 0, 0);
     }
 
     gint32 n_targets;

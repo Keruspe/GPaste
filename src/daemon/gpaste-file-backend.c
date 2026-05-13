@@ -31,9 +31,10 @@ _g_paste_file_backend_write_special_values (GOutputStream *stream,
 {
     for (const GSList *val = special_values; val; val = val->next)
     {
-        const GPasteSpecialValue *value = val->data;
-        const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), value->mime)->value_nick;
-        g_autofree gchar *text = g_paste_util_xml_encode (value->data);
+        const GPasteBinaryData *value = val->data;
+        const gchar *mime = g_enum_get_value (g_type_class_peek (G_PASTE_TYPE_SPECIAL_ATOM), g_paste_binary_data_get_mime (value))->value_nick;
+        g_autofree gchar *b64 = g_paste_binary_data_to_base64 (value);
+        g_autofree gchar *text = g_paste_util_xml_encode (b64);
 
         if (!g_output_stream_write_all (stream, "    <value mime=\"", 17, NULL, NULL /* cancellable */, error) ||
             !g_output_stream_write_all (stream, mime, strlen (mime), NULL, NULL /* cancellable */, error) ||
@@ -358,19 +359,18 @@ add_item (Data *data)
 
     for (GSList *d = data->special_values; d; d = d->next)
     {
-        GPasteSpecialValue *v = d->data;
+        GPasteBinaryData *v = d->data;
 
         if (item)
             g_paste_item_add_special_value (item, v);
-
-        g_free (v->data);
-        g_free (v);
+        else
+            g_object_unref (v);
     }
 
     if (item)
         data->mem_size += g_paste_item_get_size (item);
 
-    g_clear_pointer(&data->special_values, g_slist_free);
+    g_clear_pointer (&data->special_values, g_slist_free);
 }
 
 static void
@@ -467,9 +467,10 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                 }
                 else
                 {
-                    GPasteSpecialValue *sv = g_new (GPasteSpecialValue, 1);
-                    sv->mime = data->mime;
-                    sv->data = value;
+                    gsize raw_length;
+                    g_autofree guchar *raw = (guchar *) g_base64_decode (value, &raw_length);
+                    g_free (value);
+                    GPasteBinaryData *sv = g_paste_binary_data_new (data->mime, raw, raw_length);
                     data->special_values = g_slist_prepend (data->special_values, sv);
                 }
             }

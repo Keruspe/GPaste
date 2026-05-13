@@ -1,4 +1,5 @@
 gpaste_daemon_sources = [
+  'gpaste-binary-data.c',
   'gpaste-bus-object.c',
   'gpaste-bus.c',
   'gpaste-daemon.c',
@@ -27,6 +28,7 @@ gpaste_daemon_sources = [
 ]
 
 gpaste_daemon_headers = [
+  'gpaste-binary-data.h',
   'gpaste-bus-object.h',
   'gpaste-bus.h',
   'gpaste-daemon.h',
