@@ -5,6 +5,8 @@
 
 #include <gpaste/gpaste-settings.h>
 
+#include <gpaste-item.h>
+
 G_BEGIN_DECLS
 
 typedef enum {
@@ -37,6 +39,21 @@ struct _GPasteStorageBackendClass
                                              GError                   **error);
     GStrv                 (*list_histories) (const GPasteStorageBackend *self,
                                              GError                   **error);
+
+    /*< protected, optional: incremental updates >*/
+    void     (*add_item)             (const GPasteStorageBackend *self,
+                                      const gchar                *name,
+                                      const GPasteItem           *item,
+                                      const GList                *history);
+    void     (*remove_item)          (const GPasteStorageBackend *self,
+                                      const gchar                *name,
+                                      const gchar                *uuid);
+    void     (*replace_item)         (const GPasteStorageBackend *self,
+                                      const gchar                *name,
+                                      const gchar                *old_uuid,
+                                      const GPasteItem           *item);
+    void     (*clear_history)        (const GPasteStorageBackend *self,
+                                      const gchar                *name);
 };
 
 void g_paste_storage_backend_read_history  (const GPasteStorageBackend *self,
@@ -51,6 +68,23 @@ void g_paste_storage_backend_delete_history (const GPasteStorageBackend *self,
                                              GError                   **error);
 GStrv g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
                                               GError                   **error);
+
+void     g_paste_storage_backend_add_item             (const GPasteStorageBackend *self,
+                                                       const gchar                *name,
+                                                       const GPasteItem           *item,
+                                                       const GList                *history);
+void     g_paste_storage_backend_remove_item          (const GPasteStorageBackend *self,
+                                                       const gchar                *name,
+                                                       const gchar                *uuid,
+                                                       const GList                *history);
+void     g_paste_storage_backend_replace_item         (const GPasteStorageBackend *self,
+                                                       const gchar                *name,
+                                                       const gchar                *old_uuid,
+                                                       const GPasteItem           *item,
+                                                       const GList                *history);
+void     g_paste_storage_backend_clear_history        (const GPasteStorageBackend *self,
+                                                       const gchar                *name,
+                                                       const GList                *history);
 
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);

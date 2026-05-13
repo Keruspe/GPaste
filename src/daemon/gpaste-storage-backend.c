@@ -106,6 +106,103 @@ g_paste_storage_backend_list_histories (const GPasteStorageBackend *self,
     return NULL;
 }
 
+/**
+ * g_paste_storage_backend_add_item:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of the history to update
+ * @item: the #GPasteItem just added at the front of the history
+ * @history: (element-type GPasteItem): the full history (used as a fallback snapshot)
+ *
+ * Persist a newly added item, possibly without rewriting the whole history
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_add_item (const GPasteStorageBackend *self,
+                                  const gchar                *name,
+                                  const GPasteItem           *item,
+                                  const GList                *history)
+{
+    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (name);
+
+    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item)
+        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->add_item (self, name, item, history);
+    else
+        g_paste_storage_backend_write_history (self, name, history);
+}
+
+/**
+ * g_paste_storage_backend_remove_item:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of the history to update
+ * @uuid: the uuid of the removed item
+ * @history: (element-type GPasteItem): the full history (used as a fallback snapshot)
+ *
+ * Persist the removal of an item, possibly without rewriting the whole history
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_remove_item (const GPasteStorageBackend *self,
+                                     const gchar                *name,
+                                     const gchar                *uuid,
+                                     const GList                *history)
+{
+    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (name);
+
+    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item)
+        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->remove_item (self, name, uuid);
+    else
+        g_paste_storage_backend_write_history (self, name, history);
+}
+
+/**
+ * g_paste_storage_backend_replace_item:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of the history to update
+ * @old_uuid: the uuid of the item being replaced
+ * @item: the #GPasteItem taking its place
+ * @history: (element-type GPasteItem): the full history (used as a fallback snapshot)
+ *
+ * Persist an item replacement, possibly without rewriting the whole history
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_replace_item (const GPasteStorageBackend *self,
+                                      const gchar                *name,
+                                      const gchar                *old_uuid,
+                                      const GPasteItem           *item,
+                                      const GList                *history)
+{
+    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (name);
+    g_return_if_fail (old_uuid);
+
+    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item)
+        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->replace_item (self, name, old_uuid, item);
+    else
+        g_paste_storage_backend_write_history (self, name, history);
+}
+
+/**
+ * g_paste_storage_backend_clear_history:
+ * @self: a #GPasteStorageBackend instance
+ * @name: the name of the history to clear
+ * @history: (element-type GPasteItem): the (now empty) full history
+ *
+ * Persist the emptying of a history, possibly without rewriting the whole file
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_clear_history (const GPasteStorageBackend *self,
+                                       const gchar                *name,
+                                       const GList                *history)
+{
+    g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (name);
+
+    if (_G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history)
+        _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->clear_history (self, name);
+    else
+        g_paste_storage_backend_write_history (self, name, history);
+}
+
 static void
 g_paste_storage_backend_dispose (GObject *object)
 {
@@ -133,6 +230,11 @@ g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
     klass->get_settings = g_paste_storage_backend_get_settings;
     klass->delete_history = NULL;
     klass->list_histories = NULL;
+
+    klass->add_item = NULL;
+    klass->remove_item = NULL;
+    klass->replace_item = NULL;
+    klass->clear_history = NULL;
 
     G_OBJECT_CLASS (klass)->dispose = g_paste_storage_backend_dispose;
 }
