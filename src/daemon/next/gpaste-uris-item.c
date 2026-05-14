@@ -99,6 +99,38 @@ _g_paste_uris_item_new (const gchar *uris_joined,
 }
 
 /**
+ * g_paste_uris_item_new_from_str:
+ * @str: a string containing newline-separated file URIs
+ *
+ * Create a new instance of #GPasteUrisItem from its string representation
+ *
+ * Returns: a newly allocated #GPasteUrisItem
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteItem *
+g_paste_uris_item_new_from_str (const gchar *str)
+{
+    g_return_val_if_fail (str != NULL, NULL);
+    g_return_val_if_fail (g_utf8_validate (str, -1, NULL), NULL);
+
+    g_auto (GStrv) uris = g_strsplit (str, "\n", 0);
+    guint64 length = g_strv_length (uris);
+
+    if (!length)
+        return NULL;
+
+    GSList *files = NULL;
+    for (guint64 i = 0; i < length; ++i)
+        files = g_slist_prepend (files, g_file_new_for_uri (uris[i]));
+    files = g_slist_reverse (files);
+
+    GdkFileList *file_list = gdk_file_list_new_from_list (files);
+    g_slist_free_full (files, g_object_unref);
+
+    return _g_paste_uris_item_new (str, file_list);
+}
+
+/**
  * g_paste_uris_item_new:
  * @file_list: (transfer none): a #GdkFileList from the clipboard
  *
