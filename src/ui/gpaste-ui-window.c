@@ -401,6 +401,7 @@ g_paste_ui_window_new (GtkApplication *app)
                                       "application", app,
                                       "type",        GTK_WINDOW_TOPLEVEL,
                                       "resizable",   TRUE,
+                                      "title",       PACKAGE_STRING,
                                       "icon-name",   G_PASTE_ICON_NAME,
                                       NULL);
 

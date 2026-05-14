@@ -75,7 +75,6 @@ g_paste_ui_header_init (GPasteUiHeader *self)
     priv->settings = GTK_BUTTON (settings);
     priv->search = GTK_BUTTON (search);
 
-    gtk_header_bar_set_title(header_bar, PACKAGE_STRING);
     gtk_header_bar_set_show_close_button (header_bar, TRUE);
     gtk_header_bar_pack_end (header_bar, settings);
     gtk_header_bar_pack_end (header_bar, search);

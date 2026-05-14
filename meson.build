@@ -10,11 +10,11 @@ i18n = import('i18n')
 
 apiversion = '2'
 
-adwaita_req_version = '1.5'
+adwaita_req_version = '1.6'
 gcr_req_version = '3.90.0'
 gdk_pixbuf_req_version = '2.38.0'
 gjs_req_version = '1.78.0'
-glib_req_version = '2.70.0'
+glib_req_version = '2.74.0'
 gtk3_req_version = '3.24.0'
 gtk4_req_version = '4.6.0'
 
