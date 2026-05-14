@@ -17,7 +17,7 @@ import Gio from 'gi://Gio?version=2.0';
 export default function checkerBypass() {
     if (!Main.shellDBusService) {
         // we got loaded too early, the dbus service isn't ready so we cannot hook ourselves in, try back later
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, checkerBypass);
+        GLib.Source.set_name_by_id(GLib.idle_add_once(checkerBypass), '[GPaste] checkerBypass');
         return;
     }
     let checker = Main.shellDBusService._senderChecker;

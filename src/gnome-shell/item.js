@@ -59,7 +59,7 @@ class GPasteItem extends PopupMenuItem {
         this.setIndex(this._index);
     }
 
-    setIndex(index) {
+    async setIndex(index) {
         const oldIndex = this._index;
         this._index = index;
         this._fakeIndex = false;
@@ -67,15 +67,13 @@ class GPasteItem extends PopupMenuItem {
         if (index == -1) {
             this._setValue(null, oldIndex);
         } else {
-            this._client.get_element_at_index(index, (client, result) => {
-                const item = client.get_element_at_index_finish(result);
-                this._uuid = item.get_uuid();
-                this._setValue(item.get_value(), oldIndex);
-            });
+            const item = await this._client.get_element_at_index(index, null);
+            this._uuid = item.get_uuid();
+            this._setValue(item.get_value(), oldIndex);
         }
     }
 
-    setUuid(uuid) {
+    async setUuid(uuid) {
         const oldIndex = this._index;
         this._index = -2;
         this._fakeIndex = true;
@@ -84,10 +82,8 @@ class GPasteItem extends PopupMenuItem {
         if (uuid == null) {
             this._setValue(null, oldIndex);
         } else {
-            this._client.get_element(uuid, (client, result) => {
-                const value = client.get_element_finish(result);
-                this._setValue(value, oldIndex);
-            });
+            const value = await this._client.get_element(uuid, null);
+            this._setValue(value, oldIndex);
         }
     }
 

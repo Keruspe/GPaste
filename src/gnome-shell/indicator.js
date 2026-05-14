@@ -63,30 +63,32 @@ class GPasteIndicator extends Button {
         this._addToPostHeader(this._dummyHistoryItem);
         this._addToPreFooter(new PopupSeparatorMenuItem());
 
-        GPaste.Client.new((obj, result) => {
-            this._client = GPaste.Client.new_finish(result);
-            this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
-            this._switch = new GPasteStateSwitch(this._client);
+        this._setup().catch(console.error);
+    }
 
-            this._addToHeader(this._switch);
-            this._addToHeader(this._searchItem);
-            this._addToHeader(this._pageSwitcher);
-            this._addToFooter(new GPasteActions(this._client, this.menu, this._emptyHistoryItem));
+    async _setup() {
+        this._client = await GPaste.Client.new(null);
+        this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
+        this._switch = new GPasteStateSwitch(this._client);
 
-            this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', this._resetMaxDisplayedSize.bind(this));
-            this._resetMaxDisplayedSize();
+        this._addToHeader(this._switch);
+        this._addToHeader(this._searchItem);
+        this._addToHeader(this._pageSwitcher);
+        this._addToFooter(new GPasteActions(this._client, this.menu, this._emptyHistoryItem));
 
-            this._clientUpdateId = this._client.connect('update', this._update.bind(this));
-            this._clientShowId = this._client.connect('show-history', this._popup.bind(this));
-            this._clientTrackingId = this._client.connect('tracking', this._toggle.bind(this));
+        this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', () => this._resetMaxDisplayedSize().catch(console.error));
+        await this._resetMaxDisplayedSize();
 
-            this._onStateChanged (true);
+        this._clientUpdateId = this._client.connect('update', this._update.bind(this));
+        this._clientShowId = this._client.connect('show-history', this._popup.bind(this));
+        this._clientTrackingId = this._client.connect('tracking', this._toggle.bind(this));
 
-            this.menu.actor.connect('key-press-event', this._onKeyPressEvent.bind(this));
-            this.menu.actor.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
+        this._onStateChanged(true);
 
-            this.connect('destroy', this._onDestroy.bind(this));
-        });
+        this.menu.connect('key-press-event', this._onKeyPressEvent.bind(this));
+        this.menu.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
+
+        this.connect('destroy', this._onDestroy.bind(this));
     }
 
     shutdown() {
@@ -131,44 +133,41 @@ class GPasteIndicator extends Button {
         return this._searchItem.text.length > 0;
     }
 
-    _onSearch(page) {
+    async _onSearch(page) {
         if (this._hasSearch()) {
             const search = this._searchItem.text.toLowerCase();
+            this._searchResults = await this._client.search(search, null);
+            let results = this._searchResults.length;
+            const maxSize = this._history.length;
 
-            this._client.search(search, (client, result) => {
-                this._searchResults = client.search_finish(result);
-                let results = this._searchResults.length;
-                const maxSize = this._history.length;
+            if (!this._pageSwitcher.updateForSize(results)) {
+                return;
+            }
 
-                if (!this._pageSwitcher.updateForSize(results)) {
-                    return;
-                }
+            this._pageSwitcher.setActive(page);
+            const offset = this._pageSwitcher.getPageOffset();
 
-                this._pageSwitcher.setActive(page);
-                const offset = this._pageSwitcher.getPageOffset();
+            if (results > (maxSize + offset)) {
+                results = (maxSize + offset);
+            }
 
-                if (results > (maxSize + offset)) {
-                    results = (maxSize + offset);
-                }
+            this._history.slice(0, results - offset).forEach((i, index) => {
+                i.setUuid(this._searchResults[offset + index]);
+            });
 
-                this._history.slice(0, results - offset).forEach((i, index) => {
-                    i.setUuid(this._searchResults[offset + index]);
-                });
+            this._updateVisibility(results == 0);
 
-                this._updateVisibility(results == 0);
-
-                this._history.slice(results - offset, maxSize).forEach(function(i) {
-                    i.setIndex(-1);
-                });
+            this._history.slice(results - offset, maxSize).forEach(function(i) {
+                i.setIndex(-1);
             });
         } else {
             this._searchResults = [];
-            this._refresh(0);
+            await this._refresh(0);
         }
     }
 
     _onNewSearch() {
-        this._onSearch(1);
+        this._onSearch(1).catch(console.error);
     }
 
     _resetElementSize() {
@@ -181,50 +180,44 @@ class GPasteIndicator extends Button {
 
     _updatePage(page) {
         this._pageSwitcher.setActive(page);
-        this._refresh(0);
+        this._refresh(0).catch(console.error);
     }
 
-    _resetMaxDisplayedSize() {
+    async _resetMaxDisplayedSize() {
         const oldSize = this._history.length;
         const newSize = this._settings.get_max_displayed_history_size();
         const elementSize = this._settings.get_element_size();
 
         this._pageSwitcher.setMaxDisplayedSize(newSize);
 
-        this._client.get_history_name((client, result) => {
-            const name = client.get_history_name_finish(result);
+        const name = await this._client.get_history_name(null);
+        const realSize = await this._client.get_history_size(name, null);
+        const offset = this._pageSwitcher.getPageOffset();
 
-            this._client.get_history_size(name, (client, result) => {
-                const offset = this._pageSwitcher.getPageOffset();
+        if (newSize > oldSize) {
+            for (let index = oldSize; index < newSize; ++index) {
+                let realIndex = index + offset;
+                let item = new GPasteItem(this._client, elementSize, index, (realIndex < realSize) ? realIndex : -1);
+                this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
+                this._history[index] = item;
+            }
+        } else {
+            for (let i = newSize; i < oldSize; ++i) {
+                this._history.pop().destroy();
+            }
+        }
 
-                if (newSize > oldSize) {
-                    const realSize = client.get_history_size_finish(result);
-
-                    for (let index = oldSize; index < newSize; ++index) {
-                        let realIndex = index + offset;
-                        let item = new GPasteItem(this._client, elementSize, index, (realIndex < realSize) ? realIndex : -1);
-                        this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
-                        this._history[index] = item;
-                    }
-                } else {
-                    for (let i = newSize; i < oldSize; ++i) {
-                        this._history.pop().destroy();
-                    }
-                }
-
-                if (offset === 0 || oldSize === 0) {
-                    this._updatePage(1);
-                } else {
-                    this._updatePage((offset / oldSize) + 1);
-                }
-            });
-        });
+        if (offset === 0 || oldSize === 0) {
+            this._updatePage(1);
+        } else {
+            this._updatePage((offset / oldSize) + 1);
+        }
     }
 
     _update(client, action, target, position) {
         switch (target) {
         case GPaste.UpdateTarget.ALL:
-            this._refresh(0);
+            this._refresh(0).catch(console.error);
             break;
         case GPaste.UpdateTarget.POSITION:
             const offset = this._pageSwitcher.getPageOffset();
@@ -234,46 +227,41 @@ class GPasteIndicator extends Button {
                 this._history[displayPos].refresh();
                 break;
             case GPaste.UpdateAction.REMOVE:
-                this._refresh(displayPos);
+                this._refresh(displayPos).catch(console.error);
                 break;
             }
             break;
         }
     }
 
-    _refresh(resetTextFrom) {
+    async _refresh(resetTextFrom) {
         if (this._searchResults.length > 0) {
-            this._onSearch(this._pageSwitcher.getPage());
+            await this._onSearch(this._pageSwitcher.getPage());
         } else if (this._hasSearch()) {
             this._history.forEach(function(i, index) {
                 i.setIndex(-1);
             });
             this._updateVisibility(true);
         } else {
-            this._client.get_history_name((client, result) => {
-                const name = client.get_history_name_finish(result);
+            const name = await this._client.get_history_name(null);
+            const realSize = await this._client.get_history_size(name, null);
 
-                this._client.get_history_size(name, (client, result) => {
-                    const realSize = client.get_history_size_finish(result);
+            if (!this._pageSwitcher.updateForSize(realSize)) {
+                return;
+            }
 
-                    if (!this._pageSwitcher.updateForSize(realSize)) {
-                        return;
-                    }
+            const maxSize = this._history.length;
+            const offset = this._pageSwitcher.getPageOffset();
+            const size = Math.min(realSize - offset, maxSize);
 
-                    const maxSize = this._history.length;
-                    const offset = this._pageSwitcher.getPageOffset();
-                    const size = Math.min(realSize - offset, maxSize);
-
-                    this._history.slice(resetTextFrom, size).forEach(function(i, index) {
-                        i.setIndex(offset + resetTextFrom + index);
-                    });
-                    this._history.slice(size, maxSize).forEach(function(i, index) {
-                        i.setIndex(-1);
-                    });
-
-                    this._updateVisibility(size == 0);
-                });
+            this._history.slice(resetTextFrom, size).forEach(function(i, index) {
+                i.setIndex(offset + resetTextFrom + index);
             });
+            this._history.slice(size, maxSize).forEach(function(i, index) {
+                i.setIndex(-1);
+            });
+
+            this._updateVisibility(size == 0);
         }
     }
 
@@ -333,8 +321,7 @@ class GPasteIndicator extends Button {
         if (state) {
             this._searchItem.reset();
             this._updatePage(1);
-            let id = GLib.idle_add(GLib.PRIORITY_DEFAULT, this._selectSearch.bind(this));
-            GLib.Source.set_name_by_id(id, '[GPaste] select search');
+            GLib.Source.set_name_by_id(GLib.idle_add_once(this._selectSearch.bind(this)), '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);
         }
