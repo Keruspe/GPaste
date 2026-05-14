@@ -30,9 +30,11 @@ g_paste_show_history_keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUS
                                               gpointer          data)
 {
     GPasteDaemon *gpaste_daemon = data;
+    g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_show_history (gpaste_daemon,
-                                 NULL); /* error */
+    g_paste_daemon_show_history (gpaste_daemon, &error);
+    if (error)
+        g_warning ("Failed to show history: %s", error->message);
 }
 
 /**
