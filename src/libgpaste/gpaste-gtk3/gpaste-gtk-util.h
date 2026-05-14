@@ -12,7 +12,6 @@
 
 #include <gpaste.h>
 
-#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
@@ -20,8 +19,6 @@ G_BEGIN_DECLS
 gboolean g_paste_gtk_util_confirm_dialog   (GtkWindow   *parent,
                                             const gchar *action,
                                             const gchar *msg);
-
-gchar   *g_paste_gtk_util_compute_checksum (GdkPixbuf   *image);
 
 void     g_paste_gtk_util_empty_history    (GtkWindow      *parent_window,
                                             GPasteClient   *client,

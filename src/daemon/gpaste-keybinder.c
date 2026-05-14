@@ -1,20 +1,20 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
 #include <gpaste-keybinder.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
-#  include <gdk/gdkwayland.h>
+#  include <gdk/wayland/gdkwayland.h>
 #endif
 #if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
-#  include <gdk/gdkx.h>
+#  include <gdk/x11/gdkx.h>
 #  include <X11/extensions/XInput2.h>
 #endif
 
-#define MAX_BINDINGS 7
+#define MAX_BINDINGS 8
 
 struct _GPasteKeybinder
 {
@@ -24,6 +24,7 @@ struct _GPasteKeybinder
 enum
 {
     C_ACCEL,
+    C_XEVENT,
 
     C_LAST_SIGNAL
 };
@@ -53,11 +54,12 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Keybinder, keybinder, G_TYPE_OBJECT)
 static void
 g_paste_keybinder_change_grab_wayland (void)
 {
-    g_warning ("Wayland hotkeys are currently not supported outside of gnome-shell.");
+    g_warning_once ("Wayland hotkeys are currently not supported outside of gnome-shell.");
 }
 #endif
 
 #if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
 static void
 g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
                                    GdkDisplay       *display,
@@ -66,19 +68,17 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
     if (!g_paste_keybinding_is_active (binding))
         return;
 
-    guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
-    XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
     Display *xdisplay = GDK_DISPLAY_XDISPLAY (display);
+    Window window = gdk_x11_display_get_xrootwindow (display);
 
-    XISetMask (mask.mask, XI_KeyPress);
-
-    gdk_x11_display_error_trap_push (display);
-
-    guint64 mod_masks = Mod2Mask /* NumLock */ | LockMask /* CapsLock */;
-    Window window = gdk_x11_get_default_root_xwindow ();
     GdkModifierType modifiers = g_paste_keybinding_get_modifiers (binding);
     const guint32 *keycodes = g_paste_keybinding_get_keycodes (binding);
+
+    guint64 mod_masks = Mod2Mask /* NumLock */ | LockMask /* CapsLock */;
     g_autoptr (GArray) mods = g_array_new (FALSE, TRUE, sizeof (XIGrabModifiers));
+
+    guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
+    XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
 
     if (modifiers & XIAnyModifier)
     {
@@ -93,6 +93,10 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
                 g_array_append_val (mods, ((XIGrabModifiers) { modifiers | i, 0 }));
         }
     }
+
+    XISetMask (mask.mask, XI_KeyPress);
+
+    gdk_x11_display_error_trap_push (display);
 
     for (const guint32 *keycode = keycodes; *keycode; ++keycode)
     {
@@ -123,6 +127,7 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
     gdk_display_flush (display);
     gdk_x11_display_error_trap_pop_ignored (display);
 }
+G_GNUC_END_IGNORE_DEPRECATIONS
 #endif
 
 static void
@@ -288,8 +293,7 @@ _keybinding_cleanup_shell_stuff (gpointer data,
 }
 
 static void
-_keybinding_free (gpointer data,
-                  gpointer user_data G_GNUC_UNUSED)
+_keybinding_free (gpointer data)
 {
     _Keybinding *k = data;
     _keybinding_ungrab (k);
@@ -550,13 +554,12 @@ g_paste_keybinder_parse_event_x11 (XEvent                  *event,
 }
 #endif
 
-static GdkFilterReturn
-g_paste_keybinder_filter (GdkXEvent *xevent,
-                          GdkEvent  *event G_GNUC_UNUSED,
-                          gpointer   data)
+static gboolean
+g_paste_keybinder_xevent (GdkDisplay *display,
+                          XEvent     *xevent,
+                          gpointer    data)
 {
     GPasteKeybinderPrivate *priv = data;
-    GdkDisplay *display = gdk_display_get_default ();
     GdkModifierType modifiers = 0;
     guint64 keycode = 0;
 
@@ -567,7 +570,7 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
 #endif
 #if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     if (GDK_IS_X11_DISPLAY (display))
-        g_paste_keybinder_parse_event_x11 ((XEvent *) xevent, &modifiers, &keycode);
+        g_paste_keybinder_parse_event_x11 (xevent, &modifiers, &keycode);
     else
 #endif
         g_warning ("Unsupported GDK backend, keybinder won't work.");
@@ -579,7 +582,7 @@ g_paste_keybinder_filter (GdkXEvent *xevent,
             g_paste_keybinding_notify (real_keybinding, modifiers, keycode);
     }
 
-    return GDK_FILTER_CONTINUE;
+    return FALSE;
 }
 
 static void
@@ -650,36 +653,26 @@ g_paste_keybinder_dispose (GObject *object)
     if (priv->shell_client)
         release_shell_client (priv);
 
+    if (priv->c_signals[C_XEVENT])
+    {
+        g_signal_handler_disconnect (gdk_display_get_default (), priv->c_signals[C_XEVENT]);
+        priv->c_signals[C_XEVENT] = 0;
+    }
+
     if (priv->settings)
     {
         g_clear_object (&priv->settings);
         g_paste_keybinder_deactivate_all (self);
-        g_slist_foreach (priv->keybindings, _keybinding_free, NULL);
-        priv->keybindings = NULL;
+        g_clear_slist (&priv->keybindings, _keybinding_free);
     }
 
     G_OBJECT_CLASS (g_paste_keybinder_parent_class)->dispose (object);
 }
 
 static void
-g_paste_keybinder_finalize (GObject *object)
-{
-    GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (G_PASTE_KEYBINDER (object));
-
-    gdk_window_remove_filter (gdk_get_default_root_window (),
-                              g_paste_keybinder_filter,
-                              priv);
-
-    G_OBJECT_CLASS (g_paste_keybinder_parent_class)->finalize (object);
-}
-
-static void
 g_paste_keybinder_class_init (GPasteKeybinderClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-    object_class->dispose = g_paste_keybinder_dispose;
-    object_class->finalize = g_paste_keybinder_finalize;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_keybinder_dispose;
 }
 
 static void
@@ -689,16 +682,21 @@ g_paste_keybinder_init (GPasteKeybinder *self)
 
     priv->keybindings = NULL;
 
-    gdk_window_add_filter (gdk_get_default_root_window (),
-                           g_paste_keybinder_filter,
-                           priv);
-
 #if defined(ENABLE_X_KEYBINDER) && defined (GDK_WINDOWING_X11)
     /* Initialize */
     GdkDisplay *display = gdk_display_get_default ();
 
     if (GDK_IS_X11_DISPLAY (display))
+    {
+        G_GNUC_BEGIN_IGNORE_DEPRECATIONS
         g_paste_keybinder_get_xinput_opcode (GDK_DISPLAY_XDISPLAY (display));
+        G_GNUC_END_IGNORE_DEPRECATIONS
+
+        priv->c_signals[C_XEVENT] = g_signal_connect (display,
+                                                      "xevent",
+                                                      G_CALLBACK (g_paste_keybinder_xevent),
+                                                      priv);
+    }
 #endif
 }
 

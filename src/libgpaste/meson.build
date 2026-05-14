@@ -82,7 +82,7 @@ libgpaste_gtk3_headers = [
 
 libgpaste_gtk3_symbols_file = meson.current_source_dir() / 'libgpaste-gtk3.sym'
 
-libgpaste_gtk3_deps = [ libgpaste_internal_dep, gdk_pixbuf_dep, gdk3_dep, gtk3_dep ]
+libgpaste_gtk3_deps = [ libgpaste_internal_dep, gdk3_dep, gtk3_dep ]
 
 libgpaste_gtk3 = library(
   'gpaste-gtk-3',

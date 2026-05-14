@@ -281,7 +281,7 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
         else
         {
             g_autoptr (GError) img_error = NULL;
-            g_autoptr (GdkPixbuf) img = gdk_pixbuf_new_from_file (file, &img_error);
+            g_autoptr (GdkTexture) img = gdk_texture_new_from_filename (file, &img_error);
             if (img_error)
                 g_warning ("Failed to load image from %s: %s", file, img_error->message);
 

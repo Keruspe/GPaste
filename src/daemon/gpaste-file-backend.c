@@ -319,7 +319,7 @@ add_item (Data *data)
         item = g_paste_text_item_new (data->text);
         break;
     case URIS:
-        item = g_paste_uris_item_new (data->text);
+        item = g_paste_uris_item_new_from_str (data->text);
         break;
     case PASSWORD:
         item = g_paste_password_item_new (data->name, data->text);

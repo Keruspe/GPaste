@@ -60,7 +60,7 @@ g_paste_gtk_util_confirm_dialog (GtkWindow                     *parent,
 
 /**
  * g_paste_gtk_util_compute_checksum:
- * @image: the #GdkPixbuf to checksum
+ * @image: the #GdkTexture to checksum
  *
  * Compute the checksum of an image
  *

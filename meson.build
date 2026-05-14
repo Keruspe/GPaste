@@ -34,6 +34,7 @@ glib_dep = dependency('glib-2.0', version: glib_req)
 gobject_dep = dependency('gobject-2.0', version: glib_req)
 gtk3_dep = dependency('gtk+-3.0', version: gtk3_req)
 gtk4_dep = dependency('gtk4', version: gtk4_req)
+gtk4x11_dep = dependency('gtk4-x11', version: gtk4_req)
 libadwaita_dep = dependency('libadwaita-1', version: adwaita_req)
 
 glib_major = glib_req_version.split('.')[0].to_int()
@@ -91,10 +92,9 @@ if get_option('x-keybinder')
     language: 'c',
   )
 
-  gdk_x11_dep = dependency('gdk-x11-3.0', version: gtk3_req)
   x11_dep = dependency('x11')
   xi_dep = dependency('xi')
-  keybinder_deps += [ gdk_x11_dep, xi_dep, x11_dep ]
+  keybinder_deps += [ gtk4x11_dep, xi_dep, x11_dep ]
 endif
 
 add_project_arguments(
@@ -108,7 +108,6 @@ add_project_arguments(
   '-DG_PASTE_ICON_NAME="edit-paste"',
   '-DGDK_DISABLE_DEPRECATED',
   '-DGETTEXT_PACKAGE="GPaste"',
-  '-DGTK_API=3',
   '-DGTK_DISABLE_DEPRECATED',
   '-DLOCALEDIR="' + join_paths(get_option('prefix'), get_option('datadir'), 'locale') + '"',
   '-DPACKAGE="gpaste"',

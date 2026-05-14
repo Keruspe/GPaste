@@ -43,26 +43,6 @@ g_paste_gtk_util_confirm_dialog (GtkWindow   *parent,
 }
 
 /**
- * g_paste_gtk_util_compute_checksum:
- * @image: the #GdkPixbuf to checksum
- *
- * Compute the checksum of an image
- *
- * Returns: the newly allocated checksum
- */
-G_PASTE_VISIBLE gchar *
-g_paste_gtk_util_compute_checksum (GdkPixbuf *image)
-{
-    if (!image || !GDK_IS_PIXBUF (image))
-        return NULL;
-
-    const guint8 *data = gdk_pixbuf_read_pixels (image);
-    gsize length = gdk_pixbuf_get_byte_length (image);
-
-    return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
-}
-
-/**
  * g_paste_gtk_util_empty_history:
  * @parent_window: (nullable): the parent #GtkWindow
  * @client: a #GPasteClient instance
