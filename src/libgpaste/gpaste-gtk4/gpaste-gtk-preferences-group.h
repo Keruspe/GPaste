@@ -26,27 +26,27 @@ typedef void (*GPasteGtkTextCallback)    (GPasteSettings *settings,
                                           const gchar    *data);
 typedef void (*GPasteGtkResetCallback)   (GPasteSettings *settings);
 
-GtkSwitch *g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *self,
-                                                              const gchar               *label,
-                                                              gboolean                   value,
-                                                              GPasteGtkBooleanCallback   on_value_changed,
-                                                              GPasteGtkResetCallback     on_reset,
-                                                              GPasteSettings            *settings);
-GtkSpinButton *g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self,
-                                                                const gchar               *label,
-                                                                gdouble                    value,
-                                                                gdouble                    min,
-                                                                gdouble                    max,
-                                                                gdouble                    step,
-                                                                GPasteGtkRangeCallback     on_value_changed,
-                                                                GPasteGtkResetCallback     on_reset,
-                                                                GPasteSettings            *settings);
-GtkEntryBuffer *g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
-                                                                const gchar               *label,
-                                                                const gchar               *value,
-                                                                GPasteGtkTextCallback      on_value_changed,
-                                                                GPasteGtkResetCallback     on_reset,
-                                                                GPasteSettings            *settings);
+AdwSwitchRow *g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *self,
+                                                                 const gchar               *label,
+                                                                 gboolean                   value,
+                                                                 GPasteGtkBooleanCallback   on_value_changed,
+                                                                 GPasteGtkResetCallback     on_reset,
+                                                                 GPasteSettings            *settings);
+AdwSpinRow *g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self,
+                                                             const gchar               *label,
+                                                             gdouble                    value,
+                                                             gdouble                    min,
+                                                             gdouble                    max,
+                                                             gdouble                    step,
+                                                             GPasteGtkRangeCallback     on_value_changed,
+                                                             GPasteGtkResetCallback     on_reset,
+                                                             GPasteSettings            *settings);
+AdwEntryRow *g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
+                                                             const gchar               *label,
+                                                             const gchar               *value,
+                                                             GPasteGtkTextCallback      on_value_changed,
+                                                             GPasteGtkResetCallback     on_reset,
+                                                             GPasteSettings            *settings);
 
 GPasteGtkPreferencesGroup *g_paste_gtk_preferences_group_new (const gchar *title);
 

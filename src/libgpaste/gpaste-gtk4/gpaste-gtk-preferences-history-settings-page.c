@@ -16,14 +16,14 @@ typedef struct
 {
     GPasteGtkPreferencesManager *manager;
 
-    GtkSpinButton               *max_history_size_button;
-    GtkSpinButton               *max_memory_usage_button;
+    AdwSpinRow                  *max_history_size_button;
+    AdwSpinRow                  *max_memory_usage_button;
 
-    GtkSpinButton               *min_text_item_size_button;
-    GtkSpinButton               *max_text_item_size_button;
+    AdwSpinRow                  *min_text_item_size_button;
+    AdwSpinRow                  *max_text_item_size_button;
 
-    GtkSpinButton               *element_size_button;
-    GtkSpinButton               *max_displayed_history_size_button;
+    AdwSpinRow                  *element_size_button;
+    AdwSpinRow                  *max_displayed_history_size_button;
 } GPasteGtkPreferencesHistorySettingsPagePrivate;
 
 G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesHistorySettingsPage, preferences_history_settings_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
@@ -36,17 +36,17 @@ g_paste_gtk_preferences_history_settings_page_setting_changed (GPasteGtkPreferen
     GPasteGtkPreferencesHistorySettingsPagePrivate *priv = g_paste_gtk_preferences_history_settings_page_get_instance_private (G_PASTE_GTK_PREFERENCES_HISTORY_SETTINGS_PAGE (self));
 
     if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
-        gtk_spin_button_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
+        adw_spin_row_set_value (priv->element_size_button, g_paste_settings_get_element_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
-        gtk_spin_button_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
+        adw_spin_row_set_value (priv->max_displayed_history_size_button, g_paste_settings_get_max_displayed_history_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
-        gtk_spin_button_set_value (priv->max_history_size_button, g_paste_settings_get_max_history_size (settings));
+        adw_spin_row_set_value (priv->max_history_size_button, g_paste_settings_get_max_history_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
-        gtk_spin_button_set_value (priv->max_memory_usage_button, g_paste_settings_get_max_memory_usage (settings));
+        adw_spin_row_set_value (priv->max_memory_usage_button, g_paste_settings_get_max_memory_usage (settings));
     else if (g_paste_str_equal (key, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING))
-        gtk_spin_button_set_value (priv->max_text_item_size_button, g_paste_settings_get_max_text_item_size (settings));
+        adw_spin_row_set_value (priv->max_text_item_size_button, g_paste_settings_get_max_text_item_size (settings));
     else if (g_paste_str_equal (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
-        gtk_spin_button_set_value (priv->min_text_item_size_button, g_paste_settings_get_min_text_item_size (settings));
+        adw_spin_row_set_value (priv->min_text_item_size_button, g_paste_settings_get_min_text_item_size (settings));
 }
 
 static void

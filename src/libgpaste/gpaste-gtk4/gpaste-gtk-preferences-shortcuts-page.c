@@ -16,15 +16,15 @@ typedef struct
 {
     GPasteGtkPreferencesManager *manager;
 
-    GtkEntryBuffer              *launch_ui_entry;
-    GtkEntryBuffer              *show_history_entry;
+    AdwEntryRow                 *launch_ui_entry;
+    AdwEntryRow                 *show_history_entry;
 
-    GtkEntryBuffer              *make_password_entry;
-    GtkEntryBuffer              *upload_entry;
-    GtkEntryBuffer              *pop_entry;
+    AdwEntryRow                 *make_password_entry;
+    AdwEntryRow                 *upload_entry;
+    AdwEntryRow                 *pop_entry;
 
-    GtkEntryBuffer              *sync_clipboard_to_primary_entry;
-    GtkEntryBuffer              *sync_primary_to_clipboard_entry;
+    AdwEntryRow                 *sync_clipboard_to_primary_entry;
+    AdwEntryRow                 *sync_primary_to_clipboard_entry;
 } GPasteGtkPreferencesShortcutsPagePrivate;
 
 G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesShortcutsPage, preferences_shortcuts_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
@@ -37,19 +37,19 @@ g_paste_gtk_preferences_shortcuts_page_setting_changed (GPasteGtkPreferencesPage
     GPasteGtkPreferencesShortcutsPagePrivate *priv = g_paste_gtk_preferences_shortcuts_page_get_instance_private (G_PASTE_GTK_PREFERENCES_SHORTCUTS_PAGE (self));
 
     if (g_paste_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
-        gtk_entry_buffer_set_text (priv->launch_ui_entry, g_paste_settings_get_launch_ui (settings), -1);
+        gtk_editable_set_text (GTK_EDITABLE (priv->launch_ui_entry), g_paste_settings_get_launch_ui (settings));
     else if (g_paste_str_equal (key, G_PASTE_MAKE_PASSWORD_SETTING))
-        gtk_entry_buffer_set_text (priv->make_password_entry, g_paste_settings_get_make_password (settings), -1);
+        gtk_editable_set_text (GTK_EDITABLE (priv->make_password_entry), g_paste_settings_get_make_password (settings));
     else if (g_paste_str_equal (key, G_PASTE_POP_SETTING))
-        gtk_entry_buffer_set_text (priv->pop_entry, g_paste_settings_get_pop (settings), -1);
+        gtk_editable_set_text (GTK_EDITABLE (priv->pop_entry), g_paste_settings_get_pop (settings));
     else if (g_paste_str_equal (key, G_PASTE_SHOW_HISTORY_SETTING))
-        gtk_entry_buffer_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings), -1);
+        gtk_editable_set_text (GTK_EDITABLE (priv->show_history_entry), g_paste_settings_get_show_history (settings));
     else if (g_paste_str_equal (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
-        gtk_entry_buffer_set_text (priv->sync_clipboard_to_primary_entry, g_paste_settings_get_sync_clipboard_to_primary (settings), -1);
+        gtk_editable_set_text (GTK_EDITABLE (priv->sync_clipboard_to_primary_entry), g_paste_settings_get_sync_clipboard_to_primary (settings));
     else if (g_paste_str_equal (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
-        gtk_entry_buffer_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings), -1);
+        gtk_editable_set_text (GTK_EDITABLE (priv->sync_primary_to_clipboard_entry), g_paste_settings_get_sync_primary_to_clipboard (settings));
     else if (g_paste_str_equal (key, G_PASTE_UPLOAD_SETTING))
-        gtk_entry_buffer_set_text (priv->upload_entry, g_paste_settings_get_upload (settings), -1);
+        gtk_editable_set_text (GTK_EDITABLE (priv->upload_entry), g_paste_settings_get_upload (settings));
 }
 
 static void

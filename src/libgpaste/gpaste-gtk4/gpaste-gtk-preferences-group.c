@@ -65,7 +65,7 @@ boolean_wrapper (GObject    *object,
                  GParamSpec *pspec G_GNUC_UNUSED,
                  gpointer    user_data)
 {
-    G_PASTE_CALLBACK (GPasteGtkBooleanCallback) (data->settings, gtk_switch_get_active (GTK_SWITCH (object)));
+    G_PASTE_CALLBACK (GPasteGtkBooleanCallback) (data->settings, adw_switch_row_get_active (ADW_SWITCH_ROW (object)));
 }
 
 static gboolean
@@ -101,9 +101,9 @@ g_paste_gtk_preferences_group_make_reset_button (_CallbackDataWrapper *data)
  *
  * Add a new boolean settings to the current pane
  *
- * Returns: (transfer none): the #GtkSwitch we just added
+ * Returns: (transfer none): the #AdwSwitchRow we just added
  */
-G_PASTE_VISIBLE GtkSwitch *
+G_PASTE_VISIBLE AdwSwitchRow *
 g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *self,
                                                    const gchar               *label,
                                                    gboolean                   value,
@@ -116,25 +116,27 @@ g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *se
     g_return_val_if_fail (on_value_changed, NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    GtkWidget *sw = g_object_new (GTK_TYPE_SWITCH, "active", value, "valign", GTK_ALIGN_CENTER, NULL);
-    AdwActionRow *row = ADW_ACTION_ROW (g_object_new (ADW_TYPE_ACTION_ROW, "title", label, "activatable-widget", sw, NULL));
+    AdwSwitchRow *row = ADW_SWITCH_ROW (adw_switch_row_new ());
 
-    CALLBACK_DATA (sw);
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    adw_switch_row_set_active (row, value);
 
-    _data->c_signals[C_W_ACTION] = g_signal_connect (sw, "notify::active", G_CALLBACK (boolean_wrapper), data);
-    adw_action_row_add_suffix (row, sw);
-    adw_action_row_add_suffix (row, g_paste_gtk_preferences_group_make_reset_button (_data));
+    CALLBACK_DATA (row);
+
+    _data->c_signals[C_W_ACTION] = g_signal_connect (row, "notify::active", G_CALLBACK (boolean_wrapper), data);
+    adw_action_row_add_suffix (ADW_ACTION_ROW (row), g_paste_gtk_preferences_group_make_reset_button (_data));
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
-    return GTK_SWITCH (sw);
+    return row;
 }
 
 static void
-range_wrapper (GtkSpinButton *spinbutton,
-               gpointer       user_data)
+range_wrapper (AdwSpinRow *spin_row,
+               GParamSpec *pspec G_GNUC_UNUSED,
+               gpointer    user_data)
 {
-    G_PASTE_CALLBACK (GPasteGtkRangeCallback) (data->settings, (guint64) gtk_spin_button_get_value (spinbutton));
+    G_PASTE_CALLBACK (GPasteGtkRangeCallback) (data->settings, (guint64) adw_spin_row_get_value (spin_row));
 }
 
 /**
@@ -149,11 +151,11 @@ range_wrapper (GtkSpinButton *spinbutton,
  * @on_reset: (scope notified): the callback to call when the value is reset
  * @settings: a #GPasteSettings instance
  *
- * Add a new boolean settings to the current pane
+ * Add a new range settings to the current pane
  *
- * Returns: (transfer none): the #GtkSpinButton we just added
+ * Returns: (transfer none): the #AdwSpinRow we just added
  */
-G_PASTE_VISIBLE GtkSpinButton *
+G_PASTE_VISIBLE AdwSpinRow *
 g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self,
                                                  const gchar               *label,
                                                  gdouble                    value,
@@ -169,32 +171,27 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
     g_return_val_if_fail (on_value_changed, NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    GtkWidget *button = gtk_spin_button_new_with_range (min, max, step);
-    GtkSpinButton *b = GTK_SPIN_BUTTON (button);
-    GtkEditable *e = GTK_EDITABLE (b);
-    AdwActionRow *row = ADW_ACTION_ROW (g_object_new (ADW_TYPE_ACTION_ROW, "title", label, "activatable-widget", button, NULL));
+    AdwSpinRow *row = ADW_SPIN_ROW (adw_spin_row_new_with_range (min, max, step));
 
-    CALLBACK_DATA (button);
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    adw_spin_row_set_value (row, value);
 
-    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
-    gtk_spin_button_set_value (b, value);
-    gtk_editable_set_width_chars (e, 8);
-    gtk_editable_set_alignment (e, 1.0);
+    CALLBACK_DATA (row);
 
-    _data->c_signals[C_W_ACTION] = g_signal_connect (button, "value-changed", G_CALLBACK (range_wrapper), data);
-    adw_action_row_add_suffix (row, button);
-    adw_action_row_add_suffix (row, g_paste_gtk_preferences_group_make_reset_button (_data));
+    _data->c_signals[C_W_ACTION] = g_signal_connect (row, "notify::value", G_CALLBACK (range_wrapper), data);
+    adw_action_row_add_suffix (ADW_ACTION_ROW (row), g_paste_gtk_preferences_group_make_reset_button (_data));
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
-    return b;
+    return row;
 }
 
 static void
-text_wrapper (GObject *buffer,
-              gpointer user_data)
+text_wrapper (GObject    *object,
+              GParamSpec *pspec G_GNUC_UNUSED,
+              gpointer    user_data)
 {
-    G_PASTE_CALLBACK (GPasteGtkTextCallback) (data->settings, gtk_entry_buffer_get_text (GTK_ENTRY_BUFFER (buffer)));
+    G_PASTE_CALLBACK (GPasteGtkTextCallback) (data->settings, gtk_editable_get_text (GTK_EDITABLE (object)));
 }
 
 /**
@@ -208,9 +205,9 @@ text_wrapper (GObject *buffer,
  *
  * Add a new text settings to the current pane
  *
- * Returns: (transfer none): the #GtkEntryBuffer from the #GtkEntry we just added
+ * Returns: (transfer none): the #AdwEntryRow we just added
  */
-G_PASTE_VISIBLE GtkEntryBuffer *
+G_PASTE_VISIBLE AdwEntryRow *
 g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
                                                 const gchar               *label,
                                                 const gchar               *value,
@@ -224,20 +221,20 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
     g_return_val_if_fail (on_value_changed, NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-    GtkEntryBuffer *buffer = gtk_entry_buffer_new (value, -1);
-    GtkWidget *entry = g_object_new (GTK_TYPE_ENTRY, "buffer", buffer, "valign", GTK_ALIGN_CENTER, "width-chars", 10, "xalign", 1.0, NULL);
-    AdwActionRow *row = ADW_ACTION_ROW (g_object_new (ADW_TYPE_ACTION_ROW, "title", label, "activatable-widget", entry, NULL));
+    AdwEntryRow *row = ADW_ENTRY_ROW (adw_entry_row_new ());
 
-    CALLBACK_DATA (buffer);
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    gtk_editable_set_text (GTK_EDITABLE (row), value);
 
-    _data->c_signals[C_W_ACTION] = g_signal_connect (buffer, "notify::text", G_CALLBACK (text_wrapper), data);
-    adw_action_row_add_suffix (row, entry);
+    CALLBACK_DATA (row);
+
+    _data->c_signals[C_W_ACTION] = g_signal_connect (row, "notify::text", G_CALLBACK (text_wrapper), data);
     if (on_reset)
-        adw_action_row_add_suffix (row, g_paste_gtk_preferences_group_make_reset_button (_data));
+        adw_entry_row_add_suffix (row, g_paste_gtk_preferences_group_make_reset_button (_data));
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
-    return buffer;
+    return row;
 }
 
 static void

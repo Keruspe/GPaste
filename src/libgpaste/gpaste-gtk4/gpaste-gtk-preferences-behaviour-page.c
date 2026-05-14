@@ -16,19 +16,19 @@ typedef struct
 {
     GPasteGtkPreferencesManager *manager;
 
-    GtkSwitch                   *track_changes_switch;
-    GtkSwitch                   *close_on_select_switch;
-    GtkSwitch                   *open_centered_switch;
-    GtkSwitch                   *save_history_switch;
+    AdwSwitchRow                *track_changes_switch;
+    AdwSwitchRow                *close_on_select_switch;
+    AdwSwitchRow                *open_centered_switch;
+    AdwSwitchRow                *save_history_switch;
 
-    GtkSwitch                   *extension_enabled_switch;
-    GtkSwitch                   *track_extension_state_switch;
+    AdwSwitchRow                *extension_enabled_switch;
+    AdwSwitchRow                *track_extension_state_switch;
 
-    GtkSwitch                   *primary_to_history_switch;
-    GtkSwitch                   *synchronize_clipboards_switch;
+    AdwSwitchRow                *primary_to_history_switch;
+    AdwSwitchRow                *synchronize_clipboards_switch;
 
-    GtkSwitch                   *growing_lines_switch;
-    GtkSwitch                   *trim_items_switch;
+    AdwSwitchRow                *growing_lines_switch;
+    AdwSwitchRow                *trim_items_switch;
 } GPasteGtkPreferencesBehaviourPagePrivate;
 
 G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesBehaviourPage, preferences_behaviour_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
@@ -41,27 +41,27 @@ g_paste_gtk_preferences_behaviour_page_setting_changed (GPasteGtkPreferencesPage
     GPasteGtkPreferencesBehaviourPagePrivate *priv = g_paste_gtk_preferences_behaviour_page_get_instance_private (G_PASTE_GTK_PREFERENCES_BEHAVIOUR_PAGE (self));
 
     if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
-        gtk_switch_set_active (priv->close_on_select_switch, g_paste_settings_get_close_on_select (settings));
+        adw_switch_row_set_active (priv->close_on_select_switch, g_paste_settings_get_close_on_select (settings));
     else if (g_paste_str_equal (key, G_PASTE_OPEN_CENTERED_SETTING))
-        gtk_switch_set_active (priv->open_centered_switch, g_paste_settings_get_open_centered (settings));
+        adw_switch_row_set_active (priv->open_centered_switch, g_paste_settings_get_open_centered (settings));
     else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
-        gtk_switch_set_active (priv->growing_lines_switch, g_paste_settings_get_growing_lines (settings));
+        adw_switch_row_set_active (priv->growing_lines_switch, g_paste_settings_get_growing_lines (settings));
     else if (g_paste_str_equal (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
-        gtk_switch_set_active (priv->primary_to_history_switch, g_paste_settings_get_primary_to_history (settings));
+        adw_switch_row_set_active (priv->primary_to_history_switch, g_paste_settings_get_primary_to_history (settings));
     else if (g_paste_str_equal (key, G_PASTE_SAVE_HISTORY_SETTING))
-        gtk_switch_set_active (priv->save_history_switch, g_paste_settings_get_save_history (settings));
+        adw_switch_row_set_active (priv->save_history_switch, g_paste_settings_get_save_history (settings));
     else if (g_paste_str_equal (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
-        gtk_switch_set_active (priv->synchronize_clipboards_switch, g_paste_settings_get_synchronize_clipboards (settings));
+        adw_switch_row_set_active (priv->synchronize_clipboards_switch, g_paste_settings_get_synchronize_clipboards (settings));
     else if (g_paste_str_equal (key, G_PASTE_TRACK_CHANGES_SETTING))
-        gtk_switch_set_active (priv->track_changes_switch, g_paste_settings_get_track_changes (settings));
+        adw_switch_row_set_active (priv->track_changes_switch, g_paste_settings_get_track_changes (settings));
     else if (g_paste_str_equal (key, G_PASTE_TRIM_ITEMS_SETTING))
-        gtk_switch_set_active (priv->trim_items_switch, g_paste_settings_get_trim_items (settings));
+        adw_switch_row_set_active (priv->trim_items_switch, g_paste_settings_get_trim_items (settings));
     else if (g_paste_util_has_gnome_shell ())
     {
         if (g_paste_str_equal (key, G_PASTE_EXTENSION_ENABLED_SETTING))
-            gtk_switch_set_active (priv->extension_enabled_switch, g_paste_settings_get_extension_enabled (settings));
+            adw_switch_row_set_active (priv->extension_enabled_switch, g_paste_settings_get_extension_enabled (settings));
         else if (g_paste_str_equal (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
-            gtk_switch_set_active (priv->track_extension_state_switch, g_paste_settings_get_track_extension_state (settings));
+            adw_switch_row_set_active (priv->track_extension_state_switch, g_paste_settings_get_track_extension_state (settings));
     }
 }
 

@@ -16,9 +16,9 @@ typedef struct
 {
     GPasteGtkPreferencesManager *manager;
 
-    GtkSwitch                   *images_support_switch;
-    GtkSwitch                   *images_preview_switch;
-    GtkSpinButton               *images_preview_size_button;
+    AdwSwitchRow                *images_support_switch;
+    AdwSwitchRow                *images_preview_switch;
+    AdwSpinRow                  *images_preview_size_button;
 } GPasteGtkPreferencesImagesPagePrivate;
 
 G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesImagesPage, preferences_images_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
@@ -31,11 +31,11 @@ g_paste_gtk_preferences_images_page_setting_changed (GPasteGtkPreferencesPage *s
     GPasteGtkPreferencesImagesPagePrivate *priv = g_paste_gtk_preferences_images_page_get_instance_private (G_PASTE_GTK_PREFERENCES_IMAGES_PAGE (self));
 
     if (g_paste_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
-        gtk_switch_set_active (priv->images_support_switch, g_paste_settings_get_images_support (settings));
+        adw_switch_row_set_active (priv->images_support_switch, g_paste_settings_get_images_support (settings));
     else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SETTING))
-        gtk_switch_set_active (priv->images_preview_switch, g_paste_settings_get_images_preview (settings));
+        adw_switch_row_set_active (priv->images_preview_switch, g_paste_settings_get_images_preview (settings));
     else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING))
-        gtk_spin_button_set_value (priv->images_preview_size_button, g_paste_settings_get_images_preview_size (settings));
+        adw_spin_row_set_value (priv->images_preview_size_button, g_paste_settings_get_images_preview_size (settings));
 }
 
 static void
