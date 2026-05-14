@@ -263,8 +263,8 @@ _get_clipboard_data_from_special_atom (GtkSelectionData *selection_data,
 
         if (binary)
         {
-            length = g_paste_binary_data_get_length (binary);
-            data = g_memdup2 (g_paste_binary_data_get_data (binary), length);
+            const guchar *raw = g_bytes_get_data (g_paste_binary_data_get_bytes (binary), &length);
+            data = g_memdup2 (raw, length);
         }
         else
         {
@@ -591,7 +591,7 @@ g_paste_clipboard_update_on_special_atom_ready (GPasteClipboard  *self G_GNUC_UN
     GPasteClipboardUpdateData *data = user_data;
 
     if (raw && length > 0)
-        data->special_atom[atom] = g_paste_binary_data_new (atom, raw, length);
+        data->special_atom[atom] = g_paste_binary_data_new (atom, g_bytes_new (raw, length));
 
     g_paste_clipboard_update_maybe_done (data);
 }

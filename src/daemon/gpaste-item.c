@@ -302,7 +302,7 @@ g_paste_item_add_special_value (GPasteItem       *self,
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
-    priv->size += g_paste_binary_data_get_length (binary_data);
+    priv->size += g_bytes_get_size (g_paste_binary_data_get_bytes (binary_data));
     priv->special_values = g_slist_prepend (priv->special_values, binary_data);
 }
 

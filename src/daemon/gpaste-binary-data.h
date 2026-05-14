@@ -15,13 +15,11 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (BinaryData, binary_data, BINARY_DATA, GObject)
 
 GPasteSpecialAtom  g_paste_binary_data_get_mime     (const GPasteBinaryData *self);
-const guchar      *g_paste_binary_data_get_data     (const GPasteBinaryData *self);
-gsize              g_paste_binary_data_get_length   (const GPasteBinaryData *self);
+GBytes            *g_paste_binary_data_get_bytes    (const GPasteBinaryData *self);
 const gchar       *g_paste_binary_data_get_checksum (const GPasteBinaryData *self);
 gchar             *g_paste_binary_data_to_base64    (const GPasteBinaryData *self);
 
 GPasteBinaryData *g_paste_binary_data_new (GPasteSpecialAtom  mime,
-                                           const guchar      *data,
-                                           gsize              length);
+                                           GBytes            *bytes);
 
 G_END_DECLS

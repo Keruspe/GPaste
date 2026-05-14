@@ -468,9 +468,9 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                 else
                 {
                     gsize raw_length;
-                    g_autofree guchar *raw = (guchar *) g_base64_decode (value, &raw_length);
+                    guchar *raw = (guchar *) g_base64_decode (value, &raw_length);
                     g_free (value);
-                    GPasteBinaryData *sv = g_paste_binary_data_new (data->mime, raw, raw_length);
+                    GPasteBinaryData *sv = g_paste_binary_data_new (data->mime, g_bytes_new_take (raw, raw_length));
                     data->special_values = g_slist_prepend (data->special_values, sv);
                 }
             }

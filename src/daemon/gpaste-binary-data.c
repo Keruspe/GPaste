@@ -14,8 +14,7 @@ struct _GPasteBinaryData
 typedef struct
 {
     GPasteSpecialAtom  mime;
-    guchar            *data;
-    gsize              length;
+    GBytes            *bytes;
     gchar             *checksum;
 } GPasteBinaryDataPrivate;
 
@@ -40,46 +39,29 @@ g_paste_binary_data_get_mime (const GPasteBinaryData *self)
 }
 
 /**
- * g_paste_binary_data_get_data:
+ * g_paste_binary_data_get_bytes:
  * @self: a #GPasteBinaryData instance
  *
- * Get the raw bytes stored in the #GPasteBinaryData
+ * Get the bytes stored in the #GPasteBinaryData
  *
- * Returns: read-only pointer to the raw bytes
+ * Returns: (transfer none): read-only #GBytes
  */
-G_PASTE_VISIBLE const guchar *
-g_paste_binary_data_get_data (const GPasteBinaryData *self)
+G_PASTE_VISIBLE GBytes *
+g_paste_binary_data_get_bytes (const GPasteBinaryData *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), NULL);
 
     const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (self);
 
-    return priv->data;
-}
-
-/**
- * g_paste_binary_data_get_length:
- * @self: a #GPasteBinaryData instance
- *
- * Get the number of bytes stored in the #GPasteBinaryData
- *
- * Returns: the length in bytes
- */
-G_PASTE_VISIBLE gsize
-g_paste_binary_data_get_length (const GPasteBinaryData *self)
-{
-    g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), 0);
-
-    const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (self);
-
-    return priv->length;
+    return priv->bytes;
 }
 
 /**
  * g_paste_binary_data_get_checksum:
  * @self: a #GPasteBinaryData instance
  *
- * Get the SHA256 checksum of the data stored in the #GPasteBinaryData
+ * Get the SHA256 checksum of the data stored in the #GPasteBinaryData.
+ * Computed lazily on first call.
  *
  * Returns: read-only string containing the SHA256 checksum
  */
@@ -88,7 +70,14 @@ g_paste_binary_data_get_checksum (const GPasteBinaryData *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), NULL);
 
-    const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (self);
+    GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private ((GPasteBinaryData *)(gpointer) self);
+
+    if (!priv->checksum)
+    {
+        gsize len;
+        const guchar *data = g_bytes_get_data (priv->bytes, &len);
+        priv->checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, len);
+    }
 
     return priv->checksum;
 }
@@ -109,15 +98,18 @@ g_paste_binary_data_to_base64 (const GPasteBinaryData *self)
 
     const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (self);
 
-    return g_base64_encode (priv->data, priv->length);
+    gsize len;
+    const guchar *data = g_bytes_get_data (priv->bytes, &len);
+
+    return g_base64_encode (data, len);
 }
 
 static void
 g_paste_binary_data_finalize (GObject *object)
 {
-    const GPasteBinaryDataPrivate *priv = _g_paste_binary_data_get_instance_private (G_PASTE_BINARY_DATA (object));
+    GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private (G_PASTE_BINARY_DATA (object));
 
-    g_free (priv->data);
+    g_bytes_unref (priv->bytes);
     g_free (priv->checksum);
 
     G_OBJECT_CLASS (g_paste_binary_data_parent_class)->finalize (object);
@@ -137,29 +129,25 @@ g_paste_binary_data_init (GPasteBinaryData *self G_GNUC_UNUSED)
 /**
  * g_paste_binary_data_new:
  * @mime: the #GPasteSpecialAtom identifying the mime type
- * @data: the raw bytes to store
- * @length: the number of bytes in @data
+ * @bytes: (transfer full): the bytes to store
  *
- * Create a new instance of #GPasteBinaryData, copying @data and computing its SHA256 checksum
+ * Create a new instance of #GPasteBinaryData, taking ownership of @bytes
  *
  * Returns: a newly allocated #GPasteBinaryData
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteBinaryData *
 g_paste_binary_data_new (GPasteSpecialAtom  mime,
-                         const guchar      *data,
-                         gsize              length)
+                         GBytes            *bytes)
 {
-    g_return_val_if_fail (data, NULL);
-    g_return_val_if_fail (length > 0, NULL);
+    g_return_val_if_fail (bytes, NULL);
+    g_return_val_if_fail (g_bytes_get_size (bytes) > 0, NULL);
 
     GPasteBinaryData *self = g_object_new (G_PASTE_TYPE_BINARY_DATA, NULL);
     GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private (self);
 
     priv->mime = mime;
-    priv->data = g_memdup2 (data, length);
-    priv->length = length;
-    priv->checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
+    priv->bytes = bytes;
 
     return self;
 }
