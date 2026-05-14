@@ -18,13 +18,13 @@ gpaste_daemon_sources = [
   'gpaste-text-item.c',
   'gpaste-ui-keybinding.c',
   'gpaste-upload-keybinding.c',
-  'gpaste-uris-item.c',
   'tmp/gpaste-clipboard.c',
   'tmp/gpaste-clipboards-manager.c',
   'tmp/gpaste-image-item.c',
   'tmp/gpaste-keybinder.c',
   'tmp/gpaste-keybinding.c',
   'tmp/gpaste-special-atom.c',
+  'tmp/gpaste-uris-item.c',
 ]
 
 gpaste_daemon_headers = [
@@ -50,9 +50,9 @@ gpaste_daemon_headers = [
   'gpaste-text-item.h',
   'gpaste-ui-keybinding.h',
   'gpaste-upload-keybinding.h',
-  'gpaste-uris-item.h',
   'tmp/gpaste-image-item.h',
   'tmp/gpaste-special-atom.h',
+  'tmp/gpaste-uris-item.h',
 ]
 
 gpaste_daemon_headers_dep = declare_dependency(
