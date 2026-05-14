@@ -31,7 +31,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ImageItem, image_item, G_PASTE_TYPE_ITEM)
  * g_paste_image_item_get_checksum:
  * @self: a #GPasteImageItem instance
  *
- * Get the checksum of the GdkPixbuf contained in the #GPasteImageItem
+ * Get the checksum of the GdkTexture contained in the #GPasteImageItem
  *
  * Returns: read-only string representatig the SHA256 checksum of the image
  */
@@ -98,7 +98,7 @@ static void
 g_paste_image_item_set_size (GPasteItem *self)
 {
     GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
-    GdkPixbuf *image = priv->image;
+    GdkTexture *image = priv->image;
 
     if (image)
     {
