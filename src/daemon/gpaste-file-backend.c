@@ -456,27 +456,22 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
     case IN_VALUE:
         if (data->version == HISTORY_2_0)
         {
-            gchar *value = g_paste_util_xml_decode (txt);
+            g_autofree gchar *value = g_paste_util_xml_decode (txt);
             if (*g_strstrip (txt))
             {
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
                 if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID)
                 {
                     g_free (data->text);
-                    data->text = value;
+                    data->text = g_steal_pointer (&value);
                 }
                 else
                 {
                     gsize raw_length;
                     guchar *raw = (guchar *) g_base64_decode (value, &raw_length);
-                    g_free (value);
                     GPasteBinaryData *sv = g_paste_binary_data_new (data->mime, g_bytes_new_take (raw, raw_length));
                     data->special_values = g_slist_prepend (data->special_values, sv);
                 }
-            }
-            else
-            {
-                g_free (value);
             }
         }
         else
@@ -538,17 +533,16 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             HISTORY_INVALID,
             G_PASTE_SPECIAL_ATOM_INVALID
         };
-        GMarkupParseContext *ctx = g_markup_parse_context_new (&parser,
-                                                               G_MARKUP_TREAT_CDATA_AS_TEXT,
-                                                               &data,
-                                                               NULL);
+        g_autoptr (GMarkupParseContext) ctx = g_markup_parse_context_new (&parser,
+                                                                          G_MARKUP_TREAT_CDATA_AS_TEXT,
+                                                                          &data,
+                                                                          NULL);
         gsize text_length;
         g_autoptr (GError) error = NULL;
 
         if (!g_file_get_contents (history_file_path, &text, &text_length, &error))
         {
             g_warning ("Failed to read history file: %s", error->message);
-            g_markup_parse_context_unref (ctx);
             return;
         }
 
@@ -560,7 +554,6 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
 
         if (data.state != END)
             g_warning ("Unexpected state adter parsing history: %" G_GINT32_FORMAT, data.state);
-        g_markup_parse_context_unref (ctx);
 
         *history = data.history;
         *size = data.mem_size;
@@ -577,10 +570,8 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         if (g_paste_util_ensure_history_dir_exists (settings))
         {
             g_autoptr (GError) error = NULL;
-            GFileOutputStream *created = g_file_create (history_file, G_FILE_CREATE_NONE, NULL, &error);
-            if (created)
-                g_object_unref (created);
-            else if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+            g_autoptr (GFileOutputStream) created = g_file_create (history_file, G_FILE_CREATE_NONE, NULL, &error);
+            if (!created && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
                 g_warning ("Failed to create history file: %s", error->message);
         }
     }
@@ -623,10 +614,7 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
         g_autoptr (GFileInfo) h = history;
 
         if (error && *error)
-        {
-            g_array_unref (history_names);
             return NULL;
-        }
 
         const gchar *raw_name = g_file_info_get_display_name (h);
 

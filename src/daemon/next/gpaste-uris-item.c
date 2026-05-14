@@ -119,13 +119,12 @@ g_paste_uris_item_new_from_str (const gchar *str)
     if (!length)
         return NULL;
 
-    GSList *files = NULL;
+    g_autoslist (GFile) files = NULL;
     for (guint64 i = 0; i < length; ++i)
         files = g_slist_prepend (files, g_file_new_for_uri (uris[i]));
     files = g_slist_reverse (files);
 
     GdkFileList *file_list = gdk_file_list_new_from_list (files);
-    g_slist_free_full (files, g_object_unref);
 
     return _g_paste_uris_item_new (str, file_list);
 }
