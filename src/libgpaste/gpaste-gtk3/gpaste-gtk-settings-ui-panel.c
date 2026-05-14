@@ -254,8 +254,7 @@ g_paste_gtk_settings_ui_panel_add_text_setting (GPasteGtkSettingsUiPanel *self,
 }
 
 static void
-clean_callback_data (gpointer data,
-                     gpointer user_data G_GNUC_UNUSED)
+clean_callback_data (gpointer data)
 {
     g_autofree _CallbackDataWrapper *wrap = data;
 
@@ -269,9 +268,7 @@ g_paste_gtk_settings_ui_panel_dispose (GObject *object)
 {
     GPasteGtkSettingsUiPanelPrivate *priv = g_paste_gtk_settings_ui_panel_get_instance_private (G_PASTE_GTK_SETTINGS_UI_PANEL (object));
 
-    g_slist_foreach (priv->callback_data, clean_callback_data, NULL);
-    g_slist_free (priv->callback_data);
-    priv->callback_data = NULL;
+    g_clear_slist (&priv->callback_data, clean_callback_data);
 
     G_OBJECT_CLASS (g_paste_gtk_settings_ui_panel_parent_class)->dispose (object);
 }

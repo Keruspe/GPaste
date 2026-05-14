@@ -179,10 +179,7 @@ g_paste_clipboards_manager_update_ready (GPasteClipboard *clipboard,
         synchronized_text = g_paste_clipboard_get_text (clipboard);
 
     if (!data->track && item)
-    {
-        g_object_unref (item);
-        item = NULL;
-    }
+        g_clear_object (&item);
 
     gboolean something_in_clipboard = !!g_paste_clipboard_get_text (clipboard) ||
                                       !!g_paste_clipboard_get_image_checksum (clipboard);

@@ -790,8 +790,7 @@ g_paste_history_empty (GPasteHistory *self)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    g_list_free_full (priv->history, g_object_unref);
-    priv->history = NULL;
+    g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
