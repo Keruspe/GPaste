@@ -1067,7 +1067,7 @@ g_paste_daemon_dispose (GObject *object)
         g_clear_object (&priv->clipboards_manager);
         g_clear_object (&priv->keybinder);
         g_clear_object (&priv->screensaver);
-        g_dbus_node_info_unref (priv->g_paste_daemon_dbus_info);
+        g_clear_pointer (&priv->g_paste_daemon_dbus_info, g_dbus_node_info_unref);
     }
 
     G_OBJECT_CLASS (g_paste_daemon_parent_class)->dispose (object);
