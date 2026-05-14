@@ -73,24 +73,6 @@ g_paste_clipboard_is_clipboard (const GPasteClipboard *self)
 }
 
 /**
- * g_paste_clipboard_get_real:
- * @self: a #GPasteClipboard instance
- *
- * Get the GtkClipboard linked to the #GPasteClipboard
- *
- * Returns: (transfer none): the GtkClipboard used in the #GPasteClipboard
- */
-G_PASTE_VISIBLE GtkClipboard *
-g_paste_clipboard_get_real (const GPasteClipboard *self)
-{
-    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD (self), NULL);
-
-    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
-
-    return priv->real;
-}
-
-/**
  * g_paste_clipboard_get_text:
  * @self: a #GPasteClipboard instance
  *

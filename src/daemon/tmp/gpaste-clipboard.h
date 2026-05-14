@@ -23,7 +23,6 @@ void          g_paste_clipboard_update             (GPasteClipboard             
                                                     GPasteClipboardUpdateCallback callback,
                                                     gpointer                      user_data);
 gboolean      g_paste_clipboard_is_clipboard (const GPasteClipboard *self);
-GtkClipboard *g_paste_clipboard_get_real     (const GPasteClipboard *self);
 const gchar  *g_paste_clipboard_get_text     (const GPasteClipboard *self);
 void          g_paste_clipboard_select_text  (GPasteClipboard *self,
                                               const gchar     *text);
