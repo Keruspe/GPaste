@@ -151,7 +151,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
     g_variant_builder_init (&builder, (GVariantType *) "aa{sv}");
 
     g_autoptr (GError) error = NULL;
-    GList *results = g_paste_client_get_elements_finish (client, res, &error);
+    g_autolist (GPasteClientItem) results = g_paste_client_get_elements_finish (client, res, &error);
     if (error)
         g_warning ("GPaste get elements failed: %s", error->message);
     guint64 n = 0;
@@ -175,8 +175,6 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 
     GVariant *ans = g_variant_builder_end (&builder);
     g_dbus_method_invocation_return_value (data->invocation, g_variant_new_tuple (&ans, 1));
-
-    g_list_free_full (results, g_object_unref);
 }
 
 static gboolean

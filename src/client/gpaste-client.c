@@ -294,7 +294,7 @@ static gint
 g_paste_history (Context *ctx,
                  GError **error)
 {
-    GList *history = (ctx->raw) ?
+    g_autolist (GPasteClientItem) history = (ctx->raw) ?
         g_paste_client_get_raw_history_sync (ctx->client, error) :
         g_paste_client_get_history_sync (ctx->client, error);
 
@@ -309,8 +309,6 @@ g_paste_history (Context *ctx,
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
         print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
     }
-
-    g_list_free_full (history, g_object_unref);
 
     return EXIT_SUCCESS;
 }
@@ -590,7 +588,7 @@ g_paste_search (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    GList *items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, -1, error);
+    g_autolist (GPasteClientItem) items = g_paste_client_get_elements_sync (ctx->client, (const gchar **) results, -1, error);
     guint index = 0;
 
     for (const GList *i = items; i; i = i->next)
@@ -599,8 +597,6 @@ g_paste_search (Context *ctx,
         g_autofree gchar *line = g_strdup (g_paste_client_item_get_value (item));
         print_history_line (line, index++, g_paste_client_item_get_uuid (item), ctx);
     }
-
-    g_list_free_full (items, g_object_unref);
 
     return EXIT_SUCCESS;
 }
