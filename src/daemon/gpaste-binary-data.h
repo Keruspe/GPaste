@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <gpaste/gpaste-macros.h>
 #include <gpaste-special-atom.h>
 
 G_BEGIN_DECLS

@@ -4,10 +4,6 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-gdbus-macros.h>
-#include <gpaste/gpaste-screensaver-client.h>
-#include <gpaste/gpaste-update-enums.h>
-
 #include <gpaste-keybinder.h>
 #include <gpaste-image-item.h>
 #include <gpaste-make-password-keybinding.h>
