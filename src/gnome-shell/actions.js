@@ -6,7 +6,7 @@
 
 import { Ornament, PopupBaseMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import GObject from 'gi://GObject';
+import GObject from 'gi://GObject?version=2.0';
 
 import { GPasteAboutItem } from './aboutItem.js';
 import { GPastePadding } from './padding.js';

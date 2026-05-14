@@ -5,7 +5,7 @@
  */
 
 import Clutter from 'gi://Clutter';
-import GObject from 'gi://GObject';
+import GObject from 'gi://GObject?version=2.0';
 import St from 'gi://St';
 
 export const GPasteDeleteButton = GObject.registerClass(

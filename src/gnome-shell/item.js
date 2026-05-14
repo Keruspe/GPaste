@@ -7,9 +7,9 @@
 import { PopupMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
-import GObject from 'gi://GObject';
-import GPaste from 'gi://GPaste';
-import Pango from 'gi://Pango';
+import GObject from 'gi://GObject?version=2.0';
+import GPaste from 'gi://GPaste?version=2';
+import Pango from 'gi://Pango?version=1.0';
 import St from 'gi://St';
 
 import { GPasteDeleteItemPart } from './deleteItemPart.js';

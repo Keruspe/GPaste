@@ -11,9 +11,9 @@ import { Button } from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { PopupSeparatorMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
-import GObject from 'gi://GObject';
-import GLib from 'gi://GLib';
-import GPaste from 'gi://GPaste';
+import GObject from 'gi://GObject?version=2.0';
+import GLib from 'gi://GLib?version=2.0';
+import GPaste from 'gi://GPaste?version=2';
 import St from 'gi://St';
 
 import { GPasteActions } from './actions.js';

@@ -8,8 +8,8 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
+import GLib from 'gi://GLib?version=2.0';
+import Gio from 'gi://Gio?version=2.0';
 
 // Sadly, there is no other way of making global keybindings work on wayland until we get a portal for this.
 // I really wish we could avoid this, and the fact that we do this defeats the whole purpose of the added security from
