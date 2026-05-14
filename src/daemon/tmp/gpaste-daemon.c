@@ -1194,8 +1194,10 @@ g_paste_daemon_init (GPasteDaemon *self)
     GDBusInterfaceVTable *vtable = &priv->g_paste_daemon_dbus_vtable;
 
     priv->id_on_bus = 0;
+    g_autoptr (GError) error = NULL;
     priv->g_paste_daemon_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_DAEMON_INTERFACE,
-                                                                   NULL); /* Error */
+                                                                   &error);
+    g_assert_no_error (error);
 
     vtable->method_call = g_paste_daemon_dbus_method_call;
     vtable->get_property = g_paste_daemon_dbus_get_property;

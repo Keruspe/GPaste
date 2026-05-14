@@ -62,7 +62,10 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autofree gpointer *data = (gpointer *) user_data;
     GPasteClient *client = data[0];
     GDBusMethodInvocation *invocation = data[1];
-    g_auto (GStrv) results = g_paste_client_search_finish (client, res, NULL /* Error */);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) results = g_paste_client_search_finish (client, res, &error);
+    if (error)
+        g_warning ("GPaste search failed: %s", error->message);
 
     GVariant *ans = g_variant_new_strv ((const char * const *) results, -1);
     g_dbus_method_invocation_return_value (invocation, g_variant_new_tuple (&ans, 1));
@@ -147,7 +150,10 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_variant_builder_init (&builder, (GVariantType *) "aa{sv}");
 
-    GList *results = g_paste_client_get_elements_finish (client, res, NULL /* Error */);
+    g_autoptr (GError) error = NULL;
+    GList *results = g_paste_client_get_elements_finish (client, res, &error);
+    if (error)
+        g_warning ("GPaste get elements failed: %s", error->message);
     guint64 n = 0;
 
     for (const GList *i = results; i; i = i->next, ++n)
@@ -323,9 +329,11 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                  gpointer      user_data)
 {
     GPasteSearchProviderPrivate *priv = user_data;
+    g_autoptr (GError) error = NULL;
 
-    priv->client = g_paste_client_new_finish (res,
-                                              NULL); /* Error */
+    priv->client = g_paste_client_new_finish (res, &error);
+    if (error)
+        g_error ("Failed to connect to GPaste daemon: %s", error->message);
 }
 
 static void
@@ -335,8 +343,10 @@ g_paste_search_provider_init (GPasteSearchProvider *self)
     GDBusInterfaceVTable *vtable = &priv->g_paste_search_provider_dbus_vtable;
 
     priv->id_on_bus = 0;
+    g_autoptr (GError) error = NULL;
     priv->g_paste_search_provider_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_SEARCH_PROVIDER_INTERFACE,
-                                                                            NULL); /* Error */
+                                                                            &error);
+    g_assert_no_error (error);
 
     vtable->method_call = g_paste_search_provider_dbus_method_call;
     vtable->get_property = NULL;

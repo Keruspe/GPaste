@@ -366,8 +366,10 @@ static void
 g_paste_gnome_shell_client_init (GPasteGnomeShellClient *self)
 {
     GDBusProxy *proxy = G_DBUS_PROXY (self);
+    g_autoptr (GError) error = NULL;
     g_autoptr (GDBusNodeInfo) gnome_shell_dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GNOME_SHELL_INTERFACE,
-                                                                                    NULL); /* Error */
+                                                                                    &error);
+    g_assert_no_error (error);
 
     g_dbus_proxy_set_interface_info (proxy, gnome_shell_dbus_info->interfaces[0]);
 }
