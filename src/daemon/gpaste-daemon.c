@@ -93,15 +93,13 @@ register_bus_object (GPasteBus       *bus,
         on_name_lost (bus, gapp);
 }
 
-static gboolean
+static void
 register_search_provider (gpointer user_data)
 {
     CallbackData *data = user_data;
     GPasteBusObject *search_provider = *(data->search_provider) = g_paste_search_provider_new ();
 
     register_bus_object (data->bus, search_provider, data->gapp);
-
-    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -112,7 +110,7 @@ on_bus_acquired (GPasteBus *bus,
 
     register_bus_object (bus, G_PASTE_BUS_OBJECT (data->daemon), data->gapp);
 
-    g_source_set_name_by_id (g_idle_add (register_search_provider, user_data), "[GPaste] register_search_provider");
+    g_source_set_name_by_id (g_idle_add_once (register_search_provider, user_data), "[GPaste] register_search_provider");
 }
 
 gint
