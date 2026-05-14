@@ -173,14 +173,8 @@ static void
 g_paste_image_item_dispose (GObject *object)
 {
     GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
-    GDateTime *date = priv->date;
-
-    if (date)
-    {
-        g_date_time_unref (date);
-        g_clear_object (&priv->image);
-        priv->date = NULL;
-    }
+    g_clear_pointer (&priv->date, g_date_time_unref);
+    g_clear_object (&priv->image);
 
     G_OBJECT_CLASS (g_paste_image_item_parent_class)->dispose (object);
 }
