@@ -241,8 +241,7 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
 }
 
 static void
-clean_callback_data (gpointer data,
-                     gpointer user_data G_GNUC_UNUSED)
+clean_callback_data (gpointer data)
 {
     g_autofree _CallbackDataWrapper *wrap = data;
 
@@ -256,9 +255,7 @@ g_paste_gtk_preferences_group_dispose (GObject *object)
 {
     GPasteGtkPreferencesGroupPrivate *priv = g_paste_gtk_preferences_group_get_instance_private (G_PASTE_GTK_PREFERENCES_GROUP (object));
 
-    g_slist_foreach (priv->callback_data, clean_callback_data, NULL);
-    g_slist_free (priv->callback_data);
-    priv->callback_data = NULL;
+    g_clear_slist (&priv->callback_data, clean_callback_data);
 
     G_OBJECT_CLASS (g_paste_gtk_preferences_group_parent_class)->dispose (object);
 }
