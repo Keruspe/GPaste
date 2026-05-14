@@ -821,9 +821,7 @@ g_paste_history_load_locked (GPasteHistory        *self,
                              GPasteHistoryPrivate *priv,
                              const gchar          *name)
 {
-    g_list_free_full (priv->history,
-                      g_object_unref);
-    priv->history = NULL;
+    g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
 
     g_free (priv->name);

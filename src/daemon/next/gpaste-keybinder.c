@@ -291,8 +291,7 @@ _keybinding_cleanup_shell_stuff (gpointer data,
 }
 
 static void
-_keybinding_free (gpointer data,
-                  gpointer user_data G_GNUC_UNUSED)
+_keybinding_free (gpointer data)
 {
     _Keybinding *k = data;
     _keybinding_ungrab (k);
@@ -662,8 +661,7 @@ g_paste_keybinder_dispose (GObject *object)
     {
         g_clear_object (&priv->settings);
         g_paste_keybinder_deactivate_all (self);
-        g_slist_foreach (priv->keybindings, _keybinding_free, NULL);
-        priv->keybindings = NULL;
+        g_clear_slist (&priv->keybindings, _keybinding_free);
     }
 
     G_OBJECT_CLASS (g_paste_keybinder_parent_class)->dispose (object);
