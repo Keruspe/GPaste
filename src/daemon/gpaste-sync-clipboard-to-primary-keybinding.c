@@ -4,8 +4,6 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-gsettings-keys.h>
-
 #include <gpaste-sync-clipboard-to-primary-keybinding.h>
 
 struct _GPasteSyncClipboardToPrimaryKeybinding

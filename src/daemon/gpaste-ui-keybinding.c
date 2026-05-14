@@ -4,9 +4,6 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-gsettings-keys.h>
-#include <gpaste/gpaste-util.h>
-
 #include <gpaste-ui-keybinding.h>
 
 struct _GPasteUiKeybinding
