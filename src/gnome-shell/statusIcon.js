@@ -1,7 +1,7 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2023, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2026, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
 import GObject from 'gi://GObject?version=2.0';

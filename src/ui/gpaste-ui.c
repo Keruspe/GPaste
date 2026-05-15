@@ -1,7 +1,7 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2026, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
 #include <gpaste-gtk4/gpaste-gtk-macros.h>
@@ -46,7 +46,7 @@ show_about_dialog (gpointer user_data)
     adw_about_dialog_set_application_icon (dialog, G_PASTE_ICON_NAME);
     adw_about_dialog_set_license_type (dialog, GTK_LICENSE_BSD);
     adw_about_dialog_set_developers (dialog, authors);
-    adw_about_dialog_set_copyright (dialog, "Copyright (c) 2010-2022, Marc-Antoine Perennou");
+    adw_about_dialog_set_copyright (dialog, "Copyright (c) 2010-2026, Marc-Antoine Perennou");
     adw_about_dialog_set_comments (dialog, _("Clipboard management system"));
     adw_about_dialog_set_website (dialog, "http://www.imagination-land.org/tags/GPaste.html");
 

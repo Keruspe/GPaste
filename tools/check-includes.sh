@@ -61,7 +61,6 @@ check_includes() {
 
     for file in **/*.[ch]; do
         [[ "${file}" == "src/libgpaste/gpaste.h" ]] && continue
-        [[ "${file}" == "src/libgpaste/gpaste-gtk3.h" ]] && continue
         [[ "${file}" == "src/libgpaste/gpaste-gtk4.h" ]] && continue
         for i in $(get_includes "${file}"); do
             check_include "${file}" "${i}"

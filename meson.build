@@ -14,38 +14,29 @@ adwaita_req_version = '1.9'
 gcr_req_version = '3.90.0'
 gjs_req_version = '1.78.0'
 glib_req_version = '2.84.0'
-gtk3_req_version = '3.24.0'
 gtk4_req_version = '4.12.0'
 
 adwaita_req = '>= @0@'.format(adwaita_req_version)
 gcr_req = '>= @0@'.format(gcr_req_version)
 gjs_req = '>= @0@'.format(gjs_req_version)
 glib_req = '>= @0@'.format(glib_req_version)
-gtk3_req = '>= @0@'.format(gtk3_req_version)
 gtk4_req = '>= @0@'.format(gtk4_req_version)
 
 gcr_dep = dependency('gcr-4', version: gcr_req)
-gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
 gio_dep = dependency('gio-2.0', version: glib_req)
 glib_dep = dependency('glib-2.0', version: glib_req)
 gobject_dep = dependency('gobject-2.0', version: glib_req)
-gtk3_dep = dependency('gtk+-3.0', version: gtk3_req)
 gtk4_dep = dependency('gtk4', version: gtk4_req)
 gtk4x11_dep = dependency('gtk4-x11', version: gtk4_req)
 libadwaita_dep = dependency('libadwaita-1', version: adwaita_req)
 
 glib_major = glib_req_version.split('.')[0].to_int()
 glib_minor = glib_req_version.split('.')[1].to_int()
-gtk3_major = gtk3_req_version.split('.')[0].to_int()
-gtk3_minor = gtk3_req_version.split('.')[1].to_int()
 gtk4_major = gtk4_req_version.split('.')[0].to_int()
 gtk4_minor = gtk4_req_version.split('.')[1].to_int()
 
 if glib_minor % 2 == 1
   glib_minor = glib_minor + 1
-endif
-if gtk3_minor % 2 == 1
-  gtk3_minor = gtk3_minor + 1
 endif
 if gtk4_minor % 2 == 1
   gtk4_minor = gtk4_minor + 1
