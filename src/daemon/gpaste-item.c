@@ -340,8 +340,7 @@ g_paste_item_set_uuid (GPasteItem  *self,
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
-    g_free (priv->uuid);
-    priv->uuid = g_strdup (uuid);
+    g_set_str (&priv->uuid, uuid);
 }
 
 static void

@@ -60,8 +60,7 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
     GPasteItem *item = G_PASTE_ITEM (self);
 
     g_paste_item_add_size (item, strlen (name) - ((priv->name) ? strlen(priv->name) : 0));
-    g_free (priv->name);
-    priv->name = g_strdup (name);
+    g_set_str (&priv->name, name);
 
     // This is the prefix displayed in history to identify a password
     g_autofree gchar *full_display_string = g_strdup_printf ("[%s] %s", _("Password"), name);
