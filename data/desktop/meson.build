@@ -10,7 +10,7 @@ i18n.merge_file(
   type: 'desktop',
   output: 'org.gnome.GPaste.Preferences.desktop',
   install: true,
-  install_dir: join_paths(get_option('datadir'), 'applications'),
+  install_dir: get_option('datadir') / 'applications',
 )
 
 ui_untranslated_desktop_file = configure_file(
@@ -25,5 +25,5 @@ i18n.merge_file(
   type: 'desktop',
   output: 'org.gnome.GPaste.Ui.desktop',
   install: true,
-  install_dir: join_paths(get_option('datadir'), 'applications'),
+  install_dir: get_option('datadir') / 'applications',
 )

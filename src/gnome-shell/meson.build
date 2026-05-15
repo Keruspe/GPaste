@@ -31,5 +31,5 @@ configured_shell_ext_metadata = configure_file(
 install_data(
   shell_extension_files,
   configured_shell_ext_metadata,
-  install_dir: join_paths(get_option('datadir'), 'gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org'),
+  install_dir: get_option('datadir') / 'gnome-shell/extensions/GPaste@gnome-shell-extensions.gnome.org',
 )
