@@ -74,23 +74,28 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
     }
 
     const GPasteFileBackend *real_self = _G_PASTE_FILE_BACKEND (self);
-    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, history_file);
+
+    g_autofree gchar *tmp_path = g_strconcat (history_file_path, ".tmp", NULL);
+    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp_path);
+    g_autoptr (GOutputStream) stream = _G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, tmp_file);
 
     if (!stream)
         return;
 
+    gboolean success = TRUE;
     g_autoptr (GError) error = NULL;
 
     if (!g_output_stream_write_all (stream, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39, NULL, NULL /* cancellable */, &error) ||
         !g_output_stream_write_all (stream, "<history version=\"2.0\">\n", 24, NULL, NULL /* cancellable */, &error))
     {
         g_warning ("Failed to write history header: %s", error->message);
-        return;
+        g_clear_error (&error);
+        success = FALSE;
     }
 
-    for (; history; history = g_list_next (history))
+    for (const GList *h = history; success && h; h = g_list_next (h))
     {
-        GPasteItem *item = history->data;
+        const GPasteItem *item = h->data;
         const gchar *kind = g_paste_item_get_kind (item);
         const gchar *uuid = g_paste_item_get_uuid (item);
 
@@ -113,14 +118,39 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
         {
             g_warning ("Failed to write an item to history: %s", error->message);
             g_clear_error (&error);
-            continue;
+            success = FALSE;
         }
     }
 
-    if (!g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, &error) ||
-        !g_output_stream_close (stream, NULL /* cancellable */, &error))
+    if (success &&
+        !g_output_stream_write_all (stream, "</history>\n", 11, NULL, NULL /* cancellable */, &error))
     {
-        g_warning ("Failed to finish writing history: %s", error->message);
+        g_warning ("Failed to write history footer: %s", error->message);
+        g_clear_error (&error);
+        success = FALSE;
+    }
+
+    if (success && !g_output_stream_close (stream, NULL /* cancellable */, &error))
+    {
+        g_warning ("Failed to close history temp file: %s", error->message);
+        g_clear_error (&error);
+        success = FALSE;
+    }
+
+    if (success && !g_file_move (tmp_file, history_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+    {
+        g_warning ("Failed to install history file: %s", error->message);
+        g_clear_error (&error);
+        success = FALSE;
+    }
+
+    if (!success)
+    {
+        if (!g_file_delete (tmp_file, NULL, &error) &&
+            !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        {
+            g_warning ("Failed to delete history temp file: %s", error->message);
+        }
     }
 }
 
@@ -655,7 +685,7 @@ g_paste_file_backend_get_output_stream (const GPasteFileBackend *self G_GNUC_UNU
                                                               NULL, /* cancellable */
                                                               &error));
     if (!stream)
-        g_warning ("Failed to open history file for writing: %s", error->message);
+        g_warning ("Failed to open history temp file for writing: %s", error->message);
     return stream;
 }
 
