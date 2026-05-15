@@ -1,6 +1,6 @@
 project('GPaste', 'c',
   version: '45.6',
-  meson_version: '>=0.59.1',
+  meson_version: '>=1.1',
   default_options: [ 'warning_level=2', 'c_std=gnu17' ],
 )
 
@@ -16,19 +16,13 @@ gjs_req_version = '1.78.0'
 glib_req_version = '2.84.0'
 gtk4_req_version = '4.12.0'
 
-adwaita_req = '>= @0@'.format(adwaita_req_version)
-gcr_req = '>= @0@'.format(gcr_req_version)
-gjs_req = '>= @0@'.format(gjs_req_version)
-glib_req = '>= @0@'.format(glib_req_version)
-gtk4_req = '>= @0@'.format(gtk4_req_version)
-
-gcr_dep = dependency('gcr-4', version: gcr_req)
-gio_dep = dependency('gio-2.0', version: glib_req)
-glib_dep = dependency('glib-2.0', version: glib_req)
-gobject_dep = dependency('gobject-2.0', version: glib_req)
-gtk4_dep = dependency('gtk4', version: gtk4_req)
-gtk4x11_dep = dependency('gtk4-x11', version: gtk4_req)
-libadwaita_dep = dependency('libadwaita-1', version: adwaita_req)
+gcr_dep = dependency('gcr-4', version: '>= ' + gcr_req_version)
+gio_dep = dependency('gio-2.0', version: '>= ' + glib_req_version)
+glib_dep = dependency('glib-2.0', version: '>= ' + glib_req_version)
+gobject_dep = dependency('gobject-2.0', version: '>= ' + glib_req_version)
+gtk4_dep = dependency('gtk4', version: '>= ' + gtk4_req_version)
+gtk4x11_dep = dependency('gtk4-x11', version: '>= ' + gtk4_req_version)
+libadwaita_dep = dependency('libadwaita-1', version: '>= ' + adwaita_req_version)
 
 glib_major = glib_req_version.split('.')[0].to_int()
 glib_minor = glib_req_version.split('.')[1].to_int()
@@ -57,7 +51,7 @@ endif
 libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
 
 if get_option('gnome-shell')
-  gjs_dep = dependency('gjs-1.0', version: gjs_req)
+  gjs_dep = dependency('gjs-1.0', version: '>= ' + gjs_req_version)
   pango_dep = dependency('pango')
 endif
 
@@ -97,12 +91,12 @@ add_project_arguments(
   '-DGDK_DISABLE_DEPRECATED',
   '-DGETTEXT_PACKAGE="GPaste"',
   '-DGTK_DISABLE_DEPRECATED',
-  '-DLOCALEDIR="' + join_paths(get_option('prefix'), get_option('datadir'), 'locale') + '"',
+  '-DLOCALEDIR="' + (get_option('prefix') / get_option('datadir') / 'locale') + '"',
   '-DPACKAGE="gpaste"',
   '-DPACKAGE_NAME="GPaste"',
   '-DPACKAGE_STRING="GPaste ' + meson.project_version() +'"',
   '-DPACKAGE_VERSION="' + meson.project_version() + '"',
-  '-DPKGLIBEXECDIR="' + join_paths(get_option('prefix'), get_option('libexecdir')) +'"',
+  '-DPKGLIBEXECDIR="' + (get_option('prefix') / get_option('libexecdir')) + '"',
   '-DVERSION="' + meson.project_version() + '"',
   language: 'c',
 )
@@ -111,11 +105,11 @@ conf = configuration_data()
 
 # Used later on to configure services&gnome-shell extension
 conf.set('GETTEXT_PACKAGE', 'GPaste')
-conf.set('pkglibexecdir', join_paths(get_option('prefix'), get_option('libexecdir'), 'gpaste'))
+conf.set('pkglibexecdir', get_option('prefix') / get_option('libexecdir') / 'gpaste')
 conf.set('version', meson.project_version())
 conf.set('gettext_domain', 'GPaste')
 
-gpaste_po_dir = join_paths(meson.current_source_dir(), 'po')
+gpaste_po_dir = meson.current_source_dir() / 'po'
 
 subdir('man')
 subdir('po')

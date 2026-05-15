@@ -3,7 +3,7 @@ gschema_xml = configure_file(
   configuration: conf,
   output: 'org.gnome.GPaste.gschema.xml',
   install: true,
-  install_dir: join_paths(get_option('datadir'), 'glib-2.0', 'schemas'),
+  install_dir: get_option('datadir') / 'glib-2.0' / 'schemas',
 )
 
 # Compile the schema in the build directory for tests
