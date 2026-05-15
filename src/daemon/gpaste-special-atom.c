@@ -12,7 +12,6 @@ static const gchar *special_atoms[G_PASTE_SPECIAL_ATOM_LAST] = {
     [G_PASTE_SPECIAL_ATOM_TEXT_HTML_UTF8]     = "text/html;charset=utf-8",
     [G_PASTE_SPECIAL_ATOM_TEXT_XML]           = "text/xml",
     [G_PASTE_SPECIAL_ATOM_TEXT_XML_UTF8]      = "text/xml;charset=utf-8",
-    [G_PASTE_SPECIAL_ATOM_X_COLOR]            = "application/x-color",
 };
 
 G_PASTE_VISIBLE GType
@@ -28,7 +27,6 @@ g_paste_special_atom_get_type (void)
             { G_PASTE_SPECIAL_ATOM_TEXT_HTML_UTF8,     "G_PASTE_SPECIAL_ATOM_TEXT_HTML_UTF8",     "text-html-utf8"     },
             { G_PASTE_SPECIAL_ATOM_TEXT_XML,           "G_PASTE_SPECIAL_ATOM_TEXT_XML",           "text-xml"           },
             { G_PASTE_SPECIAL_ATOM_TEXT_XML_UTF8,      "G_PASTE_SPECIAL_ATOM_TEXT_XML_UTF8",      "text-xml-utf8"      },
-            { G_PASTE_SPECIAL_ATOM_X_COLOR,            "G_PASTE_SPECIAL_ATOM_X_COLOR",            "x-color"            },
             { G_PASTE_SPECIAL_ATOM_INVALID,            NULL,                                      NULL                 },
         };
         etype = g_enum_register_static (g_intern_static_string ("GPasteSpecialAtom"), values);

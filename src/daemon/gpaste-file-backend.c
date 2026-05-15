@@ -6,6 +6,7 @@
 
 #include <gpaste/gpaste-util.h>
 
+#include <gpaste-color-item.h>
 #include <gpaste-file-backend.h>
 #include <gpaste-image-item.h>
 #include <gpaste-password-item.h>
@@ -143,7 +144,8 @@ typedef enum
     TEXT,
     IMAGE,
     URIS,
-    PASSWORD
+    PASSWORD,
+    COLOR
 } Type;
 
 typedef enum
@@ -254,6 +256,8 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                     data->type = URIS;
                 else if (g_paste_str_equal (*v, "Password"))
                     data->type = PASSWORD;
+                else if (g_paste_str_equal (*v, "Color"))
+                    data->type = COLOR;
                 else
                     g_warning ("Unknown item kind: %s", *v);
             }
@@ -323,6 +327,9 @@ add_item (Data *data)
         break;
     case PASSWORD:
         item = g_paste_password_item_new (data->name, data->text);
+        break;
+    case COLOR:
+        item = g_paste_color_item_new_from_str (data->text);
         break;
     case IMAGE:
         if (data->images_support && data->date)

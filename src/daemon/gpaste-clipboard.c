@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <gpaste-clipboard.h>
+#include <gpaste-color-item.h>
 #include <gpaste-image-item.h>
 #include <gpaste-uris-item.h>
 
@@ -30,6 +31,7 @@ typedef enum
     CLIPBOARD_CONTENT_TEXT,
     CLIPBOARD_CONTENT_IMAGE,
     CLIPBOARD_CONTENT_FILE_LIST,
+    CLIPBOARD_CONTENT_COLOR,
 } GPasteClipboardContent;
 
 typedef struct
@@ -42,6 +44,7 @@ typedef struct
     union {
         gchar       *str;
         GdkFileList *file_list;
+        GdkRGBA      rgba;
     };
 
     guint64                c_signals[C_LAST_SIGNAL];
@@ -120,6 +123,7 @@ g_paste_clipboard_private_clear_content (GPasteClipboardPrivate *priv)
     case CLIPBOARD_CONTENT_FILE_LIST:
         g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
         break;
+    case CLIPBOARD_CONTENT_COLOR:
     case CLIPBOARD_CONTENT_NONE:
         break;
     }
@@ -379,6 +383,18 @@ g_paste_file_list_equal (GdkFileList *a,
 }
 
 static void
+g_paste_clipboard_private_set_color (GPasteClipboardPrivate *priv,
+                                     const GdkRGBA          *rgba)
+{
+    g_paste_clipboard_private_clear_content (priv);
+
+    g_debug ("%s: set color", _g_paste_clipboard_private_target_name (priv));
+
+    priv->content_kind = CLIPBOARD_CONTENT_COLOR;
+    priv->rgba = *rgba;
+}
+
+static void
 g_paste_clipboard_private_set_file_list (GPasteClipboardPrivate *priv,
                                          GdkFileList            *file_list)
 {
@@ -468,6 +484,81 @@ g_paste_clipboard_set_texture (GPasteClipboard                *self,
                                       NULL, /* cancellable */
                                       g_paste_clipboard_on_texture_ready,
                                       data);
+}
+
+typedef void (*GPasteClipboardRGBACallback) (GPasteClipboard *self,
+                                             const GdkRGBA   *rgba,
+                                             gpointer         user_data);
+
+typedef struct {
+    GPasteClipboard             *self;
+    GPasteClipboardRGBACallback  callback;
+    gpointer                     user_data;
+} GPasteClipboardRGBACallbackData;
+
+static void
+g_paste_clipboard_on_rgba_ready (GObject      *source_object,
+                                 GAsyncResult *res,
+                                 gpointer      user_data)
+{
+    g_autofree GPasteClipboardRGBACallbackData *data = user_data;
+    GPasteClipboard *self = data->self;
+    g_autoptr (GError) error = NULL;
+    const GValue *value = gdk_clipboard_read_value_finish (GDK_CLIPBOARD (source_object), res, &error);
+
+    if (!value)
+    {
+        if (error)
+            g_debug ("Failed to read color from clipboard: %s", error->message);
+        if (data->callback)
+            data->callback (self, NULL, data->user_data);
+        return;
+    }
+
+    const GdkRGBA *rgba = g_value_get_boxed (value);
+
+    if (!rgba)
+    {
+        if (data->callback)
+            data->callback (self, NULL, data->user_data);
+        return;
+    }
+
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
+
+    if (priv->content_kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &priv->rgba))
+    {
+        if (data->callback)
+            data->callback (self, NULL, data->user_data);
+        return;
+    }
+
+    g_paste_clipboard_private_set_color (priv, rgba);
+
+    if (data->callback)
+        data->callback (self, &priv->rgba, data->user_data);
+}
+
+static void
+g_paste_clipboard_set_color (GPasteClipboard             *self,
+                              GPasteClipboardRGBACallback  callback,
+                              gpointer                     user_data)
+{
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
+
+    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardRGBACallbackData *data = g_new (GPasteClipboardRGBACallbackData, 1);
+
+    data->self = self;
+    data->callback = callback;
+    data->user_data = user_data;
+
+    gdk_clipboard_read_value_async (priv->real,
+                                    GDK_TYPE_RGBA,
+                                    G_PRIORITY_DEFAULT,
+                                    NULL, /* cancellable */
+                                    g_paste_clipboard_on_rgba_ready,
+                                    data);
 }
 
 typedef void (*GPasteClipboardSpecialAtomCallback) (GPasteClipboard  *self,
@@ -565,6 +656,7 @@ typedef struct {
     gpointer                      user_data;
     gint                          pending;
     const gchar                  *text;
+    const GdkRGBA                *rgba;
     GdkFileList                  *file_list;
     GdkTexture                   *texture;
     gboolean                      fallback;
@@ -581,12 +673,14 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
 
     if (data->file_list)
         item = G_PASTE_ITEM (g_paste_uris_item_new (data->file_list));
+    else if (data->rgba)
+        item = G_PASTE_ITEM (g_paste_color_item_new (data->rgba));
     else if (data->text)
         item = G_PASTE_ITEM (g_paste_text_item_new (data->text));
     else if (data->texture)
         item = G_PASTE_ITEM (g_paste_image_item_new (data->texture));
 
-    if (item && !data->texture)
+    if (item && !data->texture && !data->rgba)
     {
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
@@ -678,6 +772,16 @@ g_paste_clipboard_update_on_texture_ready (GPasteClipboard *self G_GNUC_UNUSED,
 }
 
 static void
+g_paste_clipboard_update_on_color_ready (GPasteClipboard *self G_GNUC_UNUSED,
+                                         const GdkRGBA   *rgba,
+                                         gpointer         user_data)
+{
+    GPasteClipboardUpdateData *data = user_data;
+    data->rgba = rgba;
+    g_paste_clipboard_update_maybe_done (data);
+}
+
+static void
 g_paste_clipboard_update_on_special_atom_ready (GPasteClipboard  *self G_GNUC_UNUSED,
                                                 GPasteSpecialAtom atom,
                                                 GBytes           *bytes,
@@ -711,8 +815,9 @@ g_paste_clipboard_update (GPasteClipboard              *self,
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GdkContentFormats *formats = gdk_clipboard_get_formats (priv->real);
     gboolean has_uris = gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST);
-    gboolean has_text = !has_uris && gdk_content_formats_contain_gtype (formats, G_TYPE_STRING);
-    gboolean has_texture = !has_uris && !has_text &&
+    gboolean has_color = !has_uris && gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA);
+    gboolean has_text = !has_uris && !has_color && gdk_content_formats_contain_gtype (formats, G_TYPE_STRING);
+    gboolean has_texture = !has_uris && !has_color && !has_text &&
                            g_paste_settings_get_images_support (priv->settings) &&
                            gdk_content_formats_contain_gtype (formats, GDK_TYPE_TEXTURE);
 
@@ -723,7 +828,7 @@ g_paste_clipboard_update (GPasteClipboard              *self,
     data->user_data = user_data;
     data->pending = 1;
 
-    if (has_uris || has_text || has_texture)
+    if (has_uris || has_color || has_text || has_texture)
     {
         gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
 
@@ -739,6 +844,8 @@ g_paste_clipboard_update (GPasteClipboard              *self,
         ++data->pending;
         if (has_uris)
             g_paste_clipboard_fetch_file_list (self, data);
+        else if (has_color)
+            g_paste_clipboard_set_color (self, g_paste_clipboard_update_on_color_ready, data);
         else if (has_text)
             g_paste_clipboard_set_text (self, g_paste_clipboard_update_on_text_ready, data);
         else
@@ -792,6 +899,14 @@ g_paste_clipboard_select_item (GPasteClipboard *self,
             return FALSE;
 
         g_paste_clipboard_private_select_texture (priv, texture, checksum);
+        return TRUE;
+    }
+
+    if (_G_PASTE_IS_COLOR_ITEM (item))
+    {
+        const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
+        g_paste_clipboard_private_set_color (priv, rgba);
+        gdk_clipboard_set (priv->real, GDK_TYPE_RGBA, rgba);
         return TRUE;
     }
 
