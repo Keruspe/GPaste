@@ -24,16 +24,27 @@ enum
     C_LAST_SIGNAL
 };
 
+typedef enum
+{
+    CLIPBOARD_CONTENT_NONE,
+    CLIPBOARD_CONTENT_TEXT,
+    CLIPBOARD_CONTENT_IMAGE,
+    CLIPBOARD_CONTENT_FILE_LIST,
+} GPasteClipboardContent;
+
 typedef struct
 {
-    GdkClipboard   *real;
-    gboolean        is_clipboard;
-    GPasteSettings *settings;
-    gchar          *text;
-    gchar          *image_checksum;
-    GdkFileList    *file_list;
+    GdkClipboard          *real;
+    gboolean               is_clipboard;
+    GPasteSettings        *settings;
 
-    guint64         c_signals[C_LAST_SIGNAL];
+    GPasteClipboardContent content_kind;
+    union {
+        gchar       *str;
+        GdkFileList *file_list;
+    };
+
+    guint64                c_signals[C_LAST_SIGNAL];
 } GPasteClipboardPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Clipboard, clipboard, G_TYPE_OBJECT)
@@ -88,7 +99,7 @@ g_paste_clipboard_get_text (const GPasteClipboard *self)
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
-    return priv->text;
+    return (priv->content_kind == CLIPBOARD_CONTENT_TEXT) ? priv->str : NULL;
 }
 
 static const gchar *
@@ -98,18 +109,33 @@ _g_paste_clipboard_private_target_name (const GPasteClipboardPrivate *priv)
 }
 
 static void
+g_paste_clipboard_private_clear_content (GPasteClipboardPrivate *priv)
+{
+    switch (priv->content_kind)
+    {
+    case CLIPBOARD_CONTENT_TEXT:
+    case CLIPBOARD_CONTENT_IMAGE:
+        g_clear_pointer (&priv->str, g_free);
+        break;
+    case CLIPBOARD_CONTENT_FILE_LIST:
+        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
+        break;
+    case CLIPBOARD_CONTENT_NONE:
+        break;
+    }
+    priv->content_kind = CLIPBOARD_CONTENT_NONE;
+}
+
+static void
 g_paste_clipboard_private_set_text (GPasteClipboardPrivate *priv,
                                     const gchar            *text)
 {
-    g_free (priv->text);
-    g_free (priv->image_checksum);
-    if (priv->file_list)
-        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
+    g_paste_clipboard_private_clear_content (priv);
 
     g_debug ("%s: set text", _g_paste_clipboard_private_target_name (priv));
 
-    priv->text = g_strdup (text);
-    priv->image_checksum = NULL;
+    priv->content_kind = CLIPBOARD_CONTENT_TEXT;
+    priv->str = g_strdup (text);
 }
 
 typedef struct {
@@ -151,7 +177,7 @@ g_paste_clipboard_on_text_ready (GObject      *source_object,
             data->callback (self, NULL, data->user_data);
         return;
     }
-    if (priv->text && g_paste_str_equal (priv->text, to_add))
+    if (priv->content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_str_equal (priv->str, to_add))
     {
         if (data->callback)
             data->callback (self, NULL, data->user_data);
@@ -166,7 +192,7 @@ g_paste_clipboard_on_text_ready (GObject      *source_object,
         g_paste_clipboard_private_set_text (priv, to_add);
 
     if (data->callback)
-        data->callback (self, priv->text, data->user_data);
+        data->callback (self, priv->str, data->user_data);
 }
 
 static void
@@ -260,15 +286,12 @@ g_paste_clipboard_clear (GPasteClipboard *self)
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
 
     /* We're already clear, don't enter an infinite event loop */
-    if (!priv->text && !priv->image_checksum && !priv->file_list)
+    if (priv->content_kind == CLIPBOARD_CONTENT_NONE)
         return;
 
     g_debug ("%s: clear", _g_paste_clipboard_private_target_name (priv));
 
-    g_clear_pointer (&priv->text, g_free);
-    g_clear_pointer (&priv->image_checksum, g_free);
-    if (priv->file_list)
-        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
+    g_paste_clipboard_private_clear_content (priv);
 
     if (gdk_clipboard_is_local (priv->real))
         gdk_clipboard_set_content (priv->real, NULL);
@@ -322,20 +345,16 @@ g_paste_clipboard_get_image_checksum (const GPasteClipboard *self)
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
-    return priv->image_checksum;
+    return (priv->content_kind == CLIPBOARD_CONTENT_IMAGE) ? priv->str : NULL;
 }
 
 static void
 g_paste_clipboard_private_set_image_checksum (GPasteClipboardPrivate *priv,
                                               const gchar            *image_checksum)
 {
-    g_free (priv->text);
-    g_free (priv->image_checksum);
-    if (priv->file_list)
-        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
-
-    priv->text = NULL;
-    priv->image_checksum = g_strdup (image_checksum);
+    g_paste_clipboard_private_clear_content (priv);
+    priv->content_kind = CLIPBOARD_CONTENT_IMAGE;
+    priv->str = g_strdup (image_checksum);
 }
 
 static gboolean
@@ -363,16 +382,15 @@ static void
 g_paste_clipboard_private_set_file_list (GPasteClipboardPrivate *priv,
                                          GdkFileList            *file_list)
 {
-    g_free (priv->text);
-    g_free (priv->image_checksum);
-    if (priv->file_list)
-        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
+    g_paste_clipboard_private_clear_content (priv);
 
     g_debug ("%s: set file list", _g_paste_clipboard_private_target_name (priv));
 
-    priv->text = NULL;
-    priv->image_checksum = NULL;
-    priv->file_list = file_list ? g_boxed_copy (GDK_TYPE_FILE_LIST, file_list) : NULL;
+    if (file_list)
+    {
+        priv->content_kind = CLIPBOARD_CONTENT_FILE_LIST;
+        priv->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
+    }
 }
 
 static void
@@ -418,7 +436,7 @@ g_paste_clipboard_on_texture_ready (GObject      *source_object,
     g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
     GdkTexture *result = NULL;
 
-    if (g_paste_str_equal (checksum, priv->image_checksum))
+    if (priv->content_kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->str))
     {
         /* Same image, nothing to do */
     }
@@ -825,7 +843,7 @@ g_paste_clipboard_ensure_not_empty (GPasteClipboard *self,
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
 
-    if (priv->text || priv->image_checksum || priv->file_list)
+    if (priv->content_kind != CLIPBOARD_CONTENT_NONE)
         return;
 
     const GList *hist = g_paste_history_get_history (history);
@@ -865,10 +883,7 @@ g_paste_clipboard_finalize (GObject *object)
 {
     GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (G_PASTE_CLIPBOARD (object));
 
-    g_free (priv->text);
-    g_free (priv->image_checksum);
-    if (priv->file_list)
-        g_boxed_free (GDK_TYPE_FILE_LIST, priv->file_list);
+    g_paste_clipboard_private_clear_content (priv);
 
     G_OBJECT_CLASS (g_paste_clipboard_parent_class)->finalize (object);
 }
