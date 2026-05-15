@@ -814,12 +814,16 @@ g_paste_clipboard_update (GPasteClipboard              *self,
 
     const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
     GdkContentFormats *formats = gdk_clipboard_get_formats (priv->real);
-    gboolean has_uris = gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST);
-    gboolean has_color = !has_uris && gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA);
-    gboolean has_text = !has_uris && !has_color && gdk_content_formats_contain_gtype (formats, G_TYPE_STRING);
-    gboolean has_texture = !has_uris && !has_color && !has_text &&
-                           g_paste_settings_get_images_support (priv->settings) &&
-                           gdk_content_formats_contain_gtype (formats, GDK_TYPE_TEXTURE);
+    GPasteClipboardContent content_kind = CLIPBOARD_CONTENT_NONE;
+    if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST))
+        content_kind = CLIPBOARD_CONTENT_FILE_LIST;
+    else if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA))
+        content_kind = CLIPBOARD_CONTENT_COLOR;
+    else if (g_paste_settings_get_images_support (priv->settings) &&
+             gdk_content_formats_contain_gtype (formats, GDK_TYPE_TEXTURE))
+        content_kind = CLIPBOARD_CONTENT_IMAGE;
+    else if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
+        content_kind = CLIPBOARD_CONTENT_TEXT;
 
     GPasteClipboardUpdateData *data = g_new0 (GPasteClipboardUpdateData, 1);
 
@@ -828,11 +832,12 @@ g_paste_clipboard_update (GPasteClipboard              *self,
     data->user_data = user_data;
     data->pending = 1;
 
-    if (has_uris || has_color || has_text || has_texture)
+    if (content_kind != CLIPBOARD_CONTENT_NONE)
     {
         gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
 
-        if ((has_uris || has_text) && g_paste_settings_get_rich_text_support (priv->settings))
+        if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
+            (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (priv->settings)))
         {
             for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
             {
@@ -842,14 +847,23 @@ g_paste_clipboard_update (GPasteClipboard              *self,
         }
 
         ++data->pending;
-        if (has_uris)
+        switch (content_kind)
+        {
+        case CLIPBOARD_CONTENT_FILE_LIST:
             g_paste_clipboard_fetch_file_list (self, data);
-        else if (has_color)
+            break;
+        case CLIPBOARD_CONTENT_COLOR:
             g_paste_clipboard_set_color (self, g_paste_clipboard_update_on_color_ready, data);
-        else if (has_text)
+            break;
+        case CLIPBOARD_CONTENT_TEXT:
             g_paste_clipboard_set_text (self, g_paste_clipboard_update_on_text_ready, data);
-        else
+            break;
+        case CLIPBOARD_CONTENT_IMAGE:
             g_paste_clipboard_set_texture (self, g_paste_clipboard_update_on_texture_ready, data);
+            break;
+        case CLIPBOARD_CONTENT_NONE:
+            g_assert_not_reached ();
+        }
 
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
