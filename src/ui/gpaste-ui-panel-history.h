@@ -13,22 +13,22 @@
 
 #include <gpaste/gpaste-client.h>
 
-#include <gtk/gtk.h>
+#include <adwaita.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_PANEL_HISTORY (g_paste_ui_panel_history_get_type ())
 
-G_PASTE_FINAL_TYPE (UiPanelHistory, ui_panel_history, UI_PANEL_HISTORY, GtkListBoxRow)
+G_PASTE_FINAL_TYPE (UiPanelHistory, ui_panel_history, UI_PANEL_HISTORY, AdwSidebarItem)
 
-void g_paste_ui_panel_history_activate  (GPasteUiPanelHistory *self);
+void g_paste_ui_panel_history_activate   (GPasteUiPanelHistory *self);
 void g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
                                           guint64               length);
 
 const gchar *g_paste_ui_panel_history_get_history (const GPasteUiPanelHistory *self);
 
-GtkWidget *g_paste_ui_panel_history_new (GPasteClient *client,
-                                         const gchar  *history);
+GPasteUiPanelHistory *g_paste_ui_panel_history_new (GPasteClient *client,
+                                                    const gchar  *history);
 
 G_END_DECLS
 

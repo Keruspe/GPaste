@@ -67,8 +67,15 @@ g_paste_ui_item_on_image_path_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    g_autoptr (GtkWidget) image = gtk_image_new_from_file (path);
-    g_paste_ui_item_skeleton_set_thumbnail (G_PASTE_UI_ITEM_SKELETON (self), GTK_IMAGE (image));
+    g_autoptr (GError) load_error = NULL;
+    g_autoptr (GdkTexture) texture = gdk_texture_new_from_filename (path, &load_error);
+    if (!texture)
+    {
+        if (load_error)
+            g_warning ("Failed to load image: %s", load_error->message);
+        return;
+    }
+    g_paste_ui_item_skeleton_set_thumbnail (G_PASTE_UI_ITEM_SKELETON (self), texture);
 }
 
 static void
@@ -109,14 +116,9 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
     g_paste_client_get_element_kind (priv->client, priv->uuid, g_paste_ui_item_on_kind_ready, g_object_ref (self));
 
     if (!priv->index)
-    {
-        g_autofree gchar *markup = g_markup_printf_escaped ("<b>%s</b>", oneline);
-        g_paste_ui_item_skeleton_set_markup (G_PASTE_UI_ITEM_SKELETON (self), markup);
-    }
+        g_paste_ui_item_skeleton_set_text_bold (G_PASTE_UI_ITEM_SKELETON (self), oneline);
     else
-    {
         g_paste_ui_item_skeleton_set_text (G_PASTE_UI_ITEM_SKELETON (self), oneline);
-    }
 }
 
 static void
@@ -148,8 +150,7 @@ g_paste_ui_item_on_item_ready (GObject      *source_object G_GNUC_UNUSED,
     if (!txt || error)
         return;
 
-    g_autofree gchar *uuid = priv->uuid;
-    priv->uuid = g_strdup (g_paste_client_item_get_uuid (txt));
+    g_set_str (&priv->uuid, g_paste_client_item_get_uuid (txt));
 
     _g_paste_ui_item_ready (self, g_paste_client_item_get_value (txt));
 }
@@ -194,11 +195,11 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
     if (index != (guint64) -1)
     {
         g_paste_ui_item_reset_text (self);
-        gtk_widget_show (GTK_WIDGET (self));
+        gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
     }
     else if (priv->uuid)
     {
-        gtk_widget_hide (GTK_WIDGET (self));
+        gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
     }
 }
 
@@ -232,9 +233,8 @@ g_paste_ui_item_set_uuid (GPasteUiItem *self,
     g_return_if_fail (_G_PASTE_IS_UI_ITEM (self));
 
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
-    g_autofree gchar *_uuid = priv->uuid;
 
-    priv->uuid = g_strdup (uuid);
+    g_set_str (&priv->uuid, uuid);
 
     _g_paste_ui_item_set_index (self, (guint64) -2, TRUE);
 }

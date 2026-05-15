@@ -1,16 +1,16 @@
 /*
  * This file is part of GPaste.
  *
- * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+ * Copyright (c) 2010-2022, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gtk3/gpaste-gtk-macros.h>
-#include <gpaste-gtk3/gpaste-gtk-util.h>
+#include <gpaste-gtk4/gpaste-gtk-macros.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-window.h>
 
 static GPasteUiWindow *
-get_ui_window(gpointer user_data)
+get_ui_window (gpointer user_data)
 {
     return G_PASTE_UI_WINDOW (gtk_application_get_windows (GTK_APPLICATION (user_data))->data);
 }
@@ -34,24 +34,23 @@ show_about_dialog (gpointer user_data)
     if (!gtk_widget_get_realized (widget))
         return G_SOURCE_CONTINUE;
 
-    GtkWindow *parent = GTK_WINDOW (widget);
     const gchar *authors[] = {
         "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>",
         NULL
     };
 
-    gtk_show_about_dialog (parent,
-                           "program-name",   PACKAGE_NAME,
-                           "version",        PACKAGE_VERSION,
-                           "logo-icon-name", G_PASTE_ICON_NAME,
-                           "license-type",   GTK_LICENSE_BSD,
-                           "authors",        authors,
-                           "copyright",      "Copyright (c) 2010-2022, Marc-Antoine Perennou",
-                           "comments",       "Clipboard management system",
-                           "website",        "http://www.imagination-land.org/tags/GPaste.html",
-                           "website-label",  "Follow GPaste news",
-                           "wrap-license",   TRUE,
-                           NULL);
+    AdwAboutDialog *dialog = ADW_ABOUT_DIALOG (adw_about_dialog_new ());
+
+    adw_about_dialog_set_application_name (dialog, PACKAGE_NAME);
+    adw_about_dialog_set_version (dialog, PACKAGE_VERSION);
+    adw_about_dialog_set_application_icon (dialog, G_PASTE_ICON_NAME);
+    adw_about_dialog_set_license_type (dialog, GTK_LICENSE_BSD);
+    adw_about_dialog_set_developers (dialog, authors);
+    adw_about_dialog_set_copyright (dialog, "Copyright (c) 2010-2022, Marc-Antoine Perennou");
+    adw_about_dialog_set_comments (dialog, _("Clipboard management system"));
+    adw_about_dialog_set_website (dialog, "http://www.imagination-land.org/tags/GPaste.html");
+
+    adw_dialog_present (ADW_DIALOG (dialog), widget);
 
     return G_SOURCE_REMOVE;
 }
@@ -91,7 +90,7 @@ search_activated (GSimpleAction *action    G_GNUC_UNUSED,
 gint
 main (gint argc, gchar *argv[])
 {
-    G_PASTE_GTK_INIT_APPLICATION_FULL ("Ui", g_paste_gtk_util_show_win);
+    G_PASTE_GTK_INIT_APPLICATION ("Ui");
 
     GActionEntry app_entries[] = {
         { "about",  about_activated,  NULL, NULL, NULL, { 0 } },

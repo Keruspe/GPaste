@@ -14,7 +14,7 @@ app_get_platform_data (void)
     g_auto (GVariantBuilder) builder;
     const gchar *startup_id;
 
-    g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
+    g_variant_builder_init_static (&builder, G_VARIANT_TYPE_VARDICT);
 
     if ((startup_id = g_getenv ("DESKTOP_STARTUP_ID")))
         g_variant_builder_add (&builder, "{sv}", "desktop-startup-id", g_variant_new_string (startup_id));
@@ -148,7 +148,7 @@ g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUS
 
     g_auto (GVariantBuilder) params;
 
-    g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
+    g_variant_builder_init_static (&params, G_VARIANT_TYPE ("av"));
 
     if (arg)
         g_variant_builder_add (&params, "v", arg);
@@ -223,7 +223,7 @@ g_paste_util_activate_ui_sync (const gchar *action,
 
     g_auto (GVariantBuilder) params;
 
-    g_variant_builder_init (&params, G_VARIANT_TYPE ("av"));
+    g_variant_builder_init_static (&params, G_VARIANT_TYPE ("av"));
 
     if (arg)
         g_variant_builder_add (&params, "v", arg);

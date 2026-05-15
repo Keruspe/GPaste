@@ -25,7 +25,7 @@ g_paste_ui_search_init (GPasteUiSearch *self)
 
     gtk_widget_set_tooltip_text (widget, _("Search"));
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
-    gtk_container_add (GTK_CONTAINER (self), gtk_image_new_from_icon_name ("edit-find-symbolic", GTK_ICON_SIZE_BUTTON));
+    gtk_button_set_child (GTK_BUTTON (self), gtk_image_new_from_icon_name ("edit-find-symbolic"));
 }
 
 /**
@@ -39,5 +39,5 @@ g_paste_ui_search_init (GPasteUiSearch *self)
 G_PASTE_VISIBLE GtkWidget *
 g_paste_ui_search_new (void)
 {
-    return gtk_widget_new (G_PASTE_TYPE_UI_SEARCH, NULL);
+    return g_object_new (G_PASTE_TYPE_UI_SEARCH, NULL);
 }

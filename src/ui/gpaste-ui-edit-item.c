@@ -4,6 +4,8 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+#include <adwaita.h>
+
 #include <gpaste-ui-edit-item.h>
 
 struct _GPasteUiEditItem
@@ -24,6 +26,35 @@ typedef struct
     gchar     *uuid;
 } CallbackData;
 
+typedef struct
+{
+    GPasteClient  *client;
+    gchar         *uuid;
+    GtkTextBuffer *buffer;
+} EditItemDialogData;
+
+static void
+on_edit_response (GObject      *dialog,
+                  GAsyncResult *result,
+                  gpointer      user_data)
+{
+    g_autofree EditItemDialogData *data = user_data;
+    g_autoptr (GPasteClient) client = data->client;
+    g_autofree gchar *uuid = data->uuid;
+    g_autoptr (GtkTextBuffer) buffer = data->buffer;
+    const gchar *response = adw_alert_dialog_choose_finish (ADW_ALERT_DIALOG (dialog), result);
+
+    if (g_strcmp0 (response, "confirm") == 0)
+    {
+        GtkTextIter start, end;
+
+        gtk_text_buffer_get_bounds (buffer, &start, &end);
+        g_autofree gchar *txt = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+        if (txt && *txt)
+            g_paste_client_replace (client, uuid, txt, NULL, NULL);
+    }
+}
+
 static void
 on_item_ready (GObject      *source_object,
                GAsyncResult *res,
@@ -38,38 +69,32 @@ on_item_ready (GObject      *source_object,
     if (!old_item)
         return;
 
-    GtkWidget *dialog = gtk_dialog_new_with_buttons (PACKAGE_STRING, rootwin,
-                                                     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
-                                                     _("Edit"),   GTK_RESPONSE_OK,
-                                                     _("Cancel"), GTK_RESPONSE_CANCEL,
-                                                     NULL);
-    GtkDialog *d = GTK_DIALOG (dialog);
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (PACKAGE_STRING, NULL));
     GtkWidget *text = gtk_text_view_new ();
     GtkTextView *tv = GTK_TEXT_VIEW (text);
     GtkTextBuffer *buf = gtk_text_view_get_buffer (tv);
-    GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
+    GtkWidget *scroll = gtk_scrolled_window_new ();
     GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
 
     gtk_text_view_set_wrap_mode (tv, GTK_WRAP_WORD);
     gtk_text_buffer_set_text (buf, old_item, -1);
     gtk_scrolled_window_set_min_content_height (sw, 300);
     gtk_scrolled_window_set_min_content_width (sw, 600);
-    gtk_container_add (GTK_CONTAINER (sw), text);
+    gtk_scrolled_window_set_child (sw, text);
     gtk_widget_set_vexpand (scroll, TRUE);
-    gtk_widget_set_valign (scroll, TRUE);
-    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (d)), scroll, TRUE, TRUE, 0);
-    gtk_widget_show_all (scroll);
 
-    if (gtk_dialog_run (d) == GTK_RESPONSE_OK)
-    {
-        const gchar *txt;
+    adw_alert_dialog_add_responses (dialog,
+                                    "cancel",  _("Cancel"),
+                                    "confirm", _("Edit"),
+                                    NULL);
+    adw_alert_dialog_set_extra_child (dialog, scroll);
 
-        g_object_get (G_OBJECT (buf), "text", &txt, NULL);
-        if (txt && *txt)
-            g_paste_client_replace (client, uuid, txt, NULL, NULL);
-    }
+    EditItemDialogData *dialog_data = g_new (EditItemDialogData, 1);
+    dialog_data->client = g_object_ref (client);
+    dialog_data->uuid = g_strdup (uuid);
+    dialog_data->buffer = g_object_ref (buf);
 
-    gtk_widget_destroy (dialog);
+    adw_alert_dialog_choose (dialog, GTK_WIDGET (rootwin), NULL, on_edit_response, dialog_data);
 }
 
 static void
@@ -77,7 +102,7 @@ g_paste_ui_edit_item_activate (GPasteUiItemAction *self,
                                GPasteClient       *client,
                                const gchar        *uuid)
 {
-    CallbackData *data = g_malloc (sizeof (CallbackData));
+    CallbackData *data = g_new (CallbackData, 1);
     GPasteUiEditItemPrivate *priv = g_paste_ui_edit_item_get_instance_private (G_PASTE_UI_EDIT_ITEM (self));
 
     data->rootwin = g_object_ref (priv->rootwin);

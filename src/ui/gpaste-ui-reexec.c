@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gtk3/gpaste-gtk-util.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-reexec.h>
 
@@ -22,13 +22,30 @@ typedef struct
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiReexec, ui_reexec, GTK_TYPE_BUTTON)
 
+typedef struct
+{
+    GPasteClient *client;
+} ReexecCallbackData;
+
+static void
+on_reexec_confirmed (gboolean confirmed,
+                     gpointer  user_data)
+{
+    g_autofree ReexecCallbackData *data = user_data;
+    g_autoptr (GPasteClient) client = data->client;
+
+    if (confirmed)
+        g_paste_client_reexecute (client, NULL, NULL);
+}
+
 static void
 g_paste_ui_reexec_clicked (GtkButton *button)
 {
     const GPasteUiReexecPrivate *priv = _g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (button));
+    ReexecCallbackData *data = g_new (ReexecCallbackData, 1);
 
-    if (g_paste_gtk_util_confirm_dialog (priv->topwin, _("Restart"), _("Do you really want to restart the daemon?")))
-        g_paste_client_reexecute (priv->client, NULL, NULL);
+    data->client = g_object_ref (priv->client);
+    g_paste_gtk_util_confirm_dialog (priv->topwin, _("Restart"), _("Do you really want to restart the daemon?"), on_reexec_confirmed, data);
 }
 
 static void
@@ -55,7 +72,7 @@ g_paste_ui_reexec_init (GPasteUiReexec *self)
 
     gtk_widget_set_tooltip_text (widget, _("Restart the daemon"));
     gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
-    gtk_container_add (GTK_CONTAINER (self), gtk_image_new_from_icon_name ("view-refresh-symbolic", GTK_ICON_SIZE_BUTTON));
+    gtk_button_set_child (GTK_BUTTON (self), gtk_image_new_from_icon_name ("view-refresh-symbolic"));
 }
 
 /**
@@ -75,7 +92,7 @@ g_paste_ui_reexec_new (GtkWindow    *topwin,
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_REEXEC,NULL);
+    GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_REEXEC, NULL);
     GPasteUiReexecPrivate *priv = g_paste_ui_reexec_get_instance_private (G_PASTE_UI_REEXEC (self));
 
     priv->topwin = topwin;

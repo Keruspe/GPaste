@@ -20,7 +20,7 @@ G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesGroup, preferences_group, ADW_T
 
 #define CALLBACK_DATA(w)                                                                                \
     GPasteGtkPreferencesGroupPrivate *priv = g_paste_gtk_preferences_group_get_instance_private (self); \
-    _CallbackDataWrapper *_data = (_CallbackDataWrapper *) g_malloc0 (sizeof (_CallbackDataWrapper));   \
+    _CallbackDataWrapper *_data = g_new0 (_CallbackDataWrapper, 1);                                      \
     CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                          \
     priv->callback_data = g_slist_prepend (priv->callback_data, _data);                                 \
     _data->widget = G_OBJECT (w);                                                                       \

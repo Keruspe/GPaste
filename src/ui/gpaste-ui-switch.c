@@ -4,32 +4,23 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gtk3/gpaste-gtk-util.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-switch.h>
-
-struct _GPasteUiSwitch
-{
-    GtkSwitch parent_instance;
-};
-
-enum
-{
-    C_TRACKING,
-
-    C_LAST_SIGNAL
-};
 
 typedef struct
 {
     GPasteClient *client;
-
     GtkWindow    *topwin;
+} GPasteUiSwitchData;
 
-    guint64       c_signals[C_LAST_SIGNAL];
-} GPasteUiSwitchPrivate;
+static void
+g_paste_ui_switch_data_free (gpointer user_data)
+{
+    g_autofree GPasteUiSwitchData *data = user_data;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiSwitch, ui_switch, GTK_TYPE_SWITCH)
+    g_clear_object (&data->client);
+}
 
 static void
 on_tracking_changed (GPasteClient *client G_GNUC_UNUSED,
@@ -41,57 +32,48 @@ on_tracking_changed (GPasteClient *client G_GNUC_UNUSED,
     gtk_switch_set_active (sw, state);
 }
 
-static gboolean
-g_paste_ui_button_press_event (GtkWidget      *widget,
-                               GdkEventButton *event G_GNUC_UNUSED)
+typedef struct
 {
-    const GPasteUiSwitchPrivate *priv = _g_paste_ui_switch_get_instance_private (G_PASTE_UI_SWITCH (widget));
+    GPasteClient *client;
+    gboolean      track;
+} SwitchTrackData;
+
+static void
+on_track_confirmed (gboolean confirmed,
+                    gpointer  user_data)
+{
+    g_autofree SwitchTrackData *data = user_data;
+    g_autoptr (GPasteClient) client = data->client;
+
+    if (confirmed)
+        g_paste_client_track (client, data->track, NULL, NULL);
+}
+
+static void
+on_gesture_pressed (GtkGestureClick *gesture,
+                    gint             n_press G_GNUC_UNUSED,
+                    gdouble          x       G_GNUC_UNUSED,
+                    gdouble          y       G_GNUC_UNUSED,
+                    gpointer         user_data G_GNUC_UNUSED)
+{
+    GtkWidget *widget = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (gesture));
+    GPasteUiSwitchData *data = g_object_get_data (G_OBJECT (widget), "switch-data");
     GtkSwitch *sw = GTK_SWITCH (widget);
     gboolean track = !gtk_switch_get_active (sw);
-    gboolean changed = TRUE;
+
+    gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 
     if (!track)
     {
-        changed = g_paste_gtk_util_confirm_dialog (priv->topwin, _("Stop"), _("Do you really want to stop tracking clipboard changes?"));
-        track = !changed;
+        SwitchTrackData *track_data = g_new (SwitchTrackData, 1);
+        track_data->client = g_object_ref (data->client);
+        track_data->track = track;
+        g_paste_gtk_util_confirm_dialog (data->topwin, _("Stop"), _("Do you really want to stop tracking clipboard changes?"), on_track_confirmed, track_data);
     }
-
-    if (changed)
-        g_paste_client_track (priv->client, track, NULL, NULL);
-
-    return GDK_EVENT_STOP;
-}
-
-static void
-g_paste_ui_switch_dispose (GObject *object)
-{
-    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private (G_PASTE_UI_SWITCH (object));
-
-    if (priv->c_signals[C_TRACKING])
+    else
     {
-        g_signal_handler_disconnect (priv->client, priv->c_signals[C_TRACKING]);
-        priv->c_signals[C_TRACKING] = 0;
+        g_paste_client_track (data->client, track, NULL, NULL);
     }
-
-    g_clear_object (&priv->client);
-
-    G_OBJECT_CLASS (g_paste_ui_switch_parent_class)->dispose (object);
-}
-
-static void
-g_paste_ui_switch_class_init (GPasteUiSwitchClass *klass)
-{
-    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_button_press_event;
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_switch_dispose;
-}
-
-static void
-g_paste_ui_switch_init (GPasteUiSwitch *self)
-{
-    GtkWidget *widget = GTK_WIDGET (self);
-
-    gtk_widget_set_tooltip_text (widget, _("Track clipboard changes"));
-    gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 }
 
 /**
@@ -99,9 +81,9 @@ g_paste_ui_switch_init (GPasteUiSwitch *self)
  * @topwin: the main #GtkWindow
  * @client: a #GPasteClient instance
  *
- * Create a new instance of #GPasteUiSwitch
+ * Create a new #GtkSwitch for GPaste tracking control
  *
- * Returns: a newly allocated #GPasteUiSwitch
+ * Returns: a newly allocated #GtkSwitch
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
@@ -111,16 +93,24 @@ g_paste_ui_switch_new (GtkWindow    *topwin,
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_SWITCH, NULL);
-    GPasteUiSwitchPrivate *priv = g_paste_ui_switch_get_instance_private (G_PASTE_UI_SWITCH (self));
+    GtkWidget *self = gtk_switch_new ();
 
-    priv->topwin = topwin;
-    priv->client = g_object_ref (client);
+    gtk_widget_set_tooltip_text (self, _("Track clipboard changes"));
+    gtk_widget_set_valign (self, GTK_ALIGN_CENTER);
 
-    priv->c_signals[C_TRACKING] = g_signal_connect (G_OBJECT (priv->client),
-                                                    "tracking",
-                                                    G_CALLBACK (on_tracking_changed),
-                                                    self);
+    GPasteUiSwitchData *data = g_new0 (GPasteUiSwitchData, 1);
+    data->client = g_object_ref (client);
+    data->topwin = topwin;
+
+    g_object_set_data_full (G_OBJECT (self), "switch-data", data, g_paste_ui_switch_data_free);
+
+    GtkGesture *gesture = gtk_gesture_click_new ();
+    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_CAPTURE);
+    g_signal_connect (gesture, "pressed", G_CALLBACK (on_gesture_pressed), NULL);
+    gtk_widget_add_controller (self, GTK_EVENT_CONTROLLER (gesture));
+
+    g_signal_connect_object (client, "tracking",
+                             G_CALLBACK (on_tracking_changed), self, 0);
 
     gtk_switch_set_active (GTK_SWITCH (self), g_paste_client_is_active (client));
 

@@ -13,11 +13,13 @@
 
 #include <gpaste/gpaste-macros.h>
 
+#include <gtk/gtk.h>
+
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_SETTINGS (g_paste_ui_settings_get_type ())
 
-G_PASTE_FINAL_TYPE (UiSettings, ui_settings, UI_SETTINGS, GtkMenuButton)
+G_PASTE_FINAL_TYPE (UiSettings, ui_settings, UI_SETTINGS, GtkButton)
 
 GtkWidget *g_paste_ui_settings_new (void);
 

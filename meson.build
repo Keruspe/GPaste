@@ -10,17 +10,15 @@ i18n = import('i18n')
 
 apiversion = '2'
 
-adwaita_req_version = '1.6'
+adwaita_req_version = '1.9'
 gcr_req_version = '3.90.0'
-gdk_pixbuf_req_version = '2.38.0'
 gjs_req_version = '1.78.0'
-glib_req_version = '2.76.0'
+glib_req_version = '2.84.0'
 gtk3_req_version = '3.24.0'
-gtk4_req_version = '4.6.0'
+gtk4_req_version = '4.12.0'
 
 adwaita_req = '>= @0@'.format(adwaita_req_version)
 gcr_req = '>= @0@'.format(gcr_req_version)
-gdk_pixbuf_req = '>= @0@'.format(gdk_pixbuf_req_version)
 gjs_req = '>= @0@'.format(gjs_req_version)
 glib_req = '>= @0@'.format(glib_req_version)
 gtk3_req = '>= @0@'.format(gtk3_req_version)
@@ -28,7 +26,6 @@ gtk4_req = '>= @0@'.format(gtk4_req_version)
 
 gcr_dep = dependency('gcr-4', version: gcr_req)
 gdk3_dep = dependency('gdk-3.0', version: gtk3_req)
-gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0', version: gdk_pixbuf_req)
 gio_dep = dependency('gio-2.0', version: glib_req)
 glib_dep = dependency('glib-2.0', version: glib_req)
 gobject_dep = dependency('gobject-2.0', version: glib_req)

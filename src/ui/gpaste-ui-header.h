@@ -13,17 +13,15 @@
 
 #include <gpaste/gpaste-client.h>
 
-#include <gtk/gtk.h>
+#include <adwaita.h>
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_HEADER (g_paste_ui_header_get_type ())
+void g_paste_ui_header_show_prefs   (AdwHeaderBar *self);
+void g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
+                                     const gchar  *subtitle);
 
-G_PASTE_FINAL_TYPE (UiHeader, ui_header, UI_HEADER, GtkHeaderBar)
-
-void g_paste_ui_header_show_prefs (const GPasteUiHeader *self);
-
-GtkButton *g_paste_ui_header_get_search_button (const GPasteUiHeader *self);
+GtkToggleButton *g_paste_ui_header_get_search_button (AdwHeaderBar *self);
 
 GtkWidget *g_paste_ui_header_new (GtkWindow    *topwin,
                                   GPasteClient *client);

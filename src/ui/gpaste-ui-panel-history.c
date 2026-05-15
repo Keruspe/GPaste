@@ -8,20 +8,17 @@
 
 struct _GPasteUiPanelHistory
 {
-    GtkListBoxRow parent_instance;
+    AdwSidebarItem parent_instance;
 };
 
 typedef struct
 {
     GPasteClient *client;
 
-    GtkLabel     *index_label;
-    GtkLabel     *label;
-
     gchar        *history;
 } GPasteUiPanelHistoryPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiPanelHistory, ui_panel_history, GTK_TYPE_LIST_BOX_ROW)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiPanelHistory, ui_panel_history, ADW_TYPE_SIDEBAR_ITEM)
 
 /**
  * g_paste_ui_panel_history_activate:
@@ -44,7 +41,7 @@ g_paste_ui_panel_history_activate (GPasteUiPanelHistory *self)
  * @self: a #GPasteUiPanelHistory instance
  * @length: the length of the #GPasteHistory
  *
- * Update the index label of this history
+ * Update the displayed length of this history
  */
 G_PASTE_VISIBLE void
 g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
@@ -52,10 +49,9 @@ g_paste_ui_panel_history_set_length (GPasteUiPanelHistory *self,
 {
     g_return_if_fail (_G_PASTE_IS_UI_PANEL_HISTORY (self));
 
-    const GPasteUiPanelHistoryPrivate *priv = _g_paste_ui_panel_history_get_instance_private (self);
-    g_autofree gchar *_length = g_strdup_printf("%" G_GUINT64_FORMAT, length);
+    g_autofree gchar *str = g_strdup_printf ("%" G_GUINT64_FORMAT, length);
 
-    gtk_label_set_text (priv->index_label, _length);
+    adw_sidebar_item_set_subtitle (ADW_SIDEBAR_ITEM (self), str);
 }
 
 /**
@@ -97,36 +93,27 @@ g_paste_ui_panel_history_dispose (GObject *object)
 }
 
 static void
-g_paste_ui_panel_history_class_init (GPasteUiPanelHistoryClass *klass)
+g_paste_ui_panel_history_finalize (GObject *object)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_ui_panel_history_dispose;
+    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (object));
+
+    g_clear_pointer (&priv->history, g_free);
+
+    G_OBJECT_CLASS (g_paste_ui_panel_history_parent_class)->finalize (object);
 }
 
 static void
-g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
+g_paste_ui_panel_history_class_init (GPasteUiPanelHistoryClass *klass)
 {
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
-    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
-    GtkBox *box = GTK_BOX (hbox);
-    GtkWidget *l = gtk_label_new ("");
-    GtkLabel *label = priv->label = GTK_LABEL (l);
-    GtkWidget *il = gtk_label_new ("");
-    GtkLabel *index_label = priv->index_label = GTK_LABEL (il);
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-    gtk_widget_set_sensitive (il, FALSE);
-    gtk_label_set_xalign (index_label, 1.0);
-    gtk_label_set_width_chars (index_label, 3);
-    gtk_label_set_selectable (index_label, FALSE);
+    object_class->dispose = g_paste_ui_panel_history_dispose;
+    object_class->finalize = g_paste_ui_panel_history_finalize;
+}
 
-    gtk_widget_set_margin_start (hbox, 5);
-    gtk_widget_set_margin_end (hbox, 5);
-
-    gtk_label_set_ellipsize (label, PANGO_ELLIPSIZE_END);
-    gtk_box_pack_start (box, il, FALSE, FALSE, 0);
-    gtk_widget_set_hexpand (l, TRUE);
-    gtk_widget_set_halign (l, TRUE);
-    gtk_box_pack_start (box, l, TRUE, TRUE, 0);
-    gtk_container_add (GTK_CONTAINER (self), hbox);
+static void
+g_paste_ui_panel_history_init (GPasteUiPanelHistory *self G_GNUC_UNUSED)
+{
 }
 
 /**
@@ -139,23 +126,20 @@ g_paste_ui_panel_history_init (GPasteUiPanelHistory *self)
  * Returns: a newly allocated #GPasteUiPanelHistory
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GtkWidget *
+G_PASTE_VISIBLE GPasteUiPanelHistory *
 g_paste_ui_panel_history_new (GPasteClient *client,
                               const gchar  *history)
 {
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
     g_return_val_if_fail (g_utf8_validate (history, -1, NULL), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_PANEL_HISTORY,
-                                      "width-request",  100,
-                                      "height-request", 50,
-                                      NULL);
-    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (G_PASTE_UI_PANEL_HISTORY (self));
+    GPasteUiPanelHistory *self = g_object_new (G_PASTE_TYPE_UI_PANEL_HISTORY, NULL);
+    GPasteUiPanelHistoryPrivate *priv = g_paste_ui_panel_history_get_instance_private (self);
 
     priv->client = g_object_ref (client);
     priv->history = g_strdup (history);
 
-    gtk_label_set_text (priv->label, history);
+    adw_sidebar_item_set_title (ADW_SIDEBAR_ITEM (self), history);
 
     g_paste_client_get_history_size (client, history, on_size_ready, self);
 

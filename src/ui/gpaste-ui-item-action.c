@@ -29,23 +29,19 @@ g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
     g_return_if_fail (_G_PASTE_IS_UI_ITEM_ACTION (self));
 
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
-    g_autofree gchar *old_uuid = priv->uuid;
 
-    priv->uuid = g_strdup (uuid);
+    g_set_str (&priv->uuid, uuid);
 }
 
-static gboolean
-g_paste_ui_item_action_button_press_event (GtkWidget      *widget,
-                                           GdkEventButton *event G_GNUC_UNUSED)
+static void
+g_paste_ui_item_action_clicked (GtkButton *button)
 {
-    GPasteUiItemAction *self = G_PASTE_UI_ITEM_ACTION (widget);
+    GPasteUiItemAction *self = G_PASTE_UI_ITEM_ACTION (button);
     const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (self);
     GPasteUiItemActionClass *klass = G_PASTE_UI_ITEM_ACTION_GET_CLASS (self);
 
     if (klass->activate)
         klass->activate (self, priv->client, priv->uuid);
-
-    return TRUE;
 }
 
 static void
@@ -63,7 +59,7 @@ static void
 g_paste_ui_item_action_class_init (GPasteUiItemActionClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_item_action_dispose;
-    GTK_WIDGET_CLASS (klass)->button_press_event = g_paste_ui_item_action_button_press_event;
+    GTK_BUTTON_CLASS (klass)->clicked = g_paste_ui_item_action_clicked;
 }
 
 static void
@@ -92,9 +88,9 @@ g_paste_ui_item_action_new (GType         type,
     g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_UI_ITEM_ACTION), NULL);
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
-    GtkWidget *self = gtk_widget_new (type, NULL);
+    GtkWidget *self = g_object_new (type, NULL);
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (self));
-    GtkWidget *icon = gtk_image_new_from_icon_name (icon_name, GTK_ICON_SIZE_MENU);
+    GtkWidget *icon = gtk_image_new_from_icon_name (icon_name);
 
     priv->client = g_object_ref (client);
 
@@ -102,7 +98,7 @@ g_paste_ui_item_action_new (GType         type,
     gtk_widget_set_margin_start (icon, 5);
     gtk_widget_set_margin_end (icon, 5);
 
-    gtk_container_add (GTK_CONTAINER (self), icon);
+    gtk_button_set_child (GTK_BUTTON (self), icon);
 
     return self;
 }
