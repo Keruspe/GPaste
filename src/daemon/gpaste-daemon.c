@@ -1211,7 +1211,7 @@ g_paste_daemon_init (GPasteDaemon *self)
     g_paste_clipboards_manager_add_clipboard (clipboards_manager, primary);
     g_paste_clipboards_manager_activate (clipboards_manager);
 
-    g_paste_history_load (history, NULL);
+    g_paste_history_load_async (history, NULL);
 
     g_paste_gnome_shell_client_new (on_shell_client_ready, self);
 }

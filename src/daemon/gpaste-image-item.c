@@ -9,6 +9,7 @@
 #include <gpaste/gpaste-util.h>
 #include <gpaste-image-item.h>
 
+#include <gio/gio.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -232,6 +233,47 @@ _g_paste_image_item_new (const gchar *path,
     return self;
 }
 
+typedef struct
+{
+    GdkTexture *texture;
+    gchar      *path;
+} GPasteImageSaveData;
+
+static void
+g_paste_image_save_data_free (gpointer data)
+{
+    g_autofree GPasteImageSaveData *d = data;
+    g_clear_object (&d->texture);
+    g_clear_pointer (&d->path, g_free);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteImageSaveData, g_paste_image_save_data_free)
+
+static void g_paste_image_save_done (GObject *source_object, GAsyncResult *result, gpointer user_data);
+
+static void
+g_paste_image_save_task (GTask        *task,
+                         gpointer      source_object G_GNUC_UNUSED,
+                         gpointer      task_data,
+                         GCancellable *cancellable G_GNUC_UNUSED)
+{
+    const GPasteImageSaveData *data = task_data;
+    g_task_return_boolean (task, gdk_texture_save_to_png (data->texture, data->path));
+}
+
+static void
+g_paste_image_save_done (GObject      *source_object G_GNUC_UNUSED,
+                         GAsyncResult *result,
+                         gpointer      user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GError) error = NULL;
+    if (!g_task_propagate_boolean (G_TASK (result), &error))
+    {
+        const GPasteImageSaveData *data = g_task_get_task_data (G_TASK (result));
+        g_warning ("Failed to save image to %s: %s", data->path, error ? error->message : "unknown error");
+    }
+}
+
 /**
  * g_paste_image_item_new:
  * @texture: (transfer none): the GdkTexture we want to be contained in the #GPasteImageItem
@@ -261,8 +303,14 @@ g_paste_image_item_new (GdkTexture *texture)
                                                 g_object_ref (texture),
                                                 checksum);
 
-    if (!gdk_texture_save_to_png (texture, g_paste_item_get_value (self)))
-        g_warning ("Failed to save image to %s", g_paste_item_get_value (self));
+    g_autoptr (GPasteImageSaveData) data = g_new (GPasteImageSaveData, 1);
+    data->texture = g_object_ref (texture);
+    data->path = g_strdup (g_paste_item_get_value (self));
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, g_paste_image_save_done, NULL);
+    g_task_set_static_name (task, "gpaste-image-save");
+    g_task_set_task_data (task, g_steal_pointer (&data), g_paste_image_save_data_free);
+    g_task_run_in_thread (task, g_paste_image_save_task);
 
     return self;
 }

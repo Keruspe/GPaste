@@ -51,6 +51,8 @@ void         g_paste_history_save        (GPasteHistory *self,
                                           const gchar   *name);
 void         g_paste_history_load        (GPasteHistory *self,
                                           const gchar   *name);
+void         g_paste_history_load_async  (GPasteHistory *self,
+                                          const gchar   *name);
 void         g_paste_history_switch      (GPasteHistory *self,
                                           const gchar   *name);
 void         g_paste_history_delete      (GPasteHistory *self,
