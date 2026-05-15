@@ -17,7 +17,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_HISTORY (g_paste_ui_history_get_type ())
 
-G_PASTE_FINAL_TYPE (UiHistory, ui_history, UI_HISTORY, GtkListBox)
+G_PASTE_FINAL_TYPE (UiHistory, ui_history, UI_HISTORY, GtkBox)
 
 void g_paste_ui_history_search (GPasteUiHistory *self,
                                 const gchar     *search);

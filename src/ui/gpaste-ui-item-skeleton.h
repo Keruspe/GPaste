@@ -34,19 +34,19 @@ void g_paste_ui_item_skeleton_set_editable    (GPasteUiItemSkeleton *self,
 void g_paste_ui_item_skeleton_set_uploadable  (GPasteUiItemSkeleton *self,
                                                gboolean              uploadable);
 
-void g_paste_ui_item_skeleton_set_text   (GPasteUiItemSkeleton *self,
-                                          const gchar          *text);
-void g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
-                                          const gchar          *markup);
+void g_paste_ui_item_skeleton_set_text      (GPasteUiItemSkeleton *self,
+                                             const gchar          *text);
+void g_paste_ui_item_skeleton_set_text_bold (GPasteUiItemSkeleton *self,
+                                             const gchar          *text);
 
 void g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
                                                   guint64               index,
                                                   const gchar          *uuid);
 
 void g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
-                                             GtkImage             *image);
+                                             GdkTexture           *texture);
 
-GtkLabel *g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self);
+GtkInscription *g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self);
 
 GtkWidget *g_paste_ui_item_skeleton_new (GType           type,
                                          GPasteClient   *client,

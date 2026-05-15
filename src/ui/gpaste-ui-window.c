@@ -4,7 +4,7 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste-gtk3/gpaste-gtk-util.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 #include <gpaste-ui-header.h>
 #include <gpaste-ui-history.h>
@@ -14,32 +14,39 @@
 
 struct _GPasteUiWindow
 {
-    GtkApplicationWindow parent_instance;
+    AdwApplicationWindow parent_instance;
 };
 
 enum
 {
     C_SEARCH,
+    C_SWITCH_HISTORY,
 
     C_LAST_SIGNAL
 };
 
 typedef struct
 {
-    GPasteUiHeader  *header;
+    AdwHeaderBar    *header;
     GPasteUiHistory *history;
     GPasteClient    *client;
     GPasteSettings  *settings;
 
+    AdwToolbarView  *toolbar_view;
     GtkSearchBar    *search_bar;
     GtkSearchEntry  *search_entry;
+    GtkBox          *content_box;
+    AdwToastOverlay *toast_overlay;
+    AdwBanner       *banner;
+
+    AdwDialog       *shortcuts;
 
     gboolean         initialized;
 
     guint64          c_signals[C_LAST_SIGNAL];
 } GPasteUiWindowPrivate;
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, GTK_TYPE_APPLICATION_WINDOW)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
 
 static gboolean
 _empty (gpointer user_data)
@@ -58,6 +65,14 @@ _empty (gpointer user_data)
 
     if (!priv->initialized)
         return G_SOURCE_CONTINUE;
+
+    if (!priv->client)
+    {
+        g_free (data[1]);
+        g_free (data);
+        g_object_unref (self);
+        return G_SOURCE_REMOVE;
+    }
 
     g_autofree gchar *history = data[1];
     g_free (data);
@@ -110,8 +125,8 @@ _search (gpointer user_data)
     g_autofree gchar *search = data[1];
     g_free (data);
 
-    gtk_button_clicked (g_paste_ui_header_get_search_button (priv->header));
-    gtk_entry_set_text (GTK_ENTRY (priv->search_entry), search);
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (priv->header)), TRUE);
+    gtk_editable_set_text (GTK_EDITABLE (priv->search_entry), search);
     g_object_unref (self);
 
     return G_SOURCE_REMOVE;
@@ -171,69 +186,49 @@ g_paste_ui_window_show_prefs (GPasteUiWindow *self)
     g_source_set_name_by_id (g_idle_add (_show_prefs, g_object_ref (self)), "[GPaste] show_prefs");
 }
 
-static gboolean
-on_key_press_event (GtkWidget   *widget,
-                    GdkEventKey *event)
+static void
+on_show_help_overlay (GSimpleAction *action    G_GNUC_UNUSED,
+                      GVariant      *parameter G_GNUC_UNUSED,
+                      gpointer       user_data)
 {
-    const GPasteUiWindowPrivate *priv = _g_paste_ui_window_get_instance_private (G_PASTE_UI_WINDOW (widget));
-    GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (widget));
-    GdkEvent *_event = (GdkEvent *) event;
+    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    adw_dialog_present (priv->shortcuts, GTK_WIDGET (self));
+}
+
+static gboolean
+on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
+                guint                  keyval,
+                guint                  keycode     G_GNUC_UNUSED,
+                GdkModifierType        state       G_GNUC_UNUSED,
+                gpointer               user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (self));
     gboolean search_has_focus = focus == GTK_WIDGET (priv->search_entry);
     gboolean search_in_progress = search_has_focus && gtk_entry_get_text_length (GTK_ENTRY (priv->search_entry));
     gboolean other_entry_has_focus = focus && GTK_IS_EDITABLE (focus) && !search_has_focus;
-    gboolean forward_to_search = FALSE;
-    guint keyval;
 
-    if (gdk_event_get_keyval (_event, &keyval))
+    switch (keyval)
     {
-        switch (keyval)
+    case GDK_KEY_Escape:
+        if (!search_in_progress)
         {
-        case GDK_KEY_Escape:
-            if (!search_in_progress)
-            {
-                gtk_window_close (GTK_WINDOW (widget));
-                return GDK_EVENT_STOP;
-            }
-            else
-            {
-                forward_to_search = TRUE;
-            }
-            break;
-        case GDK_KEY_Return:
-        case GDK_KEY_KP_Enter:
-        case GDK_KEY_ISO_Enter:
-            if (search_in_progress && g_paste_ui_history_select_first (priv->history))
-                return GDK_EVENT_STOP;
-            break;
-        default:
-            forward_to_search = TRUE;
-            break;
+            gtk_window_close (GTK_WINDOW (self));
+            return GDK_EVENT_STOP;
         }
+        break;
+    case GDK_KEY_Return:
+    case GDK_KEY_KP_Enter:
+    case GDK_KEY_ISO_Enter:
+        if (search_in_progress && g_paste_ui_history_select_first (priv->history))
+            return GDK_EVENT_STOP;
+        break;
     }
 
-    if (other_entry_has_focus)
-        forward_to_search = FALSE;
-
-    if (forward_to_search && gtk_search_bar_handle_event (priv->search_bar, _event))
-        return GDK_EVENT_STOP;
-
-    gboolean res = GTK_WIDGET_CLASS (g_paste_ui_window_parent_class)->key_press_event (widget, event);
-
-    if (res == GDK_EVENT_STOP || !forward_to_search || search_has_focus)
-        return res;
-
-    // fallback to explicitely focusing search to see if key can be handled
-    gtk_entry_grab_focus_without_selecting (GTK_ENTRY (priv->search_entry));
-
-    if (gtk_search_bar_handle_event (priv->search_bar, _event))
-        return GDK_EVENT_STOP;
-
-    if (GTK_WIDGET_CLASS (g_paste_ui_window_parent_class)->key_press_event (widget, event) == GDK_EVENT_STOP)
-        return GDK_EVENT_STOP;
-
-    gtk_widget_grab_focus (focus);
-
-    return res;
+    return other_entry_has_focus ? GDK_EVENT_STOP : GDK_EVENT_PROPAGATE;
 }
 
 static void
@@ -242,7 +237,7 @@ on_search (GtkSearchEntry *entry,
 {
     GPasteUiWindowPrivate *priv = user_data;
 
-    g_paste_ui_history_search (priv->history, gtk_entry_get_text (GTK_ENTRY (entry)));
+    g_paste_ui_history_search (priv->history, gtk_editable_get_text (GTK_EDITABLE (entry)));
 }
 
 static gboolean
@@ -265,6 +260,37 @@ focus_search (gpointer user_data)
 }
 
 static void
+on_banner_quit (AdwBanner *banner G_GNUC_UNUSED,
+                gpointer   user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    g_application_quit (G_APPLICATION (gtk_window_get_application (GTK_WINDOW (self))));
+}
+
+static void
+on_switch_history (GPasteClient *client G_GNUC_UNUSED,
+                   const gchar  *history,
+                   gpointer      user_data)
+{
+    GPasteUiWindowPrivate *priv = user_data;
+
+    g_paste_ui_header_set_subtitle (priv->header, history);
+}
+
+static void
+on_initial_history_name (GObject      *source_object G_GNUC_UNUSED,
+                         GAsyncResult *res,
+                         gpointer      user_data)
+{
+    GPasteUiWindowPrivate *priv = user_data;
+    g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
+
+    if (name)
+        g_paste_ui_header_set_subtitle (priv->header, name);
+}
+
+static void
 g_paste_ui_window_dispose (GObject *object)
 {
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
@@ -272,14 +298,21 @@ g_paste_ui_window_dispose (GObject *object)
 
     if (priv->c_signals[C_SEARCH])
     {
-        GPasteUiSearchBar *search_bar = G_PASTE_UI_SEARCH_BAR (priv->search_bar);
-        GtkSearchEntry *entry = g_paste_ui_search_bar_get_entry (search_bar);
+        GtkSearchEntry *entry = g_paste_ui_search_bar_get_entry (priv->search_bar);
 
         g_signal_handler_disconnect (entry, priv->c_signals[C_SEARCH]);
         priv->c_signals[C_SEARCH] = 0;
     }
 
+    if (priv->client && priv->c_signals[C_SWITCH_HISTORY])
+    {
+        g_signal_handler_disconnect (priv->client, priv->c_signals[C_SWITCH_HISTORY]);
+        priv->c_signals[C_SWITCH_HISTORY] = 0;
+    }
+
     g_clear_object (&priv->client);
+    g_clear_object (&priv->settings);
+    g_clear_object (&priv->shortcuts);
 
     G_OBJECT_CLASS (g_paste_ui_window_parent_class)->dispose (object);
 }
@@ -288,7 +321,6 @@ static void
 g_paste_ui_window_class_init (GPasteUiWindowClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_window_dispose;
-    GTK_WIDGET_CLASS (klass)->key_press_event = on_key_press_event;
 }
 
 static void
@@ -297,33 +329,46 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
     GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
-    priv->settings = g_paste_settings_new();
+    priv->settings = g_paste_settings_new ();
+    priv->content_box = GTK_BOX (vbox);
 
-    /* Configure the main vertical box to fill the window */
-    gtk_widget_set_margin_start (vbox, 5);
-    gtk_widget_set_margin_end (vbox, 5);
-    gtk_widget_set_margin_bottom (vbox, 5);
     gtk_widget_set_hexpand (vbox, TRUE);
     gtk_widget_set_vexpand (vbox, TRUE);
     gtk_widget_set_halign (vbox, GTK_ALIGN_FILL);
     gtk_widget_set_valign (vbox, GTK_ALIGN_FILL);
 
-    gtk_window_set_position (GTK_WINDOW (self),
-                             g_paste_settings_get_open_centered (priv->settings) ? GTK_WIN_POS_CENTER : GTK_WIN_POS_MOUSE);
+    GtkWidget *banner = adw_banner_new ("");
+    priv->banner = ADW_BANNER (banner);
+    adw_banner_set_button_label (priv->banner, _("Quit"));
+    g_signal_connect (banner, "button-clicked", G_CALLBACK (on_banner_quit), self);
+    gtk_box_append (GTK_BOX (vbox), banner);
 
     GtkWidget *search_bar = g_paste_ui_search_bar_new ();
-    GtkContainer *box = GTK_CONTAINER (vbox);
-
     priv->search_bar = GTK_SEARCH_BAR (search_bar);
+    gtk_box_append (GTK_BOX (vbox), search_bar);
 
-    gtk_container_add (GTK_CONTAINER (self), vbox);
-    gtk_box_pack_start (GTK_BOX (box), search_bar, FALSE, FALSE, 0);
+    gtk_search_bar_set_key_capture_widget (priv->search_bar, GTK_WIDGET (self));
 
-    GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (G_PASTE_UI_SEARCH_BAR (search_bar));
+    GtkWidget *toolbar_view = adw_toolbar_view_new ();
+    priv->toolbar_view = ADW_TOOLBAR_VIEW (toolbar_view);
+
+    GtkWidget *toast_overlay = adw_toast_overlay_new ();
+    priv->toast_overlay = ADW_TOAST_OVERLAY (toast_overlay);
+    adw_toast_overlay_set_child (ADW_TOAST_OVERLAY (toast_overlay), vbox);
+    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar_view), toast_overlay);
+
+    adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), toolbar_view);
+
+    GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (priv->search_bar);
     priv->c_signals[C_SEARCH] = g_signal_connect (entry,
                                                   "search-changed",
                                                   G_CALLBACK (on_search),
                                                   priv);
+
+    GtkEventController *key_controller = gtk_event_controller_key_new ();
+    gtk_event_controller_set_propagation_phase (key_controller, GTK_PHASE_CAPTURE);
+    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self);
+    gtk_widget_add_controller (GTK_WIDGET (self), key_controller);
 
     g_source_set_name_by_id (g_idle_add (focus_search, self), "[GPaste] focus_search");
 }
@@ -342,69 +387,60 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     {
         priv->initialized = TRUE;
         g_critical ("%s: %s\n", _("Couldn't connect to GPaste daemon"), error->message);
-        gtk_window_close (win); /* will exit the application */
+        adw_banner_set_title (priv->banner, _("Couldn't connect to GPaste daemon"));
+        adw_banner_set_revealed (priv->banner, TRUE);
+        return;
     }
 
     GPasteSettings *settings = priv->settings;
     GtkWidget *header = g_paste_ui_header_new (win, client);
     GtkWidget *panel = g_paste_ui_panel_new (client, settings, win, priv->search_entry);
     GtkWidget *history = g_paste_ui_history_new (client, settings, G_PASTE_UI_PANEL (panel), win);
-    GPasteUiHeader *h = priv->header = G_PASTE_UI_HEADER (header);
 
+    priv->header = ADW_HEADER_BAR (header);
     priv->history = G_PASTE_UI_HISTORY (history);
     priv->client = g_object_ref (client);
 
-    gtk_window_set_titlebar (win, header);
-    gtk_application_window_set_help_overlay (GTK_APPLICATION_WINDOW (user_data), GTK_SHORTCUTS_WINDOW (g_paste_ui_shortcuts_window_new (settings)));
+    priv->shortcuts = g_object_ref_sink (ADW_DIALOG (g_paste_ui_shortcuts_window_new (settings)));
 
-    GtkContainer *vbox = GTK_CONTAINER (gtk_bin_get_child (GTK_BIN (win)));
-    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-    GtkBox *box = GTK_BOX (hbox);
+    g_autoptr (GSimpleAction) show_shortcuts = g_simple_action_new ("show-help-overlay", NULL);
+    g_signal_connect (show_shortcuts, "activate", G_CALLBACK (on_show_help_overlay), user_data);
+    g_action_map_add_action (G_ACTION_MAP (user_data), G_ACTION (show_shortcuts));
 
-    /* Configure the main horizontal box */
-    gtk_box_set_spacing (box, 2);
-    gtk_box_pack_start (box, panel, FALSE, FALSE, 0);
-    gtk_box_pack_start (box, gtk_separator_new (GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 0);
+    gtk_application_set_accels_for_action (GTK_APPLICATION (gtk_window_get_application (win)),
+                                           "win.show-help-overlay",
+                                           (const char *[]) { "<primary>question", NULL });
 
-    /* Add a scrolling container for the history */
-    GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
-    GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW (scroll);
+    adw_toolbar_view_add_top_bar (priv->toolbar_view, header);
 
-    /* Configure the scrolling container */
-    gtk_scrolled_window_set_policy (sw, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_shadow_type (sw, GTK_SHADOW_NONE);
+    AdwNavigationPage *sidebar_page = adw_navigation_page_new (panel, _("Histories"));
+    AdwNavigationPage *content_page = adw_navigation_page_new (history, _("History"));
 
-    /* Ensure the scrolled window takes all available space */
-    gtk_widget_set_hexpand (scroll, TRUE);
-    gtk_widget_set_vexpand (scroll, TRUE);
-    gtk_widget_set_halign (scroll, GTK_ALIGN_FILL);
-    gtk_widget_set_valign (scroll, GTK_ALIGN_FILL);
+    GtkWidget *nav_split_view = adw_navigation_split_view_new ();
+    adw_navigation_split_view_set_sidebar (ADW_NAVIGATION_SPLIT_VIEW (nav_split_view), sidebar_page);
+    adw_navigation_split_view_set_content (ADW_NAVIGATION_SPLIT_VIEW (nav_split_view), content_page);
+    adw_navigation_split_view_set_min_sidebar_width (ADW_NAVIGATION_SPLIT_VIEW (nav_split_view), 240);
 
-    /* Configure the history to take all available space */
-    gtk_widget_set_hexpand (history, TRUE);
-    gtk_widget_set_vexpand (history, TRUE);
+    gtk_widget_set_hexpand (nav_split_view, TRUE);
+    gtk_widget_set_vexpand (nav_split_view, TRUE);
+    gtk_widget_set_halign (nav_split_view, GTK_ALIGN_FILL);
+    gtk_widget_set_valign (nav_split_view, GTK_ALIGN_FILL);
 
-    /* Add the history to the scrolling container */
-    gtk_container_add (GTK_CONTAINER (scroll), history);
+    gtk_box_append (priv->content_box, nav_split_view);
 
-    /* Add the scroll to the main horizontal box */
-    gtk_box_pack_start (box, scroll, TRUE, TRUE, 0);
-
-    /* Configure the main horizontal box to take all available space */
-    gtk_widget_set_hexpand (hbox, TRUE);
-    gtk_widget_set_vexpand (hbox, TRUE);
-    gtk_widget_set_halign (hbox, GTK_ALIGN_FILL);
-    gtk_widget_set_valign (hbox, GTK_ALIGN_FILL);
-
-    /* Add the horizontal box to the main container */
-    gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
-
-    g_object_bind_property (g_paste_ui_header_get_search_button (h), "active",
-                            gtk_container_get_children (vbox)->data, "search-mode-enabled",
+    g_object_bind_property (g_paste_ui_header_get_search_button (priv->header), "active",
+                            priv->search_bar, "search-mode-enabled",
                             G_BINDING_BIDIRECTIONAL);
 
-    gtk_widget_show_all (GTK_WIDGET (win));
+    priv->c_signals[C_SWITCH_HISTORY] = g_signal_connect (priv->client,
+                                                          "switch-history",
+                                                          G_CALLBACK (on_switch_history),
+                                                          priv);
+
+    g_paste_client_get_history_name (priv->client, on_initial_history_name, priv);
+
     priv->initialized = TRUE;
+    gtk_window_present (win);
 }
 
 /**
@@ -421,9 +457,8 @@ g_paste_ui_window_new (GtkApplication *app)
 {
     g_return_val_if_fail (GTK_IS_APPLICATION (app), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_WINDOW,
+    GtkWidget *self = g_object_new (G_PASTE_TYPE_UI_WINDOW,
                                       "application", app,
-                                      "type",        GTK_WINDOW_TOPLEVEL,
                                       "resizable",   TRUE,
                                       "title",       PACKAGE_STRING,
                                       "icon-name",   G_PASTE_ICON_NAME,

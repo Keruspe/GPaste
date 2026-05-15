@@ -12,72 +12,63 @@
 #include <gpaste-ui-settings.h>
 #include <gpaste-ui-switch.h>
 
-struct _GPasteUiHeader
-{
-    GtkHeaderBar parent_instance;
-};
-
 typedef struct
 {
-    GtkButton *settings;
-    GtkButton *search;
-} GPasteUiHeaderPrivate;
-
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHeader, ui_header, GTK_TYPE_HEADER_BAR)
+    GtkButton       *settings;
+    GtkToggleButton *search;
+    AdwWindowTitle  *title;
+} GPasteUiHeaderData;
 
 /**
  * g_paste_ui_header_show_prefs:
- * @self: the #GPasteUiHeader
+ * @self: the header bar
  *
  * Show the prefs pane
  */
 G_PASTE_VISIBLE void
-g_paste_ui_header_show_prefs (const GPasteUiHeader *self)
+g_paste_ui_header_show_prefs (AdwHeaderBar *self)
 {
-    g_return_if_fail (_G_PASTE_IS_UI_HEADER (self));
+    g_return_if_fail (ADW_IS_HEADER_BAR (self));
 
-    const GPasteUiHeaderPrivate *priv = _g_paste_ui_header_get_instance_private (self);
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
 
-    gtk_button_clicked (priv->settings);
+    gtk_widget_activate (GTK_WIDGET (data->settings));
+}
+
+/**
+ * g_paste_ui_header_set_subtitle:
+ * @self: the header bar
+ * @subtitle: the subtitle to display (current history name)
+ *
+ * Update the subtitle shown in the window title widget
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
+                                const gchar  *subtitle)
+{
+    g_return_if_fail (ADW_IS_HEADER_BAR (self));
+
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+
+    adw_window_title_set_subtitle (data->title, subtitle);
 }
 
 /**
  * g_paste_ui_header_get_search_button:
- * @self: the #GPasteUiHeader
+ * @self: the header bar
  *
  * Get the search button
  *
- * Returns: (transfer none): the #GPasteUISearch instance
+ * Returns: (transfer none): the #GtkToggleButton for search
  */
-G_PASTE_VISIBLE GtkButton *
-g_paste_ui_header_get_search_button (const GPasteUiHeader *self)
+G_PASTE_VISIBLE GtkToggleButton *
+g_paste_ui_header_get_search_button (AdwHeaderBar *self)
 {
-    g_return_val_if_fail (_G_PASTE_IS_UI_HEADER (self), NULL);
+    g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
 
-    const GPasteUiHeaderPrivate *priv = _g_paste_ui_header_get_instance_private (self);
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
 
-    return priv->search;
-}
-
-static void
-g_paste_ui_header_class_init (GPasteUiHeaderClass *klass G_GNUC_UNUSED)
-{
-}
-
-static void
-g_paste_ui_header_init (GPasteUiHeader *self)
-{
-    GPasteUiHeaderPrivate *priv = g_paste_ui_header_get_instance_private (self);
-    GtkHeaderBar *header_bar = GTK_HEADER_BAR (self);
-    GtkWidget *settings = g_paste_ui_settings_new ();
-    GtkWidget *search = g_paste_ui_search_new ();
-
-    priv->settings = GTK_BUTTON (settings);
-    priv->search = GTK_BUTTON (search);
-
-    gtk_header_bar_set_show_close_button (header_bar, TRUE);
-    gtk_header_bar_pack_end (header_bar, settings);
-    gtk_header_bar_pack_end (header_bar, search);
+    return data->search;
 }
 
 /**
@@ -85,9 +76,9 @@ g_paste_ui_header_init (GPasteUiHeader *self)
  * @topwin: the main #GtkWindow
  * @client: a #GPasteClient instance
  *
- * Create a new instance of #GPasteUiHeader
+ * Create a new #AdwHeaderBar configured for GPaste
  *
- * Returns: a newly allocated #GPasteUiHeader
+ * Returns: a newly allocated #AdwHeaderBar
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GtkWidget *
@@ -97,14 +88,26 @@ g_paste_ui_header_new (GtkWindow    *topwin,
     g_return_val_if_fail (GTK_IS_WINDOW (topwin), NULL);
     g_return_val_if_fail (_G_PASTE_IS_CLIENT (client), NULL);
 
-    GtkWidget *self = gtk_widget_new (G_PASTE_TYPE_UI_HEADER, NULL);
-    GtkHeaderBar *bar = GTK_HEADER_BAR (self);
+    GtkWidget *self = adw_header_bar_new ();
+    AdwHeaderBar *bar = ADW_HEADER_BAR (self);
+    GtkWidget *settings = g_paste_ui_settings_new ();
+    GtkWidget *search = g_paste_ui_search_new ();
+    GtkWidget *title = adw_window_title_new (PACKAGE_NAME, NULL);
 
-    gtk_header_bar_pack_start (bar, g_paste_ui_switch_new (topwin, client));
-    gtk_header_bar_pack_start (bar, g_paste_ui_reexec_new (topwin, client));
+    GPasteUiHeaderData *data = g_new0 (GPasteUiHeaderData, 1);
+    data->settings = GTK_BUTTON (settings);
+    data->search = GTK_TOGGLE_BUTTON (search);
+    data->title = ADW_WINDOW_TITLE (title);
 
-    gtk_header_bar_pack_end (bar, g_paste_ui_about_new (gtk_window_get_application (topwin)));
-    gtk_header_bar_pack_end (bar, g_paste_ui_new_item_new (topwin, client));
+    g_object_set_data_full (G_OBJECT (self), "header-data", data, g_free);
+
+    adw_header_bar_set_title_widget (bar, title);
+    adw_header_bar_pack_start (bar, g_paste_ui_switch_new (topwin, client));
+    adw_header_bar_pack_start (bar, g_paste_ui_reexec_new (topwin, client));
+    adw_header_bar_pack_end (bar, g_paste_ui_about_new (gtk_window_get_application (topwin)));
+    adw_header_bar_pack_end (bar, g_paste_ui_new_item_new (topwin, client));
+    adw_header_bar_pack_end (bar, settings);
+    adw_header_bar_pack_end (bar, search);
 
     return self;
 }

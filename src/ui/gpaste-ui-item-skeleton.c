@@ -28,10 +28,11 @@ typedef struct
     GtkWidget      *edit;
     GtkWidget      *upload;
 
-    GtkLabel       *index_label;
-    GtkLabel       *label;
-    GtkImage       *thumbnail;
+    GtkWidget      *hbox;
 
+    GtkLabel       *index_label;
+    GtkInscription *label;
+    GtkPicture     *thumbnail;
     gboolean        editable;
     gboolean        uploadable;
 
@@ -48,8 +49,8 @@ g_paste_ui_item_skeleton_set_text_size (GPasteSettings *settings,
     GPasteUiItemSkeletonPrivate *priv = user_data;
     guint64 size = g_paste_settings_get_element_size (settings);
 
-    gtk_label_set_width_chars (priv->label, size);
-    gtk_label_set_max_width_chars (priv->label, size);
+    gtk_inscription_set_min_chars (priv->label, size);
+    gtk_inscription_set_nat_chars (priv->label, size);
 }
 
 static void
@@ -59,19 +60,18 @@ g_paste_ui_item_skeleton_on_images_preview_changed (GPasteSettings *settings,
 {
     GPasteUiItemSkeletonPrivate *priv = user_data;
 
-    if (priv->thumbnail)
-        gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), g_paste_settings_get_images_preview (settings));
-}
+    if (!priv->thumbnail)
+        return;
 
-static void
-g_paste_ui_item_skeleton_on_images_preview_size_changed (GPasteSettings *settings G_GNUC_UNUSED,
-                                                         const gchar    *key G_GNUC_UNUSED,
-                                                         gpointer        user_data)
-{
-    GPasteUiItemSkeleton *self = user_data;
-    const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
+    gboolean has_image = gtk_picture_get_paintable (priv->thumbnail) != NULL;
 
-    g_paste_ui_item_skeleton_set_thumbnail (self, priv->thumbnail);
+    if (has_image)
+    {
+        gint size = MAX ((gint) g_paste_settings_get_images_preview_size (settings), 10);
+        gtk_widget_set_size_request (GTK_WIDGET (priv->thumbnail), size, size);
+    }
+
+    gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), has_image && g_paste_settings_get_images_preview (settings));
 }
 
 static void
@@ -166,26 +166,30 @@ g_paste_ui_item_skeleton_set_text (GPasteUiItemSkeleton *self,
 
     const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
 
-    gtk_label_set_text (priv->label, text);
+    gtk_inscription_set_attributes (priv->label, NULL);
+    gtk_inscription_set_text (priv->label, text);
 }
 
 /**
- * g_paste_ui_item_skeleton_set_markup:
+ * g_paste_ui_item_skeleton_set_text_bold:
  * @self: the #GPasteUiItemSkeleton instance
- * @markup: the new markup for the label
+ * @text: the new text for the label, displayed bold
  *
- * Changes the displayed markup
+ * Changes the displayed text, rendered in bold
  */
 G_PASTE_VISIBLE void
-g_paste_ui_item_skeleton_set_markup (GPasteUiItemSkeleton *self,
-                                     const gchar          *markup)
+g_paste_ui_item_skeleton_set_text_bold (GPasteUiItemSkeleton *self,
+                                        const gchar          *text)
 {
     g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
-    g_return_if_fail (g_utf8_validate (markup, -1, NULL));
+    g_return_if_fail (g_utf8_validate (text, -1, NULL));
 
     const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
 
-    gtk_label_set_markup (priv->label, markup);
+    g_autoptr (PangoAttrList) attrs = pango_attr_list_new ();
+    pango_attr_list_insert (attrs, pango_attr_weight_new (PANGO_WEIGHT_BOLD));
+    gtk_inscription_set_attributes (priv->label, attrs);
+    gtk_inscription_set_text (priv->label, text);
 }
 
 static void
@@ -232,64 +236,20 @@ g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
 /**
  * g_paste_ui_item_skeleton_set_thumbnail:
  * @self: a #GPasteUiItemSkeleton
- * @image: (transfer none) (nullable): a #GtkImage to use as thumbnail, or %NULL to clear
+ * @texture: (transfer none) (nullable): a #GdkTexture to use as thumbnail, or %NULL to clear
  *
  * Set the thumbnail for this item if it's an image
  */
 G_PASTE_VISIBLE void
 g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
-                                        GtkImage             *image)
+                                        GdkTexture           *texture)
 {
     g_return_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self));
 
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
-    if (!image)
-    {
-        gtk_image_clear (priv->thumbnail);
-        gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), FALSE);
-        return;
-    }
-
-    GdkPixbuf *pixbuf = gtk_image_get_pixbuf (image);
-
-    if (!pixbuf)
-    {
-        gtk_image_clear (priv->thumbnail);
-        gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), FALSE);
-        return;
-    }
-
-    gint width = gdk_pixbuf_get_width (pixbuf);
-    gint height = gdk_pixbuf_get_height (pixbuf);
-    guint64 target_size = g_paste_settings_get_images_preview_size (priv->settings);
-
-    gint scaled_width, scaled_height;
-    if (width > height)
-    {
-        scaled_width = MAX ((gint) target_size, 10);
-        scaled_height = MAX ((gint) ((gdouble) height * scaled_width / width), 10);
-    }
-    else
-    {
-        scaled_height = MAX ((gint) target_size, 10);
-        scaled_width = MAX ((gint) ((gdouble) width * scaled_height / height), 10);
-    }
-
-    g_autoptr (GdkPixbuf) scaled = gdk_pixbuf_scale_simple (pixbuf, scaled_width, scaled_height, GDK_INTERP_BILINEAR);
-
-    if (!scaled)
-        return;
-
-    gtk_image_set_from_pixbuf (priv->thumbnail, scaled);
-    gtk_widget_set_size_request (GTK_WIDGET (priv->thumbnail), scaled_width, scaled_height);
-    gtk_widget_set_visible (GTK_WIDGET (priv->thumbnail), g_paste_settings_get_images_preview (priv->settings));
-
-    GtkWidget *thumbnail_widget = GTK_WIDGET (priv->thumbnail);
-    GtkWidget *parent = gtk_widget_get_parent (thumbnail_widget);
-    if (parent)
-        gtk_widget_queue_resize (parent);
-    gtk_widget_queue_draw (thumbnail_widget);
+    gtk_picture_set_paintable (priv->thumbnail, texture ? GDK_PAINTABLE (texture) : NULL);
+    g_paste_ui_item_skeleton_on_images_preview_changed (priv->settings, NULL, priv);
 }
 
 /**
@@ -300,7 +260,7 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
  *
  * Returns: (transfer none): the label
  */
-G_PASTE_VISIBLE GtkLabel *
+G_PASTE_VISIBLE GtkInscription *
 g_paste_ui_item_skeleton_get_label (GPasteUiItemSkeleton *self)
 {
     g_return_val_if_fail (_G_PASTE_IS_UI_ITEM_SKELETON (self), NULL);
@@ -315,10 +275,10 @@ add_action (gpointer data,
             gpointer user_data)
 {
     GtkWidget *w = data;
-    GtkBox *b =user_data;
+    GtkBox *b = user_data;
 
-    gtk_widget_set_halign (w, TRUE);
-    gtk_box_pack_end (b, w, FALSE, TRUE, 0);
+    gtk_widget_set_halign (w, GTK_ALIGN_START);
+    gtk_box_append (b, w);
 }
 
 static void
@@ -333,6 +293,8 @@ g_paste_ui_item_skeleton_dispose (GObject *object)
         g_signal_handler_disconnect (priv->settings, priv->c_signals[C_IMAGES_PREVIEW_SIZE]);
         g_clear_object (&priv->settings);
     }
+
+    g_clear_pointer (&priv->actions, g_slist_free);
 
     G_OBJECT_CLASS (g_paste_ui_item_skeleton_parent_class)->dispose (object);
 }
@@ -349,50 +311,51 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     GtkWidget *index_label = gtk_label_new ("");
-    GtkWidget *label = gtk_label_new ("");
+    GtkWidget *label = gtk_inscription_new (NULL);
 
     priv->index_label = GTK_LABEL (index_label);
-    priv->label = GTK_LABEL (label);
+    priv->label = GTK_INSCRIPTION (label);
     priv->editable = TRUE;
 
-    gtk_widget_set_margin_start (index_label, 5);
-    gtk_widget_set_margin_end (index_label, 5);
-    gtk_widget_set_margin_top (index_label, 5);
-    gtk_widget_set_margin_bottom (index_label, 5);
+    gtk_widget_set_margin_start (index_label, 6);
+    gtk_widget_set_margin_end (index_label, 6);
+    gtk_widget_set_margin_top (index_label, 6);
+    gtk_widget_set_margin_bottom (index_label, 6);
     gtk_widget_set_sensitive (index_label, FALSE);
     gtk_label_set_xalign (priv->index_label, 1.0);
     gtk_label_set_width_chars (priv->index_label, 3);
     gtk_label_set_max_width_chars (priv->index_label, 3);
     gtk_label_set_selectable (priv->index_label, FALSE);
-    gtk_label_set_ellipsize (priv->label, PANGO_ELLIPSIZE_END);
-    gtk_label_set_xalign (priv->label, 0.0);
+    gtk_inscription_set_text_overflow (priv->label, GTK_INSCRIPTION_OVERFLOW_ELLIPSIZE_END);
+    gtk_inscription_set_xalign (priv->label, 0.0);
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
-    gtk_widget_set_margin_start (hbox, 5);
-    gtk_widget_set_margin_end (hbox, 5);
+    priv->hbox = hbox;
+    gtk_widget_set_margin_start (hbox, 6);
+    gtk_widget_set_margin_end (hbox, 6);
 
     gtk_widget_set_halign (index_label, GTK_ALIGN_START);
-    gtk_box_pack_start (GTK_BOX (hbox), index_label, FALSE, TRUE, 0);
+    gtk_box_append (GTK_BOX (hbox), index_label);
 
     gtk_widget_set_hexpand (label, TRUE);
     gtk_widget_set_halign (label, GTK_ALIGN_START);
-    gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
+    gtk_box_append (GTK_BOX (hbox), label);
 
-    GtkWidget *thumbnail = gtk_image_new ();
-    priv->thumbnail = GTK_IMAGE (thumbnail);
+    GtkWidget *thumbnail = gtk_picture_new ();
+    priv->thumbnail = GTK_PICTURE (thumbnail);
+    gtk_picture_set_content_fit (priv->thumbnail, GTK_CONTENT_FIT_CONTAIN);
     gtk_widget_set_visible (thumbnail, FALSE);
     gtk_widget_set_hexpand (thumbnail, TRUE);
     gtk_widget_set_halign (thumbnail, GTK_ALIGN_FILL);
 
-    GtkWidget *thumbnail_container = gtk_frame_new (NULL);
-    gtk_frame_set_shadow_type (GTK_FRAME (thumbnail_container), GTK_SHADOW_NONE);
+    GtkWidget *thumbnail_container = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_hexpand (thumbnail_container, FALSE);
     gtk_widget_set_halign (thumbnail_container, GTK_ALIGN_CENTER);
 
-    gtk_container_add (GTK_CONTAINER (thumbnail_container), thumbnail);
-    gtk_box_pack_start (GTK_BOX (hbox), thumbnail_container, FALSE, FALSE, 0);
+    gtk_box_append (GTK_BOX (thumbnail_container), thumbnail);
+    gtk_box_append (GTK_BOX (hbox), thumbnail_container);
 
-    gtk_container_add (GTK_CONTAINER (self), hbox);
+    gtk_list_box_row_set_child (GTK_LIST_BOX_ROW (self), hbox);
 }
 
 /**
@@ -418,7 +381,7 @@ g_paste_ui_item_skeleton_new (GType           type,
     g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
     g_return_val_if_fail (GTK_IS_WINDOW (rootwin), NULL);
 
-    GtkWidget *self = gtk_widget_new (type, "selectable", FALSE, NULL);
+    GtkWidget *self = g_object_new (type, "selectable", FALSE, NULL);
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (self));
     GtkWidget *edit = g_paste_ui_edit_item_new (client, rootwin);
     GtkWidget *upload = g_paste_ui_upload_item_new (client);
@@ -432,7 +395,9 @@ g_paste_ui_item_skeleton_new (GType           type,
     priv->actions = g_slist_prepend (priv->actions, upload);
     priv->actions = g_slist_prepend (priv->actions, delete);
 
-    g_slist_foreach (priv->actions, add_action, gtk_bin_get_child (GTK_BIN (self)));
+    /* Reverse so that pack_end order (edit|upload|delete) is preserved with append */
+    g_autoptr (GSList) actions_reversed = g_slist_reverse (g_slist_copy (priv->actions));
+    g_slist_foreach (actions_reversed, add_action, GTK_BOX (priv->hbox));
 
     priv->c_signals[C_SIZE] = g_signal_connect (settings,
                                                 "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
@@ -446,9 +411,8 @@ g_paste_ui_item_skeleton_new (GType           type,
     g_paste_ui_item_skeleton_on_images_preview_changed (settings, NULL, priv);
     priv->c_signals[C_IMAGES_PREVIEW_SIZE] = g_signal_connect (settings,
                                                                "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
-                                                               G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_size_changed),
-                                                               self);
-    g_paste_ui_item_skeleton_on_images_preview_size_changed (settings, NULL, self);
+                                                               G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
+                                                               priv);
 
     return self;
 }

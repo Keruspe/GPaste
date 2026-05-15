@@ -17,10 +17,6 @@
 
 G_BEGIN_DECLS
 
-#define G_PASTE_TYPE_UI_SWITCH (g_paste_ui_switch_get_type ())
-
-G_PASTE_FINAL_TYPE (UiSwitch, ui_switch, UI_SWITCH, GtkSwitch)
-
 GtkWidget *g_paste_ui_switch_new (GtkWindow    *topwin,
                                   GPasteClient *client);
 

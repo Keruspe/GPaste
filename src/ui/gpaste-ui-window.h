@@ -13,13 +13,13 @@
 
 #include <gpaste/gpaste-macros.h>
 
-#include <gtk/gtk.h>
+#include <adwaita.h>
 
 G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_UI_WINDOW (g_paste_ui_window_get_type ())
 
-G_PASTE_FINAL_TYPE (UiWindow, ui_window, UI_WINDOW, GtkApplicationWindow)
+G_PASTE_FINAL_TYPE (UiWindow, ui_window, UI_WINDOW, AdwApplicationWindow)
 
 void g_paste_ui_window_empty_history (GPasteUiWindow *self,
                                       const gchar    *history);

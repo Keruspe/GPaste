@@ -13,13 +13,9 @@
 
 #include <gpaste/gpaste-settings.h>
 
-#include <gtk/gtk.h>
+#include <adwaita.h>
 
 G_BEGIN_DECLS
-
-#define G_PASTE_TYPE_UI_SHORTCUTS_WINDOW (g_paste_ui_shortcuts_window_get_type ())
-
-G_PASTE_FINAL_TYPE (UiShortcutsWindow, ui_shortcuts_window, UI_SHORTCUTS_WINDOW, GtkShortcutsWindow)
 
 GtkWidget *g_paste_ui_shortcuts_window_new (const GPasteSettings *settings);
 
