@@ -658,7 +658,6 @@ typedef struct {
     const GdkRGBA                *rgba;
     GdkFileList                  *file_list;
     GdkTexture                   *texture;
-    gboolean                      fallback;
     GPasteBinaryData             *special_atom[G_PASTE_SPECIAL_ATOM_LAST];
 } GPasteClipboardUpdateData;
 
@@ -689,7 +688,7 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
     }
 
     if (data->callback)
-        data->callback (data->self, item, data->fallback, data->user_data);
+        data->callback (data->self, item, data->user_data);
 
     for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         g_clear_object (&data->special_atom[atom]);
@@ -801,8 +800,8 @@ g_paste_clipboard_update_on_special_atom_ready (GPasteClipboard  *self G_GNUC_UN
  * @user_data: user data to pass to @callback
  *
  * Read the current clipboard content and update the internal cache.
- * The callback receives a newly created #GPasteItem (or NULL if unchanged or empty)
- * and a fallback flag that is TRUE when the clipboard was empty and no content could be retrieved.
+ * The callback receives a newly created #GPasteItem or NULL if the content is
+ * unchanged, unrecognised, or the selection has no owner.
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_update (GPasteClipboard              *self,
@@ -811,7 +810,7 @@ g_paste_clipboard_update (GPasteClipboard              *self,
 {
     g_return_if_fail (_G_PASTE_IS_CLIPBOARD (self));
 
-    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+    GPasteClipboardPrivate *priv = g_paste_clipboard_get_instance_private (self);
     GdkContentFormats *formats = gdk_clipboard_get_formats (priv->real);
     GPasteClipboardContent content_kind = CLIPBOARD_CONTENT_NONE;
     if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST))
@@ -823,6 +822,16 @@ g_paste_clipboard_update (GPasteClipboard              *self,
         content_kind = CLIPBOARD_CONTENT_IMAGE;
     else if (gdk_content_formats_contain_gtype (formats, G_TYPE_STRING))
         content_kind = CLIPBOARD_CONTENT_TEXT;
+    else
+    {
+        /* No recognized content: the selection was released or the owner
+         * provides no type we handle. Clear our cache so callers see an
+         * empty clipboard and act accordingly (e.g. ensure_not_empty). */
+        g_paste_clipboard_private_clear_content (priv);
+        if (callback)
+            callback (self, NULL, user_data);
+        return;
+    }
 
     GPasteClipboardUpdateData *data = g_new0 (GPasteClipboardUpdateData, 1);
 
@@ -831,53 +840,44 @@ g_paste_clipboard_update (GPasteClipboard              *self,
     data->user_data = user_data;
     data->pending = 1;
 
-    if (content_kind != CLIPBOARD_CONTENT_NONE)
+    gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
+
+    if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
+        (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (priv->settings)))
     {
-        gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
-
-        if (content_kind == CLIPBOARD_CONTENT_FILE_LIST ||
-            (content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_settings_get_rich_text_support (priv->settings)))
-        {
-            for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
-            {
-                if (gdk_content_formats_contain_mime_type (formats, g_paste_special_atom_get (atom)))
-                    atom_available[atom] = TRUE;
-            }
-        }
-
-        ++data->pending;
-        switch (content_kind)
-        {
-        case CLIPBOARD_CONTENT_FILE_LIST:
-            g_paste_clipboard_fetch_file_list (self, data);
-            break;
-        case CLIPBOARD_CONTENT_COLOR:
-            g_paste_clipboard_set_color (self, g_paste_clipboard_update_on_color_ready, data);
-            break;
-        case CLIPBOARD_CONTENT_TEXT:
-            g_paste_clipboard_set_text (self, g_paste_clipboard_update_on_text_ready, data);
-            break;
-        case CLIPBOARD_CONTENT_IMAGE:
-            g_paste_clipboard_set_texture (self, g_paste_clipboard_update_on_texture_ready, data);
-            break;
-        case CLIPBOARD_CONTENT_NONE:
-            g_assert_not_reached ();
-        }
-
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
-            if (atom_available[atom])
-            {
-                ++data->pending;
-                g_paste_clipboard_fetch_special_atom (self, atom, g_paste_clipboard_update_on_special_atom_ready, data);
-            }
+            if (gdk_content_formats_contain_mime_type (formats, g_paste_special_atom_get (atom)))
+                atom_available[atom] = TRUE;
         }
     }
-    else
+
+    ++data->pending;
+    switch (content_kind)
     {
-        data->fallback = TRUE;
-        ++data->pending;
+    case CLIPBOARD_CONTENT_FILE_LIST:
+        g_paste_clipboard_fetch_file_list (self, data);
+        break;
+    case CLIPBOARD_CONTENT_COLOR:
+        g_paste_clipboard_set_color (self, g_paste_clipboard_update_on_color_ready, data);
+        break;
+    case CLIPBOARD_CONTENT_TEXT:
         g_paste_clipboard_set_text (self, g_paste_clipboard_update_on_text_ready, data);
+        break;
+    case CLIPBOARD_CONTENT_IMAGE:
+        g_paste_clipboard_set_texture (self, g_paste_clipboard_update_on_texture_ready, data);
+        break;
+    case CLIPBOARD_CONTENT_NONE:
+        g_assert_not_reached ();
+    }
+
+    for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
+    {
+        if (atom_available[atom])
+        {
+            ++data->pending;
+            g_paste_clipboard_fetch_special_atom (self, atom, g_paste_clipboard_update_on_special_atom_ready, data);
+        }
     }
 
     g_paste_clipboard_update_maybe_done (data);
@@ -988,6 +988,21 @@ g_paste_clipboard_ensure_not_empty (GPasteClipboard *self,
 static void
 g_paste_clipboard_on_real_changed (GPasteClipboard *self)
 {
+    const GPasteClipboardPrivate *priv = _g_paste_clipboard_get_instance_private (self);
+
+    /* Unlike GTK3's owner-change, GdkClipboard::changed fires for local writes too.
+     * Skip them to avoid re-processing our own clipboard content. */
+    if (gdk_clipboard_is_local (priv->real))
+        return;
+
+    /* GTK4 fires changed twice per external selection event: once immediately
+     * with empty formats (before TARGETS resolves) and once with the real
+     * format list after TARGETS have been fetched. Only process the latter —
+     * equivalent to GTK3 filtering out GDK_OWNER_CHANGE_DESTROY/CLOSE. */
+    if (gdk_content_formats_is_empty (gdk_clipboard_get_formats (priv->real)))
+        return;
+
+    g_debug ("%s: owner change", _g_paste_clipboard_private_target_name (priv));
     g_signal_emit (self, signals[CHANGED], 0);
 }
 
