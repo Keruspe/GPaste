@@ -353,6 +353,7 @@ on_delete_history_action (GSimpleAction *action    G_GNUC_UNUSED,
 
     data->client = g_object_ref (priv->client);
     data->history = g_strdup (history);
+    /* Translators: %s is the name of the history being deleted. */
     g_autofree gchar *msg = g_strdup_printf (_("Are you sure you want to delete \"%s\"?"), history);
     g_paste_gtk_util_confirm_dialog (priv->rootwin, _("Delete"), msg, on_delete_confirmed, data);
 }
