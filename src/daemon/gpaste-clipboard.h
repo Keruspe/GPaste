@@ -18,7 +18,6 @@ G_PASTE_FINAL_TYPE (Clipboard, clipboard, CLIPBOARD, GObject)
 
 typedef void (*GPasteClipboardUpdateCallback) (GPasteClipboard *self,
                                                GPasteItem      *item,
-                                               gboolean         fallback,
                                                gpointer         user_data);
 
 void          g_paste_clipboard_update             (GPasteClipboard              *self,

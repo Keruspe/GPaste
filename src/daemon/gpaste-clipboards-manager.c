@@ -45,7 +45,6 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ClipboardsManager, clipboards_manager, G_TYPE_
 static void
 g_paste_clipboards_manager_bootstrap_ready (GPasteClipboard *clipboard,
                                             GPasteItem      *item G_GNUC_UNUSED,
-                                            gboolean         fallback G_GNUC_UNUSED,
                                             gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
@@ -155,22 +154,12 @@ typedef struct {
 static void
 g_paste_clipboards_manager_update_ready (GPasteClipboard *clipboard,
                                          GPasteItem      *item,
-                                         gboolean         fallback,
                                          gpointer         user_data)
 {
     g_autofree GPasteClipboardsManagerUpdateData *data = user_data;
     GPasteClipboardsManagerPrivate *priv = data->priv;
 
     g_debug ("clipboards-manager: update ready");
-
-    if (fallback)
-    {
-        g_debug ("clipboards-manager: no target ready and text fallback failed");
-
-        g_paste_clipboard_clear (clipboard);
-        g_paste_clipboard_ensure_not_empty (clipboard, priv->history);
-        return;
-    }
 
     const gchar *synchronized_text = NULL;
 
