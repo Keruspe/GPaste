@@ -216,9 +216,9 @@ _g_paste_image_item_new (const gchar *path,
         return NULL;
     }
 
-    /* This is the date format "month/day/year time" */
+    /* Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention. */
     g_autofree gchar *formatted_date = g_date_time_format (date, _("%m/%d/%y %T"));
-    /* This gets displayed in history when selecting an image */
+    /* Translators: Image item displayed in history. %d is width, %d is height, %s is the formatted date. */
     g_autofree gchar *display_string = g_strdup_printf (_("[Image, %d x %d (%s)]"),
                                                                   gdk_texture_get_width (priv->image),
                                                                   gdk_texture_get_height (priv->image),
