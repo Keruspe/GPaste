@@ -227,9 +227,7 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         return;
 
     if (priv->search)
-    {
         g_paste_ui_history_search (self, priv->search);
-    }
     else
     {
         OnUpdateCallbackData *cdata = g_new (OnUpdateCallbackData, 1);
@@ -266,9 +264,7 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
             g_paste_ui_item_set_uuid (item->data, priv->search_results[i]);
     }
     else
-    {
         g_paste_ui_history_show_status (self, "edit-find-symbolic", _("No Results"));
-    }
 
     for (guint64 i = search_results_size; i < priv->size; ++i, item = g_slist_next (item))
         g_paste_ui_item_set_index (item->data, (guint64) -1);
@@ -372,8 +368,7 @@ g_paste_ui_history_dispose (GObject *object)
     GPasteUiHistory *self = G_PASTE_UI_HISTORY (object);
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    if (priv->items)
-        g_slist_free_full (g_steal_pointer (&priv->items), g_object_unref);
+    g_clear_slist (&priv->items, g_object_unref);
 
     g_clear_pointer (&priv->search, g_free);
     g_clear_pointer (&priv->search_results, g_strfreev);

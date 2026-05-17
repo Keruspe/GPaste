@@ -220,9 +220,7 @@ g_paste_ui_item_skeleton_set_index_and_uuid (GPasteUiItemSkeleton *self,
     const GPasteUiItemSkeletonPrivate *priv = _g_paste_ui_item_skeleton_get_instance_private (self);
 
     if (index == (guint64) -1 || index == (guint64) -2)
-    {
         gtk_label_set_text (priv->index_label, "");
-    }
     else
     {
         g_autofree gchar *_index = g_strdup_printf("%" G_GUINT64_FORMAT, index);

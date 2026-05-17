@@ -162,9 +162,7 @@ g_paste_ui_panel_add_history (GPasteUiPanelPrivate *priv,
     GPasteUiPanelHistory *h;
 
     if (concurrent)
-    {
         h = concurrent->data;
-    }
     else
     {
         h = g_paste_ui_panel_history_new (priv->client, history);
@@ -406,7 +404,7 @@ g_paste_ui_panel_dispose (GObject *object)
     /* FIXME: adw_sidebar_section_dispose crashes with leftover items in libadwaita 1.9.0; drain manually until fixed upstream */
     for (GList *h = priv->histories; h; h = h->next)
         adw_sidebar_section_remove (priv->section, ADW_SIDEBAR_ITEM (h->data));
-    g_list_free (g_steal_pointer (&priv->histories));
+    g_clear_pointer (&priv->histories, g_list_free);
 
     G_OBJECT_CLASS (g_paste_ui_panel_parent_class)->dispose (object);
 }

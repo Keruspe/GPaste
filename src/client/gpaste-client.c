@@ -786,19 +786,13 @@ main (gint argc, gchar *argv[])
             g_autoptr (GPasteClientItem) item = g_paste_client_get_element_at_index_sync (ctx.client, g_ascii_strtoull (ctx.args[0], NULL, 10), &error);
 
             if (!error)
-            {
                 ctx.uuid = uuid = g_strdup (g_paste_client_item_get_uuid (item));
-            }
         }
         else
-        {
             ctx.uuid = ctx.args[0];
-        }
 
         if (!error)
-        {
             status = g_paste_dispatch (argc, (argc > 0) ? argv[0] : NULL, &ctx, &error);
-        }
 
         if (error)
         {

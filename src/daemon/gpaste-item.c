@@ -317,6 +317,16 @@ g_paste_item_set_uuid (GPasteItem  *self,
 }
 
 static void
+g_paste_item_dispose (GObject *object)
+{
+    GPasteItemPrivate *priv = g_paste_item_get_instance_private (G_PASTE_ITEM (object));
+
+    g_clear_slist (&priv->special_values, g_object_unref);
+
+    G_OBJECT_CLASS (g_paste_item_parent_class)->dispose (object);
+}
+
+static void
 g_paste_item_finalize (GObject *object)
 {
     const GPasteItem *self = _G_PASTE_ITEM (object);
@@ -328,8 +338,6 @@ g_paste_item_finalize (GObject *object)
     else
         g_free (priv->value);
     g_free (priv->display_string);
-
-    g_slist_free_full (priv->special_values, g_object_unref);
 
     G_OBJECT_CLASS (g_paste_item_parent_class)->finalize (object);
 }
@@ -368,6 +376,7 @@ g_paste_item_class_init (GPasteItemClass *klass)
     klass->set_state = g_paste_item_default_set_state;
     klass->secure = g_paste_item_default_secure;
 
+    G_OBJECT_CLASS (klass)->dispose = g_paste_item_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_item_finalize;
 }
 

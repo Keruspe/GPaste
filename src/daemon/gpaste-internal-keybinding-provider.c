@@ -102,14 +102,13 @@ internal_provider_change_grab_x11 (const guint32  *keycodes,
     XIEventMask mask = { XIAllMasterDevices, sizeof (mask_bits), mask_bits };
 
     if (modifiers & XIAnyModifier)
-    {
         g_array_append_val (mods, ((XIGrabModifiers) { XIAnyModifier, 0 }));
-    }
     else
     {
         g_array_append_val (mods, ((XIGrabModifiers) { modifiers, 0 }));
 
-        for (guint64 i = 0; i < mod_masks; ++i) {
+        for (guint64 i = 0; i < mod_masks; ++i)
+        {
             if (i & mod_masks)
                 g_array_append_val (mods, ((XIGrabModifiers) { modifiers | i, 0 }));
         }

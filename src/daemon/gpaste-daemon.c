@@ -277,9 +277,7 @@ g_paste_daemon_private_add_file (const GPasteDaemonPrivate *priv,
                              error))
     {
         if (g_utf8_validate (content, length, NULL))
-        {
             g_paste_daemon_private_do_add (priv, content, length, err);
-        }
         else
         {
             g_autoptr (GError) img_error = NULL;
@@ -408,9 +406,7 @@ g_paste_daemon_private_empty_history (const GPasteDaemonPrivate *priv,
     g_autofree gchar *name = g_paste_daemon_get_dbus_string_parameter (parameters, NULL);
 
     if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
-    {
         g_paste_history_empty (priv->history);
-    }
     else
     {
         g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);
@@ -537,9 +533,7 @@ g_paste_daemon_private_get_history_size (const GPasteDaemonPrivate *priv,
     guint64 size;
 
     if (g_paste_str_equal (name, g_paste_history_get_current (priv->history)))
-    {
         size = g_paste_history_get_length (priv->history);
-    }
     else
     {
         g_autoptr (GPasteHistory) history = g_paste_history_new (priv->settings);

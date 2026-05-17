@@ -198,9 +198,7 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
         gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
     }
     else if (priv->uuid)
-    {
         gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
-    }
 }
 
 /**
