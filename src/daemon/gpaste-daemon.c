@@ -4,6 +4,7 @@
  * Copyright (c) 2010-2026, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
+#include <gpaste-internal-keybinding-provider.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-image-item.h>
 #include <gpaste-make-password-keybinding.h>
@@ -1161,6 +1162,16 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
+use_internal_keybinding_provider (GPasteDaemon *self)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
+    g_autoptr (GPasteInternalKeybindingProvider) provider = g_paste_internal_keybinding_provider_new ();
+    g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
+    priv->keybinder = g_paste_keybinder_new (priv->settings, G_PASTE_KEYBINDING_PROVIDER (provider));
+    g_paste_daemon_activate_default_keybindings (self);
+}
+
+static void
 on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
                        GAsyncResult *res,
                        gpointer      user_data)
@@ -1170,15 +1181,16 @@ on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_finish (res, &error);
 
-    if (error)
+    if (error || !shell_client)
     {
-        g_warning ("Couldn't connect to gnome-shell: %s", error->message);
-        g_clear_object (&shell_client);
+        if (error)
+            g_warning ("Couldn't connect to gnome-shell: %s", error->message);
+        use_internal_keybinding_provider (self);
+        return;
     }
 
     g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
-
-    priv->keybinder = g_paste_keybinder_new (priv->settings, shell_client);
+    priv->keybinder = g_paste_keybinder_new (priv->settings, G_PASTE_KEYBINDING_PROVIDER (shell_client));
     g_paste_daemon_activate_default_keybindings (self);
 }
 
