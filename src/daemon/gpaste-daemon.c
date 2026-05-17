@@ -6,6 +6,7 @@
 
 #include <gpaste-internal-keybinding-provider.h>
 #include <gpaste-keybinder.h>
+#include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
 #include <gpaste-image-item.h>
 #include <gpaste-make-password-keybinding.h>
 #include <gpaste-pop-keybinding.h>
@@ -1162,13 +1163,20 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
-use_internal_keybinding_provider (GPasteDaemon *self)
+g_paste_daemon_setup_keybinder (GPasteDaemon             *self,
+                                GPasteKeybindingProvider *provider)
 {
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    g_autoptr (GPasteInternalKeybindingProvider) provider = g_paste_internal_keybinding_provider_new ();
     g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
-    priv->keybinder = g_paste_keybinder_new (priv->settings, G_PASTE_KEYBINDING_PROVIDER (provider));
+    priv->keybinder = g_paste_keybinder_new (priv->settings, provider);
     g_paste_daemon_activate_default_keybindings (self);
+}
+
+static void
+use_internal_keybinding_provider (GPasteDaemon *self)
+{
+    g_autoptr (GPasteInternalKeybindingProvider) provider = g_paste_internal_keybinding_provider_new ();
+    g_paste_daemon_setup_keybinder (self, G_PASTE_KEYBINDING_PROVIDER (provider));
 }
 
 static void
@@ -1177,7 +1185,6 @@ on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
                        gpointer      user_data)
 {
     GPasteDaemon *self = user_data;
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_finish (res, &error);
 
@@ -1189,9 +1196,26 @@ on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
-    priv->keybinder = g_paste_keybinder_new (priv->settings, G_PASTE_KEYBINDING_PROVIDER (shell_client));
-    g_paste_daemon_activate_default_keybindings (self);
+    g_paste_daemon_setup_keybinder (self, G_PASTE_KEYBINDING_PROVIDER (shell_client));
+}
+
+static void
+on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
+                        GAsyncResult *res,
+                        gpointer      user_data)
+{
+    GPasteDaemon *self = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteGtkGlobalShortcutClient) portal_client = g_paste_gtk_global_shortcut_client_new_finish (res, &error);
+
+    if (error)
+    {
+        g_warning ("Couldn't connect to GlobalShortcuts portal, falling back to gnome-shell: %s", error->message);
+        g_paste_gnome_shell_client_new (on_shell_client_ready, self);
+        return;
+    }
+
+    g_paste_daemon_setup_keybinder (self, G_PASTE_KEYBINDING_PROVIDER (portal_client));
 }
 
 static void
@@ -1223,7 +1247,7 @@ g_paste_daemon_init (GPasteDaemon *self)
 
     g_paste_history_load_async (history, NULL);
 
-    g_paste_gnome_shell_client_new (on_shell_client_ready, self);
+    g_paste_gtk_global_shortcut_client_new (on_portal_client_ready, self);
 }
 
 /**
