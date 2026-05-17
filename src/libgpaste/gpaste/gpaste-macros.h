@@ -57,7 +57,7 @@ G_BEGIN_DECLS
     G_PASTE_CONST_FUNCS (TypeName, TYPE_NAME)
 
 #define G_PASTE_CONST_PRIV_ACCESSOR(TypeName, type_name)                             \
-    static inline gconstpointer                                                      \
+    static inline G_GNUC_UNUSED gconstpointer                                        \
     _g_paste_##type_name##_get_instance_private (const GPaste##TypeName *self)       \
     {                                                                                \
       return g_paste_##type_name##_get_instance_private ((GPaste##TypeName *) self); \
@@ -75,6 +75,12 @@ G_BEGIN_DECLS
 
 #define G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName)          \
     G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
+    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
+
+#define G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE(TypeName, type_name, ParentTypeName, IFACE_TYPE, iface_init) \
+    G_DEFINE_TYPE_WITH_CODE (GPaste##TypeName, g_paste_##type_name, ParentTypeName,                                 \
+        G_ADD_PRIVATE (GPaste##TypeName)                                                                             \
+        G_IMPLEMENT_INTERFACE (IFACE_TYPE, iface_init))                                                              \
     G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
 
 #define G_PASTE_INIT_GETTEXT()                          \

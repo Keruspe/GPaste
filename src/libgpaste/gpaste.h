@@ -28,6 +28,9 @@
 /* GPasteUtil */
 #include <gpaste/gpaste-util.h>
 
+/* GPasteKeybindingProvider */
+#include <gpaste/gpaste-keybinding-provider.h>
+
 /* GPasteGnomeShellClient */
 #include <gpaste/gpaste-gnome-shell-client.h>
 

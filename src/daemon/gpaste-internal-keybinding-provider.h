@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include <gpaste/gpaste-macros.h>
-
-#include <gtk/gtk.h>
+#include <gpaste/gpaste-keybinding-provider.h>
 
 G_BEGIN_DECLS
 
@@ -17,10 +15,5 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (InternalKeybindingProvider, internal_keybinding_provider, INTERNAL_KEYBINDING_PROVIDER, GObject)
 
 GPasteInternalKeybindingProvider *g_paste_internal_keybinding_provider_new (void);
-
-void g_paste_internal_keybinding_provider_change_grab (GPasteInternalKeybindingProvider *self,
-                                                       const guint32                    *keycodes,
-                                                       GdkModifierType                   modifiers,
-                                                       gboolean                          grab);
 
 G_END_DECLS
