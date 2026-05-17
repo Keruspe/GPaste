@@ -43,6 +43,7 @@ g_paste_ui_keybinding_new (void)
 {
     return g_paste_keybinding_new (G_PASTE_TYPE_UI_KEYBINDING,
                                    G_PASTE_LAUNCH_UI_SETTING,
+                                   _("Launch UI"),
                                    g_paste_settings_get_launch_ui,
                                    launch_ui,
                                    NULL);
