@@ -68,6 +68,7 @@ pkg.generate(
 
 
 libgpaste_gtk4_sources = [
+  'gpaste-gtk4/gpaste-gtk-global-shortcut-client.c',
   'gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c',
   'gpaste-gtk4/gpaste-gtk-preferences-dialog.c',
   'gpaste-gtk4/gpaste-gtk-preferences-group.c',
@@ -81,6 +82,7 @@ libgpaste_gtk4_sources = [
 ]
 
 libgpaste_gtk4_headers = [
+  'gpaste-gtk4/gpaste-gtk-global-shortcut-client.h',
   'gpaste-gtk4/gpaste-gtk-macros.h',
   'gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h',
   'gpaste-gtk4/gpaste-gtk-preferences-dialog.h',
