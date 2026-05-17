@@ -50,6 +50,7 @@ g_paste_make_password_keybinding_new (GPasteHistory *history)
 {
     return g_paste_keybinding_new (G_PASTE_TYPE_MAKE_PASSWORD_KEYBINDING,
                                    G_PASTE_MAKE_PASSWORD_SETTING,
+                                   _("Convert to Password"),
                                    g_paste_settings_get_make_password,
                                    g_paste_make_password_keybinding_make_password,
                                    history);

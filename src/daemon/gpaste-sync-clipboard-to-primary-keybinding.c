@@ -46,6 +46,7 @@ g_paste_sync_clipboard_to_primary_keybinding_new (GPasteClipboardsManager *gcm)
 {
     return g_paste_keybinding_new (G_PASTE_TYPE_SYNC_CLIPBOARD_TO_PRIMARY_KEYBINDING,
                                    G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING,
+                                   _("Sync Clipboard to Primary"),
                                    g_paste_settings_get_sync_clipboard_to_primary,
                                    g_paste_sync_clipboard_to_primary_keybinding_sync,
                                    gcm);

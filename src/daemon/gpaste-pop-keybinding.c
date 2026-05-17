@@ -64,6 +64,7 @@ g_paste_pop_keybinding_new (GPasteHistory *history)
 
     GPasteKeybinding *self = g_paste_keybinding_new (G_PASTE_TYPE_POP_KEYBINDING,
                                                      G_PASTE_POP_SETTING,
+                                                     _("Pop from History"),
                                                      g_paste_settings_get_pop,
                                                      pop,
                                                      NULL);

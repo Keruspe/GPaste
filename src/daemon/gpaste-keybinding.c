@@ -10,6 +10,7 @@ typedef struct _GPasteKeybindingPrivate
 {
     GPasteKeybindingGetter getter;
     gchar                 *dconf_key;
+    gchar                 *description;
     GPasteKeybindingFunc   callback;
     gpointer               user_data;
     gboolean               active;
@@ -71,6 +72,24 @@ g_paste_keybinding_get_dconf_key (const GPasteKeybinding *self)
     const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     return priv->dconf_key;
+}
+
+/**
+ * g_paste_keybinding_get_description:
+ * @self: a #GPasteKeybinding instance
+ *
+ * Get the human-readable description for this keybinding
+ *
+ * Returns: the description
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_keybinding_get_description (const GPasteKeybinding *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+
+    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
+
+    return priv->description;
 }
 
 /**
@@ -230,6 +249,7 @@ g_paste_keybinding_finalize (GObject *object)
 
     g_free (priv->keycodes);
     g_free (priv->dconf_key);
+    g_free (priv->description);
 
     G_OBJECT_CLASS (g_paste_keybinding_parent_class)->finalize (object);
 }
@@ -255,6 +275,7 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  * g_paste_keybinding_new:
  * @type: the type of the subclass to instantiate
  * @dconf_key: the dconf key to watch
+ * @description: a human-readable, translated description of the action
  * @getter: (scope notified): the getter to use to get the binding
  * @callback: (closure user_data) (scope notified): the callback to call when activated
  * @user_data: (closure): the data to pass to @callback, defaults to self/this
@@ -267,6 +288,7 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 G_PASTE_VISIBLE GPasteKeybinding *
 g_paste_keybinding_new (GType                  type,
                          const gchar           *dconf_key,
+                         const gchar           *description,
                          GPasteKeybindingGetter getter,
                          GPasteKeybindingFunc   callback,
                          gpointer               user_data)
@@ -281,6 +303,7 @@ g_paste_keybinding_new (GType                  type,
 
     priv->getter = getter;
     priv->dconf_key = g_strdup (dconf_key);
+    priv->description = g_strdup (description);
     priv->callback = callback;
     priv->user_data = user_data;
     priv->keycodes = NULL;

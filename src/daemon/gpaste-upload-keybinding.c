@@ -64,6 +64,7 @@ g_paste_upload_keybinding_new (GPasteDaemon *daemon)
 
     GPasteKeybinding *self = g_paste_keybinding_new (G_PASTE_TYPE_UPLOAD_KEYBINDING,
                                                      G_PASTE_UPLOAD_SETTING,
+                                                     _("Upload to Pastebin"),
                                                      g_paste_settings_get_upload,
                                                      upload,
                                                      NULL);
