@@ -105,11 +105,20 @@ g_paste_binary_data_to_base64 (const GPasteBinaryData *self)
 }
 
 static void
+g_paste_binary_data_dispose (GObject *object)
+{
+    GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private (G_PASTE_BINARY_DATA (object));
+
+    g_clear_pointer (&priv->bytes, g_bytes_unref);
+
+    G_OBJECT_CLASS (g_paste_binary_data_parent_class)->dispose (object);
+}
+
+static void
 g_paste_binary_data_finalize (GObject *object)
 {
     GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private (G_PASTE_BINARY_DATA (object));
 
-    g_bytes_unref (priv->bytes);
     g_free (priv->checksum);
 
     G_OBJECT_CLASS (g_paste_binary_data_parent_class)->finalize (object);
@@ -118,6 +127,7 @@ g_paste_binary_data_finalize (GObject *object)
 static void
 g_paste_binary_data_class_init (GPasteBinaryDataClass *klass)
 {
+    G_OBJECT_CLASS (klass)->dispose = g_paste_binary_data_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_binary_data_finalize;
 }
 

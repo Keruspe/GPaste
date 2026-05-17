@@ -291,9 +291,7 @@ g_paste_util_empty_with_confirmation_sync (GPasteClient         *client,
     g_return_val_if_fail (!error || !(*error), FALSE);
 
     if (g_paste_settings_get_empty_history_confirmation (settings))
-    {
         return g_paste_util_activate_ui_sync ("empty", g_variant_new_string (history), error);
-    }
     else
     {
         g_autoptr (GError) _error = NULL;

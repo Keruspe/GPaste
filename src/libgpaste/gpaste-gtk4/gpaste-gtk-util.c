@@ -129,9 +129,7 @@ g_paste_gtk_util_empty_history (GtkWindow      *parent_window,
         g_paste_gtk_util_confirm_dialog (parent_window, _("Empty"), msg, empty_history_callback, data);
     }
     else
-    {
         g_paste_client_empty_history (client, history, NULL, NULL);
-    }
 }
 
 /**

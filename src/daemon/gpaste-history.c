@@ -1148,6 +1148,7 @@ g_paste_history_dispose (GObject *object)
     GPasteSettings *settings = priv->settings;
 
     g_clear_object (&priv->backend);
+    g_clear_list (&priv->history, g_object_unref);
 
     if (settings)
     {
@@ -1164,7 +1165,6 @@ g_paste_history_finalize (GObject *object)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (G_PASTE_HISTORY (object));
 
     g_free (priv->name);
-    g_list_free_full (priv->history, g_object_unref);
     g_mutex_clear (&priv->lock);
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->finalize (object);

@@ -93,6 +93,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
     static void                                                                                        \
     g_paste_settings_private_set_##name##_from_dconf (GPasteSettingsPrivate *priv)                     \
     {                                                                                                  \
+        clear_func                                                                                     \
         priv->name = g_settings_get_##setting_type (priv->settings, G_PASTE_##key##_SETTING);          \
     }                                                                                                  \
     G_PASTE_VISIBLE void                                                                               \
@@ -1090,9 +1091,7 @@ create_g_settings (void)
         return g_settings_new_with_backend (G_PASTE_SETTINGS_NAME, backend);
     }
     else
-    {
         return g_settings_new (G_PASTE_SETTINGS_NAME);
-    }
 }
 
 static void

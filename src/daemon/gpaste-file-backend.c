@@ -216,8 +216,10 @@ typedef struct
         return;                                                                                       \
     }
 #define SWITCH_STATE(x, y) \
-    ASSERT_STATE (x);      \
-    data->state = y
+    do {                   \
+        ASSERT_STATE (x);  \
+        data->state = y;   \
+    } while (0)
 
 static gboolean
 history_contains_uuid (const GList *history,
@@ -252,13 +254,9 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
             if (g_paste_str_equal (*a, "version"))
             {
                 if (g_paste_str_equal (*v, "1.0"))
-                {
                     data->version = HISTORY_1_0;
-                }
                 else if (g_paste_str_equal (*v, "2.0"))
-                {
                     data->version = HISTORY_2_0;
-                }
                 else
                 {
                     g_warning ("Unknown history version: %s", *v);
@@ -316,9 +314,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                 data->name = g_strdup (*v);
             }
             else
-            {
                 g_warning ("Unknown item attribute: %s", *a);
-            }
         }
     }
     else if (g_paste_str_equal (element_name, "value"))
@@ -338,9 +334,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         }
     }
     else
-    {
         g_warning ("Unknown element: %s", element_name);
-    }
 }
 
 static void
@@ -420,9 +414,7 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
     Data *data = user_data;
 
     if (g_paste_str_equal (element_name, "history"))
-    {
         SWITCH_STATE (IN_HISTORY, END);
-    }
     else if (g_paste_str_equal (element_name, "item"))
     {
         if (data->current_size < data->max_size)
@@ -441,13 +433,9 @@ end_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         }
     }
     else if (g_paste_str_equal (element_name, "value"))
-    {
         SWITCH_STATE (IN_VALUE_WITH_TEXT, IN_ITEM);
-    }
     else
-    {
         g_warning ("Unknown element: %s", element_name);
-    }
 }
 
 static void
@@ -477,18 +465,12 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
         {
             data->text = g_paste_util_xml_decode (txt);
             if (*g_strstrip (txt))
-            {
                 SWITCH_STATE (IN_ITEM, IN_ITEM_WITH_TEXT);
-            }
             else
-            {
                 g_clear_pointer (&data->text, g_free);
-            }
         }
         else if (*g_strstrip (txt))
-        {
             g_warning ("Unexpected text in item for history version != 1.0 %s", txt);
-        }
         break;
     }
     case IN_VALUE:
@@ -513,9 +495,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
             }
         }
         else
-        {
             g_warning ("Unexpected value for history version != 2.0");
-        }
         break;
     default:
         g_warning ("Unexpected state: %" G_GINT32_FORMAT, data->state);
@@ -659,10 +639,10 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
 
         if (g_str_has_suffix (raw_name, ".xml"))
         {
-            gchar *name = g_strdup (raw_name);
+            g_autofree gchar *name = g_strdup (raw_name);
 
             name[strlen (name) - 4] = '\0';
-            g_ptr_array_add (history_names, name);
+            g_ptr_array_add (history_names, g_steal_pointer (&name));
         }
     }
 
