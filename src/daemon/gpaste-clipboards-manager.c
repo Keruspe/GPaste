@@ -11,36 +11,23 @@ struct _GPasteClipboardsManager
     GObject parent_instance;
 };
 
-enum
-{
-    C_CLIP_CHANGED,
-
-    C_CLIP_LAST_SIGNAL
-};
-
 typedef struct
 {
     GPasteClipboard *clipboard;
-    guint64          c_signals[C_CLIP_LAST_SIGNAL];
+    GSignalGroup    *signal_group;
 } _Clipboard;
-
-enum
-{
-    C_SELECTED,
-
-    C_LAST_SIGNAL
-};
 
 typedef struct
 {
     GSList         *clipboards;
     GPasteHistory  *history;
+    GSignalGroup   *history_signals;
     GPasteSettings *settings;
-
-    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteClipboardsManagerPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ClipboardsManager, clipboards_manager, G_TYPE_OBJECT)
+
+static void g_paste_clipboards_manager_notify (GPasteClipboard *clipboard, gpointer user_data);
 
 static void
 g_paste_clipboards_manager_bootstrap_ready (GPasteClipboard *clipboard,
@@ -69,6 +56,8 @@ g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
     _Clipboard *clip = g_new0 (_Clipboard, 1);
 
     clip->clipboard = g_object_ref (clipboard);
+    clip->signal_group = g_signal_group_new (G_PASTE_TYPE_CLIPBOARD);
+    g_signal_group_connect (clip->signal_group, "changed", G_CALLBACK (g_paste_clipboards_manager_notify), priv);
 
     priv->clipboards = g_slist_prepend (priv->clipboards, clip);
     g_paste_clipboard_update (clipboard, g_paste_clipboards_manager_bootstrap_ready, priv);
@@ -216,10 +205,7 @@ g_paste_clipboards_manager_activate (GPasteClipboardsManager *self)
     {
         _Clipboard *clip = clipboard->data;
 
-        clip->c_signals[C_CLIP_CHANGED] = g_signal_connect (clip->clipboard,
-                                                             "changed",
-                                                             G_CALLBACK (g_paste_clipboards_manager_notify),
-                                                             priv);
+        g_signal_group_set_target (clip->signal_group, clip->clipboard);
     }
 }
 
@@ -296,7 +282,7 @@ _clipboard_free (gpointer data)
 {
     _Clipboard *clip = data;
 
-    g_signal_handler_disconnect (clip->clipboard, clip->c_signals[C_CLIP_CHANGED]);
+    g_clear_object (&clip->signal_group);
     g_object_unref (clip->clipboard);
     g_free (clip);
 }
@@ -305,14 +291,10 @@ static void
 g_paste_clipboards_manager_dispose (GObject *object)
 {
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (G_PASTE_CLIPBOARDS_MANAGER (object));
-    GPasteSettings *settings = priv->settings;
 
-    if (settings)
-    {
-        g_signal_handler_disconnect (settings, priv->c_signals[C_SELECTED]);
-        g_clear_object (&priv->settings);
-        g_clear_object (&priv->history);
-    }
+    g_clear_object (&priv->history_signals);
+    g_clear_object (&priv->history);
+    g_clear_object (&priv->settings);
 
     g_clear_slist (&priv->clipboards, _clipboard_free);
 
@@ -353,10 +335,9 @@ g_paste_clipboards_manager_new (GPasteHistory  *history,
     priv->history = g_object_ref (history);
     priv->settings = g_object_ref (settings);
 
-    priv->c_signals[C_SELECTED] = g_signal_connect_swapped (history,
-                                                            "selected",
-                                                            G_CALLBACK (on_item_selected),
-                                                            self);
+    GSignalGroup *history_signals = priv->history_signals = g_signal_group_new (G_PASTE_TYPE_HISTORY);
+    g_signal_group_connect_swapped (history_signals, "selected", G_CALLBACK (on_item_selected), self);
+    g_signal_group_set_target (history_signals, history);
 
     return self;
 }

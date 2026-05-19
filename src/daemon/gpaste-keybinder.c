@@ -17,7 +17,7 @@ typedef struct
 
     GPasteSettings           *settings;
     GPasteKeybindingProvider *provider;
-    guint64                   c_provider;
+    GSignalGroup             *provider_signals;
 } GPasteKeybinderPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Keybinder, keybinder, G_TYPE_OBJECT)
@@ -26,20 +26,12 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Keybinder, keybinder, G_TYPE_OBJECT)
 /* Wrapper around GPasteKeybinding */
 /***********************************/
 
-enum
-{
-    C_K_REBIND,
-
-    C_K_LAST_SIGNAL
-};
-
 typedef struct
 {
     GPasteKeybinder  *keybinder; /* not ref'd */
     GPasteKeybinding *binding;
     GPasteSettings   *settings;
-
-    guint64           c_signals[C_K_LAST_SIGNAL];
+    GSignalGroup     *signal_group;
 } _Keybinding;
 
 static void
@@ -77,10 +69,9 @@ _keybinding_new (GPasteKeybinder  *keybinder,
 
     g_autofree gchar *detailed_signal = g_strdup_printf ("rebind::%s", g_paste_keybinding_get_dconf_key (binding));
 
-    k->c_signals[C_K_REBIND] = g_signal_connect_swapped (settings,
-                                                         detailed_signal,
-                                                         G_CALLBACK (_keybinding_rebind),
-                                                         k);
+    k->signal_group = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
+    g_signal_group_connect_swapped (k->signal_group, detailed_signal, G_CALLBACK (_keybinding_rebind), k);
+    g_signal_group_set_target (k->signal_group, settings);
     return k;
 }
 
@@ -88,7 +79,7 @@ static void
 _keybinding_free (gpointer data)
 {
     _Keybinding *k = data;
-    g_signal_handler_disconnect (k->settings, k->c_signals[C_K_REBIND]);
+    g_clear_object (&k->signal_group);
     g_object_unref (k->binding);
     g_object_unref (k->settings);
     g_free (k);
@@ -200,7 +191,7 @@ g_paste_keybinder_dispose (GObject *object)
         g_clear_object (&priv->settings);
         g_paste_keybinding_provider_ungrab_all (priv->provider);
         g_clear_pointer (&priv->keybindings, g_hash_table_unref);
-        g_signal_handler_disconnect (priv->provider, priv->c_provider);
+        g_clear_object (&priv->provider_signals);
         g_clear_object (&priv->provider);
     }
 
@@ -243,10 +234,10 @@ g_paste_keybinder_new (GPasteSettings           *settings,
 
     priv->settings = g_object_ref (settings);
     priv->provider = g_object_ref (provider);
-    priv->c_provider = g_signal_connect (provider,
-                                         "keybinding-activated",
-                                         G_CALLBACK (on_keybinding_activated),
-                                         priv);
+
+    GSignalGroup *provider_signals = priv->provider_signals = g_signal_group_new (G_PASTE_TYPE_KEYBINDING_PROVIDER);
+    g_signal_group_connect (provider_signals, "keybinding-activated", G_CALLBACK (on_keybinding_activated), priv);
+    g_signal_group_set_target (provider_signals, provider);
 
     return self;
 }

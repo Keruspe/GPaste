@@ -17,14 +17,6 @@ struct _GPasteUiWindow
     AdwApplicationWindow parent_instance;
 };
 
-enum
-{
-    C_SEARCH,
-    C_SWITCH_HISTORY,
-
-    C_LAST_SIGNAL
-};
-
 typedef struct
 {
     AdwHeaderBar    *header;
@@ -41,9 +33,10 @@ typedef struct
 
     AdwDialog       *shortcuts;
 
-    gboolean         initialized;
+    GSignalGroup    *search_signals;
+    GSignalGroup    *client_signals;
 
-    guint64          c_signals[C_LAST_SIGNAL];
+    gboolean         initialized;
 } GPasteUiWindowPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -296,20 +289,8 @@ g_paste_ui_window_dispose (GObject *object)
     GPasteUiWindow *self = G_PASTE_UI_WINDOW (object);
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    if (priv->c_signals[C_SEARCH])
-    {
-        GtkSearchEntry *entry = g_paste_ui_search_bar_get_entry (priv->search_bar);
-
-        g_signal_handler_disconnect (entry, priv->c_signals[C_SEARCH]);
-        priv->c_signals[C_SEARCH] = 0;
-    }
-
-    if (priv->client && priv->c_signals[C_SWITCH_HISTORY])
-    {
-        g_signal_handler_disconnect (priv->client, priv->c_signals[C_SWITCH_HISTORY]);
-        priv->c_signals[C_SWITCH_HISTORY] = 0;
-    }
-
+    g_clear_object (&priv->search_signals);
+    g_clear_object (&priv->client_signals);
     g_clear_object (&priv->client);
     g_clear_object (&priv->settings);
     g_clear_object (&priv->shortcuts);
@@ -360,10 +341,13 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), toolbar_view);
 
     GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (priv->search_bar);
-    priv->c_signals[C_SEARCH] = g_signal_connect (entry,
-                                                  "search-changed",
-                                                  G_CALLBACK (on_search),
-                                                  priv);
+
+    GSignalGroup *search_signals = priv->search_signals = g_signal_group_new (GTK_TYPE_SEARCH_ENTRY);
+    g_signal_group_connect (search_signals, "search-changed", G_CALLBACK (on_search), priv);
+    g_signal_group_set_target (search_signals, entry);
+
+    priv->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
+    g_signal_group_connect (priv->client_signals, "switch-history", G_CALLBACK (on_switch_history), priv);
 
     GtkEventController *key_controller = gtk_event_controller_key_new ();
     gtk_event_controller_set_propagation_phase (key_controller, GTK_PHASE_CAPTURE);
@@ -432,10 +416,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                             priv->search_bar, "search-mode-enabled",
                             G_BINDING_BIDIRECTIONAL);
 
-    priv->c_signals[C_SWITCH_HISTORY] = g_signal_connect (priv->client,
-                                                          "switch-history",
-                                                          G_CALLBACK (on_switch_history),
-                                                          priv);
+    g_signal_group_set_target (priv->client_signals, priv->client);
 
     g_paste_client_get_history_name (priv->client, on_initial_history_name, priv);
 
