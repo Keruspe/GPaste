@@ -24,19 +24,13 @@ struct _GPasteHistory
     GObject parent_instance;
 };
 
-enum
-{
-    C_CHANGED,
-
-    C_LAST_SIGNAL
-};
-
 typedef struct
 {
     GMutex                lock;
 
     GPasteStorageBackend *backend;
     GPasteSettings       *settings;
+    GSignalGroup         *settings_signals;
     GList                *history;
     gsize                 size;
 
@@ -51,8 +45,6 @@ typedef struct
 
     gboolean              load_in_progress;
     guint64               load_generation;
-
-    guint64               c_signals[C_LAST_SIGNAL];
 } GPasteHistoryPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (History, history, G_TYPE_OBJECT)
@@ -1145,16 +1137,11 @@ g_paste_history_dispose (GObject *object)
 {
     GPasteHistory *self = G_PASTE_HISTORY (object);
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    GPasteSettings *settings = priv->settings;
 
     g_clear_object (&priv->backend);
     g_clear_list (&priv->history, g_object_unref);
-
-    if (settings)
-    {
-        g_signal_handler_disconnect (settings, priv->c_signals[C_CHANGED]);
-        g_clear_object (&priv->settings);
-    }
+    g_clear_object (&priv->settings_signals);
+    g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->dispose (object);
 }
@@ -1386,10 +1373,10 @@ g_paste_history_new (GPasteSettings *settings)
 
     priv->backend = g_paste_storage_backend_new (G_PASTE_STORAGE_DEFAULT, settings);
     priv->settings = g_object_ref (settings);
-    priv->c_signals[C_CHANGED] = g_signal_connect (settings,
-                                                   "changed",
-                                                   G_CALLBACK (g_paste_history_settings_changed),
-                                                   self);
+
+    GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
+    g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_history_settings_changed), self);
+    g_signal_group_set_target (settings_signals, settings);
 
     return self;
 }

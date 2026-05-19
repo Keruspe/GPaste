@@ -11,18 +11,10 @@
 #include <gpaste-ui-item-skeleton.h>
 #include <gpaste-ui-upload-item.h>
 
-enum
-{
-    C_SIZE,
-    C_IMAGES_PREVIEW,
-    C_IMAGES_PREVIEW_SIZE,
-
-    C_LAST_SIGNAL
-};
-
 typedef struct
 {
     GPasteSettings *settings;
+    GSignalGroup   *settings_signals;
 
     GSList         *actions;
     GtkWidget      *edit;
@@ -35,8 +27,6 @@ typedef struct
     GtkPicture     *thumbnail;
     gboolean        editable;
     gboolean        uploadable;
-
-    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteUiItemSkeletonPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemSkeleton, ui_item_skeleton, GTK_TYPE_LIST_BOX_ROW)
@@ -284,13 +274,8 @@ g_paste_ui_item_skeleton_dispose (GObject *object)
 {
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (object));
 
-    if (priv->settings)
-    {
-        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_SIZE]);
-        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_IMAGES_PREVIEW]);
-        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_IMAGES_PREVIEW_SIZE]);
-        g_clear_object (&priv->settings);
-    }
+    g_clear_object (&priv->settings_signals);
+    g_clear_object (&priv->settings);
 
     g_clear_pointer (&priv->actions, g_slist_free);
 
@@ -397,20 +382,22 @@ g_paste_ui_item_skeleton_new (GType           type,
     g_autoptr (GSList) actions_reversed = g_slist_reverse (g_slist_copy (priv->actions));
     g_slist_foreach (actions_reversed, add_action, GTK_BOX (priv->hbox));
 
-    priv->c_signals[C_SIZE] = g_signal_connect (settings,
-                                                "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
-                                                G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
-                                                priv);
+    GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
+    g_signal_group_connect (settings_signals,
+                            "changed::" G_PASTE_ELEMENT_SIZE_SETTING,
+                            G_CALLBACK (g_paste_ui_item_skeleton_set_text_size),
+                            priv);
+    g_signal_group_connect (settings_signals,
+                            "changed::" G_PASTE_IMAGES_PREVIEW_SETTING,
+                            G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
+                            priv);
+    g_signal_group_connect (settings_signals,
+                            "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
+                            G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
+                            priv);
+    g_signal_group_set_target (settings_signals, settings);
     g_paste_ui_item_skeleton_set_text_size (settings, NULL, priv);
-    priv->c_signals[C_IMAGES_PREVIEW] = g_signal_connect (settings,
-                                                          "changed::" G_PASTE_IMAGES_PREVIEW_SETTING,
-                                                          G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
-                                                          priv);
     g_paste_ui_item_skeleton_on_images_preview_changed (settings, NULL, priv);
-    priv->c_signals[C_IMAGES_PREVIEW_SIZE] = g_signal_connect (settings,
-                                                               "changed::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
-                                                               G_CALLBACK (g_paste_ui_item_skeleton_on_images_preview_changed),
-                                                               priv);
 
     return self;
 }

@@ -19,12 +19,9 @@ struct _GPasteUiPanel
 enum
 {
     C_SELECTION_CHANGED,
-    C_DELETE_HISTORY,
-    C_EMPTY_HISTORY,
     C_SETUP_MENU,
     C_SWITCH_ACTIVATED,
     C_SWITCH_CLICKED,
-    C_SWITCH_HISTORY,
 
     C_LAST_SIGNAL
 };
@@ -33,6 +30,7 @@ typedef struct
 {
     GPasteClient      *client;
     GPasteSettings    *settings;
+    GSignalGroup      *client_signals;
 
     AdwSidebar        *sidebar;
     AdwSidebarSection *section;
@@ -391,13 +389,8 @@ g_paste_ui_panel_dispose (GObject *object)
         priv->c_signals[C_SELECTION_CHANGED] = 0;
     }
 
-    if (priv->client)
-    {
-        g_signal_handler_disconnect (priv->client, priv->c_signals[C_DELETE_HISTORY]);
-        g_signal_handler_disconnect (priv->client, priv->c_signals[C_EMPTY_HISTORY]);
-        g_signal_handler_disconnect (priv->client, priv->c_signals[C_SWITCH_HISTORY]);
-        g_clear_object (&priv->client);
-    }
+    g_clear_object (&priv->client_signals);
+    g_clear_object (&priv->client);
 
     g_clear_object (&priv->settings);
 
@@ -524,18 +517,21 @@ g_paste_ui_panel_new (GPasteClient   *client,
     g_menu_append (menu, _("Delete"), "panel.delete-history");
     adw_sidebar_set_menu_model (priv->sidebar, G_MENU_MODEL (menu));
 
-    priv->c_signals[C_DELETE_HISTORY] = g_signal_connect (priv->client,
-                                                          "delete-history",
-                                                          G_CALLBACK (on_history_deleted),
-                                                          priv);
-    priv->c_signals[C_EMPTY_HISTORY] = g_signal_connect (priv->client,
-                                                         "empty-history",
-                                                         G_CALLBACK (on_history_emptied),
-                                                         self);
-    priv->c_signals[C_SWITCH_HISTORY] = g_signal_connect (priv->client,
-                                                          "switch-history",
-                                                          G_CALLBACK (on_history_switched),
-                                                          priv);
+    GSignalGroup *client_signals = priv->client_signals = g_signal_group_new (G_PASTE_TYPE_CLIENT);
+    g_signal_group_connect (client_signals,
+                            "delete-history",
+                            G_CALLBACK (on_history_deleted),
+                            priv);
+    g_signal_group_connect (client_signals,
+                            "empty-history",
+                            G_CALLBACK (on_history_emptied),
+                            self);
+    g_signal_group_connect (client_signals,
+                            "switch-history",
+                            G_CALLBACK (on_history_switched),
+                            priv);
+    g_signal_group_set_target (client_signals, client);
+
     priv->c_signals[C_SETUP_MENU] = g_signal_connect (priv->sidebar,
                                                        "setup-menu",
                                                        G_CALLBACK (on_setup_menu),

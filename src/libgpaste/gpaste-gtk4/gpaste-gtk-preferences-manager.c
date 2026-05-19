@@ -11,20 +11,12 @@ struct _GPasteGtkPreferencesManager
     GObject parent_instance;
 };
 
-enum
-{
-    C_SETTINGS,
-
-    C_LAST_SIGNAL
-};
-
 typedef struct
 {
     GPasteSettings *settings;
+    GSignalGroup   *settings_signals;
 
     GSList         *pages;
-
-    guint64         c_signals[C_LAST_SIGNAL];
 } GPasteGtkPreferencesManagerPrivate;
 
 G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesManager, preferences_manager, G_TYPE_OBJECT)
@@ -100,11 +92,8 @@ g_paste_gtk_preferences_manager_dispose (GObject *object)
 {
     GPasteGtkPreferencesManagerPrivate *priv = g_paste_gtk_preferences_manager_get_instance_private (G_PASTE_GTK_PREFERENCES_MANAGER (object));
 
-    if (priv->settings) /* first dispose call */
-    {
-        g_signal_handler_disconnect (priv->settings, priv->c_signals[C_SETTINGS]);
-        g_clear_object (&priv->settings);
-    }
+    g_clear_object (&priv->settings_signals);
+    g_clear_object (&priv->settings);
 
     G_OBJECT_CLASS (g_paste_gtk_preferences_manager_parent_class)->dispose (object);
 }
@@ -134,10 +123,10 @@ g_paste_gtk_preferences_manager_init (GPasteGtkPreferencesManager *self)
     GPasteGtkPreferencesManagerPrivate *priv = g_paste_gtk_preferences_manager_get_instance_private (self);
 
     priv->settings = g_paste_settings_new ();
-    priv->c_signals[C_SETTINGS] = g_signal_connect (priv->settings,
-                                                    "changed",
-                                                    G_CALLBACK (g_paste_gtk_preferences_manager_setting_changed),
-                                                    priv);
+
+    GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
+    g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_gtk_preferences_manager_setting_changed), priv);
+    g_signal_group_set_target (settings_signals, priv->settings);
 }
 
 /**

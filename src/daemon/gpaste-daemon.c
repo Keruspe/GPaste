@@ -58,16 +58,6 @@
 
 #define G_PASTE_DBUS_ASSERT(cond, _msg) G_PASTE_DBUS_ASSERT_FULL (cond, _msg, ;)
 
-enum
-{
-    C_UPDATE,
-    C_SWITCH,
-    C_TRACK,
-    C_ACTIVE_CHANGED,
-
-    C_LAST_SIGNAL
-};
-
 struct _GPasteDaemon
 {
     GPasteBusObject parent_instance;
@@ -88,7 +78,9 @@ typedef struct
     GDBusNodeInfo           *g_paste_daemon_dbus_info;
     GDBusInterfaceVTable     g_paste_daemon_dbus_vtable;
 
-    guint64                  c_signals[C_LAST_SIGNAL];
+    GSignalGroup            *history_signals;
+    GSignalGroup            *settings_signals;
+    GSignalGroup            *screensaver_signals;
 } GPasteDaemonPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
@@ -981,14 +973,10 @@ g_paste_daemon_unregister_object (gpointer user_data)
 {
     g_autoptr (GPasteDaemon) self = G_PASTE_DAEMON (user_data);
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    guint64 *c_signals = priv->c_signals;
 
-    g_signal_handler_disconnect (priv->settings, c_signals[C_TRACK]);
-    g_signal_handler_disconnect (priv->history,  c_signals[C_UPDATE]);
-    g_signal_handler_disconnect (priv->history,  c_signals[C_SWITCH]);
-
-    if (priv->screensaver)
-        g_signal_handler_disconnect (priv->screensaver, c_signals[C_ACTIVE_CHANGED]);
+    g_signal_group_set_target (priv->settings_signals, NULL);
+    g_signal_group_set_target (priv->history_signals, NULL);
+    g_signal_group_set_target (priv->screensaver_signals, NULL);
 
     priv->registered = FALSE;
 }
@@ -1056,6 +1044,9 @@ g_paste_daemon_dispose (GObject *object)
     {
         g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
         g_clear_object (&priv->connection);
+        g_clear_object (&priv->history_signals);
+        g_clear_object (&priv->settings_signals);
+        g_clear_object (&priv->screensaver_signals);
         g_clear_object (&priv->history);
         g_clear_object (&priv->settings);
         g_clear_object (&priv->clipboards_manager);
@@ -1088,20 +1079,8 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
     if (!priv->id_on_bus)
         return FALSE;
 
-    guint64 *c_signals = priv->c_signals;
-
-    c_signals[C_TRACK] = g_signal_connect_swapped (priv->settings,
-                                                   "track",
-                                                   G_CALLBACK (g_paste_daemon_tracking),
-                                                   self);
-    c_signals[C_UPDATE] = g_signal_connect_swapped (priv->history,
-                                                    "update",
-                                                    G_CALLBACK (g_paste_daemon_on_history_update),
-                                                    self);
-    c_signals[C_SWITCH] = g_signal_connect_swapped (priv->history,
-                                                    "switch",
-                                                    G_CALLBACK (g_paste_daemon_on_history_switch),
-                                                    priv);
+    g_signal_group_set_target (priv->settings_signals, priv->settings);
+    g_signal_group_set_target (priv->history_signals, priv->history);
     priv->registered = TRUE;
 
     g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed, self), "[GPaste] Startup - changed");
@@ -1148,12 +1127,7 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
         g_clear_object (&priv->screensaver);
     }
     else if (screensaver)
-    {
-        priv->c_signals[C_ACTIVE_CHANGED] = g_signal_connect_swapped (priv->screensaver,
-                                                                      "active-changed",
-                                                                      G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
-                                                                      priv);
-    }
+        g_signal_group_set_target (priv->screensaver_signals, screensaver);
 }
 
 static void
@@ -1240,6 +1214,28 @@ g_paste_daemon_init (GPasteDaemon *self)
     g_paste_clipboards_manager_activate (clipboards_manager);
 
     g_paste_history_load_async (history, NULL);
+
+    priv->history_signals = g_signal_group_new (G_PASTE_TYPE_HISTORY);
+    g_signal_group_connect_swapped (priv->history_signals,
+                                    "update",
+                                    G_CALLBACK (g_paste_daemon_on_history_update),
+                                    self);
+    g_signal_group_connect_swapped (priv->history_signals,
+                                    "switch",
+                                    G_CALLBACK (g_paste_daemon_on_history_switch),
+                                    priv);
+
+    priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
+    g_signal_group_connect_swapped (priv->settings_signals,
+                                    "track",
+                                    G_CALLBACK (g_paste_daemon_tracking),
+                                    self);
+
+    priv->screensaver_signals = g_signal_group_new (G_PASTE_TYPE_SCREENSAVER_CLIENT);
+    g_signal_group_connect_swapped (priv->screensaver_signals,
+                                    "active-changed",
+                                    G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
+                                    priv);
 
     g_paste_gtk_global_shortcut_client_new (on_portal_client_ready, self);
 }

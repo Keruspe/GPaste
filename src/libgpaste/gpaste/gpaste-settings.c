@@ -15,18 +15,12 @@ struct _GPasteSettings
     GObject parent_instance;
 };
 
-enum
-{
-    C_CHANGED,
-    C_SHELL_CHANGED,
-
-    C_LAST_SIGNAL
-};
-
 typedef struct
 {
-    GSettings *settings;
-    GSettings *shell_settings;
+    GSettings    *settings;
+    GSettings    *shell_settings;
+    GSignalGroup *settings_signals;
+    GSignalGroup *shell_settings_signals;
 
     gboolean   close_on_select;
     gboolean   open_centered;
@@ -58,8 +52,6 @@ typedef struct
     gchar     *upload;
 
     gboolean   extension_enabled;
-
-    guint64    c_signals[C_LAST_SIGNAL];
 } GPasteSettingsPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Settings, settings, G_TYPE_OBJECT)
@@ -994,20 +986,11 @@ static void
 g_paste_settings_dispose (GObject *object)
 {
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (G_PASTE_SETTINGS (object));
-    GSettings *settings = priv->settings;
-    GSettings *shell_settings = priv->shell_settings;
 
-    if (settings)
-    {
-        g_signal_handler_disconnect (settings, priv->c_signals[C_CHANGED]);
-        g_clear_object (&priv->settings);
-    }
-
-    if (shell_settings)
-    {
-        g_signal_handler_disconnect (shell_settings, priv->c_signals[C_SHELL_CHANGED]);
-        g_clear_object (&priv->shell_settings);
-    }
+    g_clear_object (&priv->settings_signals);
+    g_clear_object (&priv->settings);
+    g_clear_object (&priv->shell_settings_signals);
+    g_clear_object (&priv->shell_settings);
 
     G_OBJECT_CLASS (g_paste_settings_parent_class)->dispose (object);
 }
@@ -1109,10 +1092,9 @@ g_paste_settings_init (GPasteSettings *self)
     priv->sync_primary_to_clipboard = NULL;
     priv->upload = NULL;
 
-    priv->c_signals[C_CHANGED] = g_signal_connect (settings,
-                                                   "changed",
-                                                   G_CALLBACK (g_paste_settings_settings_changed),
-                                                   self);
+    GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
+    g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_settings_settings_changed), self);
+    g_signal_group_set_target (settings_signals, settings);
 
     g_paste_settings_private_set_close_on_select_from_dconf (priv);
     g_paste_settings_private_set_open_centered_from_dconf (priv);
@@ -1146,15 +1128,16 @@ g_paste_settings_init (GPasteSettings *self)
     priv->shell_settings = NULL;
     priv->extension_enabled = FALSE;
 
+    GSignalGroup *shell_settings_signals = priv->shell_settings_signals = g_signal_group_new (G_TYPE_SETTINGS);
+    g_signal_group_connect (shell_settings_signals,
+                            "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
+                            G_CALLBACK (g_paste_settings_shell_settings_changed),
+                            self);
+
     if (g_paste_util_has_gnome_shell ())
     {
         priv->shell_settings = g_settings_new (G_PASTE_SHELL_SETTINGS_NAME);
-
-        priv->c_signals[C_SHELL_CHANGED] = g_signal_connect (priv->shell_settings,
-                                                             "changed::" G_PASTE_SHELL_ENABLED_EXTENSIONS_SETTING,
-                                                             G_CALLBACK (g_paste_settings_shell_settings_changed),
-                                                             self);
-
+        g_signal_group_set_target (shell_settings_signals, priv->shell_settings);
         g_paste_settings_private_set_extension_enabled_from_dconf (priv);
     }
 }
