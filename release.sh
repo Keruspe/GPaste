@@ -8,7 +8,7 @@ run_ninja() {
 
 main() {
     local version="${1}"
-    appstreamcli validate data/appstream/*.xml.in || exit 1
+    appstreamcli validate data/metainfo/*.xml.in || exit 1
     run_ninja
     ls po/*.po | sed 's|po/||; s|\.po$||' | sort > po/LINGUAS
     run_ninja GPaste-pot

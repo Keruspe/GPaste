@@ -1,6 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=GPaste
+GenericName=Clipboard Manager
 Comment=Manage your clipboard history
 Keywords=Clipboard;Manager;Settings;Preferences;Configuration;
 Icon=edit-paste
