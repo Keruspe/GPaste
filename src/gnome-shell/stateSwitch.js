@@ -25,6 +25,6 @@ class GPasteStateSwitch extends PopupSwitchMenuItem {
     }
 
     _onToggle(state) {
-        this._client.track(this.state, null);
+        this._client.track(state, null);
     }
 });

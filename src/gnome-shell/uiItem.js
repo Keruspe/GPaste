@@ -14,7 +14,7 @@ import { GPasteActionButton } from './actionButton.js';
 export const GPasteUiItem = GObject.registerClass(
 class GPasteUiItem extends GPasteActionButton {
     _init(menu) {
-        super._init('go-home-symbolic', _("Graphical tool"), function() {
+        super._init('go-home-symbolic', _("Graphical tool"), () => {
             menu.itemActivated();
             GPaste.util_spawn('Ui');
         });

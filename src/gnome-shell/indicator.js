@@ -14,13 +14,11 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject?version=2.0';
 import GLib from 'gi://GLib?version=2.0';
 import GPaste from 'gi://GPaste?version=2';
-import St from 'gi://St';
 
 import { GPasteActions } from './actions.js';
 import { GPasteDummyHistoryItem } from './dummyHistoryItem.js';
 import { GPasteEmptyHistoryItem } from './emptyHistoryItem.js';
 import { GPasteItem } from './item.js';
-import { GPastePadding } from './padding.js';
 import { GPastePageSwitcher } from './pageSwitcher.js';
 import { GPasteSearchItem } from './searchItem.js';
 import { GPasteStateSwitch } from './stateSwitch.js';
@@ -135,14 +133,14 @@ class GPasteIndicator extends Button {
     }
 
     _updateIndexVisibility(state) {
-        this._history.slice(0, 10).forEach(function(i) {
+        this._history.slice(0, 10).forEach(i => {
             i.showIndex(state);
         });
     }
 
     _eventIsControlKey(event) {
         const key = event.get_key_symbol();
-        return (key == Clutter.KEY_Control_L || key == Clutter.KEY_Control_R);
+        return (key === Clutter.KEY_Control_L || key === Clutter.KEY_Control_R);
     }
 
     _hasSearch() {
@@ -171,9 +169,9 @@ class GPasteIndicator extends Button {
                 i.setUuid(this._searchResults[offset + index]);
             });
 
-            this._updateVisibility(results == 0);
+            this._updateVisibility(results === 0);
 
-            this._history.slice(results - offset, maxSize).forEach(function(i) {
+            this._history.slice(results - offset, maxSize).forEach(i => {
                 i.setIndex(-1);
             });
         } else {
@@ -189,7 +187,7 @@ class GPasteIndicator extends Button {
     _resetElementSize() {
         const size = this._settings.get_element_size();
         this._searchItem.resetSize(size/2 + 3);
-        this._history.forEach(function(i) {
+        this._history.forEach(i => {
             i.setTextSize(size);
         });
     }
@@ -214,8 +212,8 @@ class GPasteIndicator extends Button {
 
         if (newSize > oldSize) {
             for (let index = oldSize; index < newSize; ++index) {
-                let realIndex = index + offset;
-                let item = new GPasteItem(this._client, elementSize, index, (realIndex < realSize) ? realIndex : -1);
+                const realIndex = index + offset;
+                const item = new GPasteItem(this._client, elementSize, index, (realIndex < realSize) ? realIndex : -1);
                 this.menu.addMenuItem(item, this._headerSize + this._postHeaderSize + index);
                 this._history[index] = item;
             }
@@ -237,7 +235,7 @@ class GPasteIndicator extends Button {
         case GPaste.UpdateTarget.ALL:
             this._refresh(0).catch(console.error);
             break;
-        case GPaste.UpdateTarget.POSITION:
+        case GPaste.UpdateTarget.POSITION: {
             const offset = this._pageSwitcher.getPageOffset();
             const displayPos = position - offset;
             switch (action) {
@@ -250,6 +248,7 @@ class GPasteIndicator extends Button {
             }
             break;
         }
+        }
     }
 
     async _refresh(resetTextFrom) {
@@ -258,7 +257,7 @@ class GPasteIndicator extends Button {
         if (this._searchResults.length > 0) {
             await this._onSearch(this._pageSwitcher.getPage());
         } else if (this._hasSearch()) {
-            this._history.forEach(function(i, index) {
+            this._history.forEach(i => {
                 i.setIndex(-1);
             });
             this._updateVisibility(true);
@@ -276,14 +275,14 @@ class GPasteIndicator extends Button {
             const offset = this._pageSwitcher.getPageOffset();
             const size = Math.min(realSize - offset, maxSize);
 
-            this._history.slice(resetTextFrom, size).forEach(function(i, index) {
+            this._history.slice(resetTextFrom, size).forEach((i, index) => {
                 i.setIndex(offset + resetTextFrom + index);
             });
-            this._history.slice(size, maxSize).forEach(function(i, index) {
+            this._history.slice(size, maxSize).forEach(i => {
                 i.setIndex(-1);
             });
 
-            this._updateVisibility(size == 0);
+            this._updateVisibility(size === 0);
         }
     }
 
@@ -351,14 +350,14 @@ class GPasteIndicator extends Button {
     }
 
     _onMenuKeyPress(actor, event) {
-        if(this._switch.active)
+        if (this._switch.active)
             return super._onMenuKeyPress(actor, event);
 
         const symbol = event.get_key_symbol();
-        if (symbol == Clutter.KEY_Left) {
+        if (symbol === Clutter.KEY_Left) {
             return this._pageSwitcher.previous();
         }
-        if (symbol == Clutter.KEY_Right) {
+        if (symbol === Clutter.KEY_Right) {
             return this._pageSwitcher.next();
         }
         return Clutter.EVENT_PROPAGATE;
@@ -370,6 +369,11 @@ class GPasteIndicator extends Button {
             this._settingsSizeChangedId = 0;
         }
 
+        if (this._settingsMaxSizeChangedId) {
+            this._settings.disconnect(this._settingsMaxSizeChangedId);
+            this._settingsMaxSizeChangedId = 0;
+        }
+
         if (!this._client)
             return;
 
@@ -377,11 +381,6 @@ class GPasteIndicator extends Button {
         this._client.disconnect(this._clientShowId);
         this._client.disconnect(this._clientTrackingId);
         this._client = null;
-
-        if (this._settingsMaxSizeChangedId) {
-            this._settings.disconnect(this._settingsMaxSizeChangedId);
-            this._settingsMaxSizeChangedId = 0;
-        }
     }
 });
 

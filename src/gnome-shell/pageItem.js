@@ -29,10 +29,10 @@ export const GPastePageItem = GObject.registerClass({
     }
 
     setActive(active) {
-      if (active) {
-          this.add_style_pseudo_class('selected');
-      } else {
-          this.remove_style_pseudo_class('selected');
-      }
+        if (active) {
+            this.add_style_pseudo_class('selected');
+        } else {
+            this.remove_style_pseudo_class('selected');
+        }
     }
 });

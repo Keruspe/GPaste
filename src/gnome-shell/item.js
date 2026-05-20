@@ -8,7 +8,6 @@ import { PopupMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject?version=2.0';
-import GPaste from 'gi://GPaste?version=2';
 import Pango from 'gi://Pango?version=1.0';
 import St from 'gi://St';
 
@@ -38,7 +37,7 @@ class GPasteItem extends PopupMenuItem {
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this.setTextSize(size);
 
-        this.setIndex(index);
+        this.setIndex(index).catch(console.error);
     }
 
     showIndex(state) {
@@ -53,7 +52,7 @@ class GPasteItem extends PopupMenuItem {
     }
 
     refresh() {
-        this.setIndex(this._index);
+        this.setIndex(this._index).catch(console.error);
     }
 
     async setIndex(index) {
@@ -61,7 +60,7 @@ class GPasteItem extends PopupMenuItem {
         this._index = index;
         this._fakeIndex = false;
 
-        if (index == -1) {
+        if (index === -1) {
             this._setValue(null, oldIndex);
         } else {
             const item = await this._client.get_element_at_index(index, null);
@@ -85,22 +84,22 @@ class GPasteItem extends PopupMenuItem {
     }
 
     _setValue(value, oldIndex) {
-        if (this._index == 0) {
+        if (this._index === 0) {
             this.label.set_style("font-weight: bold;");
-        } else if (oldIndex == 0) {
+        } else if (oldIndex === 0) {
             this.label.set_style(null);
         }
 
-        if (this._index == -1) {
+        if (this._index === -1) {
             this._uuid = null;
             this.label.clutter_text.set_text(value || "");
             this.hide();
         } else {
-            const text = value.replace(/[\t\n\r]/g, ' ');
-            if (text != this.label.get_text()) {
+            const text = (value ?? '').replace(/[\t\n\r]/g, ' ');
+            if (text !== this.label.get_text()) {
                 this.label.clutter_text.set_text(text);
             }
-            if (oldIndex == -1) {
+            if (oldIndex === -1) {
                 this.show();
             }
         }
@@ -119,11 +118,11 @@ class GPasteItem extends PopupMenuItem {
 
     vfunc_key_press_event(event) {
         const symbol = event.get_key_symbol();
-        if (symbol == Clutter.KEY_space || symbol == Clutter.KEY_Return) {
+        if (symbol === Clutter.KEY_space || symbol === Clutter.KEY_Return) {
             this.activate(event);
             return Clutter.EVENT_STOP;
         }
-        if (symbol == Clutter.KEY_BackSpace || symbol == Clutter.KEY_Delete) {
+        if (symbol === Clutter.KEY_BackSpace || symbol === Clutter.KEY_Delete) {
             this._client.delete(this._uuid, null);
             return Clutter.EVENT_STOP;
         }

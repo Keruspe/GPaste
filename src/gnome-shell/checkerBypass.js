@@ -20,7 +20,7 @@ export default function checkerBypass() {
         GLib.Source.set_name_by_id(GLib.idle_add_once(checkerBypass), '[GPaste] checkerBypass');
         return;
     }
-    let checker = Main.shellDBusService._senderChecker;
+    const checker = Main.shellDBusService._senderChecker;
     if (!checker._gpasteEnabled) {
         checker._gpasteEnabled = true;
         checker._watchList.push(Gio.DBus.watch_name(Gio.BusType.SESSION,

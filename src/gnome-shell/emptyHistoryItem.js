@@ -8,7 +8,6 @@ import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.j
 
 import GObject from 'gi://GObject?version=2.0';
 import GPaste from 'gi://GPaste?version=2';
-import St from 'gi://St';
 
 import { GPasteActionButton } from './actionButton.js';
 
