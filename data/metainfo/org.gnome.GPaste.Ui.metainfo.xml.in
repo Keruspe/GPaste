@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright (c) 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
-<component type="desktop">
-  <id>org.gnome.GPaste.Ui.desktop</id>
+<component type="desktop-application">
+  <id>org.gnome.GPaste.Ui</id>
   <name>GPaste</name>
   <summary>Manage your clipboard history</summary>
-  <developer_name>Marc-Antoine Perennou</developer_name>
+  <developer id="org.imagination-land">
+    <name>Marc-Antoine Perennou</name>
+  </developer>
   <project_license>BSD-2-Clause</project_license>
   <metadata_license>CC-BY-SA-3.0</metadata_license>
   <project_group>GNOME</project_group>
@@ -22,22 +24,21 @@
   <screenshots>
     <screenshot type="default">
       <caption>The main UI</caption>
-      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-1.png</image>
+      <image type="source" height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-1.png</image>
     </screenshot>
     <screenshot>
       <caption>The settings UI</caption>
-      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-2.png</image>
+      <image type="source" height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-2.png</image>
     </screenshot>
     <screenshot>
       <caption>The settings UI</caption>
-      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-3.png</image>
+      <image type="source" height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-3.png</image>
     </screenshot>
     <screenshot>
       <caption>The settings UI</caption>
-      <image height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-4.png</image>
+      <image type="source" height="610" width="686">https://www.imagination-land.org/images/GPaste/3/Ui-4.png</image>
     </screenshot>
   </screenshots>
-  <update_contact>Marc-Antoine@Perennou.com</update_contact>
   <url type="bugtracker">https://github.com/Keruspe/GPaste/issues</url>
   <url type="donation">https://paypal.me/keruspe/</url>
   <url type="help">https://github.com/Keruspe/GPaste/issues</url>

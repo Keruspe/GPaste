@@ -1,4 +1,4 @@
-subdir('appstream')
+subdir('metainfo')
 subdir('completions')
 subdir('control-center')
 subdir('dbus')
