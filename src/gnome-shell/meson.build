@@ -22,6 +22,19 @@ shell_extension_files = [
   'uiItem.js',
 ]
 
+eslint = find_program(
+  meson.project_source_root() / 'node_modules/.bin/eslint',
+  required: false,
+)
+if eslint.found()
+  test(
+    'eslint',
+    eslint,
+    args: shell_extension_files,
+    workdir: meson.current_source_dir(),
+  )
+endif
+
 configured_shell_ext_metadata = configure_file(
   input: 'metadata.json.in',
   configuration: conf,

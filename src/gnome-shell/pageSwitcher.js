@@ -8,8 +8,6 @@ import { Ornament, PopupBaseMenuItem } from 'resource:///org/gnome/shell/ui/popu
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject?version=2.0';
-import St from 'gi://St';
-
 import { GPastePadding } from './padding.js';
 import { GPastePageItem } from './pageItem.js';
 
@@ -56,7 +54,7 @@ export const GPastePageSwitcher = GObject.registerClass({
         if (size > 0 && this._active === -1) {
             this._switch(1);
             return false;
-        } else if (size == 0 || this._active < pages) {
+        } else if (size === 0 || this._active < pages) {
             return true;
         } else {
             this._active = -1;
@@ -66,12 +64,12 @@ export const GPastePageSwitcher = GObject.registerClass({
     }
 
     _addPage() {
-        let sw = new GPastePageItem(this._pages.length + 1);
+        const sw = new GPastePageItem(this._pages.length + 1);
         this._pages.push(sw);
-    // We pop the trailing padding, and put it back after the page we add
-    this.remove_child(this._padding);
+        // We pop the trailing padding, and put it back after the page we add
+        this.remove_child(this._padding);
         this.add_child(sw);
-    this.add_child(this._padding);
+        this.add_child(this._padding);
 
         sw.connect('switch', (sw, page) => {
             this._switch(page);

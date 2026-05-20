@@ -13,7 +13,7 @@ import { GPasteActionButton } from './actionButton.js';
 export const GPasteAboutItem = GObject.registerClass(
 class GPasteAboutItem extends GPasteActionButton {
     _init(client, menu) {
-        super._init('dialog-information-symbolic', _("About"), function() {
+        super._init('dialog-information-symbolic', _("About"), () => {
             menu.itemActivated();
             client.about(null);
         });

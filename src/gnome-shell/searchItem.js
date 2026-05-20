@@ -54,7 +54,7 @@ export const GPasteSearchItem = GObject.registerClass({
 
     reset() {
         this._entry.text = '';
-        let text = this._entry.clutter_text;
+        const text = this._entry.clutter_text;
         text.set_cursor_visible(true);
         text.set_selection(0, 0);
     }
@@ -63,10 +63,10 @@ export const GPasteSearchItem = GObject.registerClass({
         this._entry.grab_key_focus();
     }
 
-    _onTextChanged(se, prop) {
-        const dummy = (this.text.length == 0);
+    _onTextChanged() {
+        const dummy = (this.text.length === 0);
         this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
-        if (!dummy && this._iconClickedId == 0) {
+        if (!dummy && this._iconClickedId === 0) {
             this._iconClickedId = this._entry.connect('secondary-icon-clicked', this.reset.bind(this));
         }
         this.emit('text-changed');
