@@ -1,8 +1,5 @@
-/*
- * This file is part of GPaste.
- *
- * Copyright (c) 2026, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
- */
+// SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
 

@@ -1,10 +1,6 @@
-/*
- * This file is part of GPaste.
- *
- * Copyright (c) 2010-2026, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
- *
- * Based on js/misc/util.js from gnome-shell
- */
+// SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+// SPDX-License-Identifier: BSD-2-Clause
+// Based on js/misc/util.js from gnome-shell
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
