@@ -1,8 +1,5 @@
-/*
- * This file is part of GPaste.
- *
- * Copyright (c) 2026, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
- */
+// SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+// SPDX-License-Identifier: BSD-2-Clause
 
 #if !defined (__G_PASTE_GTK4_H_INSIDE__) && !defined (G_PASTE_COMPILATION)
 #error "Only <gpaste-gtk4.h> can be included directly."

@@ -1,8 +1,5 @@
-/*
- * This file is part of GPaste.
- *
- * Copyright (c) 2010-2026, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
- */
+// SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+// SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste/gpaste-gdbus-macros.h>
 #include <gpaste/gpaste-update-enums.h>
