@@ -44,6 +44,19 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-05-24" version="45.5">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix infinite Pango assertion loop that could fill disk when clipboard content contained tab characters</li>
+          <li>Various bug fixes and memory management improvements</li>
+          <li>Daemon improvements</li>
+          <li>GNOME Shell extension improvements</li>
+          <li>GLib &gt;= 2.76 is now required</li>
+          <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-04-02" version="45.4">
       <description>
         <p>This is a maintenance release. Changes:</p>
