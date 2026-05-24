@@ -4,8 +4,6 @@
  * Copyright (c) 2010-2018, Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
  */
 
-#include <gpaste/gpaste-util.h>
-
 #include <gpaste-ui-item.h>
 
 struct _GPasteUiItem
@@ -104,7 +102,7 @@ _g_paste_ui_item_ready (GPasteUiItem *self,
                         const gchar  *txt)
 {
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
-    g_autofree gchar *oneline = g_paste_util_replace (txt, "\n", " ");
+    g_autofree gchar *oneline = g_strdelimit (g_strdup (txt), "\n\t", ' ');
 
     g_paste_ui_item_skeleton_set_index_and_uuid (G_PASTE_UI_ITEM_SKELETON (self), priv->index, priv->uuid);
     g_paste_client_get_element_kind (priv->client, priv->uuid, g_paste_ui_item_on_kind_ready, g_object_ref (self));

@@ -332,11 +332,7 @@ g_paste_clipboards_manager_dispose (GObject *object)
         g_clear_object (&priv->history);
     }
 
-    if (priv->clipboards)
-    {
-        g_slist_free_full (priv->clipboards, _clipboard_free);
-        priv->clipboards = NULL;
-    }
+    g_clear_slist (&priv->clipboards, _clipboard_free);
 
     G_OBJECT_CLASS (g_paste_clipboards_manager_parent_class)->dispose (object);
 }

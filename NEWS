@@ -1,3 +1,13 @@
+NEW in 45.5 (24/05/2026)
+=============
+
+- Fix infinite Pango assertion loop that could fill disk when clipboard content contained tab characters (#469)
+- Various bug fixes and memory management improvements
+- Daemon improvements
+- GNOME Shell extension improvements
+- GLib >= 2.76 is now required
+- Translations updates
+
 NEW in 45.4 (02/04/2026)
 =============
 

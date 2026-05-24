@@ -15,7 +15,7 @@ main() {
     run_ninja GPaste-update-po
     git commit -asm "Release GPaste ${version}"
     run_ninja dist
-    git tag -sm "Release GPaste ${version}" v${version}
+    git tag -m "Release GPaste ${version}" v${version}
 }
 
 main "${@}"

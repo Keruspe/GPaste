@@ -161,7 +161,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
         const GPasteClientItem *item = i->data;
         const gchar *value = g_paste_client_item_get_value (item);
         g_auto (GVariantBuilder) dict;
-        g_autofree gchar *result = g_paste_util_replace (value, "\n", " ");
+        g_autofree gchar *result = g_strdelimit (g_strdup (value), "\n\t", ' ');
 
         g_variant_builder_init (&dict, G_VARIANT_TYPE_VARDICT);
 

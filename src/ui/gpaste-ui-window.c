@@ -46,6 +46,14 @@ _empty (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
+
+    if (!GTK_IS_WIDGET (self))
+    {
+        g_free (data[1]);
+        g_free (data);
+        return G_SOURCE_REMOVE;
+    }
+
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
@@ -86,6 +94,14 @@ _search (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
+
+    if (!GTK_IS_WIDGET (self))
+    {
+        g_free (data[1]);
+        g_free (data);
+        return G_SOURCE_REMOVE;
+    }
+
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
@@ -126,6 +142,10 @@ static gboolean
 _show_prefs (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
+
+    if (!GTK_IS_WIDGET (self))
+        return G_SOURCE_REMOVE;
+
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
     if (!priv->initialized)
