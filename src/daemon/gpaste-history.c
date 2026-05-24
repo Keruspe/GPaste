@@ -340,7 +340,7 @@ g_paste_history_private_is_growing_line (GPasteHistoryPrivate *priv,
                                          GPasteItem           *new)
 {
     if (_G_PASTE_IS_IMAGE_ITEM (old) || _G_PASTE_IS_IMAGE_ITEM (new))
-	    return FALSE;
+        return FALSE;
 
     if (!(g_paste_settings_get_growing_lines (priv->settings) &&
         _G_PASTE_IS_TEXT_ITEM (old) && _G_PASTE_IS_TEXT_ITEM (new) &&
@@ -906,7 +906,7 @@ g_paste_history_load (GPasteHistory *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    if (priv->name && g_paste_str_equal(name, priv->name))
+    if (priv->name && g_paste_str_equal (name, priv->name))
         return;
 
     g_paste_history_load_locked (self, priv, name);
@@ -1089,7 +1089,7 @@ g_paste_history_delete (GPasteHistory *self,
     const GPasteHistoryPrivate *priv = _g_paste_history_get_instance_private (self);
     const gchar *history_name = (name) ? name : priv->name;
 
-    if (g_paste_str_equal (name, priv->name))
+    if (g_paste_str_equal (history_name, priv->name))
         g_paste_history_empty (self);
 
     g_paste_storage_backend_delete_history (priv->backend, history_name, error);
@@ -1121,7 +1121,7 @@ g_paste_history_settings_changed (GPasteSettings *settings G_GNUC_UNUSED,
     G_PASTE_LOCK_HISTORY;
 
     /* FIXME: track text item size settings */
-    if (g_paste_str_equal(key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
+    if (g_paste_str_equal (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
         g_paste_history_private_check_size (priv);
     else if (g_paste_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
         g_paste_history_private_check_memory_usage (priv);
@@ -1306,6 +1306,7 @@ g_paste_history_search (GPasteHistory *self,
 {
     g_return_val_if_fail (_G_PASTE_IS_HISTORY (self), NULL);
     g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
+    g_return_val_if_fail (strlen (pattern) <= 256, NULL);
 
     g_debug ("history: search '%s'", pattern);
 
@@ -1336,7 +1337,7 @@ g_paste_history_search (GPasteHistory *self,
 
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
-        else if (_G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal(pattern, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item))))
+        else if (_G_PASTE_IS_PASSWORD_ITEM (item) && g_paste_str_equal (pattern, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item))))
             match = TRUE;
         else if (g_regex_match (regex, g_paste_item_get_value (item), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL))
             match = TRUE;

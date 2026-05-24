@@ -56,7 +56,9 @@ g_paste_password_item_set_name (GPastePasswordItem *self,
 
     GPasteItem *item = G_PASTE_ITEM (self);
 
-    g_paste_item_add_size (item, strlen (name) - ((priv->name) ? strlen(priv->name) : 0));
+    if (priv->name)
+        g_paste_item_remove_size (item, strlen (priv->name));
+    g_paste_item_add_size (item, strlen (name));
     g_set_str (&priv->name, name);
 
     // This is the prefix displayed in history to identify a password

@@ -29,7 +29,7 @@ g_paste_client_item_get_uuid (const GPasteClientItem *self)
 
     const GPasteClientItemPrivate *priv = _g_paste_client_item_get_instance_private (self);
 
-    return priv->uuid;;
+    return priv->uuid;
 }
 
 /**
@@ -55,6 +55,8 @@ g_paste_client_item_finalize (GObject *object)
 
     g_free (priv->uuid);
     g_free (priv->value);
+
+    G_OBJECT_CLASS (g_paste_client_item_parent_class)->finalize (object);
 }
 
 static void

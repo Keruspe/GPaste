@@ -10,7 +10,7 @@ i18n = import('i18n')
 
 apiversion = '2'
 
-adwaita_req_version = '1.8'
+adwaita_req_version = '1.9'
 gcr_req_version = '3.90.0'
 gjs_req_version = '1.78.0'
 glib_req_version = '2.84.0'
