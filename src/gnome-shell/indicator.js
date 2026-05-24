@@ -347,7 +347,7 @@ class GPasteIndicator extends Button {
     }
 
     _onMenuKeyPress(actor, event) {
-        if (this._switch.active)
+        if (this._switch && this._switch.active)
             return super._onMenuKeyPress(actor, event);
 
         const symbol = event.get_key_symbol();

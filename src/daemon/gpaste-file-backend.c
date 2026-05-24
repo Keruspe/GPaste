@@ -383,7 +383,7 @@ add_item (Data *data)
 
         g_paste_item_set_uuid (item, data->uuid);
         data->history = g_list_append (data->history, item);
-        ++data->current_size;;
+        ++data->current_size;
     }
 
     for (GSList *d = data->special_values; d; d = d->next)
@@ -568,7 +568,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         }
 
         if (data.state != END)
-            g_warning ("Unexpected state adter parsing history: %" G_GINT32_FORMAT, data.state);
+            g_warning ("Unexpected state after parsing history: %" G_GINT32_FORMAT, data.state);
 
         *history = data.history;
         *size = data.mem_size;
@@ -616,8 +616,11 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
                                                                        error);
     if (error && *error)
     {
-        if ((*error)->domain == G_FILE_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
+        if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
+        {
+            g_clear_error (error);
             return g_strdupv ((GStrv) history_names->pdata);
+        }
         return NULL;
     }
 

@@ -8,7 +8,6 @@
 
 #include <gio/gio.h>
 #include <string.h>
-#include <sys/stat.h>
 
 struct _GPasteImageItem
 {
@@ -285,20 +284,27 @@ g_paste_image_item_new (GdkTexture *texture)
 {
     g_return_val_if_fail (GDK_IS_TEXTURE (texture), NULL);
 
-    gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
+    g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
     g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
     g_autofree gchar *images_dir_path = g_build_filename (history_dir, "images", NULL);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
 
-    if (!g_file_query_exists (images_dir, NULL))
-        mkdir (images_dir_path, (mode_t) 0700);
+    g_autoptr (GError) mkdir_error = NULL;
+    if (!g_file_make_directory_with_parents (images_dir, NULL, &mkdir_error) &&
+        !g_error_matches (mkdir_error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+    {
+        g_warning ("Failed to create images directory: %s", mkdir_error->message);
+        return NULL;
+    }
 
     g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
     g_autofree gchar *path = g_build_filename (images_dir_path, filename, NULL);
     GPasteItem *self = _g_paste_image_item_new (path,
                                                 g_date_time_new_now_local (),
                                                 g_object_ref (texture),
-                                                checksum);
+                                                g_steal_pointer (&checksum));
+    if (!self)
+        return NULL;
 
     g_autoptr (GPasteImageSaveData) data = g_new (GPasteImageSaveData, 1);
     data->texture = g_object_ref (texture);
