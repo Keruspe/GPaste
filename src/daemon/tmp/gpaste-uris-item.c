@@ -98,8 +98,7 @@ g_paste_uris_item_new (const gchar *uris)
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_URIS_ITEM, uris);
     GPasteUrisItemPrivate *priv = g_paste_uris_item_get_instance_private (G_PASTE_URIS_ITEM (self));
 
-    g_autofree gchar *display_string_with_newlines = g_paste_util_replace (uris, g_get_home_dir (), "~");
-    g_autofree gchar *display_string = g_paste_util_replace (display_string_with_newlines, "\n", " ");
+    g_autofree gchar *display_string = g_strdelimit (g_paste_util_replace (uris, g_get_home_dir (), "~"), "\n\t", ' ');
 
     // This is the prefix displayed in history to identify selected files
     g_autofree gchar *full_display_string = g_strconcat (_("[Files] "), display_string, NULL);
