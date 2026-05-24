@@ -87,6 +87,21 @@ g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
 }
 
 static void
+g_paste_history_item_free (gpointer data)
+{
+    GPasteItem *item = data;
+
+    if (_G_PASTE_IS_IMAGE_ITEM (item))
+    {
+        g_autoptr (GFile) image = g_file_new_for_path (g_paste_item_get_value (item));
+        g_autoptr (GError) error = NULL;
+        if (!g_file_delete (image, NULL, &error))
+            g_warning ("Failed to delete image file: %s", error->message);
+    }
+    g_object_unref (item);
+}
+
+static void
 g_paste_history_private_remove (GPasteHistoryPrivate *priv,
                                 GList                *elem,
                                 gboolean              remove_leftovers)
@@ -99,16 +114,7 @@ g_paste_history_private_remove (GPasteHistoryPrivate *priv,
     priv->size -= g_paste_item_get_size (item);
 
     if (remove_leftovers)
-    {
-        if (_G_PASTE_IS_IMAGE_ITEM (item))
-        {
-            g_autoptr (GFile) image = g_file_new_for_path (g_paste_item_get_value (item));
-            g_autoptr (GError) error = NULL;
-            if (!g_file_delete (image, NULL, &error))
-                g_warning ("Failed to delete image file: %s", error->message);
-        }
-        g_object_unref (item);
-    }
+        g_paste_history_item_free (item);
     priv->history = g_list_delete_link (priv->history, elem);
 }
 
@@ -242,8 +248,7 @@ g_paste_history_private_check_size (GPasteHistoryPrivate *priv)
 
         for (GList *_history = history; _history; _history = g_list_next (_history))
             priv->size -= g_paste_item_get_size (_history->data);
-        g_list_free_full (history,
-                          g_object_unref);
+        g_list_free_full (history, g_paste_history_item_free);
     }
 }
 
@@ -790,7 +795,7 @@ g_paste_history_empty (GPasteHistory *self)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     G_PASTE_LOCK_HISTORY;
 
-    g_clear_list (&priv->history, g_object_unref);
+    g_clear_list (&priv->history, g_paste_history_item_free);
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
