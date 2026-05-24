@@ -35,6 +35,7 @@ class GPasteIndicator extends Button {
         this.add_child(this._statusIcon);
 
         this._settings = new GPaste.Settings();
+        this._destroyed = false;
 
         this._headerSize = 0;
         this._postHeaderSize = 0;
@@ -64,6 +65,8 @@ class GPasteIndicator extends Button {
         this._addToPreFooter(new PopupSeparatorMenuItem());
 
         GPaste.Client.new((obj, result) => {
+            if (this._destroyed)
+                return;
             this._client = GPaste.Client.new_finish(result);
             this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
             this._switch = new GPasteStateSwitch(this._client);
@@ -90,6 +93,7 @@ class GPasteIndicator extends Button {
     }
 
     shutdown() {
+        this._destroyed = true;
         this._onStateChanged (false);
         this._onDestroy();
         this.destroy();
@@ -356,15 +360,23 @@ class GPasteIndicator extends Button {
     }
 
     _onDestroy() {
-        if (!this._client) {
-            return;
+        if (this._settingsSizeChangedId) {
+            this._settings.disconnect(this._settingsSizeChangedId);
+            this._settingsSizeChangedId = 0;
         }
+
+        if (!this._client)
+            return;
+
         this._client.disconnect(this._clientUpdateId);
         this._client.disconnect(this._clientShowId);
         this._client.disconnect(this._clientTrackingId);
         this._client = null;
-        this._settings.disconnect(this._settingsMaxSizeChangedId);
-        this._settings.disconnect(this._settingsSizeChangedId);
+
+        if (this._settingsMaxSizeChangedId) {
+            this._settings.disconnect(this._settingsMaxSizeChangedId);
+            this._settingsMaxSizeChangedId = 0;
+        }
     }
 });
 
