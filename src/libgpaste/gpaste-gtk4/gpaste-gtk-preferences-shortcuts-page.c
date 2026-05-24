@@ -35,21 +35,48 @@ g_paste_gtk_preferences_shortcuts_page_setting_changed (GPasteGtkPreferencesPage
                                                         const gchar              *key)
 {
     GPasteGtkPreferencesShortcutsPagePrivate *priv = g_paste_gtk_preferences_shortcuts_page_get_instance_private (G_PASTE_GTK_PREFERENCES_SHORTCUTS_PAGE (self));
+    GtkEntryBuffer *entry = NULL;
+    const gchar    *value = NULL;
 
     if (g_paste_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
-        gtk_entry_buffer_set_text (priv->launch_ui_entry, g_paste_settings_get_launch_ui (settings), -1);
+    {
+        entry = priv->launch_ui_entry;
+        value = g_paste_settings_get_launch_ui (settings);
+    }
     else if (g_paste_str_equal (key, G_PASTE_MAKE_PASSWORD_SETTING))
-        gtk_entry_buffer_set_text (priv->make_password_entry, g_paste_settings_get_make_password (settings), -1);
+    {
+        entry = priv->make_password_entry;
+        value = g_paste_settings_get_make_password (settings);
+    }
     else if (g_paste_str_equal (key, G_PASTE_POP_SETTING))
-        gtk_entry_buffer_set_text (priv->pop_entry, g_paste_settings_get_pop (settings), -1);
+    {
+        entry = priv->pop_entry;
+        value = g_paste_settings_get_pop (settings);
+    }
     else if (g_paste_str_equal (key, G_PASTE_SHOW_HISTORY_SETTING))
-        gtk_entry_buffer_set_text (priv->show_history_entry, g_paste_settings_get_show_history (settings), -1);
+    {
+        entry = priv->show_history_entry;
+        value = g_paste_settings_get_show_history (settings);
+    }
     else if (g_paste_str_equal (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
-        gtk_entry_buffer_set_text (priv->sync_clipboard_to_primary_entry, g_paste_settings_get_sync_clipboard_to_primary (settings), -1);
+    {
+        entry = priv->sync_clipboard_to_primary_entry;
+        value = g_paste_settings_get_sync_clipboard_to_primary (settings);
+    }
     else if (g_paste_str_equal (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
-        gtk_entry_buffer_set_text (priv->sync_primary_to_clipboard_entry, g_paste_settings_get_sync_primary_to_clipboard (settings), -1);
+    {
+        entry = priv->sync_primary_to_clipboard_entry;
+        value = g_paste_settings_get_sync_primary_to_clipboard (settings);
+    }
     else if (g_paste_str_equal (key, G_PASTE_UPLOAD_SETTING))
-        gtk_entry_buffer_set_text (priv->upload_entry, g_paste_settings_get_upload (settings), -1);
+    {
+        entry = priv->upload_entry;
+        value = g_paste_settings_get_upload (settings);
+    }
+
+    /* Guard against the notify::text → setter → GSettings changed → setting_changed → set_text signal loop */
+    if (entry && !g_paste_str_equal (gtk_entry_buffer_get_text (entry), value))
+        gtk_entry_buffer_set_text (entry, value, -1);
 }
 
 static void
