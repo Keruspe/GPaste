@@ -141,6 +141,8 @@ g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (GPasteGtkSettingsUiS
                                                                                                 track_extension_state_callback,
                                                                                                 (GPasteGtkResetCallback) g_paste_settings_reset_track_extension_state,
                                                                                                 settings);
+        gtk_widget_set_tooltip_text (GTK_WIDGET (priv->track_extension_state_switch),
+                                     _("When enabled, the daemon automatically starts or stops tracking clipboard changes to match the GNOME Shell extension's enabled state"));
     }
 
     g_paste_gtk_settings_ui_panel_add_separator (panel);
@@ -175,6 +177,8 @@ g_paste_gtk_settings_ui_stack_private_make_behaviour_panel (GPasteGtkSettingsUiS
                                                                                     growing_lines_callback,
                                                                                     (GPasteGtkResetCallback) g_paste_settings_reset_growing_lines,
                                                                                     settings);
+    gtk_widget_set_tooltip_text (GTK_WIDGET (priv->growing_lines_switch),
+                                 _("When enabled, if a new clipboard entry starts with the previous one, the previous entry is replaced instead of creating a new one"));
     g_paste_gtk_settings_ui_panel_add_separator (panel);
     priv->save_history_switch = g_paste_gtk_settings_ui_panel_add_boolean_setting (panel,
                                                                                    _("Save history"),
