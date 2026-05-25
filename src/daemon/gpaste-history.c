@@ -89,7 +89,7 @@ g_paste_history_private_elect_new_biggest (GPasteHistoryPrivate *priv)
 static void
 g_paste_history_item_free (gpointer data)
 {
-    GPasteItem *item = data;
+    g_autoptr (GPasteItem) item = data;
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -98,7 +98,6 @@ g_paste_history_item_free (gpointer data)
         if (!g_file_delete (image, NULL, &error))
             g_warning ("Failed to delete image file: %s", error->message);
     }
-    g_object_unref (item);
 }
 
 static void
