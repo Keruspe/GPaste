@@ -1,3 +1,20 @@
+NEW in 45.6 (25/05/2026)
+=============
+
+- Fix GC crash and signal leak when disabling the GNOME Shell extension (#435, #278)
+- GNOME Shell extension now handles daemon connection failure gracefully (Refs #478)
+- Fix crash when a history item has no value yet (#410)
+- Fix image files not being deleted when history items are removed (#423)
+- Fix image files stored in wrong directory (#423)
+- Fix keyboard focus being stolen by history items on hover (#435)
+- Fix key events incorrectly forwarded to search when another entry has focus (#308)
+- Fix signal loop when updating shortcut entries from settings
+- Fix default history item count not reset after history deletion (#389)
+- Enforce minimum window size to prevent unresizable state (#463)
+- Add descriptive tooltips for 'Sync daemon' and 'Detect growing lines' settings (#342)
+- Build: explicitly link libgpaste libraries against libc (#401)
+- Translations updates
+
 NEW in 45.5 (24/05/2026)
 =============
 
