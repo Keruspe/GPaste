@@ -274,6 +274,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         g_clear_pointer (&data->date, g_free);
         g_clear_pointer (&data->name, g_free);
         g_clear_pointer (&data->text, g_free);
+        g_clear_slist (&data->special_values, g_object_unref);
         for (const gchar **a = attribute_names, **v = attribute_values; *a && *v; ++a, ++v)
         {
             if (g_paste_str_equal (*a, "kind"))
@@ -499,7 +500,7 @@ on_text (GMarkupParseContext *context G_GNUC_UNUSED,
                 SWITCH_STATE (IN_VALUE, IN_VALUE_WITH_TEXT);
                 if (data->mime == G_PASTE_SPECIAL_ATOM_INVALID)
                 {
-                    g_free (data->text);
+                    g_clear_pointer (&data->text, g_free);
                     data->text = g_steal_pointer (&value);
                 }
                 else
@@ -594,6 +595,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
 
         *history = data.history;
         *size = data.mem_size;
+        g_clear_pointer (&data.uuid, g_free);
         g_clear_pointer (&data.date, g_free);
         g_clear_pointer (&data.name, g_free);
         g_clear_pointer (&data.text, g_free);
@@ -628,7 +630,7 @@ static GStrv
 g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNUSED,
                                       GError                   **error)
 {
-    g_autoptr (GArray) history_names = g_array_new (TRUE, TRUE, sizeof (gchar *));
+    g_autoptr (GPtrArray) history_names = g_ptr_array_new_null_terminated (0, g_free, TRUE);
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
@@ -638,7 +640,7 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
     if (error && *error)
     {
         if ((*error)->domain == G_FILE_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
-            return g_strdupv ((GStrv) (gpointer) history_names->data);
+            return g_strdupv ((GStrv) history_names->pdata);
         return NULL;
     }
 
@@ -660,11 +662,11 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
             gchar *name = g_strdup (raw_name);
 
             name[strlen (name) - 4] = '\0';
-            g_array_append_val (history_names, name);
+            g_ptr_array_add (history_names, name);
         }
     }
 
-    return g_strdupv ((GStrv) (gpointer) history_names->data);
+    return g_strdupv ((GStrv) history_names->pdata);
 }
 
 static const gchar *

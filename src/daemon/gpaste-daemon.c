@@ -109,7 +109,7 @@ static inline GPasteDBusError *
 _err (const gchar *name,
       const gchar *msg)
 {
-    GPasteDBusError *err = g_malloc (sizeof (GPasteDBusError));
+    GPasteDBusError *err = g_new (GPasteDBusError, 1);
     err->name = name;
     err->msg = msg;
     return err;
@@ -1043,14 +1043,12 @@ g_paste_daemon_on_screensaver_active_changed (GPasteDaemonPrivate *priv,
     }
 }
 
-static gboolean
+static void
 _g_paste_daemon_changed (gpointer data)
 {
     GPasteDaemon *self = G_PASTE_DAEMON (data);
 
     g_paste_daemon_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
-
-    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -1110,7 +1108,7 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
                                                     priv);
     priv->registered = TRUE;
 
-    g_source_set_name_by_id (g_timeout_add_seconds (1, _g_paste_daemon_changed, self), "[GPaste] Startup - changed");
+    g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed, self), "[GPaste] Startup - changed");
 
     return TRUE;
 }

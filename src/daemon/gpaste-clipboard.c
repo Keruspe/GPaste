@@ -600,7 +600,7 @@ g_paste_clipboard_on_special_atom_stream_ready (GObject      *source_object,
                                                 GAsyncResult *res,
                                                 gpointer      user_data)
 {
-    GPasteClipboardSpecialAtomData *data = user_data;
+    g_autofree GPasteClipboardSpecialAtomData *data = user_data;
     g_autoptr (GError) error = NULL;
     const gchar *actual_mime = NULL;
     g_autoptr (GInputStream) stream = gdk_clipboard_read_finish (GDK_CLIPBOARD (source_object), res, &actual_mime, &error);
@@ -611,7 +611,6 @@ g_paste_clipboard_on_special_atom_stream_ready (GObject      *source_object,
             g_debug ("Failed to read special atom stream: %s", error->message);
         if (data->callback)
             data->callback (data->self, data->atom, NULL, data->user_data);
-        g_free (data);
         return;
     }
 
@@ -620,7 +619,7 @@ g_paste_clipboard_on_special_atom_stream_ready (GObject      *source_object,
                                      G_PRIORITY_DEFAULT,
                                      NULL, /* cancellable */
                                      g_paste_clipboard_on_special_atom_bytes_ready,
-                                     data);
+                                     g_steal_pointer (&data));
 }
 
 static void

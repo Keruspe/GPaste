@@ -21,8 +21,6 @@ typedef struct
     guint64         index;
     gboolean        fake_index;
     gchar          *uuid;
-
-    guint64         size_id;
 } GPasteUiItemPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiItem, ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON)

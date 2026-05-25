@@ -33,9 +33,6 @@ gboolean          g_paste_history_select             (GPasteHistory *self,
 void              g_paste_history_replace            (GPasteHistory *self,
                                                       const gchar   *uuid,
                                                       const gchar   *contents);
-void              g_paste_history_refresh_item_size  (GPasteHistory    *self,
-                                                      const GPasteItem *item,
-                                                      guint64           old_size);
 void                      g_paste_history_set_password    (GPasteHistory *self,
                                                            const gchar   *uuid,
                                                            const gchar   *name);

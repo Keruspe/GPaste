@@ -548,39 +548,6 @@ g_paste_history_remove_by_uuid (GPasteHistory *self,
     g_paste_history_remove_common (self, priv, item, index);
     return TRUE;
 }
-/**
- * g_paste_history_refresh_item_size:
- * @self: a #GPasteHistory instance
- * @item: the #GPasteItem to refresh
- * @old_size: the former size of the item
- *
- * Refresh the cached size of the #GPasteItem
- */
-G_PASTE_VISIBLE void
-g_paste_history_refresh_item_size (GPasteHistory    *self,
-                                   const GPasteItem *item,
-                                   guint64           old_size)
-{
-    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
-    g_return_if_fail (_G_PASTE_IS_ITEM (item));
-
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    G_PASTE_LOCK_HISTORY;
-
-    if (!g_list_find (priv->history, item))
-        return;
-
-    guint64 size = g_paste_item_get_size (item);
-
-    g_return_if_fail (old_size <= size);
-
-    priv->size += (size - old_size);
-
-    if (size > priv->biggest_size)
-        g_paste_history_private_elect_new_biggest (priv);
-
-    g_paste_history_private_check_memory_usage (priv);
-}
 
 static GPasteItem *
 g_paste_history_private_get (const GPasteHistoryPrivate *priv,
@@ -922,8 +889,7 @@ g_paste_history_load_locked (GPasteHistory        *self,
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
 
-    g_free (priv->name);
-    priv->name = g_strdup ((name) ? name : g_paste_settings_get_history_name (priv->settings));
+    g_set_str (&priv->name, (name) ? name : g_paste_settings_get_history_name (priv->settings));
 
     g_paste_storage_backend_read_history (priv->backend, priv->name, &priv->history, &priv->size);
 
@@ -1089,8 +1055,7 @@ g_paste_history_load_async (GPasteHistory *self,
     if (priv->name && g_paste_str_equal (resolved, priv->name) && !priv->load_in_progress)
         return;
 
-    g_free (priv->name);
-    priv->name = g_strdup (resolved);
+    g_set_str (&priv->name, resolved);
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
 
@@ -1146,8 +1111,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    g_free (priv->name);
-    priv->name = g_strdup (g_paste_settings_get_history_name (priv->settings));
+    g_set_str (&priv->name, g_paste_settings_get_history_name (priv->settings));
 
     g_debug ("history: name changed to '%s'", priv->name);
 

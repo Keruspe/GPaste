@@ -45,9 +45,6 @@ gboolean      g_paste_item_equals             (const GPasteItem *self,
 const gchar  *g_paste_item_get_kind           (const GPasteItem *self);
 guint64       g_paste_item_get_size           (const GPasteItem *self);
 
-const GPasteBinaryData *g_paste_item_get_special_value (const GPasteItem *self,
-                                                        GPasteSpecialAtom atom);
-
 void g_paste_item_set_state (GPasteItem     *self,
                              GPasteItemState state);
 void g_paste_item_set_uuid  (GPasteItem     *self,
