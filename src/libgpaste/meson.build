@@ -39,7 +39,7 @@ libgpaste = library(
   dependencies: libgpaste_deps,
   install: true,
   install_dir: get_option('libdir'),
-  link_args: ['-Wl,--version-script=' + libgpaste_symbols_file],
+  link_args: ['-Wl,--version-script=' + libgpaste_symbols_file, '-lc'],
 )
 
 libgpaste_internal_dep = declare_dependency(
@@ -91,7 +91,7 @@ libgpaste_gtk3 = library(
   dependencies: libgpaste_gtk3_deps,
   install: true,
   install_dir: get_option('libdir'),
-  link_args: ['-Wl,--version-script=' + libgpaste_gtk3_symbols_file],
+  link_args: ['-Wl,--version-script=' + libgpaste_gtk3_symbols_file, '-lc'],
 )
 
 libgpaste_gtk3_internal_dep = declare_dependency(
@@ -153,7 +153,7 @@ libgpaste_gtk4 = library(
   dependencies: libgpaste_gtk4_deps,
   install: true,
   install_dir: get_option('libdir'),
-  link_args: ['-Wl,--version-script=' + libgpaste_gtk4_symbols_file],
+  link_args: ['-Wl,--version-script=' + libgpaste_gtk4_symbols_file, '-lc'],
 )
 
 libgpaste_gtk4_internal_dep = declare_dependency(
