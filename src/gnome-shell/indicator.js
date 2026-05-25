@@ -67,7 +67,12 @@ class GPasteIndicator extends Button {
         GPaste.Client.new((obj, result) => {
             if (this._destroyed)
                 return;
-            this._client = GPaste.Client.new_finish(result);
+            try {
+                this._client = GPaste.Client.new_finish(result);
+            } catch (e) {
+                console.error(`GPaste: ${e.message}`);
+                return;
+            }
             this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
             this._switch = new GPasteStateSwitch(this._client);
 
@@ -249,6 +254,8 @@ class GPasteIndicator extends Button {
     }
 
     _refresh(resetTextFrom) {
+        if (!this._client)
+            return;
         if (this._searchResults.length > 0) {
             this._onSearch(this._pageSwitcher.getPage());
         } else if (this._hasSearch()) {
