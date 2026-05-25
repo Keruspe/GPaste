@@ -161,6 +161,8 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager
                                                                                                 g_paste_settings_set_track_extension_state,
                                                                                                 g_paste_settings_reset_track_extension_state,
                                                                                                 settings);
+        adw_action_row_set_subtitle (ADW_ACTION_ROW (priv->track_extension_state_switch),
+                                     _("When enabled, the daemon automatically starts or stops tracking clipboard changes to match the GNOME Shell extension's enabled state"));
         adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
     }
 
@@ -192,6 +194,8 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager
                                                                                     g_paste_settings_set_growing_lines,
                                                                                     g_paste_settings_reset_growing_lines,
                                                                                     settings);
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (priv->growing_lines_switch),
+                                 _("When enabled, if a new clipboard entry starts with the previous one, the previous entry is replaced instead of creating a new one"));
     adw_preferences_page_add (page, ADW_PREFERENCES_GROUP (group));
 
     return GTK_WIDGET (self);

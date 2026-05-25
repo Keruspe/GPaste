@@ -6,6 +6,7 @@
 
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
+#include <gpaste/gpaste-util.h>
 #include <gpaste-image-item.h>
 
 #include <string.h>
@@ -246,7 +247,8 @@ g_paste_image_item_new (GdkTexture *texture)
     g_return_val_if_fail (GDK_IS_TEXTURE (texture), NULL);
 
     gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
-    g_autofree gchar *images_dir_path = g_build_filename (g_get_user_data_dir (), "gpaste", "images", NULL);
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *images_dir_path = g_build_filename (history_dir, "images", NULL);
     g_autoptr (GFile) images_dir = g_file_new_for_path (images_dir_path);
 
     if (!g_file_query_exists (images_dir, NULL))

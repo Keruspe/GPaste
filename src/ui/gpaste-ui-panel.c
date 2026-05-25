@@ -89,13 +89,16 @@ on_history_deleted (GPasteClient *client G_GNUC_UNUSED,
 {
     GPasteUiPanelPrivate *priv = user_data;
 
-    if (g_paste_str_equal (history, G_PASTE_DEFAULT_HISTORY))
-        return;
-
     GList *h = history_find (priv->histories, history);
 
     if (!h)
         return;
+
+    if (g_paste_str_equal (history, G_PASTE_DEFAULT_HISTORY))
+    {
+        g_paste_ui_panel_history_set_length (h->data, 0);
+        return;
+    }
 
     priv->histories = g_list_remove_link (priv->histories, h);
     gtk_container_remove (GTK_CONTAINER (priv->list_box), h->data);

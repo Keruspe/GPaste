@@ -67,7 +67,12 @@ class GPasteIndicator extends Button {
     }
 
     async _setup() {
-        this._client = await GPaste.Client.new(null);
+        try {
+            this._client = await GPaste.Client.new(null);
+        } catch (e) {
+            console.error(`GPaste: ${e.message}`);
+            return;
+        }
         if (this._destroyed) {
             this._client = null;
             return;
@@ -248,6 +253,8 @@ class GPasteIndicator extends Button {
     }
 
     async _refresh(resetTextFrom) {
+        if (!this._client)
+            return;
         if (this._searchResults.length > 0) {
             await this._onSearch(this._pageSwitcher.getPage());
         } else if (this._hasSearch()) {
