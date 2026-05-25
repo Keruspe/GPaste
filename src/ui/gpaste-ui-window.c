@@ -395,6 +395,8 @@ g_paste_ui_window_new (GtkApplication *app)
                                       "icon-name",   G_PASTE_ICON_NAME,
                                       NULL);
 
+    gtk_widget_set_size_request (self, 400, 300);
+
     g_paste_client_new (on_client_ready, self);
 
     return self;
