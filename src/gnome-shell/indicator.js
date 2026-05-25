@@ -198,6 +198,9 @@ class GPasteIndicator extends Button {
         this._client.get_history_name((client, result) => {
             const name = client.get_history_name_finish(result);
 
+            if (!this._client)
+                return;
+
             this._client.get_history_size(name, (client, result) => {
                 const offset = this._pageSwitcher.getPageOffset();
 
@@ -256,6 +259,9 @@ class GPasteIndicator extends Button {
         } else {
             this._client.get_history_name((client, result) => {
                 const name = client.get_history_name_finish(result);
+
+                if (!this._client)
+                    return;
 
                 this._client.get_history_size(name, (client, result) => {
                     const realSize = client.get_history_size_finish(result);
