@@ -17,7 +17,7 @@ import { GPasteDeleteItemPart } from './deleteItemPart.js';
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
     _init(client, size, slotIndex, index) {
-        super._init("");
+        super._init("", { can_focus: false });
         this.label.set_x_expand(true);
 
         this._client = client;
