@@ -44,6 +44,26 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-05-25" version="45.6">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix GC crash and signal leak when disabling the GNOME Shell extension</li>
+          <li>GNOME Shell extension now handles daemon connection failure gracefully</li>
+          <li>Fix crash when a history item has no value yet</li>
+          <li>Fix image files not being deleted when history items are removed</li>
+          <li>Fix image files stored in wrong directory</li>
+          <li>Fix keyboard focus being stolen by history items on hover</li>
+          <li>Fix key events incorrectly forwarded to search when another entry has focus</li>
+          <li>Fix signal loop when updating shortcut entries from settings</li>
+          <li>Fix default history item count not reset after history deletion</li>
+          <li>Enforce minimum window size to prevent unresizable state</li>
+          <li>Add descriptive tooltips for settings entries</li>
+          <li>Build: explicitly link libgpaste libraries against libc</li>
+          <li>Translations updates</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-05-24" version="45.5">
       <description>
         <p>This is a maintenance release. Changes:</p>
