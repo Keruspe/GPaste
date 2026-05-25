@@ -180,6 +180,7 @@ on_key_press_event (GtkWidget   *widget,
     GdkEvent *_event = (GdkEvent *) event;
     gboolean search_has_focus = focus == GTK_WIDGET (priv->search_entry);
     gboolean search_in_progress = search_has_focus && gtk_entry_get_text_length (GTK_ENTRY (priv->search_entry));
+    gboolean other_entry_has_focus = focus && GTK_IS_EDITABLE (focus) && !search_has_focus;
     gboolean forward_to_search = FALSE;
     guint keyval;
 
@@ -209,6 +210,9 @@ on_key_press_event (GtkWidget   *widget,
             break;
         }
     }
+
+    if (other_entry_has_focus)
+        forward_to_search = FALSE;
 
     if (forward_to_search && gtk_search_bar_handle_event (priv->search_bar, _event))
         return GDK_EVENT_STOP;
