@@ -101,6 +101,9 @@ static void
 _g_paste_ui_item_ready (GPasteUiItem *self,
                         const gchar  *txt)
 {
+    if (!txt)
+        return;
+
     GPasteUiItemPrivate *priv = g_paste_ui_item_get_instance_private (self);
     g_autofree gchar *oneline = g_strdelimit (g_strdup (txt), "\n\t", ' ');
 

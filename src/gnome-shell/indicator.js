@@ -202,6 +202,8 @@ class GPasteIndicator extends Button {
         this._pageSwitcher.setMaxDisplayedSize(newSize);
 
         const name = await this._client.get_history_name(null);
+        if (!this._client)
+            return;
         const realSize = await this._client.get_history_size(name, null);
         const offset = this._pageSwitcher.getPageOffset();
 
@@ -255,6 +257,8 @@ class GPasteIndicator extends Button {
             this._updateVisibility(true);
         } else {
             const name = await this._client.get_history_name(null);
+            if (!this._client)
+                return;
             const realSize = await this._client.get_history_size(name, null);
 
             if (!this._pageSwitcher.updateForSize(realSize)) {
