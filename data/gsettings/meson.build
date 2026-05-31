@@ -7,14 +7,6 @@ gschema_xml = configure_file(
 )
 
 # Compile the schema in the build directory for tests
-gschema_target = custom_target(
-  'compile-gsettings',
-  output: 'gschemas.compiled',
-  command: [
-    find_program('glib-compile-schemas'),
-    '--targetdir', meson.current_build_dir(),
-    meson.current_build_dir(),
-  ],
+gnome.compile_schemas(
   depend_files: gschema_xml,
-  build_by_default: true,
 )
