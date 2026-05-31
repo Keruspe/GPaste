@@ -71,14 +71,16 @@ main (gint argc, gchar *argv[])
 
     g_print ("Now testing KeyGrabber\n");
     guint32 *actions = g_paste_gnome_shell_client_grab_accelerators_sync (client, gs_accels, &error);
-    for (guint64 i = 0; i < 2; ++i)
-        accels[i].action = actions[i];
-    g_free (actions);
+
     if (error)
     {
         g_error ("Couldn't grab accelerators: %s", error->message);
         return EXIT_FAILURE;
     }
+
+    for (guint64 i = 0; i < 2; ++i)
+        accels[i].action = actions[i];
+    g_free (actions);
 
     accels[2].action = g_paste_gnome_shell_client_grab_accelerator_sync (client, gs_accel, &error);
     if (error)
