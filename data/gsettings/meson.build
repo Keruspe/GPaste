@@ -1,12 +1,9 @@
-gschema_xml = configure_file(
-  input: 'org.gnome.GPaste.gschema.xml.in',
-  configuration: conf,
-  output: 'org.gnome.GPaste.gschema.xml',
-  install: true,
+schema = 'org.gnome.GPaste.gschema.xml'
+
+install_data(
+  schema,
   install_dir: join_paths(get_option('datadir'), 'glib-2.0', 'schemas'),
 )
 
-# Compile the schema in the build directory for tests
-gnome.compile_schemas(
-  depend_files: gschema_xml,
-)
+# Compile the schema into the build tree so the test suite can find it without an install.
+gnome.compile_schemas(depend_files: files(schema))
