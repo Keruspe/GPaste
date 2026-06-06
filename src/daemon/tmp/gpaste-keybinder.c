@@ -74,7 +74,14 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
 
     gdk_x11_display_error_trap_push (display);
 
-    guint64 mod_masks = Mod2Mask /* NumLock */ | LockMask /* CapsLock */;
+    /* Grab with every combination of the "lock" modifiers (NumLock, CapsLock)
+     * so the shortcut fires regardless of their state. */
+    static const guint locked_mods[] = {
+        0,
+        Mod2Mask /* NumLock */,
+        LockMask /* CapsLock */,
+        Mod2Mask | LockMask,
+    };
     Window window = gdk_x11_get_default_root_xwindow ();
     GdkModifierType modifiers = g_paste_keybinding_get_modifiers (binding);
     const guint32 *keycodes = g_paste_keybinding_get_keycodes (binding);
@@ -86,12 +93,8 @@ g_paste_keybinder_change_grab_x11 (GPasteKeybinding *binding,
     }
     else
     {
-        g_array_append_val (mods, ((XIGrabModifiers) { modifiers, 0 }));
-
-        for (guint64 i = 0; i < mod_masks; ++i) {
-            if (i & mod_masks)
-                g_array_append_val (mods, ((XIGrabModifiers) { modifiers | i, 0 }));
-        }
+        for (guint64 i = 0; i < G_N_ELEMENTS (locked_mods); ++i)
+            g_array_append_val (mods, ((XIGrabModifiers) { modifiers | locked_mods[i], 0 }));
     }
 
     for (const guint32 *keycode = keycodes; *keycode; ++keycode)
