@@ -44,6 +44,16 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-06" version="45.7">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>GNOME Shell extension now retries the daemon connection before giving up</li>
+          <li>Fix test crash when GrabAccelerators is not allowed</li>
+          <li>Build: simplify gsettings compilation for tests</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-05-25" version="45.6">
       <description>
         <p>This is a maintenance release. Changes:</p>
