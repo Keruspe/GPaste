@@ -318,7 +318,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     GtkWidget *banner = adw_banner_new ("");
     priv->banner = ADW_BANNER (banner);
     adw_banner_set_button_label (priv->banner, _("Quit"));
-    g_signal_connect (banner, "button-clicked", G_CALLBACK (on_banner_quit), self);
+    g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_quit), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
 
     GtkWidget *search_bar = g_paste_ui_search_bar_new ();
@@ -348,7 +348,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     GtkEventController *key_controller = gtk_event_controller_key_new ();
     gtk_event_controller_set_propagation_phase (key_controller, GTK_PHASE_CAPTURE);
-    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self);
+    g_signal_connect_object (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self, 0);
     gtk_widget_add_controller (GTK_WIDGET (self), key_controller);
 
     g_source_set_name_by_id (g_idle_add (focus_search, self), "[GPaste] focus_search");
@@ -385,7 +385,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
     priv->shortcuts = g_object_ref_sink (ADW_DIALOG (g_paste_ui_shortcuts_window_new (settings)));
 
     g_autoptr (GSimpleAction) show_shortcuts = g_simple_action_new ("show-help-overlay", NULL);
-    g_signal_connect (show_shortcuts, "activate", G_CALLBACK (on_show_help_overlay), user_data);
+    g_signal_connect_object (show_shortcuts, "activate", G_CALLBACK (on_show_help_overlay), user_data, 0);
     g_action_map_add_action (G_ACTION_MAP (user_data), G_ACTION (show_shortcuts));
 
     gtk_application_set_accels_for_action (GTK_APPLICATION (gtk_window_get_application (win)),
