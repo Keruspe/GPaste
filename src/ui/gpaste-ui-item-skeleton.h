@@ -5,8 +5,7 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_ITEM_SKELETON_H__
-#define __G_PASTE_UI_ITEM_SKELETON_H__
+#pragma once
 
 #include <gpaste/gpaste-client.h>
 #include <gpaste/gpaste-settings.h>
@@ -52,4 +51,3 @@ GtkWidget *g_paste_ui_item_skeleton_new (GType           type,
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_ITEM_SKELETON_H__*/

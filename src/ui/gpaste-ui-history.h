@@ -5,8 +5,7 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_HISTORY_H__
-#define __G_PASTE_UI_HISTORY_H__
+#pragma once
 
 #include <gpaste-ui-panel.h>
 
@@ -28,4 +27,3 @@ GtkWidget *g_paste_ui_history_new (GPasteClient   *client,
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_HISTORY_H__*/

@@ -5,8 +5,7 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_EDIT_ITEM_H__
-#define __G_PASTE_UI_EDIT_ITEM_H__
+#pragma once
 
 #include <gpaste-ui-item-action.h>
 
@@ -21,4 +20,3 @@ GtkWidget *g_paste_ui_edit_item_new (GPasteClient *client,
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_EDIT_ITEM_H__*/

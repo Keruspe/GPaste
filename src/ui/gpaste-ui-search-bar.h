@@ -5,8 +5,7 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_SEARCH_BAR_H__
-#define __G_PASTE_UI_SEARCH_BAR_H__
+#pragma once
 
 #include <gpaste/gpaste-macros.h>
 
@@ -20,4 +19,3 @@ GtkWidget *g_paste_ui_search_bar_new (void);
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_SEARCH_H__*/

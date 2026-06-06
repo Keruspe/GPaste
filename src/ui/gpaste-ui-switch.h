@@ -5,8 +5,7 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_SWITCH_H__
-#define __G_PASTE_UI_SWITCH_H__
+#pragma once
 
 #include <gpaste/gpaste-client.h>
 
@@ -19,4 +18,3 @@ GtkWidget *g_paste_ui_switch_new (GtkWindow    *topwin,
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_SWITCH_H__*/

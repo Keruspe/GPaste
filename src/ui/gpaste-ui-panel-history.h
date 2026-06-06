@@ -5,8 +5,7 @@
 #error "Only <gpaste.h> can be included directly."
 #endif
 
-#ifndef __G_PASTE_UI_PANEL_HISTORY_H__
-#define __G_PASTE_UI_PANEL_HISTORY_H__
+#pragma once
 
 #include <gpaste/gpaste-client.h>
 
@@ -29,4 +28,3 @@ GPasteUiPanelHistory *g_paste_ui_panel_history_new (GPasteClient *client,
 
 G_END_DECLS
 
-#endif /*__G_PASTE_UI_PANEL_HISTORY_H__*/
