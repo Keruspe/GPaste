@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
-import { PopupSwitchMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {PopupSwitchMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import GObject from 'gi://GObject?version=2.0';
 
 export const GPasteStateSwitch = GObject.registerClass(
 class GPasteStateSwitch extends PopupSwitchMenuItem {
     _init(client) {
-        super._init(_("Track changes"), client.is_active());
+        super._init(_('Track changes'), client.is_active());
 
         this._client = client;
 

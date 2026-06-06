@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import { PopupMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {PopupMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject?version=2.0';
 import Pango from 'gi://Pango?version=1.0';
 import St from 'gi://St';
 
-import { GPasteDeleteItemPart } from './deleteItemPart.js';
+import {GPasteDeleteItemPart} from './deleteItemPart.js';
 
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
     _init(client, size, slotIndex, index) {
-        super._init("", { can_focus: false });
+        super._init('', {can_focus: false});
         this.label.set_x_expand(true);
 
         this._client = client;
@@ -23,7 +23,7 @@ class GPasteItem extends PopupMenuItem {
 
         if (slotIndex <= 9) {
             this._indexLabel = new St.Label({
-                text: slotIndex + ': '
+                text: `${slotIndex}: `,
             });
             this._indexLabelVisible = false;
         }
@@ -39,9 +39,8 @@ class GPasteItem extends PopupMenuItem {
 
     showIndex(state) {
         if (state) {
-            if (!this._indexLabelVisible) {
+            if (!this._indexLabelVisible)
                 this.insert_child_at_index(this._indexLabel, 1);
-            }
         } else if (this._indexLabelVisible) {
             this.remove_child(this._indexLabel);
         }
@@ -81,24 +80,23 @@ class GPasteItem extends PopupMenuItem {
     }
 
     _setValue(value, oldIndex) {
-        if (this._index === 0) {
-            this.label.set_style("font-weight: bold;");
-        } else if (oldIndex === 0) {
+        if (this._index === 0)
+            this.label.set_style('font-weight: bold;');
+        else if (oldIndex === 0)
             this.label.set_style(null);
-        }
+
 
         if (this._index === -1) {
             this._uuid = null;
-            this.label.clutter_text.set_text(value || "");
+            this.label.clutter_text.set_text(value || '');
             this.hide();
         } else {
             const text = (value ?? '').replace(/[\t\n\r]/g, ' ');
-            if (text !== this.label.get_text()) {
+            if (text !== this.label.get_text())
                 this.label.clutter_text.set_text(text);
-            }
-            if (oldIndex === -1) {
+
+            if (oldIndex === -1)
                 this.show();
-            }
         }
 
         this._deleteItem.setUuid(this._uuid);

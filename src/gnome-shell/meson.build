@@ -22,16 +22,16 @@ shell_extension_files = [
   'uiItem.js',
 ]
 
-eslint = find_program(
-  meson.project_source_root() / 'node_modules/.bin/eslint',
+npm = find_program('npm', required: false)
+run_eslint = find_program(
+  meson.project_source_root() / 'tools/run-eslint.sh',
   required: false,
 )
-if eslint.found()
+if npm.found() and run_eslint.found()
   test(
     'eslint',
-    eslint,
-    args: shell_extension_files,
-    workdir: meson.current_source_dir(),
+    run_eslint,
+    workdir: meson.project_source_root(),
   )
 endif
 

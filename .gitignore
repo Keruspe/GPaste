@@ -27,6 +27,7 @@
 /po/remove-potcdate.sed
 /po/remove-potcdate.sin
 /src/gnome-shell/metadata.json
-/node_modules
+node_modules
+.eslintcache
 /test-suite.log
 *.mo

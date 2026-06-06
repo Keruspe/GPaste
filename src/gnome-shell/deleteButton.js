@@ -11,7 +11,7 @@ class GPasteDeleteButton extends St.Button {
 
         this.child = new St.Icon({
             icon_name: 'edit-delete-symbolic',
-            style_class: 'popup-menu-icon'
+            style_class: 'popup-menu-icon',
         });
 
         this._client = client;
