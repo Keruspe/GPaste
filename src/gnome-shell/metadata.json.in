@@ -5,7 +5,7 @@
     "name": "GPaste",
     "version": "@version@",
     "description": "Clipboard management system",
-    "url": "http://github.com/Keruspe/GPaste",
+    "url": "https://github.com/Keruspe/GPaste",
     "gettext-domain": "@gettext_domain@"
 }
 

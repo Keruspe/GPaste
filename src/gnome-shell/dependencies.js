@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import Gio from 'gi://Gio?version=2.0';
+import Gio from 'gi://Gio';
 import GPaste from 'gi://GPaste?version=2';
 
 import * as Config from 'resource:///org/gnome/shell/misc/config.js';

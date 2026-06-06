@@ -3,7 +3,7 @@
 
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import GObject from 'gi://GObject?version=2.0';
+import GObject from 'gi://GObject';
 import GPaste from 'gi://GPaste?version=2';
 
 import {GPasteActionButton} from './actionButton.js';

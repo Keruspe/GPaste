@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 import Clutter from 'gi://Clutter';
-import GObject from 'gi://GObject?version=2.0';
+import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {GPasteActionButtonActor} from './actionButtonActor.js';

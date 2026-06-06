@@ -16,4 +16,4 @@ export default class GPasteExtension extends Extension {
     disable() {
         Main.panel.statusArea.gpaste.shutdown();
     }
-};
+}
