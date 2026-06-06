@@ -104,7 +104,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteGtkPreferencesManager *
     priv->max_history_size_button = g_paste_gtk_preferences_group_add_range_setting (group,
                                                                                      _("Max history size"),
                                                                                      (gdouble) g_paste_settings_get_max_history_size (settings),
-                                                                                     100, 65535, 5,
+                                                                                     5, 65535, 5,
                                                                                      g_paste_settings_set_max_history_size,
                                                                                      g_paste_settings_reset_max_history_size,
                                                                                      settings);
@@ -128,7 +128,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteGtkPreferencesManager *
     priv->max_text_item_size_button = g_paste_gtk_preferences_group_add_range_setting (group,
                                                                                        _("Max text item length"),
                                                                                        (gdouble) g_paste_settings_get_max_text_item_size (settings),
-                                                                                       1, (gdouble) G_MAXUINT64, 1,
+                                                                                       1, 2147483647, 1,
                                                                                        g_paste_settings_set_max_text_item_size,
                                                                                        g_paste_settings_reset_max_text_item_size,
                                                                                        settings);
