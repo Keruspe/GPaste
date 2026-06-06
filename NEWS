@@ -1,3 +1,10 @@
+NEW in 45.7 (06/06/2026)
+=============
+
+- GNOME Shell extension now retries the daemon connection before giving up (#481)
+- Fix test crash when GrabAccelerators is not allowed
+- Build: simplify gsettings compilation for tests
+
 NEW in 45.6 (25/05/2026)
 =============
 

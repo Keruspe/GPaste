@@ -23,6 +23,8 @@ import {GPasteStatusIcon} from './statusIcon.js';
 
 export const GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends Button {
+    static _CONNECT_RETRIES = 3;
+
     constructor() {
         super(0.0, 'GPaste');
 
@@ -61,14 +63,24 @@ class GPasteIndicator extends Button {
         this._setup().catch(console.error);
     }
 
-    async _setup() {
+    async _connect(retries = GPasteIndicator._CONNECT_RETRIES, delay = 1) {
         try {
-            this._client = await GPaste.Client.new(null);
+            return await GPaste.Client.new(null);
         } catch (e) {
-            console.error(`GPaste: ${e.message}`);
-            return;
+            if (retries <= 0) {
+                console.error(`GPaste: ${e.message}`);
+                return null;
+            }
+            await new Promise(resolve => setTimeout(resolve, delay * 1000));
+            if (this._destroyed)
+                return null;
+            return this._connect(retries - 1, delay * 2);
         }
-        if (this._destroyed) {
+    }
+
+    async _setup() {
+        this._client = await this._connect();
+        if (this._destroyed || !this._client) {
             this._client = null;
             return;
         }
