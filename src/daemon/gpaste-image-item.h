@@ -19,6 +19,7 @@ GdkTexture      *g_paste_image_item_get_image    (const GPasteImageItem *self);
 
 GPasteItem      *g_paste_image_item_new           (GdkTexture  *texture);
 GPasteItem      *g_paste_image_item_new_from_file (const gchar *path,
-                                                   GDateTime   *date);
+                                                   GDateTime   *date,
+                                                   const gchar *checksum);
 
 G_END_DECLS

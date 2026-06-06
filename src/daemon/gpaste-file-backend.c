@@ -17,9 +17,19 @@ _g_paste_file_backend_write_image_metadata (GOutputStream         *stream,
                                             GError               **error)
 {
     g_autofree gchar *date_str = g_date_time_format ((GDateTime *) g_paste_image_item_get_date (item), "%s");
+    const gchar *checksum = g_paste_image_item_get_checksum (item);
 
-    return g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, error) &&
-           g_output_stream_write_all (stream, date_str, 10, NULL, NULL /* cancellable */, error);
+    if (!g_output_stream_write_all (stream, "\" date=\"", 8, NULL, NULL /* cancellable */, error) ||
+        !g_output_stream_write_all (stream, date_str, strlen (date_str), NULL, NULL /* cancellable */, error))
+        return FALSE;
+
+    /* The checksum (hex SHA256) needs no XML escaping */
+    if (checksum &&
+        (!g_output_stream_write_all (stream, "\" checksum=\"", 12, NULL, NULL /* cancellable */, error) ||
+         !g_output_stream_write_all (stream, checksum, strlen (checksum), NULL, NULL /* cancellable */, error)))
+        return FALSE;
+
+    return TRUE;
 }
 
 static gboolean
@@ -195,6 +205,7 @@ typedef struct
     gboolean          images_support;
     gchar            *uuid;
     gchar            *date;
+    gchar            *checksum;
     gchar            *name;
     gchar            *text;
     GSList           *special_values;
@@ -267,6 +278,7 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
         SWITCH_STATE (IN_HISTORY, IN_ITEM);
         g_clear_pointer (&data->uuid, g_free);
         g_clear_pointer (&data->date, g_free);
+        g_clear_pointer (&data->checksum, g_free);
         g_clear_pointer (&data->name, g_free);
         g_clear_pointer (&data->text, g_free);
         g_clear_slist (&data->special_values, g_object_unref);
@@ -300,6 +312,15 @@ start_tag (GMarkupParseContext *context G_GNUC_UNUSED,
                     return;
                 }
                 data->date = g_strdup (*v);
+            }
+            else if (g_paste_str_equal (*a, "checksum"))
+            {
+                if (data->type != IMAGE)
+                {
+                    g_warning ("Expected type %" G_GINT32_FORMAT ", but got %" G_GINT32_FORMAT, IMAGE, data->type);
+                    return;
+                }
+                data->checksum = g_strdup (*v);
             }
             else if (g_paste_str_equal (*a, "name"))
             {
@@ -359,7 +380,7 @@ add_item (Data *data)
             g_autoptr (GDateTime) date_time = g_date_time_new_from_unix_local (g_ascii_strtoll (data->date,
                                                                                                 NULL, /* end */
                                                                                                 0)); /* base */
-            item = g_paste_image_item_new_from_file (data->text, date_time);
+            item = g_paste_image_item_new_from_file (data->text, date_time, data->checksum);
         }
         else
         {
@@ -540,11 +561,12 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
             0,
             g_paste_settings_get_max_history_size (settings),
             g_paste_settings_get_images_support (settings),
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
+            NULL, /* uuid */
+            NULL, /* date */
+            NULL, /* checksum */
+            NULL, /* name */
+            NULL, /* text */
+            NULL, /* special_values */
             HISTORY_INVALID,
             G_PASTE_SPECIAL_ATOM_INVALID
         };
@@ -574,6 +596,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         *size = data.mem_size;
         g_clear_pointer (&data.uuid, g_free);
         g_clear_pointer (&data.date, g_free);
+        g_clear_pointer (&data.checksum, g_free);
         g_clear_pointer (&data.name, g_free);
         g_clear_pointer (&data.text, g_free);
 

@@ -128,11 +128,9 @@ g_paste_image_item_set_state (GPasteItem     *self,
     switch (state)
     {
     case G_PASTE_ITEM_STATE_IDLE:
-        if (priv->image)
-        {
-            g_clear_object (&priv->image);
-            g_clear_pointer (&priv->checksum, g_free);
-        }
+        /* Drop only the heavy texture; keep the checksum so deduplication
+         * keeps working against idle items already in the history. */
+        g_clear_object (&priv->image);
         break;
     case G_PASTE_ITEM_STATE_ACTIVE:
         if (!priv->image)
@@ -141,7 +139,8 @@ g_paste_image_item_set_state (GPasteItem     *self,
             priv->image = gdk_texture_new_from_filename (g_paste_item_get_value (self), &error);
             if (error)
                 g_warning ("Failed to load image from %s: %s", g_paste_item_get_value (self), error->message);
-            priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
+            if (!priv->checksum)
+                priv->checksum = g_paste_gtk_util_compute_checksum (priv->image);
         }
         break;
     }
@@ -200,9 +199,13 @@ _g_paste_image_item_new (const gchar *path,
 
     priv->date = date;
     priv->image = image;
+    priv->checksum = checksum; /* may be NULL, takes ownership */
 
     if (image)
-        priv->checksum = (checksum) ? checksum : g_paste_gtk_util_compute_checksum (image);
+    {
+        if (!priv->checksum)
+            priv->checksum = g_paste_gtk_util_compute_checksum (image);
+    }
     else
         g_paste_image_item_set_state (G_PASTE_ITEM (self), G_PASTE_ITEM_STATE_ACTIVE);
 
@@ -322,6 +325,7 @@ g_paste_image_item_new (GdkTexture *texture)
  * g_paste_image_item_new_from_file:
  * @path: the path to the image we want to be contained in the #GPasteImageItem
  * @date: (transfer none): the date at which the image was created
+ * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
  *
  * Create a new instance of #GPasteImageItem
  *
@@ -330,7 +334,8 @@ g_paste_image_item_new (GdkTexture *texture)
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_image_item_new_from_file (const gchar *path,
-                                  GDateTime   *date)
+                                  GDateTime   *date,
+                                  const gchar *checksum)
 {
     g_return_val_if_fail (path, NULL);
     g_return_val_if_fail (g_utf8_validate (path, -1, NULL), NULL);
@@ -339,5 +344,5 @@ g_paste_image_item_new_from_file (const gchar *path,
     return _g_paste_image_item_new (path,
                                     g_date_time_ref (date),
                                     NULL, /* GdkTexture */
-                                    NULL); /* Checksum */
+                                    g_strdup (checksum)); /* Checksum (may be NULL) */
 }
