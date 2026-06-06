@@ -28,6 +28,8 @@ import { GPasteStatusIcon } from './statusIcon.js';
 
 export const GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends Button {
+    static _CONNECT_RETRIES = 3;
+
     _init() {
         super._init(0.0, "GPaste");
 
@@ -64,13 +66,25 @@ class GPasteIndicator extends Button {
         this._addToPostHeader(this._dummyHistoryItem);
         this._addToPreFooter(new PopupSeparatorMenuItem());
 
+        this._connect(GPasteIndicator._CONNECT_RETRIES, 1);
+    }
+
+    _connect(retries, delay) {
         GPaste.Client.new((obj, result) => {
             if (this._destroyed)
                 return;
             try {
                 this._client = GPaste.Client.new_finish(result);
             } catch (e) {
-                console.error(`GPaste: ${e.message}`);
+                if (retries > 0) {
+                    const id = GLib.timeout_add_seconds_once(GLib.PRIORITY_DEFAULT, delay, () => {
+                        if (!this._destroyed)
+                            this._connect(retries - 1, delay * 2);
+                    });
+                    GLib.Source.set_name_by_id(id, '[gpaste] _connect retry');
+                } else {
+                    console.error(`GPaste: ${e.message}`);
+                }
                 return;
             }
             this._emptyHistoryItem = new GPasteEmptyHistoryItem(this._client, this._settings, this.menu);
