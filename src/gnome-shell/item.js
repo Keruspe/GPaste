@@ -20,6 +20,7 @@ class GPasteItem extends PopupMenuItem {
         this._index = -1;
         this._fakeIndex = false;
         this._uuid = null;
+        this._generation = 0;
 
         if (slotIndex <= 9) {
             this._indexLabel = new St.Label({
@@ -52,6 +53,7 @@ class GPasteItem extends PopupMenuItem {
     }
 
     async setIndex(index) {
+        const generation = ++this._generation;
         const oldIndex = this._index;
         this._index = index;
         this._fakeIndex = false;
@@ -60,12 +62,15 @@ class GPasteItem extends PopupMenuItem {
             this._setValue(null, oldIndex);
         } else {
             const item = await this._client.get_element_at_index(index, null);
+            if (generation !== this._generation)
+                return;
             this._uuid = item.get_uuid();
             this._setValue(item.get_value(), oldIndex);
         }
     }
 
     async setUuid(uuid) {
+        const generation = ++this._generation;
         const oldIndex = this._index;
         this._index = -2;
         this._fakeIndex = true;
@@ -75,6 +80,8 @@ class GPasteItem extends PopupMenuItem {
             this._setValue(null, oldIndex);
         } else {
             const value = await this._client.get_element(uuid, null);
+            if (generation !== this._generation)
+                return;
             this._setValue(value, oldIndex);
         }
     }

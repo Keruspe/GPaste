@@ -160,6 +160,8 @@ class GPasteIndicator extends Button {
         if (this._hasSearch()) {
             const search = this._searchItem.text.toLowerCase();
             this._searchResults = await this._client.search(search, null);
+            if (!this._client)
+                return;
             let results = this._searchResults.length;
             const maxSize = this._history.length;
 
@@ -217,6 +219,8 @@ class GPasteIndicator extends Button {
         if (!this._client)
             return;
         const realSize = await this._client.get_history_size(name, null);
+        if (!this._client)
+            return;
         const offset = this._pageSwitcher.getPageOffset();
 
         if (newSize > oldSize) {
@@ -273,6 +277,8 @@ class GPasteIndicator extends Button {
             if (!this._client)
                 return;
             const realSize = await this._client.get_history_size(name, null);
+            if (!this._client)
+                return;
 
             if (!this._pageSwitcher.updateForSize(realSize))
                 return;
