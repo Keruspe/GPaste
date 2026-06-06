@@ -237,7 +237,7 @@ g_paste_util_activate_ui_sync (const gchar *action,
                                                                      NULL, /* cancellable */
                                                                      error);
 
-    return TRUE;
+    return !error || !(*error);
 }
 
 /**
