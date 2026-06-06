@@ -651,10 +651,13 @@ typedef struct {
     GPasteClipboardUpdateCallback callback;
     gpointer                      user_data;
     gint                          pending;
-    const gchar                  *text;
-    const GdkRGBA                *rgba;
-    GdkFileList                  *file_list;
-    GdkTexture                   *texture;
+    GPasteClipboardContent        content_kind;
+    union {
+        const gchar   *text;
+        GdkTexture    *texture;
+        GdkFileList   *file_list;
+        const GdkRGBA *rgba;
+    };
     GPasteBinaryData             *special_atom[G_PASTE_SPECIAL_ATOM_LAST];
 } GPasteClipboardUpdateData;
 
@@ -666,16 +669,30 @@ g_paste_clipboard_update_maybe_done (GPasteClipboardUpdateData *data)
 
     GPasteItem *item = NULL;
 
-    if (data->file_list)
-        item = G_PASTE_ITEM (g_paste_uris_item_new (data->file_list));
-    else if (data->rgba)
-        item = G_PASTE_ITEM (g_paste_color_item_new (data->rgba));
-    else if (data->text)
-        item = G_PASTE_ITEM (g_paste_text_item_new (data->text));
-    else if (data->texture)
-        item = G_PASTE_ITEM (g_paste_image_item_new (data->texture));
+    switch (data->content_kind)
+    {
+    case CLIPBOARD_CONTENT_FILE_LIST:
+        if (data->file_list)
+            item = G_PASTE_ITEM (g_paste_uris_item_new (data->file_list));
+        break;
+    case CLIPBOARD_CONTENT_COLOR:
+        if (data->rgba)
+            item = G_PASTE_ITEM (g_paste_color_item_new (data->rgba));
+        break;
+    case CLIPBOARD_CONTENT_TEXT:
+        if (data->text)
+            item = G_PASTE_ITEM (g_paste_text_item_new (data->text));
+        break;
+    case CLIPBOARD_CONTENT_IMAGE:
+        if (data->texture)
+            item = G_PASTE_ITEM (g_paste_image_item_new (data->texture));
+        break;
+    case CLIPBOARD_CONTENT_NONE:
+        break;
+    }
 
-    if (item && !data->texture && !data->rgba)
+    if (item &&
+        (data->content_kind == CLIPBOARD_CONTENT_TEXT || data->content_kind == CLIPBOARD_CONTENT_FILE_LIST))
     {
         for (GPasteSpecialAtom atom = G_PASTE_SPECIAL_ATOM_FIRST; atom < G_PASTE_SPECIAL_ATOM_LAST; ++atom)
         {
@@ -836,6 +853,7 @@ g_paste_clipboard_update (GPasteClipboard              *self,
     data->callback = callback;
     data->user_data = user_data;
     data->pending = 1;
+    data->content_kind = content_kind;
 
     gboolean atom_available[G_PASTE_SPECIAL_ATOM_LAST] = { FALSE };
 
