@@ -1,25 +1,25 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import { Ornament, PopupBaseMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {Ornament, PopupBaseMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject?version=2.0';
-import { GPastePadding } from './padding.js';
-import { GPastePageItem } from './pageItem.js';
+import {GPastePadding} from './padding.js';
+import {GPastePageItem} from './pageItem.js';
 
 const MAX_PAGES = 20;
 
 export const GPastePageSwitcher = GObject.registerClass({
     Signals: {
-        'switch': { param_types: [GObject.TYPE_UINT64] },
+        'switch': {param_types: [GObject.TYPE_UINT64]},
     },
 }, class GPastePageSwitcher extends PopupBaseMenuItem {
     _init() {
         super._init({
             style_class: 'calendar',
             reactive: false,
-            can_focus: false
+            can_focus: false,
         });
 
         this.setOrnament(Ornament.NONE);
@@ -39,14 +39,14 @@ export const GPastePageSwitcher = GObject.registerClass({
     }
 
     updateForSize(size) {
-        const pages = Math.min((size === 0) ? 0 : Math.floor((size - 1) / this._maxDisplayedSize + 1), MAX_PAGES);
+        const pages = Math.min(size === 0 ? 0 : Math.floor((size - 1) / this._maxDisplayedSize + 1), MAX_PAGES);
 
-        for (let i = this._pages.length; i < pages; ++i) {
+        for (let i = this._pages.length; i < pages; ++i)
             this._addPage();
-        }
-        while (this._pages.length !== pages) {
+
+        while (this._pages.length !== pages)
             this._pages.pop().destroy();
-        }
+
 
         if (size > 0 && this._active === -1) {
             this._switch(1);
@@ -68,13 +68,13 @@ export const GPastePageSwitcher = GObject.registerClass({
         this.add_child(sw);
         this.add_child(this._padding);
 
-        sw.connect('switch', (sw, page) => {
+        sw.connect('switch', (_sw, page) => {
             this._switch(page);
         });
     }
 
     getPageOffset() {
-        return (this._active < 0) ? 0 : (this._active * this._maxDisplayedSize);
+        return this._active < 0 ? 0 : this._active * this._maxDisplayedSize;
     }
 
     getPage() {
@@ -83,9 +83,9 @@ export const GPastePageSwitcher = GObject.registerClass({
 
     setActive(page) {
         if (page !== 0 && page !== (this._active + 1) && page <= this._pages.length) {
-            if (this._active !== -1) {
+            if (this._active !== -1)
                 this._pages[this._active].setActive(false);
-            }
+
             this._active = page - 1;
             this._pages[this._active].setActive(true);
         }
@@ -112,8 +112,7 @@ export const GPastePageSwitcher = GObject.registerClass({
     }
 
     _switch(page) {
-        if (!isNaN(page)) {
+        if (!isNaN(page))
             this.emit('switch', page);
-        }
     }
 });

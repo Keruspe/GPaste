@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import { PopupBaseMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {PopupBaseMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import GObject from 'gi://GObject?version=2.0';
 import St from 'gi://St';
 
 export const GPasteSearchItem = GObject.registerClass({
     Signals: {
-        'text-changed': { param_types: [] },
+        'text-changed': {param_types: []},
     },
 }, class GPasteSearchItem extends PopupBaseMenuItem {
     _init() {
@@ -16,27 +16,27 @@ export const GPasteSearchItem = GObject.registerClass({
             activate: false,
             reactive: true,
             hover: false,
-            can_focus: false
+            can_focus: false,
         });
 
         this._entry = new St.Entry({
             name: 'GPasteSearchEntry',
-            style_class:'search-entry',
+            style_class: 'search-entry',
             track_hover: true,
             reactive: true,
-            can_focus: true
+            can_focus: true,
         });
         this.add_child(this._entry);
 
         this._entry.set_primary_icon(new St.Icon({
-            style_class:'search-entry-icon',
-            icon_name:'edit-find-symbolic'
+            style_class: 'search-entry-icon',
+            icon_name: 'edit-find-symbolic',
         }));
         this._entry.clutter_text.connect('text-changed', this._onTextChanged.bind(this));
 
         this._clearIcon = new St.Icon({
             style_class: 'search-entry-icon',
-            icon_name: 'edit-clear-symbolic'
+            icon_name: 'edit-clear-symbolic',
         });
         this._iconClickedId = 0;
     }
@@ -46,7 +46,7 @@ export const GPasteSearchItem = GObject.registerClass({
     }
 
     resetSize(size) {
-        this._entry.style = 'width: ' + size + 'em';
+        this._entry.style = `width: ${size}em`;
     }
 
     reset() {
@@ -61,11 +61,11 @@ export const GPasteSearchItem = GObject.registerClass({
     }
 
     _onTextChanged() {
-        const dummy = (this.text.length === 0);
-        this._entry.set_secondary_icon((dummy) ? null : this._clearIcon);
-        if (!dummy && this._iconClickedId === 0) {
+        const dummy = this.text.length === 0;
+        this._entry.set_secondary_icon(dummy ? null : this._clearIcon);
+        if (!dummy && this._iconClickedId === 0)
             this._iconClickedId = this._entry.connect('secondary-icon-clicked', this.reset.bind(this));
-        }
+
         this.emit('text-changed');
     }
 });

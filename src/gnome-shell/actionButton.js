@@ -5,7 +5,7 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject?version=2.0';
 import St from 'gi://St';
 
-import { GPasteActionButtonActor } from './actionButtonActor.js';
+import {GPasteActionButtonActor} from './actionButtonActor.js';
 
 export const GPasteActionButton = GObject.registerClass(
 class GPasteActionButton extends St.Button {
@@ -17,7 +17,7 @@ class GPasteActionButton extends St.Button {
             can_focus: true,
             track_hover: true,
             style_class: 'button',
-            child: new GPasteActionButtonActor(iconName, label)
+            child: new GPasteActionButtonActor(iconName, label),
         });
 
         this._action = action;

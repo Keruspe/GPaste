@@ -7,6 +7,6 @@ import St from 'gi://St';
 export const GPastePadding = GObject.registerClass(
 class GPastePadding extends St.Label {
     _init() {
-        super._init({ text: '', x_expand: true });
+        super._init({text: '', x_expand: true});
     }
 });

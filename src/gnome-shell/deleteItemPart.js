@@ -4,7 +4,7 @@
 import GObject from 'gi://GObject?version=2.0';
 import St from 'gi://St';
 
-import { GPasteDeleteButton } from './deleteButton.js';
+import {GPasteDeleteButton} from './deleteButton.js';
 
 export const GPasteDeleteItemPart = GObject.registerClass(
 class GPasteDeleteItemPart extends St.Bin {

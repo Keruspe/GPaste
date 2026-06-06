@@ -20,9 +20,9 @@ export default function checkerBypass() {
     if (!checker._gpasteEnabled) {
         checker._gpasteEnabled = true;
         checker._watchList.push(Gio.DBus.watch_name(Gio.BusType.SESSION,
-                                                    'org.gnome.GPaste',
-                                                    Gio.BusNameWatcherFlags.NONE,
-                                                    (conn_, name_, owner) => checker._allowlistMap.set('org.gnome.GPaste', owner),
-                                                    () => checker._allowlistMap.delete('org.gnome.GPaste')));
+            'org.gnome.GPaste',
+            Gio.BusNameWatcherFlags.NONE,
+            (conn_, name_, owner) => checker._allowlistMap.set('org.gnome.GPaste', owner),
+            () => checker._allowlistMap.delete('org.gnome.GPaste')));
     }
 };

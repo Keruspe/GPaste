@@ -6,16 +6,16 @@ import St from 'gi://St';
 
 export const GPastePageItem = GObject.registerClass({
     Signals: {
-        'switch': { param_types: [GObject.TYPE_UINT64] },
+        'switch': {param_types: [GObject.TYPE_UINT64]},
     },
 }, class GPastePageItem extends St.Button {
     _init(page) {
         super._init({
-            label: '' + page,
+            label: `${page}`,
             reactive: true,
             can_focus: false,
             track_hover: true,
-            style_class: 'calendar-day-base calendar-day'
+            style_class: 'calendar-day-base calendar-day',
         });
 
         this._page = page;
@@ -26,10 +26,9 @@ export const GPastePageItem = GObject.registerClass({
     }
 
     setActive(active) {
-        if (active) {
+        if (active)
             this.add_style_pseudo_class('selected');
-        } else {
+        else
             this.remove_style_pseudo_class('selected');
-        }
     }
 });
