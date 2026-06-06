@@ -58,6 +58,10 @@ The `src/gnome-shell/` extension follows upstream GNOME Shell's JS conventions, 
 - Unlike upstream (which runs lint only from GitLab CI), GPaste has no CI, so the meson test is the integration point. This is the only intentional divergence from upstream's plumbing — the toolchain, config, layout, and `run-eslint.sh` are otherwise identical.
 - This tooling applies **only** to the JavaScript code; it does not affect the C/meson sources.
 
+Code conventions (also following upstream):
+- **Don't version-pin core `gi://` imports** — write `gi://GObject`, `gi://GLib`, `gi://Gio`, `gi://Pango`, `gi://Clutter`, `gi://St`. Only pin typelibs that genuinely ship multiple versions: `gi://GPaste?version=2`, `gi://GPasteGtk?version=4`.
+- **Manage signal lifecycles with `connectObject`/`disconnectObject`** (owner = `this`) for connections to long-lived non-actor GObjects (settings, the `GPaste.Client`), rather than tracking handler ids and disconnecting them by hand. They auto-disconnect when the owner actor is destroyed.
+
 ## Memory management
 
 Always use GLib automatic memory management. Apply to every C file touched, not only the file under edit.

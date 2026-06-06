@@ -8,8 +8,8 @@ import {Button} from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {PopupSeparatorMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import Clutter from 'gi://Clutter';
-import GObject from 'gi://GObject?version=2.0';
-import GLib from 'gi://GLib?version=2.0';
+import GObject from 'gi://GObject';
+import GLib from 'gi://GLib';
 import GPaste from 'gi://GPaste?version=2';
 
 import {GPasteActions} from './actions.js';
@@ -45,7 +45,7 @@ class GPasteIndicator extends Button {
         this._searchItem = new GPasteSearchItem();
         this._searchItem.connect('text-changed', this._onNewSearch.bind(this));
 
-        this._settingsSizeChangedId = this._settings.connect('changed::element-size', this._resetElementSize.bind(this));
+        this._settings.connectObject('changed::element-size', this._resetElementSize.bind(this), this);
         this._resetElementSize();
 
         this.menu.connect('key-press-event', this._onMenuKeyPress.bind(this));
@@ -87,11 +87,13 @@ class GPasteIndicator extends Button {
             return;
         }
 
-        this._settingsMaxSizeChangedId = this._settings.connect('changed::max-displayed-history-size', () => this._resetMaxDisplayedSize().catch(console.error));
+        this._settings.connectObject('changed::max-displayed-history-size', () => this._resetMaxDisplayedSize().catch(console.error), this);
 
-        this._clientUpdateId = this._client.connect('update', this._update.bind(this));
-        this._clientShowId = this._client.connect('show-history', this._popup.bind(this));
-        this._clientTrackingId = this._client.connect('tracking', this._toggle.bind(this));
+        this._client.connectObject(
+            'update', this._update.bind(this),
+            'show-history', this._popup.bind(this),
+            'tracking', this._toggle.bind(this),
+            this);
 
         this._onStateChanged(true);
 
@@ -110,8 +112,8 @@ class GPasteIndicator extends Button {
 
     _onKeyPressEvent(actor, event) {
         if (event.has_control_modifier()) {
-            const nb = parseInt(event.get_key_unicode());
-            if (!isNaN(nb) && nb >= 0 && nb <= 9 && nb < this._history.length)
+            const nb = parseInt(event.get_key_unicode(), 10);
+            if (!Number.isNaN(nb) && nb >= 0 && nb <= 9 && nb < this._history.length)
                 this._history[nb].activate(event);
         } else {
             this._maybeUpdateIndexVisibility(event, true);
@@ -355,22 +357,12 @@ class GPasteIndicator extends Button {
     }
 
     _onDestroy() {
-        if (this._settingsSizeChangedId) {
-            this._settings.disconnect(this._settingsSizeChangedId);
-            this._settingsSizeChangedId = 0;
-        }
-
-        if (this._settingsMaxSizeChangedId) {
-            this._settings.disconnect(this._settingsMaxSizeChangedId);
-            this._settingsMaxSizeChangedId = 0;
-        }
+        this._settings.disconnectObject(this);
 
         if (!this._client)
             return;
 
-        this._client.disconnect(this._clientUpdateId);
-        this._client.disconnect(this._clientShowId);
-        this._client.disconnect(this._clientTrackingId);
+        this._client.disconnectObject(this);
         this._client = null;
     }
 });

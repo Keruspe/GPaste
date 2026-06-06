@@ -4,7 +4,7 @@
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {PopupMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import GObject from 'gi://GObject?version=2.0';
+import GObject from 'gi://GObject';
 
 export const GPasteDummyHistoryItem = GObject.registerClass(
 class GPasteDummyHistoryItem extends PopupMenuItem {

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-import GObject from 'gi://GObject?version=2.0';
+import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 export const GPasteStatusIcon = GObject.registerClass(
