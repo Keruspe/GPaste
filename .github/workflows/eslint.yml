@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+# SPDX-License-Identifier: BSD-2-Clause
+
+name: ESLint
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/gnome-shell/**'
+      - 'tools/**'
+      - 'eslint.config.js'
+      - '.github/workflows/eslint.yml'
+  pull_request:
+    paths:
+      - 'src/gnome-shell/**'
+      - 'tools/**'
+      - 'eslint.config.js'
+      - '.github/workflows/eslint.yml'
+
+jobs:
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+      - name: Run ESLint
+        run: ./tools/run-eslint.sh
