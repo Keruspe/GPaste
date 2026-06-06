@@ -43,31 +43,18 @@ _empty (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
-
-    if (!GTK_IS_WIDGET (self))
-    {
-        g_free (data[1]);
-        g_free (data);
-        return G_SOURCE_REMOVE;
-    }
-
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    if (!priv->initialized)
+    /* Keep waiting until ready, unless the window was destroyed meanwhile */
+    if (priv->client && !priv->initialized)
         return G_SOURCE_CONTINUE;
-
-    if (!priv->client)
-    {
-        g_free (data[1]);
-        g_free (data);
-        g_object_unref (self);
-        return G_SOURCE_REMOVE;
-    }
 
     g_autofree gchar *history = data[1];
     g_free (data);
 
-    g_paste_gtk_util_empty_history (GTK_WINDOW (self), priv->client, priv->settings, history);
+    if (priv->client)
+        g_paste_gtk_util_empty_history (GTK_WINDOW (self), priv->client, priv->settings, history);
+
     g_object_unref (self);
 
     return G_SOURCE_REMOVE;
@@ -99,24 +86,21 @@ _search (gpointer user_data)
 {
     gpointer *data = (gpointer *) user_data;
     GPasteUiWindow *self = data[0];
-
-    if (!GTK_IS_WIDGET (self))
-    {
-        g_free (data[1]);
-        g_free (data);
-        return G_SOURCE_REMOVE;
-    }
-
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    if (!priv->initialized)
+    /* Keep waiting until ready, unless the window was destroyed meanwhile */
+    if (priv->client && !priv->initialized)
         return G_SOURCE_CONTINUE;
 
     g_autofree gchar *search = data[1];
     g_free (data);
 
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (priv->header)), TRUE);
-    gtk_editable_set_text (GTK_EDITABLE (priv->search_entry), search);
+    if (priv->client)
+    {
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (g_paste_ui_header_get_search_button (priv->header)), TRUE);
+        gtk_editable_set_text (GTK_EDITABLE (priv->search_entry), search);
+    }
+
     g_object_unref (self);
 
     return G_SOURCE_REMOVE;
@@ -147,16 +131,15 @@ static gboolean
 _show_prefs (gpointer user_data)
 {
     GPasteUiWindow *self = user_data;
-
-    if (!GTK_IS_WIDGET (self))
-        return G_SOURCE_REMOVE;
-
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
 
-    if (!priv->initialized)
+    /* Keep waiting until ready, unless the window was destroyed meanwhile */
+    if (priv->client && !priv->initialized)
         return G_SOURCE_CONTINUE;
 
-    g_paste_ui_header_show_prefs (priv->header);
+    if (priv->client)
+        g_paste_ui_header_show_prefs (priv->header);
+
     g_object_unref (self);
 
     return G_SOURCE_REMOVE;

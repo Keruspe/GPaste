@@ -186,12 +186,14 @@ on_histories_ready (GObject      *source_object G_GNUC_UNUSED,
                     gpointer      user_data)
 {
     g_autofree HistoriesData *data = user_data;
+    g_autoptr (GPasteUiPanel) self = data->self;
     g_autofree gchar *current = data->name;
 
-    if (!GTK_IS_WIDGET (data->self))
+    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+
+    if (!priv->client) /* panel was disposed while the call was in flight */
         return;
 
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (data->self);
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) histories = g_paste_client_list_histories_finish (priv->client, res, &error);
 
@@ -212,15 +214,16 @@ on_name_ready (GObject      *source_object G_GNUC_UNUSED,
                GAsyncResult *res,
                gpointer      user_data)
 {
-    if (!GTK_IS_WIDGET (user_data))
+    g_autoptr (GPasteUiPanel) self = user_data;
+    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
+
+    if (!priv->client) /* panel was disposed while the call was in flight */
         return;
 
-    GPasteUiPanel *self = user_data;
-    GPasteUiPanelPrivate *priv = g_paste_ui_panel_get_instance_private (self);
     g_autofree gchar *name = g_paste_client_get_history_name_finish (priv->client, res, NULL);
     HistoriesData *data = g_new (HistoriesData, 1);
 
-    data->self = self;
+    data->self = g_steal_pointer (&self);
     data->name = g_steal_pointer (&name);
 
     g_paste_client_list_histories (priv->client, on_histories_ready, data);
@@ -535,7 +538,7 @@ g_paste_ui_panel_new (GPasteClient   *client,
                                                        G_CALLBACK (on_setup_menu),
                                                        priv);
 
-    g_paste_client_get_history_name (client, on_name_ready, self);
+    g_paste_client_get_history_name (client, on_name_ready, g_object_ref (self));
 
     return self;
 }
