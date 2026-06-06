@@ -136,6 +136,7 @@ g_paste_keybinding_deactivate (GPasteKeybinding *self)
 
     g_return_if_fail (priv->active);
 
+    g_clear_pointer (&priv->keycodes, g_free);
     priv->active = FALSE;
 }
 
