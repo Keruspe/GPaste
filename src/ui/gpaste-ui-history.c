@@ -252,8 +252,10 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     priv->search_results = g_paste_client_search_finish (priv->client, res, NULL /* error */);
     guint64 search_results_size = g_strv_length (priv->search_results);
 
-    if (priv->search_results)
+    if (search_results_size)
     {
+        g_paste_ui_history_show_list (self);
+
         if (search_results_size > priv->size)
             search_results_size = priv->size;
 
