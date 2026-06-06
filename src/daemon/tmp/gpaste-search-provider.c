@@ -135,7 +135,7 @@ typedef struct
 {
     GPasteClient          *client;
     GDBusMethodInvocation *invocation;
-    const gchar          **uuids;
+    GStrv                  uuids;
 } GetResultMetasData;
 
 static void
@@ -145,7 +145,7 @@ on_elements_ready (GObject      *source_object G_GNUC_UNUSED,
 {
     g_autofree GetResultMetasData *data = user_data;
     GPasteClient *client = data->client;
-    g_autofree const gchar **uuids = data->uuids;
+    g_auto (GStrv) uuids = data->uuids;
     g_auto (GVariantBuilder) builder;
 
     g_variant_builder_init (&builder, (GVariantType *) "aa{sv}");
@@ -188,7 +188,9 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
 
     g_autoptr (GVariant) results = g_variant_iter_next_value (&parameters_iter);
     gsize len;
-    g_autofree const gchar **uuids = g_variant_get_strv (results, &len);
+    /* Deep-copy: the strings must outlive `results` since they are used again
+     * in the async on_elements_ready callback. */
+    g_auto (GStrv) uuids = g_variant_dup_strv (results, &len);
 
     if (!len)
         return FALSE;
@@ -197,10 +199,9 @@ g_paste_search_provider_private_get_result_metas (const GPasteSearchProviderPriv
 
     data->client = priv->client;
     data->invocation = invocation;
-    data->uuids = uuids;
-    uuids = NULL; // don't autofree
+    data->uuids = g_steal_pointer (&uuids);
 
-    g_paste_client_get_elements (priv->client, data->uuids, len, on_elements_ready, data);
+    g_paste_client_get_elements (priv->client, (const gchar **) data->uuids, len, on_elements_ready, data);
 
     return TRUE;
 }
