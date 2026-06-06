@@ -607,7 +607,7 @@ static GStrv
 g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNUSED,
                                       GError                   **error)
 {
-    g_autoptr (GPtrArray) history_names = g_ptr_array_new_null_terminated (0, g_free, TRUE);
+    g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
@@ -619,7 +619,7 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
         if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
         {
             g_clear_error (error);
-            return g_strdupv ((GStrv) history_names->pdata);
+            return g_strv_builder_end (history_names);
         }
         return NULL;
     }
@@ -642,11 +642,11 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
             g_autofree gchar *name = g_strdup (raw_name);
 
             name[strlen (name) - 4] = '\0';
-            g_ptr_array_add (history_names, g_steal_pointer (&name));
+            g_strv_builder_take (history_names, g_steal_pointer (&name));
         }
     }
 
-    return g_strdupv ((GStrv) history_names->pdata);
+    return g_strv_builder_end (history_names);
 }
 
 static const gchar *

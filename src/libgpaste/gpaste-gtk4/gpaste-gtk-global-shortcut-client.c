@@ -101,20 +101,21 @@ gtk_accel_to_portal_trigger (const gchar *accel)
     if (!key_name)
         return NULL;
 
-    g_autoptr (GPtrArray) tokens = g_ptr_array_new_with_free_func (g_free);
+    g_autoptr (GStrvBuilder) tokens = g_strv_builder_new ();
 
     if (mods & GDK_CONTROL_MASK)
-        g_ptr_array_add (tokens, g_strdup ("CTRL"));
+        g_strv_builder_add (tokens, "CTRL");
     if (mods & GDK_ALT_MASK)
-        g_ptr_array_add (tokens, g_strdup ("ALT"));
+        g_strv_builder_add (tokens, "ALT");
     if (mods & GDK_SHIFT_MASK)
-        g_ptr_array_add (tokens, g_strdup ("SHIFT"));
+        g_strv_builder_add (tokens, "SHIFT");
     if (mods & GDK_SUPER_MASK)
-        g_ptr_array_add (tokens, g_strdup ("SUPER"));
+        g_strv_builder_add (tokens, "SUPER");
 
-    g_ptr_array_add (tokens, g_ascii_strup (key_name, -1));
-    g_ptr_array_add (tokens, NULL);
-    return g_strjoinv ("+", (gchar **) tokens->pdata);
+    g_strv_builder_take (tokens, g_ascii_strup (key_name, -1));
+
+    g_auto (GStrv) parts = g_strv_builder_end (tokens);
+    return g_strjoinv ("+", parts);
 }
 
 static GVariant *
