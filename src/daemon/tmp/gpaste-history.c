@@ -243,11 +243,18 @@ g_paste_history_private_check_size (GPasteHistoryPrivate *priv)
     {
         history = g_list_nth (history, max_history_size);
         g_return_if_fail (history);
-        history->prev->next = NULL;
-        history->prev = NULL;
 
         for (GList *_history = history; _history; _history = g_list_next (_history))
             priv->size -= g_paste_item_get_size (_history->data);
+
+        if (history->prev)
+        {
+            history->prev->next = NULL;
+            history->prev = NULL;
+        }
+        else
+            priv->history = NULL;
+
         g_list_free_full (history, g_paste_history_item_free);
     }
 }
@@ -283,7 +290,11 @@ _g_paste_history_add (GPasteHistory *self,
     guint64 max_memory = g_paste_settings_get_max_memory_usage (priv->settings) * 1024 * 1024;
 
     if (g_paste_item_get_size (item) > max_memory)
+    {
+        if (new_selection)
+            g_object_unref (item);
         return;
+    }
 
     GList *history = priv->history;
     gboolean election_needed = !history; // If we don't have an history we want to initalize the biggest
@@ -296,14 +307,22 @@ _g_paste_history_add (GPasteHistory *self,
         GPasteItem *old_first = history->data;
 
         if (g_paste_item_equals (old_first, item))
+        {
+            if (new_selection)
+                g_object_unref (item);
             return;
+        }
 
         if (new_selection && g_paste_history_private_is_growing_line (priv, old_first, item))
         {
             if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (old_first)))
                 election_needed = TRUE;
             target = G_PASTE_UPDATE_TARGET_POSITION;
+            /* old_first is a distinct object replaced by the grown item; this
+             * branch is add-only, so free the object we removed (its shared
+             * backing file, if any, is kept). */
             g_paste_history_private_remove (priv, history, FALSE);
+            g_object_unref (old_first);
         }
         else
         {
@@ -325,9 +344,16 @@ _g_paste_history_add (GPasteHistory *self,
             {
                 if (g_paste_item_equals (history->data, item) || (new_selection && g_paste_history_private_is_growing_line (priv, history->data, item)))
                 {
-                    if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (history->data)))
+                    GPasteItem *dup = history->data;
+
+                    if (g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (dup)))
                         election_needed = TRUE;
                     g_paste_history_private_remove (priv, history, FALSE);
+                    /* On add, dup is a distinct duplicate replaced by the new item:
+                     * free the object (its shared backing file is kept). On select,
+                     * dup IS item being moved to the front, so leave its ref alone. */
+                    if (new_selection)
+                        g_object_unref (dup);
                     break;
                 }
             }
