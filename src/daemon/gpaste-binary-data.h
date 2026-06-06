@@ -13,7 +13,6 @@ G_PASTE_FINAL_TYPE (BinaryData, binary_data, BINARY_DATA, GObject)
 
 GPasteSpecialAtom  g_paste_binary_data_get_mime     (const GPasteBinaryData *self);
 GBytes            *g_paste_binary_data_get_bytes    (const GPasteBinaryData *self);
-const gchar       *g_paste_binary_data_get_checksum (const GPasteBinaryData *self);
 gchar             *g_paste_binary_data_to_base64    (const GPasteBinaryData *self);
 
 GPasteBinaryData *g_paste_binary_data_new (GPasteSpecialAtom  mime,

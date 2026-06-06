@@ -12,7 +12,6 @@ typedef struct
 {
     GPasteSpecialAtom  mime;
     GBytes            *bytes;
-    gchar             *checksum;
 } GPasteBinaryDataPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (BinaryData, binary_data, G_TYPE_OBJECT)
@@ -54,32 +53,6 @@ g_paste_binary_data_get_bytes (const GPasteBinaryData *self)
 }
 
 /**
- * g_paste_binary_data_get_checksum:
- * @self: a #GPasteBinaryData instance
- *
- * Get the SHA256 checksum of the data stored in the #GPasteBinaryData.
- * Computed lazily on first call.
- *
- * Returns: read-only string containing the SHA256 checksum
- */
-G_PASTE_VISIBLE const gchar *
-g_paste_binary_data_get_checksum (const GPasteBinaryData *self)
-{
-    g_return_val_if_fail (_G_PASTE_IS_BINARY_DATA (self), NULL);
-
-    GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private ((GPasteBinaryData *)(gpointer) self);
-
-    if (!priv->checksum)
-    {
-        gsize len;
-        const guchar *data = g_bytes_get_data (priv->bytes, &len);
-        priv->checksum = g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, len);
-    }
-
-    return priv->checksum;
-}
-
-/**
  * g_paste_binary_data_to_base64:
  * @self: a #GPasteBinaryData instance
  *
@@ -112,20 +85,9 @@ g_paste_binary_data_dispose (GObject *object)
 }
 
 static void
-g_paste_binary_data_finalize (GObject *object)
-{
-    GPasteBinaryDataPrivate *priv = g_paste_binary_data_get_instance_private (G_PASTE_BINARY_DATA (object));
-
-    g_free (priv->checksum);
-
-    G_OBJECT_CLASS (g_paste_binary_data_parent_class)->finalize (object);
-}
-
-static void
 g_paste_binary_data_class_init (GPasteBinaryDataClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_binary_data_dispose;
-    G_OBJECT_CLASS (klass)->finalize = g_paste_binary_data_finalize;
 }
 
 static void
