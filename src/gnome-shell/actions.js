@@ -11,8 +11,8 @@ import {GPasteUiItem} from './uiItem.js';
 
 export const GPasteActions = GObject.registerClass(
 class GPasteActions extends PopupBaseMenuItem {
-    _init(client, menu, emptyHistoryItem) {
-        super._init({
+    constructor(client, menu, emptyHistoryItem) {
+        super({
             reactive: false,
             can_focus: false,
         });

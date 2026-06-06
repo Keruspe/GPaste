@@ -6,8 +6,8 @@ import St from 'gi://St';
 
 export const GPasteDeleteButton = GObject.registerClass(
 class GPasteDeleteButton extends St.Button {
-    _init(client, uuid) {
-        super._init();
+    constructor(client, uuid) {
+        super();
 
         this.child = new St.Icon({
             icon_name: 'edit-delete-symbolic',

@@ -15,8 +15,8 @@ export const GPastePageSwitcher = GObject.registerClass({
         'switch': {param_types: [GObject.TYPE_UINT64]},
     },
 }, class GPastePageSwitcher extends PopupBaseMenuItem {
-    _init() {
-        super._init({
+    constructor() {
+        super({
             style_class: 'calendar',
             reactive: false,
             can_focus: false,

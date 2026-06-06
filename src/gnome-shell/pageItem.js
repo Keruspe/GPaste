@@ -9,8 +9,8 @@ export const GPastePageItem = GObject.registerClass({
         'switch': {param_types: [GObject.TYPE_UINT64]},
     },
 }, class GPastePageItem extends St.Button {
-    _init(page) {
-        super._init({
+    constructor(page) {
+        super({
             label: `${page}`,
             reactive: true,
             can_focus: false,

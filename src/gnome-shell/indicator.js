@@ -23,8 +23,8 @@ import {GPasteStatusIcon} from './statusIcon.js';
 
 export const GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends Button {
-    _init() {
-        super._init(0.0, 'GPaste');
+    constructor() {
+        super(0.0, 'GPaste');
 
         this._statusIcon = new GPasteStatusIcon();
         this.add_child(this._statusIcon);

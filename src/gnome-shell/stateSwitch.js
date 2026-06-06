@@ -8,8 +8,8 @@ import GObject from 'gi://GObject';
 
 export const GPasteStateSwitch = GObject.registerClass(
 class GPasteStateSwitch extends PopupSwitchMenuItem {
-    _init(client) {
-        super._init(_('Track changes'), client.is_active());
+    constructor(client) {
+        super(_('Track changes'), client.is_active());
 
         this._client = client;
 

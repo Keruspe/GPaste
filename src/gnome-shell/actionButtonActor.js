@@ -8,8 +8,8 @@ import St from 'gi://St';
 
 export const GPasteActionButtonActor = GObject.registerClass(
 class GPasteActionButtonActor extends St.BoxLayout {
-    _init(iconName, label) {
-        super._init({style: 'spacing: 10px;'});
+    constructor(iconName, label) {
+        super({style: 'spacing: 10px;'});
 
         this.add_child(new St.Icon({
             icon_name: iconName,
