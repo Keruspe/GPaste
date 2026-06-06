@@ -88,10 +88,13 @@ Key rules:
 - Do **not** use auto-cleanup on a variable whose ownership is intentionally transferred — use `g_steal_pointer` to make the handoff explicit.
 - Do **not** use `if (ptr) g_slist_free_full (g_steal_pointer (&ptr), fn)` in dispose — use `g_clear_slist (&ptr, fn)` instead (handles NULL safely).
 - When storing a `g_settings_get_string` value (owned, `(transfer full)`) into a `gchar *` field, free the old value and take ownership directly: `g_free(field); field = g_settings_get_string(...)`. Do **not** assign without freeing first (leak on re-assignment), and do **not** route it through `g_set_str` (that would re-`g_strdup` an already-owned string — a wasted allocation).
+- For a stored `GSource`/timeout/idle/signal handler id, prefer `g_clear_handle_id (&id, remove_func)` over the hand-rolled `if (id) { remove_func (id); id = 0; }` — it is NULL-safe and nulls the field in one call (e.g. `g_clear_handle_id (&priv->retry_source, g_source_remove)`). Use this in new code and when touching such cleanup.
+- Build NULL-terminated string vectors with `GStrvBuilder` (`g_strv_builder_add` for borrowed strings, `g_strv_builder_take` for owned ones, `g_strv_builder_end` to get the `GStrv`) rather than hand-managing a `GPtrArray` + manual `NULL` terminator + `(GStrv) ->pdata` cast. It also avoids the deep `g_strdupv` copy that returning a `GPtrArray`'s contents requires.
+- Prefer `g_signal_connect_object (source, sig, cb, gobject, 0)` over plain `g_signal_connect` when the handler's data is a **GObject** shorter-lived than the signal source and you would otherwise not disconnect — it auto-disconnects when that object is finalized. Do **not** convert sites that pass non-GObject data (a `priv`/struct pointer), pass `NULL` data, or that deliberately disconnect early in `dispose` for ordering reasons (e.g. `GPasteInternalKeybindingProvider` disconnects its `GdkDisplay::xevent` handler before freeing the state that handler uses — `g_signal_connect_object` would only disconnect at finalize and regress that).
 
 ## Maintenance rules
 
-- When adding or removing a public function from any library under `src/libgpaste/`, update the corresponding `.sym` file (`libgpaste.sym`, `libgpaste-gtk3.sym`, or `libgpaste-gtk4.sym`).
+- When adding or removing a public function from any library under `src/libgpaste/`, update the corresponding `.sym` file (`libgpaste.sym` or `libgpaste-gtk4.sym`).
 - When updating source files in this repository, keep `CLAUDE.md` up to date to reflect any new patterns, rules, or architectural decisions introduced.
 
 ## Architecture
@@ -100,10 +103,9 @@ GPaste is a GNOME clipboard manager split across several binaries and a shared l
 
 ### `src/libgpaste/` — shared library
 
-The core library used by all other components. Three sub-modules:
+The core library used by all other components. Two sub-modules:
 
 - `gpaste/` — daemon-agnostic types: `GpasteClient` (D-Bus client), `GpasteSettings` (GSettings wrapper), `GPasteGnomeShellClient` (GNOME Shell keybinding D-Bus proxy), `GPasteGlobalShortcutClient` (XDG GlobalShortcuts portal proxy), enums, utilities.
-- `gpaste-gtk3/` — GTK3 UI helpers.
 - `gpaste-gtk4/` — GTK4 + Adwaita UI helpers (used by the preferences app).
 
 The library exposes a versioned ABI (symbol version scripts in `src/libgpaste/`). GIR and Vala bindings are generated from it.
@@ -178,11 +180,11 @@ Translations managed via Weblate. Add new strings to the relevant `.c` source wi
 ## Key dependencies
 
 - GLib/GObject/Gio ≥ 2.84
-- GTK3 ≥ 3.24 (UI, client)
-- GTK4 ≥ 4.12 + libadwaita ≥ 1.8 (UI and preferences; 1.8 required for AdwShortcutsDialog)
-- GCR ≥ 3.90 (password item storage)
-- GdkPixbuf ≥ 2.38 (image items)
+- GTK4 ≥ 4.12 + libadwaita ≥ 1.9 (UI and preferences; 1.9 required for `AdwSidebar`)
+- GCR (`gcr-4`) ≥ 3.90 (password item storage)
 - gjs ≥ 1.78 (GNOME Shell extension runtime)
 - Optional: libX11 + libXI (x-keybinder)
 
-On Fedora: `dnf install meson ninja-build glib2-devel gtk3-devel gtk4-devel libgdk-pixbuf2-devel gcr-devel libadwaita-devel gjs-devel`
+Image items use `GdkTexture` from GTK4 directly — there is no longer a GdkPixbuf dependency.
+
+On Fedora: `dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel gjs-devel`
