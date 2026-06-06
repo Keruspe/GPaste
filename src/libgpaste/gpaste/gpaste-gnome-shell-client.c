@@ -393,11 +393,7 @@ gnome_shell_client_grab_all (GPasteKeybindingProvider          *provider,
     if (priv->grabbing)
         return;
 
-    if (priv->retry_source)
-    {
-        g_source_remove (priv->retry_source);
-        priv->retry_source = 0;
-    }
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
 
     g_hash_table_remove_all (priv->id_to_action);
 
@@ -473,11 +469,7 @@ gnome_shell_client_ungrab_all (GPasteKeybindingProvider *provider)
     GPasteGnomeShellClient *self = G_PASTE_GNOME_SHELL_CLIENT (provider);
     GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
 
-    if (priv->retry_source)
-    {
-        g_source_remove (priv->retry_source);
-        priv->retry_source = 0;
-    }
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
 
     GHashTableIter iter;
     gpointer key G_GNUC_UNUSED, value;
@@ -579,11 +571,7 @@ g_paste_gnome_shell_client_dispose (GObject *object)
     GPasteGnomeShellClient *self = G_PASTE_GNOME_SHELL_CLIENT (object);
     GPasteGnomeShellClientPrivate *priv = g_paste_gnome_shell_client_get_instance_private (self);
 
-    if (priv->retry_source)
-    {
-        g_source_remove (priv->retry_source);
-        priv->retry_source = 0;
-    }
+    g_clear_handle_id (&priv->retry_source, g_source_remove);
 
     if (priv->shell_watch)
     {
