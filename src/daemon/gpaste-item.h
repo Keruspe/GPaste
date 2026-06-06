@@ -48,7 +48,7 @@ void g_paste_item_set_uuid  (GPasteItem     *self,
                              const gchar    *uuid);
 
 void g_paste_item_set_display_string (GPasteItem       *self,
-                                      const gchar      *display_string);
+                                      gchar            *display_string);
 void g_paste_item_add_special_value  (GPasteItem       *self,
                                       GPasteBinaryData *binary_data);
 

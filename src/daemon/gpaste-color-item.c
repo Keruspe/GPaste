@@ -71,7 +71,7 @@ _g_paste_color_item_new (const gchar   *str,
     priv->rgba = *rgba;
 
     g_autofree gchar *display = g_strconcat (_("[Color]"), " ", str, NULL);
-    g_paste_item_set_display_string (self, display);
+    g_paste_item_set_display_string (self, g_steal_pointer (&display));
 
     return self;
 }

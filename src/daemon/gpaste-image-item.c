@@ -219,7 +219,7 @@ _g_paste_image_item_new (const gchar *path,
                                                                   gdk_texture_get_width (priv->image),
                                                                   gdk_texture_get_height (priv->image),
                                                                   formatted_date);
-    g_paste_item_set_display_string (self, display_string);
+    g_paste_item_set_display_string (self, g_steal_pointer (&display_string));
 
     if (image)
         g_paste_image_item_set_size (self);

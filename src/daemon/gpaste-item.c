@@ -229,31 +229,26 @@ g_paste_item_remove_size (GPasteItem *self,
 /**
  * g_paste_item_set_display_string:
  * @self: a #GPasteItem instance
- * @display_string: the new display string
+ * @display_string: (transfer full) (nullable): the new display string
  *
  * Set the string to display
  */
 G_PASTE_VISIBLE void
-g_paste_item_set_display_string (GPasteItem  *self,
-                                 const gchar *display_string)
+g_paste_item_set_display_string (GPasteItem *self,
+                                 gchar      *display_string)
 {
     g_return_if_fail (_G_PASTE_IS_ITEM (self));
 
     GPasteItemPrivate *priv = g_paste_item_get_instance_private (self);
 
     if (priv->display_string)
-    {
         priv->size -= (strlen (priv->display_string) + 1);
-        g_free (priv->display_string);
-    }
+
+    g_free (priv->display_string);
+    priv->display_string = display_string;
 
     if (display_string)
-    {
-        priv->display_string = g_strdup (display_string);
         priv->size += strlen (display_string) + 1;
-    }
-    else
-        priv->display_string = NULL;
 }
 
 /**

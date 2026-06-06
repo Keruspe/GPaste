@@ -85,7 +85,7 @@ _g_paste_uris_item_new (const gchar *uris_joined,
     g_autofree gchar *display_no_home = g_paste_util_replace (uris_joined, g_get_home_dir (), "~");
     g_autofree gchar *display_flat = g_paste_util_replace (display_no_home, "\n", " ");
     g_autofree gchar *display = g_strconcat (_("[Files] "), display_flat, NULL);
-    g_paste_item_set_display_string (self, display);
+    g_paste_item_set_display_string (self, g_steal_pointer (&display));
 
     guint64 n_uris = g_slist_length (gdk_file_list_get_files (file_list));
     g_paste_item_add_size (self, strlen (uris_joined) + 1 + n_uris);
