@@ -8,8 +8,8 @@ import {GPasteDeleteButton} from './deleteButton.js';
 
 export const GPasteDeleteItemPart = GObject.registerClass(
 class GPasteDeleteItemPart extends St.Bin {
-    _init(client, uuid) {
-        super._init();
+    constructor(client, uuid) {
+        super();
         this._deleteButton = new GPasteDeleteButton(client, uuid);
         this.child = this._deleteButton;
     }

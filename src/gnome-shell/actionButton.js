@@ -9,8 +9,8 @@ import {GPasteActionButtonActor} from './actionButtonActor.js';
 
 export const GPasteActionButton = GObject.registerClass(
 class GPasteActionButton extends St.Button {
-    _init(iconName, label, action) {
-        super._init({
+    constructor(iconName, label, action) {
+        super({
             x_expand: true,
             x_align: Clutter.ActorAlign.CENTER,
             reactive: true,

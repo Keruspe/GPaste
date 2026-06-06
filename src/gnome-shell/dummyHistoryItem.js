@@ -8,8 +8,8 @@ import GObject from 'gi://GObject';
 
 export const GPasteDummyHistoryItem = GObject.registerClass(
 class GPasteDummyHistoryItem extends PopupMenuItem {
-    _init() {
-        super._init(_("(Couldn't connect to GPaste daemon)"));
+    constructor() {
+        super(_("(Couldn't connect to GPaste daemon)"));
         this.setSensitive(false);
     }
 

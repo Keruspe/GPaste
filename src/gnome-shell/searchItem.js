@@ -11,8 +11,8 @@ export const GPasteSearchItem = GObject.registerClass({
         'text-changed': {param_types: []},
     },
 }, class GPasteSearchItem extends PopupBaseMenuItem {
-    _init() {
-        super._init({
+    constructor() {
+        super({
             activate: false,
             reactive: true,
             hover: false,

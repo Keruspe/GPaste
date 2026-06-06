@@ -10,8 +10,8 @@ import {GPasteActionButton} from './actionButton.js';
 
 export const GPasteEmptyHistoryItem = GObject.registerClass(
 class GPasteEmptyHistoryItem extends GPasteActionButton {
-    _init(client, settings, menu) {
-        super._init('edit-clear-all-symbolic', _('Empty history'), async () => {
+    constructor(client, settings, menu) {
+        super('edit-clear-all-symbolic', _('Empty history'), async () => {
             menu.itemActivated();
             const name = await client.get_history_name(null);
             GPaste.util_empty_with_confirmation(client, settings, name);
