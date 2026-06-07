@@ -44,6 +44,18 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-07" version="45.8">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix use-after-free crash in the GNOME Shell search provider</li>
+          <li>Fix keyboard shortcuts not triggering when NumLock and CapsLock are both active</li>
+          <li>Fix memory leaks when re-copying history items and when rebinding shortcuts</li>
+          <li>Fix potential crash when enforcing a very small history size</li>
+          <li>Build: ship the GSettings schema as a static file</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-06" version="45.7">
       <description>
         <p>This is a maintenance release. Changes:</p>
