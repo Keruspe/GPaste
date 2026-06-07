@@ -10,3 +10,12 @@ DBusActivatable=true
 Terminal=false
 Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
 StartupNotify=true
+Actions=prefs;about;
+
+[Desktop Action prefs]
+Name=Preferences
+Exec=gapplication action org.gnome.GPaste.Ui prefs
+
+[Desktop Action about]
+Name=About
+Exec=gapplication action org.gnome.GPaste.Ui about
