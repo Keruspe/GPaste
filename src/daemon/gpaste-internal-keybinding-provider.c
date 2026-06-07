@@ -92,7 +92,14 @@ internal_provider_change_grab_x11 (const guint32  *keycodes,
     Display *xdisplay = GDK_DISPLAY_XDISPLAY (display);
     Window window = gdk_x11_display_get_xrootwindow (display);
 
-    guint64 mod_masks = Mod2Mask /* NumLock */ | LockMask /* CapsLock */;
+    /* Grab with every combination of the "lock" modifiers (NumLock, CapsLock)
+     * so the shortcut fires regardless of their state. */
+    static const guint locked_mods[] = {
+        0,
+        Mod2Mask /* NumLock */,
+        LockMask /* CapsLock */,
+        Mod2Mask | LockMask,
+    };
     g_autoptr (GArray) mods = g_array_new (FALSE, TRUE, sizeof (XIGrabModifiers));
 
     guchar mask_bits[XIMaskLen (XI_LASTEVENT)] = { 0 };
@@ -102,13 +109,8 @@ internal_provider_change_grab_x11 (const guint32  *keycodes,
         g_array_append_val (mods, ((XIGrabModifiers) { XIAnyModifier, 0 }));
     else
     {
-        g_array_append_val (mods, ((XIGrabModifiers) { modifiers, 0 }));
-
-        for (guint64 i = 0; i < mod_masks; ++i)
-        {
-            if (i & mod_masks)
-                g_array_append_val (mods, ((XIGrabModifiers) { modifiers | i, 0 }));
-        }
+        for (guint64 i = 0; i < G_N_ELEMENTS (locked_mods); ++i)
+            g_array_append_val (mods, ((XIGrabModifiers) { modifiers | locked_mods[i], 0 }));
     }
 
     XISetMask (mask.mask, XI_KeyPress);

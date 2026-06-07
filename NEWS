@@ -1,3 +1,12 @@
+NEW in 45.8 (07/06/2026)
+=============
+
+- Fix use-after-free crash in the GNOME Shell search provider
+- Fix keyboard shortcuts not triggering when NumLock and CapsLock are both active
+- Fix memory leaks when re-copying history items and when rebinding shortcuts
+- Fix potential crash when enforcing a very small history size
+- Build: ship the GSettings schema as a static file
+
 NEW in 45.7 (06/06/2026)
 =============
 

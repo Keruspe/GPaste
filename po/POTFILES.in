@@ -2,7 +2,7 @@ data/control-center/42-gpaste.control-center.xml.in
 data/desktop/org.gnome.GPaste.Daemon.desktop.in.in
 data/desktop/org.gnome.GPaste.Preferences.desktop.in.in
 data/desktop/org.gnome.GPaste.Ui.desktop.in.in
-data/gsettings/org.gnome.GPaste.gschema.xml.in
+data/gsettings/org.gnome.GPaste.gschema.xml
 data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in
 src/client/gpaste-client.c
 src/daemon/gpaste-bus.c

@@ -211,9 +211,11 @@ static void
 g_paste_daemon_private_do_add_item (const GPasteDaemonPrivate *priv,
                                     GPasteItem                *item)
 {
-    g_paste_history_add (priv->history, item);
+    /* g_paste_history_add takes ownership; keep our own ref for the select call below */
+    g_paste_history_add (priv->history, g_object_ref (item));
     if (!g_paste_clipboards_manager_select (priv->clipboards_manager, item))
         g_paste_history_remove (priv->history, 0);
+    g_object_unref (item);
 }
 
 static void
