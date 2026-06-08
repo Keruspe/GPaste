@@ -1147,26 +1147,6 @@ use_internal_keybinding_provider (GPasteDaemon *self)
 }
 
 static void
-on_shell_client_ready (GObject      *source_object G_GNUC_UNUSED,
-                       GAsyncResult *res,
-                       gpointer      user_data)
-{
-    GPasteDaemon *self = user_data;
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteGnomeShellClient) shell_client = g_paste_gnome_shell_client_new_finish (res, &error);
-
-    if (error || !shell_client)
-    {
-        if (error)
-            g_warning ("Couldn't connect to gnome-shell: %s", error->message);
-        use_internal_keybinding_provider (self);
-        return;
-    }
-
-    g_paste_daemon_setup_keybinder (self, G_PASTE_KEYBINDING_PROVIDER (shell_client));
-}
-
-static void
 on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
                         GAsyncResult *res,
                         gpointer      user_data)
@@ -1177,8 +1157,8 @@ on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (error)
     {
-        g_warning ("Couldn't connect to GlobalShortcuts portal, falling back to gnome-shell: %s", error->message);
-        g_paste_gnome_shell_client_new (on_shell_client_ready, self);
+        g_warning ("Couldn't connect to GlobalShortcuts portal, falling back to X11: %s", error->message);
+        use_internal_keybinding_provider (self);
         return;
     }
 

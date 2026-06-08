@@ -115,7 +115,6 @@ subdir('man')
 subdir('po')
 subdir('src')
 subdir('data')
-subdir('tests')
 
 gnome.post_install(
   glib_compile_schemas: true,

@@ -28,9 +28,6 @@
 /* GPasteKeybindingProvider */
 #include <gpaste/gpaste-keybinding-provider.h>
 
-/* GPasteGnomeShellClient */
-#include <gpaste/gpaste-gnome-shell-client.h>
-
 /* GPasteScreensaverClient */
 #include <gpaste/gpaste-screensaver-client.h>
 

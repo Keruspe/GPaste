@@ -110,16 +110,14 @@ GPaste is a GNOME clipboard manager split across several binaries and a shared l
 
 The core library used by all other components. Two sub-modules:
 
-- `gpaste/` — daemon-agnostic types: `GpasteClient` (D-Bus client), `GpasteSettings` (GSettings wrapper), `GPasteGnomeShellClient` (GNOME Shell keybinding D-Bus proxy), `GPasteGlobalShortcutClient` (XDG GlobalShortcuts portal proxy), enums, utilities.
+- `gpaste/` — daemon-agnostic types: `GpasteClient` (D-Bus client), `GpasteSettings` (GSettings wrapper), `GPasteGlobalShortcutClient` (XDG GlobalShortcuts portal proxy), enums, utilities.
 - `gpaste-gtk4/` — GTK4 + Adwaita UI helpers (used by the preferences app).
 
 The library exposes a versioned ABI (symbol version scripts in `src/libgpaste/`). GIR and Vala bindings are generated from it.
 
-**`GPasteKeybindingProvider`** is a GObject interface (`G_DECLARE_INTERFACE`) that abstracts keybinding grabbing. It declares `grab_all(accels[])` / `ungrab_all()` vtable methods and a `keybinding-activated(const gchar *id)` signal. Implemented by `GPasteGnomeShellClient`, `GPasteGlobalShortcutClient`, and the daemon-internal `GPasteInternalKeybindingProvider`. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; }` is the transfer type between keybinder and provider; arrays are null-terminated by `.id = NULL`.
+**`GPasteKeybindingProvider`** is a GObject interface (`G_DECLARE_INTERFACE`) that abstracts keybinding grabbing. It declares `grab_all(accels[])` / `ungrab_all()` vtable methods and a `keybinding-activated(const gchar *id)` signal. Implemented by `GPasteGlobalShortcutClient` and the daemon-internal `GPasteInternalKeybindingProvider`. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; }` is the transfer type between keybinder and provider; arrays are null-terminated by `.id = NULL`.
 
 **`GPasteGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`). It implements `GPasteKeybindingProvider`; the portal session is created lazily on the first `grab_all` call. The public API is limited to constructors and the GObject type — all shortcut registration goes through the provider interface. Internally it stores registered shortcuts as a `GPtrArray` of private `_Shortcut` structs and handles the portal's Request/Response async pattern transparently.
-
-**`GPasteGnomeShellClient`** implements `GPasteKeybindingProvider` using GNOME Shell's `GrabAccelerators` D-Bus API. It stores a `GHashTable` mapping shortcut id → GNOME Shell action id, retries on `G_DBUS_ERROR_UNKNOWN_METHOD` (up to 10 times), and watches the shell bus name to re-grab on shell restart.
 
 **GObject type macros** — use these in `.c` files:
 
@@ -138,7 +136,7 @@ The background service. Owns the clipboard history and exposes it over D-Bus (`o
 
 - Clipboard watching (primary + clipboard selections)
 - Item types: text, password, image, URI
-- Keybinding registration via a three-level fallback: XDG GlobalShortcuts portal → GNOME Shell → internal X11/Wayland (`GPasteInternalKeybindingProvider`); all three implement `GPasteKeybindingProvider`
+- Keybinding registration via a two-level fallback: XDG GlobalShortcuts portal → internal X11/Wayland (`GPasteInternalKeybindingProvider`); both implement `GPasteKeybindingProvider`
 - History persistence to disk
 
 ### `src/client/` — `gpaste-client`

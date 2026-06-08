@@ -110,20 +110,6 @@ global:
     g_paste_keybinding_provider_grab_all;
     g_paste_keybinding_provider_ungrab_all;
 
-    g_paste_gnome_shell_client_get_type;
-    g_paste_gnome_shell_client_grab_accelerator;
-    g_paste_gnome_shell_client_grab_accelerator_finish;
-    g_paste_gnome_shell_client_grab_accelerator_sync;
-    g_paste_gnome_shell_client_grab_accelerators;
-    g_paste_gnome_shell_client_grab_accelerators_finish;
-    g_paste_gnome_shell_client_grab_accelerators_sync;
-    g_paste_gnome_shell_client_new;
-    g_paste_gnome_shell_client_new_finish;
-    g_paste_gnome_shell_client_new_sync;
-    g_paste_gnome_shell_client_ungrab_accelerator;
-    g_paste_gnome_shell_client_ungrab_accelerator_finish;
-    g_paste_gnome_shell_client_ungrab_accelerator_sync;
-
     g_paste_item_kind_get_type;
 
     g_paste_screensaver_client_get_type;
