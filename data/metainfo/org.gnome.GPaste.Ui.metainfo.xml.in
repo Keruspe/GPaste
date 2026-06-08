@@ -46,6 +46,22 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-08" version="50.0">
+      <description>
+        <p>This is a major release porting GPaste to GTK 4 and libadwaita. Changes:</p>
+        <ul>
+          <li>Port the daemon, history UI and preferences to GTK 4 and libadwaita</li>
+          <li>Show image thumbnails in the history, with configurable preview size</li>
+          <li>Support global keyboard shortcuts on Wayland through the XDG GlobalShortcuts portal</li>
+          <li>Recognise copied colours as dedicated colour items</li>
+          <li>Give keybindings human-readable descriptions and install a daemon desktop file</li>
+          <li>Fix images sometimes being repeatedly re-added to the history</li>
+          <li>Fix keyboard shortcuts not triggering when NumLock and CapsLock are both active</li>
+          <li>Fix several crashes (search provider, UI lifetime, GNOME Shell extension) and memory leaks</li>
+          <li>Modernise the GNOME Shell extension to current conventions</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-07" version="45.8">
       <description>
         <p>This is a maintenance release. Changes:</p>
