@@ -23,8 +23,6 @@ src/daemon/gpaste-history.c
 src/daemon/gpaste-history.h
 src/daemon/gpaste-image-item.c
 src/daemon/gpaste-image-item.h
-src/daemon/gpaste-internal-keybinding-provider.c
-src/daemon/gpaste-internal-keybinding-provider.h
 src/daemon/gpaste-item.c
 src/daemon/gpaste-item.h
 src/daemon/gpaste-keybinder.c
@@ -60,7 +58,6 @@ src/daemon/gpaste-uris-item.h
 src/daemon/main.c
 src/gnome-shell/aboutItem.js
 src/gnome-shell/actionButtonActor.js
-src/gnome-shell/checkerBypass.js
 src/gnome-shell/deleteButton.js
 src/gnome-shell/deleteItemPart.js
 src/gnome-shell/dummyHistoryItem.js
@@ -81,13 +78,9 @@ src/libgpaste/gpaste/gpaste-client-item.c
 src/libgpaste/gpaste/gpaste-client-item.h
 src/libgpaste/gpaste/gpaste-gdbus-defines.h
 src/libgpaste/gpaste/gpaste-gdbus-macros.h
-src/libgpaste/gpaste/gpaste-gnome-shell-client.c
-src/libgpaste/gpaste/gpaste-gnome-shell-client.h
 src/libgpaste/gpaste/gpaste-gsettings-keys.h
 src/libgpaste/gpaste/gpaste-item-enums.c
 src/libgpaste/gpaste/gpaste-item-enums.h
-src/libgpaste/gpaste/gpaste-keybinding-provider.c
-src/libgpaste/gpaste/gpaste-keybinding-provider.h
 src/libgpaste/gpaste/gpaste-macros.h
 src/libgpaste/gpaste/gpaste-screensaver-client.c
 src/libgpaste/gpaste/gpaste-screensaver-client.h
