@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:57+0200\n"
+"POT-Creation-Date: 2026-06-08 23:40+0200\n"
 "PO-Revision-Date: 2026-03-16 04:09+0000\n"
 "Last-Translator: தமிழ்நேரம் <tamilneram247@gmail.com>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/gpaste/gpaste/ta/"
@@ -1204,36 +1204,36 @@ msgstr "Gpaste டீமனுடன் இணைக்க முடியவி
 msgid "[Color]"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:903
+#: src/daemon/gpaste-daemon.c:266
 #, fuzzy
 msgid "Convert to Password"
 msgstr "கடவுச்சொல்லை மறுபெயரிடுங்கள்"
 
-#: src/daemon/gpaste-daemon.c:905
+#: src/daemon/gpaste-daemon.c:268
 #, fuzzy
 msgid "Pop from History"
 msgstr "வரலாற்று அணுகல்"
 
-#: src/daemon/gpaste-daemon.c:907
+#: src/daemon/gpaste-daemon.c:270
 #, fuzzy
 msgid "Show History"
 msgstr "வரலாற்று அணுகல்"
 
-#: src/daemon/gpaste-daemon.c:909
+#: src/daemon/gpaste-daemon.c:272
 #, fuzzy
 msgid "Sync Clipboard to Primary"
 msgstr "கிளிப்போர்டை முதன்மை தேர்வுக்கு ஒத்திசைக்கவும்"
 
-#: src/daemon/gpaste-daemon.c:911
+#: src/daemon/gpaste-daemon.c:274
 #, fuzzy
 msgid "Sync Primary to Clipboard"
 msgstr "முதன்மை தேர்வை கிளிப்போர்டுடன் ஒத்திசைக்கவும்"
 
-#: src/daemon/gpaste-daemon.c:913
+#: src/daemon/gpaste-daemon.c:276
 msgid "Launch UI"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:915
+#: src/daemon/gpaste-daemon.c:278
 msgid "Upload to Pastebin"
 msgstr ""
 

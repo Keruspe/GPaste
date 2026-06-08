@@ -17,6 +17,8 @@ src/daemon/gpaste-color-item.c
 src/daemon/gpaste-color-item.h
 src/daemon/gpaste-daemon.c
 src/daemon/gpaste-daemon.h
+src/daemon/gpaste-daemon-methods.c
+src/daemon/gpaste-daemon-methods.h
 src/daemon/gpaste-file-backend.c
 src/daemon/gpaste-file-backend.h
 src/daemon/gpaste-history.c

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:57+0200\n"
+"POT-Creation-Date: 2026-06-08 23:40+0200\n"
 "PO-Revision-Date: 2023-09-23 17:02+0000\n"
 "Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/gpaste/gpaste/de/"
@@ -1242,36 +1242,36 @@ msgstr "Verbindung zum GPaste-Daemon konnte nicht hergestellt werden"
 msgid "[Color]"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:903
+#: src/daemon/gpaste-daemon.c:266
 #, fuzzy
 msgid "Convert to Password"
 msgstr "Passwort umbenennen"
 
-#: src/daemon/gpaste-daemon.c:905
+#: src/daemon/gpaste-daemon.c:268
 #, fuzzy
 msgid "Pop from History"
 msgstr "Zugang zur Chronik"
 
-#: src/daemon/gpaste-daemon.c:907
+#: src/daemon/gpaste-daemon.c:270
 #, fuzzy
 msgid "Show History"
 msgstr "Zugang zur Chronik"
 
-#: src/daemon/gpaste-daemon.c:909
+#: src/daemon/gpaste-daemon.c:272
 #, fuzzy
 msgid "Sync Clipboard to Primary"
 msgstr "Die Zwischenablage mit der primären Auswahl synchronisieren"
 
-#: src/daemon/gpaste-daemon.c:911
+#: src/daemon/gpaste-daemon.c:274
 #, fuzzy
 msgid "Sync Primary to Clipboard"
 msgstr "Die primäre Auswahl mit der Zwischenablage synchronisieren"
 
-#: src/daemon/gpaste-daemon.c:913
+#: src/daemon/gpaste-daemon.c:276
 msgid "Launch UI"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:915
+#: src/daemon/gpaste-daemon.c:278
 msgid "Upload to Pastebin"
 msgstr ""
 

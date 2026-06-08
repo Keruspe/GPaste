@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:57+0200\n"
+"POT-Creation-Date: 2026-06-08 23:40+0200\n"
 "PO-Revision-Date: 2025-07-15 11:01+0000\n"
 "Last-Translator: magnogna <gabrielecasagrande@ik.me>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/gpaste/gpaste/it/"
@@ -1235,36 +1235,36 @@ msgstr "Impossibile connettersi al demone GPaste"
 msgid "[Color]"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:903
+#: src/daemon/gpaste-daemon.c:266
 #, fuzzy
 msgid "Convert to Password"
 msgstr "rinomina la password"
 
-#: src/daemon/gpaste-daemon.c:905
+#: src/daemon/gpaste-daemon.c:268
 #, fuzzy
 msgid "Pop from History"
 msgstr "Accesso alla cronologia"
 
-#: src/daemon/gpaste-daemon.c:907
+#: src/daemon/gpaste-daemon.c:270
 #, fuzzy
 msgid "Show History"
 msgstr "Accesso alla cronologia"
 
-#: src/daemon/gpaste-daemon.c:909
+#: src/daemon/gpaste-daemon.c:272
 #, fuzzy
 msgid "Sync Clipboard to Primary"
 msgstr "Sincronizza gli appunti alla selezione primaria"
 
-#: src/daemon/gpaste-daemon.c:911
+#: src/daemon/gpaste-daemon.c:274
 #, fuzzy
 msgid "Sync Primary to Clipboard"
 msgstr "Sincronizza la selezione primaria agli appunti"
 
-#: src/daemon/gpaste-daemon.c:913
+#: src/daemon/gpaste-daemon.c:276
 msgid "Launch UI"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:915
+#: src/daemon/gpaste-daemon.c:278
 msgid "Upload to Pastebin"
 msgstr ""
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:57+0200\n"
+"POT-Creation-Date: 2026-06-08 23:40+0200\n"
 "PO-Revision-Date: 2024-09-02 20:09+0000\n"
 "Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/gpaste/"
@@ -1291,36 +1291,36 @@ msgstr "Kunne ikke koble til GPaste-nisse igjen"
 msgid "[Color]"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:903
+#: src/daemon/gpaste-daemon.c:266
 #, fuzzy
 msgid "Convert to Password"
 msgstr "gi passordet et nytt navn"
 
-#: src/daemon/gpaste-daemon.c:905
+#: src/daemon/gpaste-daemon.c:268
 #, fuzzy
 msgid "Pop from History"
 msgstr "Historikkinnstillinger"
 
-#: src/daemon/gpaste-daemon.c:907
+#: src/daemon/gpaste-daemon.c:270
 #, fuzzy
 msgid "Show History"
 msgstr "Historikkinnstillinger"
 
-#: src/daemon/gpaste-daemon.c:909
+#: src/daemon/gpaste-daemon.c:272
 #, fuzzy
 msgid "Sync Clipboard to Primary"
 msgstr "Synkroniser utklippstavle til primærmarkering"
 
-#: src/daemon/gpaste-daemon.c:911
+#: src/daemon/gpaste-daemon.c:274
 #, fuzzy
 msgid "Sync Primary to Clipboard"
 msgstr "Synkroniser primær markering til utklippstavle"
 
-#: src/daemon/gpaste-daemon.c:913
+#: src/daemon/gpaste-daemon.c:276
 msgid "Launch UI"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:915
+#: src/daemon/gpaste-daemon.c:278
 msgid "Upload to Pastebin"
 msgstr ""
 

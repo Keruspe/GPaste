@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:57+0200\n"
+"POT-Creation-Date: 2026-06-08 23:40+0200\n"
 "PO-Revision-Date: 2025-04-15 16:05+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
@@ -1216,36 +1216,36 @@ msgstr "Не удалось подключиться к демону GPaste"
 msgid "[Color]"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:903
+#: src/daemon/gpaste-daemon.c:266
 #, fuzzy
 msgid "Convert to Password"
 msgstr "переименовать пароль"
 
-#: src/daemon/gpaste-daemon.c:905
+#: src/daemon/gpaste-daemon.c:268
 #, fuzzy
 msgid "Pop from History"
 msgstr "Доступ к истории"
 
-#: src/daemon/gpaste-daemon.c:907
+#: src/daemon/gpaste-daemon.c:270
 #, fuzzy
 msgid "Show History"
 msgstr "Доступ к истории"
 
-#: src/daemon/gpaste-daemon.c:909
+#: src/daemon/gpaste-daemon.c:272
 #, fuzzy
 msgid "Sync Clipboard to Primary"
 msgstr "Синхронизировать буфер обмена с основным выделением"
 
-#: src/daemon/gpaste-daemon.c:911
+#: src/daemon/gpaste-daemon.c:274
 #, fuzzy
 msgid "Sync Primary to Clipboard"
 msgstr "Синхронизировать основное выделение с буфером обмена"
 
-#: src/daemon/gpaste-daemon.c:913
+#: src/daemon/gpaste-daemon.c:276
 msgid "Launch UI"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:915
+#: src/daemon/gpaste-daemon.c:278
 msgid "Upload to Pastebin"
 msgstr ""
 
