@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-07 07:32+0200\n"
-"PO-Revision-Date: 2025-07-19 18:02+0000\n"
+"PO-Revision-Date: 2026-06-08 20:06+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "is/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n % 10 != 1 || n % 100 == 11;\n"
-"X-Generator: Weblate 5.13-dev\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: data/control-center/42-gpaste.control-center.xml.in:2
 msgid "@GETTEXT_PACKAGE@"
@@ -85,9 +85,8 @@ msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr "Klippispjald;Stýring;Stillingar;Kjörstillingar;Uppsetning;"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
 msgid "Clipboard Manager"
-msgstr "Rekja breytingar á klippispjaldi"
+msgstr "Klippispjaldstýring"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:7
@@ -133,19 +132,19 @@ msgstr "Sjálfgefið er einungis texti vistaður"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:40
 msgid "Show image previews in the history?"
-msgstr ""
+msgstr "Birta forskoðun mynda í vinnsluferli?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:41
 msgid "By default, we show previews of images in the history"
-msgstr ""
+msgstr "Sjálfgefið birtist forskoðun mynda í vinnsluferlinu"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
 msgid "Size of image previews in pixels"
-msgstr ""
+msgstr "Breidd forskoðunar mynda í mynddílum"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:50
 msgid "Default size is 100 pixels"
-msgstr ""
+msgstr "Sjálfgefin stærð er 100 mynddílar"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Do we close the UI after selecting an item?"
@@ -550,19 +549,16 @@ msgid "GNOME Shell extension improvements"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:99
-#, fuzzy
 msgid "GLib >= 2.76 is now required"
-msgstr "gcr 4 er núna nauðsynlegt"
+msgstr "GLib >= 2.76 er núna nauðsynlegt"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:108
-#, fuzzy
 msgid "Support for gnome 50"
-msgstr "Stuðningur við GNOME 48"
+msgstr "Stuðningur við GNOME 50"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:109
-#, fuzzy
 msgid "Support for gnome 49"
-msgstr "Stuðningur við GNOME 48"
+msgstr "Stuðningur við GNOME 49"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:118
 msgid "Support for gnome 48"
@@ -1116,7 +1112,7 @@ msgstr "Ekki tókst að tengjast GPaste-vaktaranum"
 
 #: src/daemon/gpaste-color-item.c:73
 msgid "[Color]"
-msgstr ""
+msgstr "[Litur]"
 
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:216
@@ -1130,9 +1126,8 @@ msgid "[Image, %d x %d (%s)]"
 msgstr "[mynd, %d x %d (%s)]"
 
 #: src/daemon/gpaste-make-password-keybinding.c:50
-#, fuzzy
 msgid "Convert to Password"
-msgstr "endurnefna lykilorðið"
+msgstr "Umbreyta í lykilorð"
 
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/gpaste-password-item.c:65
@@ -1140,32 +1135,28 @@ msgid "Password"
 msgstr "Lykilorð"
 
 #: src/daemon/gpaste-pop-keybinding.c:64
-#, fuzzy
 msgid "Pop from History"
-msgstr "Aðgangur að ferli"
+msgstr "Taka úr ferli"
 
 #: src/daemon/gpaste-show-history-keybinding.c:49
-#, fuzzy
 msgid "Show History"
-msgstr "Aðgangur að ferli"
+msgstr "Sýna feril"
 
 #: src/daemon/gpaste-sync-clipboard-to-primary-keybinding.c:46
-#, fuzzy
 msgid "Sync Clipboard to Primary"
-msgstr "Samstilla klippispjaldið við aðalval (primary - miðjuhnappur)"
+msgstr "Samstilla klippispjald við aðalval (primary - miðjuhnappur)"
 
 #: src/daemon/gpaste-sync-primary-to-clipboard-keybinding.c:46
-#, fuzzy
 msgid "Sync Primary to Clipboard"
-msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjaldið"
+msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjald"
 
 #: src/daemon/gpaste-ui-keybinding.c:43
 msgid "Launch UI"
-msgstr ""
+msgstr "Ræsa viðmótið"
 
 #: src/daemon/gpaste-upload-keybinding.c:64
 msgid "Upload to Pastebin"
-msgstr ""
+msgstr "Senda inn á Pastebin"
 
 #: src/daemon/gpaste-uris-item.c:87
 msgid "[Files] "
@@ -1312,9 +1303,8 @@ msgstr "Hámarksstærð einingar við birtingu"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:81
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:92
-#, fuzzy
 msgid "Images settings"
-msgstr "Stillingaviðmótið"
+msgstr "Stillingar mynda"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:94
 msgid "Images support"
@@ -1322,11 +1312,11 @@ msgstr "Stuðningur við myndir"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:100
 msgid "Image previews"
-msgstr ""
+msgstr "Forskoðun mynda"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:106
 msgid "Preview size"
-msgstr ""
+msgstr "Stærð forskoðunar"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:122
 msgid "Keyboard shortcuts"
@@ -1348,9 +1338,9 @@ msgstr "Hætta við"
 
 #. Translators: %s is the name of the history being emptied.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:126
-#, fuzzy, c-format
+#, c-format
 msgid "Do you really want to empty \"%s\"?"
-msgstr "Viltu örugglega tæma ferilinn?"
+msgstr "Viltu örugglega tæma \"%s\"?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:127
 #: src/ui/gpaste-ui-history.c:153 src/ui/gpaste-ui-history.c:426
@@ -1360,7 +1350,7 @@ msgstr "Tómt"
 
 #: src/ui/gpaste-ui.c:47
 msgid "Clipboard management system"
-msgstr ""
+msgstr "Klippispjaldsstjórnunarkerfi"
 
 #: src/ui/gpaste-ui-delete-item.c:46 src/ui/gpaste-ui-panel.c:355
 #: src/ui/gpaste-ui-panel.c:515
@@ -1372,17 +1362,16 @@ msgid "Edit"
 msgstr "Breyta"
 
 #: src/ui/gpaste-ui-history.c:264
-#, fuzzy
 msgid "No Results"
-msgstr "(Engar niðurstöður)"
+msgstr "Engar niðurstöður"
 
 #: src/ui/gpaste-ui-new-item.c:67
 msgid "Add new item"
-msgstr ""
+msgstr "Bæta við nýju atriði"
 
 #: src/ui/gpaste-ui-new-item.c:100
 msgid "New item"
-msgstr ""
+msgstr "Nýtt atriði"
 
 #: src/ui/gpaste-ui-panel.c:304
 msgid "Under which name do you want to backup this history?"
@@ -1394,14 +1383,13 @@ msgstr "Öryggisafrit"
 
 #. Translators: %s is the name of the history being deleted.
 #: src/ui/gpaste-ui-panel.c:354
-#, fuzzy, c-format
+#, c-format
 msgid "Are you sure you want to delete \"%s\"?"
-msgstr "Ertu viss um að þú viljir eyða þessum ferli?"
+msgstr "Ertu viss um að þú viljir eyða \"%s\"?"
 
 #: src/ui/gpaste-ui-panel.c:438
-#, fuzzy
 msgid "Switch to history"
-msgstr "skipta í annan feril"
+msgstr "Skipta í feril"
 
 #: src/ui/gpaste-ui-panel.c:445
 msgid "Switch to"
@@ -1445,17 +1433,15 @@ msgstr "Senda inn"
 
 #: src/ui/gpaste-ui-window.c:320
 msgid "Quit"
-msgstr ""
+msgstr "Hætta"
 
 #: src/ui/gpaste-ui-window.c:397
-#, fuzzy
 msgid "Histories"
-msgstr "Aðgangur að ferli"
+msgstr "Ferlar"
 
 #: src/ui/gpaste-ui-window.c:398
-#, fuzzy
 msgid "History"
-msgstr "Aðgangur að ferli"
+msgstr "Ferill"
 
 #~ msgid "is already running."
 #~ msgstr "er þegar í gangi."
