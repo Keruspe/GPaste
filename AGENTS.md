@@ -63,6 +63,11 @@ Code conventions (also following upstream):
 - **Manage signal lifecycles with `connectObject`/`disconnectObject`** (owner = `this`) for connections to long-lived non-actor GObjects (settings, the `GPaste.Client`), rather than tracking handler ids and disconnecting them by hand. They auto-disconnect when the owner actor is destroyed.
 - **Use a standard `constructor()` (calling `super(...)`) in `GObject.registerClass` classes**, not `_init()`/`super._init()`. GJS bridges to the `_init()`-based shell/St/Clutter base classes transparently (positional args like `super(0.0, 'GPaste')` and property dicts like `super({...})` both work).
 
+Async / `Gio._promisify` conventions (these bit us — keep them):
+- **`Gio._promisify` works on instance methods (`SomeClass.prototype`) but NOT on a static constructor (`SomeClass.new`) inside gnome-shell.** The wrapper assignment silently fails to stick on the class object (it works in standalone `gjs`, so it is easy to miss), and the *raw* introspected `new` then throws *"At least 1 argument required, but only 0 passed"* when awaited with no args. Promise-wrap the raw `new` + `new_finish` pair by hand instead — see `_connect` in `indicator.js`. `dependencies.js` promisifies only the instance methods.
+- **Don't pass a trailing `null` to a promisified async method that has no `cancellable`.** GPaste.Client's async methods are `(…args, callback, user_data)` with no cancellable; a trailing `null` lands in the callback slot and defeats `Gio._promisify` (the call hangs or returns `undefined`). Call them with their real args only: `await client.get_history_size(name)`, not `(name, null)`.
+- **`GLib.idle_add_once` / `GLib.timeout_add_once` take `(priority, func)`**, not `(func)`. Passing only the callback makes GJS treat the callback as the priority and dispatch with no function → *"callback is not a function"*. Always pass an explicit priority (e.g. `GLib.PRIORITY_DEFAULT_IDLE`) and keep the `GLib.Source.set_name_by_id(...)` wrapper.
+
 ## Memory management
 
 Always use GLib automatic memory management. Apply to every C file touched, not only the file under edit.

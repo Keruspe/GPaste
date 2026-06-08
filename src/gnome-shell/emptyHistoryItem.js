@@ -13,7 +13,7 @@ class GPasteEmptyHistoryItem extends GPasteActionButton {
     constructor(client, settings, menu) {
         super('edit-clear-all-symbolic', _('Empty history'), async () => {
             menu.itemActivated();
-            const name = await client.get_history_name(null);
+            const name = await client.get_history_name();
             GPaste.util_empty_with_confirmation(client, settings, name);
         });
     }

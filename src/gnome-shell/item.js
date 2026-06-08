@@ -61,7 +61,7 @@ class GPasteItem extends PopupMenuItem {
         if (index === -1) {
             this._setValue(null, oldIndex);
         } else {
-            const item = await this._client.get_element_at_index(index, null);
+            const item = await this._client.get_element_at_index(index);
             if (generation !== this._generation)
                 return;
             this._uuid = item.get_uuid();
@@ -79,7 +79,7 @@ class GPasteItem extends PopupMenuItem {
         if (uuid == null) {
             this._setValue(null, oldIndex);
         } else {
-            const value = await this._client.get_element(uuid, null);
+            const value = await this._client.get_element(uuid);
             if (generation !== this._generation)
                 return;
             this._setValue(value, oldIndex);

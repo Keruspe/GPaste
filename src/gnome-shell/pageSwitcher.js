@@ -5,6 +5,7 @@ import {Ornament, PopupBaseMenuItem} from 'resource:///org/gnome/shell/ui/popupM
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
+
 import {GPastePadding} from './padding.js';
 import {GPastePageItem} from './pageItem.js';
 
@@ -112,7 +113,7 @@ export const GPastePageSwitcher = GObject.registerClass({
     }
 
     _switch(page) {
-        if (!isNaN(page))
+        if (!Number.isNaN(page))
             this.emit('switch', page);
     }
 });

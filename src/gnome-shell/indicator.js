@@ -65,7 +65,18 @@ class GPasteIndicator extends Button {
 
     async _connect(retries = GPasteIndicator._CONNECT_RETRIES, delay = 1) {
         try {
-            return await GPaste.Client.new(null);
+            // GJS' Gio._promisify cannot replace the static GPaste.Client.new
+            // constructor inside gnome-shell (the class-object property assignment
+            // does not stick), so promise-wrap the raw async pair by hand.
+            return await new Promise((resolve, reject) => {
+                GPaste.Client.new((_source, res) => {
+                    try {
+                        resolve(GPaste.Client.new_finish(res));
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            });
         } catch (e) {
             if (retries <= 0) {
                 console.error(`GPaste: ${e.message}`);
@@ -159,7 +170,7 @@ class GPasteIndicator extends Button {
     async _onSearch(page) {
         if (this._hasSearch()) {
             const search = this._searchItem.text.toLowerCase();
-            this._searchResults = await this._client.search(search, null);
+            this._searchResults = await this._client.search(search);
             if (!this._client)
                 return;
             let results = this._searchResults.length;
@@ -215,10 +226,10 @@ class GPasteIndicator extends Button {
 
         this._pageSwitcher.setMaxDisplayedSize(newSize);
 
-        const name = await this._client.get_history_name(null);
+        const name = await this._client.get_history_name();
         if (!this._client)
             return;
-        const realSize = await this._client.get_history_size(name, null);
+        const realSize = await this._client.get_history_size(name);
         if (!this._client)
             return;
         const offset = this._pageSwitcher.getPageOffset();
@@ -251,7 +262,7 @@ class GPasteIndicator extends Button {
             const displayPos = position - offset;
             switch (action) {
             case GPaste.UpdateAction.REPLACE:
-                this._history[displayPos].refresh();
+                this._history[displayPos]?.refresh();
                 break;
             case GPaste.UpdateAction.REMOVE:
                 this._refresh(displayPos).catch(console.error);
@@ -273,10 +284,10 @@ class GPasteIndicator extends Button {
             });
             this._updateVisibility(true);
         } else {
-            const name = await this._client.get_history_name(null);
+            const name = await this._client.get_history_name();
             if (!this._client)
                 return;
-            const realSize = await this._client.get_history_size(name, null);
+            const realSize = await this._client.get_history_size(name);
             if (!this._client)
                 return;
 
@@ -353,7 +364,7 @@ class GPasteIndicator extends Button {
         if (state) {
             this._searchItem.reset();
             this._updatePage(1);
-            GLib.Source.set_name_by_id(GLib.idle_add_once(this._selectSearch.bind(this)), '[GPaste] select search');
+            GLib.Source.set_name_by_id(GLib.idle_add_once(GLib.PRIORITY_DEFAULT_IDLE, this._selectSearch.bind(this)), '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);
         }
