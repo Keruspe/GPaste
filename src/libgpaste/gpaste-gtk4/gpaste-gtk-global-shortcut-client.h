@@ -13,9 +13,36 @@ G_BEGIN_DECLS
 
 #define G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME "org.freedesktop.portal.Desktop"
 
+/**
+ * GPasteKeybindingAccelerator:
+ * @id: a unique string identifier for this shortcut (the dconf key)
+ * @accelerator: the trigger string (e.g., "<Super>V")
+ * @description: a human-readable, translated description shown in the portal UI
+ *
+ * Represents a global shortcut to be registered with a #GPasteGtkGlobalShortcutClient.
+ * Terminate an array of these with an entry whose @id is %NULL.
+ */
+typedef struct
+{
+    const gchar *id;
+    const gchar *accelerator;
+    const gchar *description;
+} GPasteKeybindingAccelerator;
+
+#define G_PASTE_KEYBINDING_ACCELERATOR(id, accelerator, description) \
+    ((GPasteKeybindingAccelerator) { (id), (accelerator), (description) })
+
 #define G_PASTE_TYPE_GTK_GLOBAL_SHORTCUT_CLIENT (g_paste_gtk_global_shortcut_client_get_type ())
 
 G_PASTE_FINAL_TYPE (GtkGlobalShortcutClient, gtk_global_shortcut_client, GTK_GLOBAL_SHORTCUT_CLIENT, GDBusProxy)
+
+/***********/
+/* Methods */
+/***********/
+
+void g_paste_gtk_global_shortcut_client_grab_all   (GPasteGtkGlobalShortcutClient     *self,
+                                                    const GPasteKeybindingAccelerator *accels);
+void g_paste_gtk_global_shortcut_client_ungrab_all (GPasteGtkGlobalShortcutClient     *self);
 
 /****************/
 /* Constructors */

@@ -2,10 +2,18 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste/gpaste-gdbus-macros.h>
-#include <gpaste/gpaste-keybinding-provider.h>
 #include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
 
 #include <gtk/gtk.h>
+
+enum
+{
+    KEYBINDING_ACTIVATED,
+
+    LAST_SIGNAL
+};
+
+static guint signals[LAST_SIGNAL] = { 0 };
 
 #define G_PASTE_GTK_GLOBAL_SHORTCUT_OBJECT_PATH    "/org/freedesktop/portal/desktop"
 #define G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE_NAME "org.freedesktop.portal.GlobalShortcuts"
@@ -77,10 +85,7 @@ struct _GPasteGtkGlobalShortcutClient
     GDBusProxy parent_instance;
 };
 
-static void global_shortcut_client_provider_init (GPasteKeybindingProviderInterface *iface);
-
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE (GtkGlobalShortcutClient, gtk_global_shortcut_client, G_TYPE_DBUS_PROXY,
-    G_PASTE_TYPE_KEYBINDING_PROVIDER, global_shortcut_client_provider_init)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkGlobalShortcutClient, gtk_global_shortcut_client, G_TYPE_DBUS_PROXY)
 
 /**********************/
 /* Shortcut variant   */
@@ -307,9 +312,9 @@ start_create_session_async (GPasteGtkGlobalShortcutClient *self,
                        on_create_session_method_done, data);
 }
 
-/**************************/
-/* GPasteKeybindingProvider */
-/**************************/
+/**********************/
+/* Shortcut grabbing  */
+/**********************/
 
 static void
 on_provider_bind_done (GObject      *source   G_GNUC_UNUSED,
@@ -321,11 +326,20 @@ on_provider_bind_done (GObject      *source   G_GNUC_UNUSED,
         g_warning ("GPasteGtkGlobalShortcutClient: BindShortcuts failed: %s", error->message);
 }
 
-static void
-global_shortcut_client_grab_all (GPasteKeybindingProvider          *provider,
-                                  const GPasteKeybindingAccelerator *accels)
+/**
+ * g_paste_gtk_global_shortcut_client_grab_all:
+ * @self: a #GPasteGtkGlobalShortcutClient
+ * @accels: (array): a %NULL-terminated (by id) array of #GPasteKeybindingAccelerator
+ *
+ * Replace all currently registered shortcuts with @accels.
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_global_shortcut_client_grab_all (GPasteGtkGlobalShortcutClient     *self,
+                                             const GPasteKeybindingAccelerator *accels)
 {
-    GPasteGtkGlobalShortcutClient *self = G_PASTE_GTK_GLOBAL_SHORTCUT_CLIENT (provider);
+    g_return_if_fail (_G_PASTE_IS_GTK_GLOBAL_SHORTCUT_CLIENT (self));
+    g_return_if_fail (accels);
+
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
 
     g_ptr_array_set_size (priv->shortcuts, 0);
@@ -343,10 +357,17 @@ global_shortcut_client_grab_all (GPasteKeybindingProvider          *provider,
         g_task_return_boolean (task, TRUE);
 }
 
-static void
-global_shortcut_client_ungrab_all (GPasteKeybindingProvider *provider)
+/**
+ * g_paste_gtk_global_shortcut_client_ungrab_all:
+ * @self: a #GPasteGtkGlobalShortcutClient
+ *
+ * Release all currently registered shortcuts.
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_global_shortcut_client_ungrab_all (GPasteGtkGlobalShortcutClient *self)
 {
-    GPasteGtkGlobalShortcutClient *self = G_PASTE_GTK_GLOBAL_SHORTCUT_CLIENT (provider);
+    g_return_if_fail (_G_PASTE_IS_GTK_GLOBAL_SHORTCUT_CLIENT (self));
+
     GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
 
     g_ptr_array_set_size (priv->shortcuts, 0);
@@ -356,13 +377,6 @@ global_shortcut_client_ungrab_all (GPasteKeybindingProvider *provider)
 
     g_autoptr (GTask) task = g_task_new (self, NULL, on_provider_bind_done, NULL);
     start_bind_async (self, task);
-}
-
-static void
-global_shortcut_client_provider_init (GPasteKeybindingProviderInterface *iface)
-{
-    iface->grab_all   = global_shortcut_client_grab_all;
-    iface->ungrab_all = global_shortcut_client_ungrab_all;
 }
 
 /**********************/
@@ -388,7 +402,7 @@ g_paste_gtk_global_shortcut_client_g_signal (GDBusProxy  *proxy,
                        &session_handle, &shortcut_id, &timestamp, &options);
 
         if (g_paste_str_equal (session_handle, priv->session_handle))
-            g_paste_keybinding_provider_emit_keybinding_activated (G_PASTE_KEYBINDING_PROVIDER (self), shortcut_id);
+            g_signal_emit (self, signals[KEYBINDING_ACTIVATED], 0, shortcut_id);
     }
 }
 
@@ -413,6 +427,25 @@ g_paste_gtk_global_shortcut_client_class_init (GPasteGtkGlobalShortcutClientClas
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_gtk_global_shortcut_client_dispose;
     G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_gtk_global_shortcut_client_g_signal;
+
+    /**
+     * GPasteGtkGlobalShortcutClient::keybinding-activated:
+     * @client: the object on which the signal was emitted
+     * @id: the id of the activated shortcut (its dconf key)
+     *
+     * The "keybinding-activated" signal is emitted when a registered shortcut
+     * is pressed by the user.
+     */
+    signals[KEYBINDING_ACTIVATED] = g_signal_new ("keybinding-activated",
+                                                  G_TYPE_FROM_CLASS (klass),
+                                                  G_SIGNAL_RUN_LAST,
+                                                  0,
+                                                  NULL, /* accumulator */
+                                                  NULL, /* accumulator data */
+                                                  g_cclosure_marshal_VOID__STRING,
+                                                  G_TYPE_NONE,
+                                                  1,
+                                                  G_TYPE_STRING);
 }
 
 static void

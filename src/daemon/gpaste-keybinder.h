@@ -4,7 +4,7 @@
 #pragma once
 
 #include <gpaste-keybinding.h>
-#include <gpaste/gpaste-keybinding-provider.h>
+#include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
 
 G_BEGIN_DECLS
 
@@ -17,7 +17,7 @@ void g_paste_keybinder_add_keybinding (GPasteKeybinder          *self,
 void g_paste_keybinder_activate_all   (GPasteKeybinder          *self);
 void g_paste_keybinder_deactivate_all (GPasteKeybinder          *self);
 
-GPasteKeybinder *g_paste_keybinder_new (GPasteSettings           *settings,
-                                        GPasteKeybindingProvider *provider);
+GPasteKeybinder *g_paste_keybinder_new (GPasteSettings                *settings,
+                                        GPasteGtkGlobalShortcutClient *provider);
 
 G_END_DECLS

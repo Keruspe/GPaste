@@ -25,9 +25,6 @@
 /* GPasteUtil */
 #include <gpaste/gpaste-util.h>
 
-/* GPasteKeybindingProvider */
-#include <gpaste/gpaste-keybinding-provider.h>
-
 /* GPasteScreensaverClient */
 #include <gpaste/gpaste-screensaver-client.h>
 

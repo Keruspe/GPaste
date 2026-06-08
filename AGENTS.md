@@ -109,14 +109,12 @@ GPaste is a GNOME clipboard manager split across several binaries and a shared l
 
 The core library used by all other components. Two sub-modules:
 
-- `gpaste/` — daemon-agnostic types: `GpasteClient` (D-Bus client), `GpasteSettings` (GSettings wrapper), `GPasteGlobalShortcutClient` (XDG GlobalShortcuts portal proxy), enums, utilities.
-- `gpaste-gtk4/` — GTK4 + Adwaita UI helpers (used by the preferences app).
+- `gpaste/` — daemon-agnostic types: `GpasteClient` (D-Bus client), `GpasteSettings` (GSettings wrapper), enums, utilities.
+- `gpaste-gtk4/` — GTK4 + Adwaita UI helpers (used by the preferences app) plus `GPasteGtkGlobalShortcutClient` (XDG GlobalShortcuts portal proxy).
 
 The library exposes a versioned ABI (symbol version scripts in `src/libgpaste/`). GIR and Vala bindings are generated from it.
 
-**`GPasteKeybindingProvider`** is a GObject interface (`G_DECLARE_INTERFACE`) that abstracts keybinding grabbing. It declares `grab_all(accels[])` / `ungrab_all()` vtable methods and a `keybinding-activated(const gchar *id)` signal. Implemented by `GPasteGlobalShortcutClient`. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; }` is the transfer type between keybinder and provider; arrays are null-terminated by `.id = NULL`.
-
-**`GPasteGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`). It implements `GPasteKeybindingProvider`; the portal session is created lazily on the first `grab_all` call. The public API is limited to constructors and the GObject type — all shortcut registration goes through the provider interface. Internally it stores registered shortcuts as a `GPtrArray` of private `_Shortcut` structs and handles the portal's Request/Response async pattern transparently.
+**`GPasteGtkGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`) as a `GDBusProxy` subclass. It is the daemon's only keybinding mechanism: `g_paste_gtk_global_shortcut_client_grab_all(accels[])` / `_ungrab_all()` register/release shortcuts and the `keybinding-activated(const gchar *id)` signal fires when one is pressed. The portal session is created lazily on the first `grab_all` call. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; const gchar *description; }` is the transfer type between keybinder and client; arrays are null-terminated by `.id = NULL`. Internally it stores registered shortcuts as a `GPtrArray` of private `_Shortcut` structs and handles the portal's Request/Response async pattern transparently.
 
 **GObject type macros** — use these in `.c` files:
 
@@ -135,7 +133,7 @@ The background service. Owns the clipboard history and exposes it over D-Bus (`o
 
 - Clipboard watching (primary + clipboard selections)
 - Item types: text, password, image, URI
-- Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGlobalShortcutClient`, implementing `GPasteKeybindingProvider`); if the portal is unavailable, keyboard shortcuts are simply disabled
+- Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGtkGlobalShortcutClient`, used directly by the keybinder); if the portal is unavailable, keyboard shortcuts are simply disabled
 - History persistence to disk
 
 ### `src/client/` — `gpaste-client`

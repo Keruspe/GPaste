@@ -105,10 +105,6 @@ global:
     g_paste_client_item_get_value;
     g_paste_client_item_new;
 
-    g_paste_keybinding_provider_emit_keybinding_activated;
-    g_paste_keybinding_provider_get_type;
-    g_paste_keybinding_provider_grab_all;
-    g_paste_keybinding_provider_ungrab_all;
 
     g_paste_item_kind_get_type;
 

@@ -1144,7 +1144,7 @@ on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    priv->keybinder = g_paste_keybinder_new (priv->settings, G_PASTE_KEYBINDING_PROVIDER (portal_client));
+    priv->keybinder = g_paste_keybinder_new (priv->settings, portal_client);
     g_paste_daemon_activate_default_keybindings (self);
 }
 

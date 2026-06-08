@@ -6,7 +6,6 @@ pkg = import('pkgconfig')
 libgpaste_sources = [
   'gpaste/gpaste-client-item.c',
   'gpaste/gpaste-client.c',
-  'gpaste/gpaste-keybinding-provider.c',
   'gpaste/gpaste-item-enums.c',
   'gpaste/gpaste-screensaver-client.c',
   'gpaste/gpaste-settings.c',
@@ -19,7 +18,6 @@ libgpaste_headers = [
   'gpaste/gpaste-client.h',
   'gpaste/gpaste-gdbus-defines.h',
   'gpaste/gpaste-gdbus-macros.h',
-  'gpaste/gpaste-keybinding-provider.h',
   'gpaste/gpaste-gsettings-keys.h',
   'gpaste/gpaste-item-enums.h',
   'gpaste/gpaste-macros.h',
