@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:33+0200\n"
+"POT-Creation-Date: 2026-06-08 22:57+0200\n"
 "PO-Revision-Date: 2021-08-17 10:34+0000\n"
 "Last-Translator: Luna Jernberg <droidbittin@gmail.com>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/gpaste/gpaste/sv/"
@@ -1224,6 +1224,39 @@ msgstr "Kunde inte ansluta till GPaste-tjänsten"
 msgid "[Color]"
 msgstr ""
 
+#: src/daemon/gpaste-daemon.c:903
+#, fuzzy
+msgid "Convert to Password"
+msgstr "Byt namn på lösenordet"
+
+#: src/daemon/gpaste-daemon.c:905
+#, fuzzy
+msgid "Pop from History"
+msgstr "Historikinställningar"
+
+#: src/daemon/gpaste-daemon.c:907
+#, fuzzy
+msgid "Show History"
+msgstr "Historikinställningar"
+
+#: src/daemon/gpaste-daemon.c:909
+#, fuzzy
+msgid "Sync Clipboard to Primary"
+msgstr "Synkronisera urklipp med primär markering"
+
+#: src/daemon/gpaste-daemon.c:911
+#, fuzzy
+msgid "Sync Primary to Clipboard"
+msgstr "Synkronisera primär markering med urklipp"
+
+#: src/daemon/gpaste-daemon.c:913
+msgid "Launch UI"
+msgstr ""
+
+#: src/daemon/gpaste-daemon.c:915
+msgid "Upload to Pastebin"
+msgstr ""
+
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:219
 msgid "%m/%d/%y %T"
@@ -1235,43 +1268,10 @@ msgstr "%y-%m-%d %T"
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Bild, %d x %d (%s)]"
 
-#: src/daemon/gpaste-make-password-keybinding.c:50
-#, fuzzy
-msgid "Convert to Password"
-msgstr "Byt namn på lösenordet"
-
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/gpaste-password-item.c:65
 msgid "Password"
 msgstr "Lösenord"
-
-#: src/daemon/gpaste-pop-keybinding.c:64
-#, fuzzy
-msgid "Pop from History"
-msgstr "Historikinställningar"
-
-#: src/daemon/gpaste-show-history-keybinding.c:49
-#, fuzzy
-msgid "Show History"
-msgstr "Historikinställningar"
-
-#: src/daemon/gpaste-sync-clipboard-to-primary-keybinding.c:46
-#, fuzzy
-msgid "Sync Clipboard to Primary"
-msgstr "Synkronisera urklipp med primär markering"
-
-#: src/daemon/gpaste-sync-primary-to-clipboard-keybinding.c:46
-#, fuzzy
-msgid "Sync Primary to Clipboard"
-msgstr "Synkronisera primär markering med urklipp"
-
-#: src/daemon/gpaste-ui-keybinding.c:43
-msgid "Launch UI"
-msgstr ""
-
-#: src/daemon/gpaste-upload-keybinding.c:64
-msgid "Upload to Pastebin"
-msgstr ""
 
 #: src/daemon/gpaste-uris-item.c:87
 msgid "[Files] "

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:33+0200\n"
+"POT-Creation-Date: 2026-06-08 22:57+0200\n"
 "PO-Revision-Date: 2021-02-18 20:50+0000\n"
 "Last-Translator: Matej U <mateju@svn.gnome.org>\n"
 "Language-Team: Slovenian <https://hosted.weblate.org/projects/gpaste/gpaste/"
@@ -1166,6 +1166,37 @@ msgstr ""
 msgid "[Color]"
 msgstr ""
 
+#: src/daemon/gpaste-daemon.c:903
+#, fuzzy
+msgid "Convert to Password"
+msgstr "preimenuj geslo"
+
+#: src/daemon/gpaste-daemon.c:905
+#, fuzzy
+msgid "Pop from History"
+msgstr "izbriši zgodovino"
+
+#: src/daemon/gpaste-daemon.c:907
+#, fuzzy
+msgid "Show History"
+msgstr "izbriši zgodovino"
+
+#: src/daemon/gpaste-daemon.c:909
+msgid "Sync Clipboard to Primary"
+msgstr ""
+
+#: src/daemon/gpaste-daemon.c:911
+msgid "Sync Primary to Clipboard"
+msgstr ""
+
+#: src/daemon/gpaste-daemon.c:913
+msgid "Launch UI"
+msgstr ""
+
+#: src/daemon/gpaste-daemon.c:915
+msgid "Upload to Pastebin"
+msgstr ""
+
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:219
 msgid "%m/%d/%y %T"
@@ -1177,41 +1208,10 @@ msgstr ""
 msgid "[Image, %d x %d (%s)]"
 msgstr ""
 
-#: src/daemon/gpaste-make-password-keybinding.c:50
-#, fuzzy
-msgid "Convert to Password"
-msgstr "preimenuj geslo"
-
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/gpaste-password-item.c:65
 msgid "Password"
 msgstr "Geslo"
-
-#: src/daemon/gpaste-pop-keybinding.c:64
-#, fuzzy
-msgid "Pop from History"
-msgstr "izbriši zgodovino"
-
-#: src/daemon/gpaste-show-history-keybinding.c:49
-#, fuzzy
-msgid "Show History"
-msgstr "izbriši zgodovino"
-
-#: src/daemon/gpaste-sync-clipboard-to-primary-keybinding.c:46
-msgid "Sync Clipboard to Primary"
-msgstr ""
-
-#: src/daemon/gpaste-sync-primary-to-clipboard-keybinding.c:46
-msgid "Sync Primary to Clipboard"
-msgstr ""
-
-#: src/daemon/gpaste-ui-keybinding.c:43
-msgid "Launch UI"
-msgstr ""
-
-#: src/daemon/gpaste-upload-keybinding.c:64
-msgid "Upload to Pastebin"
-msgstr ""
 
 #: src/daemon/gpaste-uris-item.c:87
 msgid "[Files] "

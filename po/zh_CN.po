@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.38.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:33+0200\n"
+"POT-Creation-Date: 2026-06-08 22:57+0200\n"
 "PO-Revision-Date: 2026-02-27 19:09+0000\n"
 "Last-Translator: ayasa520 <ayasa0520@gmail.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
@@ -1184,6 +1184,39 @@ msgstr "无法连接GPaste守护进程"
 msgid "[Color]"
 msgstr ""
 
+#: src/daemon/gpaste-daemon.c:903
+#, fuzzy
+msgid "Convert to Password"
+msgstr "更改密码名称"
+
+#: src/daemon/gpaste-daemon.c:905
+#, fuzzy
+msgid "Pop from History"
+msgstr "记录访问"
+
+#: src/daemon/gpaste-daemon.c:907
+#, fuzzy
+msgid "Show History"
+msgstr "记录访问"
+
+#: src/daemon/gpaste-daemon.c:909
+#, fuzzy
+msgid "Sync Clipboard to Primary"
+msgstr "同步剪切板到主选择项"
+
+#: src/daemon/gpaste-daemon.c:911
+#, fuzzy
+msgid "Sync Primary to Clipboard"
+msgstr "同步主选择项到剪切板"
+
+#: src/daemon/gpaste-daemon.c:913
+msgid "Launch UI"
+msgstr ""
+
+#: src/daemon/gpaste-daemon.c:915
+msgid "Upload to Pastebin"
+msgstr ""
+
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:219
 msgid "%m/%d/%y %T"
@@ -1195,43 +1228,10 @@ msgstr "%m/%d/%y %T"
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Image, %d x %d (%s)]"
 
-#: src/daemon/gpaste-make-password-keybinding.c:50
-#, fuzzy
-msgid "Convert to Password"
-msgstr "更改密码名称"
-
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/gpaste-password-item.c:65
 msgid "Password"
 msgstr "密码"
-
-#: src/daemon/gpaste-pop-keybinding.c:64
-#, fuzzy
-msgid "Pop from History"
-msgstr "记录访问"
-
-#: src/daemon/gpaste-show-history-keybinding.c:49
-#, fuzzy
-msgid "Show History"
-msgstr "记录访问"
-
-#: src/daemon/gpaste-sync-clipboard-to-primary-keybinding.c:46
-#, fuzzy
-msgid "Sync Clipboard to Primary"
-msgstr "同步剪切板到主选择项"
-
-#: src/daemon/gpaste-sync-primary-to-clipboard-keybinding.c:46
-#, fuzzy
-msgid "Sync Primary to Clipboard"
-msgstr "同步主选择项到剪切板"
-
-#: src/daemon/gpaste-ui-keybinding.c:43
-msgid "Launch UI"
-msgstr ""
-
-#: src/daemon/gpaste-upload-keybinding.c:64
-msgid "Upload to Pastebin"
-msgstr ""
 
 #: src/daemon/gpaste-uris-item.c:87
 msgid "[Files] "

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpaste 3.40.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:33+0200\n"
+"POT-Creation-Date: 2026-06-08 22:57+0200\n"
 "PO-Revision-Date: 2021-05-30 16:32+0000\n"
 "Last-Translator: F4 Developer <skowanski@f4dev.me>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/gpaste/gpaste/pl/"
@@ -1228,6 +1228,39 @@ msgstr "Nie można było połączyć się z daemonem GPaste"
 msgid "[Color]"
 msgstr ""
 
+#: src/daemon/gpaste-daemon.c:903
+#, fuzzy
+msgid "Convert to Password"
+msgstr "zmień nazwę hasła"
+
+#: src/daemon/gpaste-daemon.c:905
+#, fuzzy
+msgid "Pop from History"
+msgstr "Ustawienia historii"
+
+#: src/daemon/gpaste-daemon.c:907
+#, fuzzy
+msgid "Show History"
+msgstr "Ustawienia historii"
+
+#: src/daemon/gpaste-daemon.c:909
+#, fuzzy
+msgid "Sync Clipboard to Primary"
+msgstr "Synchronizuj schowek do pierwszego zaznaczenia"
+
+#: src/daemon/gpaste-daemon.c:911
+#, fuzzy
+msgid "Sync Primary to Clipboard"
+msgstr "Synchronizuj pierwsze zaznaczenie do schowka"
+
+#: src/daemon/gpaste-daemon.c:913
+msgid "Launch UI"
+msgstr ""
+
+#: src/daemon/gpaste-daemon.c:915
+msgid "Upload to Pastebin"
+msgstr ""
+
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:219
 msgid "%m/%d/%y %T"
@@ -1239,43 +1272,10 @@ msgstr "%d/%m/%y %T"
 msgid "[Image, %d x %d (%s)]"
 msgstr "[Obraz, %d x %d (%s)]"
 
-#: src/daemon/gpaste-make-password-keybinding.c:50
-#, fuzzy
-msgid "Convert to Password"
-msgstr "zmień nazwę hasła"
-
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/gpaste-password-item.c:65
 msgid "Password"
 msgstr "Hasło"
-
-#: src/daemon/gpaste-pop-keybinding.c:64
-#, fuzzy
-msgid "Pop from History"
-msgstr "Ustawienia historii"
-
-#: src/daemon/gpaste-show-history-keybinding.c:49
-#, fuzzy
-msgid "Show History"
-msgstr "Ustawienia historii"
-
-#: src/daemon/gpaste-sync-clipboard-to-primary-keybinding.c:46
-#, fuzzy
-msgid "Sync Clipboard to Primary"
-msgstr "Synchronizuj schowek do pierwszego zaznaczenia"
-
-#: src/daemon/gpaste-sync-primary-to-clipboard-keybinding.c:46
-#, fuzzy
-msgid "Sync Primary to Clipboard"
-msgstr "Synchronizuj pierwsze zaznaczenie do schowka"
-
-#: src/daemon/gpaste-ui-keybinding.c:43
-msgid "Launch UI"
-msgstr ""
-
-#: src/daemon/gpaste-upload-keybinding.c:64
-msgid "Upload to Pastebin"
-msgstr ""
 
 #: src/daemon/gpaste-uris-item.c:87
 msgid "[Files] "

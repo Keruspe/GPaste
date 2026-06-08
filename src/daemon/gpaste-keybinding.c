@@ -3,6 +3,11 @@
 
 #include <gpaste-keybinding.h>
 
+struct _GPasteKeybinding
+{
+    GObject parent_instance;
+};
+
 typedef struct _GPasteKeybindingPrivate
 {
     GPasteKeybindingGetter getter;
@@ -15,7 +20,7 @@ typedef struct _GPasteKeybindingPrivate
     guint32               *keycodes;
 } GPasteKeybindingPrivate;
 
-G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (Keybinding, keybinding, G_TYPE_OBJECT)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Keybinding, keybinding, G_TYPE_OBJECT)
 
 /**
  * g_paste_keybinding_get_modifiers:
@@ -271,12 +276,11 @@ g_paste_keybinding_init (GPasteKeybinding *self)
 
 /**
  * g_paste_keybinding_new:
- * @type: the type of the subclass to instantiate
  * @dconf_key: the dconf key to watch
  * @description: a human-readable, translated description of the action
  * @getter: (scope notified): the getter to use to get the binding
  * @callback: (closure user_data) (scope notified): the callback to call when activated
- * @user_data: (closure): the data to pass to @callback, defaults to self/this
+ * @user_data: (closure): the data to pass to @callback
  *
  * Create a new instance of #GPasteKeybinding
  *
@@ -284,19 +288,17 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteKeybinding *
-g_paste_keybinding_new (GType                  type,
-                         const gchar           *dconf_key,
+g_paste_keybinding_new (const gchar           *dconf_key,
                          const gchar           *description,
                          GPasteKeybindingGetter getter,
                          GPasteKeybindingFunc   callback,
                          gpointer               user_data)
 {
-    g_return_val_if_fail (g_type_is_a (type, G_PASTE_TYPE_KEYBINDING), NULL);
     g_return_val_if_fail (dconf_key, NULL);
     g_return_val_if_fail (getter, NULL);
     g_return_val_if_fail (callback, NULL);
 
-    GPasteKeybinding *self = g_object_new (type, NULL);
+    GPasteKeybinding *self = g_object_new (G_PASTE_TYPE_KEYBINDING, NULL);
     GPasteKeybindingPrivate *priv = g_paste_keybinding_get_instance_private (self);
 
     priv->getter = getter;

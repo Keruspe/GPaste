@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 22:33+0200\n"
+"POT-Creation-Date: 2026-06-08 22:57+0200\n"
 "PO-Revision-Date: 2026-06-08 20:06+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
@@ -1168,6 +1168,34 @@ msgstr "Ekki tókst að tengjast GPaste-vaktaranum"
 msgid "[Color]"
 msgstr "[Litur]"
 
+#: src/daemon/gpaste-daemon.c:903
+msgid "Convert to Password"
+msgstr "Umbreyta í lykilorð"
+
+#: src/daemon/gpaste-daemon.c:905
+msgid "Pop from History"
+msgstr "Taka úr ferli"
+
+#: src/daemon/gpaste-daemon.c:907
+msgid "Show History"
+msgstr "Sýna feril"
+
+#: src/daemon/gpaste-daemon.c:909
+msgid "Sync Clipboard to Primary"
+msgstr "Samstilla klippispjald við aðalval (primary - miðjuhnappur)"
+
+#: src/daemon/gpaste-daemon.c:911
+msgid "Sync Primary to Clipboard"
+msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjald"
+
+#: src/daemon/gpaste-daemon.c:913
+msgid "Launch UI"
+msgstr "Ræsa viðmótið"
+
+#: src/daemon/gpaste-daemon.c:915
+msgid "Upload to Pastebin"
+msgstr "Senda inn á Pastebin"
+
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:219
 msgid "%m/%d/%y %T"
@@ -1179,38 +1207,10 @@ msgstr "%m/%d/%y %T"
 msgid "[Image, %d x %d (%s)]"
 msgstr "[mynd, %d x %d (%s)]"
 
-#: src/daemon/gpaste-make-password-keybinding.c:50
-msgid "Convert to Password"
-msgstr "Umbreyta í lykilorð"
-
 #. This is the prefix displayed in history to identify a password
 #: src/daemon/gpaste-password-item.c:65
 msgid "Password"
 msgstr "Lykilorð"
-
-#: src/daemon/gpaste-pop-keybinding.c:64
-msgid "Pop from History"
-msgstr "Taka úr ferli"
-
-#: src/daemon/gpaste-show-history-keybinding.c:49
-msgid "Show History"
-msgstr "Sýna feril"
-
-#: src/daemon/gpaste-sync-clipboard-to-primary-keybinding.c:46
-msgid "Sync Clipboard to Primary"
-msgstr "Samstilla klippispjald við aðalval (primary - miðjuhnappur)"
-
-#: src/daemon/gpaste-sync-primary-to-clipboard-keybinding.c:46
-msgid "Sync Primary to Clipboard"
-msgstr "Samstilla aðalval (primary - miðjuhnappur) við klippispjald"
-
-#: src/daemon/gpaste-ui-keybinding.c:43
-msgid "Launch UI"
-msgstr "Ræsa viðmótið"
-
-#: src/daemon/gpaste-upload-keybinding.c:64
-msgid "Upload to Pastebin"
-msgstr "Senda inn á Pastebin"
 
 #: src/daemon/gpaste-uris-item.c:87
 msgid "[Files] "

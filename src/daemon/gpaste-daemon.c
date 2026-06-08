@@ -1,16 +1,12 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-clipboards-manager.h>
+#include <gpaste-daemon.h>
+#include <gpaste-history.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
 #include <gpaste-image-item.h>
-#include <gpaste-make-password-keybinding.h>
-#include <gpaste-pop-keybinding.h>
-#include <gpaste-show-history-keybinding.h>
-#include <gpaste-sync-clipboard-to-primary-keybinding.h>
-#include <gpaste-sync-primary-to-clipboard-keybinding.h>
-#include <gpaste-ui-keybinding.h>
-#include <gpaste-upload-keybinding.h>
 
 #include <string.h>
 
@@ -838,6 +834,65 @@ _g_paste_daemon_upload (GPasteDaemon     *self,
 }
 
 static void
+keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
+                          gpointer          data)
+{
+    GPasteHistory *history = data;
+    const GPasteItem *first = g_paste_history_get (history, 0);
+
+    if (!first)
+        return;
+
+    g_paste_history_set_password (history, g_paste_item_get_uuid (first), NULL);
+}
+
+static void
+keybinding_pop (GPasteKeybinding *self G_GNUC_UNUSED,
+                gpointer          data)
+{
+    g_paste_history_remove (data, 0);
+}
+
+static void
+keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUSED,
+                         gpointer          data)
+{
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_show_history (data, &error);
+    if (error)
+        g_warning ("Failed to show history: %s", error->message);
+}
+
+static void
+keybinding_sync_clipboard_to_primary (GPasteKeybinding *self G_GNUC_UNUSED,
+                                      gpointer          data)
+{
+    g_paste_clipboards_manager_sync_from_to (data, TRUE);
+}
+
+static void
+keybinding_sync_primary_to_clipboard (GPasteKeybinding *self G_GNUC_UNUSED,
+                                      gpointer          data)
+{
+    g_paste_clipboards_manager_sync_from_to (data, FALSE);
+}
+
+static void
+keybinding_launch_ui (GPasteKeybinding *self G_GNUC_UNUSED,
+                      gpointer          data G_GNUC_UNUSED)
+{
+    g_paste_util_spawn ("Ui");
+}
+
+static void
+keybinding_upload (GPasteKeybinding *self G_GNUC_UNUSED,
+                   gpointer          data)
+{
+    g_paste_daemon_upload (data, NULL);
+}
+
+static void
 g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
 {
     const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
@@ -845,13 +900,20 @@ g_paste_daemon_activate_default_keybindings (GPasteDaemon *self)
     GPasteHistory *history = priv->history;
     GPasteClipboardsManager *clipboards_manager = priv->clipboards_manager;
     GPasteKeybinding *keybindings[] = {
-        g_paste_make_password_keybinding_new (history),
-        g_paste_pop_keybinding_new (history),
-        g_paste_show_history_keybinding_new (self),
-        g_paste_sync_clipboard_to_primary_keybinding_new (clipboards_manager),
-        g_paste_sync_primary_to_clipboard_keybinding_new (clipboards_manager),
-        g_paste_ui_keybinding_new (),
-        g_paste_upload_keybinding_new (self)
+        g_paste_keybinding_new (G_PASTE_MAKE_PASSWORD_SETTING, _("Convert to Password"),
+                                g_paste_settings_get_make_password, keybinding_make_password, history),
+        g_paste_keybinding_new (G_PASTE_POP_SETTING, _("Pop from History"),
+                                g_paste_settings_get_pop, keybinding_pop, history),
+        g_paste_keybinding_new (G_PASTE_SHOW_HISTORY_SETTING, _("Show History"),
+                                g_paste_settings_get_show_history, keybinding_show_history, self),
+        g_paste_keybinding_new (G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING, _("Sync Clipboard to Primary"),
+                                g_paste_settings_get_sync_clipboard_to_primary, keybinding_sync_clipboard_to_primary, clipboards_manager),
+        g_paste_keybinding_new (G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING, _("Sync Primary to Clipboard"),
+                                g_paste_settings_get_sync_primary_to_clipboard, keybinding_sync_primary_to_clipboard, clipboards_manager),
+        g_paste_keybinding_new (G_PASTE_LAUNCH_UI_SETTING, _("Launch UI"),
+                                g_paste_settings_get_launch_ui, keybinding_launch_ui, NULL),
+        g_paste_keybinding_new (G_PASTE_UPLOAD_SETTING, _("Upload to Pastebin"),
+                                g_paste_settings_get_upload, keybinding_upload, self)
     };
 
     for (guint64 k = 0; k < G_N_ELEMENTS (keybindings); ++k)

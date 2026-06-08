@@ -11,12 +11,7 @@ G_BEGIN_DECLS
 
 #define G_PASTE_TYPE_KEYBINDING (g_paste_keybinding_get_type ())
 
-G_PASTE_DERIVABLE_TYPE (Keybinding, keybinding, KEYBINDING, GObject)
-
-struct _GPasteKeybindingClass
-{
-    GObjectClass parent_class;
-};
+G_PASTE_FINAL_TYPE (Keybinding, keybinding, KEYBINDING, GObject)
 
 typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
 typedef void         (*GPasteKeybindingFunc)   (GPasteKeybinding *self,
@@ -38,8 +33,7 @@ void            g_paste_keybinding_notify        (GPasteKeybinding *self,
                                                   GdkModifierType   modifiers,
                                                   guint64           keycode);
 
-GPasteKeybinding *g_paste_keybinding_new (GType                  type,
-                                          const gchar           *dconf_key,
+GPasteKeybinding *g_paste_keybinding_new (const gchar           *dconf_key,
                                           const gchar           *description,
                                           GPasteKeybindingGetter getter,
                                           GPasteKeybindingFunc   callback,
