@@ -19,7 +19,6 @@ Common build options (`meson .. -Doption=value`):
 | `gnome-shell` | true | Build the GNOME Shell extension |
 | `introspection` | true | Generate GIR data |
 | `vapi` | true | Generate Vala bindings (requires introspection) |
-| `x-keybinder` | true | X11 keybinder support |
 | `systemd` | true | systemd user unit |
 
 To disable the GTK UI components for a minimal daemon-only build:
@@ -95,7 +94,7 @@ Key rules:
 - When storing a `g_settings_get_string` value (owned, `(transfer full)`) into a `gchar *` field, free the old value and take ownership directly: `g_free(field); field = g_settings_get_string(...)`. Do **not** assign without freeing first (leak on re-assignment), and do **not** route it through `g_set_str` (that would re-`g_strdup` an already-owned string — a wasted allocation).
 - For a stored `GSource`/timeout/idle/signal handler id, prefer `g_clear_handle_id (&id, remove_func)` over the hand-rolled `if (id) { remove_func (id); id = 0; }` — it is NULL-safe and nulls the field in one call (e.g. `g_clear_handle_id (&priv->retry_source, g_source_remove)`). Use this in new code and when touching such cleanup.
 - Build NULL-terminated string vectors with `GStrvBuilder` (`g_strv_builder_add` for borrowed strings, `g_strv_builder_take` for owned ones, `g_strv_builder_end` to get the `GStrv`) rather than hand-managing a `GPtrArray` + manual `NULL` terminator + `(GStrv) ->pdata` cast. It also avoids the deep `g_strdupv` copy that returning a `GPtrArray`'s contents requires.
-- Prefer `g_signal_connect_object (source, sig, cb, gobject, 0)` over plain `g_signal_connect` when the handler's data is a **GObject** shorter-lived than the signal source and you would otherwise not disconnect — it auto-disconnects when that object is finalized. Do **not** convert sites that pass non-GObject data (a `priv`/struct pointer), pass `NULL` data, or that deliberately disconnect early in `dispose` for ordering reasons (e.g. `GPasteInternalKeybindingProvider` disconnects its `GdkDisplay::xevent` handler before freeing the state that handler uses — `g_signal_connect_object` would only disconnect at finalize and regress that).
+- Prefer `g_signal_connect_object (source, sig, cb, gobject, 0)` over plain `g_signal_connect` when the handler's data is a **GObject** shorter-lived than the signal source and you would otherwise not disconnect — it auto-disconnects when that object is finalized. Do **not** convert sites that pass non-GObject data (a `priv`/struct pointer), pass `NULL` data, or that deliberately disconnect early in `dispose` for ordering reasons (where `g_signal_connect_object` would only disconnect at finalize and regress that ordering).
 
 ## Maintenance rules
 
@@ -115,7 +114,7 @@ The core library used by all other components. Two sub-modules:
 
 The library exposes a versioned ABI (symbol version scripts in `src/libgpaste/`). GIR and Vala bindings are generated from it.
 
-**`GPasteKeybindingProvider`** is a GObject interface (`G_DECLARE_INTERFACE`) that abstracts keybinding grabbing. It declares `grab_all(accels[])` / `ungrab_all()` vtable methods and a `keybinding-activated(const gchar *id)` signal. Implemented by `GPasteGlobalShortcutClient` and the daemon-internal `GPasteInternalKeybindingProvider`. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; }` is the transfer type between keybinder and provider; arrays are null-terminated by `.id = NULL`.
+**`GPasteKeybindingProvider`** is a GObject interface (`G_DECLARE_INTERFACE`) that abstracts keybinding grabbing. It declares `grab_all(accels[])` / `ungrab_all()` vtable methods and a `keybinding-activated(const gchar *id)` signal. Implemented by `GPasteGlobalShortcutClient`. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; }` is the transfer type between keybinder and provider; arrays are null-terminated by `.id = NULL`.
 
 **`GPasteGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`). It implements `GPasteKeybindingProvider`; the portal session is created lazily on the first `grab_all` call. The public API is limited to constructors and the GObject type — all shortcut registration goes through the provider interface. Internally it stores registered shortcuts as a `GPtrArray` of private `_Shortcut` structs and handles the portal's Request/Response async pattern transparently.
 
@@ -136,7 +135,7 @@ The background service. Owns the clipboard history and exposes it over D-Bus (`o
 
 - Clipboard watching (primary + clipboard selections)
 - Item types: text, password, image, URI
-- Keybinding registration via a two-level fallback: XDG GlobalShortcuts portal → internal X11/Wayland (`GPasteInternalKeybindingProvider`); both implement `GPasteKeybindingProvider`
+- Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGlobalShortcutClient`, implementing `GPasteKeybindingProvider`); if the portal is unavailable, keyboard shortcuts are simply disabled
 - History persistence to disk
 
 ### `src/client/` — `gpaste-client`
@@ -186,7 +185,7 @@ Translations managed via Weblate. Add new strings to the relevant `.c` source wi
 - GTK4 ≥ 4.12 + libadwaita ≥ 1.9 (UI and preferences; 1.9 required for `AdwSidebar`)
 - GCR (`gcr-4`) ≥ 3.90 (password item storage)
 - gjs ≥ 1.78 (GNOME Shell extension runtime)
-- Optional: libX11 + libXI (x-keybinder)
+- gtk4-x11 (the daemon forces the GDK x11 backend at startup)
 
 Image items use `GdkTexture` from GTK4 directly — there is no longer a GdkPixbuf dependency.
 

@@ -6,5 +6,4 @@ option('gnome-shell', type: 'boolean', value: true, description: 'install the gn
 option('systemd', type: 'boolean', value: true, description: 'install the systemd unit')
 option('systemd-user-unit-dir', type: 'string', value: '', description: 'path to where systemd stores its user units')
 option('vapi', type: 'boolean', value: true, description: 'build vala bindings')
-option('x-keybinder', type: 'boolean', value: true, description: 'build the x keybinder')
 option('zsh-completion', type: 'boolean', value: true, description: 'install zsh completion files')

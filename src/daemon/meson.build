@@ -11,7 +11,6 @@ gpaste_daemon_sources = [
   'gpaste-history.c',
   'gpaste-image-item.c',
   'gpaste-item.c',
-  'gpaste-internal-keybinding-provider.c',
   'gpaste-keybinder.c',
   'gpaste-keybinding.c',
   'gpaste-make-password-keybinding.c',
@@ -41,7 +40,6 @@ gpaste_daemon_headers = [
   'gpaste-history.h',
   'gpaste-image-item.h',
   'gpaste-item.h',
-  'gpaste-internal-keybinding-provider.h',
   'gpaste-keybinder.h',
   'gpaste-keybinding.h',
   'gpaste-make-password-keybinding.h',
@@ -68,6 +66,6 @@ executable(
   'gpaste-daemon',
   sources: gpaste_daemon_sources,
   install: true,
-  dependencies: [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_daemon_headers_dep ] + keybinder_deps,
+  dependencies: [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_daemon_headers_dep ],
   install_dir: get_option('libexecdir') / 'gpaste',
 )

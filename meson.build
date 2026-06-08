@@ -66,19 +66,6 @@ if get_option('vapi') and not get_option('introspection')
   error('GIR generation has to be enabled via -Dintrospection=true to build vala bindings!')
 endif
 
-keybinder_deps = []
-
-if get_option('x-keybinder')
-  add_project_arguments(
-    '-DENABLE_X_KEYBINDER=1',
-    language: 'c',
-  )
-
-  x11_dep = dependency('x11')
-  xi_dep = dependency('xi')
-  keybinder_deps += [ gtk4x11_dep, xi_dep, x11_dep ]
-endif
-
 add_project_arguments(
   '-DG_LOG_DOMAIN="GPaste"',
   '-DG_LOG_USE_STRUCTURED=1',

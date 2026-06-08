@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-internal-keybinding-provider.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
 #include <gpaste-image-item.h>
@@ -1130,39 +1129,23 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
 }
 
 static void
-g_paste_daemon_setup_keybinder (GPasteDaemon             *self,
-                                GPasteKeybindingProvider *provider)
-{
-    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
-    g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
-    priv->keybinder = g_paste_keybinder_new (priv->settings, provider);
-    g_paste_daemon_activate_default_keybindings (self);
-}
-
-static void
-use_internal_keybinding_provider (GPasteDaemon *self)
-{
-    g_autoptr (GPasteInternalKeybindingProvider) provider = g_paste_internal_keybinding_provider_new ();
-    g_paste_daemon_setup_keybinder (self, G_PASTE_KEYBINDING_PROVIDER (provider));
-}
-
-static void
 on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
                         GAsyncResult *res,
                         gpointer      user_data)
 {
     GPasteDaemon *self = user_data;
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteGtkGlobalShortcutClient) portal_client = g_paste_gtk_global_shortcut_client_new_finish (res, &error);
 
     if (error)
     {
-        g_warning ("Couldn't connect to GlobalShortcuts portal, falling back to X11: %s", error->message);
-        use_internal_keybinding_provider (self);
+        g_warning ("Couldn't connect to the GlobalShortcuts portal, keyboard shortcuts won't work: %s", error->message);
         return;
     }
 
-    g_paste_daemon_setup_keybinder (self, G_PASTE_KEYBINDING_PROVIDER (portal_client));
+    priv->keybinder = g_paste_keybinder_new (priv->settings, G_PASTE_KEYBINDING_PROVIDER (portal_client));
+    g_paste_daemon_activate_default_keybindings (self);
 }
 
 static void
@@ -1216,6 +1199,7 @@ g_paste_daemon_init (GPasteDaemon *self)
                                     G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
                                     priv);
 
+    g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
     g_paste_gtk_global_shortcut_client_new (on_portal_client_ready, self);
 }
 
