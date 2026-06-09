@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-09 21:29+0200\n"
-"PO-Revision-Date: 2026-06-08 20:06+0000\n"
+"POT-Creation-Date: 2026-06-08 23:40+0200\n"
+"PO-Revision-Date: 2026-06-09 19:38+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "is/>\n"
@@ -48,9 +48,8 @@ msgid "Manage your clipboard history"
 msgstr "Sýslaðu með feril klippispjalds"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:16
-#, fuzzy
 msgid "Preferences"
-msgstr "Kjörstillingar GPaste"
+msgstr "Kjörstillingar"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
 #: src/gnome-shell/aboutItem.js:13 src/ui/gpaste-ui-about.c:38
@@ -66,10 +65,12 @@ msgid ""
 "The extra stuff of that element will be replaced by \"…\", and newlines by "
 "\" \" when displaying from the applet, 0 to disable."
 msgstr ""
+"Aukaefni þessa atriðis verður skipt út með \"…\" og nýjum línum með \" \" "
+"þegar það birtist í smáforritinu, settu 0 til að gera óvirkt."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:15
 msgid "Do we detect and replace growing lines in history?"
-msgstr ""
+msgstr "Eru vaxandi línur greindar og þeim skipt út í ferilskráningu?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:16
 msgid ""
@@ -77,6 +78,9 @@ msgid ""
 "two entries in the history. With this feature enabled, the first one will be "
 "replaced by the second one."
 msgstr ""
+"Sjálfgefið mun það að velja fyrst \"Hér er\" og síðan \"Hér er dæmi\" búa "
+"til tvær færslur í vinnsluferlinum. Þegar þessi eiginleiki er virkjaður, "
+"verður fyrri færslunni skipt út fyrir þá seinni."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:24
 msgid "The name of the current history"
@@ -128,17 +132,19 @@ msgstr "Sjálfgefið opnast það þar músarbendillinn er"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:73
 msgid "The keyboard shortcut to launch the graphical interface"
-msgstr "Flýtilykill til að ræsa myndræna viðmótið"
+msgstr "Flýtilyklar til að ræsa myndræna viðmótið"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:74
 msgid ""
 "By default, hitting ctrl + alt + g does that (\"<Ctrl><Alt>G\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið er það gert með því að ýta á ctrl + alt + g (\"<Ctrl><Alt>G\") "
+"Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:82
 msgid "The keyboard shortcut to mark the active item as being a password"
-msgstr ""
+msgstr "Flýtilyklar til að merkja virka atriðið sem lykilorð"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:83
 msgid ""
@@ -146,6 +152,8 @@ msgid ""
 "password (\"<Ctrl><Alt>S\"). An empty string here disables this "
 "functionnality."
 msgstr ""
+"Sjálfgefið er virkt atriði merkt sem lykilorð með því að ýta á ctrl + alt + "
+"s (\"<Ctrl><Alt>S\"). Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:92
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:146
@@ -180,7 +188,7 @@ msgstr "Hámarksstærð textaatriða"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:120
 msgid "Maximum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
+msgstr "Hámarksstærð textaatriða. Allt utan þessara marka er hunsað."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:128
 msgid "Min text item size"
@@ -188,17 +196,19 @@ msgstr "Lágmarksstærð textaatriða"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:129
 msgid "Minimum size of a text item. Anything out of this boundary is ignored."
-msgstr ""
+msgstr "Lágmarksstærð textaatriða. Allt utan þessara marka er hunsað."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:136
 msgid "The keyboard shortcut to delete the first element in history"
-msgstr ""
+msgstr "Flýtilyklar til að eyða fyrstu einingunni í ferlinum"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:137
 msgid ""
 "By default, hitting ctrl + alt + v does that (\"<Ctrl><Alt>V\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið er það gert með því að ýta á ctrl + alt + v (\"<Ctrl><Alt>V\") "
+"Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:145
 msgid "Does the primary selection affects history?"
@@ -207,39 +217,44 @@ msgstr "Hefur aðalval (primary - miðjuhnappur) áhrif á feril?"
 #: data/gsettings/org.gnome.GPaste.gschema.xml:146
 msgid "By default, only clipboard (ctrl+c) affects history."
 msgstr ""
+"Sjálfgefið hefur einungis klippispjaldið (ctrl+c) áhrif á vinnsluferilinn."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:153
 msgid ""
 "Do we save all versions of selected rich text (e.g. html) or just the plain "
 "text version?"
 msgstr ""
+"Eru vistaðar allar útgáfur valinna atriða með sniðnum texta (t.d. html) eða "
+"bara útgáfan með hreinum texta?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:154
 msgid "By default, we're saving all"
-msgstr "Sjálfgefið vistum við allt"
+msgstr "Sjálfgefið er allt vistað"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:161
 msgid "Do we save the history from one session to another?"
-msgstr ""
+msgstr "Er vinnsluferill vistaður úr einni setu í aðra?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:162
 msgid "By default, we're saving it"
-msgstr "Sjálfgefið vistum við það"
+msgstr "Sjálfgefið er það vistað"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:169
 msgid "The keyboard shortcut to display the menu"
-msgstr "Lyklaborðsvísun til að birta valmyndina"
+msgstr "Flýtilyklar til að birta valmyndina"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:170
 msgid ""
 "By default, hitting ctrl + alt + h displays the menu (\"<Ctrl><Alt>H\"). An "
 "empty string here disables this functionnality."
 msgstr ""
+"Sjálfgefið birtist valmyndin með því að ýta á ctrl + alt + h (\"<Ctrl><Alt>"
+"H\"). Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:178
 msgid "The keyboard shortcut to sync the clipboard to the primary selection"
 msgstr ""
-"Flýtivísun til að samstilla klippispjaldið við aðalval (primary - "
+"Flýtilyklar til að samstilla klippispjaldið við aðalval (primary - "
 "miðjuhnappur)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:179
@@ -247,11 +262,13 @@ msgid ""
 "By default, hitting ctrl + alt + o syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið samstillist það með því að ýta á ctrl + alt + o (\"<Ctrl><Alt>P\")"
+". Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:187
 msgid "The keyboard shortcut to sync the primary selection to the clipboard"
 msgstr ""
-"Flýtivísun til að samstilla aðalval (primary - miðjuhnappur) við "
+"Flýtilyklar til að samstilla aðalval (primary - miðjuhnappur) við "
 "klippispjaldið"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:188
@@ -259,6 +276,8 @@ msgid ""
 "By default, hitting ctrl + alt + p syncs them (\"<Ctrl><Alt>P\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið samstillist það með því að ýta á ctrl + alt + p (\"<Ctrl><Alt>P\")"
+". Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:196
 msgid "Are the primary selection and the clipboard synchronized?"
@@ -292,29 +311,35 @@ msgstr "Sjálfgefið helst staða vaktarans óbreytt"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:220
 msgid "Do we trim the textual items before adding them to history?"
-msgstr ""
+msgstr "Eru textaatriði stytt áður en þeim er bætt í ferilskrá?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:221
 msgid ""
 "Trimming means removing all trailing and ending spaces. By default, we're "
 "letting them as-is."
 msgstr ""
+"Stytting þýðir að öll bil á undan og eftir eru fjarlægð. Sjálfgefið látum "
+"við þau halda sér."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:229
 msgid ""
 "The keyboard shortcut to upload the first element in history to a pastebin "
 "service"
 msgstr ""
+"Flýtilyklar til að senda fyrsta atriði í ferli inn á úrklippuþjónustu "
+"(pastebin)"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:230
 msgid ""
 "By default, hitting ctrl + alt + u does that (\"<Ctrl><Alt>U\"). An empty "
 "string here disables this functionnality."
 msgstr ""
+"Sjálfgefið er það gert með því að ýta á ctrl + alt + u (\"<Ctrl><Alt>U\"). "
+"Auður strengur hér gerir þessa virkni óvirka."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:238
 msgid "Do we prompt for confirmation when emptying a history?"
-msgstr "Kalla eftir staðfestingu þegar ferill er tæmdur?"
+msgstr "Er kallað eftir staðfestingu þegar ferill er tæmdur?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:239
 msgid "By default, we do as it's a destructive action"
@@ -329,12 +354,16 @@ msgid ""
 "GPaste is a clipboard managing system allowing you to track and manage your "
 "clipboard history in a highly customizable way."
 msgstr ""
+"GPaste er kerfi til að sýsla með feril klippispjaldsins og fylgjast með og "
+"nota áður afrituð atriði með aðferðum sem auðvelt er að sérsníða."
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:20
 msgid ""
 "GPaste provides you with a graphical tool allowing you to manage everything "
 "easily."
 msgstr ""
+"GPaste gefur kost á myndrænu verkfæri til að sýsla með hlutina á einfaldan "
+"hátt."
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:27
 msgid "The main UI"
@@ -419,6 +448,8 @@ msgstr ""
 msgid ""
 "This is a major release porting GPaste to GTK 4 and libadwaita. Changes:"
 msgstr ""
+"Þetta er mikilvæg uppfærsla sem yfirfærir GPaste í GTK 4 og libadwaita. "
+"Helstu breytingar:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:64
 msgid "Port the daemon, history UI and preferences to GTK 4 and libadwaita"
@@ -790,6 +821,8 @@ msgstr ""
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:466
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
+"Gera stuðning við myndir sjálfgefið óvirkan (er hægt að virkja aftur í "
+"kjörstillingum)"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:467
 msgid "Search now includes passwords (using their names)"
@@ -1130,7 +1163,7 @@ msgstr "Tókst að endurkeyra vaktarann\n"
 
 #: src/client/gpaste-client.c:486
 msgid "Cannot add non utf8 data as text."
-msgstr "Get ekki bætt við 'ekki-utf8' gögnum sem texta."
+msgstr "Ekki er hægt að bæta 'ekki-utf8' gögnum við sem texta."
 
 #: src/client/gpaste-client.c:796 src/ui/gpaste-ui-window.c:353
 #: src/ui/gpaste-ui-window.c:354
@@ -1264,6 +1297,8 @@ msgid ""
 "When enabled, the daemon automatically starts or stops tracking clipboard "
 "changes to match the GNOME Shell extension's enabled state"
 msgstr ""
+"Þegar þetta er virkt, ræsir eða stöðvar vaktarinn sjálfkrafa vöktun á "
+"breytingum á klippispjaldinu til samræmis við stöðu GNOME Shell viðaukans"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:166
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:174
@@ -1295,6 +1330,8 @@ msgid ""
 "When enabled, if a new clipboard entry starts with the previous one, the "
 "previous entry is replaced instead of creating a new one"
 msgstr ""
+"Þegar þetta er virkt; ef ný færsla á klippispjaldi hefst með því sama og sú "
+"á undan, þá er fyrri færslunni skipt út í stað þess að útbúa nýja"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:92
 msgid "History settings"
