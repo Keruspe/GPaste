@@ -12,7 +12,6 @@ apiversion = '2'
 
 adwaita_req_version = '1.9'
 gcr_req_version = '3.90.0'
-gjs_req_version = '1.78.0'
 glib_req_version = '2.84.0'
 gtk4_req_version = '4.12.0'
 
@@ -23,6 +22,7 @@ gobject_dep = dependency('gobject-2.0', version: '>= ' + glib_req_version)
 gtk4_dep = dependency('gtk4', version: '>= ' + gtk4_req_version)
 gtk4x11_dep = dependency('gtk4-x11', version: '>= ' + gtk4_req_version)
 libadwaita_dep = dependency('libadwaita-1', version: '>= ' + adwaita_req_version)
+pango_dep = dependency('pango')
 
 glib_major = glib_req_version.split('.')[0].to_int()
 glib_minor = glib_req_version.split('.')[1].to_int()
@@ -49,11 +49,6 @@ if keybindings_dir == ''
 endif
 
 libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
-
-if get_option('gnome-shell')
-  gjs_dep = dependency('gjs-1.0', version: '>= ' + gjs_req_version)
-  pango_dep = dependency('pango')
-endif
 
 userunit_dir = get_option('systemd-user-unit-dir')
 if userunit_dir == ''
@@ -84,13 +79,13 @@ add_project_arguments(
   '-DG_LOG_USE_STRUCTURED=1',
   '-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_@0@_@1@'.format(glib_major, glib_minor),
   '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_@0@_@1@'.format(glib_major, glib_minor),
+  '-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_@0@_@1@'.format(gtk4_major, gtk4_minor),
+  '-DGDK_VERSION_MAX_ALLOWED=GDK_VERSION_@0@_@1@'.format(gtk4_major, gtk4_minor),
   '-DG_PASTE_COMPILATION',
   '-DG_PASTE_DEFAULT_HISTORY="history"',
   '-DG_PASTE_EXTENSION_NAME="GPaste@gnome-shell-extensions.gnome.org"',
   '-DG_PASTE_ICON_NAME="edit-paste"',
-  '-DGDK_DISABLE_DEPRECATED',
   '-DGETTEXT_PACKAGE="GPaste"',
-  '-DGTK_DISABLE_DEPRECATED',
   '-DLOCALEDIR="' + (get_option('prefix') / get_option('datadir') / 'locale') + '"',
   '-DPACKAGE="gpaste"',
   '-DPACKAGE_NAME="GPaste"',
