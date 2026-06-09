@@ -19,52 +19,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.0.1-dev\n"
 
-#: data/control-center/42-gpaste.control-center.xml.in:2
-msgid "@GETTEXT_PACKAGE@"
-msgstr "@GETTEXT_PACKAGE@"
-
-#: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
-#: src/ui/gpaste-ui-shortcuts-window.c:24
-msgid "Launch the graphical tool"
-msgstr "Start grafisk program"
-
-#: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
-#: src/ui/gpaste-ui-shortcuts-window.c:25
-msgid "Mark the active item as being a password"
-msgstr "Markér det aktive element som kodeord"
-
-#: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
-#: src/ui/gpaste-ui-shortcuts-window.c:23
-msgid "Delete the active item from history"
-msgstr "Slet det aktive element fra historikken"
-
-#: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
-#: src/ui/gpaste-ui-shortcuts-window.c:26
-msgid "Display the history"
-msgstr "Vis historik"
-
-#: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
-#: src/ui/gpaste-ui-shortcuts-window.c:27
-msgid "Sync the clipboard to the primary selection"
-msgstr "Synkroniser udklipsholderen med den primære markering"
-
-#: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
-#: src/ui/gpaste-ui-shortcuts-window.c:28
-msgid "Sync the primary selection to the clipboard"
-msgstr "Synkroniser den primære markering med udklipsholderen"
-
-#: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
-#: src/ui/gpaste-ui-shortcuts-window.c:29
-msgid "Upload the active item to a pastebin service"
-msgstr "Upload det aktive element til en pastebin service"
-
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:6
@@ -1433,9 +1387,44 @@ msgstr ""
 msgid "History access"
 msgstr ""
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
+#: src/ui/gpaste-ui-shortcuts-window.c:24
+msgid "Launch the graphical tool"
+msgstr "Start grafisk program"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
+#: src/ui/gpaste-ui-shortcuts-window.c:26
+msgid "Display the history"
+msgstr "Vis historik"
+
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Active element manipulation"
 msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
+#: src/ui/gpaste-ui-shortcuts-window.c:25
+msgid "Mark the active item as being a password"
+msgstr "Markér det aktive element som kodeord"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
+#: src/ui/gpaste-ui-shortcuts-window.c:29
+msgid "Upload the active item to a pastebin service"
+msgstr "Upload det aktive element til en pastebin service"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
+#: src/ui/gpaste-ui-shortcuts-window.c:23
+msgid "Delete the active item from history"
+msgstr "Slet det aktive element fra historikken"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
+#: src/ui/gpaste-ui-shortcuts-window.c:27
+msgid "Sync the clipboard to the primary selection"
+msgstr "Synkroniser udklipsholderen med den primære markering"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
+#: src/ui/gpaste-ui-shortcuts-window.c:28
+msgid "Sync the primary selection to the clipboard"
+msgstr "Synkroniser den primære markering med udklipsholderen"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
 #: src/ui/gpaste-ui-edit-item.c:84 src/ui/gpaste-ui-new-item.c:66
@@ -1550,3 +1539,6 @@ msgstr ""
 #: src/ui/gpaste-ui-window.c:381
 msgid "History"
 msgstr ""
+
+#~ msgid "@GETTEXT_PACKAGE@"
+#~ msgstr "@GETTEXT_PACKAGE@"

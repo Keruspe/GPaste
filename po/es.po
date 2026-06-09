@@ -19,52 +19,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Weblate 5.17-dev\n"
 
-#: data/control-center/42-gpaste.control-center.xml.in:2
-msgid "@GETTEXT_PACKAGE@"
-msgstr "@GETTEXT_PACKAGE@"
-
-#: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
-#: src/ui/gpaste-ui-shortcuts-window.c:24
-msgid "Launch the graphical tool"
-msgstr "Iniciar la herramienta gráfica"
-
-#: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
-#: src/ui/gpaste-ui-shortcuts-window.c:25
-msgid "Mark the active item as being a password"
-msgstr "Marca elemento activo como contraseña"
-
-#: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
-#: src/ui/gpaste-ui-shortcuts-window.c:23
-msgid "Delete the active item from history"
-msgstr "Eliminar el elemento activo del histórico"
-
-#: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
-#: src/ui/gpaste-ui-shortcuts-window.c:26
-msgid "Display the history"
-msgstr "Mostrar el histórico"
-
-#: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
-#: src/ui/gpaste-ui-shortcuts-window.c:27
-msgid "Sync the clipboard to the primary selection"
-msgstr "Sincronizar portapapeles con la selección principal"
-
-#: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
-#: src/ui/gpaste-ui-shortcuts-window.c:28
-msgid "Sync the primary selection to the clipboard"
-msgstr "Sincronizar selección principal con el portapapeles"
-
-#: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
-#: src/ui/gpaste-ui-shortcuts-window.c:29
-msgid "Upload the active item to a pastebin service"
-msgstr "Cargar el elemento activo en un servicio «pastebin»"
-
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:6
@@ -1462,9 +1416,44 @@ msgstr "Atajos del teclado"
 msgid "History access"
 msgstr "Acceso al historial"
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
+#: src/ui/gpaste-ui-shortcuts-window.c:24
+msgid "Launch the graphical tool"
+msgstr "Iniciar la herramienta gráfica"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
+#: src/ui/gpaste-ui-shortcuts-window.c:26
+msgid "Display the history"
+msgstr "Mostrar el histórico"
+
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Active element manipulation"
 msgstr "Manipulación de los elementos activos"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
+#: src/ui/gpaste-ui-shortcuts-window.c:25
+msgid "Mark the active item as being a password"
+msgstr "Marca elemento activo como contraseña"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
+#: src/ui/gpaste-ui-shortcuts-window.c:29
+msgid "Upload the active item to a pastebin service"
+msgstr "Cargar el elemento activo en un servicio «pastebin»"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
+#: src/ui/gpaste-ui-shortcuts-window.c:23
+msgid "Delete the active item from history"
+msgstr "Eliminar el elemento activo del histórico"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
+#: src/ui/gpaste-ui-shortcuts-window.c:27
+msgid "Sync the clipboard to the primary selection"
+msgstr "Sincronizar portapapeles con la selección principal"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
+#: src/ui/gpaste-ui-shortcuts-window.c:28
+msgid "Sync the primary selection to the clipboard"
+msgstr "Sincronizar selección principal con el portapapeles"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
 #: src/ui/gpaste-ui-edit-item.c:84 src/ui/gpaste-ui-new-item.c:66
@@ -1582,6 +1571,9 @@ msgstr "Acceso al historial"
 #, fuzzy
 msgid "History"
 msgstr "Acceso al historial"
+
+#~ msgid "@GETTEXT_PACKAGE@"
+#~ msgstr "@GETTEXT_PACKAGE@"
 
 #~ msgid "is already running."
 #~ msgstr "ya está ejecutándose."

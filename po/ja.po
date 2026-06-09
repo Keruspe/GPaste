@@ -18,52 +18,6 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: data/control-center/42-gpaste.control-center.xml.in:2
-msgid "@GETTEXT_PACKAGE@"
-msgstr ""
-
-#: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
-#: src/ui/gpaste-ui-shortcuts-window.c:24
-msgid "Launch the graphical tool"
-msgstr "GUI ツールを起動する"
-
-#: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
-#: src/ui/gpaste-ui-shortcuts-window.c:25
-msgid "Mark the active item as being a password"
-msgstr "アクティブな項目をパスワードとしてマークする"
-
-#: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
-#: src/ui/gpaste-ui-shortcuts-window.c:23
-msgid "Delete the active item from history"
-msgstr "履歴からアクティブな項目を削除する"
-
-#: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
-#: src/ui/gpaste-ui-shortcuts-window.c:26
-msgid "Display the history"
-msgstr "履歴を表示する"
-
-#: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
-#: src/ui/gpaste-ui-shortcuts-window.c:27
-msgid "Sync the clipboard to the primary selection"
-msgstr "クリップボードからプライマリー選択に同期する"
-
-#: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
-#: src/ui/gpaste-ui-shortcuts-window.c:28
-msgid "Sync the primary selection to the clipboard"
-msgstr "プライマリー選択からクリップボードに同期する"
-
-#: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
-#: src/ui/gpaste-ui-shortcuts-window.c:29
-msgid "Upload the active item to a pastebin service"
-msgstr "Pastebin にアクティブな項目をアップロードする"
-
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:6
@@ -1425,9 +1379,44 @@ msgstr "キーボードショートカット"
 msgid "History access"
 msgstr "履歴設定"
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
+#: src/ui/gpaste-ui-shortcuts-window.c:24
+msgid "Launch the graphical tool"
+msgstr "GUI ツールを起動する"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
+#: src/ui/gpaste-ui-shortcuts-window.c:26
+msgid "Display the history"
+msgstr "履歴を表示する"
+
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Active element manipulation"
 msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
+#: src/ui/gpaste-ui-shortcuts-window.c:25
+msgid "Mark the active item as being a password"
+msgstr "アクティブな項目をパスワードとしてマークする"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
+#: src/ui/gpaste-ui-shortcuts-window.c:29
+msgid "Upload the active item to a pastebin service"
+msgstr "Pastebin にアクティブな項目をアップロードする"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
+#: src/ui/gpaste-ui-shortcuts-window.c:23
+msgid "Delete the active item from history"
+msgstr "履歴からアクティブな項目を削除する"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
+#: src/ui/gpaste-ui-shortcuts-window.c:27
+msgid "Sync the clipboard to the primary selection"
+msgstr "クリップボードからプライマリー選択に同期する"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
+#: src/ui/gpaste-ui-shortcuts-window.c:28
+msgid "Sync the primary selection to the clipboard"
+msgstr "プライマリー選択からクリップボードに同期する"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
 #: src/ui/gpaste-ui-edit-item.c:84 src/ui/gpaste-ui-new-item.c:66

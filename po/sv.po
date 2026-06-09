@@ -19,52 +19,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 4.8-dev\n"
 
-#: data/control-center/42-gpaste.control-center.xml.in:2
-msgid "@GETTEXT_PACKAGE@"
-msgstr "@GETTEXT_PACKAGE@"
-
-#: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
-#: src/ui/gpaste-ui-shortcuts-window.c:24
-msgid "Launch the graphical tool"
-msgstr "Starta det grafiska verktyget"
-
-#: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
-#: src/ui/gpaste-ui-shortcuts-window.c:25
-msgid "Mark the active item as being a password"
-msgstr "Märk den aktiva posten som varande lösenord"
-
-#: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
-#: src/ui/gpaste-ui-shortcuts-window.c:23
-msgid "Delete the active item from history"
-msgstr "Ta bort aktiv post från historiken"
-
-#: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
-#: src/ui/gpaste-ui-shortcuts-window.c:26
-msgid "Display the history"
-msgstr "Visa historiken"
-
-#: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
-#: src/ui/gpaste-ui-shortcuts-window.c:27
-msgid "Sync the clipboard to the primary selection"
-msgstr "Synkronisera urklipp med primär markering"
-
-#: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
-#: src/ui/gpaste-ui-shortcuts-window.c:28
-msgid "Sync the primary selection to the clipboard"
-msgstr "Synkronisera primär markering med urklipp"
-
-#: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
-#: src/ui/gpaste-ui-shortcuts-window.c:29
-msgid "Upload the active item to a pastebin service"
-msgstr "Ladda upp aktiv post till en pastebin-tjänst"
-
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:6
@@ -1462,9 +1416,44 @@ msgstr "Tangentbordsgenvägar"
 msgid "History access"
 msgstr "Historikinställningar"
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
+#: src/ui/gpaste-ui-shortcuts-window.c:24
+msgid "Launch the graphical tool"
+msgstr "Starta det grafiska verktyget"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
+#: src/ui/gpaste-ui-shortcuts-window.c:26
+msgid "Display the history"
+msgstr "Visa historiken"
+
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Active element manipulation"
 msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
+#: src/ui/gpaste-ui-shortcuts-window.c:25
+msgid "Mark the active item as being a password"
+msgstr "Märk den aktiva posten som varande lösenord"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
+#: src/ui/gpaste-ui-shortcuts-window.c:29
+msgid "Upload the active item to a pastebin service"
+msgstr "Ladda upp aktiv post till en pastebin-tjänst"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
+#: src/ui/gpaste-ui-shortcuts-window.c:23
+msgid "Delete the active item from history"
+msgstr "Ta bort aktiv post från historiken"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
+#: src/ui/gpaste-ui-shortcuts-window.c:27
+msgid "Sync the clipboard to the primary selection"
+msgstr "Synkronisera urklipp med primär markering"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
+#: src/ui/gpaste-ui-shortcuts-window.c:28
+msgid "Sync the primary selection to the clipboard"
+msgstr "Synkronisera primär markering med urklipp"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
 #: src/ui/gpaste-ui-edit-item.c:84 src/ui/gpaste-ui-new-item.c:66
@@ -1582,6 +1571,9 @@ msgstr "Historikinställningar"
 #, fuzzy
 msgid "History"
 msgstr "Historikinställningar"
+
+#~ msgid "@GETTEXT_PACKAGE@"
+#~ msgstr "@GETTEXT_PACKAGE@"
 
 #~ msgid "is already running."
 #~ msgstr "körs redan."

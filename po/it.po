@@ -19,52 +19,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.13-dev\n"
 
-#: data/control-center/42-gpaste.control-center.xml.in:2
-msgid "@GETTEXT_PACKAGE@"
-msgstr "@GETTEXT_PACKAGE@"
-
-#: data/control-center/42-gpaste.control-center.xml.in:3
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
-#: src/ui/gpaste-ui-shortcuts-window.c:24
-msgid "Launch the graphical tool"
-msgstr "Lancia lo strumento grafico"
-
-#: data/control-center/42-gpaste.control-center.xml.in:4
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
-#: src/ui/gpaste-ui-shortcuts-window.c:25
-msgid "Mark the active item as being a password"
-msgstr "Segna l'elemento attivo come password"
-
-#: data/control-center/42-gpaste.control-center.xml.in:5
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
-#: src/ui/gpaste-ui-shortcuts-window.c:23
-msgid "Delete the active item from history"
-msgstr "Elimina l'elemento attivo dalla cronologia"
-
-#: data/control-center/42-gpaste.control-center.xml.in:6
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
-#: src/ui/gpaste-ui-shortcuts-window.c:26
-msgid "Display the history"
-msgstr "Mostra la cronologia"
-
-#: data/control-center/42-gpaste.control-center.xml.in:7
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
-#: src/ui/gpaste-ui-shortcuts-window.c:27
-msgid "Sync the clipboard to the primary selection"
-msgstr "Sincronizza gli appunti alla selezione primaria"
-
-#: data/control-center/42-gpaste.control-center.xml.in:8
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
-#: src/ui/gpaste-ui-shortcuts-window.c:28
-msgid "Sync the primary selection to the clipboard"
-msgstr "Sincronizza la selezione primaria agli appunti"
-
-#: data/control-center/42-gpaste.control-center.xml.in:9
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
-#: src/ui/gpaste-ui-shortcuts-window.c:29
-msgid "Upload the active item to a pastebin service"
-msgstr "Carica l'elemento attivo in un servizio pastebin"
-
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:6
@@ -1468,9 +1422,44 @@ msgstr "Scorciatoie da tastiera"
 msgid "History access"
 msgstr "Accesso alla cronologia"
 
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
+#: src/ui/gpaste-ui-shortcuts-window.c:24
+msgid "Launch the graphical tool"
+msgstr "Lancia lo strumento grafico"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
+#: src/ui/gpaste-ui-shortcuts-window.c:26
+msgid "Display the history"
+msgstr "Mostra la cronologia"
+
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
 msgid "Active element manipulation"
 msgstr "Manipolazione degli elementi attivi"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
+#: src/ui/gpaste-ui-shortcuts-window.c:25
+msgid "Mark the active item as being a password"
+msgstr "Segna l'elemento attivo come password"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
+#: src/ui/gpaste-ui-shortcuts-window.c:29
+msgid "Upload the active item to a pastebin service"
+msgstr "Carica l'elemento attivo in un servizio pastebin"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
+#: src/ui/gpaste-ui-shortcuts-window.c:23
+msgid "Delete the active item from history"
+msgstr "Elimina l'elemento attivo dalla cronologia"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
+#: src/ui/gpaste-ui-shortcuts-window.c:27
+msgid "Sync the clipboard to the primary selection"
+msgstr "Sincronizza gli appunti alla selezione primaria"
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
+#: src/ui/gpaste-ui-shortcuts-window.c:28
+msgid "Sync the primary selection to the clipboard"
+msgstr "Sincronizza la selezione primaria agli appunti"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
 #: src/ui/gpaste-ui-edit-item.c:84 src/ui/gpaste-ui-new-item.c:66
@@ -1588,6 +1577,9 @@ msgstr "Accesso alla cronologia"
 #, fuzzy
 msgid "History"
 msgstr "Accesso alla cronologia"
+
+#~ msgid "@GETTEXT_PACKAGE@"
+#~ msgstr "@GETTEXT_PACKAGE@"
 
 #~ msgid "is already running."
 #~ msgstr "è già in esecuzione."
