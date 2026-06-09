@@ -35,15 +35,15 @@ g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
     AdwBin *bin = ADW_BIN (self);
     GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     GtkBox *b = GTK_BOX (box);
-    g_autoptr (GPasteGtkPreferencesManager) manager = g_paste_gtk_preferences_manager_new ();
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     GtkWidget *stack = adw_view_stack_new ();
     AdwViewStack *s = ADW_VIEW_STACK (stack);
     GtkWidget *switcher = GTK_WIDGET (g_object_new (ADW_TYPE_VIEW_SWITCHER, "stack", stack, "policy", ADW_VIEW_SWITCHER_POLICY_WIDE, NULL));
 
-    add_page (s, g_paste_gtk_preferences_behaviour_page_new (manager));
-    add_page (s, g_paste_gtk_preferences_history_settings_page_new (manager));
-    add_page (s, g_paste_gtk_preferences_images_page_new (manager));
-    add_page (s, g_paste_gtk_preferences_shortcuts_page_new (manager));
+    add_page (s, g_paste_gtk_preferences_behaviour_page_new (settings));
+    add_page (s, g_paste_gtk_preferences_history_settings_page_new (settings));
+    add_page (s, g_paste_gtk_preferences_images_page_new (settings));
+    add_page (s, g_paste_gtk_preferences_shortcuts_page_new (settings));
 
     gtk_box_append (b, switcher);
     gtk_box_append (b, stack);

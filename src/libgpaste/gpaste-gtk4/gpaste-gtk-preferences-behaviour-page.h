@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gpaste-gtk4/gpaste-gtk-preferences-manager.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-page.h>
 
 G_BEGIN_DECLS
 
@@ -15,6 +15,6 @@ G_BEGIN_DECLS
 
 G_PASTE_GTK_FINAL_TYPE (PreferencesBehaviourPage, preferences_behaviour_page, PREFERENCES_BEHAVIOUR_PAGE, GPasteGtkPreferencesPage)
 
-GtkWidget *g_paste_gtk_preferences_behaviour_page_new (GPasteGtkPreferencesManager *manager);
+GtkWidget *g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings);
 
 G_END_DECLS

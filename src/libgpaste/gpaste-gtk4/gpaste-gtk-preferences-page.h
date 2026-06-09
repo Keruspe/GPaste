@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gpaste-gtk4/gpaste-gtk-macros.h>
+#include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
 
 G_BEGIN_DECLS
 
@@ -18,15 +18,9 @@ G_PASTE_GTK_DERIVABLE_TYPE (PreferencesPage, preferences_page, PREFERENCES_PAGE,
 struct _GPasteGtkPreferencesPageClass
 {
     AdwPreferencesPageClass parent_class;
-
-    /*< pure virtual >*/
-    void (*setting_changed) (GPasteGtkPreferencesPage *self,
-                             GPasteSettings           *settings,
-                             const gchar              *key);
 };
 
-void g_paste_gtk_preferences_page_setting_changed (GPasteGtkPreferencesPage *self,
-                                                   GPasteSettings           *settings,
-                                                   const gchar              *key);
+void g_paste_gtk_preferences_page_add_group (GPasteGtkPreferencesPage  *self,
+                                             GPasteGtkPreferencesGroup *group);
 
 G_END_DECLS

@@ -6,26 +6,21 @@
 G_PASTE_GTK_DEFINE_TYPE (PreferencesPage, preferences_page, ADW_TYPE_PREFERENCES_PAGE)
 
 /**
- * g_paste_gtk_preferences_page_setting_changed:
+ * g_paste_gtk_preferences_page_add_group:
  * @self: a #GPasteGtkPreferencesPage instance
- * @settings: a #GPasteSettings instance
- * @key: the settings key that just changed
+ * @group: a #GPasteGtkPreferencesGroup instance
  *
- * Apply changes related to the update of one setting
+ * Add @group to the page. The group's rows are bound to their settings, so no
+ * extra tracking is needed.
  */
 G_PASTE_VISIBLE void
-g_paste_gtk_preferences_page_setting_changed (GPasteGtkPreferencesPage *self,
-                                              GPasteSettings           *settings,
-                                              const gchar              *key)
+g_paste_gtk_preferences_page_add_group (GPasteGtkPreferencesPage  *self,
+                                        GPasteGtkPreferencesGroup *group)
 {
     g_return_if_fail (G_PASTE_IS_GTK_PREFERENCES_PAGE (self));
-    g_return_if_fail (G_PASTE_IS_SETTINGS (settings));
-    g_return_if_fail (key);
+    g_return_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (group));
 
-    GPasteGtkPreferencesPageClass *klass = G_PASTE_GTK_PREFERENCES_PAGE_GET_CLASS (self);
-
-    if (klass->setting_changed)
-        klass->setting_changed (self, settings, key);
+    adw_preferences_page_add (ADW_PREFERENCES_PAGE (self), ADW_PREFERENCES_GROUP (group));
 }
 
 static void

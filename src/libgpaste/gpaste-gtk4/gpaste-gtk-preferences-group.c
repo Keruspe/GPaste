@@ -8,226 +8,179 @@ struct _GPasteGtkPreferencesGroup
     AdwPreferencesGroup parent_instance;
 };
 
-typedef struct
-{
-    GSList *callback_data;
-} GPasteGtkPreferencesGroupPrivate;
+G_PASTE_GTK_DEFINE_TYPE (PreferencesGroup, preferences_group, ADW_TYPE_PREFERENCES_GROUP)
 
-G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesGroup, preferences_group, ADW_TYPE_PREFERENCES_GROUP)
-
-#define CALLBACK_DATA(w)                                                                                \
-    GPasteGtkPreferencesGroupPrivate *priv = g_paste_gtk_preferences_group_get_instance_private (self); \
-    _CallbackDataWrapper *_data = g_new0 (_CallbackDataWrapper, 1);                                      \
-    CallbackDataWrapper *data = (CallbackDataWrapper *) _data;                                          \
-    priv->callback_data = g_slist_prepend (priv->callback_data, _data);                                 \
-    _data->widget = G_OBJECT (w);                                                                       \
-    data->callback = G_CALLBACK (on_value_changed);                                                     \
-    data->reset_cb = on_reset;                                                                          \
-    data->settings = settings;
-
-#define G_PASTE_CALLBACK(cb_type)                                  \
-    CallbackDataWrapper *data = (CallbackDataWrapper *) user_data; \
-    ((cb_type) data->callback)
-
-#define G_PASTE_RESET_CALLBACK()                                   \
-    CallbackDataWrapper *data = (CallbackDataWrapper *) user_data; \
-    (data->reset_cb)
+/* Settings expose one GObject property per key (named like the key), so each
+ * row binds straight to its setting with g_object_bind_property(). The reset
+ * suffix restores the key's default through the same notify path. */
 
 typedef struct
 {
-    GCallback              callback;
-    GPasteGtkResetCallback reset_cb;
-    GPasteSettings        *settings;
-} CallbackDataWrapper;
-
-enum
-{
-    C_W_ACTION,
-    C_W_RESET,
-
-    C_W_LAST_SIGNAL
-};
-
-typedef struct
-{
-    CallbackDataWrapper wrap;
-    GObject            *widget;
-    GtkWidget          *reset_widget;
-
-    guint64             c_signals[C_W_LAST_SIGNAL];
-} _CallbackDataWrapper;
+    GPasteSettings *settings; /* not owned: outlives the row */
+    const gchar    *key;      /* not owned: a static G_PASTE_*_SETTING string */
+} ResetData;
 
 static void
-boolean_wrapper (GObject    *object,
-                 GParamSpec *pspec G_GNUC_UNUSED,
-                 gpointer    user_data)
+on_reset_clicked (GtkButton *button G_GNUC_UNUSED,
+                  gpointer   user_data)
 {
-    G_PASTE_CALLBACK (GPasteGtkBooleanCallback) (data->settings, adw_switch_row_get_active (ADW_SWITCH_ROW (object)));
+    const ResetData *data = user_data;
+
+    g_paste_settings_reset (data->settings, data->key);
 }
 
-static gboolean
-g_paste_gtk_preferences_group_on_reset_clicked (GtkWidget *widget G_GNUC_UNUSED,
-                                                gpointer   user_data)
+static void
+reset_data_free (gpointer  data,
+                 GClosure *closure G_GNUC_UNUSED)
 {
-    G_PASTE_RESET_CALLBACK () (data->settings);
-    return FALSE;
+    g_free (data);
 }
 
-static GtkWidget *
-g_paste_gtk_preferences_group_make_reset_button (_CallbackDataWrapper *data)
+static void
+add_reset_button (GtkWidget      *row,
+                  GPasteSettings *settings,
+                  const gchar    *key)
 {
-    GtkWidget *reset_widget = data->reset_widget = gtk_button_new_from_icon_name ("edit-delete-symbolic");
-    data->c_signals[C_W_RESET] = g_signal_connect (reset_widget,
-                                                   "clicked",
-                                                   G_CALLBACK (g_paste_gtk_preferences_group_on_reset_clicked),
-                                                   data);
-    if (!((CallbackDataWrapper *) data)->reset_cb)
-        gtk_widget_set_sensitive (reset_widget, FALSE);
-    gtk_widget_set_valign (reset_widget, GTK_ALIGN_CENTER);
-    return data->reset_widget;
+    GtkWidget *button = gtk_button_new_from_icon_name ("edit-delete-symbolic");
+
+    gtk_widget_add_css_class (button, "flat");
+    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+    gtk_widget_set_tooltip_text (button, _("Reset to default"));
+
+    ResetData *data = g_new0 (ResetData, 1);
+    data->settings = settings;
+    data->key = key;
+    g_signal_connect_data (button, "clicked", G_CALLBACK (on_reset_clicked), data, reset_data_free, 0);
+
+    /* AdwEntryRow is not an AdwActionRow, so it has its own suffix API. */
+    if (ADW_IS_ENTRY_ROW (row))
+        adw_entry_row_add_suffix (ADW_ENTRY_ROW (row), button);
+    else
+        adw_action_row_add_suffix (ADW_ACTION_ROW (row), button);
 }
 
 /**
  * g_paste_gtk_preferences_group_add_boolean_setting:
  * @self: a #GPasteGtkPreferencesGroup instance
  * @label: the label to display
- * @value: the deafault value
- * @on_value_changed: (scope notified): the callback to call when the value changes
- * @on_reset: (scope notified): the callback to call when the value is reset
+ * @key: the settings key (and property name) this row tracks
  * @settings: a #GPasteSettings instance
  *
- * Add a new boolean settings to the current pane
+ * Add a new boolean setting to the current pane, bound to @key.
  *
  * Returns: (transfer none): the #AdwSwitchRow we just added
  */
 G_PASTE_VISIBLE AdwSwitchRow *
 g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *self,
                                                    const gchar               *label,
-                                                   gboolean                   value,
-                                                   GPasteGtkBooleanCallback   on_value_changed,
-                                                   GPasteGtkResetCallback     on_reset,
+                                                   const gchar               *key,
                                                    GPasteSettings            *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
     g_return_val_if_fail (label, NULL);
-    g_return_val_if_fail (on_value_changed, NULL);
+    g_return_val_if_fail (key, NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     AdwSwitchRow *row = ADW_SWITCH_ROW (adw_switch_row_new ());
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
-    adw_switch_row_set_active (row, value);
-
-    CALLBACK_DATA (row);
-
-    _data->c_signals[C_W_ACTION] = g_signal_connect (row, "notify::active", G_CALLBACK (boolean_wrapper), data);
-    adw_action_row_add_suffix (ADW_ACTION_ROW (row), g_paste_gtk_preferences_group_make_reset_button (_data));
+    g_object_bind_property (settings, key, row, "active", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+    add_reset_button (GTK_WIDGET (row), settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
     return row;
 }
 
-static void
-range_wrapper (AdwSpinRow *spin_row,
-               GParamSpec *pspec G_GNUC_UNUSED,
-               gpointer    user_data)
+static gboolean
+uint64_to_double (GBinding     *binding G_GNUC_UNUSED,
+                  const GValue *from,
+                  GValue       *to,
+                  gpointer      user_data G_GNUC_UNUSED)
 {
-    G_PASTE_CALLBACK (GPasteGtkRangeCallback) (data->settings, (guint64) adw_spin_row_get_value (spin_row));
+    g_value_set_double (to, (gdouble) g_value_get_uint64 (from));
+    return TRUE;
+}
+
+static gboolean
+double_to_uint64 (GBinding     *binding G_GNUC_UNUSED,
+                  const GValue *from,
+                  GValue       *to,
+                  gpointer      user_data G_GNUC_UNUSED)
+{
+    g_value_set_uint64 (to, (guint64) g_value_get_double (from));
+    return TRUE;
 }
 
 /**
  * g_paste_gtk_preferences_group_add_range_setting:
  * @self: a #GPasteGtkPreferencesGroup instance
  * @label: the label to display
- * @value: the deafault value
+ * @key: the settings key (and property name) this row tracks
  * @min: the minimal authorized value
  * @max: the maximal authorized value
  * @step: the step between proposed values
- * @on_value_changed: (scope notified): the callback to call when the value changes
- * @on_reset: (scope notified): the callback to call when the value is reset
  * @settings: a #GPasteSettings instance
  *
- * Add a new range settings to the current pane
+ * Add a new range setting to the current pane, bound to @key.
  *
  * Returns: (transfer none): the #AdwSpinRow we just added
  */
 G_PASTE_VISIBLE AdwSpinRow *
 g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self,
                                                  const gchar               *label,
-                                                 gdouble                    value,
+                                                 const gchar               *key,
                                                  gdouble                    min,
                                                  gdouble                    max,
                                                  gdouble                    step,
-                                                 GPasteGtkRangeCallback     on_value_changed,
-                                                 GPasteGtkResetCallback     on_reset,
                                                  GPasteSettings            *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
     g_return_val_if_fail (label, NULL);
-    g_return_val_if_fail (on_value_changed, NULL);
+    g_return_val_if_fail (key, NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     AdwSpinRow *row = ADW_SPIN_ROW (adw_spin_row_new_with_range (min, max, step));
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
-    adw_spin_row_set_value (row, value);
-
-    CALLBACK_DATA (row);
-
-    _data->c_signals[C_W_ACTION] = g_signal_connect (row, "notify::value", G_CALLBACK (range_wrapper), data);
-    adw_action_row_add_suffix (ADW_ACTION_ROW (row), g_paste_gtk_preferences_group_make_reset_button (_data));
+    /* The setting is a guint64, the row value a gdouble. */
+    g_object_bind_property_full (settings, key, row, "value",
+                                 G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL,
+                                 uint64_to_double, double_to_uint64, NULL, NULL);
+    add_reset_button (GTK_WIDGET (row), settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
     return row;
-}
-
-static void
-text_wrapper (GObject    *object,
-              GParamSpec *pspec G_GNUC_UNUSED,
-              gpointer    user_data)
-{
-    G_PASTE_CALLBACK (GPasteGtkTextCallback) (data->settings, gtk_editable_get_text (GTK_EDITABLE (object)));
 }
 
 /**
  * g_paste_gtk_preferences_group_add_text_setting:
  * @self: a #GPasteGtkPreferencesGroup instance
  * @label: the label to display
- * @value: the deafault value
- * @on_value_changed: (scope notified): the callback to call when the value changes
- * @on_reset: (scope notified): the callback to call when the value is reset
+ * @key: the settings key (and property name) this row tracks
  * @settings: a #GPasteSettings instance
  *
- * Add a new text settings to the current pane
+ * Add a new text setting to the current pane, bound to @key.
  *
  * Returns: (transfer none): the #AdwEntryRow we just added
  */
 G_PASTE_VISIBLE AdwEntryRow *
 g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
                                                 const gchar               *label,
-                                                const gchar               *value,
-                                                GPasteGtkTextCallback      on_value_changed,
-                                                GPasteGtkResetCallback     on_reset,
+                                                const gchar               *key,
                                                 GPasteSettings            *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
     g_return_val_if_fail (label, NULL);
-    g_return_val_if_fail (value, NULL);
-    g_return_val_if_fail (on_value_changed, NULL);
+    g_return_val_if_fail (key, NULL);
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     AdwEntryRow *row = ADW_ENTRY_ROW (adw_entry_row_new ());
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
-    gtk_editable_set_text (GTK_EDITABLE (row), value);
-
-    CALLBACK_DATA (row);
-
-    _data->c_signals[C_W_ACTION] = g_signal_connect (row, "notify::text", G_CALLBACK (text_wrapper), data);
-    if (on_reset)
-        adw_entry_row_add_suffix (row, g_paste_gtk_preferences_group_make_reset_button (_data));
+    g_object_bind_property (settings, key, row, "text", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+    add_reset_button (GTK_WIDGET (row), settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
@@ -235,29 +188,8 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
 }
 
 static void
-clean_callback_data (gpointer data)
+g_paste_gtk_preferences_group_class_init (GPasteGtkPreferencesGroupClass *klass G_GNUC_UNUSED)
 {
-    g_autofree _CallbackDataWrapper *wrap = data;
-
-    g_signal_handler_disconnect (wrap->widget, wrap->c_signals[C_W_ACTION]);
-    if (wrap->reset_widget)
-        g_signal_handler_disconnect (wrap->reset_widget, wrap->c_signals[C_W_RESET]);
-}
-
-static void
-g_paste_gtk_preferences_group_dispose (GObject *object)
-{
-    GPasteGtkPreferencesGroupPrivate *priv = g_paste_gtk_preferences_group_get_instance_private (G_PASTE_GTK_PREFERENCES_GROUP (object));
-
-    g_clear_slist (&priv->callback_data, clean_callback_data);
-
-    G_OBJECT_CLASS (g_paste_gtk_preferences_group_parent_class)->dispose (object);
-}
-
-static void
-g_paste_gtk_preferences_group_class_init (GPasteGtkPreferencesGroupClass *klass)
-{
-    G_OBJECT_CLASS (klass)->dispose = g_paste_gtk_preferences_group_dispose;
 }
 
 static void

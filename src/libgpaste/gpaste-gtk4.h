@@ -12,7 +12,6 @@
 /* GPasteGtkPreferences */
 #include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
-#include <gpaste-gtk4/gpaste-gtk-preferences-manager.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.h>
