@@ -7,7 +7,6 @@ gpaste_daemon_sources = [
   'gpaste-clipboards-manager.c',
   'gpaste-daemon.c',
   'gpaste-daemon-methods.c',
-  'main.c',
   'gpaste-file-backend.c',
   'gpaste-history.c',
   'gpaste-image-item.c',
@@ -50,10 +49,25 @@ gpaste_daemon_headers_dep = declare_dependency(
   sources: gpaste_daemon_headers,
 )
 
+gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_daemon_headers_dep ]
+
+# Everything but main.c, as a static library so the test suite can link the
+# daemon-internal types (history, items, backends) without an install.
+gpaste_daemon_internal = static_library(
+  'gpaste-daemon-internal',
+  sources: gpaste_daemon_sources,
+  dependencies: gpaste_daemon_deps,
+)
+
+gpaste_daemon_internal_dep = declare_dependency(
+  link_with: gpaste_daemon_internal,
+  dependencies: gpaste_daemon_deps,
+)
+
 executable(
   'gpaste-daemon',
-  sources: gpaste_daemon_sources,
+  sources: [ 'main.c' ],
   install: true,
-  dependencies: [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_daemon_headers_dep ],
+  dependencies: [ gpaste_daemon_internal_dep ],
   install_dir: get_option('libexecdir') / 'gpaste',
 )

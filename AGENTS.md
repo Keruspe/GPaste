@@ -31,8 +31,14 @@ meson .. -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 Run tests from the build directory:
 
 ```sh
-ninja test
+ninja test          # or: meson test -C build
 ```
+
+Tests live under `tests/`. `tests/history/` unit-tests the `GPasteHistory` model
+(add/dedup/size-enforcement/remove/select) against an in-memory `GSettings`
+(`GSETTINGS_BACKEND=memory` + the schema compiled into the build tree) and a
+throwaway `XDG_DATA_HOME`, so they need no display server or dconf. The `eslint`
+test lints the GNOME Shell extension JS.
 
 Check header include ordering:
 
@@ -136,6 +142,8 @@ The background service. Owns the clipboard history and exposes it over D-Bus (`o
 - Item types: text, password, image, URI
 - Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGtkGlobalShortcutClient`, used directly by the keybinder); if the portal is unavailable, keyboard shortcuts are simply disabled
 - History persistence to disk
+
+The D-Bus method surface lives in `gpaste-daemon-methods.{c,h}`: free functions that take a small `GPasteDaemonMethods` context `{ connection, history, settings, clipboards_manager }` rather than the daemon's instance-private struct. `gpaste-daemon.c` keeps the object lifecycle, the signal emitters, the controller actions that need the GObject (`upload`, `reexecute`, `show_history`), and a dispatcher that builds the context and forwards. Everything but `main.c` is compiled into a `gpaste-daemon-internal` static library (`gpaste_daemon_internal_dep`) so the daemon executable and the test suite both link the same code.
 
 ### `src/client/` — `gpaste-client`
 
