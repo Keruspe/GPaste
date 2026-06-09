@@ -21,7 +21,8 @@ Common build options (`meson .. -Doption=value`):
 | `vapi` | true | Generate Vala bindings (requires introspection) |
 | `systemd` | true | systemd user unit |
 
-To disable the GTK UI components for a minimal daemon-only build:
+For a lighter build that skips the GNOME Shell extension, GIR introspection data
+and Vala bindings (the daemon, UI and preferences apps are always built):
 
 ```sh
 meson .. -Dgnome-shell=false -Dintrospection=false -Dvapi=false

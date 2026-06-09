@@ -46,6 +46,17 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-09" version="50.1">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix building without the GNOME Shell extension (-Dgnome-shell=false)</li>
+          <li>Restore GTK deprecation version-gating and drop the unused build-time gjs dependency</li>
+          <li>Target GNOME Shell 50 in the extension</li>
+          <li>Bump the library soversions to reflect the API/ABI changes since 45.8</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-08" version="50.0">
       <description>
         <p>This is a major release porting GPaste to GTK 4 and libadwaita. Changes:</p>

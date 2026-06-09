@@ -1,3 +1,11 @@
+NEW in 50.1 (09/06/2026)
+=============
+
+- Fix building with -Dgnome-shell=false: the UI's Pango dependency was only pulled in when the GNOME Shell extension was enabled, so a build without the extension failed to configure
+- Restore GTK deprecation version-gating (GDK_VERSION_MIN_REQUIRED/MAX_ALLOWED) and drop the unused build-time gjs dependency
+- The GNOME Shell extension now targets GNOME Shell 50
+- Bump the libgpaste and libgpaste-gtk4 soversions to reflect the API/ABI changes since 45.8 (the GTK 4 port), which the 50.0 release omitted to do
+
 NEW in 50.0 (08/06/2026)
 =============
 

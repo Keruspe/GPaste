@@ -1,5 +1,5 @@
-libgpaste_soversion = '0.0.1'
-libgpaste_gtk4_soversion = '0.0.1'
+libgpaste_soversion = '0.1.0'
+libgpaste_gtk4_soversion = '1.0.0'
 
 pkg = import('pkgconfig')
 
@@ -37,6 +37,7 @@ libgpaste = library(
   install: true,
   install_dir: get_option('libdir'),
   link_args: ['-Wl,--version-script=' + libgpaste_symbols_file, '-lc'],
+  link_depends: libgpaste_symbols_file,
 )
 
 libgpaste_internal_dep = declare_dependency(
@@ -104,6 +105,7 @@ libgpaste_gtk4 = library(
   install: true,
   install_dir: get_option('libdir'),
   link_args: ['-Wl,--version-script=' + libgpaste_gtk4_symbols_file, '-lc'],
+  link_depends: libgpaste_gtk4_symbols_file,
 )
 
 libgpaste_gtk4_internal_dep = declare_dependency(

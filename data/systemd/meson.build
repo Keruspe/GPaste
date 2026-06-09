@@ -3,7 +3,7 @@ foreach name : ['org.gnome.GPaste', 'org.gnome.GPaste.Ui', 'org.gnome.GPaste.Pre
     input: name + '.systemd.in',
     configuration: conf,
     output: name + '.service',
-    install: get_option('systemd'),
+    install: true,
     install_dir: userunit_dir,
   )
 endforeach
