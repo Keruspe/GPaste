@@ -23,6 +23,8 @@ src/daemon/gpaste-file-backend.c
 src/daemon/gpaste-file-backend.h
 src/daemon/gpaste-history.c
 src/daemon/gpaste-history.h
+src/daemon/gpaste-history-saver.c
+src/daemon/gpaste-history-saver.h
 src/daemon/gpaste-image-item.c
 src/daemon/gpaste-image-item.h
 src/daemon/gpaste-item.c

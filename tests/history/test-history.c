@@ -37,12 +37,49 @@ make_history (GPasteSettings **out_settings,
     return history;
 }
 
+/* Like make_history but without forcing a name into GSettings (which would emit
+ * a deferred "changed" and reload), so the round-trip test can drive the name
+ * itself through load()/load_async(). */
+static GPasteHistory *
+make_plain_history (void)
+{
+    GPasteSettings *settings = g_paste_settings_new ();
+
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_max_history_size (settings, 100);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+
+    GPasteHistory *history = g_paste_history_new (settings);
+
+    g_object_unref (settings);
+
+    return history;
+}
+
 static const gchar *
 value_at (GPasteHistory *history,
           guint64        index)
 {
     const GPasteItem *item = g_paste_history_get (history, index);
     return item ? g_paste_item_get_value (item) : NULL;
+}
+
+/* Drain the main context for up to @max_ms ms, stopping early once @history
+ * reaches @expected_len entries. */
+static gboolean
+pump_until_length (GPasteHistory *history,
+                   guint64        expected_len,
+                   guint          max_ms)
+{
+    for (guint i = 0; i < max_ms; ++i)
+    {
+        if (g_paste_history_get_length (history) == expected_len)
+            return TRUE;
+        while (g_main_context_iteration (NULL, FALSE))
+            ;
+        g_usleep (1000);
+    }
+    return g_paste_history_get_length (history) == expected_len;
 }
 
 static void
@@ -203,6 +240,39 @@ test_empty (void)
     g_assert_null (g_paste_history_get (history, 0));
 }
 
+static void
+test_save_load_roundtrip (void)
+{
+    const gchar *name = "roundtrip";
+
+    /* Write through the async saver: add two items, then drain the loop so the
+     * background write reaches disk. */
+    {
+        g_autoptr (GPasteHistory) writer = make_plain_history ();
+        g_paste_history_load (writer, name);
+
+        g_paste_history_add (writer, g_paste_text_item_new ("alpha"));
+        g_paste_history_add (writer, g_paste_text_item_new ("beta"));
+
+        for (guint i = 0; i < 300; ++i)
+        {
+            while (g_main_context_iteration (NULL, FALSE))
+                ;
+            g_usleep (1000);
+        }
+    }
+
+    /* Read it back asynchronously into a fresh history. */
+    {
+        g_autoptr (GPasteHistory) reader = make_plain_history ();
+        g_paste_history_load_async (reader, name);
+
+        g_assert_true (pump_until_length (reader, 2, 5000));
+        g_assert_cmpstr (value_at (reader, 0), ==, "beta");
+        g_assert_cmpstr (value_at (reader, 1), ==, "alpha");
+    }
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -226,6 +296,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/get_by_uuid", test_get_by_uuid);
     g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
     g_test_add_func ("/history/empty", test_empty);
+    g_test_add_func ("/history/save_load_roundtrip", test_save_load_roundtrip);
 
     return g_test_run ();
 }

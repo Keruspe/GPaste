@@ -6,6 +6,7 @@
 #include <gpaste/gpaste-util.h>
 
 #include <gpaste-history.h>
+#include <gpaste-history-saver.h>
 #include <gpaste-image-item.h>
 #include <gpaste-storage-backend.h>
 #include <gpaste-uris-item.h>
@@ -26,6 +27,7 @@ typedef struct
     GMutex                lock;
 
     GPasteStorageBackend *backend;
+    GPasteHistorySaver   *saver;
     GPasteSettings       *settings;
     GSignalGroup         *settings_signals;
     GList                *history;
@@ -36,12 +38,6 @@ typedef struct
     /* Note: we never track the first (active) item here */
     const gchar          *biggest_uuid;
     guint64               biggest_size;
-
-    gboolean              write_in_progress;
-    gboolean              write_pending;
-
-    gboolean              load_in_progress;
-    guint64               load_generation;
 } GPasteHistoryPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (History, history, G_TYPE_OBJECT)
@@ -140,26 +136,6 @@ g_paste_history_emit_switch (GPasteHistory *self,
                    NULL);
 }
 
-typedef struct
-{
-    GPasteStorageBackend *backend;
-    gchar                *name;
-    GList                *history;
-} GPasteHistoryWriteData;
-
-static void
-g_paste_history_write_data_free (gpointer data)
-{
-    g_autofree GPasteHistoryWriteData *d = data;
-    g_clear_object (&d->backend);
-    g_clear_pointer (&d->name, g_free);
-    g_clear_list (&d->history, g_object_unref);
-}
-
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteHistoryWriteData, g_paste_history_write_data_free)
-
-static void g_paste_history_write_done (GObject *source_object, GAsyncResult *result, gpointer user_data);
-
 static gpointer
 g_paste_history_copy_ref (gconstpointer src,
                           gpointer      data G_GNUC_UNUSED)
@@ -167,48 +143,11 @@ g_paste_history_copy_ref (gconstpointer src,
     return g_object_ref ((gpointer) src);
 }
 
-static void
-g_paste_history_write_task (GTask        *task,
-                            gpointer      source_object G_GNUC_UNUSED,
-                            gpointer      task_data,
-                            GCancellable *cancellable G_GNUC_UNUSED)
+/* A deep, ref-holding copy of the current history, to be handed to the saver. */
+static GList *
+g_paste_history_snapshot (const GPasteHistoryPrivate *priv)
 {
-    const GPasteHistoryWriteData *data = task_data;
-    g_paste_storage_backend_write_history (data->backend, data->name, data->history);
-    g_task_return_boolean (task, TRUE);
-}
-
-static void
-g_paste_history_schedule_write (GPasteHistory        *self,
-                                GPasteHistoryPrivate *priv)
-{
-    priv->write_pending = FALSE;
-    priv->write_in_progress = TRUE;
-
-    g_autoptr (GPasteHistoryWriteData) data = g_new (GPasteHistoryWriteData, 1);
-    data->backend = g_object_ref (priv->backend);
-    data->name = g_strdup (priv->name);
-    data->history = g_list_copy_deep (priv->history, g_paste_history_copy_ref, NULL);
-
-    g_autoptr (GTask) task = g_task_new (self, NULL, g_paste_history_write_done, NULL);
-    g_task_set_static_name (task, "gpaste-history-write");
-    g_task_set_task_data (task, g_steal_pointer (&data), g_paste_history_write_data_free);
-    g_task_run_in_thread (task, g_paste_history_write_task);
-}
-
-static void
-g_paste_history_write_done (GObject      *source_object,
-                            GAsyncResult *result G_GNUC_UNUSED,
-                            gpointer      user_data G_GNUC_UNUSED)
-{
-    GPasteHistory *self = G_PASTE_HISTORY (source_object);
-    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    G_PASTE_LOCK_HISTORY;
-
-    priv->write_in_progress = FALSE;
-
-    if (priv->write_pending && priv->backend)
-        g_paste_history_schedule_write (self, priv);
+    return g_list_copy_deep (priv->history, g_paste_history_copy_ref, NULL);
 }
 
 static void
@@ -236,13 +175,10 @@ g_paste_history_update (GPasteHistory     *self,
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    if (!priv->load_in_progress)
-    {
-        if (priv->write_in_progress)
-            priv->write_pending = TRUE;
-        else
-            g_paste_history_schedule_write (self, priv);
-    }
+    /* Don't persist intermediate states while an async load is replacing the
+     * history; the load result will trigger its own save when appropriate. */
+    if (!g_paste_history_saver_is_loading (priv->saver))
+        g_paste_history_saver_save (priv->saver, priv->name, g_paste_history_snapshot (priv));
 
     g_paste_history_emit_update (self, action, target, position);
 }
@@ -935,113 +871,31 @@ g_paste_history_load (GPasteHistory *self,
     g_paste_history_load_locked (self, priv, name);
 }
 
-typedef struct
-{
-    GPasteStorageBackend *backend;
-    gchar                *name;
-    guint64               generation;
-    gboolean              save_after;
-} GPasteHistoryLoadData;
-
-typedef struct
-{
-    GList *history;
-    gsize  size;
-} GPasteHistoryLoadResult;
-
+/* Install the result of an async load (driven by the saver) into the model. */
 static void
-g_paste_history_load_data_free (gpointer data)
+g_paste_history_on_loaded (gpointer  user_data,
+                           GList    *history,
+                           gsize     size,
+                           gboolean  save_after)
 {
-    g_autofree GPasteHistoryLoadData *d = data;
-    g_clear_object (&d->backend);
-    g_clear_pointer (&d->name, g_free);
-}
-
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteHistoryLoadData, g_paste_history_load_data_free)
-
-static void
-g_paste_history_load_result_free (GPasteHistoryLoadResult *result)
-{
-    g_autofree GPasteHistoryLoadResult *r = result;
-    g_clear_list (&r->history, g_object_unref);
-}
-
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteHistoryLoadResult, g_paste_history_load_result_free)
-
-static void
-g_paste_history_load_task (GTask        *task,
-                           gpointer      source_object G_GNUC_UNUSED,
-                           gpointer      task_data,
-                           GCancellable *cancellable G_GNUC_UNUSED)
-{
-    const GPasteHistoryLoadData *data = task_data;
-    GPasteHistoryLoadResult *result = g_new0 (GPasteHistoryLoadResult, 1);
-
-    g_paste_storage_backend_read_history (data->backend, data->name, &result->history, &result->size);
-    g_task_return_pointer (task, result, (GDestroyNotify) g_paste_history_load_result_free);
-}
-
-static void
-g_paste_history_load_done (GObject      *source_object,
-                           GAsyncResult *result,
-                           gpointer      user_data G_GNUC_UNUSED)
-{
-    GPasteHistory *self = G_PASTE_HISTORY (source_object);
+    GPasteHistory *self = user_data;
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
-    const GPasteHistoryLoadData *data = g_task_get_task_data (G_TASK (result));
-
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteHistoryLoadResult) load_result = g_task_propagate_pointer (G_TASK (result), &error);
-
     G_PASTE_LOCK_HISTORY;
 
-    priv->load_in_progress = FALSE;
+    g_clear_list (&priv->history, g_object_unref);
+    priv->history = history;
+    priv->size = size;
 
-    if (!load_result)
+    if (priv->history)
     {
-        if (error)
-            g_warning ("Failed to load history: %s", error->message);
-        return;
+        g_paste_history_activate_first (self, TRUE);
+        g_paste_history_private_elect_new_biggest (priv);
     }
 
-    if (data->generation == priv->load_generation)
-    {
-        g_clear_list (&priv->history, g_object_unref);
-        priv->history = g_steal_pointer (&load_result->history);
-        priv->size = load_result->size;
-
-        if (priv->history)
-        {
-            g_paste_history_activate_first (self, TRUE);
-            g_paste_history_private_elect_new_biggest (priv);
-        }
-
-        if (data->save_after)
-            g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
-        else
-            g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
-    }
-}
-
-static void
-g_paste_history_schedule_load (GPasteHistory        *self,
-                               GPasteHistoryPrivate *priv,
-                               const gchar          *name,
-                               gboolean              save_after)
-{
-    priv->load_in_progress = TRUE;
-    priv->load_generation++;
-
-    g_autoptr (GPasteHistoryLoadData) data = g_new (GPasteHistoryLoadData, 1);
-    data->backend = g_object_ref (priv->backend);
-    data->name = g_strdup (name);
-    data->generation = priv->load_generation;
-    data->save_after = save_after;
-
-    g_autoptr (GTask) task = g_task_new (self, NULL, g_paste_history_load_done, NULL);
-    g_task_set_static_name (task, "gpaste-history-load");
-    g_task_set_task_data (task, g_steal_pointer (&data), g_paste_history_load_data_free);
-    g_task_run_in_thread (task, g_paste_history_load_task);
+    if (save_after)
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
+    else
+        g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
 /**
@@ -1064,14 +918,14 @@ g_paste_history_load_async (GPasteHistory *self,
 
     const gchar *resolved = (name) ? name : g_paste_settings_get_history_name (priv->settings);
 
-    if (priv->name && g_paste_str_equal (resolved, priv->name) && !priv->load_in_progress)
+    if (priv->name && g_paste_str_equal (resolved, priv->name) && !g_paste_history_saver_is_loading (priv->saver))
         return;
 
     g_set_str (&priv->name, resolved);
     g_clear_list (&priv->history, g_object_unref);
     priv->size = 0;
 
-    g_paste_history_schedule_load (self, priv, priv->name, FALSE);
+    g_paste_history_saver_load (priv->saver, priv->name, FALSE);
 }
 
 /**
@@ -1131,7 +985,7 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     priv->size = 0;
 
     g_paste_history_emit_switch (self, priv->name);
-    g_paste_history_schedule_load (self, priv, priv->name, TRUE);
+    g_paste_history_saver_load (priv->saver, priv->name, TRUE);
 }
 
 static void
@@ -1158,6 +1012,7 @@ g_paste_history_dispose (GObject *object)
     GPasteHistory *self = G_PASTE_HISTORY (object);
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
+    g_clear_object (&priv->saver);
     g_clear_object (&priv->backend);
     g_clear_list (&priv->history, g_object_unref);
     g_clear_object (&priv->settings_signals);
@@ -1393,6 +1248,7 @@ g_paste_history_new (GPasteSettings *settings)
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     priv->backend = g_paste_storage_backend_new (G_PASTE_STORAGE_DEFAULT, settings);
+    priv->saver = g_paste_history_saver_new (priv->backend, self, g_paste_history_on_loaded);
     priv->settings = g_object_ref (settings);
 
     GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);

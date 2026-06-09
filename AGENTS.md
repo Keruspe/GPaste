@@ -141,7 +141,7 @@ The background service. Owns the clipboard history and exposes it over D-Bus (`o
 - Clipboard watching (primary + clipboard selections)
 - Item types: text, password, image, URI
 - Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGtkGlobalShortcutClient`, used directly by the keybinder); if the portal is unavailable, keyboard shortcuts are simply disabled
-- History persistence to disk
+- History persistence to disk: `GPasteHistory` owns the in-memory model and dedup/size policy, but delegates the asynchronous I/O to `GPasteHistorySaver`, which writes snapshots handed to it (coalescing concurrent requests) and loads histories in the background. The saver never touches the live list, so it shares no locking with the model; it hands load results back through a callback.
 
 The D-Bus method surface lives in `gpaste-daemon-methods.{c,h}`: free functions that take a small `GPasteDaemonMethods` context `{ connection, history, settings, clipboards_manager }` rather than the daemon's instance-private struct. `gpaste-daemon.c` keeps the object lifecycle, the signal emitters, the controller actions that need the GObject (`upload`, `reexecute`, `show_history`), and a dispatcher that builds the context and forwards. Everything but `main.c` is compiled into a `gpaste-daemon-internal` static library (`gpaste_daemon_internal_dep`) so the daemon executable and the test suite both link the same code.
 
