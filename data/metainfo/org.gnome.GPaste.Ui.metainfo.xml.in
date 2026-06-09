@@ -46,7 +46,7 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
-    <release type="stable" date="UNRELEASED" version="50.1">
+    <release type="stable" date="2026-06-09" version="50.1">
       <description>
         <p>This is a maintenance release. Changes:</p>
         <ul>

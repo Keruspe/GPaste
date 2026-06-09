@@ -1,4 +1,4 @@
-NEW in 50.1 (UNRELEASED)
+NEW in 50.1 (09/06/2026)
 =============
 
 - Fix building with -Dgnome-shell=false: the UI's Pango dependency was only pulled in when the GNOME Shell extension was enabled, so a build without the extension failed to configure
