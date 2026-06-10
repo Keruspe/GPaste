@@ -1,6 +1,5 @@
 gpaste_ui_sources = [
   'gpaste-ui-about.c',
-  'gpaste-ui-delete-item.c',
   'gpaste-ui-edit-item.c',
   'gpaste-ui-header.c',
   'gpaste-ui-history.c',
@@ -16,14 +15,12 @@ gpaste_ui_sources = [
   'gpaste-ui-settings.c',
   'gpaste-ui-shortcuts-window.c',
   'gpaste-ui-switch.c',
-  'gpaste-ui-upload-item.c',
   'gpaste-ui-window.c',
   'gpaste-ui.c',
 ]
 
 gpaste_ui_headers = [
   'gpaste-ui-about.h',
-  'gpaste-ui-delete-item.h',
   'gpaste-ui-edit-item.h',
   'gpaste-ui-header.h',
   'gpaste-ui-history.h',
@@ -39,7 +36,6 @@ gpaste_ui_headers = [
   'gpaste-ui-settings.h',
   'gpaste-ui-shortcuts-window.h',
   'gpaste-ui-switch.h',
-  'gpaste-ui-upload-item.h',
   'gpaste-ui-window.h',
 ]
 

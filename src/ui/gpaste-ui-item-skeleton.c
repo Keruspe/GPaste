@@ -3,10 +3,9 @@
 
 #include <gpaste/gpaste-gsettings-keys.h>
 
-#include <gpaste-ui-delete-item.h>
 #include <gpaste-ui-edit-item.h>
+#include <gpaste-ui-item-action.h>
 #include <gpaste-ui-item-skeleton.h>
-#include <gpaste-ui-upload-item.h>
 
 typedef struct
 {
@@ -267,6 +266,20 @@ add_action (gpointer data,
 }
 
 static void
+delete_item_action (GPasteClient *client,
+                    const gchar  *uuid)
+{
+    g_paste_client_delete (client, uuid, NULL, NULL);
+}
+
+static void
+upload_item_action (GPasteClient *client,
+                    const gchar  *uuid)
+{
+    g_paste_client_upload (client, uuid, NULL, NULL);
+}
+
+static void
 g_paste_ui_item_skeleton_dispose (GObject *object)
 {
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (object));
@@ -364,8 +377,8 @@ g_paste_ui_item_skeleton_new (GType           type,
     GtkWidget *self = g_object_new (type, "selectable", FALSE, NULL);
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (G_PASTE_UI_ITEM_SKELETON (self));
     GtkWidget *edit = g_paste_ui_edit_item_new (client, rootwin);
-    GtkWidget *upload = g_paste_ui_upload_item_new (client);
-    GtkWidget *delete = g_paste_ui_delete_item_new (client);
+    GtkWidget *upload = g_paste_ui_item_action_new_simple (client, "document-send-symbolic", _("Upload"), upload_item_action);
+    GtkWidget *delete = g_paste_ui_item_action_new_simple (client, "edit-delete-symbolic", _("Delete"), delete_item_action);
 
     priv->settings = g_object_ref (settings);
     priv->edit = edit;

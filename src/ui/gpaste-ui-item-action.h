@@ -21,11 +21,15 @@ struct _GPasteUiItemActionClass
 {
     GtkButtonClass parent_class;
 
-    /*< pure virtual >*/
+    /*< virtual: subclasses with their own state override this; simple,
+        stateless actions use g_paste_ui_item_action_new_simple instead >*/
     void (*activate) (GPasteUiItemAction *self,
                       GPasteClient       *client,
                       const gchar        *uuid);
 };
+
+typedef void (*GPasteUiItemActionFunc) (GPasteClient *client,
+                                        const gchar  *uuid);
 
 void g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
                                       const gchar        *uuid);
@@ -34,6 +38,10 @@ GtkWidget *g_paste_ui_item_action_new (GType         type,
                                        GPasteClient *client,
                                        const gchar  *icon_name,
                                        const gchar  *tooltip);
+GtkWidget *g_paste_ui_item_action_new_simple (GPasteClient          *client,
+                                              const gchar           *icon_name,
+                                              const gchar           *tooltip,
+                                              GPasteUiItemActionFunc activate);
 
 G_END_DECLS
 

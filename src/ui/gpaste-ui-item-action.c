@@ -5,12 +5,14 @@
 
 typedef struct
 {
-    GPasteClient *client;
+    GPasteClient          *client;
 
-    gchar        *uuid;
+    gchar                 *uuid;
+
+    GPasteUiItemActionFunc activate_func; /* set for simple, subclass-less actions */
 } GPasteUiItemActionPrivate;
 
-G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (UiItemAction, ui_item_action, GTK_TYPE_BUTTON)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiItemAction, ui_item_action, GTK_TYPE_BUTTON)
 
 /**
  * g_paste_ui_item_action_set_uuid:
@@ -28,6 +30,18 @@ g_paste_ui_item_action_set_uuid (GPasteUiItemAction *self,
     GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (self);
 
     g_set_str (&priv->uuid, uuid);
+}
+
+static void
+g_paste_ui_item_action_real_activate (GPasteUiItemAction *self,
+                                      GPasteClient       *client,
+                                      const gchar        *uuid)
+{
+    const GPasteUiItemActionPrivate *priv = _g_paste_ui_item_action_get_instance_private (self);
+
+    /* Default for subclass-less actions created via _new_simple. */
+    if (priv->activate_func)
+        priv->activate_func (client, uuid);
 }
 
 static void
@@ -57,6 +71,7 @@ g_paste_ui_item_action_class_init (GPasteUiItemActionClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_item_action_dispose;
     GTK_BUTTON_CLASS (klass)->clicked = g_paste_ui_item_action_clicked;
+    klass->activate = g_paste_ui_item_action_real_activate;
 }
 
 static void
@@ -96,6 +111,35 @@ g_paste_ui_item_action_new (GType         type,
     gtk_widget_set_margin_end (icon, 5);
 
     gtk_button_set_child (GTK_BUTTON (self), icon);
+
+    return self;
+}
+
+/**
+ * g_paste_ui_item_action_new_simple:
+ * @client: a #GPasteClient
+ * @icon_name: the name of the icon to use
+ * @tooltip: the tooltip to display
+ * @activate: (scope notified): the action to run on the tracked item when clicked
+ *
+ * Create a #GPasteUiItemAction that runs @activate when clicked, without
+ * needing a dedicated subclass.
+ *
+ * Returns: a newly allocated #GPasteUiItemAction
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GtkWidget *
+g_paste_ui_item_action_new_simple (GPasteClient          *client,
+                                   const gchar           *icon_name,
+                                   const gchar           *tooltip,
+                                   GPasteUiItemActionFunc activate)
+{
+    g_return_val_if_fail (activate, NULL);
+
+    GtkWidget *self = g_paste_ui_item_action_new (G_PASTE_TYPE_UI_ITEM_ACTION, client, icon_name, tooltip);
+    GPasteUiItemActionPrivate *priv = g_paste_ui_item_action_get_instance_private (G_PASTE_UI_ITEM_ACTION (self));
+
+    priv->activate_func = activate;
 
     return self;
 }
