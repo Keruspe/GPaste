@@ -7,7 +7,7 @@
 #include <gpaste-history.h>
 #include <gpaste-keybinder.h>
 #include <gpaste-text-item.h>
-#include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
+#include <gpaste-global-shortcut-client.h>
 
 #include <string.h>
 
@@ -573,7 +573,7 @@ on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
     GPasteDaemon *self = user_data;
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GError) error = NULL;
-    g_autoptr (GPasteGtkGlobalShortcutClient) portal_client = g_paste_gtk_global_shortcut_client_new_finish (res, &error);
+    g_autoptr (GPasteGlobalShortcutClient) portal_client = g_paste_global_shortcut_client_new_finish (res, &error);
 
     if (error)
     {
@@ -637,7 +637,7 @@ g_paste_daemon_init (GPasteDaemon *self)
                                     priv);
 
     g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
-    g_paste_gtk_global_shortcut_client_new (on_portal_client_ready, self);
+    g_paste_global_shortcut_client_new (on_portal_client_ready, self);
 }
 
 /**

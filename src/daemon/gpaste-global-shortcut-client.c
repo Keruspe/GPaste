@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste/gpaste-gdbus-macros.h>
-#include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
+#include <gpaste-global-shortcut-client.h>
 
 #include <gtk/gtk.h>
 
@@ -15,29 +15,29 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-#define G_PASTE_GTK_GLOBAL_SHORTCUT_OBJECT_PATH    "/org/freedesktop/portal/desktop"
-#define G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE_NAME "org.freedesktop.portal.GlobalShortcuts"
+#define G_PASTE_GLOBAL_SHORTCUT_OBJECT_PATH    "/org/freedesktop/portal/desktop"
+#define G_PASTE_GLOBAL_SHORTCUT_INTERFACE_NAME "org.freedesktop.portal.GlobalShortcuts"
 
-#define G_PASTE_GTK_GLOBAL_SHORTCUT_CREATE_SESSION "CreateSession"
-#define G_PASTE_GTK_GLOBAL_SHORTCUT_BIND_SHORTCUTS "BindShortcuts"
+#define G_PASTE_GLOBAL_SHORTCUT_CREATE_SESSION "CreateSession"
+#define G_PASTE_GLOBAL_SHORTCUT_BIND_SHORTCUTS "BindShortcuts"
 
-#define G_PASTE_GTK_GLOBAL_SHORTCUT_SIG_ACTIVATED "Activated"
+#define G_PASTE_GLOBAL_SHORTCUT_SIG_ACTIVATED "Activated"
 
-#define G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE                                                            \
+#define G_PASTE_GLOBAL_SHORTCUT_INTERFACE                                                            \
     "<node>"                                                                                             \
-        "<interface name='" G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE_NAME "'>"                              \
-            "<method name='" G_PASTE_GTK_GLOBAL_SHORTCUT_CREATE_SESSION "'>"                             \
+        "<interface name='" G_PASTE_GLOBAL_SHORTCUT_INTERFACE_NAME "'>"                              \
+            "<method name='" G_PASTE_GLOBAL_SHORTCUT_CREATE_SESSION "'>"                             \
                 "<arg type='a{sv}'   direction='in'  name='options' />"                                  \
                 "<arg type='o'       direction='out' name='handle'  />"                                  \
             "</method>"                                                                                  \
-            "<method name='" G_PASTE_GTK_GLOBAL_SHORTCUT_BIND_SHORTCUTS "'>"                             \
+            "<method name='" G_PASTE_GLOBAL_SHORTCUT_BIND_SHORTCUTS "'>"                             \
                 "<arg type='o'         direction='in'  name='session_handle' />"                         \
                 "<arg type='a(sa{sv})' direction='in'  name='shortcuts'      />"                         \
                 "<arg type='s'         direction='in'  name='parent_window'  />"                         \
                 "<arg type='a{sv}'     direction='in'  name='options'        />"                         \
                 "<arg type='o'         direction='out' name='handle'         />"                         \
             "</method>"                                                                                  \
-            "<signal name='" G_PASTE_GTK_GLOBAL_SHORTCUT_SIG_ACTIVATED "'>"                              \
+            "<signal name='" G_PASTE_GLOBAL_SHORTCUT_SIG_ACTIVATED "'>"                              \
                 "<arg type='o'     name='session_handle' />"                                             \
                 "<arg type='s'     name='shortcut_id'   />"                                              \
                 "<arg type='t'     name='timestamp'     />"                                              \
@@ -78,14 +78,14 @@ typedef struct
 {
     gchar     *session_handle;
     GPtrArray *shortcuts;  /* _Shortcut*, owned via _shortcut_free */
-} GPasteGtkGlobalShortcutClientPrivate;
+} GPasteGlobalShortcutClientPrivate;
 
-struct _GPasteGtkGlobalShortcutClient
+struct _GPasteGlobalShortcutClient
 {
     GDBusProxy parent_instance;
 };
 
-G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GtkGlobalShortcutClient, gtk_global_shortcut_client, G_TYPE_DBUS_PROXY)
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (GlobalShortcutClient, global_shortcut_client, G_TYPE_DBUS_PROXY)
 
 /**********************/
 /* Shortcut variant   */
@@ -124,7 +124,7 @@ gtk_accel_to_portal_trigger (const gchar *accel)
 }
 
 static GVariant *
-build_shortcuts_variant (GPasteGtkGlobalShortcutClientPrivate *priv)
+build_shortcuts_variant (GPasteGlobalShortcutClientPrivate *priv)
 {
     g_auto (GVariantBuilder) builder;
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(sa{sv})"));
@@ -158,7 +158,7 @@ build_shortcuts_variant (GPasteGtkGlobalShortcutClientPrivate *priv)
 
 typedef struct
 {
-    GPasteGtkGlobalShortcutClient *client;
+    GPasteGlobalShortcutClient *client;
     GTask                         *task;
     GDBusConnection               *connection;
     guint                          signal_id;
@@ -173,7 +173,7 @@ session_request_data_free (_SessionRequestData *data)
     g_free (data);
 }
 
-static void start_bind_async (GPasteGtkGlobalShortcutClient *self, GTask *task);
+static void start_bind_async (GPasteGlobalShortcutClient *self, GTask *task);
 
 static void
 on_bind_method_done (GObject      *source,
@@ -186,8 +186,8 @@ on_bind_method_done (GObject      *source,
 
     if (!ret)
     {
-        GPasteGtkGlobalShortcutClient *self = G_PASTE_GTK_GLOBAL_SHORTCUT_CLIENT (source);
-        GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+        GPasteGlobalShortcutClient *self = G_PASTE_GLOBAL_SHORTCUT_CLIENT (source);
+        GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
         g_clear_pointer (&priv->session_handle, g_free);
         g_task_return_error (task, g_steal_pointer (&error));
     }
@@ -196,10 +196,10 @@ on_bind_method_done (GObject      *source,
 }
 
 static void
-start_bind_async (GPasteGtkGlobalShortcutClient *self,
+start_bind_async (GPasteGlobalShortcutClient *self,
                   GTask                         *task)
 {
-    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
     GDBusProxy *proxy = G_DBUS_PROXY (self);
 
     g_auto (GVariantBuilder) options;
@@ -212,7 +212,7 @@ start_bind_async (GPasteGtkGlobalShortcutClient *self,
         g_variant_builder_end (&options)
     };
 
-    g_dbus_proxy_call (proxy, G_PASTE_GTK_GLOBAL_SHORTCUT_BIND_SHORTCUTS,
+    g_dbus_proxy_call (proxy, G_PASTE_GLOBAL_SHORTCUT_BIND_SHORTCUTS,
                        g_variant_new_tuple (params, 4),
                        G_DBUS_CALL_FLAGS_NONE, -1, NULL,
                        on_bind_method_done, g_object_ref (task));
@@ -251,10 +251,10 @@ on_session_created (GDBusConnection *conn,
         return;
     }
 
-    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (data->client);
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
     g_set_str (&priv->session_handle, g_variant_get_string (handle_v, NULL));
 
-    g_autoptr (GPasteGtkGlobalShortcutClient) client = g_object_ref (data->client);
+    g_autoptr (GPasteGlobalShortcutClient) client = g_object_ref (data->client);
     g_autoptr (GTask) task = g_object_ref (data->task);
     session_request_data_free (data);
 
@@ -288,7 +288,7 @@ on_create_session_method_done (GObject      *source,
 }
 
 static void
-start_create_session_async (GPasteGtkGlobalShortcutClient *self,
+start_create_session_async (GPasteGlobalShortcutClient *self,
                             GTask                      *task)
 {
     GDBusProxy *proxy = G_DBUS_PROXY (self);
@@ -306,7 +306,7 @@ start_create_session_async (GPasteGtkGlobalShortcutClient *self,
 
     GVariant *params[] = { g_variant_builder_end (&options) };
 
-    g_dbus_proxy_call (proxy, G_PASTE_GTK_GLOBAL_SHORTCUT_CREATE_SESSION,
+    g_dbus_proxy_call (proxy, G_PASTE_GLOBAL_SHORTCUT_CREATE_SESSION,
                        g_variant_new_tuple (params, 1),
                        G_DBUS_CALL_FLAGS_NONE, -1, NULL,
                        on_create_session_method_done, data);
@@ -323,24 +323,24 @@ on_provider_bind_done (GObject      *source   G_GNUC_UNUSED,
 {
     g_autoptr (GError) error = NULL;
     if (!g_task_propagate_boolean (G_TASK (result), &error))
-        g_warning ("GPasteGtkGlobalShortcutClient: BindShortcuts failed: %s", error->message);
+        g_warning ("GPasteGlobalShortcutClient: BindShortcuts failed: %s", error->message);
 }
 
 /**
- * g_paste_gtk_global_shortcut_client_grab_all:
- * @self: a #GPasteGtkGlobalShortcutClient
+ * g_paste_global_shortcut_client_grab_all:
+ * @self: a #GPasteGlobalShortcutClient
  * @accels: (array): a %NULL-terminated (by id) array of #GPasteKeybindingAccelerator
  *
  * Replace all currently registered shortcuts with @accels.
  */
 G_PASTE_VISIBLE void
-g_paste_gtk_global_shortcut_client_grab_all (GPasteGtkGlobalShortcutClient     *self,
+g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient     *self,
                                              const GPasteKeybindingAccelerator *accels)
 {
-    g_return_if_fail (_G_PASTE_IS_GTK_GLOBAL_SHORTCUT_CLIENT (self));
+    g_return_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
     g_return_if_fail (accels);
 
-    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
 
     g_ptr_array_set_size (priv->shortcuts, 0);
 
@@ -358,17 +358,17 @@ g_paste_gtk_global_shortcut_client_grab_all (GPasteGtkGlobalShortcutClient     *
 }
 
 /**
- * g_paste_gtk_global_shortcut_client_ungrab_all:
- * @self: a #GPasteGtkGlobalShortcutClient
+ * g_paste_global_shortcut_client_ungrab_all:
+ * @self: a #GPasteGlobalShortcutClient
  *
  * Release all currently registered shortcuts.
  */
 G_PASTE_VISIBLE void
-g_paste_gtk_global_shortcut_client_ungrab_all (GPasteGtkGlobalShortcutClient *self)
+g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient *self)
 {
-    g_return_if_fail (_G_PASTE_IS_GTK_GLOBAL_SHORTCUT_CLIENT (self));
+    g_return_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (self));
 
-    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
 
     g_ptr_array_set_size (priv->shortcuts, 0);
 
@@ -384,16 +384,16 @@ g_paste_gtk_global_shortcut_client_ungrab_all (GPasteGtkGlobalShortcutClient *se
 /**********************/
 
 static void
-g_paste_gtk_global_shortcut_client_g_signal (GDBusProxy  *proxy,
+g_paste_global_shortcut_client_g_signal (GDBusProxy  *proxy,
                                              const gchar *sender_name G_GNUC_UNUSED,
                                              const gchar *signal_name,
                                              GVariant    *parameters)
 {
-    GPasteGtkGlobalShortcutClient *self = G_PASTE_GTK_GLOBAL_SHORTCUT_CLIENT (proxy);
+    GPasteGlobalShortcutClient *self = G_PASTE_GLOBAL_SHORTCUT_CLIENT (proxy);
 
-    if (g_paste_str_equal (signal_name, G_PASTE_GTK_GLOBAL_SHORTCUT_SIG_ACTIVATED))
+    if (g_paste_str_equal (signal_name, G_PASTE_GLOBAL_SHORTCUT_SIG_ACTIVATED))
     {
-        GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+        GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
         const gchar *session_handle;
         const gchar *shortcut_id;
         guint64 timestamp G_GNUC_UNUSED;
@@ -411,25 +411,25 @@ g_paste_gtk_global_shortcut_client_g_signal (GDBusProxy  *proxy,
 /****************/
 
 static void
-g_paste_gtk_global_shortcut_client_dispose (GObject *object)
+g_paste_global_shortcut_client_dispose (GObject *object)
 {
-    GPasteGtkGlobalShortcutClient *self = G_PASTE_GTK_GLOBAL_SHORTCUT_CLIENT (object);
-    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+    GPasteGlobalShortcutClient *self = G_PASTE_GLOBAL_SHORTCUT_CLIENT (object);
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
 
     g_clear_pointer (&priv->session_handle, g_free);
     g_clear_pointer (&priv->shortcuts, g_ptr_array_unref);
 
-    G_OBJECT_CLASS (g_paste_gtk_global_shortcut_client_parent_class)->dispose (object);
+    G_OBJECT_CLASS (g_paste_global_shortcut_client_parent_class)->dispose (object);
 }
 
 static void
-g_paste_gtk_global_shortcut_client_class_init (GPasteGtkGlobalShortcutClientClass *klass)
+g_paste_global_shortcut_client_class_init (GPasteGlobalShortcutClientClass *klass)
 {
-    G_OBJECT_CLASS (klass)->dispose = g_paste_gtk_global_shortcut_client_dispose;
-    G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_gtk_global_shortcut_client_g_signal;
+    G_OBJECT_CLASS (klass)->dispose = g_paste_global_shortcut_client_dispose;
+    G_DBUS_PROXY_CLASS (klass)->g_signal = g_paste_global_shortcut_client_g_signal;
 
     /**
-     * GPasteGtkGlobalShortcutClient::keybinding-activated:
+     * GPasteGlobalShortcutClient::keybinding-activated:
      * @client: the object on which the signal was emitted
      * @id: the id of the activated shortcut (its dconf key)
      *
@@ -449,63 +449,63 @@ g_paste_gtk_global_shortcut_client_class_init (GPasteGtkGlobalShortcutClientClas
 }
 
 static void
-g_paste_gtk_global_shortcut_client_init (GPasteGtkGlobalShortcutClient *self)
+g_paste_global_shortcut_client_init (GPasteGlobalShortcutClient *self)
 {
     GDBusProxy *proxy = G_DBUS_PROXY (self);
     g_autoptr (GError) error = NULL;
-    g_autoptr (GDBusNodeInfo) dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GTK_GLOBAL_SHORTCUT_INTERFACE,
+    g_autoptr (GDBusNodeInfo) dbus_info = g_dbus_node_info_new_for_xml (G_PASTE_GLOBAL_SHORTCUT_INTERFACE,
                                                                         &error);
     g_assert_no_error (error);
 
     g_dbus_proxy_set_interface_info (proxy, dbus_info->interfaces[0]);
 
-    GPasteGtkGlobalShortcutClientPrivate *priv = g_paste_gtk_global_shortcut_client_get_instance_private (self);
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
     priv->session_handle = NULL;
     priv->shortcuts = g_ptr_array_new_with_free_func (_shortcut_free);
 }
 
 /**
- * g_paste_gtk_global_shortcut_client_new_sync:
+ * g_paste_global_shortcut_client_new_sync:
  * @error: Return location for error or %NULL.
  *
- * Create a new instance of #GPasteGtkGlobalShortcutClient
+ * Create a new instance of #GPasteGlobalShortcutClient
  *
- * Returns: a newly allocated #GPasteGtkGlobalShortcutClient
+ * Returns: a newly allocated #GPasteGlobalShortcutClient
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteGtkGlobalShortcutClient *
-g_paste_gtk_global_shortcut_client_new_sync (GError **error)
+G_PASTE_VISIBLE GPasteGlobalShortcutClient *
+g_paste_global_shortcut_client_new_sync (GError **error)
 {
-    CUSTOM_PROXY_NEW (GTK_GLOBAL_SHORTCUT_CLIENT, GTK_GLOBAL_SHORTCUT, G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME);
+    CUSTOM_PROXY_NEW (GLOBAL_SHORTCUT_CLIENT, GLOBAL_SHORTCUT, G_PASTE_GLOBAL_SHORTCUT_BUS_NAME);
 }
 
 /**
- * g_paste_gtk_global_shortcut_client_new:
+ * g_paste_global_shortcut_client_new:
  * @callback: Callback function to invoke when the proxy is ready.
  * @user_data: User data to pass to @callback.
  *
- * Create a new instance of #GPasteGtkGlobalShortcutClient
+ * Create a new instance of #GPasteGlobalShortcutClient
  */
 G_PASTE_VISIBLE void
-g_paste_gtk_global_shortcut_client_new (GAsyncReadyCallback callback,
+g_paste_global_shortcut_client_new (GAsyncReadyCallback callback,
                                     gpointer            user_data)
 {
-    CUSTOM_PROXY_NEW_ASYNC (GTK_GLOBAL_SHORTCUT_CLIENT, GTK_GLOBAL_SHORTCUT, G_PASTE_GTK_GLOBAL_SHORTCUT_BUS_NAME);
+    CUSTOM_PROXY_NEW_ASYNC (GLOBAL_SHORTCUT_CLIENT, GLOBAL_SHORTCUT, G_PASTE_GLOBAL_SHORTCUT_BUS_NAME);
 }
 
 /**
- * g_paste_gtk_global_shortcut_client_new_finish:
+ * g_paste_global_shortcut_client_new_finish:
  * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback function passed to the async ctor.
  * @error: Return location for error or %NULL.
  *
- * Create a new instance of #GPasteGtkGlobalShortcutClient
+ * Create a new instance of #GPasteGlobalShortcutClient
  *
- * Returns: a newly allocated #GPasteGtkGlobalShortcutClient
+ * Returns: a newly allocated #GPasteGlobalShortcutClient
  *          free it with g_object_unref
  */
-G_PASTE_VISIBLE GPasteGtkGlobalShortcutClient *
-g_paste_gtk_global_shortcut_client_new_finish (GAsyncResult *result,
+G_PASTE_VISIBLE GPasteGlobalShortcutClient *
+g_paste_global_shortcut_client_new_finish (GAsyncResult *result,
                                            GError      **error)
 {
-    CUSTOM_PROXY_NEW_FINISH (GTK_GLOBAL_SHORTCUT_CLIENT);
+    CUSTOM_PROXY_NEW_FINISH (GLOBAL_SHORTCUT_CLIENT);
 }

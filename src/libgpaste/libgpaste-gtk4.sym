@@ -1,12 +1,5 @@
 LIBGPASTE_GTK4_42 {
 global:
-    g_paste_gtk_global_shortcut_client_get_type;
-    g_paste_gtk_global_shortcut_client_grab_all;
-    g_paste_gtk_global_shortcut_client_new;
-    g_paste_gtk_global_shortcut_client_new_finish;
-    g_paste_gtk_global_shortcut_client_new_sync;
-    g_paste_gtk_global_shortcut_client_ungrab_all;
-
     g_paste_gtk_util_confirm_dialog;
     g_paste_gtk_util_compute_checksum;
     g_paste_gtk_util_empty_history;

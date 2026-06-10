@@ -9,9 +9,6 @@
 #include <gpaste-gtk4/gpaste-gtk-macros.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
-/* GPasteGlobalShortcutClient */
-#include <gpaste-gtk4/gpaste-gtk-global-shortcut-client.h>
-
 /* GPasteGtkPreferences */
 #include <gpaste-gtk4/gpaste-gtk-preferences-dialog.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>

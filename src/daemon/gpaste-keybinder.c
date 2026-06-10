@@ -13,7 +13,7 @@ typedef struct
     GHashTable               *keybindings;  /* const gchar * (borrowed from _Keybinding) → _Keybinding * */
 
     GPasteSettings                *settings;
-    GPasteGtkGlobalShortcutClient *provider;
+    GPasteGlobalShortcutClient *provider;
     GSignalGroup                  *provider_signals;
 } GPasteKeybinderPrivate;
 
@@ -142,7 +142,7 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
     }
     accels[i].id = NULL;
 
-    g_paste_gtk_global_shortcut_client_grab_all (priv->provider, accels);
+    g_paste_global_shortcut_client_grab_all (priv->provider, accels);
 }
 
 /**
@@ -158,7 +158,7 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
 
-    g_paste_gtk_global_shortcut_client_ungrab_all (priv->provider);
+    g_paste_global_shortcut_client_ungrab_all (priv->provider);
 
     g_autoptr (GList) values = g_hash_table_get_values (priv->keybindings);
     for (GList *l = values; l; l = g_list_next (l))
@@ -166,7 +166,7 @@ g_paste_keybinder_deactivate_all (GPasteKeybinder *self)
 }
 
 static void
-on_keybinding_activated (GPasteGtkGlobalShortcutClient *provider G_GNUC_UNUSED,
+on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
                          const gchar                   *id,
                          gpointer                       user_data)
 {
@@ -186,7 +186,7 @@ g_paste_keybinder_dispose (GObject *object)
     if (priv->settings)
     {
         g_clear_object (&priv->settings);
-        g_paste_gtk_global_shortcut_client_ungrab_all (priv->provider);
+        g_paste_global_shortcut_client_ungrab_all (priv->provider);
         g_clear_pointer (&priv->keybindings, g_hash_table_unref);
         g_clear_object (&priv->provider_signals);
         g_clear_object (&priv->provider);
@@ -212,7 +212,7 @@ g_paste_keybinder_init (GPasteKeybinder *self)
 /**
  * g_paste_keybinder_new:
  * @settings: a #GPasteSettings instance
- * @provider: a #GPasteGtkGlobalShortcutClient instance
+ * @provider: a #GPasteGlobalShortcutClient instance
  *
  * Create a new instance of #GPasteKeybinder
  *
@@ -221,10 +221,10 @@ g_paste_keybinder_init (GPasteKeybinder *self)
  */
 G_PASTE_VISIBLE GPasteKeybinder *
 g_paste_keybinder_new (GPasteSettings                *settings,
-                       GPasteGtkGlobalShortcutClient *provider)
+                       GPasteGlobalShortcutClient *provider)
 {
     g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
-    g_return_val_if_fail (_G_PASTE_IS_GTK_GLOBAL_SHORTCUT_CLIENT (provider), NULL);
+    g_return_val_if_fail (_G_PASTE_IS_GLOBAL_SHORTCUT_CLIENT (provider), NULL);
 
     GPasteKeybinder *self = G_PASTE_KEYBINDER (g_object_new (G_PASTE_TYPE_KEYBINDER, NULL));
     GPasteKeybinderPrivate *priv = g_paste_keybinder_get_instance_private (self);
@@ -232,7 +232,7 @@ g_paste_keybinder_new (GPasteSettings                *settings,
     priv->settings = g_object_ref (settings);
     priv->provider = g_object_ref (provider);
 
-    GSignalGroup *provider_signals = priv->provider_signals = g_signal_group_new (G_PASTE_TYPE_GTK_GLOBAL_SHORTCUT_CLIENT);
+    GSignalGroup *provider_signals = priv->provider_signals = g_signal_group_new (G_PASTE_TYPE_GLOBAL_SHORTCUT_CLIENT);
     g_signal_group_connect (provider_signals, "keybinding-activated", G_CALLBACK (on_keybinding_activated), priv);
     g_signal_group_set_target (provider_signals, provider);
 

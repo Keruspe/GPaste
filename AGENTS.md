@@ -117,11 +117,9 @@ GPaste is a GNOME clipboard manager split across several binaries and a shared l
 The core library used by all other components. Two sub-modules:
 
 - `gpaste/` — daemon-agnostic types: `GpasteClient` (D-Bus client), `GpasteSettings` (GSettings wrapper), enums, utilities.
-- `gpaste-gtk4/` — GTK4 + Adwaita UI helpers (used by the preferences app) plus `GPasteGtkGlobalShortcutClient` (XDG GlobalShortcuts portal proxy).
+- `gpaste-gtk4/` — GTK4 + Adwaita UI helpers (used by the preferences app).
 
 The library exposes a versioned ABI (symbol version scripts in `src/libgpaste/`). GIR and Vala bindings are generated from it.
-
-**`GPasteGtkGlobalShortcutClient`** wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`) as a `GDBusProxy` subclass. It is the daemon's only keybinding mechanism: `g_paste_gtk_global_shortcut_client_grab_all(accels[])` / `_ungrab_all()` register/release shortcuts and the `keybinding-activated(const gchar *id)` signal fires when one is pressed. The portal session is created lazily on the first `grab_all` call. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; const gchar *description; }` is the transfer type between keybinder and client; arrays are null-terminated by `.id = NULL`. Internally it stores registered shortcuts as a `GPtrArray` of private `_Shortcut` structs and handles the portal's Request/Response async pattern transparently.
 
 **GObject type macros** — use these in `.c` files:
 
@@ -129,10 +127,7 @@ The library exposes a versioned ABI (symbol version scripts in `src/libgpaste/`)
 |---|---|
 | `G_PASTE_DEFINE_TYPE` | Simple concrete type, no private data, no interface |
 | `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` | Concrete type with a `Private` struct |
-| `G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE` | Concrete type with private data **and** one interface implementation |
 | `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE` | Abstract base class with private data |
-
-`G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE(TypeName, type_name, ParentType, IFACE_TYPE, iface_init)` expands to `G_DEFINE_TYPE_WITH_CODE` + `G_ADD_PRIVATE` + `G_IMPLEMENT_INTERFACE` and also generates the const-safe `_g_paste_<type_name>_get_instance_private` accessor (annotated `G_GNUC_UNUSED` so it does not warn when not called).
 
 ### `src/daemon/` — `gpaste-daemon`
 
@@ -140,8 +135,10 @@ The background service. Owns the clipboard history and exposes it over D-Bus (`o
 
 - Clipboard watching (primary + clipboard selections)
 - Item types: text, password, image, URI
-- Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGtkGlobalShortcutClient`, used directly by the keybinder); if the portal is unavailable, keyboard shortcuts are simply disabled
+- Keybinding registration through the XDG GlobalShortcuts portal (`GPasteGlobalShortcutClient`, used directly by the keybinder); if the portal is unavailable, keyboard shortcuts are simply disabled
 - History persistence to disk: `GPasteHistory` owns the in-memory model and dedup/size policy, but delegates the asynchronous I/O to `GPasteHistorySaver`, which writes snapshots handed to it (coalescing concurrent requests) and loads histories in the background. The saver never touches the live list, so it shares no locking with the model; it hands load results back through a callback.
+
+**`GPasteGlobalShortcutClient`** (daemon-private, in `src/daemon/`) wraps the XDG GlobalShortcuts portal (`org.freedesktop.portal.Desktop`) as a `GDBusProxy` subclass. It is the daemon's only keybinding mechanism: `g_paste_global_shortcut_client_grab_all(accels[])` / `_ungrab_all()` register/release shortcuts and the `keybinding-activated(const gchar *id)` signal fires when one is pressed. The portal session is created lazily on the first `grab_all` call. The `GPasteKeybindingAccelerator` struct `{ const gchar *id; const gchar *accelerator; const gchar *description; }` is the transfer type between keybinder and client; arrays are null-terminated by `.id = NULL`. Internally it stores registered shortcuts as a `GPtrArray` of private `_Shortcut` structs and handles the portal's Request/Response async pattern transparently.
 
 The D-Bus method surface lives in `gpaste-daemon-methods.{c,h}`: free functions that take a small `GPasteDaemonMethods` context `{ connection, history, settings, clipboards_manager }` rather than the daemon's instance-private struct. `gpaste-daemon.c` keeps the object lifecycle, the signal emitters, the controller actions that need the GObject (`upload`, `reexecute`, `show_history`), and a dispatcher that builds the context and forwards. Everything but `main.c` is compiled into a `gpaste-daemon-internal` static library (`gpaste_daemon_internal_dep`) so the daemon executable and the test suite both link the same code.
 
