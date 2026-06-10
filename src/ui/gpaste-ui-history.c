@@ -27,7 +27,10 @@ typedef struct
     GtkWindow      *rootwin;
 
     GSList         *items;
-    guint64         size;
+    guint64         size;       /* number of item widgets currently allocated */
+    guint64         limit;      /* how many items we currently allow on screen; grows lazily */
+    guint64         available;  /* last known total size of the history */
+    gboolean        loading;    /* a lazy-growth refresh is in flight */
     gint32          item_height;
 
     gchar          *search;
@@ -112,13 +115,18 @@ g_paste_ui_history_update_height_request (GPasteSettings *settings,
 {
     GPasteUiHistory *self = user_data;
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-    guint64 new_size = g_paste_settings_get_max_displayed_history_size (settings);
+    guint64 max_displayed = g_paste_settings_get_max_displayed_history_size (settings);
 
     if (priv->item_height)
-        g_object_set (G_OBJECT (priv->list_box), "height-request", new_size * priv->item_height, NULL);
+        g_object_set (G_OBJECT (priv->list_box), "height-request", max_displayed * priv->item_height, NULL);
 
-    if (new_size != priv->size)
+    /* max-displayed-history-size is the initial batch and the floor for how many
+     * items we keep on screen; lazy scrolling can only ever grow past it. */
+    if (priv->limit < max_displayed)
+    {
+        priv->limit = max_displayed;
         g_paste_ui_history_refresh (self, 0);
+    }
 }
 
 typedef struct {
@@ -143,9 +151,16 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     guint64 old_size = priv->size;
     guint64 refreshTextBound = old_size;
     guint64 new_size = g_paste_client_get_history_size_finish (priv->client, res, NULL);
-    guint64 max_size = g_paste_settings_get_max_displayed_history_size (priv->settings);
+    guint64 max_displayed = g_paste_settings_get_max_displayed_history_size (priv->settings);
 
-    priv->size = MIN (new_size, max_size);
+    priv->loading = FALSE;
+    priv->available = new_size;
+    /* Never keep a display limit larger than what the history can fill: when it
+     * shrinks (items removed, emptied, or a smaller history selected), drop back
+     * so lazy growth restarts from the configured batch instead of eagerly
+     * reloading the old depth should the history grow again. */
+    priv->limit = MIN (priv->limit, MAX (max_displayed, new_size));
+    priv->size = MIN (new_size, priv->limit);
 
     if (priv->size)
         g_paste_ui_history_show_list (self);
@@ -231,8 +246,56 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         cdata->self = self;
         cdata->from_index = from_index;
 
+        priv->loading = TRUE;
         g_paste_client_get_history_name (priv->client, on_name_ready, cdata);
     }
+}
+
+static gboolean
+g_paste_ui_history_can_grow (GPasteUiHistory *self)
+{
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
+
+    /* size is MIN (available, limit), so there is more to load iff the history
+     * holds more items than our current display limit. */
+    return priv->client && !priv->search && !priv->loading && priv->available > priv->limit;
+}
+
+static void
+g_paste_ui_history_grow (GPasteUiHistory *self)
+{
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    priv->limit += g_paste_settings_get_max_displayed_history_size (priv->settings);
+    g_paste_ui_history_refresh (self, priv->size);
+}
+
+/* While the loaded items do not yet overflow the viewport, keep loading more so
+ * the view always offers something to scroll to when further items exist. The
+ * vertical adjustment emits "changed" when its content or viewport is resized. */
+static void
+g_paste_ui_history_on_adjustment_changed (GtkAdjustment *adjustment,
+                                          gpointer       user_data)
+{
+    GPasteUiHistory *self = user_data;
+    gdouble page = gtk_adjustment_get_page_size (adjustment);
+
+    /* page <= 0 means the viewport is not allocated yet. */
+    if (page > 0 && gtk_adjustment_get_upper (adjustment) <= page && g_paste_ui_history_can_grow (self))
+        g_paste_ui_history_grow (self);
+}
+
+/* Once the items overflow the viewport, load another batch each time the user
+ * scrolls to the bottom, lazily pulling in the rest of the history on demand. */
+static void
+g_paste_ui_history_on_edge_reached (GtkScrolledWindow *scroll G_GNUC_UNUSED,
+                                    GtkPositionType    pos,
+                                    gpointer           user_data)
+{
+    GPasteUiHistory *self = user_data;
+
+    if (pos == GTK_POS_BOTTOM && g_paste_ui_history_can_grow (self))
+        g_paste_ui_history_grow (self);
 }
 
 static void
@@ -421,6 +484,7 @@ g_paste_ui_history_new (GPasteClient   *client,
     priv->settings = g_object_ref (settings);
     priv->panel = panel;
     priv->rootwin = rootwin;
+    priv->limit = g_paste_settings_get_max_displayed_history_size (settings);
 
     GtkWidget *status_page = adw_status_page_new ();
     priv->status_page = ADW_STATUS_PAGE (status_page);
@@ -443,6 +507,10 @@ g_paste_ui_history_new (GPasteClient   *client,
     gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), list_box);
     gtk_widget_set_visible (scroll, FALSE);
     gtk_box_append (box, scroll);
+
+    GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scroll));
+    g_signal_connect_object (vadjustment, "changed", G_CALLBACK (g_paste_ui_history_on_adjustment_changed), self, 0);
+    g_signal_connect_object (scroll, "edge-reached", G_CALLBACK (g_paste_ui_history_on_edge_reached), self, 0);
 
     g_signal_connect (list_box, "row-activated", G_CALLBACK (on_row_activated), NULL);
 
