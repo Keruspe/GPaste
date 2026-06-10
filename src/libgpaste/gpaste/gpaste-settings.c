@@ -878,6 +878,55 @@ g_paste_settings_rebind (GPasteSettings *self,
                    NULL);
 }
 
+/* The settings cached from dconf, each paired with the loader the SETTING macro
+ * generated for it. Both g_paste_settings_settings_changed and the initial load
+ * in g_paste_settings_init are driven off this single table, so neither can drift
+ * from the accessors above. (extension-enabled lives in the separate shell
+ * settings and is handled on its own.) */
+typedef struct
+{
+    const gchar *key;
+    void       (*from_dconf) (GPasteSettingsPrivate *priv);
+    gboolean     rebind; /* keybinding settings re-grab their shortcut on change */
+} GPasteSettingEntry;
+
+#define SETTING_ENTRY(KEY, name)    { G_PASTE_##KEY##_SETTING, g_paste_settings_private_set_##name##_from_dconf, FALSE }
+#define KEYBINDING_ENTRY(KEY, name) { G_PASTE_##KEY##_SETTING, g_paste_settings_private_set_##name##_from_dconf, TRUE }
+
+static const GPasteSettingEntry setting_entries[] = {
+    SETTING_ENTRY (CLOSE_ON_SELECT, close_on_select),
+    SETTING_ENTRY (OPEN_CENTERED, open_centered),
+    SETTING_ENTRY (ELEMENT_SIZE, element_size),
+    SETTING_ENTRY (EMPTY_HISTORY_CONFIRMATION, empty_history_confirmation),
+    SETTING_ENTRY (GROWING_LINES, growing_lines),
+    SETTING_ENTRY (HISTORY_NAME, history_name),
+    SETTING_ENTRY (IMAGES_SUPPORT, images_support),
+    SETTING_ENTRY (IMAGES_PREVIEW, images_preview),
+    SETTING_ENTRY (IMAGES_PREVIEW_SIZE, images_preview_size),
+    KEYBINDING_ENTRY (LAUNCH_UI, launch_ui),
+    KEYBINDING_ENTRY (MAKE_PASSWORD, make_password),
+    SETTING_ENTRY (MAX_DISPLAYED_HISTORY_SIZE, max_displayed_history_size),
+    SETTING_ENTRY (MAX_HISTORY_SIZE, max_history_size),
+    SETTING_ENTRY (MAX_MEMORY_USAGE, max_memory_usage),
+    SETTING_ENTRY (MAX_TEXT_ITEM_SIZE, max_text_item_size),
+    SETTING_ENTRY (MIN_TEXT_ITEM_SIZE, min_text_item_size),
+    KEYBINDING_ENTRY (POP, pop),
+    SETTING_ENTRY (PRIMARY_TO_HISTORY, primary_to_history),
+    SETTING_ENTRY (RICH_TEXT_SUPPORT, rich_text_support),
+    SETTING_ENTRY (SAVE_HISTORY, save_history),
+    KEYBINDING_ENTRY (SHOW_HISTORY, show_history),
+    KEYBINDING_ENTRY (SYNC_CLIPBOARD_TO_PRIMARY, sync_clipboard_to_primary),
+    KEYBINDING_ENTRY (SYNC_PRIMARY_TO_CLIPBOARD, sync_primary_to_clipboard),
+    SETTING_ENTRY (SYNCHRONIZE_CLIPBOARDS, synchronize_clipboards),
+    SETTING_ENTRY (TRACK_CHANGES, track_changes),
+    SETTING_ENTRY (TRACK_EXTENSION_STATE, track_extension_state),
+    SETTING_ENTRY (TRIM_ITEMS, trim_items),
+    KEYBINDING_ENTRY (UPLOAD, upload),
+};
+
+#undef SETTING_ENTRY
+#undef KEYBINDING_ENTRY
+
 static void
 g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                                    const gchar *key,
@@ -886,90 +935,26 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     GPasteSettings *self = G_PASTE_SETTINGS (user_data);
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
-    if (g_paste_str_equal (key, G_PASTE_CLOSE_ON_SELECT_SETTING))
-        g_paste_settings_private_set_close_on_select_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_OPEN_CENTERED_SETTING))
-        g_paste_settings_private_set_open_centered_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_ELEMENT_SIZE_SETTING))
-        g_paste_settings_private_set_element_size_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_EMPTY_HISTORY_CONFIRMATION_SETTING))
-        g_paste_settings_private_set_empty_history_confirmation_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_GROWING_LINES_SETTING))
-        g_paste_settings_private_set_growing_lines_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_HISTORY_NAME_SETTING))
-        g_paste_settings_private_set_history_name_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_IMAGES_SUPPORT_SETTING))
-        g_paste_settings_private_set_images_support_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SETTING))
-        g_paste_settings_private_set_images_preview_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING))
-        g_paste_settings_private_set_images_preview_size_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_LAUNCH_UI_SETTING))
+    for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
     {
-        g_paste_settings_private_set_launch_ui_from_dconf (priv);
-        g_paste_settings_rebind (self, G_PASTE_LAUNCH_UI_SETTING);
+        const GPasteSettingEntry *entry = &setting_entries[i];
+
+        if (!g_paste_str_equal (key, entry->key))
+            continue;
+
+        entry->from_dconf (priv);
+        if (entry->rebind)
+            g_paste_settings_rebind (self, key);
+        break;
     }
-    else if (g_paste_str_equal (key, G_PASTE_MAKE_PASSWORD_SETTING))
-    {
-        g_paste_settings_private_set_make_password_from_dconf (priv);
-        g_paste_settings_rebind (self, G_PASTE_MAKE_PASSWORD_SETTING);
-    }
-    else if (g_paste_str_equal (key, G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING))
-        g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_MAX_HISTORY_SIZE_SETTING))
-        g_paste_settings_private_set_max_history_size_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_MAX_MEMORY_USAGE_SETTING))
-        g_paste_settings_private_set_max_memory_usage_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING))
-        g_paste_settings_private_set_max_text_item_size_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING))
-        g_paste_settings_private_set_min_text_item_size_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_POP_SETTING))
-    {
-        g_paste_settings_private_set_pop_from_dconf (priv);
-        g_paste_settings_rebind (self, G_PASTE_POP_SETTING);
-    }
-    else if (g_paste_str_equal (key, G_PASTE_PRIMARY_TO_HISTORY_SETTING ))
-        g_paste_settings_private_set_primary_to_history_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_RICH_TEXT_SUPPORT_SETTING))
-        g_paste_settings_private_set_rich_text_support_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_SAVE_HISTORY_SETTING))
-        g_paste_settings_private_set_save_history_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_SHOW_HISTORY_SETTING))
-    {
-        g_paste_settings_private_set_show_history_from_dconf (priv);
-        g_paste_settings_rebind (self, G_PASTE_SHOW_HISTORY_SETTING);
-    }
-    else if (g_paste_str_equal (key, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING))
-    {
-        g_paste_settings_private_set_sync_clipboard_to_primary_from_dconf (priv);
-        g_paste_settings_rebind (self, G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING);
-    }
-    else if (g_paste_str_equal (key, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING))
-    {
-        g_paste_settings_private_set_sync_primary_to_clipboard_from_dconf (priv);
-        g_paste_settings_rebind (self, G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING);
-    }
-    else if (g_paste_str_equal (key, G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING))
-        g_paste_settings_private_set_synchronize_clipboards_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_TRACK_CHANGES_SETTING))
-    {
-        g_paste_settings_private_set_track_changes_from_dconf (priv);
+
+    /* track-changes additionally notifies trackers of the new state */
+    if (g_paste_str_equal (key, G_PASTE_TRACK_CHANGES_SETTING))
         g_signal_emit (self,
                        signals[TRACK],
                        0, /* detail */
                        priv->track_changes,
                        NULL);
-    }
-    else if (g_paste_str_equal (key, G_PASTE_TRACK_EXTENSION_STATE_SETTING))
-        g_paste_settings_private_set_track_extension_state_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_TRIM_ITEMS_SETTING))
-        g_paste_settings_private_set_trim_items_from_dconf (priv);
-    else if (g_paste_str_equal (key, G_PASTE_UPLOAD_SETTING))
-    {
-        g_paste_settings_private_set_upload_from_dconf (priv);
-        g_paste_settings_rebind (self, G_PASTE_UPLOAD_SETTING);
-    }
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -1093,34 +1078,8 @@ g_paste_settings_init (GPasteSettings *self)
     g_signal_group_connect (settings_signals, "changed", G_CALLBACK (g_paste_settings_settings_changed), self);
     g_signal_group_set_target (settings_signals, settings);
 
-    g_paste_settings_private_set_close_on_select_from_dconf (priv);
-    g_paste_settings_private_set_open_centered_from_dconf (priv);
-    g_paste_settings_private_set_element_size_from_dconf (priv);
-    g_paste_settings_private_set_empty_history_confirmation_from_dconf (priv);
-    g_paste_settings_private_set_growing_lines_from_dconf (priv);
-    g_paste_settings_private_set_history_name_from_dconf (priv);
-    g_paste_settings_private_set_images_support_from_dconf (priv);
-    g_paste_settings_private_set_images_preview_from_dconf (priv);
-    g_paste_settings_private_set_images_preview_size_from_dconf (priv);
-    g_paste_settings_private_set_launch_ui_from_dconf (priv);
-    g_paste_settings_private_set_make_password_from_dconf (priv);
-    g_paste_settings_private_set_max_displayed_history_size_from_dconf (priv);
-    g_paste_settings_private_set_max_history_size_from_dconf (priv);
-    g_paste_settings_private_set_max_memory_usage_from_dconf (priv);
-    g_paste_settings_private_set_max_text_item_size_from_dconf (priv);
-    g_paste_settings_private_set_min_text_item_size_from_dconf (priv);
-    g_paste_settings_private_set_pop_from_dconf (priv);
-    g_paste_settings_private_set_primary_to_history_from_dconf (priv);
-    g_paste_settings_private_set_rich_text_support_from_dconf (priv);
-    g_paste_settings_private_set_save_history_from_dconf (priv);
-    g_paste_settings_private_set_show_history_from_dconf (priv);
-    g_paste_settings_private_set_sync_clipboard_to_primary_from_dconf (priv);
-    g_paste_settings_private_set_sync_primary_to_clipboard_from_dconf (priv);
-    g_paste_settings_private_set_synchronize_clipboards_from_dconf (priv);
-    g_paste_settings_private_set_track_changes_from_dconf (priv);
-    g_paste_settings_private_set_track_extension_state_from_dconf (priv);
-    g_paste_settings_private_set_trim_items_from_dconf (priv);
-    g_paste_settings_private_set_upload_from_dconf (priv);
+    for (gsize i = 0; i < G_N_ELEMENTS (setting_entries); ++i)
+        setting_entries[i].from_dconf (priv);
 
     priv->shell_settings = NULL;
     priv->extension_enabled = FALSE;
