@@ -1112,7 +1112,7 @@ msgstr "forcer l'applet ou l'extension à afficher l'historique"
 #. Translators: help for gpaste upload
 #: src/client/gpaste-client.c:214
 msgid "upload the item <uuid> to a pastebin service"
-msgstr "Téléverser l'élément <uuid> vers un sevice type pastebin"
+msgstr "Téléverser l'élément <uuid> vers un service type pastebin"
 
 #. Translators: help for gpaste version
 #: src/client/gpaste-client.c:216
@@ -1452,7 +1452,7 @@ msgstr "Marquer l'élément actif comme étant un mot de passe"
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
 #: src/ui/gpaste-ui-shortcuts-window.c:29
 msgid "Upload the active item to a pastebin service"
-msgstr "Téléverser l'élément actif vers un sevice type pastebin"
+msgstr "Téléverser l'élément actif vers un service type pastebin"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
 #: src/ui/gpaste-ui-shortcuts-window.c:23
