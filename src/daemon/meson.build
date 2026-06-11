@@ -69,6 +69,15 @@ if libsodium_dep.found() and libsecret_dep.found()
   gpaste_daemon_deps += libsecret_dep
 endif
 
+# The mutter (MetaSelection) clipboard backend only makes sense inside
+# gnome-shell, so it is built alongside the extension. It calls into libmutter,
+# so the daemon links it.
+if get_option('gnome-shell')
+  gpaste_daemon_sources += [ 'gpaste-clipboard-meta.c' ]
+  gpaste_daemon_headers += [ 'gpaste-clipboard-meta.h' ]
+  gpaste_daemon_deps += dependency('libmutter-18')
+endif
+
 gpaste_daemon_headers_dep = declare_dependency(
   include_directories: include_directories('.', '../libgpaste'),
   sources: gpaste_daemon_headers,
