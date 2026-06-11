@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <gpaste-clipboard.h>
+#include <gpaste-clipboard-provider.h>
 
 G_BEGIN_DECLS
 
@@ -12,7 +12,7 @@ G_BEGIN_DECLS
 G_PASTE_FINAL_TYPE (ClipboardsManager, clipboards_manager, CLIPBOARDS_MANAGER, GObject)
 
 void     g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
-                                                   GPasteClipboard         *clipboard);
+                                                   GPasteClipboardProvider *clipboard);
 void     g_paste_clipboards_manager_sync_from_to  (GPasteClipboardsManager *self,
                                                    gboolean                 from_clipboard);
 void     g_paste_clipboards_manager_activate      (GPasteClipboardsManager *self);

@@ -74,6 +74,12 @@ G_BEGIN_DECLS
     G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (GPaste##TypeName, g_paste_##type_name, ParentTypeName) \
     G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
 
+#define G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE(TypeName, type_name, ParentTypeName, IFACE_TYPE, iface_init) \
+    G_DEFINE_TYPE_WITH_CODE (GPaste##TypeName, g_paste_##type_name, ParentTypeName,                                 \
+        G_ADD_PRIVATE (GPaste##TypeName)                                                                             \
+        G_IMPLEMENT_INTERFACE (IFACE_TYPE, iface_init))                                                              \
+    G_PASTE_CONST_PRIV_ACCESSOR (TypeName, type_name)
+
 #define G_PASTE_INIT_GETTEXT()                          \
     bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);        \
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8"); \

@@ -10,7 +10,7 @@ struct _GPasteClipboardsManager
 
 typedef struct
 {
-    GPasteClipboard *clipboard;
+    GPasteClipboardProvider *clipboard;
     GSignalGroup    *signal_group;
 } _Clipboard;
 
@@ -24,40 +24,40 @@ typedef struct
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (ClipboardsManager, clipboards_manager, G_TYPE_OBJECT)
 
-static void g_paste_clipboards_manager_notify (GPasteClipboard *clipboard, gpointer user_data);
+static void g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard, gpointer user_data);
 
 static void
-g_paste_clipboards_manager_bootstrap_ready (GPasteClipboard *clipboard,
+g_paste_clipboards_manager_bootstrap_ready (GPasteClipboardProvider *clipboard,
                                             GPasteItem      *item G_GNUC_UNUSED,
                                             gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
-    g_paste_clipboard_ensure_not_empty (clipboard, priv->history);
+    g_paste_clipboard_provider_ensure_not_empty (clipboard, priv->history);
 }
 
 /**
  * g_paste_clipboards_manager_add_clipboard:
  * @self: a #GPasteClipboardsManager instance
- * @clipboard: (transfer none): the GPasteClipboard to add
+ * @clipboard: (transfer none): the GPasteClipboardProvider to add
  *
- * Add a #GPasteClipboard to the #GPasteClipboardsManager
+ * Add a #GPasteClipboardProvider to the #GPasteClipboardsManager
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_add_clipboard (GPasteClipboardsManager *self,
-                                          GPasteClipboard         *clipboard)
+                                          GPasteClipboardProvider         *clipboard)
 {
     g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
-    g_return_if_fail (_G_PASTE_IS_CLIPBOARD (clipboard));
+    g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (clipboard));
 
     GPasteClipboardsManagerPrivate *priv = g_paste_clipboards_manager_get_instance_private (self);
     _Clipboard *clip = g_new0 (_Clipboard, 1);
 
     clip->clipboard = g_object_ref (clipboard);
-    clip->signal_group = g_signal_group_new (G_PASTE_TYPE_CLIPBOARD);
+    clip->signal_group = g_signal_group_new (G_PASTE_TYPE_CLIPBOARD_PROVIDER);
     g_signal_group_connect (clip->signal_group, "changed", G_CALLBACK (g_paste_clipboards_manager_notify), priv);
 
     priv->clipboards = g_slist_prepend (priv->clipboards, clip);
-    g_paste_clipboard_update (clipboard, g_paste_clipboards_manager_bootstrap_ready, priv);
+    g_paste_clipboard_provider_update (clipboard, g_paste_clipboards_manager_bootstrap_ready, priv);
 }
 
 /**
@@ -74,29 +74,29 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
     g_return_if_fail (_G_PASTE_IS_CLIPBOARDS_MANAGER (self));
 
     const GPasteClipboardsManagerPrivate *priv = _g_paste_clipboards_manager_get_instance_private (self);
-    GPasteClipboard *_from = NULL;
-    GPasteClipboard *_to = NULL;
+    GPasteClipboardProvider *_from = NULL;
+    GPasteClipboardProvider *_to = NULL;
 
     g_debug ("clipboards-manager: sync_from_to");
 
     for (GSList *clipboard = priv->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         _Clipboard *_clip = clipboard->data;
-        GPasteClipboard *clip = _clip->clipboard;
+        GPasteClipboardProvider *clip = _clip->clipboard;
 
-        if (g_paste_clipboard_is_clipboard (clip) == from_clipboard)
+        if (g_paste_clipboard_provider_is_clipboard (clip) == from_clipboard)
             _from = clip;
         else
             _to = clip;
     }
 
     if (_from && _to)
-        g_paste_clipboard_sync_text (_from, _to);
+        g_paste_clipboard_provider_sync_text (_from, _to);
 }
 
 static void
 g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
-                                          GPasteClipboard                *clipboard,
+                                          GPasteClipboardProvider                *clipboard,
                                           GPasteItem                     *item,
                                           const gchar                    *synchronized_text,
                                           gboolean                        something_in_clipboard)
@@ -109,7 +109,7 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
         g_paste_history_add (history, item);
 
     if (!something_in_clipboard)
-        g_paste_clipboard_ensure_not_empty (clipboard, history);
+        g_paste_clipboard_provider_ensure_not_empty (clipboard, history);
 
     if (synchronized_text)
     {
@@ -118,15 +118,15 @@ g_paste_clipboards_manager_notify_finish (GPasteClipboardsManagerPrivate *priv,
         for (GSList *_clipboard = priv->clipboards; _clipboard; _clipboard = g_slist_next (_clipboard))
         {
             _Clipboard *_clip = _clipboard->data;
-            GPasteClipboard *clip = _clip->clipboard;
+            GPasteClipboardProvider *clip = _clip->clipboard;
 
             if (clipboard == clip)
                 continue;
 
-            const gchar *text = g_paste_clipboard_get_text (clip);
+            const gchar *text = g_paste_clipboard_provider_get_text (clip);
 
             if (!text || !g_paste_str_equal (text, synchronized_text))
-                g_paste_clipboard_select_text (clip, synchronized_text);
+                g_paste_clipboard_provider_select_text (clip, synchronized_text);
         }
     }
 }
@@ -138,7 +138,7 @@ typedef struct {
 } GPasteClipboardsManagerUpdateData;
 
 static void
-g_paste_clipboards_manager_update_ready (GPasteClipboard *clipboard,
+g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
                                          GPasteItem      *item,
                                          gpointer         user_data)
 {
@@ -149,21 +149,21 @@ g_paste_clipboards_manager_update_ready (GPasteClipboard *clipboard,
 
     const gchar *synchronized_text = NULL;
 
-    if (item && g_paste_clipboard_get_text (clipboard) &&
+    if (item && g_paste_clipboard_provider_get_text (clipboard) &&
         g_paste_settings_get_synchronize_clipboards (priv->settings))
-        synchronized_text = g_paste_clipboard_get_text (clipboard);
+        synchronized_text = g_paste_clipboard_provider_get_text (clipboard);
 
     if (!data->track && item)
         g_clear_object (&item);
 
-    gboolean something_in_clipboard = !!g_paste_clipboard_get_text (clipboard) ||
-                                      !!g_paste_clipboard_get_image_checksum (clipboard);
+    gboolean something_in_clipboard = !!g_paste_clipboard_provider_get_text (clipboard) ||
+                                      !!g_paste_clipboard_provider_get_image_checksum (clipboard);
 
     g_paste_clipboards_manager_notify_finish (priv, clipboard, item, synchronized_text, something_in_clipboard);
 }
 
 static void
-g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
+g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard,
                                    gpointer         user_data)
 {
     GPasteClipboardsManagerPrivate *priv = user_data;
@@ -172,7 +172,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
 
     GPasteSettings *settings = priv->settings;
     gboolean track = (g_paste_settings_get_track_changes (settings) &&
-                          (g_paste_clipboard_is_clipboard (clipboard) ||             // We're not primary
+                          (g_paste_clipboard_provider_is_clipboard (clipboard) ||             // We're not primary
                            g_paste_settings_get_primary_to_history (settings) ||     // Or we asked that primary affects clipboard
                            g_paste_settings_get_synchronize_clipboards (settings))); // Or primary and clipboards are synchronized hence primary will affect history through clipboard
     GPasteClipboardsManagerUpdateData *data = g_new0 (GPasteClipboardsManagerUpdateData, 1);
@@ -180,7 +180,7 @@ g_paste_clipboards_manager_notify (GPasteClipboard *clipboard,
     data->priv = priv;
     data->track = track;
 
-    g_paste_clipboard_update (clipboard,
+    g_paste_clipboard_provider_update (clipboard,
                               g_paste_clipboards_manager_update_ready,
                               data);
 }
@@ -230,7 +230,7 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     {
         _Clipboard *clip = clipboard->data;
 
-        if (!g_paste_clipboard_select_item (clip->clipboard, item))
+        if (!g_paste_clipboard_provider_select_item (clip->clipboard, item))
         {
             g_debug ("clipboards-manager: item was invalid, deleting it");
             return FALSE;
@@ -259,7 +259,7 @@ g_paste_clipboards_manager_store (GPasteClipboardsManager *self)
     {
         _Clipboard *clip = clipboard->data;
 
-        g_paste_clipboard_store (clip->clipboard);
+        g_paste_clipboard_provider_store (clip->clipboard);
     }
 }
 
