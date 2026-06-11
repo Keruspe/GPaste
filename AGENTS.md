@@ -186,7 +186,7 @@ Translations managed via Weblate. Add new strings to the relevant `.c` source wi
 ## Key dependencies
 
 - GLib/GObject/Gio ≥ 2.84
-- GTK4 ≥ 4.12 + libadwaita ≥ 1.9 (UI and preferences; 1.9 required for `AdwSidebar`)
+- GTK4 ≥ 4.18 + libadwaita ≥ 1.9 (UI and preferences; 1.9 required for `AdwSidebar`)
 - GCR (`gcr-4`) ≥ 3.90 (password item storage)
 - gjs ≥ 1.78 (GNOME Shell extension runtime)
 - Optional: libX11 + libXI (x-keybinder)
