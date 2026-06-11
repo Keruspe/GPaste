@@ -44,6 +44,15 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-11" version="45.9">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>GNOME Shell extension: restore keyboard navigation of history items</li>
+          <li>Fix a typo in the French translation</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-07" version="45.8">
       <description>
         <p>This is a maintenance release. Changes:</p>
