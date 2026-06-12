@@ -30,6 +30,10 @@ AdwEntryRow *g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreference
                                                              const gchar               *label,
                                                              const gchar               *key,
                                                              GPasteSettings            *settings);
+GtkWidget *g_paste_gtk_preferences_group_add_shortcut_setting (GPasteGtkPreferencesGroup *self,
+                                                               const gchar               *label,
+                                                               const gchar               *key,
+                                                               GPasteSettings            *settings);
 
 GPasteGtkPreferencesGroup *g_paste_gtk_preferences_group_new (const gchar *title);
 

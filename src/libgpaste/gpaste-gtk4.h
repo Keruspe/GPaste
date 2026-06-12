@@ -19,4 +19,7 @@
 #include <gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
 
+/* Widgets */
+#include <gpaste-gtk4/gpaste-gtk-shortcut-row.h>
+
 #undef __G_PASTE_GTK4_H_INSIDE__

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
+#include <gpaste-gtk4/gpaste-gtk-shortcut-row.h>
 
 struct _GPasteGtkPreferencesGroup
 {
@@ -183,6 +184,40 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
     add_reset_button (GTK_WIDGET (row), settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
+
+    return row;
+}
+
+/**
+ * g_paste_gtk_preferences_group_add_shortcut_setting:
+ * @self: a #GPasteGtkPreferencesGroup instance
+ * @label: the label to display
+ * @key: the settings key (and property name) this row tracks
+ * @settings: a #GPasteSettings instance
+ *
+ * Add a new keyboard-shortcut setting to the current pane, bound to @key. The
+ * row captures the key combination the user presses rather than having them
+ * type the accelerator by hand.
+ *
+ * Returns: (transfer none): the #GPasteGtkShortcutRow we just added
+ */
+G_PASTE_VISIBLE GtkWidget *
+g_paste_gtk_preferences_group_add_shortcut_setting (GPasteGtkPreferencesGroup *self,
+                                                    const gchar               *label,
+                                                    const gchar               *key,
+                                                    GPasteSettings            *settings)
+{
+    g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
+    g_return_val_if_fail (label, NULL);
+    g_return_val_if_fail (key, NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
+    GtkWidget *row = g_paste_gtk_shortcut_row_new (label);
+
+    g_object_bind_property (settings, key, row, "accelerator", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+    add_reset_button (row, settings, key);
+
+    adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), row);
 
     return row;
 }

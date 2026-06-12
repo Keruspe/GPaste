@@ -10,9 +10,15 @@ global:
 
     g_paste_gtk_preferences_group_add_boolean_setting;
     g_paste_gtk_preferences_group_add_range_setting;
+    g_paste_gtk_preferences_group_add_shortcut_setting;
     g_paste_gtk_preferences_group_add_text_setting;
     g_paste_gtk_preferences_group_get_type;
     g_paste_gtk_preferences_group_new;
+
+    g_paste_gtk_shortcut_row_get_accelerator;
+    g_paste_gtk_shortcut_row_get_type;
+    g_paste_gtk_shortcut_row_new;
+    g_paste_gtk_shortcut_row_set_accelerator;
 
     g_paste_gtk_preferences_history_settings_page_get_type;
     g_paste_gtk_preferences_history_settings_page_new;
