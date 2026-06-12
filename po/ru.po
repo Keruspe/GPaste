@@ -8,10 +8,10 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-12 07:05+0200\n"
-"PO-Revision-Date: 2026-06-12 05:12+0000\n"
+"PO-Revision-Date: 2026-06-12 20:09+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
-"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
-">\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -431,38 +431,47 @@ msgstr "Это обслуживающий выпуск. Изменения:"
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:91
 msgid "GNOME Shell extension: restore keyboard navigation of history items"
 msgstr ""
+"GNOME Shell extension: восстановление навигации по элементам истории с "
+"помощью клавиатуры"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:54
 msgid ""
 "GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection"
 msgstr ""
+"GNOME Shell extension: восстановлен функционал Ctrl index и Ctrl+0-9 для "
+"выделения"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:55
 msgid "Build: require GTK 4.18"
-msgstr ""
+msgstr "Сборка: требуется GTK 4.18"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:56
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:92
 msgid "Fix a typo in the French translation"
-msgstr ""
+msgstr "Исправлена опечатка во французском переводе"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:64
 msgid "Fix building without the GNOME Shell extension (-Dgnome-shell=false)"
 msgstr ""
+"Исправлена ошибка при сборке без GNOME Shell extension (-Dgnome-shell=false)"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:65
 msgid ""
 "Restore GTK deprecation version-gating and drop the unused build-time gjs "
 "dependency"
 msgstr ""
+"Восстановлено ограничение по версиям для GTK и удалена неиспользуемая "
+"зависимость gjs, используемая во время сборки"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:66
 msgid "Target GNOME Shell 50 in the extension"
-msgstr ""
+msgstr "Для расширения целевой оболочкой является GNOME Shell 50"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:67
 msgid "Bump the library soversions to reflect the API/ABI changes since 45.8"
 msgstr ""
+"Обновлены версии библиотек, чтобы отразить изменения API/ABI, произошедшие с "
+"версии 45.8"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:73
 msgid ""
