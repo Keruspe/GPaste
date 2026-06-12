@@ -859,6 +859,7 @@ g_paste_settings_shell_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     GPasteSettingsPrivate *priv = g_paste_settings_get_instance_private (self);
 
     g_paste_settings_private_set_extension_enabled_from_dconf (priv);
+    g_object_notify (G_OBJECT (self), G_PASTE_EXTENSION_ENABLED_SETTING);
 
     /* Forward the signal */
     g_signal_emit (self,
@@ -943,6 +944,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
             continue;
 
         entry->from_dconf (priv);
+        /* Property name == GSettings key, so bound widgets refresh from here. */
+        g_object_notify (G_OBJECT (self), entry->key);
         if (entry->rebind)
             g_paste_settings_rebind (self, key);
         break;
@@ -962,6 +965,126 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
                    g_quark_from_string (key),
                    key,
                    NULL);
+}
+
+/* --- Bindable GObject properties -------------------------------------------
+ *
+ * Every setting is exposed as a GObject property named exactly like its
+ * GSettings key (e.g. "track-changes"), so UI widgets can bind to it with
+ * g_object_bind_property() rather than wiring getters/setters by hand. The
+ * property accessors delegate to the typed get/set above (keeping their
+ * validation), and external changes notify through the "changed" handler. */
+#define G_PASTE_SETTINGS_FOR_EACH_PROP(BOOL, UINT, STR)             \
+    BOOL (close_on_select,            CLOSE_ON_SELECT)              \
+    BOOL (open_centered,              OPEN_CENTERED)                \
+    UINT (element_size,               ELEMENT_SIZE)                 \
+    BOOL (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)   \
+    BOOL (growing_lines,              GROWING_LINES)                \
+    STR  (history_name,               HISTORY_NAME)                 \
+    BOOL (images_support,             IMAGES_SUPPORT)               \
+    BOOL (images_preview,             IMAGES_PREVIEW)               \
+    UINT (images_preview_size,        IMAGES_PREVIEW_SIZE)          \
+    STR  (launch_ui,                  LAUNCH_UI)                    \
+    STR  (make_password,              MAKE_PASSWORD)                \
+    UINT (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)   \
+    UINT (max_history_size,           MAX_HISTORY_SIZE)             \
+    UINT (max_memory_usage,           MAX_MEMORY_USAGE)             \
+    UINT (max_text_item_size,         MAX_TEXT_ITEM_SIZE)           \
+    UINT (min_text_item_size,         MIN_TEXT_ITEM_SIZE)           \
+    STR  (pop,                        POP)                          \
+    BOOL (primary_to_history,         PRIMARY_TO_HISTORY)           \
+    BOOL (rich_text_support,          RICH_TEXT_SUPPORT)            \
+    BOOL (save_history,               SAVE_HISTORY)                 \
+    STR  (show_history,               SHOW_HISTORY)                 \
+    STR  (sync_clipboard_to_primary,  SYNC_CLIPBOARD_TO_PRIMARY)    \
+    STR  (sync_primary_to_clipboard,  SYNC_PRIMARY_TO_CLIPBOARD)    \
+    BOOL (synchronize_clipboards,     SYNCHRONIZE_CLIPBOARDS)       \
+    BOOL (track_changes,              TRACK_CHANGES)                \
+    BOOL (track_extension_state,      TRACK_EXTENSION_STATE)        \
+    BOOL (trim_items,                 TRIM_ITEMS)                   \
+    STR  (upload,                     UPLOAD)
+
+enum
+{
+    PROP_0,
+#define _PROP_ID(name, KEY) PROP_##name,
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_PROP_ID, _PROP_ID, _PROP_ID)
+#undef _PROP_ID
+    /* Derived from the shell schema rather than a plain key; handled apart. */
+    PROP_extension_enabled,
+    N_PROPERTIES
+};
+
+static GParamSpec *properties[N_PROPERTIES] = { NULL };
+
+static void
+g_paste_settings_get_property (GObject    *object,
+                               guint       prop_id,
+                               GValue     *value,
+                               GParamSpec *pspec)
+{
+    GPasteSettings *self = G_PASTE_SETTINGS (object);
+
+    switch (prop_id)
+    {
+#define _GET_BOOL(name, KEY) case PROP_##name: g_value_set_boolean (value, g_paste_settings_get_##name (self)); break;
+#define _GET_UINT(name, KEY) case PROP_##name: g_value_set_uint64 (value, g_paste_settings_get_##name (self)); break;
+#define _GET_STR(name, KEY)  case PROP_##name: g_value_set_string (value, g_paste_settings_get_##name (self)); break;
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_GET_BOOL, _GET_UINT, _GET_STR)
+#undef _GET_BOOL
+#undef _GET_UINT
+#undef _GET_STR
+    case PROP_extension_enabled:
+        g_value_set_boolean (value, g_paste_settings_get_extension_enabled (self));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
+g_paste_settings_set_property (GObject      *object,
+                               guint         prop_id,
+                               const GValue *value,
+                               GParamSpec   *pspec)
+{
+    GPasteSettings *self = G_PASTE_SETTINGS (object);
+
+    switch (prop_id)
+    {
+#define _SET_BOOL(name, KEY) case PROP_##name: g_paste_settings_set_##name (self, g_value_get_boolean (value)); break;
+#define _SET_UINT(name, KEY) case PROP_##name: g_paste_settings_set_##name (self, g_value_get_uint64 (value)); break;
+#define _SET_STR(name, KEY)  case PROP_##name: g_paste_settings_set_##name (self, g_value_get_string (value)); break;
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_SET_BOOL, _SET_UINT, _SET_STR)
+#undef _SET_BOOL
+#undef _SET_UINT
+#undef _SET_STR
+    case PROP_extension_enabled:
+        g_paste_settings_set_extension_enabled (self, g_value_get_boolean (value));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+/**
+ * g_paste_settings_reset:
+ * @self: a #GPasteSettings instance
+ * @key: the GSettings key (also the property name) to reset
+ *
+ * Reset the given key to its default value. The change propagates through the
+ * usual "changed"/notify path, so bound widgets update automatically.
+ */
+G_PASTE_VISIBLE void
+g_paste_settings_reset (GPasteSettings *self,
+                        const gchar    *key)
+{
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (self));
+    g_return_if_fail (key);
+
+    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);
+
+    g_settings_reset (priv->settings, key);
 }
 
 static void
@@ -1001,6 +1124,21 @@ g_paste_settings_class_init (GPasteSettingsClass *klass)
 
     object_class->dispose = g_paste_settings_dispose;
     object_class->finalize = g_paste_settings_finalize;
+    object_class->get_property = g_paste_settings_get_property;
+    object_class->set_property = g_paste_settings_set_property;
+
+    /* One bindable property per setting, named after its GSettings key.
+     * G_PARAM_EXPLICIT_NOTIFY: the only notify comes from the "changed" handler,
+     * once the stored value has actually been refreshed. */
+#define _INSTALL_BOOL(name, KEY) properties[PROP_##name] = g_param_spec_boolean (G_PASTE_##KEY##_SETTING, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+#define _INSTALL_UINT(name, KEY) properties[PROP_##name] = g_param_spec_uint64 (G_PASTE_##KEY##_SETTING, NULL, NULL, 0, G_MAXUINT64, 0, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+#define _INSTALL_STR(name, KEY)  properties[PROP_##name] = g_param_spec_string (G_PASTE_##KEY##_SETTING, NULL, NULL, NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+    G_PASTE_SETTINGS_FOR_EACH_PROP (_INSTALL_BOOL, _INSTALL_UINT, _INSTALL_STR)
+#undef _INSTALL_BOOL
+#undef _INSTALL_UINT
+#undef _INSTALL_STR
+    properties[PROP_extension_enabled] = g_param_spec_boolean (G_PASTE_EXTENSION_ENABLED_SETTING, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
+    g_object_class_install_properties (object_class, N_PROPERTIES, properties);
 
     /**
      * GPasteSettings::changed:

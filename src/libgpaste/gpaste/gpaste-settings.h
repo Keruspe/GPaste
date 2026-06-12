@@ -134,6 +134,9 @@ gboolean g_paste_settings_get_extension_enabled (const GPasteSettings *self);
 void     g_paste_settings_set_extension_enabled (GPasteSettings *self,
                                                  gboolean        value);
 
+void g_paste_settings_reset (GPasteSettings *self,
+                             const gchar    *key);
+
 GPasteSettings *g_paste_settings_new (void);
 
 G_END_DECLS

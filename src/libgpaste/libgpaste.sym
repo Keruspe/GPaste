@@ -144,6 +144,7 @@ global:
     g_paste_settings_get_type;
     g_paste_settings_get_upload;
     g_paste_settings_new;
+    g_paste_settings_reset;
     g_paste_settings_reset_close_on_select;
     g_paste_settings_reset_element_size;
     g_paste_settings_reset_empty_history_confirmation;
