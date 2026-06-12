@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-12 07:05+0200\n"
-"PO-Revision-Date: 2025-04-15 16:05+0000\n"
+"PO-Revision-Date: 2026-06-12 05:12+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
 ">\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 2026.7.dev0\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -40,9 +40,8 @@ msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr "Clipboard;Manager;Settings;Preferences;Configuration;Буфер;Обмена;Менеджер;Настройки;Предпочтения;Конфигурация;"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
 msgid "Clipboard Manager"
-msgstr "Отслеживать изменения в буфере обмена"
+msgstr "Менеджер буфера обмена"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:7
@@ -50,14 +49,13 @@ msgid "Manage your clipboard history"
 msgstr "Управляйте историей буфера обмена"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:16
-#, fuzzy
 msgid "Preferences"
-msgstr "Настройки GPaste"
+msgstr "Параметры"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
 #: src/gnome-shell/aboutItem.js:13 src/ui/gpaste-ui-about.c:38
 msgid "About"
-msgstr "О нас"
+msgstr "О приложении"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:7
 msgid "Max size of an element when displaying it"
@@ -102,19 +100,20 @@ msgstr "По умолчанию мы сохраняем только текст"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:40
 msgid "Show image previews in the history?"
-msgstr ""
+msgstr "Отображать предварительный просмотр изображений в истории?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:41
 msgid "By default, we show previews of images in the history"
 msgstr ""
+"По умолчанию мы показываем предварительный просмотр изображений из истории"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
 msgid "Size of image previews in pixels"
-msgstr ""
+msgstr "Размер изображений при предварительном просмотре в пикселях"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:50
 msgid "Default size is 100 pixels"
-msgstr ""
+msgstr "Размер по умолчанию - 100 пикселей"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Do we close the UI after selecting an item?"
