@@ -1,3 +1,11 @@
+NEW in 50.2 (12/06/2026)
+=============
+
+- GNOME Shell extension: restore keyboard navigation of history items
+- GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection
+- Build: require GTK 4.18
+- Fix a typo in the French translation
+
 NEW in 50.1 (09/06/2026)
 =============
 
@@ -28,6 +36,12 @@ NEW in 50.0 (08/06/2026)
 - Write the history file atomically to reduce corruption risk
 - GNOME Shell extension: retry the daemon connection before giving up, and modernise the JavaScript to current GNOME Shell conventions
 - Numerous internal modernisations (async I/O via GTask, GSignalGroup, static GSettings schema)
+
+NEW in 45.9 (11/06/2026)
+=============
+
+- GNOME Shell extension: restore keyboard navigation of history items
+- Fix a typo in the French translation
 
 NEW in 45.8 (07/06/2026)
 =============

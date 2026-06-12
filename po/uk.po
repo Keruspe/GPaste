@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-09 21:29+0200\n"
+"POT-Creation-Date: 2026-06-12 07:05+0200\n"
 "PO-Revision-Date: 2025-07-10 06:01+0000\n"
 "Last-Translator: Максим Горпиніч <gorpinicmaksim5@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/gpaste/gpaste/"
@@ -376,436 +376,457 @@ msgid "The settings UI"
 msgstr "Інтерфейс налаштувань"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:51
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:78
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:90
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:100
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:62
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:89
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:98
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:110
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:120
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:133
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:143
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:152
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:161
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:180
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:197
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:205
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:213
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:231
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:239
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:247
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:255
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:263
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:287
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:295
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:303
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:311
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:319
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:327
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:335
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:343
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:352
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:361
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:379
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:387
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:395
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:403
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:421
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:429
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:438
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:447
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:456
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:464
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:485
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:493
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:501
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:509
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:517
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:533
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:541
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:549
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:557
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:573
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:140
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:153
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:163
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:172
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:181
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:200
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:217
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:225
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:233
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:251
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:259
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:267
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:275
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:283
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:307
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:315
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:323
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:331
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:339
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:347
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:355
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:363
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:372
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:381
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:399
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:407
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:415
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:423
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:441
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:449
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:458
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:467
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:476
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:484
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:505
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:513
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:521
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:529
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:537
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:553
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:561
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:569
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:577
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:593
 msgid "This is a maintenance release. Changes:"
 msgstr "Випуск з обслуговування. Зміни:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:53
-msgid "Fix building without the GNOME Shell extension (-Dgnome-shell=false)"
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:91
+msgid "GNOME Shell extension: restore keyboard navigation of history items"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:54
+msgid ""
+"GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:55
+msgid "Build: require GTK 4.18"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:56
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:92
+msgid "Fix a typo in the French translation"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:64
+msgid "Fix building without the GNOME Shell extension (-Dgnome-shell=false)"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:65
 msgid ""
 "Restore GTK deprecation version-gating and drop the unused build-time gjs "
 "dependency"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:55
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:66
 msgid "Target GNOME Shell 50 in the extension"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:56
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:67
 msgid "Bump the library soversions to reflect the API/ABI changes since 45.8"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:62
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:73
 msgid ""
 "This is a major release porting GPaste to GTK 4 and libadwaita. Changes:"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:64
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:75
 msgid "Port the daemon, history UI and preferences to GTK 4 and libadwaita"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:65
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:76
 msgid "Show image thumbnails in the history, with configurable preview size"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:66
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:77
 msgid ""
 "Support global keyboard shortcuts on Wayland through the XDG GlobalShortcuts "
 "portal"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:67
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:78
 msgid "Recognise copied colours as dedicated colour items"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:68
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:79
 msgid ""
 "Give keybindings human-readable descriptions and install a daemon desktop "
 "file"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:69
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
 msgid "Fix images sometimes being repeatedly re-added to the history"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:70
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:81
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:101
 msgid ""
 "Fix keyboard shortcuts not triggering when NumLock and CapsLock are both "
 "active"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:71
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
 msgid ""
 "Fix several crashes (search provider, UI lifetime, GNOME Shell extension) "
 "and memory leaks"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:72
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:83
 msgid "Modernise the GNOME Shell extension to current conventions"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:100
 msgid "Fix use-after-free crash in the GNOME Shell search provider"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:102
 msgid ""
 "Fix memory leaks when re-copying history items and when rebinding shortcuts"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:83
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:103
 msgid "Fix potential crash when enforcing a very small history size"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:84
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:104
 msgid "Build: ship the GSettings schema as a static file"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:92
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:112
 msgid ""
 "GNOME Shell extension now retries the daemon connection before giving up"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:93
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:113
 msgid "Fix test crash when GrabAccelerators is not allowed"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:94
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:114
 msgid "Build: simplify gsettings compilation for tests"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:102
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:122
 msgid "Fix GC crash and signal leak when disabling the GNOME Shell extension"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:103
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:123
 msgid "GNOME Shell extension now handles daemon connection failure gracefully"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:104
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:124
 #, fuzzy
 msgid "Fix crash when a history item has no value yet"
 msgstr "виправлено аварійне завершення коли ще немає історії"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:105
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:125
 msgid "Fix image files not being deleted when history items are removed"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:106
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:126
 msgid "Fix image files stored in wrong directory"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:107
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:127
 #, fuzzy
 msgid "Fix keyboard focus being stolen by history items on hover"
 msgstr ""
 "Виправлено ваду яка призводила до відкриття історії тільки з одним об'єктом"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:108
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:128
 msgid ""
 "Fix key events incorrectly forwarded to search when another entry has focus"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:109
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:129
 msgid "Fix signal loop when updating shortcut entries from settings"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:110
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:130
 msgid "Fix default history item count not reset after history deletion"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:111
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:131
 msgid "Enforce minimum window size to prevent unresizable state"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:112
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:132
 msgid "Add descriptive tooltips for settings entries"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:113
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:133
 msgid "Build: explicitly link libgpaste libraries against libc"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:114
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:127
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:137
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:146
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:155
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:164
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:174
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:225
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:267
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:281
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:134
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:147
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:157
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:166
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:175
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:184
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:194
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:245
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:287
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:301
 msgid "Translations updates"
 msgstr "Оновлення перекладів"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:122
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:142
 msgid ""
 "Fix infinite Pango assertion loop that could fill disk when clipboard "
 "content contained tab characters"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:123
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:143
 msgid "Various bug fixes and memory management improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:124
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:144
 msgid "Daemon improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:125
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:145
 msgid "GNOME Shell extension improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:126
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:146
 #, fuzzy
 msgid "GLib >= 2.76 is now required"
 msgstr "Тепер потребується gcr 4"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:135
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:155
 #, fuzzy
 msgid "Support for gnome 50"
 msgstr "Підтримка gnome 48"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:136
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:156
 #, fuzzy
 msgid "Support for gnome 49"
 msgstr "Підтримка gnome 48"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:145
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
 msgid "Support for gnome 48"
 msgstr "Підтримка gnome 48"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:154
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:174
 msgid "Support for gnome 47"
 msgstr "Підтримка GNOME 47"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:163
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:183
 msgid "Support for gnome 46"
 msgstr "Підтримка GNOME 46"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:170
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:190
 msgid "Stable release for GNOME 45. Changes:"
 msgstr "Стабільний випуск для GNOME 45. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:172
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:192
 msgid "Port to gnome 45"
 msgstr "Портування до GNOME 45"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:173
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:193
 msgid "Add setting to open ui window centered"
 msgstr "Додано опцію для відкривання вікна інтерфейсу центрованим"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:182
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:199
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:233
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:289
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:202
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:219
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:253
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:309
 msgid "Fix a bug leading to history with only one item"
 msgstr ""
 "Виправлено ваду яка призводила до відкриття історії тільки з одним об'єктом"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:188
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:208
 msgid "First release for GNOME 44. Changes:"
 msgstr "Перший випуск для GNOME 44. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:190
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:210
 msgid "gcr 4 is now required"
 msgstr "Тепер потребується gcr 4"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:191
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:211
 msgid "Port to gnome 44"
 msgstr "Портування до GNOME 44"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:207
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:241
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:297
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:227
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:261
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:317
 msgid "Avoid crash under heavy memory load"
 msgstr "Уникання аварійного завершення при високому навантаженні пам'яті"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:215
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:249
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:305
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:381
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:235
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:269
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:325
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:401
 msgid "Respect --use-index when displaying history"
 msgstr "Дотримування --use-index при відображенні історії"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:221
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:241
 msgid "First release for GNOME 43. Changes:"
 msgstr "Перший випуск для GNOME 43. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:223
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:243
 msgid "Port to GNOME 43"
 msgstr "Портування до GNOME 43"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:224
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:244
 msgid "Internal preparation for gtk4 port"
 msgstr "Внутрішня підготовка до портування на GTK4"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:257
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:313
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:389
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:277
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:333
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:409
 msgid "Open GPaste UI where the mouse pointer is"
 msgstr "Відкривання інтерфейсу GPaste там де курсор миші"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:265
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:285
 msgid "Fixes to the new preferences tool"
 msgstr "Виправлення до нового інструменту налаштувань"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:266
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:286
 msgid "Style fixes"
 msgstr "Виправлення стилю"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:273
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:293
 msgid "First release for GNOME 42. Changes:"
 msgstr "Перший випуск для GNOME 42. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:275
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:295
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
 "Стара бібліотека libpaste була замінена на нову мінімалістичну libpaste-2 "
 "без залежностей від GTK"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:276
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:296
 msgid "New libgpaste-gtk3 for utils and settings ui"
 msgstr "Нова libpaste-gtk3 бібліотека для утиліт та інтерфейсу налаштувань"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:277
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:297
 msgid "New libgpaste-gtk4 for utils and preferences ui"
 msgstr "Нова бібліотека libpaste-gtk4 для утиліт та інтерфейсу налаштувань"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:278
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:298
 msgid "New gtk4 based gpaste-preferences utility"
 msgstr "Нова утиліта gpaste-preferences заснована на GTK4"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:279
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:299
 msgid "Autotools are no longer supported"
 msgstr "Автоінструменти більше не підтримуються"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:280
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:300
 msgid "Extension updated for gnome-shell 42"
 msgstr "Розширення оновлено до оболонки GNOME 42 (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:321
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:341
 msgid "fix the storage path for meson builds"
 msgstr "Виправлено шлях до сховища для meson збірок"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:329
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:349
 msgid "fix some race conditions in history handling"
 msgstr "виправлено декілька станів гонитви у поводженні з історією"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:337
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:357
 msgid "better fix crash when there is no history yet"
 msgstr "покращено виправлення аварійного завершення коли історії ще нема"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:345
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:365
 msgid "fix crash when there is no history yet"
 msgstr "виправлено аварійне завершення коли ще немає історії"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:346
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:355
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:364
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:373
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:397
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:366
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:375
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:384
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:393
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:417
 msgid "translations update"
 msgstr "Оновлення перекладів"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:354
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:374
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr ""
 "Виправлено розширення оболонки GNOME (gnome-shell) коли даемон "
 "перезапускається"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:363
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:383
 msgid "Fix keybindings for wayland"
 msgstr "Виправлено клавіатурні скорочення для Wayland"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:370
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:390
 msgid "First release for GNOME 41. Changes:"
 msgstr "Перший випуск для GNOME 41. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:372
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:392
 msgid "port to gnome-shell 41"
 msgstr "Портування до оболонки GNOME 41 (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:405
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:425
 msgid "fix a crash in memory usage checking"
 msgstr "Виправлено аварійне завершення у перевірці використання пам'яті"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:412
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:432
 msgid "First release for GNOME 40. Changes:"
 msgstr "Перший випуск для GNOME 40. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:414
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:434
 msgid "port to gnome-shell 40"
 msgstr "Портування до оболонки GNOME 40 (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:415
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:435
 msgid "placeholder for gnome-shell prefs"
 msgstr "Заповнювач для налаштувань оболонки GNOME (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:423
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:487
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:443
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:507
 msgid "fix X11 keybinder outside of GNOME"
 msgstr "Виправлено X11 клавіатурні скорочення за межами GNOME"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:431
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:451
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 "Покращена обробка та звітування про неправильні uuid-ри відправлені до "
 "gpaste-client"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:432
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:452
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
@@ -813,96 +834,96 @@ msgstr ""
 "gpaste-client тепер має --use-index аргумент для декількох підкоманд для "
 "використання індексу замість uuid-ів"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:440
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:460
 msgid "fix the make-password keybinding"
 msgstr "Виправленно make-password клавіатурне скорочення"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:441
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:450
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:461
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:470
 msgid "updated translations"
 msgstr "Оновлення перекладів"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:449
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:469
 msgid "gnome-shell extension warning fixes"
 msgstr "Виправлено застереження розширення оболонки GNOME (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:458
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:495
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:478
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:515
 msgid "gnome-shell extension cosmetic updates"
 msgstr "Візуальні покращення до розширення оболонки GNOME (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:466
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:486
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr ""
 "Вимкнена підтримка зображень за замовченням (можна ввімкнути назад у "
 "налаштуваннях)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:467
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:487
 msgid "Search now includes passwords (using their names)"
 msgstr "Тепер пошук включає паролі (використовуючи їхні назви)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:468
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:488
 msgid "systemd integration enhancements"
 msgstr "Покращення до інтеграції з systemd"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:474
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:494
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "Перший випуск до GNOME 3.38. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:476
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:496
 msgid "Drop the Tracking DBus signal"
 msgstr "Скидання сигналу слідкування DBus"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:477
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:497
 msgid "Switch to uuids to identify items"
 msgstr "Переключення на uuid-ри для ідентифікації об'єктів"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:478
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:498
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "Піднята версія DBus інтерфейсу до org.gnome.GPaste2"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:479
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:499
 msgid "Update to gnome-shell 3.38.0"
 msgstr "Оновлено до оболонки GNOME 3.38.0 (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:503
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:535
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:577
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:523
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:555
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:597
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr ""
 "Виправлення активація об'єктів за допомогою Ctrl + цифра у оболонці GNOME "
 "(gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:511
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:543
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:576
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:531
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:563
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:596
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr ""
 "Виправлення перезавантаження комбінацій клавіш за допомогою gnome-shell"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:519
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:551
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:539
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:571
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "Виправлено захоплення комбінацій клавіш за допомогою gnome-shell"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:525
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:545
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "Перший випуск для GNOME 3.36. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:527
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:547
 msgid "Update to gnome-shell 3.36.0"
 msgstr "Оновлено до оболонки GNOME 3.36.0 (gnome-shell)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:559
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:575
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:579
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:595
 msgid "Compatibility with recent appstream-glib"
 msgstr "Сумісність з нещодавнім appsteam-glib"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:565
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:585
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "Перший випуск для GNOME 3.34. Зміни:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:567
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:587
 msgid "Update to gnome-shell 3.34.0"
 msgstr "Оновлено до оболонки GNOME 3.34.0 (gnome-shell)"
 

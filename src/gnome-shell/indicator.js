@@ -50,8 +50,6 @@ class GPasteIndicator extends Button {
         this._settings.connectObject('changed::element-size', this._resetElementSize.bind(this), this);
         this._resetElementSize();
 
-        this.menu.connect('key-press-event', this._onMenuKeyPress.bind(this));
-
         this._pageSwitcher = new GPastePageSwitcher();
         this._pageSwitcher.connect('switch', (sw, page) => {
             this._updatePage(page);
@@ -120,8 +118,12 @@ class GPasteIndicator extends Button {
 
         this._onStateChanged(true);
 
-        this.menu.connect('key-press-event', this._onKeyPressEvent.bind(this));
-        this.menu.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
+        // The ctrl-index overlay and ctrl+0-9 selection are driven by raw key
+        // events. The menu object is a Signals.EventEmitter and never emits
+        // 'key-press-event'/'key-release-event'; those fire on its actor, so the
+        // handlers have to be connected there.
+        this.menu.actor.connect('key-press-event', this._onKeyPressEvent.bind(this));
+        this.menu.actor.connect('key-release-event', this._onKeyReleaseEvent.bind(this));
 
         this.connect('destroy', this._onDestroy.bind(this));
     }

@@ -1,5 +1,5 @@
 project('GPaste', 'c',
-  version: '50.1',
+  version: '50.2',
   meson_version: '>=1.1',
   default_options: [ 'warning_level=2', 'c_std=gnu17' ],
 )
@@ -13,7 +13,7 @@ apiversion = '2'
 adwaita_req_version = '1.9'
 gcr_req_version = '3.90.0'
 glib_req_version = '2.84.0'
-gtk4_req_version = '4.12.0'
+gtk4_req_version = '4.18.0'
 
 gcr_dep = dependency('gcr-4', version: '>= ' + gcr_req_version)
 gio_dep = dependency('gio-2.0', version: '>= ' + glib_req_version)
