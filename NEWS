@@ -1,3 +1,11 @@
+NEW in 50.2 (12/06/2026)
+=============
+
+- GNOME Shell extension: restore keyboard navigation of history items
+- GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection
+- Build: require GTK 4.18
+- Fix a typo in the French translation
+
 NEW in 50.1 (09/06/2026)
 =============
 

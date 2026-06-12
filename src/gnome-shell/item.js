@@ -16,7 +16,7 @@ class GPasteItem extends PopupMenuItem {
         // hover: false keeps the pointer from stealing key focus from the search
         // entry (Fix #435) without dropping can_focus, so the rows stay reachable
         // with the arrow keys.
-        super("", {hover: false});
+        super('', {hover: false});
         this.label.set_x_expand(true);
 
         this._client = client;

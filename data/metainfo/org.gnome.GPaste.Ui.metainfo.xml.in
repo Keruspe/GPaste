@@ -46,6 +46,17 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-12" version="50.2">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>GNOME Shell extension: restore keyboard navigation of history items</li>
+          <li>GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection</li>
+          <li>Build: require GTK 4.18</li>
+          <li>Fix a typo in the French translation</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-09" version="50.1">
       <description>
         <p>This is a maintenance release. Changes:</p>
