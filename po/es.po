@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-12 07:05+0200\n"
-"PO-Revision-Date: 2026-03-12 11:09+0000\n"
-"Last-Translator: Lucas Vieites <lucas.vieites@gmail.com>\n"
-"Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
-">\n"
+"PO-Revision-Date: 2026-06-12 20:09+0000\n"
+"Last-Translator: Libre <6n0n1m0s@proton.me>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Weblate 5.17-dev\n"
+"X-Generator: Weblate 2026.7.dev0\n"
 
 #: data/desktop/org.gnome.GPaste.Daemon.desktop.in.in:3
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:3
@@ -39,9 +39,8 @@ msgid "Clipboard;Manager;Settings;Preferences;Configuration;"
 msgstr "Portapapeles;Gestor;Configuración;Preferencias;Parámetros;"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:4
-#, fuzzy
 msgid "Clipboard Manager"
-msgstr "Seguimiento de cambios en el portapapeles"
+msgstr "Gestor de Portapapeles"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:5
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:7
@@ -49,9 +48,8 @@ msgid "Manage your clipboard history"
 msgstr "Gestione el histórico de su portapapeles"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:16
-#, fuzzy
 msgid "Preferences"
-msgstr "Ajustes de GPaste"
+msgstr "Preferencias"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
 #: src/gnome-shell/aboutItem.js:13 src/ui/gpaste-ui-about.c:38
@@ -103,19 +101,19 @@ msgstr "De manera predeterminada se guarda solo el texto"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:40
 msgid "Show image previews in the history?"
-msgstr ""
+msgstr "¿Mostrar vista previas de la imagen dentro del historia?"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:41
 msgid "By default, we show previews of images in the history"
-msgstr ""
+msgstr "Por defecto, mostramos vistas previas de imágenes en la historia"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:49
 msgid "Size of image previews in pixels"
-msgstr ""
+msgstr "Tamaño de las vistas previas de imagen en píxeles"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:50
 msgid "Default size is 100 pixels"
-msgstr ""
+msgstr "El tamaño por defecto es 100 píxeles"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Do we close the UI after selecting an item?"
@@ -439,71 +437,91 @@ msgstr "Esta es una versión de mantenimiento. Cambios:"
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:91
 msgid "GNOME Shell extension: restore keyboard navigation of history items"
 msgstr ""
+"Extensiones del Shell de GNOME: restaura navegación del teclado de elementos "
+"del historial"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:54
 msgid ""
 "GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection"
 msgstr ""
+"Extensión del shell de GNOME: restaurar la superposición del índice Ctrl y "
+"la selección Ctrl+0-9"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:55
 msgid "Build: require GTK 4.18"
-msgstr ""
+msgstr "Creación: requiere GTK 4.18"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:56
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:92
 msgid "Fix a typo in the French translation"
-msgstr ""
+msgstr "Fije un tipo en la traducción al francés"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:64
 msgid "Fix building without the GNOME Shell extension (-Dgnome-shell=false)"
 msgstr ""
+"Soluciona construir sin la extensión de la Consola GNOME (-Dgnome‐"
+"shell=false)"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:65
 msgid ""
 "Restore GTK deprecation version-gating and drop the unused build-time gjs "
 "dependency"
 msgstr ""
+"Restaura obsolescencia de GTK version-gating y descartar la dependencia no "
+"utilizada en tiempo de compilación de gjs"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:66
 msgid "Target GNOME Shell 50 in the extension"
-msgstr ""
+msgstr "Destino de GNOME Shell 50 en la extensión"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:67
 msgid "Bump the library soversions to reflect the API/ABI changes since 45.8"
 msgstr ""
+"Trastea con soversions de la biblioteca para reflejar los cambios de API/ABI "
+"desde 45.8"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:73
 msgid ""
 "This is a major release porting GPaste to GTK 4 and libadwaita. Changes:"
 msgstr ""
+"Esto es una versión mayor portando GPaste a GTK 4 y libadwaita. Cambios:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:75
 msgid "Port the daemon, history UI and preferences to GTK 4 and libadwaita"
 msgstr ""
+"Portado del demonio, historial IU y preferencias para GTK 4 y libadwaita"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:76
 msgid "Show image thumbnails in the history, with configurable preview size"
 msgstr ""
+"Mostrar miniaturas de imagen en la historia, con tamaño de vista previa "
+"configurable"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:77
 msgid ""
 "Support global keyboard shortcuts on Wayland through the XDG GlobalShortcuts "
 "portal"
 msgstr ""
+"Acepta atajos de teclado global en Wayland a través del portal "
+"GlobalShortcuts de XDG"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:78
 msgid "Recognise copied colours as dedicated colour items"
-msgstr ""
+msgstr "Reconoce colores copiados color elementos dedicados del color"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:79
 msgid ""
 "Give keybindings human-readable descriptions and install a daemon desktop "
 "file"
 msgstr ""
+"Proporciona descripciones legibles por humanos de vínculos de teclado e "
+"instala un archivo demonio de escritorio"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
 msgid "Fix images sometimes being repeatedly re-added to the history"
 msgstr ""
+"Soluciona imágenes que algunas veces son re‐añadidos repetidamente al "
+"historial"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:81
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:101
@@ -511,98 +529,120 @@ msgid ""
 "Fix keyboard shortcuts not triggering when NumLock and CapsLock are both "
 "active"
 msgstr ""
+"Soluciona atajos de teclado no disparador cuando ambos BloqNum y Mayús están "
+"activos"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
 msgid ""
 "Fix several crashes (search provider, UI lifetime, GNOME Shell extension) "
 "and memory leaks"
 msgstr ""
+"Soluciona varios choques (proveedor de búsqueda, IU lifetime, Extensión de "
+"GNOME Shell) y pérdidas de memoria"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:83
 msgid "Modernise the GNOME Shell extension to current conventions"
-msgstr ""
+msgstr "Moderniza la extensión de GNOME Shell para las convenciones vigentes"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:100
 msgid "Fix use-after-free crash in the GNOME Shell search provider"
 msgstr ""
+"Soluciona cuelgue use-after-free en el proveedor de búsqueda en GNOME Shell"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:102
 msgid ""
 "Fix memory leaks when re-copying history items and when rebinding shortcuts"
 msgstr ""
+"Soluciona pérdida de memoria cuando re‐copia elementos de historia y cuando "
+"re‐vincula enlaces"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:103
 msgid "Fix potential crash when enforcing a very small history size"
 msgstr ""
+"Soluciones rotura potencial cuando refuerza un tamaño de historial muy "
+"pequeño"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:104
 msgid "Build: ship the GSettings schema as a static file"
-msgstr ""
+msgstr "Construir: traslada el esquema GSettings como un archivo estático"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:112
 msgid ""
 "GNOME Shell extension now retries the daemon connection before giving up"
 msgstr ""
+"La extensión de GNOME Shell ahora reintenta la conexión del demonio antes de "
+"renunciar"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:113
 msgid "Fix test crash when GrabAccelerators is not allowed"
-msgstr ""
+msgstr "Soluciona prueba de cuelgue cuando GrabAccelerators no está concedida"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:114
 msgid "Build: simplify gsettings compilation for tests"
-msgstr ""
+msgstr "Construcción: simplifica la compilación de gsettings para pruebas"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:122
 msgid "Fix GC crash and signal leak when disabling the GNOME Shell extension"
 msgstr ""
+"Repara cuelgue GC y pérdida de señal cuando inhabilita la extensión de GNOME "
+"Shell"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:123
 msgid "GNOME Shell extension now handles daemon connection failure gracefully"
 msgstr ""
+"Extensión de GNOME Shell ahora manipula fallo de conexión de afectuosamente"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:124
-#, fuzzy
 msgid "Fix crash when a history item has no value yet"
-msgstr "arreglar el fallo cuando aún no hay historial"
+msgstr ""
+"Soluciona el cuelgue cuando un elemento de historial no tiene aún ningún "
+"valor"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:125
 msgid "Fix image files not being deleted when history items are removed"
 msgstr ""
+"Soluciona archivos de imagen que no son eliminados cuando los elementos del "
+"historial son retirados"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:126
 msgid "Fix image files stored in wrong directory"
-msgstr ""
+msgstr "Soluciona archivos de imagen almacenados en directorio incorrecto"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:127
-#, fuzzy
 msgid "Fix keyboard focus being stolen by history items on hover"
 msgstr ""
-"Se corrigió un error que provocaba que el historial tuviera un solo elemento"
+"Solucionado el foco de teclado al ser almacenado por elementos del histórico "
+"al flotar"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:128
 msgid ""
 "Fix key events incorrectly forwarded to search when another entry has focus"
 msgstr ""
+"Repara eventos de tecla reenviados incorrectamente para buscar cuando otro "
+"apunte tiene foco"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:129
 msgid "Fix signal loop when updating shortcut entries from settings"
 msgstr ""
+"Selecciona bucle de señal cuando actualiza enlace de apuntes desde ajustes"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:130
 msgid "Fix default history item count not reset after history deletion"
 msgstr ""
+"Soluciona contador de elemento de histórico por defecto no restablecido tras "
+"borrado de historia"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:131
 msgid "Enforce minimum window size to prevent unresizable state"
-msgstr ""
+msgstr "Fuerza tamaño mínimo de ventana para prevenir estado no redimensionable"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:132
 msgid "Add descriptive tooltips for settings entries"
-msgstr ""
+msgstr "Añade consejos descriptivos para apuntes de ajustes"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:133
 msgid "Build: explicitly link libgpaste libraries against libc"
-msgstr ""
+msgstr "Creación: enlace explícitamente de bibliotecas libgpaste frente a libc"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:134
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:147
@@ -622,33 +662,32 @@ msgid ""
 "Fix infinite Pango assertion loop that could fill disk when clipboard "
 "content contained tab characters"
 msgstr ""
+"Soluciona bucle infinito de aserción en Pango que pudo completar el disco "
+"cuando el contenido del portapapeles contenido en los caracteres de etiqueta"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:143
 msgid "Various bug fixes and memory management improvements"
-msgstr ""
+msgstr "Varias correcciones de fallos y mejoras de gestión de memoria"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:144
 msgid "Daemon improvements"
-msgstr ""
+msgstr "Mejoras del demonio"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:145
 msgid "GNOME Shell extension improvements"
-msgstr ""
+msgstr "Mejoras de extensión de GNOME Shell"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:146
-#, fuzzy
 msgid "GLib >= 2.76 is now required"
-msgstr "Ahora se requiere gcr 4"
+msgstr "Ahora se requiere Glib >= 2.76"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:155
-#, fuzzy
 msgid "Support for gnome 50"
-msgstr "Admite gnome 48"
+msgstr "Se admite para GNOME 50"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:156
-#, fuzzy
 msgid "Support for gnome 49"
-msgstr "Admite gnome 48"
+msgstr "Se admite GNOME 49"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
 msgid "Support for gnome 48"
@@ -1221,40 +1260,35 @@ msgstr "No se pudo conectar al servicio GPaste"
 
 #: src/daemon/gpaste-color-item.c:73
 msgid "[Color]"
-msgstr ""
+msgstr "[Color]"
 
 #: src/daemon/gpaste-daemon.c:266
-#, fuzzy
 msgid "Convert to Password"
-msgstr "cambiar el nombre de la contraseña"
+msgstr "Convertir a Contraseña"
 
 #: src/daemon/gpaste-daemon.c:268
-#, fuzzy
 msgid "Pop from History"
-msgstr "Acceso al historial"
+msgstr "Flotar desde Historial"
 
 #: src/daemon/gpaste-daemon.c:270
-#, fuzzy
 msgid "Show History"
-msgstr "Acceso al historial"
+msgstr "Mostrar Historial"
 
 #: src/daemon/gpaste-daemon.c:272
-#, fuzzy
 msgid "Sync Clipboard to Primary"
-msgstr "Sincronizar portapapeles con la selección principal"
+msgstr "Sincronizar Portapapeles a Primario"
 
 #: src/daemon/gpaste-daemon.c:274
-#, fuzzy
 msgid "Sync Primary to Clipboard"
-msgstr "Sincronizar selección principal con el portapapeles"
+msgstr "Sincronizar Primario a Portapapeles"
 
 #: src/daemon/gpaste-daemon.c:276
 msgid "Launch UI"
-msgstr ""
+msgstr "IU del lanzador"
 
 #: src/daemon/gpaste-daemon.c:278
 msgid "Upload to Pastebin"
-msgstr ""
+msgstr "Subir a Pastebin"
 
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:219
@@ -1351,6 +1385,9 @@ msgid ""
 "When enabled, the daemon automatically starts or stops tracking clipboard "
 "changes to match the GNOME Shell extension's enabled state"
 msgstr ""
+"Cuando está habilitado, automáticamente el demonio comienza o deja de "
+"rastrear cambios de portapapeles para que coincida con el estado habilitado "
+"de la extensión GNOME Shell"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:166
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:174
@@ -1382,6 +1419,8 @@ msgid ""
 "When enabled, if a new clipboard entry starts with the previous one, the "
 "previous entry is replaced instead of creating a new one"
 msgstr ""
+"Cuando está habilitado, si un apunte nuevo del portapapeles comienza con la "
+"anterior, el anterior apunte se reemplaza en lugar de crear una nueva"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:92
 msgid "History settings"
@@ -1413,9 +1452,8 @@ msgstr "Tamaño máximo del elemento cuando se muestra"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:81
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:92
-#, fuzzy
 msgid "Images settings"
-msgstr "La interfaz de configuración"
+msgstr "Ajustes de imágenes"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:94
 msgid "Images support"
@@ -1423,11 +1461,11 @@ msgstr "Soporte de imágenes"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:100
 msgid "Image previews"
-msgstr ""
+msgstr "Vistas de imagen"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:106
 msgid "Preview size"
-msgstr ""
+msgstr "Tamaño de vista previa"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:122
 msgid "Keyboard shortcuts"
@@ -1484,9 +1522,9 @@ msgstr "Cancelar"
 
 #. Translators: %s is the name of the history being emptied.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:126
-#, fuzzy, c-format
+#, c-format
 msgid "Do you really want to empty \"%s\"?"
-msgstr "¿De verdad quieres vaciar el historial?"
+msgstr "¿De verdad quieres vaciar el «%s»?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:127
 #: src/ui/gpaste-ui-history.c:153 src/ui/gpaste-ui-history.c:428
@@ -1496,7 +1534,7 @@ msgstr "Vacío"
 
 #: src/ui/gpaste-ui.c:47
 msgid "Clipboard management system"
-msgstr ""
+msgstr "Sistema de gestión del portapapeles"
 
 #: src/ui/gpaste-ui-delete-item.c:46 src/ui/gpaste-ui-panel.c:358
 #: src/ui/gpaste-ui-panel.c:518
@@ -1508,17 +1546,16 @@ msgid "Edit"
 msgstr "Editar"
 
 #: src/ui/gpaste-ui-history.c:266
-#, fuzzy
 msgid "No Results"
-msgstr "(Sin resultados)"
+msgstr "Sin Resultados"
 
 #: src/ui/gpaste-ui-new-item.c:67
 msgid "Add new item"
-msgstr ""
+msgstr "Añade elemento nuevo"
 
 #: src/ui/gpaste-ui-new-item.c:100
 msgid "New item"
-msgstr ""
+msgstr "Nuevo elemento"
 
 #: src/ui/gpaste-ui-panel.c:307
 msgid "Under which name do you want to backup this history?"
@@ -1530,14 +1567,13 @@ msgstr "Copia de seguridad"
 
 #. Translators: %s is the name of the history being deleted.
 #: src/ui/gpaste-ui-panel.c:357
-#, fuzzy, c-format
+#, c-format
 msgid "Are you sure you want to delete \"%s\"?"
-msgstr "¿Estás seguro de que deseas eliminar este historial?"
+msgstr "¿Seguro que deseas eliminar \"%s\"?"
 
 #: src/ui/gpaste-ui-panel.c:441
-#, fuzzy
 msgid "Switch to history"
-msgstr "cambiar a otro histórico"
+msgstr "Cambiar a historial"
 
 #: src/ui/gpaste-ui-panel.c:448
 msgid "Switch to"
@@ -1584,14 +1620,12 @@ msgid "Quit"
 msgstr "Salir"
 
 #: src/ui/gpaste-ui-window.c:380
-#, fuzzy
 msgid "Histories"
-msgstr "Acceso al historial"
+msgstr "Historiales"
 
 #: src/ui/gpaste-ui-window.c:381
-#, fuzzy
 msgid "History"
-msgstr "Acceso al historial"
+msgstr "Historia"
 
 #~ msgid "@GETTEXT_PACKAGE@"
 #~ msgstr "@GETTEXT_PACKAGE@"
