@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-12 07:05+0200\n"
-"PO-Revision-Date: 2026-06-12 20:09+0000\n"
+"PO-Revision-Date: 2026-06-14 12:01+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "ru/>\n"
@@ -477,34 +477,47 @@ msgstr ""
 msgid ""
 "This is a major release porting GPaste to GTK 4 and libadwaita. Changes:"
 msgstr ""
+"Это крупный выпуск, портирующий GPaste на GTK 4 и libadwaita. Изменения:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:75
 msgid "Port the daemon, history UI and preferences to GTK 4 and libadwaita"
 msgstr ""
+"Перенесён на GTK 4 и libadwaita демон, пользовательский интерфейс истории и "
+"параметров"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:76
 msgid "Show image thumbnails in the history, with configurable preview size"
 msgstr ""
+"Добавлена настройка размера предварительного просмотра миниатюр изображений "
+"в истории"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:77
 msgid ""
 "Support global keyboard shortcuts on Wayland through the XDG GlobalShortcuts "
 "portal"
 msgstr ""
+"Добавлена поддержка глобальных комбинаций клавиш в Wayland через портал XDG "
+"GlobalShortcuts"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:78
 msgid "Recognise copied colours as dedicated colour items"
 msgstr ""
+"Распознавание скопированных цветов осуществляется в виде отдельных цветовых "
+"элементов"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:79
 msgid ""
 "Give keybindings human-readable descriptions and install a daemon desktop "
 "file"
 msgstr ""
+"Комбинациям клавиш даны удобочитаемые описания и установлен файл демона "
+"рабочего стола"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
 msgid "Fix images sometimes being repeatedly re-added to the history"
 msgstr ""
+"Исправлена ошибка, из-за которой изображения иногда повторно добавлялись в "
+"историю"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:81
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:101
@@ -512,33 +525,45 @@ msgid ""
 "Fix keyboard shortcuts not triggering when NumLock and CapsLock are both "
 "active"
 msgstr ""
+"Исправлена ошибка, из-за которой комбинации клавиш не срабатывали при "
+"активных NumLock и CapsLock"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
 msgid ""
 "Fix several crashes (search provider, UI lifetime, GNOME Shell extension) "
 "and memory leaks"
 msgstr ""
+"Исправлено несколько сбоев (search provider, UI lifetime, GNOME Shell "
+"extension) и утечки памяти"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:83
 msgid "Modernise the GNOME Shell extension to current conventions"
 msgstr ""
+"GNOME Shell extension модернизировано в соответствии с современными "
+"стандартами"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:100
 msgid "Fix use-after-free crash in the GNOME Shell search provider"
 msgstr ""
+"Исправлена ошибка, приводящая к сбою из-за использования освобожденной "
+"памяти в поставщике поиска GNOME Shell"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:102
 msgid ""
 "Fix memory leaks when re-copying history items and when rebinding shortcuts"
 msgstr ""
+"Устранены утечки памяти при повторном копировании элементов истории и "
+"повторной привязке клавиш"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:103
 msgid "Fix potential crash when enforcing a very small history size"
 msgstr ""
+"Исправлена потенциальная ошибка, приводящая к сбою при установлении очень "
+"малого размера истории"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:104
 msgid "Build: ship the GSettings schema as a static file"
-msgstr ""
+msgstr "Сборка: схема GSettings поставляется в виде статического файла"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:112
 msgid ""
@@ -562,23 +587,26 @@ msgid "GNOME Shell extension now handles daemon connection failure gracefully"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:124
-#, fuzzy
 msgid "Fix crash when a history item has no value yet"
-msgstr "исправлен сбой, когда истории ещё нет"
+msgstr "Исправлен сбой, когда элемент истории ещё не имеет значения"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:125
 msgid "Fix image files not being deleted when history items are removed"
 msgstr ""
+"Исправлена ошибка, из-за которой файлы изображений не удалялись при удалении "
+"элементов истории"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:126
 msgid "Fix image files stored in wrong directory"
 msgstr ""
+"Исправлена ошибка, из-за которой файлы изображений хранились в неправильном "
+"каталоге"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:127
-#, fuzzy
 msgid "Fix keyboard focus being stolen by history items on hover"
 msgstr ""
-"Исправлена ошибка, приводившая к открытию истории только с одним элементом"
+"Исправлена ошибка, из-за которой фокус клавиатуры перехватывался элементами "
+"истории при наведении курсора"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:128
 msgid ""
@@ -603,7 +631,7 @@ msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:133
 msgid "Build: explicitly link libgpaste libraries against libc"
-msgstr ""
+msgstr "Сборка: явная привязка библиотеки libgpaste к libc"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:134
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:147
@@ -623,33 +651,32 @@ msgid ""
 "Fix infinite Pango assertion loop that could fill disk when clipboard "
 "content contained tab characters"
 msgstr ""
+"Исправлена бесконечная циклическая ошибка Pango, которая могла привести к "
+"переполнению диска, если содержимое буфера обмена содержало символы табуляции"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:143
 msgid "Various bug fixes and memory management improvements"
-msgstr ""
+msgstr "Исправлены различные ошибки и улучшено управление памятью"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:144
 msgid "Daemon improvements"
-msgstr ""
+msgstr "Улучшения в работе демона"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:145
 msgid "GNOME Shell extension improvements"
-msgstr ""
+msgstr "Улучшения в GNOME Shell extension"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:146
-#, fuzzy
 msgid "GLib >= 2.76 is now required"
-msgstr "теперь требуется gcr 4"
+msgstr "Теперь требуется GLib >= 2.76"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:155
-#, fuzzy
 msgid "Support for gnome 50"
-msgstr "Поддержка gnome 48"
+msgstr "Поддержка gnome 50"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:156
-#, fuzzy
 msgid "Support for gnome 49"
-msgstr "Поддержка gnome 48"
+msgstr "Поддержка gnome 49"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
 msgid "Support for gnome 48"
