@@ -44,11 +44,11 @@
     </key>
 
     <key name="images-preview-size" type="t">
-      <range min="50" max="400"/>
+      <range min="50" max="200"/>
       <default>50</default>
       <summary>Size of image previews in pixels</summary>
       <description>
-        Default size is 100 pixels
+        Size of the inline image thumbnail in the history; the larger detail preview is shown on hover. Default size is 50 pixels.
       </description>
     </key>
 
@@ -124,7 +124,7 @@
 
     <key name="min-text-item-size" type="t">
       <range min="1" max="65535"/>
-      <default>1</default>
+      <default>4</default>
       <summary>Min text item size</summary>
       <description>
         Minimum size of a text item. Anything out of this boundary is ignored.

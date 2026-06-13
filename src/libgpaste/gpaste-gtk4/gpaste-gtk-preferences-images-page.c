@@ -53,7 +53,7 @@ g_paste_gtk_preferences_images_page_new (GPasteSettings *settings)
     g_paste_gtk_preferences_group_add_range_setting (group,
                                                      _("Preview size"),
                                                      G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
-                                                     50, 400, 10,
+                                                     50, 200, 10,
                                                      settings);
     g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
 
