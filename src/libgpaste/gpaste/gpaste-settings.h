@@ -26,7 +26,6 @@ guint64      g_paste_settings_get_images_preview_size        (const GPasteSettin
 gboolean     g_paste_settings_get_images_support             (const GPasteSettings *self);
 const gchar *g_paste_settings_get_launch_ui                  (const GPasteSettings *self);
 const gchar *g_paste_settings_get_make_password              (const GPasteSettings *self);
-guint64      g_paste_settings_get_max_displayed_history_size (const GPasteSettings *self);
 guint64      g_paste_settings_get_max_history_size           (const GPasteSettings *self);
 guint64      g_paste_settings_get_max_memory_usage           (const GPasteSettings *self);
 guint64      g_paste_settings_get_max_text_item_size         (const GPasteSettings *self);
@@ -55,7 +54,6 @@ void g_paste_settings_reset_images_preview_size        (GPasteSettings *self);
 void g_paste_settings_reset_images_support             (GPasteSettings *self);
 void g_paste_settings_reset_launch_ui                  (GPasteSettings *self);
 void g_paste_settings_reset_make_password              (GPasteSettings *self);
-void g_paste_settings_reset_max_displayed_history_size (GPasteSettings *self);
 void g_paste_settings_reset_max_history_size           (GPasteSettings *self);
 void g_paste_settings_reset_max_memory_usage           (GPasteSettings *self);
 void g_paste_settings_reset_max_text_item_size         (GPasteSettings *self);
@@ -95,8 +93,6 @@ void g_paste_settings_set_launch_ui                  (GPasteSettings *self,
                                                       const gchar    *value);
 void g_paste_settings_set_make_password              (GPasteSettings *self,
                                                       const gchar    *value);
-void g_paste_settings_set_max_displayed_history_size (GPasteSettings *self,
-                                                      guint64         value);
 void g_paste_settings_set_max_history_size           (GPasteSettings *self,
                                                       guint64         value);
 void g_paste_settings_set_max_memory_usage           (GPasteSettings *self,

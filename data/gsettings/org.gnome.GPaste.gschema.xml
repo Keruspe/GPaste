@@ -86,15 +86,6 @@
       </description>
     </key>
 
-    <key name="max-displayed-history-size" type="t">
-      <range min="10" max="255"/>
-      <default>20</default>
-      <summary>Max displayed history size</summary>
-      <description>
-        Maximum number of items displayed in the history
-      </description>
-    </key>
-
     <key name="max-history-size" type="t">
       <range min="5" max="65535"/>
       <default>300</default>

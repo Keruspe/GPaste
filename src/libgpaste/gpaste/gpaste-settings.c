@@ -30,7 +30,6 @@ typedef struct
     guint64    images_preview_size;
     gchar     *launch_ui;
     gchar     *make_password;
-    guint64    max_displayed_history_size;
     guint64    max_history_size;
     guint64    max_memory_usage;
     guint64    max_text_item_size;
@@ -375,29 +374,6 @@ STRING_SETTING (launch_ui, LAUNCH_UI)
  * Change the "make-password" setting
  */
 STRING_SETTING (make_password, MAKE_PASSWORD)
-
-/**
- * g_paste_settings_get_max_displayed_history_size:
- * @self: a #GPasteSettings instance
- *
- * Get the "max-displayed-history-size" setting
- *
- * Returns: the value of the "max-displayed-history-size" setting
- */
-/**
- * g_paste_settings_reset_max_displayed_history_size:
- * @self: a #GPasteSettings instance
- *
- * Reset the "max-displayed-history-size" setting
- */
-/**
- * g_paste_settings_set_max_displayed_history_size:
- * @self: a #GPasteSettings instance
- * @value: the maximum number of items to display
- *
- * Change the "max-displayed-history-size" setting
- */
-UNSIGNED_SETTING (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)
 
 /**
  * g_paste_settings_get_max_history_size:
@@ -906,7 +882,6 @@ static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (IMAGES_PREVIEW_SIZE, images_preview_size),
     KEYBINDING_ENTRY (LAUNCH_UI, launch_ui),
     KEYBINDING_ENTRY (MAKE_PASSWORD, make_password),
-    SETTING_ENTRY (MAX_DISPLAYED_HISTORY_SIZE, max_displayed_history_size),
     SETTING_ENTRY (MAX_HISTORY_SIZE, max_history_size),
     SETTING_ENTRY (MAX_MEMORY_USAGE, max_memory_usage),
     SETTING_ENTRY (MAX_TEXT_ITEM_SIZE, max_text_item_size),
@@ -986,7 +961,6 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     UINT (images_preview_size,        IMAGES_PREVIEW_SIZE)          \
     STR  (launch_ui,                  LAUNCH_UI)                    \
     STR  (make_password,              MAKE_PASSWORD)                \
-    UINT (max_displayed_history_size, MAX_DISPLAYED_HISTORY_SIZE)   \
     UINT (max_history_size,           MAX_HISTORY_SIZE)             \
     UINT (max_memory_usage,           MAX_MEMORY_USAGE)             \
     UINT (max_text_item_size,         MAX_TEXT_ITEM_SIZE)           \

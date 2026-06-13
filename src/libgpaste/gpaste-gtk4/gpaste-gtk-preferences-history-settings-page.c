@@ -73,11 +73,6 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                      G_PASTE_ELEMENT_SIZE_SETTING,
                                                      0, 511, 5,
                                                      settings);
-    g_paste_gtk_preferences_group_add_range_setting (group,
-                                                     _("Max displayed history size"),
-                                                     G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
-                                                     10, 255, 5,
-                                                     settings);
     g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
 
     return GTK_WIDGET (self);

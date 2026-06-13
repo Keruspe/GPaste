@@ -31,6 +31,7 @@ typedef struct
     guint64         limit;      /* how many items we currently allow on screen; grows lazily */
     guint64         available;  /* last known total size of the history */
     gboolean        loading;    /* a lazy-growth refresh is in flight */
+    guint64         refresh_generation; /* bumped per refresh; stale callbacks bail */
     gboolean        selection_mode; /* merge mode: rows are multi-selectable */
     GPtrArray      *selection;       /* selected uuids, in the order they were picked */
     gint32          item_height;
@@ -119,31 +120,39 @@ g_paste_ui_history_drop_list (GtkListBox *list_box,
 static void g_paste_ui_history_refresh (GPasteUiHistory *self,
                                         guint64          from_index);
 
-static void
-g_paste_ui_history_update_height_request (GPasteSettings *settings,
-                                          const gchar    *key G_GNUC_UNUSED,
-                                          gpointer        user_data)
+/* One batch is a viewport's worth of items: enough to fill the visible area so
+ * the list always has something to scroll to while more history remains. Until
+ * a row has been measured and the viewport allocated, fall back to a fixed
+ * count and let the lazy-growth loop top it up to fill the window. */
+#define G_PASTE_UI_HISTORY_DEFAULT_BATCH 20
+
+/* Smallest plausible row height in pixels. Used to bound eager filling: dividing
+ * the viewport height by it yields the most rows that could ever be needed, so a
+ * run of not-yet-laid-out (zero-height) rows can't keep loading the whole history. */
+#define G_PASTE_UI_HISTORY_MIN_ROW_HEIGHT 16.0
+
+static guint64
+g_paste_ui_history_batch (GPasteUiHistory *self)
 {
-    GPasteUiHistory *self = user_data;
-    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
-    guint64 max_displayed = g_paste_settings_get_max_displayed_history_size (settings);
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
 
-    if (priv->item_height)
-        g_object_set (G_OBJECT (priv->list_box), "height-request", max_displayed * priv->item_height, NULL);
-
-    /* max-displayed-history-size is the initial batch and the floor for how many
-     * items we keep on screen; lazy scrolling can only ever grow past it. */
-    if (priv->limit < max_displayed)
+    if (priv->item_height > 0 && priv->scroll)
     {
-        priv->limit = max_displayed;
-        g_paste_ui_history_refresh (self, 0);
+        GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (priv->scroll);
+        gdouble page = gtk_adjustment_get_page_size (vadjustment);
+
+        if (page > 0)
+            return (guint64) (page / priv->item_height) + 1;
     }
+
+    return G_PASTE_UI_HISTORY_DEFAULT_BATCH;
 }
 
 typedef struct {
     GPasteUiHistory *self;
     gchar           *name;
     guint64          from_index;
+    guint64          generation;
 } OnUpdateCallbackData;
 
 static void
@@ -159,18 +168,23 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
     if (!priv->client)
         return;
 
+    /* A later refresh superseded this one: leave priv->loading set (the newer
+     * refresh clears it) and don't re-index from this stale from_index, which
+     * could leave shifted rows with wrong indices. */
+    if (cdata->generation != priv->refresh_generation)
+        return;
+
     guint64 old_size = priv->size;
     guint64 refreshTextBound = old_size;
     guint64 new_size = g_paste_client_get_history_size_finish (priv->client, res, NULL);
-    guint64 max_displayed = g_paste_settings_get_max_displayed_history_size (priv->settings);
 
     priv->loading = FALSE;
     priv->available = new_size;
     /* Never keep a display limit larger than what the history can fill: when it
      * shrinks (items removed, emptied, or a smaller history selected), drop back
-     * so lazy growth restarts from the configured batch instead of eagerly
-     * reloading the old depth should the history grow again. */
-    priv->limit = MIN (priv->limit, MAX (max_displayed, new_size));
+     * so lazy growth restarts from a single batch instead of eagerly reloading
+     * the old depth should the history grow again. */
+    priv->limit = MIN (priv->limit, MAX (g_paste_ui_history_batch (self), new_size));
     priv->size = MIN (new_size, priv->limit);
 
     if (priv->size)
@@ -218,10 +232,7 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
         g_paste_ui_item_set_index (item->data, i);
 
     if (!priv->item_height && priv->items)
-    {
         gtk_widget_measure (GTK_WIDGET (priv->items->data), GTK_ORIENTATION_VERTICAL, -1, NULL, &priv->item_height, NULL, NULL);
-        g_paste_ui_history_update_height_request (priv->settings, NULL, self);
-    }
 }
 
 static void
@@ -259,6 +270,7 @@ g_paste_ui_history_refresh (GPasteUiHistory *self,
         OnUpdateCallbackData *cdata = g_new (OnUpdateCallbackData, 1);
         cdata->self = self;
         cdata->from_index = from_index;
+        cdata->generation = ++priv->refresh_generation;
 
         priv->loading = TRUE;
         g_paste_client_get_history_name (priv->client, on_name_ready, cdata);
@@ -280,7 +292,7 @@ g_paste_ui_history_grow (GPasteUiHistory *self)
 {
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
-    priv->limit += g_paste_settings_get_max_displayed_history_size (priv->settings);
+    priv->limit += g_paste_ui_history_batch (self);
     g_paste_ui_history_refresh (self, priv->size);
 }
 
@@ -292,10 +304,16 @@ g_paste_ui_history_on_adjustment_changed (GtkAdjustment *adjustment,
                                           gpointer       user_data)
 {
     GPasteUiHistory *self = user_data;
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
     gdouble page = gtk_adjustment_get_page_size (adjustment);
 
+    /* Cap eager filling assuming a sane minimum row height, so zero/near-zero
+     * height rows can't keep upper <= page forever and load the whole history. */
+    guint64 max_fill = (guint64) (page / G_PASTE_UI_HISTORY_MIN_ROW_HEIGHT) + 2;
+
     /* page <= 0 means the viewport is not allocated yet. */
-    if (page > 0 && gtk_adjustment_get_upper (adjustment) <= page && g_paste_ui_history_can_grow (self))
+    if (page > 0 && gtk_adjustment_get_upper (adjustment) <= page &&
+        priv->size < max_fill && g_paste_ui_history_can_grow (self))
         g_paste_ui_history_grow (self);
 }
 
@@ -657,7 +675,7 @@ g_paste_ui_history_new (GPasteClient   *client,
     priv->settings = g_object_ref (settings);
     priv->panel = panel;
     priv->rootwin = rootwin;
-    priv->limit = g_paste_settings_get_max_displayed_history_size (settings);
+    priv->limit = G_PASTE_UI_HISTORY_DEFAULT_BATCH;
 
     GtkWidget *status_page = adw_status_page_new ();
     priv->status_page = ADW_STATUS_PAGE (status_page);
@@ -695,10 +713,6 @@ g_paste_ui_history_new (GPasteClient   *client,
     g_signal_connect_object (select_gesture, "pressed", G_CALLBACK (on_row_pressed), self, 0);
     gtk_widget_add_controller (list_box, GTK_EVENT_CONTROLLER (select_gesture));
 
-    g_signal_connect_object (settings,
-                             "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
-                             G_CALLBACK (g_paste_ui_history_update_height_request),
-                             self, 0);
     g_signal_connect_object (client,
                              "update",
                              G_CALLBACK (g_paste_ui_history_on_update),

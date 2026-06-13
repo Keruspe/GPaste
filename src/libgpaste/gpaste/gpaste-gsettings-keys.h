@@ -25,7 +25,6 @@ G_BEGIN_DECLS
 #define G_PASTE_IMAGES_SUPPORT_SETTING             "images-support"
 #define G_PASTE_LAUNCH_UI_SETTING                  "launch-ui"
 #define G_PASTE_MAKE_PASSWORD_SETTING              "make-password"
-#define G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING "max-displayed-history-size"
 #define G_PASTE_MAX_HISTORY_SIZE_SETTING           "max-history-size"
 #define G_PASTE_MAX_MEMORY_USAGE_SETTING           "max-memory-usage"
 #define G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING         "max-text-item-size"

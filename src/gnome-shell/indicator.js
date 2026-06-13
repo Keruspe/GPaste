@@ -25,6 +25,9 @@ import {GPasteStatusIcon} from './statusIcon.js';
 export const GPasteIndicator = GObject.registerClass(
 class GPasteIndicator extends Button {
     static _CONNECT_RETRIES = 3;
+    // Rows to load before any have been laid out (and a real row height is
+    // known); _maybeLoadMore() then tops the list up to fill the viewport.
+    static _DEFAULT_BATCH = 20;
 
     constructor() {
         super(0.0, 'GPaste');
@@ -44,7 +47,6 @@ class GPasteIndicator extends Button {
         this._available = 0;
         this._loading = false;
         this._reloadGeneration = 0;
-        this._batch = this._settings.get_max_displayed_history_size();
 
         this._dummyHistoryItem = new GPasteDummyHistoryItem();
         this.menu.addMenuItem(this._dummyHistoryItem);
@@ -133,11 +135,6 @@ class GPasteIndicator extends Button {
             this._client = null;
             return;
         }
-
-        this._settings.connectObject('changed::max-displayed-history-size', () => {
-            this._batch = this._settings.get_max_displayed_history_size();
-            this._reloadCurrent();
-        }, this);
 
         this._client.connectObject(
             'update', this._update.bind(this),
@@ -246,7 +243,7 @@ class GPasteIndicator extends Button {
             const elementSize = this._settings.get_element_size();
             const searching = this._hasSearch();
             const start = this._history.length;
-            const end = Math.min(this._totalSize(), start + this._batch);
+            const end = Math.min(this._totalSize(), start + this._fillBatch());
 
             for (let i = start; i < end; ++i)
                 this._createRow(elementSize, i, searching ? -1 : i, searching ? this._searchResults[i] : null);
@@ -255,6 +252,23 @@ class GPasteIndicator extends Button {
             // for the rest of the session.
             this._loading = false;
         }
+    }
+
+    // One batch is a viewport's worth of rows: enough to fill the visible area
+    // so the menu always has something to scroll to while more history remains.
+    // The average row height is derived from the laid-out content (upper /
+    // loaded); before anything is laid out we fall back to a fixed count.
+    _fillBatch() {
+        const adjustment = this._scrollView.vadjustment;
+        const page = adjustment.page_size;
+        const loaded = this._history.length;
+
+        if (page > 0 && loaded > 0 && adjustment.upper > 0) {
+            const rowHeight = adjustment.upper / loaded;
+            return Math.max(1, Math.ceil(page / rowHeight) + 1);
+        }
+
+        return GPasteIndicator._DEFAULT_BATCH;
     }
 
     _maybeLoadMore() {
