@@ -3,7 +3,7 @@
 
     <key name="element-size" type="t">
       <range min="0" max="511"/>
-      <default>60</default>
+      <default>80</default>
       <summary>Max size of an element when displaying it</summary>
       <description>
         The extra stuff of that element will be replaced by "…", and newlines by " " when displaying from the applet, 0 to disable.
@@ -97,7 +97,7 @@
 
     <key name="max-history-size" type="t">
       <range min="5" max="65535"/>
-      <default>100</default>
+      <default>300</default>
       <summary>Max history size</summary>
       <description>
         Maximum number of items in history
@@ -106,7 +106,7 @@
 
     <key name="max-memory-usage" type="t">
       <range min="5" max="16383"/>
-      <default>30</default>
+      <default>60</default>
       <summary>Max memory usage (MB)</summary>
       <description>
         Maximum amount of memory used to store contents
