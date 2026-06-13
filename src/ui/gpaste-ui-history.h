@@ -20,6 +20,11 @@ void g_paste_ui_history_search (GPasteUiHistory *self,
 
 gboolean g_paste_ui_history_select_first (GPasteUiHistory *self);
 
+void g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
+                                            gboolean         selection_mode);
+GStrv g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
+                                             guint64         *length);
+
 GtkWidget *g_paste_ui_history_new (GPasteClient   *client,
                                    GPasteSettings *settings,
                                    GPasteUiPanel  *panel,

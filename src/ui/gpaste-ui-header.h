@@ -19,6 +19,13 @@ void g_paste_ui_header_set_subtitle (AdwHeaderBar *self,
 
 GtkToggleButton *g_paste_ui_header_get_search_button (AdwHeaderBar *self);
 
+GtkWidget *g_paste_ui_header_get_merge_button  (AdwHeaderBar *self);
+GtkWidget *g_paste_ui_header_get_cancel_button (AdwHeaderBar *self);
+void g_paste_ui_header_set_selection_mode  (AdwHeaderBar *self,
+                                            gboolean      selection_mode);
+void g_paste_ui_header_set_selection_count (AdwHeaderBar *self,
+                                            guint         count);
+
 GtkWidget *g_paste_ui_header_new (GtkWindow    *topwin,
                                   GPasteClient *client);
 

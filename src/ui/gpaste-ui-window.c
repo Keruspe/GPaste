@@ -28,6 +28,10 @@ typedef struct
     AdwToastOverlay *toast_overlay;
     AdwBanner       *banner;
 
+    GtkActionBar    *merge_bar;
+    GtkWidget       *merge_button;
+    GtkWidget       *merge_entry; /* custom separator */
+
     AdwDialog       *shortcuts;
 
     GSignalGroup    *search_signals;
@@ -170,6 +174,8 @@ on_show_help_overlay (GSimpleAction *action    G_GNUC_UNUSED,
     adw_dialog_present (priv->shortcuts, GTK_WIDGET (self));
 }
 
+static void exit_selection_mode (GPasteUiWindow *self);
+
 static gboolean
 on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
                 guint                  keyval,
@@ -187,6 +193,11 @@ on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
     switch (keyval)
     {
     case GDK_KEY_Escape:
+        if (priv->merge_bar && gtk_action_bar_get_revealed (priv->merge_bar))
+        {
+            exit_selection_mode (self);
+            return GDK_EVENT_STOP;
+        }
         if (!search_in_progress)
         {
             gtk_window_close (GTK_WINDOW (self));
@@ -261,6 +272,150 @@ on_initial_history_name (GObject      *source_object G_GNUC_UNUSED,
 
     if (name)
         g_paste_ui_header_set_subtitle (priv->header, name);
+}
+
+static void
+exit_selection_mode (GPasteUiWindow *self)
+{
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    g_paste_ui_history_set_selection_mode (priv->history, FALSE);
+    g_paste_ui_header_set_selection_mode (priv->header, FALSE);
+    gtk_action_bar_set_revealed (priv->merge_bar, FALSE);
+}
+
+static void
+on_enter_selection_mode (GtkButton *button G_GNUC_UNUSED,
+                         gpointer   user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    g_paste_ui_history_set_selection_mode (priv->history, TRUE);
+    g_paste_ui_header_set_selection_mode (priv->header, TRUE);
+    g_paste_ui_header_set_selection_count (priv->header, 0);
+    gtk_action_bar_set_revealed (priv->merge_bar, TRUE);
+}
+
+static void
+on_cancel_selection_mode (GtkButton *button G_GNUC_UNUSED,
+                          gpointer   user_data)
+{
+    exit_selection_mode (user_data);
+}
+
+static void
+on_selection_changed (GPasteUiHistory *history G_GNUC_UNUSED,
+                      guint            count,
+                      gpointer         user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    g_paste_ui_header_set_selection_count (priv->header, count);
+    /* Merging is only meaningful with at least two items. */
+    gtk_widget_set_sensitive (priv->merge_button, count >= 2);
+}
+
+static void
+do_merge (GPasteUiWindow *self,
+          GtkWidget      *origin,
+          const gchar    *separator)
+{
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+    guint64 n = 0;
+    g_auto (GStrv) uuids = g_paste_ui_history_get_selected_uuids (priv->history, &n);
+
+    gtk_popover_popdown (GTK_POPOVER (gtk_widget_get_ancestor (origin, GTK_TYPE_POPOVER)));
+
+    /* uuids are in selection order, so the merge keeps it. */
+    if (n >= 2)
+        g_paste_client_merge (priv->client, "", separator, (const gchar **) uuids, n, NULL, NULL);
+
+    exit_selection_mode (self);
+}
+
+static void
+on_separator_chosen (GtkButton *button,
+                     gpointer   user_data)
+{
+    do_merge (user_data, GTK_WIDGET (button), g_object_get_data (G_OBJECT (button), "separator"));
+}
+
+static void
+on_custom_separator (GtkWidget *widget,
+                     gpointer   user_data)
+{
+    GPasteUiWindow *self = user_data;
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    do_merge (self, widget, gtk_editable_get_text (GTK_EDITABLE (priv->merge_entry)));
+}
+
+static void
+add_separator_choice (GtkBox         *box,
+                      GPasteUiWindow *self,
+                      const gchar    *label,
+                      const gchar    *separator)
+{
+    GtkWidget *button = gtk_button_new_with_label (label);
+
+    gtk_button_set_has_frame (GTK_BUTTON (button), FALSE);
+    g_object_set_data_full (G_OBJECT (button), "separator", g_strdup (separator), g_free);
+    g_signal_connect (button, "clicked", G_CALLBACK (on_separator_chosen), self);
+    gtk_box_append (box, button);
+}
+
+static GtkWidget *
+build_merge_bar (GPasteUiWindow *self)
+{
+    GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_margin_top (box, 6);
+    gtk_widget_set_margin_bottom (box, 6);
+    gtk_widget_set_margin_start (box, 6);
+    gtk_widget_set_margin_end (box, 6);
+
+    /* translators: separators inserted between the merged items */
+    add_separator_choice (GTK_BOX (box), self, _("New line"), "\n");
+    add_separator_choice (GTK_BOX (box), self, _("Space"), " ");
+    add_separator_choice (GTK_BOX (box), self, _("Comma"), ", ");
+    add_separator_choice (GTK_BOX (box), self, _("Tabulation"), "\t");
+
+    gtk_box_append (GTK_BOX (box), gtk_separator_new (GTK_ORIENTATION_HORIZONTAL));
+
+    GtkWidget *custom = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_widget_set_margin_top (custom, 6);
+
+    GtkWidget *entry = priv->merge_entry = gtk_entry_new ();
+    gtk_entry_set_placeholder_text (GTK_ENTRY (entry), _("Custom separator"));
+    gtk_widget_set_hexpand (entry, TRUE);
+    g_signal_connect (entry, "activate", G_CALLBACK (on_custom_separator), self);
+
+    GtkWidget *custom_merge = gtk_button_new_from_icon_name ("object-select-symbolic");
+    gtk_widget_set_tooltip_text (custom_merge, _("Merge with this separator"));
+    g_signal_connect (custom_merge, "clicked", G_CALLBACK (on_custom_separator), self);
+
+    gtk_box_append (GTK_BOX (custom), entry);
+    gtk_box_append (GTK_BOX (custom), custom_merge);
+    gtk_box_append (GTK_BOX (box), custom);
+
+    GtkWidget *popover = gtk_popover_new ();
+    gtk_popover_set_child (GTK_POPOVER (popover), box);
+
+    GtkWidget *merge_button = priv->merge_button = gtk_menu_button_new ();
+    gtk_menu_button_set_label (GTK_MENU_BUTTON (merge_button), _("Merge"));
+    gtk_menu_button_set_popover (GTK_MENU_BUTTON (merge_button), popover);
+    gtk_widget_add_css_class (merge_button, "suggested-action");
+    gtk_widget_set_sensitive (merge_button, FALSE);
+
+    GtkWidget *bar = gtk_action_bar_new ();
+    priv->merge_bar = GTK_ACTION_BAR (bar);
+    gtk_action_bar_set_revealed (priv->merge_bar, FALSE);
+    gtk_action_bar_pack_end (priv->merge_bar, merge_button);
+
+    return bar;
 }
 
 static void
@@ -376,6 +531,14 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
                                            (const char *[]) { "<primary>question", NULL });
 
     adw_toolbar_view_add_top_bar (priv->toolbar_view, header);
+    adw_toolbar_view_add_bottom_bar (priv->toolbar_view, build_merge_bar (user_data));
+
+    g_signal_connect_object (g_paste_ui_header_get_merge_button (priv->header), "clicked",
+                             G_CALLBACK (on_enter_selection_mode), user_data, 0);
+    g_signal_connect_object (g_paste_ui_header_get_cancel_button (priv->header), "clicked",
+                             G_CALLBACK (on_cancel_selection_mode), user_data, 0);
+    g_signal_connect_object (priv->history, "selection-changed",
+                             G_CALLBACK (on_selection_changed), user_data, 0);
 
     AdwNavigationPage *sidebar_page = adw_navigation_page_new (panel, _("Histories"));
     AdwNavigationPage *content_page = adw_navigation_page_new (history, _("History"));

@@ -14,6 +14,8 @@ typedef struct
     GtkButton       *settings;
     GtkToggleButton *search;
     AdwWindowTitle  *title;
+    GtkWidget       *merge;  /* enters merge selection mode */
+    GtkWidget       *cancel; /* leaves it */
 } GPasteUiHeaderData;
 
 /* A plain header GtkButton: shared icon/tooltip/valign setup plus a click
@@ -143,6 +145,89 @@ g_paste_ui_header_get_search_button (AdwHeaderBar *self)
 }
 
 /**
+ * g_paste_ui_header_get_merge_button:
+ * @self: the header bar
+ *
+ * Get the button that enters merge selection mode
+ *
+ * Returns: (transfer none): the merge #GtkButton
+ */
+G_PASTE_VISIBLE GtkWidget *
+g_paste_ui_header_get_merge_button (AdwHeaderBar *self)
+{
+    g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
+
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+
+    return data->merge;
+}
+
+/**
+ * g_paste_ui_header_get_cancel_button:
+ * @self: the header bar
+ *
+ * Get the button that leaves merge selection mode
+ *
+ * Returns: (transfer none): the cancel #GtkButton
+ */
+G_PASTE_VISIBLE GtkWidget *
+g_paste_ui_header_get_cancel_button (AdwHeaderBar *self)
+{
+    g_return_val_if_fail (ADW_IS_HEADER_BAR (self), NULL);
+
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+
+    return data->cancel;
+}
+
+/**
+ * g_paste_ui_header_set_selection_mode:
+ * @self: the header bar
+ * @selection_mode: whether merge selection mode is active
+ *
+ * Switch the header between its normal look and the selection-mode look (accent
+ * styling, the merge button replaced by a cancel button).
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_header_set_selection_mode (AdwHeaderBar *self,
+                                      gboolean      selection_mode)
+{
+    g_return_if_fail (ADW_IS_HEADER_BAR (self));
+
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+
+    if (selection_mode)
+        gtk_widget_add_css_class (GTK_WIDGET (self), "selection-mode");
+    else
+    {
+        gtk_widget_remove_css_class (GTK_WIDGET (self), "selection-mode");
+        adw_window_title_set_title (data->title, PACKAGE_NAME);
+    }
+
+    gtk_widget_set_visible (data->merge, !selection_mode);
+    gtk_widget_set_visible (data->cancel, selection_mode);
+}
+
+/**
+ * g_paste_ui_header_set_selection_count:
+ * @self: the header bar
+ * @count: the number of selected items
+ *
+ * Update the title to reflect how many items are selected for merging.
+ */
+G_PASTE_VISIBLE void
+g_paste_ui_header_set_selection_count (AdwHeaderBar *self,
+                                       guint         count)
+{
+    g_return_if_fail (ADW_IS_HEADER_BAR (self));
+
+    GPasteUiHeaderData *data = g_object_get_data (G_OBJECT (self), "header-data");
+    g_autofree gchar *title = g_strdup_printf (ngettext ("%u selected", "%u selected", count), count);
+
+    adw_window_title_set_title (data->title, title);
+}
+
+/**
  * g_paste_ui_header_new:
  * @topwin: the main #GtkWindow
  * @client: a #GPasteClient instance
@@ -176,20 +261,33 @@ g_paste_ui_header_new (GtkWindow    *topwin,
     GtkWidget *reexec = header_button_new ("view-refresh-symbolic", _("Restart the daemon"),
                                            G_CALLBACK (on_reexec_clicked), reexec_data, reexec_data_free);
 
+    GtkWidget *merge = gtk_button_new ();
+    gtk_widget_set_tooltip_text (merge, _("Select items to merge"));
+    gtk_widget_set_valign (merge, GTK_ALIGN_CENTER);
+    gtk_button_set_child (GTK_BUTTON (merge), gtk_image_new_from_icon_name ("edit-select-all-symbolic"));
+
+    GtkWidget *cancel = gtk_button_new_with_label (_("Cancel"));
+    gtk_widget_set_valign (cancel, GTK_ALIGN_CENTER);
+    gtk_widget_set_visible (cancel, FALSE);
+
     GPasteUiHeaderData *data = g_new0 (GPasteUiHeaderData, 1);
     data->settings = GTK_BUTTON (settings);
     data->search = GTK_TOGGLE_BUTTON (search);
     data->title = ADW_WINDOW_TITLE (title);
+    data->merge = merge;
+    data->cancel = cancel;
 
     g_object_set_data_full (G_OBJECT (self), "header-data", data, g_free);
 
     adw_header_bar_set_title_widget (bar, title);
     adw_header_bar_pack_start (bar, g_paste_ui_switch_new (topwin, client));
     adw_header_bar_pack_start (bar, reexec);
+    adw_header_bar_pack_start (bar, cancel);
     adw_header_bar_pack_end (bar, about);
     adw_header_bar_pack_end (bar, g_paste_ui_new_item_new (topwin, client));
     adw_header_bar_pack_end (bar, settings);
     adw_header_bar_pack_end (bar, search);
+    adw_header_bar_pack_end (bar, merge);
 
     return self;
 }

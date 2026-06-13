@@ -23,6 +23,24 @@ typedef struct
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiItem, ui_item, G_PASTE_TYPE_UI_ITEM_SKELETON)
 
 /**
+ * g_paste_ui_item_get_uuid:
+ * @self: a #GPasteUiItem instance
+ *
+ * Get the uuid of the item currently displayed
+ *
+ * Returns: (nullable): the uuid, owned by the item
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_ui_item_get_uuid (GPasteUiItem *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_UI_ITEM (self), NULL);
+
+    const GPasteUiItemPrivate *priv = _g_paste_ui_item_get_instance_private (self);
+
+    return priv->uuid;
+}
+
+/**
  * g_paste_ui_item_activate:
  * @self: a #GPasteUiItem instance
  *

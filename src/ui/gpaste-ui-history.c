@@ -31,11 +31,22 @@ typedef struct
     guint64         limit;      /* how many items we currently allow on screen; grows lazily */
     guint64         available;  /* last known total size of the history */
     gboolean        loading;    /* a lazy-growth refresh is in flight */
+    gboolean        selection_mode; /* merge mode: rows are multi-selectable */
+    GPtrArray      *selection;       /* selected uuids, in the order they were picked */
     gint32          item_height;
 
     gchar          *search;
     GStrv           search_results;
 } GPasteUiHistoryPrivate;
+
+enum
+{
+    SELECTION_CHANGED,
+
+    LAST_SIGNAL
+};
+
+static guint64 signals[LAST_SIGNAL] = { 0 };
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (UiHistory, ui_history, GTK_TYPE_BOX)
 
@@ -174,6 +185,9 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
         for (guint64 i = old_size; i < priv->size; ++i)
         {
             GtkWidget *item = g_paste_ui_item_new (priv->client, priv->settings, priv->rootwin, i);
+            /* Rows loaded while in merge mode must be selectable like the rest. */
+            gtk_list_box_row_set_selectable (GTK_LIST_BOX_ROW (item), priv->selection_mode);
+            gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (item), !priv->selection_mode);
             priv->items = g_slist_append (priv->items, item);
         }
         g_paste_ui_history_add_list (priv->list_box, g_slist_nth (priv->items, old_size));
@@ -425,12 +439,133 @@ g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
 }
 
 static void
+on_selected_rows_changed (GtkListBox *list_box G_GNUC_UNUSED,
+                          gpointer    user_data)
+{
+    GPasteUiHistory *self = user_data;
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
+
+    g_signal_emit (self, signals[SELECTION_CHANGED], 0, priv->selection->len);
+}
+
+static void
+apply_selectable (gpointer data,
+                  gpointer user_data)
+{
+    GtkListBoxRow *row = data;
+    const gboolean *on = user_data;
+
+    gtk_list_box_row_set_selectable (row, *on);
+    gtk_list_box_row_set_activatable (row, !*on);
+}
+
+/**
+ * g_paste_ui_history_set_selection_mode:
+ * @self: a #GPasteUiHistory instance
+ * @selection_mode: whether to enter the multi-selection "merge" mode
+ *
+ * Toggle the merge selection mode: rows become multi-selectable (and stop
+ * activating/pasting on click) so several entries can be picked for merging.
+ */
+void
+g_paste_ui_history_set_selection_mode (GPasteUiHistory *self,
+                                       gboolean         selection_mode)
+{
+    g_return_if_fail (_G_PASTE_IS_UI_HISTORY (self));
+
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    priv->selection_mode = selection_mode;
+    g_ptr_array_set_size (priv->selection, 0);
+
+    gtk_list_box_set_selection_mode (priv->list_box, selection_mode ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_NONE);
+    g_slist_foreach (priv->items, apply_selectable, &selection_mode);
+
+    /* Leaving the mode (GTK_SELECTION_NONE) already cleared the selection. */
+    g_signal_emit (self, signals[SELECTION_CHANGED], 0, 0u);
+}
+
+/**
+ * g_paste_ui_history_get_selected_uuids:
+ * @self: a #GPasteUiHistory instance
+ * @length: (out): the number of returned uuids
+ *
+ * Collect the uuids of the rows selected in merge mode, in the order they were
+ * picked (so the merge keeps that order).
+ *
+ * Returns: (transfer full): a NULL-terminated array of uuids
+ */
+GStrv
+g_paste_ui_history_get_selected_uuids (GPasteUiHistory *self,
+                                       guint64         *length)
+{
+    g_return_val_if_fail (_G_PASTE_IS_UI_HISTORY (self), NULL);
+    g_return_val_if_fail (length, NULL);
+
+    const GPasteUiHistoryPrivate *priv = _g_paste_ui_history_get_instance_private (self);
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    for (guint i = 0; i < priv->selection->len; ++i)
+        g_strv_builder_add (builder, g_ptr_array_index (priv->selection, i));
+
+    *length = priv->selection->len;
+
+    return g_strv_builder_end (builder);
+}
+
+/* In merge mode, a plain click should toggle that row's selection (GtkListBox
+ * would otherwise replace the whole selection). Claim the press so the default
+ * gesture does not run. */
+static void
+on_row_pressed (GtkGestureClick *gesture,
+                gint             n_press G_GNUC_UNUSED,
+                gdouble          x       G_GNUC_UNUSED,
+                gdouble          y,
+                gpointer         user_data)
+{
+    GPasteUiHistory *self = user_data;
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    if (!priv->selection_mode)
+        return;
+
+    GtkListBoxRow *row = gtk_list_box_get_row_at_y (priv->list_box, (gint) y);
+
+    if (!row)
+        return;
+
+    gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+
+    const gchar *uuid = g_paste_ui_item_get_uuid (G_PASTE_UI_ITEM (row));
+
+    if (gtk_list_box_row_is_selected (row))
+    {
+        for (guint i = 0; uuid && i < priv->selection->len; ++i)
+        {
+            if (g_paste_str_equal (g_ptr_array_index (priv->selection, i), uuid))
+            {
+                g_ptr_array_remove_index (priv->selection, i);
+                break;
+            }
+        }
+        gtk_list_box_unselect_row (priv->list_box, row);
+    }
+    else
+    {
+        if (uuid)
+            g_ptr_array_add (priv->selection, g_strdup (uuid));
+        gtk_list_box_select_row (priv->list_box, row);
+    }
+}
+
+static void
 g_paste_ui_history_dispose (GObject *object)
 {
     GPasteUiHistory *self = G_PASTE_UI_HISTORY (object);
     GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
 
     g_clear_slist (&priv->items, g_object_unref);
+    g_clear_pointer (&priv->selection, g_ptr_array_unref);
 
     g_clear_pointer (&priv->search, g_free);
     g_clear_pointer (&priv->search_results, g_strfreev);
@@ -444,11 +579,25 @@ static void
 g_paste_ui_history_class_init (GPasteUiHistoryClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_ui_history_dispose;
+
+    signals[SELECTION_CHANGED] = g_signal_new ("selection-changed",
+                                               G_PASTE_TYPE_UI_HISTORY,
+                                               G_SIGNAL_RUN_LAST,
+                                               0, /* class offset */
+                                               NULL, /* accumulator */
+                                               NULL, /* accumulator data */
+                                               g_cclosure_marshal_VOID__UINT,
+                                               G_TYPE_NONE,
+                                               1,
+                                               G_TYPE_UINT);
 }
 
 static void
-g_paste_ui_history_init (GPasteUiHistory *self G_GNUC_UNUSED)
+g_paste_ui_history_init (GPasteUiHistory *self)
 {
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+
+    priv->selection = g_ptr_array_new_with_free_func (g_free);
 }
 
 /**
@@ -513,6 +662,14 @@ g_paste_ui_history_new (GPasteClient   *client,
     g_signal_connect_object (scroll, "edge-reached", G_CALLBACK (g_paste_ui_history_on_edge_reached), self, 0);
 
     g_signal_connect (list_box, "row-activated", G_CALLBACK (on_row_activated), NULL);
+    g_signal_connect_object (list_box, "selected-rows-changed", G_CALLBACK (on_selected_rows_changed), self, 0);
+
+    /* Toggle-on-click for merge mode; capture phase so it runs before the
+     * list box's own selection gesture. */
+    GtkGesture *select_gesture = gtk_gesture_click_new ();
+    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (select_gesture), GTK_PHASE_CAPTURE);
+    g_signal_connect_object (select_gesture, "pressed", G_CALLBACK (on_row_pressed), self, 0);
+    gtk_widget_add_controller (list_box, GTK_EVENT_CONTROLLER (select_gesture));
 
     g_signal_connect_object (settings,
                              "changed::" G_PASTE_MAX_DISPLAYED_HISTORY_SIZE_SETTING,
