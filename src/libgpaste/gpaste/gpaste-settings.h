@@ -136,6 +136,8 @@ void     g_paste_settings_set_extension_enabled (GPasteSettings *self,
 
 void g_paste_settings_reset (GPasteSettings *self,
                              const gchar    *key);
+gboolean g_paste_settings_is_default (GPasteSettings *self,
+                                      const gchar    *key);
 
 GPasteSettings *g_paste_settings_new (void);
 

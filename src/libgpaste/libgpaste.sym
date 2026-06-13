@@ -143,6 +143,7 @@ global:
     g_paste_settings_get_trim_items;
     g_paste_settings_get_type;
     g_paste_settings_get_upload;
+    g_paste_settings_is_default;
     g_paste_settings_new;
     g_paste_settings_reset;
     g_paste_settings_reset_close_on_select;

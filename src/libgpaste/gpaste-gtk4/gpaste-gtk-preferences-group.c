@@ -12,8 +12,8 @@ struct _GPasteGtkPreferencesGroup
 G_PASTE_GTK_DEFINE_TYPE (PreferencesGroup, preferences_group, ADW_TYPE_PREFERENCES_GROUP)
 
 /* Settings expose one GObject property per key (named like the key), so each
- * row binds straight to its setting with g_object_bind_property(). The reset
- * suffix restores the key's default through the same notify path. */
+ * row binds straight to its setting with g_object_bind_property(). A right-click
+ * menu restores the key's default through the same notify path. */
 
 typedef struct
 {
@@ -21,43 +21,103 @@ typedef struct
     const gchar    *key;      /* not owned: a static G_PASTE_*_SETTING string */
 } ResetData;
 
+/* --- Reset a preference through a right-click menu --------------------------
+ *
+ * GNOME apps don't usually expose a per-setting reset; this offers a
+ * "Reset to default" row context menu. */
+
 static void
-on_reset_clicked (GtkButton *button G_GNUC_UNUSED,
-                  gpointer   user_data)
+on_reset_menu_clicked (GtkButton *button,
+                       gpointer   user_data)
 {
     const ResetData *data = user_data;
 
     g_paste_settings_reset (data->settings, data->key);
+
+    GtkWidget *popover = gtk_widget_get_ancestor (GTK_WIDGET (button), GTK_TYPE_POPOVER);
+    if (popover)
+        gtk_popover_popdown (GTK_POPOVER (popover));
+}
+
+/* The menu popover is built on demand and unparents itself once closed, so it
+ * is never a lingering child of the row when the row is finalized. */
+static void
+on_reset_popover_closed (GtkPopover *popover,
+                         gpointer    user_data G_GNUC_UNUSED)
+{
+    gtk_widget_unparent (GTK_WIDGET (popover));
 }
 
 static void
-reset_data_free (gpointer  data,
-                 GClosure *closure G_GNUC_UNUSED)
+popup_reset_menu (GtkGesture *gesture,
+                  GtkWidget  *row,
+                  gdouble     x,
+                  gdouble     y)
 {
-    g_free (data);
+    ResetData *data = g_object_get_data (G_OBJECT (row), "gpaste-reset-data");
+    const GdkRectangle rect = { (gint) x, (gint) y, 1, 1 };
+
+    /* A plain button that resets the key directly, like the suffix button does;
+     * no GAction, so there is no action-muxer lookup to get wrong. Disabled
+     * while the key is already at its default. */
+    GtkWidget *button = gtk_button_new_with_label (_("Reset to default"));
+    gtk_button_set_has_frame (GTK_BUTTON (button), FALSE);
+    gtk_widget_set_sensitive (button, !g_paste_settings_is_default (data->settings, data->key));
+    g_signal_connect (button, "clicked", G_CALLBACK (on_reset_menu_clicked), data);
+
+    GtkWidget *popover = gtk_popover_new ();
+    gtk_popover_set_child (GTK_POPOVER (popover), button);
+    gtk_popover_set_has_arrow (GTK_POPOVER (popover), FALSE);
+    gtk_widget_set_halign (popover, GTK_ALIGN_START);
+    gtk_widget_set_parent (popover, row);
+    gtk_popover_set_pointing_to (GTK_POPOVER (popover), &rect);
+    g_signal_connect (popover, "closed", G_CALLBACK (on_reset_popover_closed), NULL);
+
+    gtk_gesture_set_state (gesture, GTK_EVENT_SEQUENCE_CLAIMED);
+    gtk_popover_popup (GTK_POPOVER (popover));
 }
 
 static void
-add_reset_button (GtkWidget      *row,
-                  GPasteSettings *settings,
-                  const gchar    *key)
+on_row_secondary_pressed (GtkGestureClick *gesture,
+                          gint             n_press G_GNUC_UNUSED,
+                          gdouble          x,
+                          gdouble          y,
+                          gpointer         user_data)
 {
-    GtkWidget *button = gtk_button_new_from_icon_name ("edit-delete-symbolic");
+    popup_reset_menu (GTK_GESTURE (gesture), user_data, x, y);
+}
 
-    gtk_widget_add_css_class (button, "flat");
-    gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
-    gtk_widget_set_tooltip_text (button, _("Reset to default"));
+static void
+on_row_long_pressed (GtkGestureLongPress *gesture,
+                     gdouble              x,
+                     gdouble              y,
+                     gpointer             user_data)
+{
+    popup_reset_menu (GTK_GESTURE (gesture), user_data, x, y);
+}
 
+static void
+add_reset_menu (GtkWidget      *row,
+                GPasteSettings *settings,
+                const gchar    *key)
+{
+    /* The settings/key the popup-on-demand menu resets; owned by the row. */
     ResetData *data = g_new0 (ResetData, 1);
+
     data->settings = settings;
     data->key = key;
-    g_signal_connect_data (button, "clicked", G_CALLBACK (on_reset_clicked), data, reset_data_free, 0);
+    g_object_set_data_full (G_OBJECT (row), "gpaste-reset-data", data, g_free);
 
-    /* AdwEntryRow is not an AdwActionRow, so it has its own suffix API. */
-    if (ADW_IS_ENTRY_ROW (row))
-        adw_entry_row_add_suffix (ADW_ENTRY_ROW (row), button);
-    else
-        adw_action_row_add_suffix (ADW_ACTION_ROW (row), button);
+    /* Right-click (and touch long-press) anywhere on the row pops the menu. */
+    GtkGesture *secondary = gtk_gesture_click_new ();
+    gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (secondary), GDK_BUTTON_SECONDARY);
+    g_signal_connect (secondary, "pressed", G_CALLBACK (on_row_secondary_pressed), row);
+    gtk_widget_add_controller (row, GTK_EVENT_CONTROLLER (secondary));
+
+    GtkGesture *long_press = gtk_gesture_long_press_new ();
+    gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (long_press), TRUE);
+    g_signal_connect (long_press, "pressed", G_CALLBACK (on_row_long_pressed), row);
+    gtk_widget_add_controller (row, GTK_EVENT_CONTROLLER (long_press));
 }
 
 /**
@@ -86,7 +146,7 @@ g_paste_gtk_preferences_group_add_boolean_setting (GPasteGtkPreferencesGroup *se
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
     g_object_bind_property (settings, key, row, "active", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-    add_reset_button (GTK_WIDGET (row), settings, key);
+    add_reset_menu (GTK_WIDGET (row), settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
@@ -148,7 +208,7 @@ g_paste_gtk_preferences_group_add_range_setting (GPasteGtkPreferencesGroup *self
     g_object_bind_property_full (settings, key, row, "value",
                                  G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL,
                                  uint64_to_double, double_to_uint64, NULL, NULL);
-    add_reset_button (GTK_WIDGET (row), settings, key);
+    add_reset_menu (GTK_WIDGET (row), settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
@@ -181,7 +241,7 @@ g_paste_gtk_preferences_group_add_text_setting (GPasteGtkPreferencesGroup *self,
 
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
     g_object_bind_property (settings, key, row, "text", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-    add_reset_button (GTK_WIDGET (row), settings, key);
+    add_reset_menu (GTK_WIDGET (row), settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
 
@@ -215,7 +275,7 @@ g_paste_gtk_preferences_group_add_shortcut_setting (GPasteGtkPreferencesGroup *s
     GtkWidget *row = g_paste_gtk_shortcut_row_new (label);
 
     g_object_bind_property (settings, key, row, "accelerator", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-    add_reset_button (row, settings, key);
+    add_reset_menu (row, settings, key);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), row);
 

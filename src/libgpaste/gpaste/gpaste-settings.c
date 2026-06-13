@@ -1087,6 +1087,29 @@ g_paste_settings_reset (GPasteSettings *self,
     g_settings_reset (priv->settings, key);
 }
 
+/**
+ * g_paste_settings_is_default:
+ * @self: a #GPasteSettings instance
+ * @key: the GSettings key to test
+ *
+ * Check whether @key is still at its default value (i.e. the user has not
+ * overridden it), so callers can e.g. disable a per-key reset action.
+ *
+ * Returns: %TRUE if @key has no user-set value
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_settings_is_default (GPasteSettings *self,
+                             const gchar    *key)
+{
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (self), TRUE);
+    g_return_val_if_fail (key, TRUE);
+
+    const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);
+    g_autoptr (GVariant) user_value = g_settings_get_user_value (priv->settings, key);
+
+    return user_value == NULL;
+}
+
 static void
 g_paste_settings_dispose (GObject *object)
 {
