@@ -32,9 +32,13 @@ add_page (AdwViewStack *s,
 static void
 g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
 {
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    /* The rows bind to (and reset through) this settings object without holding
+     * a reference, so it has to outlive them: tie it to the widget. */
+    GPasteSettings *settings = g_paste_settings_new ();
     GtkWidget *stack = adw_view_stack_new ();
     AdwViewStack *s = ADW_VIEW_STACK (stack);
+
+    g_object_set_data_full (G_OBJECT (self), "gpaste-settings", settings, g_object_unref);
 
     add_page (s, g_paste_gtk_preferences_behaviour_page_new (settings));
     add_page (s, g_paste_gtk_preferences_history_settings_page_new (settings));

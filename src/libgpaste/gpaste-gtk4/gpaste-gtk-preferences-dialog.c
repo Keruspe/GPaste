@@ -14,7 +14,8 @@ struct _GPasteGtkPreferencesDialog
 
 typedef struct
 {
-    GApplication *gapp;
+    GApplication   *gapp;
+    GPasteSettings *settings; /* kept alive for the bound rows' lifetime */
 } GPasteGtkPreferencesDialogPrivate;
 
 G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesDialog, preferences_dialog, ADW_TYPE_PREFERENCES_DIALOG)
@@ -26,6 +27,10 @@ g_paste_gtk_preferences_dialog_finalize (GObject *object)
 
     if (priv->gapp)
         g_application_release (priv->gapp);
+
+    g_clear_object (&priv->settings);
+
+    G_OBJECT_CLASS (g_paste_gtk_preferences_dialog_parent_class)->finalize (object);
 }
 
 static void
@@ -38,7 +43,10 @@ static void
 g_paste_gtk_preferences_dialog_init (GPasteGtkPreferencesDialog *self)
 {
     AdwPreferencesDialog *win = ADW_PREFERENCES_DIALOG (self);
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GPasteGtkPreferencesDialogPrivate *priv = g_paste_gtk_preferences_dialog_get_instance_private (self);
+    /* The rows bind to (and reset through) this settings object without holding
+     * a reference, so it has to outlive them. */
+    GPasteSettings *settings = priv->settings = g_paste_settings_new ();
 
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_behaviour_page_new (settings)));
     adw_preferences_dialog_add (win, ADW_PREFERENCES_PAGE (g_paste_gtk_preferences_history_settings_page_new (settings)));
