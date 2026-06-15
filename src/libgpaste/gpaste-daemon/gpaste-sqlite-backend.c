@@ -610,6 +610,247 @@ g_paste_sqlite_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UN
     return "db";
 }
 
+/* --- Incremental write path (C2). --- */
+
+/* SELECT COALESCE(MAX(clip_order), 0) FROM items. */
+static gdouble
+_g_paste_sqlite_backend_max_clip_order (sqlite3 *db)
+{
+    sqlite3_stmt *stmt = NULL;
+    gdouble max = 0.0;
+
+    if (sqlite3_prepare_v2 (db, "SELECT COALESCE(MAX(clip_order), 0) FROM items", -1, &stmt, NULL) == SQLITE_OK)
+    {
+        if (sqlite3_step (stmt) == SQLITE_ROW)
+            max = sqlite3_column_double (stmt, 0);
+        sqlite3_finalize (stmt);
+    }
+
+    return max;
+}
+
+/* Returns a freshly-allocated uuid for an existing row with matching (hash, kind),
+ * or NULL if no duplicate is on file. */
+static gchar *
+_g_paste_sqlite_backend_lookup_dup_uuid (sqlite3     *db,
+                                         gint64       hash,
+                                         const gchar *kind)
+{
+    sqlite3_stmt *stmt = NULL;
+    gchar *uuid = NULL;
+
+    if (sqlite3_prepare_v2 (db,
+                            "SELECT uuid FROM items WHERE hash = ? AND kind = ? LIMIT 1",
+                            -1, &stmt, NULL) == SQLITE_OK)
+    {
+        sqlite3_bind_int64 (stmt, 1, hash);
+        sqlite3_bind_text  (stmt, 2, kind, -1, SQLITE_TRANSIENT);
+
+        if (sqlite3_step (stmt) == SQLITE_ROW)
+            uuid = g_strdup ((const gchar *) sqlite3_column_text (stmt, 0));
+
+        sqlite3_finalize (stmt);
+    }
+
+    return uuid;
+}
+
+/* DELETE the lowest-priority rows until the table is at most @limit items. The
+ * ordering matches read_history_file's SELECT, with pinned items winning over
+ * stickies winning over plain clip_order. pinned = 0 is the only level present
+ * in C2 — the pinned column is plumbed through for future PRs. */
+static void
+_g_paste_sqlite_backend_truncate (sqlite3 *db,
+                                  guint64  limit)
+{
+    if (!limit)
+        return;
+
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2 (db,
+                            "DELETE FROM items"
+                            " WHERE pinned = 0"
+                            "   AND uuid NOT IN ("
+                            "       SELECT uuid FROM items"
+                            "        ORDER BY pinned DESC, sticky_clip_order DESC, clip_order DESC"
+                            "        LIMIT ?)",
+                            -1, &stmt, NULL) == SQLITE_OK)
+    {
+        sqlite3_bind_int64 (stmt, 1, (gint64) limit);
+        if (sqlite3_step (stmt) != SQLITE_DONE)
+            g_warning ("truncate items failed: %s", sqlite3_errmsg (db));
+        sqlite3_finalize (stmt);
+    }
+}
+
+static sqlite3 *
+_g_paste_sqlite_backend_open_for_name (const GPasteStorageBackend *self,
+                                       const gchar                *name)
+{
+    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    if (!g_paste_util_ensure_history_dir_exists ())
+        return NULL;
+    if (!g_paste_settings_get_track_changes (settings))
+        return NULL;
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+    return _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, path);
+}
+
+static void
+g_paste_sqlite_backend_add_item (const GPasteStorageBackend *self,
+                                 const gchar                *name,
+                                 const GPasteItem           *item,
+                                 const GList                *history G_GNUC_UNUSED)
+{
+    const gchar *kind = g_paste_item_get_kind (item);
+    if (g_paste_str_equal (kind, "Password"))
+        return;
+
+    sqlite3 *db = _g_paste_sqlite_backend_open_for_name (self, name);
+    if (!db)
+        return;
+
+    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
+        return;
+
+    const gchar *value      = g_paste_item_get_value (item);
+    gint64       hash       = _g_paste_sqlite_backend_hash_u64 (value);
+    gdouble      next_order = _g_paste_sqlite_backend_max_clip_order (db) + 1.0;
+    g_autofree gchar *dup   = _g_paste_sqlite_backend_lookup_dup_uuid (db, hash, kind);
+
+    if (dup)
+    {
+        /* Existing row stays in place under its uuid; only its clip_order is
+         * bumped so the latest paste appears at the head on the next read. */
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2 (db,
+                                "UPDATE items SET clip_order = ? WHERE uuid = ?",
+                                -1, &stmt, NULL) == SQLITE_OK)
+        {
+            sqlite3_bind_double (stmt, 1, next_order);
+            sqlite3_bind_text   (stmt, 2, dup, -1, SQLITE_TRANSIENT);
+            sqlite3_step (stmt);
+            sqlite3_finalize (stmt);
+        }
+    }
+    else
+    {
+        _g_paste_sqlite_backend_insert_item (db, item, next_order);
+    }
+
+    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
+    _g_paste_sqlite_backend_truncate (db, g_paste_settings_get_max_history_size (settings));
+
+    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
+        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+}
+
+static void
+g_paste_sqlite_backend_remove_item (const GPasteStorageBackend *self,
+                                    const gchar                *name,
+                                    const gchar                *uuid)
+{
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+    if (!g_file_test (path, G_FILE_TEST_EXISTS))
+        return;
+
+    sqlite3 *db = _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, path);
+    if (!db)
+        return;
+
+    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
+        return;
+
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?", -1, &stmt, NULL) == SQLITE_OK)
+    {
+        sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_TRANSIENT);
+        if (sqlite3_step (stmt) != SQLITE_DONE)
+            g_warning ("DELETE FROM items WHERE uuid failed: %s", sqlite3_errmsg (db));
+        sqlite3_finalize (stmt);
+    }
+
+    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
+        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+}
+
+static void
+g_paste_sqlite_backend_replace_item (const GPasteStorageBackend *self,
+                                     const gchar                *name,
+                                     const gchar                *old_uuid,
+                                     const GPasteItem           *item)
+{
+    if (g_paste_str_equal (g_paste_item_get_kind (item), "Password"))
+        return;
+
+    sqlite3 *db = _g_paste_sqlite_backend_open_for_name (self, name);
+    if (!db)
+        return;
+
+    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
+        return;
+
+    /* Inherit the old row's clip_order so the replacement keeps the same
+     * position in the read order. If the old row is gone (race / programmer
+     * error), fall back to MAX+1 so we don't lose the new item. */
+    sqlite3_stmt *stmt    = NULL;
+    gdouble       clip    = _g_paste_sqlite_backend_max_clip_order (db) + 1.0;
+    gboolean      had_old = FALSE;
+
+    if (sqlite3_prepare_v2 (db, "SELECT clip_order FROM items WHERE uuid = ?",
+                            -1, &stmt, NULL) == SQLITE_OK)
+    {
+        sqlite3_bind_text (stmt, 1, old_uuid, -1, SQLITE_TRANSIENT);
+        if (sqlite3_step (stmt) == SQLITE_ROW)
+        {
+            clip = sqlite3_column_double (stmt, 0);
+            had_old = TRUE;
+        }
+        sqlite3_finalize (stmt);
+    }
+
+    if (had_old &&
+        sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?",
+                            -1, &stmt, NULL) == SQLITE_OK)
+    {
+        sqlite3_bind_text (stmt, 1, old_uuid, -1, SQLITE_TRANSIENT);
+        if (sqlite3_step (stmt) != SQLITE_DONE)
+            g_warning ("DELETE old uuid in replace failed: %s", sqlite3_errmsg (db));
+        sqlite3_finalize (stmt);
+    }
+
+    _g_paste_sqlite_backend_insert_item (db, item, clip);
+
+    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
+        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+}
+
+static void
+g_paste_sqlite_backend_clear_history (const GPasteStorageBackend *self,
+                                      const gchar                *name)
+{
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+    if (!g_file_test (path, G_FILE_TEST_EXISTS))
+        return;
+
+    sqlite3 *db = _g_paste_sqlite_backend_open ((const GPasteSqliteBackend *) self, path);
+    if (!db)
+        return;
+
+    if (!_g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE"))
+        return;
+
+    if (!_g_paste_sqlite_backend_exec (db, "DELETE FROM items"))
+    {
+        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+        return;
+    }
+
+    if (!_g_paste_sqlite_backend_exec (db, "COMMIT"))
+        _g_paste_sqlite_backend_exec (db, "ROLLBACK");
+}
+
 static void
 g_paste_sqlite_backend_dispose (GObject *object)
 {
@@ -630,6 +871,11 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
     storage_class->get_extension      = g_paste_sqlite_backend_get_extension;
     storage_class->delete_history     = g_paste_sqlite_backend_delete_history;
     storage_class->list_histories     = g_paste_sqlite_backend_list_histories;
+
+    storage_class->add_item       = g_paste_sqlite_backend_add_item;
+    storage_class->remove_item    = g_paste_sqlite_backend_remove_item;
+    storage_class->replace_item   = g_paste_sqlite_backend_replace_item;
+    storage_class->clear_history  = g_paste_sqlite_backend_clear_history;
 
     G_OBJECT_CLASS (klass)->dispose = g_paste_sqlite_backend_dispose;
 }
