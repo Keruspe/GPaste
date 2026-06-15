@@ -12,8 +12,8 @@ class GPasteActionButton extends St.Button {
     constructor(iconName, label, action) {
         super({
             x_expand: true,
-            // Fill the (homogeneous) cell so every action button is the same
-            // width; the icon and label are centered inside by the actor.
+            // Fill the (equal) flex cell so all three action buttons end up the
+            // same width; the icon+label inside stays centered (see the actor).
             x_align: Clutter.ActorAlign.FILL,
             reactive: true,
             can_focus: true,

@@ -183,6 +183,8 @@ Standalone preferences window. Uses GTK4 and libadwaita for a modern look.
 
 Native shell integration. Provides the panel indicator and quick-access popover. Communicates with the daemon via D-Bus. Lives under the standard GNOME Shell extension layout with `extension.js` as entry point.
 
+**History display** (`indicator.js`): the popover history is an `St.ScrollView` wrapping a `PopupMenuSection`, filled lazily. `max-displayed-history-size` is the batch size: `_loadMore()` appends a batch of `GPasteItem` rows, and the scroll view's `vadjustment` drives growth — `changed` keeps appending while the content does not yet overflow the viewport, `notify::value` appends the next batch when the user scrolls to the bottom — so the whole history is reachable by scrolling (no page switcher). St does not recycle actors, so only the scrolled-to depth is ever materialised; `_reloadGeneration` guards against overlapping async reloads, and rows are `destroy()`ed on reload. Because the section is nested in the scroll view (not the menu's item tree), each row's `activate` is wired to `menu.itemActivated()` by hand to close the menu.
+
 ### `data/`
 
 Non-code resources: D-Bus service files (`dbus/`), `.desktop` entries, GSettings schemas (`gsettings/`), systemd user units, AppStream metadata.

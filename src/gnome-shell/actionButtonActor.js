@@ -10,9 +10,13 @@ import St from 'gi://St';
 export const GPasteActionButtonActor = GObject.registerClass(
 class GPasteActionButtonActor extends St.BoxLayout {
     constructor(iconName, label) {
-        // Stay centered inside the (wider) button rather than stretching, so
-        // the icon and label keep together regardless of the button width.
-        super({style: 'spacing: 10px;', x_align: Clutter.ActorAlign.CENTER});
+        // The parent button fills its flex cell, so keep the icon+label group at
+        // its natural width and centered rather than stretched to the left edge.
+        super({
+            style: 'spacing: 10px;',
+            x_expand: false,
+            x_align: Clutter.ActorAlign.CENTER,
+        });
 
         this.add_child(new St.Icon({
             icon_name: iconName,

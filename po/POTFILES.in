@@ -36,8 +36,6 @@ src/gnome-shell/emptyHistoryItem.js
 src/gnome-shell/extension.js
 src/gnome-shell/indicator.js
 src/gnome-shell/item.js
-src/gnome-shell/pageItem.js
-src/gnome-shell/pageSwitcher.js
 src/gnome-shell/prefs.js
 src/gnome-shell/searchItem.js
 src/gnome-shell/stateSwitch.js

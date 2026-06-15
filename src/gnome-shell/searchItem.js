@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {PopupBaseMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import GObject from 'gi://GObject';
@@ -22,6 +23,7 @@ export const GPasteSearchItem = GObject.registerClass({
         this._entry = new St.Entry({
             name: 'GPasteSearchEntry',
             style_class: 'search-entry',
+            hint_text: _('Type to search…'),
             track_hover: true,
             reactive: true,
             can_focus: true,

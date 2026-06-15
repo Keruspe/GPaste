@@ -12,7 +12,7 @@ import {GPasteDeleteItemPart} from './deleteItemPart.js';
 
 export const GPasteItem = GObject.registerClass(
 class GPasteItem extends PopupMenuItem {
-    constructor(client, size, slotIndex, index) {
+    constructor(client, size, slotIndex, index, uuid = null) {
         // hover: false keeps the pointer from stealing key focus from the search
         // entry (Fix #435) without dropping can_focus, so the rows stay reachable
         // with the arrow keys.
@@ -38,7 +38,20 @@ class GPasteItem extends PopupMenuItem {
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this.setTextSize(size);
 
-        this.setIndex(index).catch(console.error);
+        // Search rows are addressed by uuid (the search returns uuids); history
+        // rows by their index.
+        if (uuid !== null)
+            this.setUuid(uuid).catch(console.error);
+        else
+            this.setIndex(index).catch(console.error);
+    }
+
+    destroy() {
+        // Discard any in-flight setIndex()/setUuid() fetch: bumping the
+        // generation makes its post-await guard bail out instead of touching
+        // this now-finalized actor.
+        this._generation++;
+        super.destroy();
     }
 
     showIndex(state) {
