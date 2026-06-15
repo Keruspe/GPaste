@@ -131,6 +131,8 @@ class GPasteItem extends PopupMenuItem {
             this._client.delete(this._uuid, null);
             return Clutter.EVENT_STOP;
         }
-        return Clutter.EVENT_PROPAGATE;
+        // Chain up so PopupBaseMenuItem keeps handling arrow-key focus
+        // navigation between history rows.
+        return super.vfunc_key_press_event(event);
     }
 });
