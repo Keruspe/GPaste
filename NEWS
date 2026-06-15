@@ -1,3 +1,9 @@
+NEW in 50.3 (16/06/2026)
+=============
+
+- GNOME Shell extension: fix keyboard navigation in the history menu (Down now moves through every history item, Left/Right move between the action buttons when one is focused, and Up returns from the actions to the last history item)
+- GNOME Shell extension: give every action button the same width regardless of its label
+
 NEW in 50.2 (12/06/2026)
 =============
 

@@ -11,6 +11,7 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import GPaste from 'gi://GPaste?version=2';
+import St from 'gi://St';
 
 import {GPasteActions} from './actions.js';
 import {GPasteDummyHistoryItem} from './dummyHistoryItem.js';
@@ -100,7 +101,8 @@ class GPasteIndicator extends Button {
         this._addToHeader(this._switch);
         this._addToHeader(this._searchItem);
         this._addToHeader(this._pageSwitcher);
-        this._addToFooter(new GPasteActions(this._client, this.menu, this._emptyHistoryItem));
+        this._actions = new GPasteActions(this._client, this.menu, this._emptyHistoryItem);
+        this._addToFooter(this._actions);
 
         await this._resetMaxDisplayedSize();
         if (this._destroyed) {
@@ -378,6 +380,32 @@ class GPasteIndicator extends Button {
             return super._onMenuKeyPress(actor, event);
 
         const symbol = event.get_key_symbol();
+
+        // When an action button is focused, Left/Right move between the
+        // actions and Up returns to the last history item; the action buttons
+        // are plain St.Buttons and don't drive that focus navigation
+        // themselves.
+        const focus = global.stage.get_key_focus();
+        if (this._actions && focus && this._actions.contains(focus)) {
+            if (symbol === Clutter.KEY_Left || symbol === Clutter.KEY_Right) {
+                const direction = symbol === Clutter.KEY_Left
+                    ? St.DirectionType.LEFT
+                    : St.DirectionType.RIGHT;
+                this._actions.navigate_focus(focus, direction, false);
+                return Clutter.EVENT_STOP;
+            }
+
+            if (symbol === Clutter.KEY_Up) {
+                const last = this._lastHistoryItem();
+                if (last) {
+                    last.grab_key_focus();
+                    return Clutter.EVENT_STOP;
+                }
+            }
+
+            return Clutter.EVENT_PROPAGATE;
+        }
+
         if (symbol === Clutter.KEY_Left)
             return this._pageSwitcher.previous();
 
@@ -385,6 +413,14 @@ class GPasteIndicator extends Button {
             return this._pageSwitcher.next();
 
         return Clutter.EVENT_PROPAGATE;
+    }
+
+    _lastHistoryItem() {
+        for (let i = this._history.length - 1; i >= 0; --i) {
+            if (this._history[i].visible)
+                return this._history[i];
+        }
+        return null;
     }
 
     _onDestroy() {
