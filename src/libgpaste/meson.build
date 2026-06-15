@@ -168,3 +168,144 @@ if get_option('vapi')
     install: true,
   )
 endif
+
+libgpaste_daemon_soversion = '0.0.0'
+
+# The introspectable, always-built core of the daemon library. Optional bits
+# (mutter clipboard, libsodium converter, libsecret keyring) are appended below
+# but kept out of the GIR/umbrella so introspection stays toolkit-clean.
+gpaste_daemon_gir_sources = [
+  'gpaste-daemon/gpaste-binary-data.c',
+  'gpaste-daemon/gpaste-bus-object.c',
+  'gpaste-daemon/gpaste-bus.c',
+  'gpaste-daemon/gpaste-clipboard-gdk.c',
+  'gpaste-daemon/gpaste-clipboard-provider.c',
+  'gpaste-daemon/gpaste-clipboards-manager.c',
+  'gpaste-daemon/gpaste-color-item.c',
+  'gpaste-daemon/gpaste-daemon-methods.c',
+  'gpaste-daemon/gpaste-daemon.c',
+  'gpaste-daemon/gpaste-file-backend.c',
+  'gpaste-daemon/gpaste-global-shortcut-client.c',
+  'gpaste-daemon/gpaste-history-saver.c',
+  'gpaste-daemon/gpaste-history.c',
+  'gpaste-daemon/gpaste-image-item.c',
+  'gpaste-daemon/gpaste-item.c',
+  'gpaste-daemon/gpaste-keybinder.c',
+  'gpaste-daemon/gpaste-keybinding.c',
+  'gpaste-daemon/gpaste-noop-backend.c',
+  'gpaste-daemon/gpaste-password-item.c',
+  'gpaste-daemon/gpaste-search-provider.c',
+  'gpaste-daemon/gpaste-special-atom.c',
+  'gpaste-daemon/gpaste-storage-backend.c',
+  'gpaste-daemon/gpaste-storage-migration.c',
+  'gpaste-daemon/gpaste-text-item.c',
+  'gpaste-daemon/gpaste-uris-item.c',
+]
+
+gpaste_daemon_gir_headers = [
+  'gpaste-daemon/gpaste-binary-data.h',
+  'gpaste-daemon/gpaste-bus-object.h',
+  'gpaste-daemon/gpaste-bus.h',
+  'gpaste-daemon/gpaste-clipboard-gdk.h',
+  'gpaste-daemon/gpaste-clipboard-provider.h',
+  'gpaste-daemon/gpaste-clipboards-manager.h',
+  'gpaste-daemon/gpaste-color-item.h',
+  'gpaste-daemon/gpaste-daemon-methods.h',
+  'gpaste-daemon/gpaste-daemon.h',
+  'gpaste-daemon/gpaste-file-backend.h',
+  'gpaste-daemon/gpaste-global-shortcut-client.h',
+  'gpaste-daemon/gpaste-history-saver.h',
+  'gpaste-daemon/gpaste-history.h',
+  'gpaste-daemon/gpaste-image-item.h',
+  'gpaste-daemon/gpaste-item.h',
+  'gpaste-daemon/gpaste-keybinder.h',
+  'gpaste-daemon/gpaste-keybinding.h',
+  'gpaste-daemon/gpaste-noop-backend.h',
+  'gpaste-daemon/gpaste-password-item.h',
+  'gpaste-daemon/gpaste-search-provider.h',
+  'gpaste-daemon/gpaste-special-atom.h',
+  'gpaste-daemon/gpaste-storage-backend.h',
+  'gpaste-daemon/gpaste-storage-migration.h',
+  'gpaste-daemon/gpaste-text-item.h',
+  'gpaste-daemon/gpaste-uris-item.h',
+]
+
+gpaste_daemon_sources = gpaste_daemon_gir_sources
+gpaste_daemon_headers = gpaste_daemon_gir_headers
+
+gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ]
+
+# Optional libsodium-based encryption converter for the history storage.
+if libsodium_dep.found()
+  gpaste_daemon_sources += [ 'gpaste-daemon/gpaste-secret-stream-converter.c' ]
+  gpaste_daemon_headers += [ 'gpaste-daemon/gpaste-secret-stream-converter.h' ]
+  gpaste_daemon_deps += libsodium_dep
+endif
+
+# Optional libsecret support to remember the passphrase in the keyring.
+if libsodium_dep.found() and libsecret_dep.found()
+  gpaste_daemon_sources += [ 'gpaste-daemon/gpaste-storage-keyring.c' ]
+  gpaste_daemon_headers += [ 'gpaste-daemon/gpaste-storage-keyring.h' ]
+  gpaste_daemon_deps += libsecret_dep
+endif
+
+# The mutter (MetaSelection) clipboard backend only makes sense inside
+# gnome-shell, so it is built alongside the extension. It calls into libmutter,
+# so the daemon links it.
+if get_option('gnome-shell')
+  gpaste_daemon_sources += [ 'gpaste-daemon/gpaste-clipboard-meta.c' ]
+  gpaste_daemon_headers += [ 'gpaste-daemon/gpaste-clipboard-meta.h' ]
+  gpaste_daemon_deps += dependency('libmutter-18')
+endif
+
+gpaste_daemon_headers_dep = declare_dependency(
+  include_directories: include_directories('.'),
+  sources: gpaste_daemon_headers,
+)
+
+gpaste_daemon_deps += gpaste_daemon_headers_dep
+
+libgpaste_daemon_symbols_file = meson.current_source_dir() / 'libgpaste-daemon.sym'
+
+libgpaste_daemon = library(
+  'gpaste-daemon',
+  sources: gpaste_daemon_sources,
+  version: libgpaste_daemon_soversion,
+  dependencies: gpaste_daemon_deps,
+  install: true,
+  install_dir: get_option('libdir'),
+  # The version script lists symbols for optional features (encryption, libsecret,
+  # the mutter clipboard) that are not compiled in every configuration; allow the
+  # script to reference those undefined symbols (ld >= 2.43 defaults to erroring).
+  link_args: ['-Wl,--version-script=' + libgpaste_daemon_symbols_file, '-lc'] + cc.get_supported_link_arguments('-Wl,--undefined-version'),
+  link_depends: libgpaste_daemon_symbols_file,
+)
+
+gpaste_daemon_internal_dep = declare_dependency(
+  link_with: libgpaste_daemon,
+  dependencies: gpaste_daemon_deps,
+)
+
+install_headers(
+  ['gpaste-daemon.h'],
+  subdir: 'gpaste-' + apiversion,
+)
+install_headers(
+  gpaste_daemon_headers,
+  subdir: 'gpaste-' + apiversion + '/gpaste-daemon',
+)
+
+if get_option('introspection')
+  libgpaste_daemon_gir = gnome.generate_gir(
+    libgpaste_daemon,
+    sources: [ gpaste_daemon_gir_sources, gpaste_daemon_gir_headers ],
+    includes: [ libgpaste_gir[0], libgpaste_gtk4_gir[0], 'Adw-1', 'Gtk-4.0', 'Gdk-4.0', 'Gio-2.0', 'GLib-2.0', 'GObject-2.0' ],
+    dependencies: [ gpaste_daemon_deps, gpaste_daemon_internal_dep ],
+    header: 'gpaste-daemon.h',
+    namespace: 'GPasteDaemon',
+    nsversion: '1',
+    identifier_prefix: 'GPaste',
+    symbol_prefix: 'g_paste',
+    install: true,
+  )
+endif
