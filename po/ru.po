@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-12 07:05+0200\n"
-"PO-Revision-Date: 2026-06-14 12:01+0000\n"
+"PO-Revision-Date: 2026-06-16 08:05+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
 "ru/>\n"
@@ -569,18 +569,24 @@ msgstr "Сборка: схема GSettings поставляется в виде 
 msgid ""
 "GNOME Shell extension now retries the daemon connection before giving up"
 msgstr ""
+"GNOME Shell extension теперь повторяет попытку подключения к демону, прежде "
+"чем прекратить работу"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:113
 msgid "Fix test crash when GrabAccelerators is not allowed"
 msgstr ""
+"Исправлена ошибка, приводящая к сбою теста при недопустимости использования "
+"GrabAccelerators"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:114
 msgid "Build: simplify gsettings compilation for tests"
-msgstr ""
+msgstr "Сборка: упрощение компиляции gsettings для тестов"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:122
 msgid "Fix GC crash and signal leak when disabling the GNOME Shell extension"
 msgstr ""
+"Исправлены сбои сборщика мусора и утечки памяти при отключении GNOME Shell "
+"extension"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:123
 msgid "GNOME Shell extension now handles daemon connection failure gracefully"
@@ -1373,6 +1379,9 @@ msgid ""
 "When enabled, the daemon automatically starts or stops tracking clipboard "
 "changes to match the GNOME Shell extension's enabled state"
 msgstr ""
+"При включённом параметре: демон автоматически запускает или останавливает "
+"отслеживание изменений в буфере обмена в соответствии с состоянием включения "
+"GNOME Shell extension."
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:166
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:174
@@ -1404,6 +1413,8 @@ msgid ""
 "When enabled, if a new clipboard entry starts with the previous one, the "
 "previous entry is replaced instead of creating a new one"
 msgstr ""
+"При включённом параметре: если новая запись в буфере обмена начинается с "
+"предыдущей, предыдущая запись будет заменена, а не создана новая"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:92
 msgid "History settings"
@@ -1506,9 +1517,9 @@ msgstr "Отмена"
 
 #. Translators: %s is the name of the history being emptied.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:126
-#, fuzzy, c-format
+#, c-format
 msgid "Do you really want to empty \"%s\"?"
-msgstr "Вы действительно хотите очистить историю?"
+msgstr "Вы действительно хотите очистить «%s»?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:127
 #: src/ui/gpaste-ui-history.c:153 src/ui/gpaste-ui-history.c:428
@@ -1518,7 +1529,7 @@ msgstr "Пусто"
 
 #: src/ui/gpaste-ui.c:47
 msgid "Clipboard management system"
-msgstr ""
+msgstr "Система управления буфером обмена"
 
 #: src/ui/gpaste-ui-delete-item.c:46 src/ui/gpaste-ui-panel.c:358
 #: src/ui/gpaste-ui-panel.c:518
@@ -1530,17 +1541,16 @@ msgid "Edit"
 msgstr "Редактировать"
 
 #: src/ui/gpaste-ui-history.c:266
-#, fuzzy
 msgid "No Results"
-msgstr "(Нет результата)"
+msgstr "Ничего не найдено"
 
 #: src/ui/gpaste-ui-new-item.c:67
 msgid "Add new item"
-msgstr ""
+msgstr "Добавить новый элемент"
 
 #: src/ui/gpaste-ui-new-item.c:100
 msgid "New item"
-msgstr ""
+msgstr "Новый элемент"
 
 #: src/ui/gpaste-ui-panel.c:307
 msgid "Under which name do you want to backup this history?"
@@ -1552,9 +1562,9 @@ msgstr "Резервное копирование"
 
 #. Translators: %s is the name of the history being deleted.
 #: src/ui/gpaste-ui-panel.c:357
-#, fuzzy, c-format
+#, c-format
 msgid "Are you sure you want to delete \"%s\"?"
-msgstr "Вы уверены, что хотите удалить эту историю?"
+msgstr "Вы уверены, что хотите удалить «%s»?"
 
 #: src/ui/gpaste-ui-panel.c:441
 #, fuzzy
@@ -1612,9 +1622,8 @@ msgid "Histories"
 msgstr "Доступ к истории"
 
 #: src/ui/gpaste-ui-window.c:381
-#, fuzzy
 msgid "History"
-msgstr "Доступ к истории"
+msgstr "История"
 
 #~ msgid "@GETTEXT_PACKAGE@"
 #~ msgstr "@GETTEXT_PACKAGE@"
