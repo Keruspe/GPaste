@@ -815,8 +815,18 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     if (_G_PASTE_IS_COLOR_ITEM (item))
     {
         const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
+
         g_paste_clipboard_gdk_private_set_color (priv, rgba);
-        gdk_clipboard_set (priv->real, GDK_TYPE_RGBA, rgba);
+
+        /* Offer the colour itself plus its textual form, so it can be pasted both
+         * into colour-aware apps (application/x-color) and into plain text fields. */
+        GdkContentProvider *providers[] = {
+            gdk_content_provider_new_typed (GDK_TYPE_RGBA, rgba),
+            gdk_content_provider_new_typed (G_TYPE_STRING, g_paste_item_get_real_value (item)),
+        };
+        g_autoptr (GdkContentProvider) provider = gdk_content_provider_new_union (providers, G_N_ELEMENTS (providers));
+
+        gdk_clipboard_set_content (priv->real, provider);
         return TRUE;
     }
 

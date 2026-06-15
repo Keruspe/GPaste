@@ -581,6 +581,12 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_value_init (&value, GDK_TYPE_RGBA);
         g_value_set_boxed (&value, rgba);
         g_paste_clipboard_meta_source_add_value (source, &value);
+
+        /* Plus the textual form, so the colour pastes into plain text fields too. */
+        const gchar *real_value = g_paste_item_get_real_value (item);
+        g_autoptr (GBytes) text_bytes = g_bytes_new (real_value, strlen (real_value));
+
+        g_paste_clipboard_meta_source_add_text (source, text_bytes);
         g_paste_clipboard_meta_publish_source (self, source);
         return TRUE;
     }
