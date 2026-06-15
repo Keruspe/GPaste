@@ -17,8 +17,6 @@ typedef const gchar *(*GPasteKeybindingGetter) (const GPasteSettings *settings);
 typedef void         (*GPasteKeybindingFunc)   (GPasteKeybinding *self,
                                                 gpointer          data);
 
-const guint32  *g_paste_keybinding_get_keycodes    (const GPasteKeybinding *self);
-GdkModifierType g_paste_keybinding_get_modifiers   (const GPasteKeybinding *self);
 const gchar    *g_paste_keybinding_get_dconf_key   (const GPasteKeybinding *self);
 const gchar    *g_paste_keybinding_get_description (const GPasteKeybinding *self);
 const gchar    *g_paste_keybinding_get_accelerator (const GPasteKeybinding *self,
@@ -29,9 +27,6 @@ void            g_paste_keybinding_activate      (GPasteKeybinding *self,
 void            g_paste_keybinding_deactivate    (GPasteKeybinding *self);
 gboolean        g_paste_keybinding_is_active     (GPasteKeybinding *self);
 void            g_paste_keybinding_perform       (GPasteKeybinding *self);
-void            g_paste_keybinding_notify        (GPasteKeybinding *self,
-                                                  GdkModifierType   modifiers,
-                                                  guint64           keycode);
 
 GPasteKeybinding *g_paste_keybinding_new (const gchar           *dconf_key,
                                           const gchar           *description,

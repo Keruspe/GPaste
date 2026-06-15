@@ -63,6 +63,12 @@ if libsodium_dep.found() and libsecret_dep.found()
   add_project_arguments('-DG_PASTE_ENABLE_LIBSECRET', language: 'c')
 endif
 
+# The mutter (MetaSelection) clipboard backend is built alongside the extension;
+# this lets the daemon expose g_paste_daemon_new_meta () for the in-shell glue.
+if get_option('gnome-shell')
+  add_project_arguments('-DG_PASTE_ENABLE_GNOME_SHELL', language: 'c')
+endif
+
 userunit_dir = get_option('systemd-user-unit-dir')
 if userunit_dir == ''
   if get_option('systemd')

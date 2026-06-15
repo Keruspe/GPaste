@@ -115,17 +115,41 @@ g_paste_bus_own_name (GPasteBus *self)
                                       g_object_unref);
 }
 
+/**
+ * g_paste_bus_unown_name:
+ * @self: the #GPasteBus
+ *
+ * Release the bus name previously owned with g_paste_bus_own_name().
+ *
+ * g_bus_own_name() holds a reference on @self until the name is unowned, so this
+ * has to be called for the bus to be finalized (merely dropping the caller's
+ * reference is not enough). Gated on the owner id rather than the connection so
+ * the name is released even when it was never acquired (e.g. another owner held
+ * it). Safe to call when the name was never owned and more than once.
+ */
+G_PASTE_VISIBLE void
+g_paste_bus_unown_name (GPasteBus *self)
+{
+    g_return_if_fail (_G_PASTE_IS_BUS (self));
+
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
+
+    if (priv->id_on_bus)
+    {
+        g_bus_unown_name (priv->id_on_bus);
+        priv->id_on_bus = 0;
+    }
+
+    g_clear_object (&priv->connection);
+}
+
 static void
 g_paste_bus_dispose (GObject *object)
 {
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (G_PASTE_BUS (object));
+    GPasteBus *self = G_PASTE_BUS (object);
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
 
-    if (priv->connection)
-    {
-        g_bus_unown_name (priv->id_on_bus);
-        g_clear_object (&priv->connection);
-    }
-
+    g_paste_bus_unown_name (self);
     g_clear_pointer (&priv->objects, g_ptr_array_unref);
 
     G_OBJECT_CLASS (g_paste_bus_parent_class)->dispose (object);

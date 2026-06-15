@@ -3,6 +3,7 @@ shell_extension_files = [
   'actionButton.js',
   'actionButtonActor.js',
   'actions.js',
+  'daemon.js',
   'deleteButton.js',
   'deleteItemPart.js',
   'dependencies.js',

@@ -10,6 +10,10 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 
+#ifdef G_PASTE_ENABLE_GNOME_SHELL
+#include <gpaste-daemon/gpaste-clipboard-meta.h>
+#endif
+
 #include <string.h>
 
 struct _GPasteDaemon
@@ -691,3 +695,32 @@ g_paste_daemon_new_gdk (GPasteSettings *settings)
 
     return g_paste_daemon_new (settings, clipboard, primary);
 }
+
+#ifdef G_PASTE_ENABLE_GNOME_SHELL
+/**
+ * g_paste_daemon_new_meta:
+ * @settings: a #GPasteSettings instance
+ * @selection: the mutter MetaSelection (typed as #GObject to keep this API
+ *             free of a libmutter dependency)
+ *
+ * Create a new instance of #GPasteDaemon driving the mutter clipboard backend,
+ * for use from inside gnome-shell. The same @selection backs both the clipboard
+ * and the primary provider.
+ *
+ * Returns: a newly allocated #GPasteDaemon
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteDaemon *
+g_paste_daemon_new_meta (GPasteSettings *settings,
+                         GObject        *selection)
+{
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (META_IS_SELECTION (selection), NULL);
+
+    MetaSelection *meta_selection = META_SELECTION (selection);
+    g_autoptr (GPasteClipboardProvider) clipboard = g_paste_clipboard_meta_new_clipboard (meta_selection, settings);
+    g_autoptr (GPasteClipboardProvider) primary = g_paste_clipboard_meta_new_primary (meta_selection, settings);
+
+    return g_paste_daemon_new (settings, clipboard, primary);
+}
+#endif

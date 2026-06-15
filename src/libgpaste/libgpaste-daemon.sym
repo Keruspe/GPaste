@@ -11,6 +11,7 @@ global:
     g_paste_bus_object_get_type;
     g_paste_bus_object_register_on_connection;
     g_paste_bus_own_name;
+    g_paste_bus_unown_name;
     g_paste_clipboard_gdk_get_type;
     g_paste_clipboard_gdk_new_clipboard;
     g_paste_clipboard_gdk_new_primary;
@@ -70,6 +71,7 @@ global:
     g_paste_daemon_methods_track;
     g_paste_daemon_new;
     g_paste_daemon_new_gdk;
+    g_paste_daemon_new_meta;
     g_paste_daemon_show_history;
     g_paste_daemon_upload;
     g_paste_file_backend_get_type;
@@ -143,12 +145,9 @@ global:
     g_paste_keybinding_get_accelerator;
     g_paste_keybinding_get_dconf_key;
     g_paste_keybinding_get_description;
-    g_paste_keybinding_get_keycodes;
-    g_paste_keybinding_get_modifiers;
     g_paste_keybinding_get_type;
     g_paste_keybinding_is_active;
     g_paste_keybinding_new;
-    g_paste_keybinding_notify;
     g_paste_keybinding_perform;
     g_paste_noop_backend_get_type;
     g_paste_password_item_get_name;

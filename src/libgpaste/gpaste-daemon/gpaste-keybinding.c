@@ -16,47 +16,9 @@ typedef struct _GPasteKeybindingPrivate
     GPasteKeybindingFunc   callback;
     gpointer               user_data;
     gboolean               active;
-    GdkModifierType        modifiers;
-    guint32               *keycodes;
 } GPasteKeybindingPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Keybinding, keybinding, G_TYPE_OBJECT)
-
-/**
- * g_paste_keybinding_get_modifiers:
- * @self: a #GPasteKeybinding instance
- *
- * Get the modifiers for this keybinding
- *
- * Returns: the modifiers
- */
-G_PASTE_VISIBLE GdkModifierType
-g_paste_keybinding_get_modifiers (const GPasteKeybinding *self)
-{
-    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING (self), 0);
-
-    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
-
-    return priv->modifiers;
-}
-
-/**
- * g_paste_keybinding_get_keycodes:
- * @self: a #GPasteKeybinding instance
- *
- * Get the keycodes for this keybinding
- *
- * Returns: the keycodes
- */
-G_PASTE_VISIBLE const guint32 *
-g_paste_keybinding_get_keycodes (const GPasteKeybinding *self)
-{
-    g_return_val_if_fail (_G_PASTE_IS_KEYBINDING (self), NULL);
-
-    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
-
-    return priv->keycodes;
-}
 
 /**
  * g_paste_keybinding_get_dconf_key:
@@ -136,9 +98,15 @@ g_paste_keybinding_activate (GPasteKeybinding *self,
 
     if (binding)
     {
-        gtk_accelerator_parse_with_keycode (binding, NULL, NULL, &priv->keycodes, &priv->modifiers);
+        // Parse the accelerator without resolving hardware keycodes: the global
+        // shortcuts are driven through the XDG portal from the accelerator
+        // string, so we never need a GdkDisplay (which would not exist when the
+        // daemon runs in-process inside gnome-shell, where gtk_init is not
+        // called).
+        guint keyval = 0;
+        GdkModifierType modifiers;
 
-        priv->active = priv->keycodes != NULL;
+        priv->active = gtk_accelerator_parse (binding, &keyval, &modifiers) && keyval != 0;
     }
 }
 
@@ -157,7 +125,6 @@ g_paste_keybinding_deactivate (GPasteKeybinding *self)
 
     g_return_if_fail (priv->active);
 
-    g_clear_pointer (&priv->keycodes, g_free);
     priv->active = FALSE;
 }
 
@@ -177,44 +144,6 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
     const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
 
     return priv->active;
-}
-
-static gboolean
-g_paste_keybinding_private_match (const GPasteKeybindingPrivate *priv,
-                                  GdkModifierType                modifiers,
-                                  guint64                        keycode)
-{
-    if (priv->keycodes && priv->modifiers == (priv->modifiers & modifiers))
-    {
-        for (guint32 *_keycode = priv->keycodes; *_keycode; ++_keycode)
-        {
-            if (keycode == *_keycode)
-                return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-/**
- * g_paste_keybinding_notify:
- * @self: a #GPasteKeybinding instance
- * @modifiers: The modifiers of the current event
- * @keycode: the keycode of the current event
- *
- * Runs the callback associated to the keybinding if needed
- */
-G_PASTE_VISIBLE void
-g_paste_keybinding_notify (GPasteKeybinding *self,
-                           GdkModifierType   modifiers,
-                           guint64           keycode)
-{
-    g_return_if_fail (_G_PASTE_IS_KEYBINDING (self));
-
-    const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (self);
-
-    if (keycode && g_paste_keybinding_private_match (priv, modifiers, keycode))
-        priv->callback (self, priv->user_data);
 }
 
 /**
@@ -250,7 +179,6 @@ g_paste_keybinding_finalize (GObject *object)
 {
     const GPasteKeybindingPrivate *priv = _g_paste_keybinding_get_instance_private (G_PASTE_KEYBINDING (object));
 
-    g_free (priv->keycodes);
     g_free (priv->dconf_key);
     g_free (priv->description);
 
@@ -306,7 +234,6 @@ g_paste_keybinding_new (const gchar           *dconf_key,
     priv->description = g_strdup (description);
     priv->callback = callback;
     priv->user_data = user_data;
-    priv->keycodes = NULL;
 
     return self;
 }

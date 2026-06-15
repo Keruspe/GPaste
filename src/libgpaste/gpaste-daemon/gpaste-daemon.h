@@ -22,4 +22,11 @@ GPasteDaemon *g_paste_daemon_new     (GPasteSettings          *settings,
                                       GPasteClipboardProvider *primary);
 GPasteDaemon *g_paste_daemon_new_gdk (GPasteSettings          *settings);
 
+#ifdef G_PASTE_ENABLE_GNOME_SHELL
+/* @selection is the mutter MetaSelection (global.display.get_selection ()),
+ * typed as a plain #GObject so this header needs no libmutter. */
+GPasteDaemon *g_paste_daemon_new_meta (GPasteSettings *settings,
+                                       GObject        *selection);
+#endif
+
 G_END_DECLS

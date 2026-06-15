@@ -19,6 +19,8 @@ void g_paste_bus_add_object (GPasteBus       *self,
 
 void g_paste_bus_own_name (GPasteBus *self);
 
+void g_paste_bus_unown_name (GPasteBus *self);
+
 GPasteBus *g_paste_bus_new (void);
 
 G_END_DECLS
