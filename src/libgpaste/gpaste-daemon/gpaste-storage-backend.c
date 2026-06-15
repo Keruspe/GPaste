@@ -5,6 +5,7 @@
 
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
+#include <gpaste-daemon/gpaste-sqlite-backend.h>
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
 #include <gpaste-daemon/gpaste-storage-keyring.h>
@@ -315,6 +316,8 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
         return G_PASTE_TYPE_FILE_BACKEND;
     case G_PASTE_STORAGE_NOOP:
         return G_PASTE_TYPE_NOOP_BACKEND;
+    case G_PASTE_STORAGE_SQLITE:
+        return G_PASTE_TYPE_SQLITE_BACKEND;
     default:
         /* G_PASTE_STORAGE_DEFAULT, and any unexpected value, map to the plain
          * file backend; return it directly rather than recursing. */
