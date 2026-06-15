@@ -23,6 +23,7 @@ gtk4_dep = dependency('gtk4', version: '>= ' + gtk4_req_version)
 gtk4x11_dep = dependency('gtk4-x11', version: '>= ' + gtk4_req_version)
 libadwaita_dep = dependency('libadwaita-1', version: '>= ' + adwaita_req_version)
 pango_dep = dependency('pango')
+sqlite3_dep = dependency('sqlite3')
 
 glib_major = glib_req_version.split('.')[0].to_int()
 glib_minor = glib_req_version.split('.')[1].to_int()
