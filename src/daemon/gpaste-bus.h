@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <gpaste/gpaste-macros.h>
+#include <gpaste-bus-object.h>
 
 G_BEGIN_DECLS
 
@@ -11,14 +11,14 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (Bus, bus, BUS, GObject)
 
-typedef void (*GPasteBusAcquiredCallback) (GPasteBus *bus,
-                                           gpointer   user_data);
+/* Hand the bus an object to expose. It is registered immediately if the name is
+ * already owned, otherwise when it is acquired; the bus keeps it alive and emits
+ * "name-lost" if registration fails. */
+void g_paste_bus_add_object (GPasteBus       *self,
+                             GPasteBusObject *object);
 
 void g_paste_bus_own_name (GPasteBus *self);
 
-GDBusConnection *g_paste_bus_get_connection (const GPasteBus *self);
-
-GPasteBus *g_paste_bus_new (GPasteBusAcquiredCallback on_bus_acquired,
-                            gpointer                  user_data);
+GPasteBus *g_paste_bus_new (void);
 
 G_END_DECLS

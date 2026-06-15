@@ -5,6 +5,7 @@
 
 #include <gpaste-file-backend.h>
 #include <gpaste-noop-backend.h>
+#include <gpaste-storage-backend.h>
 #include <gpaste-storage-migration.h>
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
@@ -461,6 +462,68 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
     g_object_set_data_full (G_OBJECT (window), "gpaste-passphrase-data", self, g_free);
 
     gtk_window_present (self->window);
+}
+
+static void
+on_prepare_done (gpointer user_data)
+{
+    g_main_loop_quit (user_data);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+static void
+on_prepare_passphrase (const gchar *passphrase,
+                       gpointer     user_data)
+{
+    if (passphrase)
+        g_paste_storage_backend_set_passphrase (passphrase);
+
+    g_main_loop_quit (user_data);
+}
+#endif
+
+void
+g_paste_storage_migration_prepare (GtkApplication *application,
+                                   GPasteSettings *settings)
+{
+    g_return_if_fail (GTK_IS_APPLICATION (application));
+    g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
+
+    /* Also reachable later through the "storage-migration" action. */
+    g_paste_storage_migration_register_action (application, settings);
+
+    /* Let the user pick (or confirm) where the history is stored before the
+     * daemon starts persisting anything. */
+    if (g_paste_storage_migration_needed (settings))
+    {
+        g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
+
+        adw_init ();
+        g_paste_storage_migration_show (application, settings, on_prepare_done, loop);
+        g_main_loop_run (loop);
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* An already-configured encrypted history needs to be unlocked before the
+     * daemon loads it. */
+    if (g_paste_settings_get_storage_backend (settings) == G_PASTE_STORAGE_ENCRYPTED_FILE &&
+        !g_paste_storage_backend_get_passphrase ())
+    {
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        /* Prefer a passphrase remembered in the keyring over prompting. */
+        g_paste_storage_keyring_apply ();
+#endif
+
+        if (!g_paste_storage_backend_get_passphrase ())
+        {
+            g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
+
+            adw_init ();
+            g_paste_storage_migration_prompt_passphrase (application, FALSE, on_prepare_passphrase, loop);
+            g_main_loop_run (loop);
+        }
+    }
+#endif
 }
 
 static void

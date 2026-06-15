@@ -541,7 +541,9 @@ g_paste_clipboard_gdk_fetch_special_atom (GPasteClipboardGdk                   *
     data->callback = callback;
     data->user_data = user_data;
 
-    // TODO: should/can we fetch all mime types at once?
+    /* gdk_clipboard_read_async() resolves to a single stream (the first of the
+     * requested mimetypes the owner provides), so distinct atoms cannot be
+     * collapsed into one read; update() already fires these reads in parallel. */
     const gchar *mime_types[] = { g_paste_special_atom_get (atom), NULL };
 
     gdk_clipboard_read_async (priv->real,

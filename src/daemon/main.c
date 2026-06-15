@@ -7,12 +7,7 @@
 #include <gpaste-bus.h>
 #include <gpaste-daemon.h>
 #include <gpaste-search-provider.h>
-#include <gpaste-storage-backend.h>
 #include <gpaste-storage-migration.h>
-
-#ifdef G_PASTE_ENABLE_LIBSECRET
-#include <gpaste-storage-keyring.h>
-#endif
 
 #ifdef G_OS_UNIX
 #  include <glib-unix.h>
@@ -78,63 +73,6 @@ on_name_lost (GPasteBus *bus G_GNUC_UNUSED,
     exit (EXIT_FAILURE);
 }
 
-typedef struct
-{
-    GPasteBus        *bus;
-    GPasteDaemon     *daemon;
-    GPasteBusObject **search_provider;
-    GApplication     *gapp;
-} CallbackData;
-
-static void
-register_bus_object (GPasteBus       *bus,
-                     GPasteBusObject *object,
-                     GApplication    *gapp)
-{
-    g_autoptr (GError) error = NULL;
-
-    if (!g_paste_bus_object_register_on_connection (object, g_paste_bus_get_connection (bus), &error))
-        on_name_lost (bus, gapp);
-}
-
-static void
-register_search_provider (gpointer user_data)
-{
-    CallbackData *data = user_data;
-    GPasteBusObject *search_provider = *(data->search_provider) = g_paste_search_provider_new ();
-
-    register_bus_object (data->bus, search_provider, data->gapp);
-}
-
-static void
-on_bus_acquired (GPasteBus *bus,
-                 gpointer   user_data)
-{
-    CallbackData *data = user_data;
-
-    register_bus_object (bus, G_PASTE_BUS_OBJECT (data->daemon), data->gapp);
-
-    g_source_set_name_by_id (g_idle_add_once (register_search_provider, user_data), "[GPaste] register_search_provider");
-}
-
-static void
-on_storage_migration_done (gpointer user_data)
-{
-    g_main_loop_quit (user_data);
-}
-
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-static void
-on_storage_passphrase (const gchar *passphrase,
-                       gpointer     user_data)
-{
-    if (passphrase)
-        g_paste_storage_backend_set_passphrase (passphrase);
-
-    g_main_loop_quit (user_data);
-}
-#endif
-
 gint
 main (gint argc, gchar *argv[])
 {
@@ -146,51 +84,18 @@ main (gint argc, gchar *argv[])
     /* Keep the gapplication around */
     g_application_hold (gapp);
 
-    /* Let the user pick (or confirm) where the history is stored before the
-     * daemon starts persisting anything. The dialog is also reachable later
-     * through the "storage-migration" action. */
+    /* Get the history store ready (backend choice + encrypted-history unlock)
+     * before the daemon starts persisting anything. */
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    g_paste_storage_migration_register_action (app, settings);
+    g_paste_storage_migration_prepare (app, settings);
 
-    if (g_paste_storage_migration_needed (settings))
-    {
-        g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
+    g_autoptr (GPasteDaemon) g_paste_daemon = g_paste_daemon_new ();
+    g_autoptr (GPasteBusObject) search_provider = g_paste_search_provider_new ();
+    g_autoptr (GPasteBus) bus = g_paste_bus_new ();
 
-        adw_init ();
-        g_paste_storage_migration_show (app, settings, on_storage_migration_done, loop);
-        g_main_loop_run (loop);
-    }
-
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* An already-configured encrypted history needs to be unlocked before the
-     * daemon loads it. */
-    if (g_paste_settings_get_storage_backend (settings) == G_PASTE_STORAGE_ENCRYPTED_FILE &&
-        !g_paste_storage_backend_get_passphrase ())
-    {
-#ifdef G_PASTE_ENABLE_LIBSECRET
-        /* Prefer a passphrase remembered in the keyring over prompting. */
-        g_paste_storage_keyring_apply ();
-#endif
-
-        if (!g_paste_storage_backend_get_passphrase ())
-        {
-            g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
-
-            adw_init ();
-            g_paste_storage_migration_prompt_passphrase (app, FALSE, on_storage_passphrase, loop);
-            g_main_loop_run (loop);
-        }
-    }
-#endif
-
-    g_autofree CallbackData *data = g_new0 (CallbackData, 1);
-    g_autoptr (GPasteDaemon) g_paste_daemon = data->daemon = g_paste_daemon_new ();
-    g_autoptr (GPasteBusObject) search_provider = NULL;
-
-    data->search_provider = &search_provider;
-    data->gapp = gapp;
-
-    g_autoptr (GPasteBus) bus = data->bus = g_paste_bus_new (on_bus_acquired, data);
+    /* The bus registers these once the name is acquired and owns them afterwards. */
+    g_paste_bus_add_object (bus, G_PASTE_BUS_OBJECT (g_paste_daemon));
+    g_paste_bus_add_object (bus, search_provider);
 
     guint64 c_signals[C_LAST_SIGNAL] = {
         [C_NAME_LOST] = g_signal_connect (bus,

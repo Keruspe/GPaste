@@ -14,11 +14,10 @@ struct _GPasteBus
 
 typedef struct
 {
-    GDBusConnection          *connection;
-    guint64                   id_on_bus;
+    GDBusConnection *connection;
+    guint64          id_on_bus;
 
-    GPasteBusAcquiredCallback on_bus_acquired;
-    gpointer                  user_data;
+    GPtrArray       *objects; /* GPasteBusObject*, owned, registered on the connection */
 } GPasteBusPrivate;
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE (Bus, bus, G_TYPE_OBJECT)
@@ -33,6 +32,17 @@ enum
 static guint64 signals[LAST_SIGNAL] = { 0 };
 
 static void
+g_paste_bus_register_object (GPasteBus       *self,
+                             GPasteBusObject *object)
+{
+    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (self);
+    g_autoptr (GError) error = NULL;
+
+    if (!g_paste_bus_object_register_on_connection (object, priv->connection, &error))
+        g_signal_emit (self, signals[NAME_LOST], 0, NULL);
+}
+
+static void
 g_paste_bus_on_bus_acquired (GDBusConnection *connection,
                              const char      *name G_GNUC_UNUSED,
                              gpointer         user_data)
@@ -42,8 +52,8 @@ g_paste_bus_on_bus_acquired (GDBusConnection *connection,
 
     priv->connection = g_object_ref (connection);
 
-    if (priv->on_bus_acquired)
-        priv->on_bus_acquired (self, priv->user_data);
+    for (guint i = 0; i < priv->objects->len; ++i)
+        g_paste_bus_register_object (self, g_ptr_array_index (priv->objects, i));
 }
 
 static void
@@ -55,6 +65,29 @@ g_paste_bus_on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
                    signals[NAME_LOST],
                    0, /* detail */
                    NULL);
+}
+
+/**
+ * g_paste_bus_add_object:
+ * @self: the #GPasteBus
+ * @object: (transfer none): the #GPasteBusObject to expose
+ *
+ * Register @object on the bus (now if the name is already owned, otherwise once
+ * it is acquired). The bus keeps it alive for its own lifetime.
+ */
+G_PASTE_VISIBLE void
+g_paste_bus_add_object (GPasteBus       *self,
+                        GPasteBusObject *object)
+{
+    g_return_if_fail (_G_PASTE_IS_BUS (self));
+    g_return_if_fail (_G_PASTE_IS_BUS_OBJECT (object));
+
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
+
+    g_ptr_array_add (priv->objects, g_object_ref (object));
+
+    if (priv->connection)
+        g_paste_bus_register_object (self, object);
 }
 
 /**
@@ -82,24 +115,6 @@ g_paste_bus_own_name (GPasteBus *self)
                                       g_object_unref);
 }
 
-/**
- * g_paste_bus_get_connection:
- * @self: the #GPasteBus
- *
- * returns the #GDBusConnection
- *
- * Returns: (transfer none) (nullable): the connection
- */
-G_PASTE_VISIBLE GDBusConnection *
-g_paste_bus_get_connection (const GPasteBus *self)
-{
-    g_return_val_if_fail (_G_PASTE_IS_BUS (self), NULL);
-
-    const GPasteBusPrivate *priv = _g_paste_bus_get_instance_private (self);
-
-    return priv->connection;
-}
-
 static void
 g_paste_bus_dispose (GObject *object)
 {
@@ -110,6 +125,8 @@ g_paste_bus_dispose (GObject *object)
         g_bus_unown_name (priv->id_on_bus);
         g_clear_object (&priv->connection);
     }
+
+    g_clear_pointer (&priv->objects, g_ptr_array_unref);
 
     G_OBJECT_CLASS (g_paste_bus_parent_class)->dispose (object);
 }
@@ -138,13 +155,15 @@ g_paste_bus_class_init (GPasteBusClass *klass)
 }
 
 static void
-g_paste_bus_init (GPasteBus *self G_GNUC_UNUSED)
+g_paste_bus_init (GPasteBus *self)
 {
+    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
+
+    priv->objects = g_ptr_array_new_with_free_func (g_object_unref);
 }
 
 /**
  * g_paste_bus_new:
- * @on_bus_acquired: (closure user_data) (scope notified) (nullable): handler to invoke when name is acquired or %NULL
  *
  * Create a new instance of #GPasteBus
  *
@@ -152,14 +171,7 @@ g_paste_bus_init (GPasteBus *self G_GNUC_UNUSED)
  *          free it with g_object_unref
  */
 G_PASTE_VISIBLE GPasteBus *
-g_paste_bus_new (GPasteBusAcquiredCallback on_bus_acquired,
-                 gpointer                  user_data)
+g_paste_bus_new (void)
 {
-    GPasteBus *self = G_PASTE_BUS (g_object_new (G_PASTE_TYPE_BUS, NULL));
-    GPasteBusPrivate *priv = g_paste_bus_get_instance_private (self);
-
-    priv->on_bus_acquired = on_bus_acquired;
-    priv->user_data = user_data;
-
-    return self;
+    return G_PASTE_BUS (g_object_new (G_PASTE_TYPE_BUS, NULL));
 }
