@@ -13,6 +13,7 @@ typedef enum {
     G_PASTE_STORAGE_NOOP,
     G_PASTE_STORAGE_FILE,
     G_PASTE_STORAGE_ENCRYPTED_FILE,
+    G_PASTE_STORAGE_SQLITE,
     G_PASTE_N_STORAGE, /* must stay last, before the aliases */
     G_PASTE_STORAGE_DEFAULT = G_PASTE_STORAGE_FILE
 } GPasteStorage;
