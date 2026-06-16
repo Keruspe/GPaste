@@ -46,6 +46,25 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="UNRELEASED" version="51.0">
+      <description>
+        <p>This is a major release. Changes:</p>
+        <ul>
+          <li>Encrypt the history at rest with an optional encrypted file backend and a storage migration dialog</li>
+          <li>Add SQLite storage backends (plain and encrypted) that store the history in a per-history database</li>
+          <li>Migrate the history between storage backends on demand from the preferences or gpaste-client</li>
+          <li>Optionally run the daemon inside the GNOME Shell extension with a mutter-backed clipboard provider (experimental)</li>
+          <li>Add a merge mode to combine several history items</li>
+          <li>Rewrite the GNOME Shell extension history as a scrollable, lazily-loaded list</li>
+          <li>Lazily load history on scroll in the graphical tool, dropping the max-displayed limit</li>
+          <li>Enlarge image previews on hover via a custom tooltip</li>
+          <li>Publish copied colours as text on the clipboard as well</li>
+          <li>Capture keyboard shortcuts in the preferences instead of typing them</li>
+          <li>Raise the default retention, element and memory limits</li>
+          <li>Drop the internal X11 keybinder and the GNOME Shell keybinding client</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-07-19" version="50.6">
       <description>
         <p>This is a maintenance release. Changes:</p>
