@@ -9,3 +9,8 @@ DBusActivatable=true
 Terminal=false
 Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
 StartupNotify=true
+Actions=storage-migration;
+
+[Desktop Action storage-migration]
+Name=Storage migration
+Exec=@pkglibexecdir@/gpaste-daemon-storage-migration

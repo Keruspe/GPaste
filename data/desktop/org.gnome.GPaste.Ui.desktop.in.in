@@ -10,7 +10,7 @@ DBusActivatable=true
 Terminal=false
 Categories=GTK;GNOME;Settings;X-GNOME-PersonalSettings;
 StartupNotify=true
-Actions=prefs;about;
+Actions=prefs;about;storage-migration;
 
 [Desktop Action prefs]
 Name=Preferences
@@ -19,3 +19,7 @@ Exec=gapplication action org.gnome.GPaste.Ui prefs
 [Desktop Action about]
 Name=About
 Exec=gapplication action org.gnome.GPaste.Ui about
+
+[Desktop Action storage-migration]
+Name=Storage migration
+Exec=@pkglibexecdir@/gpaste-daemon-storage-migration
