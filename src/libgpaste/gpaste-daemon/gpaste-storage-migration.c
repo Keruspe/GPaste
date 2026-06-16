@@ -86,11 +86,18 @@ static void
 update_state (MigrationData *self)
 {
     GPasteStorage chosen = backend_for_index (self, adw_combo_row_get_selected (self->backend_row));
+    gboolean backend_changes = chosen != G_PASTE_STORAGE_PREVIOUS;
     gboolean import_possible = can_import (chosen);
 
     gtk_widget_set_sensitive (GTK_WIDGET (self->import_row), import_possible);
     if (!import_possible)
         adw_switch_row_set_active (self->import_row, FALSE);
+
+    /* There is only "old data" to delete once we actually leave the previous
+     * backend; otherwise deleting it would throw away what we just kept. */
+    gtk_widget_set_sensitive (GTK_WIDGET (self->cleanup_row), backend_changes);
+    if (!backend_changes)
+        adw_switch_row_set_active (self->cleanup_row, FALSE);
 
     /* Deleting the old data without importing it first throws it away. */
     adw_banner_set_revealed (self->warning,
@@ -106,13 +113,74 @@ on_state_changed (GObject    *object G_GNUC_UNUSED,
     update_state (user_data);
 }
 
+/* AdwComboRow ellipsizes both the label previewing the current selection and the
+ * ones in its dropdown, and exposes neither a property to stop it nor the labels
+ * themselves. They are plain GtkLabels in the row's widget tree though, so reach
+ * them by walking it and turn ellipsization off, showing the longer backend
+ * descriptions in full. */
 static void
+disable_label_ellipsize (GtkWidget *widget)
+{
+    if (GTK_IS_LABEL (widget))
+    {
+        gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_NONE);
+        gtk_label_set_max_width_chars (GTK_LABEL (widget), -1);
+    }
+
+    for (GtkWidget *child = gtk_widget_get_first_child (widget);
+         child;
+         child = gtk_widget_get_next_sibling (child))
+        disable_label_ellipsize (child);
+}
+
+static void
+disable_popover_ellipsize (gpointer data)
+{
+    disable_label_ellipsize (data);
+    g_object_unref (data);
+}
+
+/* The dropdown labels only exist once the popover's list view has been allocated,
+ * which happens after "map"; defer to an idle so they are there when we walk it.
+ * The ref keeps the popover alive in case the window is torn down meanwhile. */
+static void
+on_backend_popover_mapped (GtkWidget *popover,
+                           gpointer   user_data G_GNUC_UNUSED)
+{
+    guint id = g_idle_add_once (disable_popover_ellipsize, g_object_ref (popover));
+    g_source_set_name_by_id (id, "[gpaste] disable combo dropdown ellipsize");
+}
+
+/* Disable ellipsization on the preview label now and, since the dropdown labels
+ * are (re)built every time it opens, re-run the walk whenever the popover maps. */
+static void
+disable_backend_combo_ellipsize (GtkWidget *widget)
+{
+    if (GTK_IS_LABEL (widget))
+    {
+        gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_NONE);
+        gtk_label_set_max_width_chars (GTK_LABEL (widget), -1);
+    }
+    else if (GTK_IS_POPOVER (widget))
+        g_signal_connect (widget, "map", G_CALLBACK (on_backend_popover_mapped), NULL);
+
+    for (GtkWidget *child = gtk_widget_get_first_child (widget);
+         child;
+         child = gtk_widget_get_next_sibling (child))
+        disable_backend_combo_ellipsize (child);
+}
+
+/* Returns TRUE only if every history was copied into @chosen and reads back with
+ * the expected size, so the caller never deletes the originals on a failed write
+ * (e.g. an encrypted write that ran out of memory deriving the key). */
+static gboolean
 import_histories (GPasteSettings *settings,
                   GPasteStorage   chosen)
 {
     g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (G_PASTE_STORAGE_PREVIOUS, settings);
     g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new (chosen, settings);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
+    gboolean ok = TRUE;
 
     for (GStrv name = names; name && *name; ++name)
     {
@@ -122,7 +190,18 @@ import_histories (GPasteSettings *settings,
         g_paste_storage_backend_read_history (previous, *name, &history, &size);
         g_paste_storage_backend_write_history (next, *name, history);
         g_list_free_full (history, g_object_unref);
+
+        GList *written = NULL;
+        gsize written_size = 0;
+
+        g_paste_storage_backend_read_history (next, *name, &written, &written_size);
+        g_list_free_full (written, g_object_unref);
+
+        if (written_size != size)
+            ok = FALSE;
     }
+
+    return ok;
 }
 
 static void
@@ -146,10 +225,17 @@ apply_migration (MigrationData *self,
 
     g_paste_settings_set_storage_backend (self->settings, chosen);
 
+    /* Only delete the old data once the import (if any) is confirmed, so a failed
+     * import can never wipe the history it was meant to migrate. */
+    gboolean imported = TRUE;
+
     if (import && can_import (chosen))
-        import_histories (self->settings, chosen);
-    if (cleanup)
+        imported = import_histories (self->settings, chosen);
+
+    if (cleanup && imported)
         cleanup_histories (self->settings);
+    else if (cleanup)
+        g_warning ("History import failed; keeping the old data instead of deleting it");
 
     g_paste_settings_set_storage_backend_revision (self->settings, G_PASTE_STORAGE_BACKEND_REVISION);
 
@@ -215,6 +301,26 @@ on_close_request (GtkWindow *window G_GNUC_UNUSED,
     return GDK_EVENT_PROPAGATE;
 }
 
+/* Escape dismisses the dialog just like the window's close button: route it
+ * through gtk_window_close() (which emits "close-request" -> on_close_request),
+ * not gtk_window_destroy(), so the dismissal path runs and the revision stays
+ * untouched. */
+static gboolean
+on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
+                guint                  keyval,
+                guint                  keycode    G_GNUC_UNUSED,
+                GdkModifierType        state      G_GNUC_UNUSED,
+                gpointer               user_data)
+{
+    MigrationData *self = user_data;
+
+    if (keyval != GDK_KEY_Escape)
+        return GDK_EVENT_PROPAGATE;
+
+    gtk_window_close (self->window);
+    return GDK_EVENT_STOP;
+}
+
 /**
  * g_paste_storage_migration_show:
  * @application: the #GtkApplication to anchor the dialog to
@@ -251,6 +357,7 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     GtkWidget *window = adw_application_window_new (application);
     self->window = GTK_WINDOW (window);
     gtk_window_set_title (self->window, _("Storage migration"));
+    gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
     gtk_window_set_default_size (self->window, 480, -1);
     gtk_window_set_modal (self->window, TRUE);
 
@@ -280,7 +387,9 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (backend_row), _("Storage backend"));
     adw_combo_row_set_model (self->backend_row, G_LIST_MODEL (backends));
     g_object_unref (backends);
+
     adw_combo_row_set_selected (self->backend_row, index_for_backend (self, suggested));
+    disable_backend_combo_ellipsize (backend_row);
 
     GtkWidget *import_row = adw_switch_row_new ();
     self->import_row = ADW_SWITCH_ROW (import_row);
@@ -318,6 +427,10 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     g_signal_connect (cleanup_row, "notify::active", G_CALLBACK (on_state_changed), self);
     g_signal_connect (window, "close-request", G_CALLBACK (on_close_request), self);
     g_object_set_data_full (G_OBJECT (window), "gpaste-migration-data", self, migration_data_free);
+
+    GtkEventController *key_controller = gtk_event_controller_key_new ();
+    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self);
+    gtk_widget_add_controller (window, key_controller);
 
     update_state (self);
 
@@ -374,6 +487,12 @@ passphrase_deliver (PassphraseData *self,
 
     self->delivered = TRUE;
 
+    /* An empty passphrase is no passphrase: deliver NULL so callers treat it as
+     * a dismissal rather than configuring an unprotected "encrypted" history
+     * (they only null-check the pointer, not its contents). */
+    if (passphrase && !*passphrase)
+        passphrase = NULL;
+
     if (self->done)
         self->done (passphrase, self->user_data);
 }
@@ -404,6 +523,24 @@ on_passphrase_close (GtkWindow *window G_GNUC_UNUSED,
     return GDK_EVENT_PROPAGATE;
 }
 
+/* Escape dismisses the prompt like the close button: gtk_window_close() emits
+ * "close-request" (on_passphrase_close), which delivers NULL. */
+static gboolean
+on_passphrase_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
+                           guint                  keyval,
+                           guint                  keycode    G_GNUC_UNUSED,
+                           GdkModifierType        state      G_GNUC_UNUSED,
+                           gpointer               user_data)
+{
+    PassphraseData *self = user_data;
+
+    if (keyval != GDK_KEY_Escape)
+        return GDK_EVENT_PROPAGATE;
+
+    gtk_window_close (self->window);
+    return GDK_EVENT_STOP;
+}
+
 /**
  * g_paste_storage_migration_prompt_passphrase:
  * @application: the #GtkApplication to anchor the dialog to
@@ -429,6 +566,7 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
     GtkWidget *window = adw_application_window_new (application);
     self->window = GTK_WINDOW (window);
     gtk_window_set_title (self->window, _("Encrypted history"));
+    gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
     gtk_window_set_default_size (self->window, 420, -1);
     gtk_window_set_modal (self->window, TRUE);
 
@@ -478,6 +616,10 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
 
     g_signal_connect (window, "close-request", G_CALLBACK (on_passphrase_close), self);
     g_object_set_data_full (G_OBJECT (window), "gpaste-passphrase-data", self, g_free);
+
+    GtkEventController *key_controller = gtk_event_controller_key_new ();
+    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_passphrase_key_pressed), self);
+    gtk_widget_add_controller (window, key_controller);
 
     gtk_window_present (self->window);
 }
