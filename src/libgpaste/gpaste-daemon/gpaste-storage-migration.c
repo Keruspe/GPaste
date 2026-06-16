@@ -502,7 +502,8 @@ on_prepare_passphrase (const gchar *passphrase,
 
 void
 g_paste_storage_migration_prepare (GtkApplication *application,
-                                   GPasteSettings *settings)
+                                   GPasteSettings *settings,
+                                   gboolean        force)
 {
     g_return_if_fail (GTK_IS_APPLICATION (application));
     g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
@@ -511,8 +512,9 @@ g_paste_storage_migration_prepare (GtkApplication *application,
     g_paste_storage_migration_register_action (application, settings);
 
     /* Let the user pick (or confirm) where the history is stored before the
-     * daemon starts persisting anything. */
-    if (g_paste_storage_migration_needed (settings))
+     * daemon starts persisting anything. @force skips the revision check so the
+     * standalone helper always shows the dialog when launched explicitly. */
+    if (force || g_paste_storage_migration_needed (settings))
     {
         g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
 

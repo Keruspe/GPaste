@@ -634,3 +634,17 @@ g_paste_util_ensure_history_dir_exists (void)
 
     return TRUE;
 }
+
+/**
+ * g_paste_util_spawn_storage_migration:
+ * @error: (nullable): a #GError, or %NULL
+ *
+ * Spawn the storage-migration helper executable.
+ *
+ * Returns: (transfer full) (nullable): the new #GSubprocess, or %NULL on error
+ */
+G_PASTE_VISIBLE GSubprocess *
+g_paste_util_spawn_storage_migration (GError **error)
+{
+    return g_subprocess_new (G_SUBPROCESS_FLAGS_NONE, error, PKGLIBEXECDIR "/gpaste-daemon-storage-migration", NULL);
+}

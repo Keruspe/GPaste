@@ -54,4 +54,6 @@ GFile *g_paste_util_get_history_file      (const gchar *name,
 
 gboolean g_paste_util_ensure_history_dir_exists (void);
 
+GSubprocess *g_paste_util_spawn_storage_migration (GError **error);
+
 G_END_DECLS

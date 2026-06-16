@@ -223,6 +223,7 @@ global:
     g_paste_util_read_pid_file;
     g_paste_util_replace;
     g_paste_util_spawn;
+    g_paste_util_spawn_storage_migration;
     g_paste_util_spawn_sync;
     g_paste_util_write_pid_file;
     g_paste_util_xml_decode;

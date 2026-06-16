@@ -23,11 +23,16 @@ typedef void (*GPasteStoragePassphraseFunc) (const gchar *passphrase,
 gboolean g_paste_storage_migration_needed (GPasteSettings *settings);
 
 /* Synchronously get the history store ready before the daemon loads it: register
- * the migration action, run the migration dialog if the revision changed, and
- * (when encryption is enabled) unlock an encrypted history from the keyring or a
- * passphrase prompt. Spins a nested main loop while a dialog is up. */
+ * the migration action, run the migration dialog, and (when encryption is
+ * enabled) unlock an encrypted history from the keyring or a passphrase prompt.
+ * Spins a nested main loop while a dialog is up. When @force is %FALSE the dialog
+ * is only shown if the stored revision changed (g_paste_storage_migration_needed);
+ * when %TRUE it is always shown. Deciding whether a migration is needed is the
+ * launcher's job (the standalone daemon, or daemon.js before spawning the helper),
+ * so the helper executable always forces the dialog. */
 void g_paste_storage_migration_prepare (GtkApplication *application,
-                                        GPasteSettings *settings);
+                                        GPasteSettings *settings,
+                                        gboolean        force);
 
 /* Ask the user for the encrypted history passphrase. @confirm asks for it twice
  * (with a data-loss warning) when setting up a new encrypted history; otherwise

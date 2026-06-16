@@ -88,7 +88,7 @@ main (gint argc, gchar *argv[])
     /* Get the history store ready (backend choice + encrypted-history unlock)
      * before the daemon starts persisting anything. */
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    g_paste_storage_migration_prepare (app, settings);
+    g_paste_storage_migration_prepare (app, settings, FALSE);
 
     g_autoptr (GPasteDaemon) g_paste_daemon = g_paste_daemon_new_gdk (settings);
     g_autoptr (GPasteBusObject) search_provider = g_paste_search_provider_new ();
