@@ -8,7 +8,6 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {GPasteAboutItem} from './aboutItem.js';
-import {GPastePadding} from './padding.js';
 import {GPasteUiItem} from './uiItem.js';
 
 export const GPasteActions = GObject.registerClass(
@@ -20,18 +19,17 @@ class GPasteActions extends PopupBaseMenuItem {
         });
 
         this.setOrnament(Ornament.NONE);
-        // Add padding at the beginning and end so that our contents is centered
-        this.add_child(new GPastePadding());
-        // A homogeneous box keeps every action button the same width,
-        // regardless of how long its label is.
+        // A homogeneous box keeps every action button the same width, regardless
+        // of how long its label is; centering it keeps the row balanced.
         const box = new St.Widget({
+            x_expand: true,
+            x_align: Clutter.ActorAlign.CENTER,
             layout_manager: new Clutter.BoxLayout({homogeneous: true}),
         });
         box.add_child(new GPasteUiItem(menu));
         box.add_child(emptyHistoryItem);
         box.add_child(new GPasteAboutItem(client, menu));
         this.add_child(box);
-        this.add_child(new GPastePadding());
     }
 
     // The menu's Up/Down navigation lands on one of our buttons, but they sit

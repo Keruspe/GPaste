@@ -11,7 +11,6 @@ shell_extension_files = [
   'extension.js',
   'indicator.js',
   'item.js',
-  'padding.js',
   'prefs.js',
   'searchItem.js',
   'stateSwitch.js',
