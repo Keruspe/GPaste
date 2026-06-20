@@ -21,6 +21,7 @@ typedef struct
     GtkLabel       *index_label;
     GtkInscription *label;
     GtkPicture     *thumbnail;
+    GtkWidget      *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
     gboolean        editable;
     gboolean        uploadable;
 } GPasteUiItemSkeletonPrivate;
@@ -233,6 +234,8 @@ g_paste_ui_item_skeleton_set_thumbnail (GPasteUiItemSkeleton *self,
     GPasteUiItemSkeletonPrivate *priv = g_paste_ui_item_skeleton_get_instance_private (self);
 
     gtk_picture_set_paintable (priv->thumbnail, texture ? GDK_PAINTABLE (texture) : NULL);
+    /* The cached hover preview is tied to the old paintable; drop it. */
+    g_clear_object (&priv->tooltip_preview);
     g_paste_ui_item_skeleton_on_images_preview_changed (priv->settings, NULL, priv);
 }
 
@@ -248,29 +251,37 @@ g_paste_ui_item_skeleton_on_thumbnail_query_tooltip (GtkWidget  *widget,
                                                      gint        y        G_GNUC_UNUSED,
                                                      gboolean    keyboard G_GNUC_UNUSED,
                                                      GtkTooltip *tooltip,
-                                                     gpointer    user_data G_GNUC_UNUSED)
+                                                     gpointer    user_data)
 {
+    GPasteUiItemSkeletonPrivate *priv = user_data;
     GdkPaintable *paintable = gtk_picture_get_paintable (GTK_PICTURE (widget));
 
     if (!paintable)
         return FALSE;
 
-    GtkWidget *preview = gtk_picture_new_for_paintable (paintable);
-    gtk_picture_set_content_fit (GTK_PICTURE (preview), GTK_CONTENT_FIT_CONTAIN);
-
-    gint width = gdk_paintable_get_intrinsic_width (paintable);
-    gint height = gdk_paintable_get_intrinsic_height (paintable);
-
-    if (width > 0 && height > 0)
+    /* query-tooltip fires repeatedly while hovering; build the scaled preview
+     * once per thumbnail and reuse it (cleared in set_thumbnail/dispose). */
+    if (!priv->tooltip_preview)
     {
-        gdouble scale = MIN (1.0, MIN ((gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / width,
-                                       (gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / height));
-        gtk_widget_set_size_request (preview, width * scale, height * scale);
-    }
-    else
-        gtk_widget_set_size_request (preview, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE);
+        GtkWidget *preview = gtk_picture_new_for_paintable (paintable);
+        gtk_picture_set_content_fit (GTK_PICTURE (preview), GTK_CONTENT_FIT_CONTAIN);
 
-    gtk_tooltip_set_custom (tooltip, preview);
+        gint width = gdk_paintable_get_intrinsic_width (paintable);
+        gint height = gdk_paintable_get_intrinsic_height (paintable);
+
+        if (width > 0 && height > 0)
+        {
+            gdouble scale = MIN (1.0, MIN ((gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / width,
+                                           (gdouble) G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE / height));
+            gtk_widget_set_size_request (preview, width * scale, height * scale);
+        }
+        else
+            gtk_widget_set_size_request (preview, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE, G_PASTE_UI_ITEM_SKELETON_PREVIEW_SIZE);
+
+        priv->tooltip_preview = g_object_ref_sink (preview);
+    }
+
+    gtk_tooltip_set_custom (tooltip, priv->tooltip_preview);
 
     return TRUE;
 }
@@ -325,6 +336,7 @@ g_paste_ui_item_skeleton_dispose (GObject *object)
 
     g_clear_object (&priv->settings_signals);
     g_clear_object (&priv->settings);
+    g_clear_object (&priv->tooltip_preview);
 
     g_clear_pointer (&priv->actions, g_slist_free);
 
@@ -380,7 +392,7 @@ g_paste_ui_item_skeleton_init (GPasteUiItemSkeleton *self)
     gtk_widget_set_hexpand (thumbnail, TRUE);
     gtk_widget_set_halign (thumbnail, GTK_ALIGN_FILL);
     gtk_widget_set_has_tooltip (thumbnail, TRUE);
-    g_signal_connect (thumbnail, "query-tooltip", G_CALLBACK (g_paste_ui_item_skeleton_on_thumbnail_query_tooltip), NULL);
+    g_signal_connect (thumbnail, "query-tooltip", G_CALLBACK (g_paste_ui_item_skeleton_on_thumbnail_query_tooltip), priv);
 
     GtkWidget *thumbnail_container = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_hexpand (thumbnail_container, FALSE);
