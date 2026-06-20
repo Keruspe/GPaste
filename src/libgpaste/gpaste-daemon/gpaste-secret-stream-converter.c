@@ -150,6 +150,7 @@ derive_key (GPasteSecretStreamConverterPrivate *priv,
 
 static gboolean
 encrypt_process (GPasteSecretStreamConverterPrivate *priv,
+                 gboolean                            flush,
                  gboolean                            at_end,
                  GError                            **error)
 {
@@ -180,6 +181,12 @@ encrypt_process (GPasteSecretStreamConverterPrivate *priv,
      * trailing bytes are available to become the FINAL chunk at end. */
     while (priv->in->len > CHUNK_SIZE)
         push_chunk (priv, CHUNK_SIZE, TAG_MESSAGE);
+
+    /* On an explicit flush, also emit the buffered partial chunk so all the input
+     * we were handed reaches the base stream (the GConverter flush contract); a
+     * later write simply continues the stream and at_end still emits FINAL. */
+    if (flush && !at_end && priv->in->len)
+        push_chunk (priv, priv->in->len, TAG_MESSAGE);
 
     if (at_end && !priv->finished)
     {
@@ -289,8 +296,9 @@ g_paste_secret_stream_converter_convert (GConverter      *converter,
         *bytes_read = inbuf_size;
     }
 
+    gboolean flush = (flags & G_CONVERTER_FLUSH) != 0;
     gboolean ok = (priv->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
-        ? encrypt_process (priv, at_end, error)
+        ? encrypt_process (priv, flush, at_end, error)
         : decrypt_process (priv, at_end, error);
 
     if (!ok)
