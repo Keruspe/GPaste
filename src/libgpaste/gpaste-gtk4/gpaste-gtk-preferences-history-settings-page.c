@@ -12,6 +12,20 @@ struct _GPasteGtkPreferencesHistorySettingsPage
 G_PASTE_GTK_DEFINE_TYPE (PreferencesHistorySettingsPage, preferences_history_settings_page, G_PASTE_TYPE_GTK_PREFERENCES_PAGE)
 
 static void
+on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
+                                gpointer      user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GError) error = NULL;
+
+    /* The dialog needs gtk_init/Adw and a nested main loop, so run it out of
+     * process in the dedicated helper rather than inside the preferences. */
+    g_autoptr (GSubprocess) proc = g_paste_util_spawn_storage_migration (&error);
+
+    if (!proc)
+        g_warning ("Could not start the storage migration: %s", error->message);
+}
+
+static void
 g_paste_gtk_preferences_history_settings_page_class_init (GPasteGtkPreferencesHistorySettingsPageClass *klass G_GNUC_UNUSED)
 {
 }
@@ -73,6 +87,15 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
                                                      G_PASTE_ELEMENT_SIZE_SETTING,
                                                      0, 511, 5,
                                                      settings);
+    g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
+
+    group = g_paste_gtk_preferences_group_new (_("Storage"));
+    adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
+                                           _("Choose how the history is stored on disk (plain or encrypted)."));
+    g_paste_gtk_preferences_group_add_button (group,
+                                              _("Change storage backend…"),
+                                              G_CALLBACK (on_storage_migration_activated),
+                                              NULL);
     g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
 
     return GTK_WIDGET (self);

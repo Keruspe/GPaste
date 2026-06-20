@@ -9,6 +9,7 @@ global:
     g_paste_gtk_preferences_behaviour_page_new;
 
     g_paste_gtk_preferences_group_add_boolean_setting;
+    g_paste_gtk_preferences_group_add_button;
     g_paste_gtk_preferences_group_add_range_setting;
     g_paste_gtk_preferences_group_add_shortcut_setting;
     g_paste_gtk_preferences_group_add_text_setting;

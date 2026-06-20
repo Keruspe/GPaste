@@ -282,6 +282,38 @@ g_paste_gtk_preferences_group_add_shortcut_setting (GPasteGtkPreferencesGroup *s
     return row;
 }
 
+/**
+ * g_paste_gtk_preferences_group_add_button:
+ * @self: a #GPasteGtkPreferencesGroup instance
+ * @label: the label to display
+ * @activated: (scope forever) (closure user_data): the callback to run when the row is activated
+ * @user_data: user data for @activated
+ *
+ * Add a button-like row to the current pane that runs @activated when clicked.
+ * Unlike the setting rows, this one is not bound to a key.
+ *
+ * Returns: (transfer none): the #AdwButtonRow we just added
+ */
+G_PASTE_VISIBLE AdwButtonRow *
+g_paste_gtk_preferences_group_add_button (GPasteGtkPreferencesGroup *self,
+                                          const gchar               *label,
+                                          GCallback                  activated,
+                                          gpointer                   user_data)
+{
+    g_return_val_if_fail (G_PASTE_IS_GTK_PREFERENCES_GROUP (self), NULL);
+    g_return_val_if_fail (label, NULL);
+
+    AdwButtonRow *row = ADW_BUTTON_ROW (adw_button_row_new ());
+
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), label);
+    if (activated)
+        g_signal_connect (row, "activated", activated, user_data);
+
+    adw_preferences_group_add (ADW_PREFERENCES_GROUP (self), GTK_WIDGET (row));
+
+    return row;
+}
+
 static void
 g_paste_gtk_preferences_group_class_init (GPasteGtkPreferencesGroupClass *klass G_GNUC_UNUSED)
 {

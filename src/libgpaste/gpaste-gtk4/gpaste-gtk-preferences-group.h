@@ -35,6 +35,11 @@ GtkWidget *g_paste_gtk_preferences_group_add_shortcut_setting (GPasteGtkPreferen
                                                                const gchar               *key,
                                                                GPasteSettings            *settings);
 
+AdwButtonRow *g_paste_gtk_preferences_group_add_button (GPasteGtkPreferencesGroup *self,
+                                                        const gchar               *label,
+                                                        GCallback                  activated,
+                                                        gpointer                   user_data);
+
 GPasteGtkPreferencesGroup *g_paste_gtk_preferences_group_new (const gchar *title);
 
 G_END_DECLS
