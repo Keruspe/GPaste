@@ -57,44 +57,38 @@ class GPasteItem extends PopupMenuItem {
 
     async setIndex(index) {
         const generation = ++this._generation;
-        const oldIndex = this._index;
         this._index = index;
         this._fakeIndex = false;
 
         if (index === -1) {
-            this._setValue(null, oldIndex);
+            this._setValue(null);
         } else {
             const item = await this._client.get_element_at_index(index);
             if (generation !== this._generation)
                 return;
             this._uuid = item.get_uuid();
-            this._setValue(item.get_value(), oldIndex);
+            this._setValue(item.get_value());
         }
     }
 
     async setUuid(uuid) {
         const generation = ++this._generation;
-        const oldIndex = this._index;
         this._index = -2;
         this._fakeIndex = true;
         this._uuid = uuid;
 
         if (uuid == null) {
-            this._setValue(null, oldIndex);
+            this._setValue(null);
         } else {
             const value = await this._client.get_element(uuid);
             if (generation !== this._generation)
                 return;
-            this._setValue(value, oldIndex);
+            this._setValue(value);
         }
     }
 
-    _setValue(value, oldIndex) {
-        if (this._index === 0)
-            this.label.set_style('font-weight: bold;');
-        else if (oldIndex === 0)
-            this.label.set_style(null);
-
+    _setValue(value) {
+        this.label.set_style(this._index === 0 ? 'font-weight: bold;' : null);
 
         if (this._index === -1) {
             this._uuid = null;
@@ -105,8 +99,7 @@ class GPasteItem extends PopupMenuItem {
             if (text !== this.label.get_text())
                 this.label.clutter_text.set_text(text);
 
-            if (oldIndex === -1)
-                this.show();
+            this.show();
         }
 
         this._deleteItem.setUuid(this._uuid);
