@@ -13,6 +13,7 @@ typedef struct
     GHashTable               *keybindings;  /* const gchar * (borrowed from _Keybinding) → _Keybinding * */
 
     GPasteSettings                *settings;
+    GSignalGroup                  *settings_signals;
     GPasteGlobalShortcutClient *provider;
     GSignalGroup                  *provider_signals;
 } GPasteKeybinderPrivate;
@@ -28,7 +29,6 @@ typedef struct
     GPasteKeybinder  *keybinder; /* not ref'd */
     GPasteKeybinding *binding;
     GPasteSettings   *settings;
-    GSignalGroup     *signal_group;
 } _Keybinding;
 
 static void
@@ -45,14 +45,6 @@ _keybinding_deactivate (_Keybinding *k)
         g_paste_keybinding_deactivate (k->binding);
 }
 
-static void
-_keybinding_rebind (_Keybinding    *k,
-                    GPasteSettings *settings G_GNUC_UNUSED)
-{
-    g_paste_keybinder_deactivate_all (k->keybinder);
-    g_paste_keybinder_activate_all (k->keybinder);
-}
-
 static _Keybinding *
 _keybinding_new (GPasteKeybinder  *keybinder,
                  GPasteKeybinding *binding,
@@ -64,11 +56,6 @@ _keybinding_new (GPasteKeybinder  *keybinder,
     k->binding = binding;
     k->settings = g_object_ref (settings);
 
-    g_autofree gchar *detailed_signal = g_strdup_printf ("rebind::%s", g_paste_keybinding_get_dconf_key (binding));
-
-    k->signal_group = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
-    g_signal_group_connect_swapped (k->signal_group, detailed_signal, G_CALLBACK (_keybinding_rebind), k);
-    g_signal_group_set_target (k->signal_group, settings);
     return k;
 }
 
@@ -76,10 +63,20 @@ static void
 _keybinding_free (gpointer data)
 {
     _Keybinding *k = data;
-    g_clear_object (&k->signal_group);
     g_object_unref (k->binding);
     g_object_unref (k->settings);
     g_free (k);
+}
+
+/* Any shortcut key change re-applies the whole set (a rebind reconfigures every
+ * binding anyway), so one shared "rebind" listener on the settings suffices
+ * instead of a GSignalGroup per binding. */
+static void
+on_setting_rebind (GPasteKeybinder *self,
+                   GPasteSettings  *settings G_GNUC_UNUSED)
+{
+    g_paste_keybinder_deactivate_all (self);
+    g_paste_keybinder_activate_all (self);
 }
 
 /**
@@ -185,6 +182,7 @@ g_paste_keybinder_dispose (GObject *object)
 
     if (priv->settings)
     {
+        g_clear_object (&priv->settings_signals);
         g_clear_object (&priv->settings);
         g_paste_global_shortcut_client_ungrab_all (priv->provider);
         g_clear_pointer (&priv->keybindings, g_hash_table_unref);
@@ -231,6 +229,10 @@ g_paste_keybinder_new (GPasteSettings                *settings,
 
     priv->settings = g_object_ref (settings);
     priv->provider = g_object_ref (provider);
+
+    GSignalGroup *settings_signals = priv->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
+    g_signal_group_connect_swapped (settings_signals, "rebind", G_CALLBACK (on_setting_rebind), self);
+    g_signal_group_set_target (settings_signals, settings);
 
     GSignalGroup *provider_signals = priv->provider_signals = g_signal_group_new (G_PASTE_TYPE_GLOBAL_SHORTCUT_CLIENT);
     g_signal_group_connect (provider_signals, "keybinding-activated", G_CALLBACK (on_keybinding_activated), priv);
