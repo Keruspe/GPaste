@@ -185,34 +185,32 @@ on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
 {
     GPasteUiWindow *self = user_data;
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
-    GtkWidget *focus = gtk_window_get_focus (GTK_WINDOW (self));
-    gboolean search_has_focus = focus == GTK_WIDGET (priv->search_entry);
-    gboolean search_in_progress = search_has_focus && gtk_entry_get_text_length (GTK_ENTRY (priv->search_entry));
-    gboolean other_entry_has_focus = focus && GTK_IS_EDITABLE (focus) && !search_has_focus;
 
-    switch (keyval)
+    if (keyval != GDK_KEY_Escape)
+        return GDK_EVENT_PROPAGATE;
+
+    if (gtk_search_bar_get_search_mode (priv->search_bar))
+        return GDK_EVENT_PROPAGATE;
+
+    if (gtk_action_bar_get_revealed (priv->merge_bar))
     {
-    case GDK_KEY_Escape:
-        if (priv->merge_bar && gtk_action_bar_get_revealed (priv->merge_bar))
-        {
-            exit_selection_mode (self);
-            return GDK_EVENT_STOP;
-        }
-        if (!search_in_progress)
-        {
-            gtk_window_close (GTK_WINDOW (self));
-            return GDK_EVENT_STOP;
-        }
-        break;
-    case GDK_KEY_Return:
-    case GDK_KEY_KP_Enter:
-    case GDK_KEY_ISO_Enter:
-        if (search_in_progress && g_paste_ui_history_select_first (priv->history))
-            return GDK_EVENT_STOP;
-        break;
+        exit_selection_mode (self);
+        return GDK_EVENT_STOP;
     }
 
-    return other_entry_has_focus ? GDK_EVENT_STOP : GDK_EVENT_PROPAGATE;
+    gtk_window_close (GTK_WINDOW (self));
+    return GDK_EVENT_STOP;
+}
+
+static void
+on_search_activate (GtkSearchEntry *entry,
+                    gpointer        user_data)
+{
+    GPasteUiWindowPrivate *priv = user_data;
+    const gchar *search = gtk_editable_get_text (GTK_EDITABLE (entry));
+
+    if (search && *search)
+        g_paste_ui_history_select_first (priv->history);
 }
 
 static void
@@ -222,25 +220,6 @@ on_search (GtkSearchEntry *entry,
     GPasteUiWindowPrivate *priv = user_data;
 
     g_paste_ui_history_search (priv->history, gtk_editable_get_text (GTK_EDITABLE (entry)));
-}
-
-static gboolean
-focus_search (gpointer user_data)
-{
-    GPasteUiWindow *self = user_data;
-    const GPasteUiWindowPrivate *priv = _g_paste_ui_window_get_instance_private (self);
-    GtkWindow *win = user_data;
-    GtkWidget *widget = user_data;
-
-    if (!GTK_IS_WIDGET (widget))
-        return G_SOURCE_REMOVE;
-
-    if (!gtk_widget_get_realized (widget))
-        return G_SOURCE_CONTINUE;
-
-    gtk_window_set_focus (win, GTK_WIDGET (priv->search_entry));
-
-    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -478,6 +457,7 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     GtkSearchEntry *entry = priv->search_entry = g_paste_ui_search_bar_get_entry (priv->search_bar);
 
     GSignalGroup *search_signals = priv->search_signals = g_signal_group_new (GTK_TYPE_SEARCH_ENTRY);
+    g_signal_group_connect (search_signals, "activate", G_CALLBACK (on_search_activate), priv);
     g_signal_group_connect (search_signals, "search-changed", G_CALLBACK (on_search), priv);
     g_signal_group_set_target (search_signals, entry);
 
@@ -485,11 +465,9 @@ g_paste_ui_window_init (GPasteUiWindow *self)
     g_signal_group_connect (priv->client_signals, "switch-history", G_CALLBACK (on_switch_history), priv);
 
     GtkEventController *key_controller = gtk_event_controller_key_new ();
-    gtk_event_controller_set_propagation_phase (key_controller, GTK_PHASE_CAPTURE);
+    gtk_event_controller_set_propagation_phase (key_controller, GTK_PHASE_BUBBLE);
     g_signal_connect_object (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self, 0);
     gtk_widget_add_controller (GTK_WIDGET (self), key_controller);
-
-    g_source_set_name_by_id (g_idle_add (focus_search, self), "[GPaste] focus_search");
 }
 
 static void
