@@ -77,6 +77,7 @@ _shortcut_free (gpointer data)
 typedef struct
 {
     gchar     *session_handle;
+    gboolean   session_creating; /* a CreateSession round-trip is in flight */
     GPtrArray *shortcuts;  /* _Shortcut*, owned via _shortcut_free */
 } GPasteGlobalShortcutClientPrivate;
 
@@ -162,11 +163,16 @@ typedef struct
     GTask                         *task;
     GDBusConnection               *connection;
     guint                          signal_id;
+    guint                          timeout_id;
 } _SessionRequestData;
 
 static void
 session_request_data_free (_SessionRequestData *data)
 {
+    if (data->timeout_id)
+        g_source_remove (data->timeout_id);
+    if (data->signal_id)
+        g_dbus_connection_signal_unsubscribe (data->connection, data->signal_id);
     g_clear_object (&data->client);
     g_clear_object (&data->task);
     g_clear_object (&data->connection);
@@ -229,6 +235,10 @@ on_session_created (GDBusConnection *conn,
 {
     _SessionRequestData *data = user_data;
     g_dbus_connection_signal_unsubscribe (conn, data->signal_id);
+    data->signal_id = 0; /* already unsubscribed; don't let the free do it again */
+
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
+    priv->session_creating = FALSE;
 
     guint response;
     g_autoptr (GVariant) results = NULL;
@@ -251,7 +261,6 @@ on_session_created (GDBusConnection *conn,
         return;
     }
 
-    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
     g_set_str (&priv->session_handle, g_variant_get_string (handle_v, NULL));
 
     g_autoptr (GPasteGlobalShortcutClient) client = g_object_ref (data->client);
@@ -259,6 +268,24 @@ on_session_created (GDBusConnection *conn,
     session_request_data_free (data);
 
     start_bind_async (client, task);
+}
+
+/* The portal Request may never emit Response (e.g. a broken portal); recover so
+ * session_creating does not stay set forever, blocking every later grab. */
+static gboolean
+on_session_timeout (gpointer user_data)
+{
+    _SessionRequestData *data = user_data;
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
+
+    priv->session_creating = FALSE;
+    data->timeout_id = 0; /* this source is firing; don't let the free remove it */
+
+    g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_TIMED_OUT,
+                             "Timed out waiting for the GlobalShortcuts portal to create a session");
+    session_request_data_free (data);
+
+    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -272,6 +299,8 @@ on_create_session_method_done (GObject      *source,
 
     if (!ret)
     {
+        GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (data->client);
+        priv->session_creating = FALSE;
         g_task_return_error (data->task, g_steal_pointer (&error));
         session_request_data_free (data);
         return;
@@ -285,6 +314,9 @@ on_create_session_method_done (GObject      *source,
         "org.freedesktop.portal.Request", "Response",
         request_path, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
         on_session_created, data, NULL);
+
+    data->timeout_id = g_timeout_add_seconds (30, on_session_timeout, data);
+    g_source_set_name_by_id (data->timeout_id, "[GPaste] portal session timeout");
 }
 
 static void
@@ -299,6 +331,9 @@ start_create_session_async (GPasteGlobalShortcutClient *self,
     data->task = g_object_ref (task);
     data->connection = g_object_ref (connection);
     data->signal_id = 0;
+    data->timeout_id = 0; /* only set once the session is created; the synchronous
+                           * failure path frees data before then and would
+                           * otherwise g_source_remove() an uninitialised id */
 
     g_auto (GVariantBuilder) options;
     g_variant_builder_init (&options, G_VARIANT_TYPE_VARDICT);
@@ -326,6 +361,26 @@ on_provider_bind_done (GObject      *source   G_GNUC_UNUSED,
         g_warning ("GPasteGlobalShortcutClient: BindShortcuts failed: %s", error->message);
 }
 
+/* The portal binds shortcuts to a session for the session's lifetime, so the
+ * only way to (re)bind a different set is to drop the session and create a new
+ * one. Close the current session, if any. */
+static void
+close_session (GPasteGlobalShortcutClient *self)
+{
+    GPasteGlobalShortcutClientPrivate *priv = g_paste_global_shortcut_client_get_instance_private (self);
+
+    if (!priv->session_handle)
+        return;
+
+    g_dbus_connection_call (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),
+                            g_dbus_proxy_get_name (G_DBUS_PROXY (self)),
+                            priv->session_handle,
+                            "org.freedesktop.portal.Session", "Close",
+                            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+
+    g_clear_pointer (&priv->session_handle, g_free);
+}
+
 /**
  * g_paste_global_shortcut_client_grab_all:
  * @self: a #GPasteGlobalShortcutClient
@@ -347,12 +402,23 @@ g_paste_global_shortcut_client_grab_all (GPasteGlobalShortcutClient     *self,
     for (const GPasteKeybindingAccelerator *a = accels; a->id; a++)
         g_ptr_array_add (priv->shortcuts, _shortcut_new (a->id, a->accelerator, a->description));
 
+    /* A CreateSession is already in flight: it will bind priv->shortcuts (the
+     * latest set) when it completes, so let it finish rather than starting a
+     * second session. */
+    if (priv->session_creating)
+        return;
+
     g_autoptr (GTask) task = g_task_new (self, NULL, on_provider_bind_done, NULL);
 
-    if (priv->session_handle)
-        start_bind_async (self, task);
-    else if (priv->shortcuts->len)
+    /* Drop any existing session and create a fresh one so the new shortcuts
+     * actually take effect. */
+    close_session (self);
+
+    if (priv->shortcuts->len)
+    {
+        priv->session_creating = TRUE;
         start_create_session_async (self, task);
+    }
     else
         g_task_return_boolean (task, TRUE);
 }
@@ -372,11 +438,10 @@ g_paste_global_shortcut_client_ungrab_all (GPasteGlobalShortcutClient *self)
 
     g_ptr_array_set_size (priv->shortcuts, 0);
 
-    if (!priv->session_handle)
-        return;
-
-    g_autoptr (GTask) task = g_task_new (self, NULL, on_provider_bind_done, NULL);
-    start_bind_async (self, task);
+    /* If a session is being created it will bind the now-empty set; otherwise
+     * just drop the session, there is nothing left to bind. */
+    if (!priv->session_creating)
+        close_session (self);
 }
 
 /**********************/

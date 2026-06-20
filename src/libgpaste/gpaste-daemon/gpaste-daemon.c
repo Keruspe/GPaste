@@ -576,7 +576,7 @@ on_portal_client_ready (GObject      *source_object G_GNUC_UNUSED,
                         GAsyncResult *res,
                         gpointer      user_data)
 {
-    GPasteDaemon *self = user_data;
+    g_autoptr (GPasteDaemon) self = user_data; /* ref taken at the call site */
     GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteGlobalShortcutClient) portal_client = g_paste_global_shortcut_client_new_finish (res, &error);
@@ -633,7 +633,8 @@ g_paste_daemon_init (GPasteDaemon *self)
                                     priv);
 
     g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
-    g_paste_global_shortcut_client_new (on_portal_client_ready, self);
+    /* Hold a ref across the async call: the callback owns it (g_autoptr). */
+    g_paste_global_shortcut_client_new (on_portal_client_ready, g_object_ref (self));
 }
 
 /**
