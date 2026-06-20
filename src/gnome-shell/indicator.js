@@ -303,10 +303,7 @@ class GPasteIndicator extends Button {
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
-        this._clearRows();
-        this._scrollToTop();
-        this._loadMore();
-        this._updateVisibility(this._available === 0);
+        this._rebuild(this._available === 0);
     }
 
     async _runSearch() {
@@ -320,10 +317,16 @@ class GPasteIndicator extends Button {
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
+        this._rebuild(this._searchResults.length === 0);
+    }
+
+    // Tear down the materialised rows and refill from the top; shared by the
+    // full reload and the search paths.
+    _rebuild(empty) {
         this._clearRows();
         this._scrollToTop();
         this._loadMore();
-        this._updateVisibility(this._searchResults.length === 0);
+        this._updateVisibility(empty);
     }
 
     _reloadCurrent() {
