@@ -12,9 +12,9 @@
 #include <gpaste-daemon/gpaste-storage-keyring.h>
 #endif
 
-/* The backend the history used before this dialog ever ran: everything was
- * stored on disk, so "file" is what we import from and clean up. */
-#define G_PASTE_STORAGE_PREVIOUS G_PASTE_STORAGE_FILE
+#ifdef G_PASTE_ENABLE_PWQUALITY
+#include <pwquality.h>
+#endif
 
 typedef struct
 {
@@ -29,12 +29,78 @@ typedef struct
     AdwSwitchRow                  *cleanup_row;
     AdwBanner                     *warning;
 
+    /* The backend the history currently lives in (detected from the files on
+     * disk): what we import from and clean up. */
+    GPasteStorage                  current;
+
     /* The backends offered by the combo, in display order. */
     GPasteStorage                  backends[G_PASTE_N_STORAGE];
     guint                          n_backends;
 
     gboolean                       applied;
 } MigrationData;
+
+/* Work out which backend the history currently lives in by looking at the files
+ * on disk, independent of the (possibly stale or unset) settings value. The
+ * active history is checked first; failing that, whichever flavour has the most
+ * files on disk wins, so an existing setup is still recognised. */
+static GPasteStorage
+detect_current_backend (GPasteSettings *settings)
+{
+    const gchar *name = g_paste_settings_get_history_name (settings);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_autoptr (GFile) encrypted = g_paste_util_get_history_file (name, "xmls");
+
+    if (g_file_query_exists (encrypted, NULL))
+        return G_PASTE_STORAGE_ENCRYPTED_FILE;
+#endif
+
+    g_autoptr (GFile) plain = g_paste_util_get_history_file (name, "xml");
+
+    if (g_file_query_exists (plain, NULL))
+        return G_PASTE_STORAGE_FILE;
+
+    /* No history under the active name: fall back to the more-used flavour. */
+    guint plain_count = 0;
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    guint encrypted_count = 0;
+#endif
+    g_autoptr (GFile) dir = g_paste_util_get_history_dir ();
+    g_autoptr (GFileEnumerator) children = g_file_enumerate_children (dir,
+                                                                      G_FILE_ATTRIBUTE_STANDARD_NAME,
+                                                                      G_FILE_QUERY_INFO_NONE,
+                                                                      NULL, NULL);
+
+    if (children)
+    {
+        GFileInfo *info;
+
+        while ((info = g_file_enumerator_next_file (children, NULL, NULL)))
+        {
+            g_autoptr (GFileInfo) child = info;
+            /* ".xmls" never matches the ".xml" suffix, so order does not matter. */
+            const gchar *child_name = g_file_info_get_name (child);
+
+            if (g_str_has_suffix (child_name, ".xml"))
+                ++plain_count;
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+            else if (g_str_has_suffix (child_name, ".xmls"))
+                ++encrypted_count;
+#endif
+        }
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    if (encrypted_count > 0 && encrypted_count >= plain_count)
+        return G_PASTE_STORAGE_ENCRYPTED_FILE;
+#endif
+
+    if (plain_count > 0)
+        return G_PASTE_STORAGE_FILE;
+
+    return G_PASTE_STORAGE_NOOP;
+}
 
 /* The combo lists the backends in a built-at-runtime order; map both ways. */
 static GPasteStorage
@@ -73,28 +139,32 @@ g_paste_storage_migration_needed (GPasteSettings *settings)
     return g_paste_settings_get_storage_backend_revision (settings) != G_PASTE_STORAGE_BACKEND_REVISION;
 }
 
-/* "Import" only makes sense when we are moving to a different backend that
- * actually stores something; copying file -> file or importing into "no
- * storage" is pointless, so the toggle is disabled in those cases. */
+/* "Import" only makes sense when we are moving from a backend that has stored
+ * data into a different one that also stores something; copying file -> file,
+ * importing into "no storage", or importing from an empty "no storage" source
+ * are all pointless, so the toggle is disabled in those cases. */
 static gboolean
-can_import (GPasteStorage chosen)
+can_import (MigrationData *self,
+            GPasteStorage  chosen)
 {
-    return chosen != G_PASTE_STORAGE_NOOP && chosen != G_PASTE_STORAGE_PREVIOUS;
+    return self->current != G_PASTE_STORAGE_NOOP &&
+           chosen != G_PASTE_STORAGE_NOOP &&
+           chosen != self->current;
 }
 
 static void
 update_state (MigrationData *self)
 {
     GPasteStorage chosen = backend_for_index (self, adw_combo_row_get_selected (self->backend_row));
-    gboolean backend_changes = chosen != G_PASTE_STORAGE_PREVIOUS;
-    gboolean import_possible = can_import (chosen);
+    /* There is only "old data" to delete once we actually leave a backend that
+     * stored something; otherwise deleting it would throw away what we kept. */
+    gboolean backend_changes = self->current != G_PASTE_STORAGE_NOOP && chosen != self->current;
+    gboolean import_possible = can_import (self, chosen);
 
     gtk_widget_set_sensitive (GTK_WIDGET (self->import_row), import_possible);
     if (!import_possible)
         adw_switch_row_set_active (self->import_row, FALSE);
 
-    /* There is only "old data" to delete once we actually leave the previous
-     * backend; otherwise deleting it would throw away what we just kept. */
     gtk_widget_set_sensitive (GTK_WIDGET (self->cleanup_row), backend_changes);
     if (!backend_changes)
         adw_switch_row_set_active (self->cleanup_row, FALSE);
@@ -175,9 +245,10 @@ disable_backend_combo_ellipsize (GtkWidget *widget)
  * (e.g. an encrypted write that ran out of memory deriving the key). */
 static gboolean
 import_histories (GPasteSettings *settings,
+                  GPasteStorage   current,
                   GPasteStorage   chosen)
 {
-    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (G_PASTE_STORAGE_PREVIOUS, settings);
+    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (current, settings);
     g_autoptr (GPasteStorageBackend) next = g_paste_storage_backend_new (chosen, settings);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
     gboolean ok = TRUE;
@@ -205,9 +276,10 @@ import_histories (GPasteSettings *settings,
 }
 
 static void
-cleanup_histories (GPasteSettings *settings)
+cleanup_histories (GPasteSettings *settings,
+                   GPasteStorage   current)
 {
-    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (G_PASTE_STORAGE_PREVIOUS, settings);
+    g_autoptr (GPasteStorageBackend) previous = g_paste_storage_backend_new (current, settings);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (previous, NULL);
 
     for (GStrv name = names; name && *name; ++name)
@@ -229,11 +301,11 @@ apply_migration (MigrationData *self,
      * import can never wipe the history it was meant to migrate. */
     gboolean imported = TRUE;
 
-    if (import && can_import (chosen))
-        imported = import_histories (self->settings, chosen);
+    if (import && can_import (self, chosen))
+        imported = import_histories (self->settings, self->current, chosen);
 
     if (cleanup && imported)
-        cleanup_histories (self->settings);
+        cleanup_histories (self->settings, self->current);
     else if (cleanup)
         g_warning ("History import failed; keeping the old data instead of deleting it");
 
@@ -249,6 +321,27 @@ apply_migration (MigrationData *self,
         done (done_data);
 }
 
+#ifdef G_PASTE_ENABLE_LIBSECRET
+/* Try the passphrase remembered in the keyring, discarding it when it has gone
+ * stale and no longer decrypts the history (so a stale entry never gets used).
+ * Returns %TRUE when a usable passphrase is now set. */
+static gboolean
+try_keyring_passphrase (GPasteSettings *settings)
+{
+    if (!g_paste_storage_keyring_apply ())
+        return FALSE;
+
+    if (!g_paste_file_backend_passphrase_can_decrypt (settings, g_paste_storage_backend_get_passphrase ()))
+    {
+        g_warning ("The passphrase stored in the keyring does not unlock the history; asking for it");
+        g_paste_storage_backend_set_passphrase (NULL);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+#endif
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 static void
 on_passphrase_set (const gchar *passphrase,
@@ -263,6 +356,31 @@ on_passphrase_set (const gchar *passphrase,
     g_paste_storage_backend_set_passphrase (passphrase);
     apply_migration (self, G_PASTE_STORAGE_ENCRYPTED_FILE);
 }
+
+/* The existing encrypted history we are migrating away from has to be decrypted
+ * to import (or listed to delete), so it needs its own passphrase. Verify it
+ * unlocks the data and re-prompt on a wrong one, then apply with the chosen
+ * target. */
+static void
+on_source_passphrase_set (const gchar *passphrase,
+                          gpointer     user_data)
+{
+    MigrationData *self = user_data;
+
+    if (!passphrase)
+        return;
+
+    if (!g_paste_file_backend_passphrase_can_decrypt (self->settings, passphrase))
+    {
+        g_paste_storage_migration_prompt_passphrase (self->application, FALSE,
+                                                     _("Wrong passphrase, please try again"),
+                                                     on_source_passphrase_set, self);
+        return;
+    }
+
+    g_paste_storage_backend_set_passphrase (passphrase);
+    apply_migration (self, backend_for_index (self, adw_combo_row_get_selected (self->backend_row)));
+}
 #endif
 
 static void
@@ -273,11 +391,31 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
     GPasteStorage chosen = backend_for_index (self, adw_combo_row_get_selected (self->backend_row));
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* The encrypted backend needs a passphrase before it can import or store. */
-    if (chosen == G_PASTE_STORAGE_ENCRYPTED_FILE && !g_paste_storage_backend_get_passphrase ())
+    /* Switching to encrypted storage needs a (new) passphrase to store with.
+     * Keeping the existing encrypted backend does not: its passphrase is obtained
+     * later through the daemon's normal unlock flow. */
+    if (chosen == G_PASTE_STORAGE_ENCRYPTED_FILE && chosen != self->current &&
+        !g_paste_storage_backend_get_passphrase ())
     {
-        g_paste_storage_migration_prompt_passphrase (self->application, TRUE, on_passphrase_set, self);
+        g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL, on_passphrase_set, self);
         return;
+    }
+
+    /* Importing from (or deleting) an existing encrypted history needs its
+     * passphrase to read or list it. Prefer one remembered in the keyring, and
+     * only prompt when there is none or it has gone stale. */
+    if (self->current == G_PASTE_STORAGE_ENCRYPTED_FILE && !g_paste_storage_backend_get_passphrase () &&
+        (adw_switch_row_get_active (self->import_row) || adw_switch_row_get_active (self->cleanup_row)))
+    {
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        try_keyring_passphrase (self->settings);
+#endif
+
+        if (!g_paste_storage_backend_get_passphrase ())
+        {
+            g_paste_storage_migration_prompt_passphrase (self->application, FALSE, NULL, on_source_passphrase_set, self);
+            return;
+        }
     }
 #endif
 
@@ -285,7 +423,7 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
 }
 
 /* Dismissing the dialog leaves the revision untouched so it is shown again on
- * the next start: the user has to make a deliberate choice. The suggested
+ * the next start: the user has to make a deliberate choice. The detected current
  * backend (already written below) is used for this session in the meantime.
  * gtk_window_destroy() (the apply path) does not emit "close-request", so this
  * only runs for an actual dismissal. */
@@ -339,20 +477,20 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     g_return_if_fail (GTK_IS_APPLICATION (application));
     g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
 
-    /* Suggest "file" when there is existing data to keep, "none" otherwise, and
-     * apply it right away so this session has a backend even if the dialog is
-     * dismissed without an explicit choice. */
-    g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
-    g_auto (GStrv) histories = g_paste_storage_backend_list_histories (file, NULL);
-    GPasteStorage suggested = (histories && histories[0]) ? G_PASTE_STORAGE_FILE : G_PASTE_STORAGE_NOOP;
+    /* Detect the backend the history currently lives in from the files on disk,
+     * and apply it right away so this session keeps the right backend even if the
+     * dialog is dismissed without an explicit choice (importantly, an encrypted
+     * history is not silently downgraded to "none"). */
+    GPasteStorage current = detect_current_backend (settings);
 
-    g_paste_settings_set_storage_backend (settings, suggested);
+    g_paste_settings_set_storage_backend (settings, current);
 
     MigrationData *self = g_new0 (MigrationData, 1);
     self->settings = g_object_ref (settings);
     self->application = application;
     self->done = done;
     self->user_data = user_data;
+    self->current = current;
 
     GtkWidget *window = adw_application_window_new (application);
     self->window = GTK_WINDOW (window);
@@ -388,7 +526,7 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     adw_combo_row_set_model (self->backend_row, G_LIST_MODEL (backends));
     g_object_unref (backends);
 
-    adw_combo_row_set_selected (self->backend_row, index_for_backend (self, suggested));
+    adw_combo_row_set_selected (self->backend_row, index_for_backend (self, current));
     disable_backend_combo_ellipsize (backend_row);
 
     GtkWidget *import_row = adw_switch_row_new ();
@@ -449,14 +587,96 @@ typedef struct
     GtkWidget                  *remember;
     GtkWidget                  *ok;
 
+    /* Only built when setting a new passphrase (confirm) and libpwquality is
+     * available: the strength meter, the row carrying its rating/hint, and the
+     * pwquality settings used to score the passphrase. */
+    GtkLevelBar                *strength;
+    GtkWidget                  *strength_row;
+#ifdef G_PASTE_ENABLE_PWQUALITY
+    pwquality_settings_t       *pwq;
+#endif
+
     gboolean                    delivered;
 } PassphraseData;
+
+static void
+passphrase_data_free (gpointer data)
+{
+    PassphraseData *self = data;
+
+#ifdef G_PASTE_ENABLE_PWQUALITY
+    if (self->pwq)
+        pwquality_free_settings (self->pwq);
+#endif
+
+    g_free (self);
+}
 
 static const gchar *
 passphrase_text (GtkEditable *editable)
 {
     return editable ? gtk_editable_get_text (editable) : "";
 }
+
+#ifdef G_PASTE_ENABLE_PWQUALITY
+/* The textual rating shown when the passphrase passes the basic checks (so
+ * libpwquality has no specific complaint to surface instead). */
+static const gchar *
+passphrase_rating (guint level)
+{
+    switch (level)
+    {
+    case 1:
+        return _("Weak");
+    case 2:
+        return _("Fair");
+    case 3:
+        return _("Good");
+    case 4:
+        return _("Strong");
+    default:
+        return "";
+    }
+}
+
+/* GNOME-style passphrase rating via libpwquality (as gnome-control-center does):
+ * map the 0-100 score to a 0-4 meter level and produce an actionable hint. On a
+ * hard failure (too short, dictionary word, ...) libpwquality returns a negative
+ * code whose localized reason becomes the hint. Returns the meter level and, in
+ * @hint, a newly-allocated message to show (rating word or pwquality reason). */
+static guint
+passphrase_strength (pwquality_settings_t *pwq,
+                     const gchar          *passphrase,
+                     gchar               **hint)
+{
+    if (!passphrase || !*passphrase)
+    {
+        *hint = NULL;
+        return 0;
+    }
+
+    void *auxerror = NULL;
+    gint score = pwquality_check (pwq, passphrase, NULL, NULL, &auxerror);
+
+    if (score < 0)
+    {
+        /* pwquality_strerror also consumes auxerror, so this frees it too. */
+        gchar buf[PWQ_MAX_ERROR_MESSAGE_LEN];
+
+        *hint = g_strdup (pwquality_strerror (buf, sizeof (buf), score, auxerror));
+        return 1;
+    }
+
+    guint level = (score < 50) ? 1
+                : (score < 75) ? 2
+                : (score < 90) ? 3
+                :                4;
+
+    *hint = g_strdup (passphrase_rating (level));
+
+    return level;
+}
+#endif
 
 static void
 passphrase_update_ok (PassphraseData *self)
@@ -475,7 +695,25 @@ static void
 on_passphrase_changed (GtkEditable *editable G_GNUC_UNUSED,
                        gpointer     user_data)
 {
-    passphrase_update_ok (user_data);
+    PassphraseData *self = user_data;
+
+    /* The red hint flags the previous wrong attempt; clear it as soon as the
+     * user amends the passphrase so it does not bleed into the next try. */
+    gtk_widget_remove_css_class (GTK_WIDGET (self->entry), "error");
+
+#ifdef G_PASTE_ENABLE_PWQUALITY
+    /* Reflect the strength of the new passphrase as it is typed. */
+    if (self->strength)
+    {
+        g_autofree gchar *hint = NULL;
+        guint strength = passphrase_strength (self->pwq, passphrase_text (self->entry), &hint);
+
+        gtk_level_bar_set_value (self->strength, strength);
+        adw_action_row_set_subtitle (ADW_ACTION_ROW (self->strength_row), hint ? hint : "");
+    }
+#endif
+
+    passphrase_update_ok (self);
 }
 
 static void
@@ -545,6 +783,8 @@ on_passphrase_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
  * g_paste_storage_migration_prompt_passphrase:
  * @application: the #GtkApplication to anchor the dialog to
  * @confirm: whether to ask for the passphrase twice (new encrypted history)
+ * @error_message: (nullable): an error to show above the entry (e.g. when
+ *                 re-prompting after a wrong passphrase)
  * @done: (scope async): receives the entered passphrase, or %NULL if dismissed
  * @user_data: data passed to @done
  *
@@ -553,6 +793,7 @@ on_passphrase_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
 G_PASTE_VISIBLE void
 g_paste_storage_migration_prompt_passphrase (GtkApplication              *application,
                                              gboolean                     confirm,
+                                             const gchar                 *error_message,
                                              GPasteStoragePassphraseFunc  done,
                                              gpointer                     user_data)
 {
@@ -587,6 +828,13 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
     GtkWidget *group = adw_preferences_group_new ();
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), entry);
 
+    /* Re-prompt after a wrong passphrase: flag the entry and say what went wrong. */
+    if (error_message)
+    {
+        adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group), error_message);
+        gtk_widget_add_css_class (entry, "error");
+    }
+
     if (confirm)
     {
         GtkWidget *confirm_entry = adw_password_entry_row_new ();
@@ -594,6 +842,31 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
         adw_preferences_row_set_title (ADW_PREFERENCES_ROW (confirm_entry), _("Confirm passphrase"));
         g_signal_connect (confirm_entry, "changed", G_CALLBACK (on_passphrase_changed), self);
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), confirm_entry);
+
+#ifdef G_PASTE_ENABLE_PWQUALITY
+        /* Rate the new passphrase as it is typed (libpwquality), with the rating
+         * or pwquality's advice as the subtitle and a colour-graded meter. */
+        self->pwq = pwquality_default_settings ();
+        pwquality_read_config (self->pwq, NULL, NULL);
+
+        GtkWidget *strength_row = adw_action_row_new ();
+        self->strength_row = strength_row;
+        adw_preferences_row_set_title (ADW_PREFERENCES_ROW (strength_row), _("Passphrase strength"));
+
+        GtkWidget *strength = gtk_level_bar_new ();
+        self->strength = GTK_LEVEL_BAR (strength);
+        gtk_level_bar_set_min_value (self->strength, 0);
+        gtk_level_bar_set_max_value (self->strength, 4);
+        /* Colour the meter red → orange → green as the rating climbs. */
+        gtk_level_bar_add_offset_value (self->strength, GTK_LEVEL_BAR_OFFSET_LOW, 1);
+        gtk_level_bar_add_offset_value (self->strength, GTK_LEVEL_BAR_OFFSET_HIGH, 3);
+        gtk_level_bar_add_offset_value (self->strength, GTK_LEVEL_BAR_OFFSET_FULL, 4);
+        gtk_widget_set_valign (strength, GTK_ALIGN_CENTER);
+        gtk_widget_set_size_request (strength, 120, -1);
+        adw_action_row_add_suffix (ADW_ACTION_ROW (strength_row), strength);
+        adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), strength_row);
+#endif
+
         adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
                                                _("If you forget this passphrase, your stored history cannot be recovered."));
     }
@@ -615,7 +888,7 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
     adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
 
     g_signal_connect (window, "close-request", G_CALLBACK (on_passphrase_close), self);
-    g_object_set_data_full (G_OBJECT (window), "gpaste-passphrase-data", self, g_free);
+    g_object_set_data_full (G_OBJECT (window), "gpaste-passphrase-data", self, passphrase_data_free);
 
     GtkEventController *key_controller = gtk_event_controller_key_new ();
     g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_passphrase_key_pressed), self);
@@ -631,14 +904,41 @@ on_prepare_done (gpointer user_data)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+typedef struct
+{
+    GtkApplication *application;
+    GPasteSettings *settings;
+    GMainLoop      *loop;
+} UnlockData;
+
 static void
 on_prepare_passphrase (const gchar *passphrase,
                        gpointer     user_data)
 {
-    if (passphrase)
-        g_paste_storage_backend_set_passphrase (passphrase);
+    UnlockData *data = user_data;
 
-    g_main_loop_quit (user_data);
+    /* Dismissed: leave no passphrase set. The encrypted backend then refuses to
+     * store anything (it must not fall back to plaintext) and the on-disk history
+     * is left untouched, so nothing is lost. */
+    if (!passphrase)
+    {
+        g_main_loop_quit (data->loop);
+        return;
+    }
+
+    /* Never accept a passphrase that does not decrypt the existing history: using
+     * it would load an empty history and the first save would overwrite — and
+     * destroy — the real, still-encrypted data. Ask again instead. */
+    if (!g_paste_file_backend_passphrase_can_decrypt (data->settings, passphrase))
+    {
+        g_paste_storage_migration_prompt_passphrase (data->application, FALSE,
+                                                     _("Wrong passphrase, please try again"),
+                                                     on_prepare_passphrase, data);
+        return;
+    }
+
+    g_paste_storage_backend_set_passphrase (passphrase);
+    g_main_loop_quit (data->loop);
 }
 #endif
 
@@ -672,16 +972,18 @@ g_paste_storage_migration_prepare (GtkApplication *application,
         !g_paste_storage_backend_get_passphrase ())
     {
 #ifdef G_PASTE_ENABLE_LIBSECRET
-        /* Prefer a passphrase remembered in the keyring over prompting. */
-        g_paste_storage_keyring_apply ();
+        /* Prefer a passphrase remembered in the keyring over prompting (a stale
+         * one that no longer decrypts is discarded by try_keyring_passphrase). */
+        try_keyring_passphrase (settings);
 #endif
 
         if (!g_paste_storage_backend_get_passphrase ())
         {
             g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
+            UnlockData data = { application, settings, loop };
 
             adw_init ();
-            g_paste_storage_migration_prompt_passphrase (application, FALSE, on_prepare_passphrase, loop);
+            g_paste_storage_migration_prompt_passphrase (application, FALSE, NULL, on_prepare_passphrase, &data);
             g_main_loop_run (loop);
         }
     }

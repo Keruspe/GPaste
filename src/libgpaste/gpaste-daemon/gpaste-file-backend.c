@@ -858,4 +858,51 @@ g_paste_file_backend_new_encrypted (GPasteSettings *settings,
 
     return self;
 }
+
+/**
+ * g_paste_file_backend_passphrase_can_decrypt:
+ * @settings: a #GPasteSettings instance
+ * @passphrase: the passphrase to check
+ *
+ * Check whether @passphrase actually decrypts the existing encrypted history.
+ * This guards against accepting a wrong passphrase: loading with it yields an
+ * empty history (the authenticated decryption fails), and the first save would
+ * then overwrite — and permanently destroy — the real, still-encrypted data.
+ *
+ * Returns: %FALSE only when an encrypted history is present and @passphrase does
+ *          not decrypt it; %TRUE when it does, or when there is no real encrypted
+ *          data on disk to lose (so there is nothing to verify against)
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_file_backend_passphrase_can_decrypt (GPasteSettings *settings,
+                                             const gchar    *passphrase)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), FALSE);
+    g_return_val_if_fail (passphrase && *passphrase, FALSE);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
+    const gchar *extension = _G_PASTE_STORAGE_BACKEND_GET_CLASS (backend)->get_extension (backend);
+    g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
+
+    for (GStrv name = names; name && *name; ++name)
+    {
+        g_autofree gchar *path = g_paste_util_get_history_file_path (*name, extension);
+        g_autoptr (GFile) file = g_paste_util_get_history_file (*name, extension);
+        g_autofree gchar *text = NULL;
+        gsize text_length;
+        g_autoptr (GError) error = NULL;
+
+        if (g_paste_file_backend_load_contents (backend, path, file, &text, &text_length, &error))
+            return TRUE; /* decrypts cleanly: this is the right passphrase */
+
+        /* A wrong passphrase (or a tampered header/MAC) fails the authenticated
+         * decryption with INVALID_DATA; that is the case we must reject. Other
+         * failures (an empty placeholder file, truncation, an I/O error) carry no
+         * recoverable data, so they do not condemn the passphrase. */
+        if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA))
+            return FALSE;
+    }
+
+    return TRUE;
+}
 #endif

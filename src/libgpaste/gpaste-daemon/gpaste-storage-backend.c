@@ -6,6 +6,10 @@
 #include <gpaste-daemon/gpaste-file-backend.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
 
+#ifdef G_PASTE_ENABLE_LIBSECRET
+#include <gpaste-daemon/gpaste-storage-keyring.h>
+#endif
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 #define GCR_API_SUBJECT_TO_CHANGE
 #include <gcr/gcr.h>
@@ -95,6 +99,7 @@ g_paste_storage_backend_write_history (const GPasteStorageBackend *self,
                                        const GList                *history)
 {
     g_return_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self));
+    g_return_if_fail (name);
 
     g_autofree gchar *history_file_path = _g_paste_storage_backend_get_history_file_path (self, name);
 
@@ -311,7 +316,9 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
     case G_PASTE_STORAGE_NOOP:
         return G_PASTE_TYPE_NOOP_BACKEND;
     default:
-        return _g_paste_storage_backend_get_type (G_PASTE_STORAGE_DEFAULT);
+        /* G_PASTE_STORAGE_DEFAULT, and any unexpected value, map to the plain
+         * file backend; return it directly rather than recursing. */
+        return G_PASTE_TYPE_FILE_BACKEND;
     }
 }
 
@@ -335,6 +342,25 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
     if (storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE)
     {
         const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
+
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        /* No passphrase set in this process yet (e.g. the in-process daemon in
+         * gnome-shell never ran the prompt): fall back to the one remembered in
+         * the keyring before giving up. Only trust it if it actually decrypts the
+         * history: a stale keyring entry must not be used, or the first save would
+         * overwrite the real data with an empty, wrongly-encrypted history. */
+        if (!passphrase && g_paste_storage_keyring_apply ())
+        {
+            passphrase = g_paste_storage_backend_get_passphrase ();
+
+            if (passphrase && !g_paste_file_backend_passphrase_can_decrypt (settings, passphrase))
+            {
+                g_warning ("The passphrase stored in the keyring does not unlock the history");
+                g_paste_storage_backend_set_passphrase (NULL);
+                passphrase = NULL;
+            }
+        }
+#endif
 
         if (passphrase)
             return g_paste_file_backend_new_encrypted (settings, passphrase);

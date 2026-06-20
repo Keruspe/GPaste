@@ -248,6 +248,11 @@ if libsodium_dep.found() and libsecret_dep.found()
   gpaste_daemon_deps += libsecret_dep
 endif
 
+# Optional libpwquality support to rate the passphrase strength in the prompt.
+if libsodium_dep.found() and libpwquality_dep.found()
+  gpaste_daemon_deps += libpwquality_dep
+endif
+
 # The mutter (MetaSelection) clipboard backend only makes sense inside
 # gnome-shell, so it is built alongside the extension. It calls into libmutter,
 # so the daemon links it.

@@ -63,6 +63,13 @@ if libsodium_dep.found() and libsecret_dep.found()
   add_project_arguments('-DG_PASTE_ENABLE_LIBSECRET', language: 'c')
 endif
 
+# Optional libpwquality support to rate the passphrase strength (GNOME-style) in
+# the new-encrypted-history prompt. Only useful alongside encryption.
+libpwquality_dep = dependency('pwquality', required: get_option('pwquality'))
+if libsodium_dep.found() and libpwquality_dep.found()
+  add_project_arguments('-DG_PASTE_ENABLE_PWQUALITY', language: 'c')
+endif
+
 # The mutter (MetaSelection) clipboard backend is built alongside the extension;
 # this lets the daemon expose g_paste_daemon_new_meta () for the in-shell glue.
 if get_option('gnome-shell')

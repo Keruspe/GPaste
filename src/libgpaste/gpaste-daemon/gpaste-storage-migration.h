@@ -36,9 +36,12 @@ void g_paste_storage_migration_prepare (GtkApplication *application,
 
 /* Ask the user for the encrypted history passphrase. @confirm asks for it twice
  * (with a data-loss warning) when setting up a new encrypted history; otherwise
- * it is a single unlock field. Lives in the daemon, not the UI. */
+ * it is a single unlock field. @error_message, when set, is shown above the
+ * entry (e.g. to re-prompt after a wrong passphrase). Lives in the daemon, not
+ * the UI. */
 void g_paste_storage_migration_prompt_passphrase (GtkApplication              *application,
                                                   gboolean                     confirm,
+                                                  const gchar                 *error_message,
                                                   GPasteStoragePassphraseFunc  done,
                                                   gpointer                     user_data);
 
