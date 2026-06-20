@@ -12,7 +12,8 @@ typedef struct
 } GPasteUiSwitchData;
 
 static void
-g_paste_ui_switch_data_free (gpointer user_data)
+g_paste_ui_switch_data_free (gpointer  user_data,
+                             GClosure *closure G_GNUC_UNUSED)
 {
     g_autofree GPasteUiSwitchData *data = user_data;
 
@@ -51,10 +52,10 @@ on_gesture_pressed (GtkGestureClick *gesture,
                     gint             n_press G_GNUC_UNUSED,
                     gdouble          x       G_GNUC_UNUSED,
                     gdouble          y       G_GNUC_UNUSED,
-                    gpointer         user_data G_GNUC_UNUSED)
+                    gpointer         user_data)
 {
     GtkWidget *widget = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (gesture));
-    GPasteUiSwitchData *data = g_object_get_data (G_OBJECT (widget), "switch-data");
+    GPasteUiSwitchData *data = user_data;
     GtkSwitch *sw = GTK_SWITCH (widget);
     gboolean track = !gtk_switch_get_active (sw);
 
@@ -97,11 +98,10 @@ g_paste_ui_switch_new (GtkWindow    *topwin,
     data->client = g_object_ref (client);
     data->topwin = topwin;
 
-    g_object_set_data_full (G_OBJECT (self), "switch-data", data, g_paste_ui_switch_data_free);
-
     GtkGesture *gesture = gtk_gesture_click_new ();
     gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_CAPTURE);
-    g_signal_connect (gesture, "pressed", G_CALLBACK (on_gesture_pressed), NULL);
+    /* The gesture is owned by the widget; tie @data's lifetime to its closure. */
+    g_signal_connect_data (gesture, "pressed", G_CALLBACK (on_gesture_pressed), data, g_paste_ui_switch_data_free, 0);
     gtk_widget_add_controller (self, GTK_EVENT_CONTROLLER (gesture));
 
     g_signal_connect_object (client, "tracking",

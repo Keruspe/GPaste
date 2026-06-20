@@ -16,7 +16,7 @@ g_paste_ui_search_bar_get_entry (GtkSearchBar *self)
 {
     g_return_val_if_fail (GTK_IS_SEARCH_BAR (self), NULL);
 
-    return GTK_SEARCH_ENTRY (g_object_get_data (G_OBJECT (self), "entry"));
+    return GTK_SEARCH_ENTRY (gtk_search_bar_get_child (self));
 }
 
 /**
@@ -33,7 +33,6 @@ g_paste_ui_search_bar_new (void)
     GtkWidget *self = gtk_search_bar_new ();
     GtkWidget *entry = gtk_search_entry_new ();
 
-    g_object_set_data (G_OBJECT (self), "entry", entry);
     gtk_search_bar_set_child (GTK_SEARCH_BAR (self), entry);
     gtk_search_bar_connect_entry (GTK_SEARCH_BAR (self), GTK_EDITABLE (entry));
 

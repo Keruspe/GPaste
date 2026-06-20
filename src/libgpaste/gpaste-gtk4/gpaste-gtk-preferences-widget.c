@@ -12,11 +12,27 @@ struct _GPasteGtkPreferencesWidget
     AdwBin parent_instance;
 };
 
-G_PASTE_GTK_DEFINE_TYPE (PreferencesWidget, preferences_widget, ADW_TYPE_BIN)
+typedef struct
+{
+    GPasteSettings *settings;
+} GPasteGtkPreferencesWidgetPrivate;
+
+G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesWidget, preferences_widget, ADW_TYPE_BIN)
 
 static void
-g_paste_gtk_preferences_widget_class_init (GPasteGtkPreferencesWidgetClass *klass G_GNUC_UNUSED)
+g_paste_gtk_preferences_widget_dispose (GObject *object)
 {
+    GPasteGtkPreferencesWidgetPrivate *priv = g_paste_gtk_preferences_widget_get_instance_private (G_PASTE_GTK_PREFERENCES_WIDGET (object));
+
+    g_clear_object (&priv->settings);
+
+    G_OBJECT_CLASS (g_paste_gtk_preferences_widget_parent_class)->dispose (object);
+}
+
+static void
+g_paste_gtk_preferences_widget_class_init (GPasteGtkPreferencesWidgetClass *klass)
+{
+    G_OBJECT_CLASS (klass)->dispose = g_paste_gtk_preferences_widget_dispose;
 }
 
 static void
@@ -33,12 +49,11 @@ static void
 g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
 {
     /* The rows bind to (and reset through) this settings object without holding
-     * a reference, so it has to outlive them: tie it to the widget. */
-    GPasteSettings *settings = g_paste_settings_new ();
+     * a reference, so it has to outlive them: keep it on the widget. */
+    GPasteGtkPreferencesWidgetPrivate *priv = g_paste_gtk_preferences_widget_get_instance_private (self);
+    GPasteSettings *settings = priv->settings = g_paste_settings_new ();
     GtkWidget *stack = adw_view_stack_new ();
     AdwViewStack *s = ADW_VIEW_STACK (stack);
-
-    g_object_set_data_full (G_OBJECT (self), "gpaste-settings", settings, g_object_unref);
 
     add_page (s, g_paste_gtk_preferences_behaviour_page_new (settings));
     add_page (s, g_paste_gtk_preferences_history_settings_page_new (settings));
