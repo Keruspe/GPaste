@@ -715,14 +715,18 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self,
                                                                        G_FILE_QUERY_INFO_NONE,
                                                                        NULL,
                                                                        error);
-    if (error && *error)
+    /* A missing history dir (fresh profile) is not an error: return an empty
+     * list. Check the enumerator itself, since callers may pass error == NULL. */
+    if (!histories)
     {
-        if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
+        if (error && *error)
         {
-            g_clear_error (error);
-            return g_strv_builder_end (history_names);
+            if ((*error)->domain == G_IO_ERROR && (*error)->code == G_IO_ERROR_NOT_FOUND)
+                g_clear_error (error);
+            else
+                return NULL;
         }
-        return NULL;
+        return g_strv_builder_end (history_names);
     }
 
     GFileInfo *history;
