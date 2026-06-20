@@ -72,13 +72,6 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
         const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);             \
         return priv->name;                                                                             \
     }                                                                                                  \
-    G_PASTE_VISIBLE void                                                                               \
-    g_paste_settings_reset_##name (GPasteSettings *self)                                               \
-    {                                                                                                  \
-        g_return_if_fail (_G_PASTE_IS_SETTINGS (self));                                                \
-        const GPasteSettingsPrivate *priv = _g_paste_settings_get_instance_private (self);             \
-        g_settings_reset (priv->settings, G_PASTE_##key##_SETTING);                                    \
-    }                                                                                                  \
     static void                                                                                        \
     g_paste_settings_private_set_##name##_from_dconf (GPasteSettingsPrivate *priv)                     \
     {                                                                                                  \
@@ -133,12 +126,6 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
  * Returns: the value of the "close-on-select" setting
  */
 /**
- * g_paste_settings_reset_close_on_select:
- * @self: a #GPasteSettings instance
- *
- * Reset the "close-on-select" setting
- */
-/**
  * g_paste_settings_set_close_on_select:
  * @self: a #GPasteSettings instance
  * @value: the new history name
@@ -154,12 +141,6 @@ BOOLEAN_SETTING (close_on_select, CLOSE_ON_SELECT)
  * Get the "open-centered" setting
  *
  * Returns: the value of the "open-centered" setting
- */
-/**
- * g_paste_settings_reset_open_centered:
- * @self: a #GPasteSettings instance
- *
- * Reset the "open-centered" setting
  */
 /**
  * g_paste_settings_set_open_centered:
@@ -179,12 +160,6 @@ BOOLEAN_SETTING (open_centered, OPEN_CENTERED)
  * Returns: the value of the "element-size" setting
  */
 /**
- * g_paste_settings_reset_element_size:
- * @self: a #GPasteSettings instance
- *
- * Reset the "element-size" setting
- */
-/**
  * g_paste_settings_set_element_size:
  * @self: a #GPasteSettings instance
  * @value: the maximum displayed size of an item
@@ -200,12 +175,6 @@ UNSIGNED_SETTING (element_size, ELEMENT_SIZE)
  * Get the "empty-history-confirmation" setting
  *
  * Returns: the value of the "empty-history-confirmation" setting
- */
-/**
- * g_paste_settings_reset_empty_history_confirmation:
- * @self: a #GPasteSettings instance
- *
- * Reset the "empty-history-confirmation" setting
  */
 /**
  * g_paste_settings_set_empty_history_confirmation:
@@ -225,12 +194,6 @@ BOOLEAN_SETTING (empty_history_confirmation, EMPTY_HISTORY_CONFIRMATION)
  * Returns: the value of the "growing-lines" setting
  */
 /**
- * g_paste_settings_reset_growing_lines:
- * @self: a #GPasteSettings instance
- *
- * Reset the "growing-lines" setting
- */
-/**
  * g_paste_settings_set_growing_lines:
  * @self: a #GPasteSettings instance
  * @value: whether to detect or not growing lines
@@ -246,12 +209,6 @@ BOOLEAN_SETTING (growing_lines, GROWING_LINES)
  * Get the "history-name" setting
  *
  * Returns: the value of the "history-name" setting
- */
-/**
- * g_paste_settings_reset_history_name:
- * @self: a #GPasteSettings instance
- *
- * Reset the "history-name" setting
  */
 /**
  * g_paste_settings_set_history_name:
@@ -271,12 +228,6 @@ STRING_SETTING (history_name, HISTORY_NAME)
  * Returns: the value of the "images-support" setting
  */
 /**
- * g_paste_settings_reset_images_support:
- * @self: a #GPasteSettings instance
- *
- * Reset the "images-support" setting
- */
-/**
  * g_paste_settings_set_images_support:
  * @self: a #GPasteSettings instance
  * @value: the new history name
@@ -292,12 +243,6 @@ BOOLEAN_SETTING (images_support, IMAGES_SUPPORT)
  * Get the "images-preview" setting
  *
  * Returns: the value of the "images-preview" setting
- */
-/**
- * g_paste_settings_reset_images_preview:
- * @self: a #GPasteSettings instance
- *
- * Reset the "images-preview" setting
  */
 /**
  * g_paste_settings_set_images_preview:
@@ -317,12 +262,6 @@ BOOLEAN_SETTING (images_preview, IMAGES_PREVIEW)
  * Returns: the value of the "images-preview-size" setting
  */
 /**
- * g_paste_settings_reset_images_preview_size:
- * @self: a #GPasteSettings instance
- *
- * Reset the "images-preview-size" setting
- */
-/**
  * g_paste_settings_set_images_preview_size:
  * @self: a #GPasteSettings instance
  * @value: the size of image previews in pixels
@@ -338,12 +277,6 @@ UNSIGNED_SETTING (images_preview_size, IMAGES_PREVIEW_SIZE)
  * Get the "launch-ui" setting
  *
  * Returns: the value of the "launch-ui" setting
- */
-/**
- * g_paste_settings_reset_launch_ui:
- * @self: a #GPasteSettings instance
- *
- * Reset the "launch-ui" setting
  */
 /**
  * g_paste_settings_set_launch_ui:
@@ -363,12 +296,6 @@ STRING_SETTING (launch_ui, LAUNCH_UI)
  * Returns: the value of the "make-password" setting
  */
 /**
- * g_paste_settings_reset_make_password:
- * @self: a #GPasteSettings instance
- *
- * Reset the "make-password" setting
- */
-/**
  * g_paste_settings_set_make_password:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
@@ -384,12 +311,6 @@ STRING_SETTING (make_password, MAKE_PASSWORD)
  * Get the "max-history-size" setting
  *
  * Returns: the value of the "max-history-size" setting
- */
-/**
- * g_paste_settings_reset_max_history_size:
- * @self: a #GPasteSettings instance
- *
- * Reset the "max-history-size" setting
  */
 /**
  * g_paste_settings_set_max_history_size:
@@ -409,12 +330,6 @@ UNSIGNED_SETTING (max_history_size, MAX_HISTORY_SIZE)
  * Returns: the value of the "max-memory-usage" setting
  */
 /**
- * g_paste_settings_reset_max_memory_usage:
- * @self: a #GPasteSettings instance
- *
- * Reset the "max-memory-usage" setting
- */
-/**
  * g_paste_settings_set_max_memory_usage:
  * @self: a #GPasteSettings instance
  * @value: the maximum amount of memory we can use
@@ -430,12 +345,6 @@ UNSIGNED_SETTING (max_memory_usage, MAX_MEMORY_USAGE)
  * Get the "max-text-item-size" setting
  *
  * Returns: the value of the "max-text-item-size" setting
- */
-/**
- * g_paste_settings_reset_max_text_item_size:
- * @self: a #GPasteSettings instance
- *
- * Reset the "max-text-item-size" setting
  */
 /**
  * g_paste_settings_set_max_text_item_size:
@@ -455,12 +364,6 @@ UNSIGNED_SETTING (max_text_item_size, MAX_TEXT_ITEM_SIZE)
  * Returns: the value of the "min-text-item-size" setting
  */
 /**
- * g_paste_settings_reset_min_text_item_size:
- * @self: a #GPasteSettings instance
- *
- * Reset the "min-text-item-size" setting
- */
-/**
  * g_paste_settings_set_min_text_item_size:
  * @self: a #GPasteSettings instance
  * @value: the minimum size for a textual item to be handled
@@ -476,12 +379,6 @@ UNSIGNED_SETTING (min_text_item_size, MIN_TEXT_ITEM_SIZE)
  * Get the "pop" setting
  *
  * Returns: the value of the "pop" setting
- */
-/**
- * g_paste_settings_reset_pop:
- * @self: a #GPasteSettings instance
- *
- * Reset the "pop" setting
  */
 /**
  * g_paste_settings_set_pop:
@@ -501,12 +398,6 @@ STRING_SETTING (pop, POP)
  * Returns: the value of the "primary-to-history" setting
  */
 /**
- * g_paste_settings_reset_primary_to_history:
- * @self: a #GPasteSettings instance
- *
- * Reset the "primary-to-history" setting
- */
-/**
  * g_paste_settings_set_primary_to_history:
  * @self: a #GPasteSettings instance
  * @value: whether to track or not the primary selection changes as clipboard ones
@@ -522,12 +413,6 @@ BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
  * Get the "rich-text-support" setting
  *
  * Returns: the value of the "rich-text-support" setting
- */
-/**
- * g_paste_settings_reset_rich_text_support:
- * @self: a #GPasteSettings instance
- *
- * Reset the "rich-text-support" setting
  */
 /**
  * g_paste_settings_set_rich_text_support:
@@ -547,12 +432,6 @@ BOOLEAN_SETTING (rich_text_support, RICH_TEXT_SUPPORT)
  * Returns: the value of the "show-history" setting
  */
 /**
- * g_paste_settings_reset_show_history:
- * @self: a #GPasteSettings instance
- *
- * Reset the "show-history" setting
- */
-/**
  * g_paste_settings_set_show_history:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
@@ -568,12 +447,6 @@ STRING_SETTING (show_history, SHOW_HISTORY)
  * Get the "storage-backend" setting
  *
  * Returns: the value of the "storage-backend" setting (a #GPasteStorage)
- */
-/**
- * g_paste_settings_reset_storage_backend:
- * @self: a #GPasteSettings instance
- *
- * Reset the "storage-backend" setting
  */
 /**
  * g_paste_settings_set_storage_backend:
@@ -593,12 +466,6 @@ ENUM_SETTING (storage_backend, STORAGE_BACKEND)
  * Returns: the value of the "storage-backend-revision" setting
  */
 /**
- * g_paste_settings_reset_storage_backend_revision:
- * @self: a #GPasteSettings instance
- *
- * Reset the "storage-backend-revision" setting
- */
-/**
  * g_paste_settings_set_storage_backend_revision:
  * @self: a #GPasteSettings instance
  * @value: the last processed storage backend revision
@@ -614,12 +481,6 @@ UNSIGNED_SETTING (storage_backend_revision, STORAGE_BACKEND_REVISION)
  * Get the "sync-clipboard-to-primary" setting
  *
  * Returns: the value of the "sync-clipboard-to-primary" setting
- */
-/**
- * g_paste_settings_reset_sync_clipboard_to_primary:
- * @self: a #GPasteSettings instance
- *
- * Reset the "sync-clipboard-to-primary" setting
  */
 /**
  * g_paste_settings_set_sync_clipboard_to_primary:
@@ -639,12 +500,6 @@ STRING_SETTING (sync_clipboard_to_primary, SYNC_CLIPBOARD_TO_PRIMARY)
  * Returns: the value of the "sync-primary-to-clipboard" setting
  */
 /**
- * g_paste_settings_reset_sync_primary_to_clipboard:
- * @self: a #GPasteSettings instance
- *
- * Reset the "sync-primary-to-clipboard" setting
- */
-/**
  * g_paste_settings_set_sync_primary_to_clipboard:
  * @self: a #GPasteSettings instance
  * @value: the new keyboard shortcut
@@ -660,12 +515,6 @@ STRING_SETTING (sync_primary_to_clipboard, SYNC_PRIMARY_TO_CLIPBOARD)
  * Get the "synchronize-clipboards" setting
  *
  * Returns: the value of the "synchronize-clipboards" setting
- */
-/**
- * g_paste_settings_reset_synchronize_clipboards:
- * @self: a #GPasteSettings instance
- *
- * Reset the "synchronize-clipboards" setting
  */
 /**
  * g_paste_settings_set_synchronize_clipboards:
@@ -685,12 +534,6 @@ BOOLEAN_SETTING (synchronize_clipboards, SYNCHRONIZE_CLIPBOARDS)
  * Returns: the value of the "track-changes" setting
  */
 /**
- * g_paste_settings_reset_track_changes:
- * @self: a #GPasteSettings instance
- *
- * Reset the "track-changes" setting
- */
-/**
  * g_paste_settings_set_track_changes:
  * @self: a #GPasteSettings instance
  * @value: whether to track or not the clipboard changes
@@ -706,12 +549,6 @@ BOOLEAN_SETTING (track_changes, TRACK_CHANGES)
  * Get the "track-extension-state" setting
  *
  * Returns: the value of the "track-extension-state" setting
- */
-/**
- * g_paste_settings_reset_track_extension_state:
- * @self: a #GPasteSettings instance
- *
- * Reset the "track-extension-state" setting
  */
 /**
  * g_paste_settings_set_track_extension_state:
@@ -731,12 +568,6 @@ BOOLEAN_SETTING (track_extension_state, TRACK_EXTENSION_STATE)
  * Returns: the value of the "trim-items" setting
  */
 /**
- * g_paste_settings_reset_trim_items:
- * @self: a #GPasteSettings instance
- *
- * Reset the "trim-items" setting
- */
-/**
  * g_paste_settings_set_trim_items:
  * @self: a #GPasteSettings instance
  * @value: whether to trim or not textual items
@@ -752,12 +583,6 @@ BOOLEAN_SETTING (trim_items, TRIM_ITEMS)
  * Get the "upload" setting
  *
  * Returns: the value of the "upload" setting
- */
-/**
- * g_paste_settings_reset_upload:
- * @self: a #GPasteSettings instance
- *
- * Reset the "upload" setting
  */
 /**
  * g_paste_settings_set_upload:

@@ -44,34 +44,6 @@ gboolean     g_paste_settings_get_track_extension_state      (const GPasteSettin
 gboolean     g_paste_settings_get_trim_items                 (const GPasteSettings *self);
 const gchar *g_paste_settings_get_upload                     (const GPasteSettings *self);
 
-void g_paste_settings_reset_close_on_select            (GPasteSettings *self);
-void g_paste_settings_reset_open_centered              (GPasteSettings *self);
-void g_paste_settings_reset_element_size               (GPasteSettings *self);
-void g_paste_settings_reset_empty_history_confirmation (GPasteSettings *self);
-void g_paste_settings_reset_growing_lines              (GPasteSettings *self);
-void g_paste_settings_reset_history_name               (GPasteSettings *self);
-void g_paste_settings_reset_images_preview             (GPasteSettings *self);
-void g_paste_settings_reset_images_preview_size        (GPasteSettings *self);
-void g_paste_settings_reset_images_support             (GPasteSettings *self);
-void g_paste_settings_reset_launch_ui                  (GPasteSettings *self);
-void g_paste_settings_reset_make_password              (GPasteSettings *self);
-void g_paste_settings_reset_max_history_size           (GPasteSettings *self);
-void g_paste_settings_reset_max_memory_usage           (GPasteSettings *self);
-void g_paste_settings_reset_max_text_item_size         (GPasteSettings *self);
-void g_paste_settings_reset_min_text_item_size         (GPasteSettings *self);
-void g_paste_settings_reset_pop                        (GPasteSettings *self);
-void g_paste_settings_reset_primary_to_history         (GPasteSettings *self);
-void g_paste_settings_reset_rich_text_support          (GPasteSettings *self);
-void g_paste_settings_reset_show_history               (GPasteSettings *self);
-void g_paste_settings_reset_storage_backend            (GPasteSettings *self);
-void g_paste_settings_reset_storage_backend_revision   (GPasteSettings *self);
-void g_paste_settings_reset_sync_clipboard_to_primary  (GPasteSettings *self);
-void g_paste_settings_reset_sync_primary_to_clipboard  (GPasteSettings *self);
-void g_paste_settings_reset_synchronize_clipboards     (GPasteSettings *self);
-void g_paste_settings_reset_track_changes              (GPasteSettings *self);
-void g_paste_settings_reset_track_extension_state      (GPasteSettings *self);
-void g_paste_settings_reset_trim_items                 (GPasteSettings *self);
-void g_paste_settings_reset_upload                     (GPasteSettings *self);
 
 void g_paste_settings_set_close_on_select            (GPasteSettings *self,
                                                       gboolean        value);
