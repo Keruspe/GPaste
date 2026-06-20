@@ -238,6 +238,12 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteHistorySaverLoadResult) load_result = g_task_propagate_pointer (G_TASK (result), &error);
 
+    /* A newer load superseded this one: leave load_in_progress set (the newer
+     * load will clear it) and drop this stale result, so is_loading() does not
+     * briefly report FALSE and let a save race the still-running load. */
+    if (data->generation != priv->load_generation)
+        return;
+
     priv->load_in_progress = FALSE;
 
     if (!load_result)
@@ -247,8 +253,7 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    if (data->generation == priv->load_generation)
-        priv->loaded (priv->owner, g_steal_pointer (&load_result->history), load_result->size, data->save_after);
+    priv->loaded (priv->owner, g_steal_pointer (&load_result->history), load_result->size, data->save_after);
 }
 
 /**
