@@ -46,6 +46,8 @@ g_paste_gtk_shortcut_row_get_accelerator (GPasteGtkShortcutRow *self)
     return priv->accelerator;
 }
 
+static void g_paste_gtk_shortcut_row_stop_capture (GPasteGtkShortcutRow *self);
+
 /**
  * g_paste_gtk_shortcut_row_set_accelerator:
  * @self: a #GPasteGtkShortcutRow instance
@@ -68,6 +70,11 @@ g_paste_gtk_shortcut_row_set_accelerator (GPasteGtkShortcutRow *self,
 
     g_set_str (&priv->accelerator, accel);
     gtk_shortcut_label_set_accelerator (GTK_SHORTCUT_LABEL (priv->label), accel);
+
+    /* An external change (e.g. "Reset to default") while the row is armed makes
+     * the in-progress capture moot; disarm it so the next key isn't captured. */
+    if (priv->capturing)
+        g_paste_gtk_shortcut_row_stop_capture (self);
 
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ACCELERATOR]);
 }
@@ -152,7 +159,12 @@ g_paste_gtk_shortcut_row_on_key_pressed (GtkEventControllerKey *controller,
     if (gdk_key_event_is_modifier (gtk_event_controller_get_current_event (GTK_EVENT_CONTROLLER (controller))))
         return GDK_EVENT_STOP;
 
-    if (gtk_accelerator_valid (keyval, mods))
+    /* A modifier-less key would be grabbed globally and break ordinary typing,
+     * so only accept a bare key for things that are meaningful alone (the
+     * function keys); everything else needs a real modifier. */
+    gboolean standalone_ok = keyval >= GDK_KEY_F1 && keyval <= GDK_KEY_F35;
+
+    if (gtk_accelerator_valid (keyval, mods) && (mods || standalone_ok))
     {
         g_autofree gchar *name = gtk_accelerator_name (keyval, mods);
 
