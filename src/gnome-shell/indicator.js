@@ -123,6 +123,11 @@ class GPasteIndicator extends Button {
 
         this._updateScrollHeight();
 
+        // The max-height is derived from the work area of the monitor the
+        // indicator lives on; recompute it when the monitor layout changes
+        // (resolution, monitor hot-plug, panel moved to another monitor).
+        Main.layoutManager.connectObject('monitors-changed', this._updateScrollHeight.bind(this), this);
+
         // "changed" fires when the content/viewport is resized (fill until the
         // viewport overflows); "notify::value" fires on scroll (load the next
         // batch when the bottom is reached).
@@ -313,11 +318,12 @@ class GPasteIndicator extends Button {
         const name = await this._client.get_history_name();
         if (!this._client || generation !== this._reloadGeneration)
             return;
-        this._available = await this._client.get_history_size(name);
+        const available = await this._client.get_history_size(name);
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
-        this._rebuild(this._available === 0);
+        this._available = available;
+        this._rebuild(available === 0);
     }
 
     async _runSearch() {
@@ -327,11 +333,12 @@ class GPasteIndicator extends Button {
         const generation = ++this._reloadGeneration;
         const search = this._searchItem.text.toLowerCase();
 
-        this._searchResults = await this._client.search(search);
+        const results = await this._client.search(search);
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
-        this._rebuild(this._searchResults.length === 0);
+        this._searchResults = results;
+        this._rebuild(results.length === 0);
     }
 
     // Reconcile the materialised rows with the current content (history or
@@ -395,17 +402,19 @@ class GPasteIndicator extends Button {
         const name = await this._client.get_history_name();
         if (!this._client || generation !== this._reloadGeneration)
             return;
-        this._available = await this._client.get_history_size(name);
+        const available = await this._client.get_history_size(name);
         if (!this._client || generation !== this._reloadGeneration)
             return;
 
-        while (this._history.length > this._available)
+        this._available = available;
+
+        while (this._history.length > available)
             this._history.pop().destroy();
 
         for (let i = from; i < this._history.length; ++i)
             this._history[i].setIndex(i).catch(console.error);
 
-        this._updateVisibility(this._available === 0);
+        this._updateVisibility(available === 0);
         this._maybeLoadMore();
     }
 
@@ -470,8 +479,14 @@ class GPasteIndicator extends Button {
 
     _onOpenStateChanged(menu, state) {
         if (state) {
+            // reset() clears any leftover search text; when there was some, that
+            // synchronously fires 'text-changed' → _onNewSearch → _reloadCurrent,
+            // so only reload explicitly when the search was already empty, to
+            // avoid a redundant round-trip on every open.
+            const hadSearch = this._hasSearch();
             this._searchItem.reset();
-            this._reloadCurrent();
+            if (!hadSearch)
+                this._reloadCurrent();
             GLib.Source.set_name_by_id(GLib.idle_add_once(GLib.PRIORITY_DEFAULT_IDLE, this._selectSearch.bind(this)), '[GPaste] select search');
         } else {
             this._updateIndexVisibility(false);
@@ -531,6 +546,7 @@ class GPasteIndicator extends Button {
     }
 
     _onDestroy() {
+        Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
         this._clearRows();
 

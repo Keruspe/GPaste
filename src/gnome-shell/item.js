@@ -21,9 +21,13 @@ class GPasteItem extends PopupMenuItem {
 
         this._client = client;
         this._index = -1;
-        this._fakeIndex = false;
         this._uuid = null;
         this._generation = 0;
+        // The full (untruncated) text currently set on the label. Compared
+        // against in _setValue to skip redundant set_text() calls; we can't use
+        // label.get_text() for that because max_length truncates what the label
+        // stores, so a long value would never compare equal.
+        this._displayedText = null;
 
         if (slotIndex <= 9) {
             this._indexLabel = new St.Label({
@@ -71,7 +75,6 @@ class GPasteItem extends PopupMenuItem {
     async setIndex(index) {
         const generation = ++this._generation;
         this._index = index;
-        this._fakeIndex = false;
 
         if (index === -1) {
             this._setValue(null);
@@ -87,7 +90,6 @@ class GPasteItem extends PopupMenuItem {
     async setUuid(uuid) {
         const generation = ++this._generation;
         this._index = -2;
-        this._fakeIndex = true;
         this._uuid = uuid;
 
         if (uuid == null) {
@@ -105,12 +107,15 @@ class GPasteItem extends PopupMenuItem {
 
         if (this._index === -1) {
             this._uuid = null;
-            this.label.clutter_text.set_text(value || '');
+            this._displayedText = value || '';
+            this.label.clutter_text.set_text(this._displayedText);
             this.hide();
         } else {
             const text = (value ?? '').replace(/[\t\n\r]/g, ' ');
-            if (text !== this.label.get_text())
+            if (text !== this._displayedText) {
+                this._displayedText = text;
                 this.label.clutter_text.set_text(text);
+            }
 
             this.show();
         }
