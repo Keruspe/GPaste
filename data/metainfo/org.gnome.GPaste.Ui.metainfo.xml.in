@@ -46,6 +46,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-21" version="50.5">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix the daemon failing to restart with "gpaste-client daemon-reexec" (the re-exec path was missing the gpaste libexec subdirectory)</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-21" version="50.4">
       <description>
         <p>This is a maintenance release. Changes:</p>
