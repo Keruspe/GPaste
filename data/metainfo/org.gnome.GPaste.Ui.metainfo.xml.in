@@ -46,6 +46,14 @@
   <url type="translate">https://github.com/Keruspe/GPaste</url>
   <translation type="gettext">GPaste</translation>
   <releases>
+    <release type="stable" date="2026-06-21" version="50.5">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix the daemon failing to restart with "gpaste-client daemon-reexec" (the re-exec path was missing the gpaste libexec subdirectory)</li>
+        </ul>
+      </description>
+    </release>
     <release type="stable" date="2026-06-21" version="50.4">
       <description>
         <p>This is a maintenance release. Changes:</p>
@@ -99,6 +107,14 @@
           <li>Fix keyboard shortcuts not triggering when NumLock and CapsLock are both active</li>
           <li>Fix several crashes (search provider, UI lifetime, GNOME Shell extension) and memory leaks</li>
           <li>Modernise the GNOME Shell extension to current conventions</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" date="2026-06-21" version="45.10">
+      <description>
+        <p>This is a maintenance release. Changes:</p>
+        <ul>
+          <li>Fix the daemon failing to restart with "gpaste-client daemon-reexec" (the re-exec path was missing the gpaste libexec subdirectory)</li>
         </ul>
       </description>
     </release>

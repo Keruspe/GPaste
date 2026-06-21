@@ -1,5 +1,5 @@
 project('GPaste', 'c',
-  version: '50.4',
+  version: '50.5',
   meson_version: '>=1.1',
   default_options: [ 'warning_level=2', 'c_std=gnu17' ],
 )
@@ -61,6 +61,8 @@ if get_option('vapi') and not get_option('introspection')
   error('GIR generation has to be enabled via -Dintrospection=true to build vala bindings!')
 endif
 
+pkglibexecdir = get_option('prefix') / get_option('libexecdir') / 'gpaste'
+
 add_project_arguments(
   '-DG_LOG_DOMAIN="GPaste"',
   '-DG_LOG_USE_STRUCTURED=1',
@@ -78,7 +80,7 @@ add_project_arguments(
   '-DPACKAGE_NAME="GPaste"',
   '-DPACKAGE_STRING="GPaste ' + meson.project_version() +'"',
   '-DPACKAGE_VERSION="' + meson.project_version() + '"',
-  '-DPKGLIBEXECDIR="' + (get_option('prefix') / get_option('libexecdir')) + '"',
+  '-DPKGLIBEXECDIR="' + pkglibexecdir + '"',
   '-DVERSION="' + meson.project_version() + '"',
   language: 'c',
 )
@@ -87,7 +89,7 @@ conf = configuration_data()
 
 # Used later on to configure services&gnome-shell extension
 conf.set('GETTEXT_PACKAGE', 'GPaste')
-conf.set('pkglibexecdir', get_option('prefix') / get_option('libexecdir') / 'gpaste')
+conf.set('pkglibexecdir', pkglibexecdir)
 conf.set('version', meson.project_version())
 conf.set('gettext_domain', 'GPaste')
 
