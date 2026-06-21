@@ -74,6 +74,8 @@ if get_option('x-keybinder')
   keybinder_deps += [ gtk4x11_dep, xi_dep, x11_dep ]
 endif
 
+pkglibexecdir = get_option('prefix') / get_option('libexecdir') / 'gpaste'
+
 add_project_arguments(
   '-DG_LOG_DOMAIN="GPaste"',
   '-DG_LOG_USE_STRUCTURED=1',
@@ -91,7 +93,7 @@ add_project_arguments(
   '-DPACKAGE_NAME="GPaste"',
   '-DPACKAGE_STRING="GPaste ' + meson.project_version() +'"',
   '-DPACKAGE_VERSION="' + meson.project_version() + '"',
-  '-DPKGLIBEXECDIR="' + (get_option('prefix') / get_option('libexecdir')) + '"',
+  '-DPKGLIBEXECDIR="' + pkglibexecdir + '"',
   '-DVERSION="' + meson.project_version() + '"',
   language: 'c',
 )
@@ -100,7 +102,7 @@ conf = configuration_data()
 
 # Used later on to configure services&gnome-shell extension
 conf.set('GETTEXT_PACKAGE', 'GPaste')
-conf.set('pkglibexecdir', get_option('prefix') / get_option('libexecdir') / 'gpaste')
+conf.set('pkglibexecdir', pkglibexecdir)
 conf.set('version', meson.project_version())
 conf.set('gettext_domain', 'GPaste')
 
