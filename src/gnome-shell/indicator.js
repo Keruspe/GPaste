@@ -235,8 +235,16 @@ class GPasteIndicator extends Button {
     }
 
     _scrollToTop() {
-        const adjustment = this._scrollView.vadjustment;
-        adjustment.value = adjustment.lower;
+        // Bringing the first row into view resets to the top; unlike poking the
+        // adjustment directly it animates and cooperates with the fade effect.
+        // With no row to target (empty history or no search results) there is
+        // nothing to scroll to, so just pin the adjustment to the top.
+        if (this._history.length > 0) {
+            ensureActorVisibleInScrollView(this._scrollView, this._history[0]);
+        } else {
+            const adjustment = this._scrollView.vadjustment;
+            adjustment.value = adjustment.lower;
+        }
     }
 
     _loadMore() {
@@ -326,13 +334,45 @@ class GPasteIndicator extends Button {
         this._rebuild(this._searchResults.length === 0);
     }
 
-    // Tear down the materialised rows and refill from the top; shared by the
-    // full reload and the search paths.
+    // Reconcile the materialised rows with the current content (history or
+    // search results) in place rather than tearing them all down: update the
+    // rows we keep, drop any surplus, create any shortfall, then scroll back to
+    // the top. Reusing the actors avoids the flicker (and focus loss) of
+    // rebuilding the whole list on every search keystroke and when entering or
+    // leaving search. Shared by the full reload and the search paths.
     _rebuild(empty) {
-        this._clearRows();
-        this._scrollToTop();
-        this._loadMore();
+        // Hold off lazy loading while the row count (and thus the scroll
+        // adjustment) is in flux, so a re-entrant _maybeLoadMore() can't fire.
+        this._loading = true;
+
+        try {
+            const searching = this._hasSearch();
+            const total = this._totalSize();
+            const elementSize = this._settings.get_element_size();
+
+            // Keep a viewport's worth of rows, or the whole content when it is
+            // smaller; never drop the rows we already loaded past that (lazy
+            // loading tops the list up again on scroll).
+            const target = Math.min(total, Math.max(this._history.length, this._fillBatch()));
+
+            while (this._history.length > target)
+                this._history.pop().destroy();
+
+            for (let i = 0; i < this._history.length; ++i) {
+                if (searching)
+                    this._history[i].setUuid(this._searchResults[i]).catch(console.error);
+                else
+                    this._history[i].setIndex(i).catch(console.error);
+            }
+
+            for (let i = this._history.length; i < target; ++i)
+                this._createRow(elementSize, i, searching ? -1 : i, searching ? this._searchResults[i] : null);
+        } finally {
+            this._loading = false;
+        }
+
         this._updateVisibility(empty);
+        this._scrollToTop();
     }
 
     _reloadCurrent() {
