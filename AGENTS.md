@@ -105,8 +105,8 @@ Key rules:
 
 ## Maintenance rules
 
-- When adding or removing a public function from any of the libraries, update the corresponding `.sym` file: `src/libgpaste/libgpaste.sym`, `src/libgpaste/libgpaste-gtk4.sym`, or `src/daemon/libgpaste-daemon.sym`.
-- When updating source files in this repository, keep `CLAUDE.md` up to date to reflect any new patterns, rules, or architectural decisions introduced.
+- A public library function is exported by marking its definition `G_PASTE_VISIBLE` (the libraries build with `gnu_symbol_visibility: 'hidden'`, so anything unmarked stays internal). There are no `.sym` version scripts to maintain; the `G_PASTE_*_TYPE` macros already mark their generated `get_type`. Conditionally-compiled (feature-gated) symbols just need the marker — they export only in configurations where they are compiled.
+- When updating source files in this repository, keep `AGENTS.md` up to date to reflect any new patterns, rules, or architectural decisions introduced.
 
 ## Architecture
 
@@ -119,7 +119,7 @@ The core libraries used by all other components. Two sub-modules:
 - `gpaste/` → **libgpaste** — daemon-agnostic types: `GPasteClient` (D-Bus client), `GPasteClientItem` (the lightweight item representation transferred over D-Bus), `GPasteSettings` (GSettings wrapper), enums, utilities.
 - `gpaste-gtk4/` → **libgpaste-gtk4** — GTK4 + Adwaita helpers (the preferences widgets).
 
-A third library, **libgpaste-daemon**, lives under `src/daemon/` (see below) and holds the rich clipboard item hierarchy along with the rest of the daemon objects. Each library exposes a versioned ABI via a symbol version script, and GIR + Vala bindings are generated from it.
+A third library, **libgpaste-daemon**, lives under `src/libgpaste/gpaste-daemon/` and holds the rich clipboard item hierarchy along with the rest of the daemon objects. Each library exports the symbols marked `G_PASTE_VISIBLE` (built with hidden default visibility), and GIR + Vala bindings are generated from it.
 
 **GObject type macros** — use these in `.c` files:
 
@@ -131,7 +131,7 @@ A third library, **libgpaste-daemon**, lives under `src/daemon/` (see below) and
 
 ### `src/daemon/` — `gpaste-daemon` + **libgpaste-daemon**
 
-The background service. Owns the clipboard history and exposes it over D-Bus (`org.gnome.GPaste`). All of its objects live in the installed, introspectable **libgpaste-daemon** library (sources under `src/daemon/gpaste-daemon/`, umbrella header `src/daemon/gpaste-daemon.h`, version script `src/daemon/libgpaste-daemon.sym`, `GPasteDaemon-1` GIR/typelib); `src/daemon/gpaste-daemon.c` is the thin executable entry point that links it. Its types keep the `GPaste`/`g_paste_` prefix, so the GIR passes an explicit `identifier_prefix: 'GPaste'` / `symbol_prefix: 'g_paste'` to place them in the `GPasteDaemon` namespace. Handles:
+The background service. Owns the clipboard history and exposes it over D-Bus (`org.gnome.GPaste`). All of its objects live in the installed, introspectable **libgpaste-daemon** library (sources under `src/libgpaste/gpaste-daemon/`, umbrella header `src/libgpaste/gpaste-daemon.h`, `GPasteDaemon-1` GIR/typelib); `src/daemon/gpaste-daemon.c` is the thin executable entry point that links it. Its types keep the `GPaste`/`g_paste_` prefix, so the GIR passes an explicit `identifier_prefix: 'GPaste'` / `symbol_prefix: 'g_paste'` to place them in the `GPasteDaemon` namespace. Handles:
 
 - Clipboard watching (primary + clipboard selections), through the backend-agnostic `GPasteClipboardProvider` interface
 - The rich clipboard item type hierarchy: the abstract `GPasteItem` base, the plain `GPasteTextItem`/`GPastePasswordItem`, the GTK4-backed `GPasteColorItem`/`GPasteImageItem`/`GPasteUrisItem`, and the `GPasteSpecialAtom`/`GPasteBinaryData` helpers (the UI/client instead use libgpaste's lightweight `GPasteClientItem`)

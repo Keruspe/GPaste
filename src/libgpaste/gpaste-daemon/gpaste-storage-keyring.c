@@ -22,7 +22,7 @@ g_paste_storage_keyring_schema (void)
     return &schema;
 }
 
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_storage_keyring_apply (void)
 {
     g_autoptr (GError) error = NULL;
@@ -40,7 +40,7 @@ g_paste_storage_keyring_apply (void)
     return TRUE;
 }
 
-void
+G_PASTE_VISIBLE void
 g_paste_storage_keyring_store (const gchar *passphrase)
 {
     g_return_if_fail (passphrase && *passphrase);

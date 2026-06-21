@@ -65,7 +65,7 @@ migration_data_free (gpointer data)
     g_object_unref (self->settings);
 }
 
-gboolean
+G_PASTE_VISIBLE gboolean
 g_paste_storage_migration_needed (GPasteSettings *settings)
 {
     g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), FALSE);
@@ -224,7 +224,7 @@ on_close_request (GtkWindow *window G_GNUC_UNUSED,
  *
  * Show the storage migration dialog.
  */
-void
+G_PASTE_VISIBLE void
 g_paste_storage_migration_show (GtkApplication                 *application,
                                 GPasteSettings                 *settings,
                                 GPasteStorageMigrationDoneFunc  done,
@@ -413,7 +413,7 @@ on_passphrase_close (GtkWindow *window G_GNUC_UNUSED,
  *
  * Prompt the user for the encrypted history passphrase.
  */
-void
+G_PASTE_VISIBLE void
 g_paste_storage_migration_prompt_passphrase (GtkApplication              *application,
                                              gboolean                     confirm,
                                              GPasteStoragePassphraseFunc  done,
@@ -500,7 +500,7 @@ on_prepare_passphrase (const gchar *passphrase,
 }
 #endif
 
-void
+G_PASTE_VISIBLE void
 g_paste_storage_migration_prepare (GtkApplication *application,
                                    GPasteSettings *settings,
                                    gboolean        force)
@@ -565,7 +565,7 @@ on_storage_migration_action (GSimpleAction *action G_GNUC_UNUSED,
         g_paste_storage_migration_show (application, settings, NULL, NULL);
 }
 
-void
+G_PASTE_VISIBLE void
 g_paste_storage_migration_register_action (GtkApplication *application,
                                            GPasteSettings *settings)
 {

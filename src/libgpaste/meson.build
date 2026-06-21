@@ -27,8 +27,6 @@ libgpaste_headers = [
   'gpaste/gpaste-util.h',
 ]
 
-libgpaste_symbols_file = meson.current_source_dir() / 'libgpaste.sym'
-
 libgpaste = library(
   'gpaste-' + apiversion,
   sources: libgpaste_sources,
@@ -36,8 +34,9 @@ libgpaste = library(
   dependencies: libgpaste_deps,
   install: true,
   install_dir: get_option('libdir'),
-  link_args: ['-Wl,--version-script=' + libgpaste_symbols_file, '-lc'],
-  link_depends: libgpaste_symbols_file,
+  # Exports are the symbols marked G_PASTE_VISIBLE; everything else stays hidden.
+  gnu_symbol_visibility: 'hidden',
+  link_args: ['-lc'],
 )
 
 libgpaste_internal_dep = declare_dependency(
@@ -91,8 +90,6 @@ libgpaste_gtk4_headers = [
   'gpaste-gtk4/gpaste-gtk-util.h',
 ]
 
-libgpaste_gtk4_symbols_file = meson.current_source_dir() / 'libgpaste-gtk4.sym'
-
 libgpaste_gtk4_deps = [ libgpaste_internal_dep, libadwaita_dep, gtk4_dep ]
 
 libgpaste_gtk4 = library(
@@ -102,8 +99,8 @@ libgpaste_gtk4 = library(
   dependencies: libgpaste_gtk4_deps,
   install: true,
   install_dir: get_option('libdir'),
-  link_args: ['-Wl,--version-script=' + libgpaste_gtk4_symbols_file, '-lc'],
-  link_depends: libgpaste_gtk4_symbols_file,
+  gnu_symbol_visibility: 'hidden',
+  link_args: ['-lc'],
 )
 
 libgpaste_gtk4_internal_dep = declare_dependency(
@@ -267,8 +264,6 @@ gpaste_daemon_headers_dep = declare_dependency(
 
 gpaste_daemon_deps += gpaste_daemon_headers_dep
 
-libgpaste_daemon_symbols_file = meson.current_source_dir() / 'libgpaste-daemon.sym'
-
 libgpaste_daemon = library(
   'gpaste-daemon',
   sources: gpaste_daemon_sources,
@@ -276,11 +271,12 @@ libgpaste_daemon = library(
   dependencies: gpaste_daemon_deps,
   install: true,
   install_dir: get_option('libdir'),
-  # The version script lists symbols for optional features (encryption, libsecret,
-  # the mutter clipboard) that are not compiled in every configuration; allow the
-  # script to reference those undefined symbols (ld >= 2.43 defaults to erroring).
-  link_args: ['-Wl,--version-script=' + libgpaste_daemon_symbols_file, '-lc'] + cc.get_supported_link_arguments('-Wl,--undefined-version'),
-  link_depends: libgpaste_daemon_symbols_file,
+  # Exports are the symbols marked G_PASTE_VISIBLE. Optional-feature symbols
+  # (encryption, libsecret, the mutter clipboard) are only compiled when the
+  # feature is enabled, so they export exactly when present without the version
+  # script having to reference symbols that may be undefined.
+  gnu_symbol_visibility: 'hidden',
+  link_args: ['-lc'],
 )
 
 gpaste_daemon_internal_dep = declare_dependency(
