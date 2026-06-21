@@ -26,13 +26,28 @@ typedef void (*GPasteHistorySaverLoadedFunc) (gpointer  user_data,
                                               gsize     size,
                                               gboolean  save_after);
 
+/* The kind of change being persisted. Incremental backends (e.g. SQLite) act on
+ * the supplied item/uuid; the file backend ignores them and rewrites the whole
+ * snapshot, so for it every kind behaves like %G_PASTE_HISTORY_SAVE_FULL. */
+typedef enum
+{
+    G_PASTE_HISTORY_SAVE_FULL,    /* rewrite the whole history */
+    G_PASTE_HISTORY_SAVE_ADD,     /* @item was prepended */
+    G_PASTE_HISTORY_SAVE_REMOVE,  /* @uuid was removed */
+    G_PASTE_HISTORY_SAVE_REPLACE, /* @uuid was replaced by @item */
+    G_PASTE_HISTORY_SAVE_CLEAR,   /* the history was emptied */
+} GPasteHistorySaveOp;
+
 /********************/
 /* Async operations */
 /********************/
 
-void     g_paste_history_saver_save       (GPasteHistorySaver *self,
-                                           const gchar        *name,
-                                           GList              *history);
+void     g_paste_history_saver_record     (GPasteHistorySaver  *self,
+                                           GPasteHistorySaveOp  op,
+                                           const gchar         *name,
+                                           const GPasteItem    *item,
+                                           const gchar         *uuid,
+                                           GList               *history);
 void     g_paste_history_saver_load       (GPasteHistorySaver *self,
                                            const gchar        *name,
                                            gboolean            save_after);

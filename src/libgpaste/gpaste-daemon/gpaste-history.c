@@ -168,17 +168,20 @@ g_paste_history_emit_update (GPasteHistory     *self,
 }
 
 static void
-g_paste_history_update (GPasteHistory     *self,
-                        GPasteUpdateAction action,
-                        GPasteUpdateTarget target,
-                        guint64            position)
+g_paste_history_update (GPasteHistory      *self,
+                        GPasteUpdateAction  action,
+                        GPasteUpdateTarget  target,
+                        guint64             position,
+                        GPasteHistorySaveOp op,
+                        const GPasteItem   *item,
+                        const gchar        *uuid)
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     /* Don't persist intermediate states while an async load is replacing the
      * history; the load result will trigger its own save when appropriate. */
     if (!g_paste_history_saver_is_loading (priv->saver))
-        g_paste_history_saver_save (priv->saver, priv->name, g_paste_history_snapshot (priv));
+        g_paste_history_saver_record (priv->saver, op, priv->name, item, uuid, g_paste_history_snapshot (priv));
 
     g_paste_history_emit_update (self, action, target, position);
 }
@@ -386,7 +389,7 @@ _g_paste_history_add (GPasteHistory *self,
         g_paste_history_private_elect_new_biggest (priv);
 
     g_paste_history_private_check_memory_usage (priv);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, target, 0, G_PASTE_HISTORY_SAVE_ADD, item, NULL);
 }
 
 /**
@@ -418,7 +421,8 @@ g_paste_history_remove_common (GPasteHistory        *self,
     if (!item)
         return;
 
-    gboolean was_biggest = g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (item->data));
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (item->data));
+    gboolean was_biggest = g_paste_str_equal (priv->biggest_uuid, uuid);
 
     g_paste_history_private_remove (priv, item, TRUE);
 
@@ -428,7 +432,7 @@ g_paste_history_remove_common (GPasteHistory        *self,
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (priv);
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, index);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REMOVE, NULL, uuid);
 }
 
 static void
@@ -609,7 +613,8 @@ _g_paste_history_replace (GPasteHistory *self,
 {
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
     GPasteItem *old = todel->data;
-    gboolean was_biggest = g_paste_str_equal (priv->biggest_uuid, g_paste_item_get_uuid (old));
+    g_autofree gchar *old_uuid = g_strdup (g_paste_item_get_uuid (old));
+    gboolean was_biggest = g_paste_str_equal (priv->biggest_uuid, old_uuid);
 
     priv->size -= g_paste_item_get_size (old);
     priv->size += g_paste_item_get_size (new);
@@ -620,7 +625,7 @@ _g_paste_history_replace (GPasteHistory *self,
     if (was_biggest)
         g_paste_history_private_elect_new_biggest (priv);
 
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, new, old_uuid);
 }
 
 /**
@@ -785,7 +790,7 @@ g_paste_history_rename_password (GPasteHistory *self,
     if (item)
     {
         g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (item), new_name);
-        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index);
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_POSITION, index, G_PASTE_HISTORY_SAVE_REPLACE, item, g_paste_item_get_uuid (item));
     }
 }
 
@@ -807,7 +812,7 @@ g_paste_history_empty (GPasteHistory *self)
     priv->size = 0;
 
     g_paste_history_private_elect_new_biggest (priv);
-    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0);
+    g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_CLEAR, NULL, NULL);
 }
 
 /**
@@ -893,7 +898,7 @@ g_paste_history_on_loaded (gpointer  user_data,
     }
 
     if (save_after)
-        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
+        g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL);
     else
         g_paste_history_emit_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }

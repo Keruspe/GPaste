@@ -89,6 +89,8 @@ void     g_paste_storage_backend_clear_history        (const GPasteStorageBacken
                                                        const gchar                *name,
                                                        const GList                *history);
 
+gboolean g_paste_storage_backend_is_incremental       (const GPasteStorageBackend *self);
+
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);
 

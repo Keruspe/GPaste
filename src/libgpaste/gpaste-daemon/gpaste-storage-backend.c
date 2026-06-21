@@ -240,6 +240,26 @@ g_paste_storage_backend_clear_history (const GPasteStorageBackend *self,
         g_paste_storage_backend_write_history (self, name, history);
 }
 
+/**
+ * g_paste_storage_backend_is_incremental:
+ * @self: a #GPasteStorageBackend instance
+ *
+ * Whether the backend implements any of the incremental update methods. When it
+ * does not, the add/remove/replace/clear wrappers all fall back to rewriting the
+ * whole history, so callers may coalesce successive updates into a single write.
+ *
+ * Returns: %TRUE if at least one incremental update method is implemented
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_is_incremental (const GPasteStorageBackend *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+
+    const GPasteStorageBackendClass *klass = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+
+    return klass->add_item || klass->remove_item || klass->replace_item || klass->clear_history;
+}
+
 static void
 g_paste_storage_backend_dispose (GObject *object)
 {
