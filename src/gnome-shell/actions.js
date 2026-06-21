@@ -30,20 +30,9 @@ class GPasteActions extends PopupBaseMenuItem {
         box.add_child(emptyHistoryItem);
         box.add_child(new GPasteAboutItem(client, menu));
         this.add_child(box);
-    }
 
-    // The menu's Up/Down navigation lands on one of our buttons, but they sit
-    // side by side, so move between them with Left/Right ourselves: the focused
-    // button's key press bubbles up here, and navigate_focus walks our children.
-    vfunc_key_press_event(event) {
-        const symbol = event.get_key_symbol();
-        if (symbol === Clutter.KEY_Left || symbol === Clutter.KEY_Right) {
-            const direction = symbol === Clutter.KEY_Left
-                ? St.DirectionType.LEFT
-                : St.DirectionType.RIGHT;
-            if (this.navigate_focus(global.stage.key_focus, direction, false))
-                return Clutter.EVENT_STOP;
-        }
-        return super.vfunc_key_press_event(event);
+        // Left/Right navigation between these buttons is driven from the
+        // indicator's _onMenuKeyPress: this row is non-reactive, so the key
+        // event never bubbles through it, only through the (reactive) menu actor.
     }
 });

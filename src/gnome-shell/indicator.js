@@ -5,6 +5,7 @@ import './dependencies.js';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {Button} from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {PopupMenuSection, PopupSeparatorMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
@@ -218,6 +219,11 @@ class GPasteIndicator extends Button {
         // (it is nested in the scroll view), so close the menu on activation
         // ourselves rather than relying on the usual menu-item plumbing.
         item.connect('activate', () => this.menu.itemActivated());
+        // The rows live in a nested scroll view, which does not scroll a
+        // keyboard-focused child into view on its own; do it ourselves so
+        // arrow-key navigation never lands on a row clipped outside the
+        // viewport (and so Up from the actions reveals the last row).
+        item.connect('key-focus-in', () => ensureActorVisibleInScrollView(this._scrollView, item));
         this._historySection.addMenuItem(item);
         this._history.push(item);
         return item;
@@ -437,17 +443,30 @@ class GPasteIndicator extends Button {
         if (this._switch && this._switch.active)
             return super._onMenuKeyPress(actor, event);
 
-        // When an action button is focused, Up returns to the last history
+        const symbol = event.get_key_symbol();
+
+        // The action buttons sit side by side inside a non-reactive row, so the
+        // key event never bubbles through their container; the menu actor
+        // (reactive) is where it surfaces, so drive their navigation from here.
+        // Left/Right move between the actions and Up returns to the last history
         // item; the action buttons are plain St.Buttons and don't drive that
-        // focus navigation themselves. (Left/Right between the actions is
-        // handled by GPasteActions itself, closer to the focused button.)
+        // focus navigation themselves.
         const focus = global.stage.get_key_focus();
-        if (event.get_key_symbol() === Clutter.KEY_Up &&
-            this._actions && focus && this._actions.contains(focus)) {
-            const last = this._lastHistoryItem();
-            if (last) {
-                last.grab_key_focus();
+        if (this._actions && focus && this._actions.contains(focus)) {
+            if (symbol === Clutter.KEY_Left || symbol === Clutter.KEY_Right) {
+                const direction = symbol === Clutter.KEY_Left
+                    ? St.DirectionType.LEFT
+                    : St.DirectionType.RIGHT;
+                this._actions.navigate_focus(focus, direction, false);
                 return Clutter.EVENT_STOP;
+            }
+
+            if (symbol === Clutter.KEY_Up) {
+                const last = this._lastHistoryItem();
+                if (last) {
+                    last.grab_key_focus();
+                    return Clutter.EVENT_STOP;
+                }
             }
         }
 
