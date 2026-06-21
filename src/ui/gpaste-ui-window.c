@@ -180,11 +180,21 @@ static gboolean
 on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
                 guint                  keyval,
                 guint                  keycode     G_GNUC_UNUSED,
-                GdkModifierType        state       G_GNUC_UNUSED,
+                GdkModifierType        state,
                 gpointer               user_data)
 {
     GPasteUiWindow *self = user_data;
     GPasteUiWindowPrivate *priv = g_paste_ui_window_get_instance_private (self);
+
+    /* Ctrl+0-9 activates the item displayed at that index, mirroring the GNOME
+     * Shell extension (the index is shown to the left of each item). */
+    if (state & GDK_CONTROL_MASK)
+    {
+        if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9)
+            return g_paste_ui_history_activate_index (priv->history, keyval - GDK_KEY_0) ? GDK_EVENT_STOP : GDK_EVENT_PROPAGATE;
+        if (keyval >= GDK_KEY_KP_0 && keyval <= GDK_KEY_KP_9)
+            return g_paste_ui_history_activate_index (priv->history, keyval - GDK_KEY_KP_0) ? GDK_EVENT_STOP : GDK_EVENT_PROPAGATE;
+    }
 
     if (keyval != GDK_KEY_Escape)
         return GDK_EVENT_PROPAGATE;

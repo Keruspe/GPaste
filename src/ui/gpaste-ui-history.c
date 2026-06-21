@@ -398,6 +398,30 @@ g_paste_ui_history_select_first (GPasteUiHistory *self)
     return g_paste_ui_item_activate (priv->items->data);
 }
 
+/**
+ * g_paste_ui_history_activate_index:
+ * @self: a #GPasteUiHistory instance
+ * @index: the position (0-based) of the item to activate
+ *
+ * Activate the item currently displayed at @index, if any.
+ *
+ * returns: whether anything was activated or not
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_ui_history_activate_index (GPasteUiHistory *self,
+                                   guint64          index)
+{
+    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY (self), FALSE);
+
+    GPasteUiHistoryPrivate *priv = g_paste_ui_history_get_instance_private (self);
+    GPasteUiItem *item = g_slist_nth_data (priv->items, index);
+
+    if (!item)
+        return FALSE;
+
+    return g_paste_ui_item_activate (item);
+}
+
 static void
 g_paste_ui_history_on_update (GPasteClient      *client G_GNUC_UNUSED,
                               GPasteUpdateAction action,
