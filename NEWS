@@ -1,3 +1,9 @@
+NEW in 50.4 (21/06/2026)
+=============
+
+- GNOME Shell extension: fix history items gradually disappearing from the menu (overlapping daemon updates could leave rows permanently hidden)
+- UI: fix keyboard input in the main window so Escape and Enter no longer swallow keystrokes meant for the search or history switch entries, and type-to-search now works right after startup
+
 NEW in 50.3 (16/06/2026)
 =============
 
