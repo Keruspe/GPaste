@@ -19,7 +19,7 @@ on_storage_migration_activated (AdwButtonRow *row G_GNUC_UNUSED,
 
     /* The dialog needs gtk_init/Adw and a nested main loop, so run it out of
      * process in the dedicated helper rather than inside the preferences. */
-    g_autoptr (GSubprocess) proc = g_paste_util_spawn_storage_migration (&error);
+    g_autoptr (GSubprocess) proc = g_paste_util_spawn_storage ("migrate", &error);
 
     if (!proc)
         g_warning ("Could not start the storage migration: %s", error->message);

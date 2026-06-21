@@ -22,4 +22,4 @@ Exec=gapplication action org.gnome.GPaste.Ui about
 
 [Desktop Action storage-migration]
 Name=Storage migration
-Exec=@pkglibexecdir@/gpaste-daemon-storage-migration
+Exec=@pkglibexecdir@/gpaste-storage migrate

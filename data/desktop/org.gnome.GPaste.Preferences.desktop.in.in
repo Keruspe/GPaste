@@ -13,4 +13,4 @@ Actions=storage-migration;
 
 [Desktop Action storage-migration]
 Name=Storage migration
-Exec=@pkglibexecdir@/gpaste-daemon-storage-migration
+Exec=@pkglibexecdir@/gpaste-storage migrate

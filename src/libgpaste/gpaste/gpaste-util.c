@@ -636,15 +636,20 @@ g_paste_util_ensure_history_dir_exists (void)
 }
 
 /**
- * g_paste_util_spawn_storage_migration:
+ * g_paste_util_spawn_storage:
+ * @command: the subcommand to run ("migrate" or "decrypt")
  * @error: (nullable): a #GError, or %NULL
  *
- * Spawn the storage-migration helper executable.
+ * Spawn the gpaste-storage helper executable with @command. Its stdout is piped
+ * so the caller can read back the encrypted-history passphrase the helper ended
+ * up with (the helper runs in its own process and cannot share it otherwise).
  *
  * Returns: (transfer full) (nullable): the new #GSubprocess, or %NULL on error
  */
 G_PASTE_VISIBLE GSubprocess *
-g_paste_util_spawn_storage_migration (GError **error)
+g_paste_util_spawn_storage (const gchar *command,
+                            GError     **error)
 {
-    return g_subprocess_new (G_SUBPROCESS_FLAGS_NONE, error, PKGLIBEXECDIR "/gpaste-daemon-storage-migration", NULL);
+    return g_subprocess_new (G_SUBPROCESS_FLAGS_STDOUT_PIPE, error,
+                             PKGLIBEXECDIR "/gpaste-storage", command, NULL);
 }

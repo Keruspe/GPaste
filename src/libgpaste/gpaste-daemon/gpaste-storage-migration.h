@@ -20,19 +20,15 @@ typedef void (*GPasteStorageMigrationDoneFunc) (gpointer user_data);
 typedef void (*GPasteStoragePassphraseFunc) (const gchar *passphrase,
                                              gpointer     user_data);
 
+/* Whether the migration dialog should be shown: the stored backend revision
+ * differs from G_PASTE_STORAGE_BACKEND_REVISION. */
 gboolean g_paste_storage_migration_needed (GPasteSettings *settings);
 
-/* Synchronously get the history store ready before the daemon loads it: register
- * the migration action, run the migration dialog, and (when encryption is
- * enabled) unlock an encrypted history from the keyring or a passphrase prompt.
- * Spins a nested main loop while a dialog is up. When @force is %FALSE the dialog
- * is only shown if the stored revision changed (g_paste_storage_migration_needed);
- * when %TRUE it is always shown. Deciding whether a migration is needed is the
- * launcher's job (the standalone daemon, or daemon.js before spawning the helper),
- * so the helper executable always forces the dialog. */
-void g_paste_storage_migration_prepare (GtkApplication *application,
-                                        GPasteSettings *settings,
-                                        gboolean        force);
+/* Whether an encrypted history still needs decrypting before it can be loaded:
+ * the backend is encrypted and no passphrase is set yet. When libsecret is built
+ * this also applies a usable keyring passphrase as a side effect (returning
+ * %FALSE then), so a %TRUE result means a prompt is genuinely required. */
+gboolean g_paste_storage_decryption_needed (GPasteSettings *settings);
 
 /* Ask the user for the encrypted history passphrase. @confirm asks for it twice
  * (with a data-loss warning) when setting up a new encrypted history; otherwise
@@ -45,10 +41,24 @@ void g_paste_storage_migration_prompt_passphrase (GtkApplication              *a
                                                   GPasteStoragePassphraseFunc  done,
                                                   gpointer                     user_data);
 
+/* Show the migration dialog (the "migrate" concern) and call @done when it is
+ * dismissed. Always shows it; deciding whether it is needed is the caller's job
+ * (g_paste_storage_migration_needed()). The caller drives the main loop (e.g.
+ * through g_application_run()); this never spins one of its own. */
 void g_paste_storage_migration_show (GtkApplication                 *application,
                                      GPasteSettings                 *settings,
                                      GPasteStorageMigrationDoneFunc  done,
                                      gpointer                        user_data);
+
+/* Unlock an already-encrypted history (the "decrypt" concern) through a
+ * passphrase prompt, calling @done once settled. Only meaningful after
+ * g_paste_storage_decryption_needed() returns %TRUE (which also applies a usable
+ * keyring passphrase); @done is invoked immediately when there is nothing to do.
+ * Like _show above, the caller owns the main loop. */
+void g_paste_storage_decryption_show (GtkApplication                 *application,
+                                      GPasteSettings                 *settings,
+                                      GPasteStorageMigrationDoneFunc  done,
+                                      gpointer                        user_data);
 
 void g_paste_storage_migration_register_action (GtkApplication *application,
                                                 GPasteSettings *settings);

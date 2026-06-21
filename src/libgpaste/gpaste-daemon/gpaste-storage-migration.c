@@ -313,6 +313,66 @@ try_keyring_passphrase (GPasteSettings *settings)
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+typedef void (*UnlockDoneFunc) (gpointer user_data);
+
+typedef struct
+{
+    GtkApplication *application;
+    GPasteSettings *settings;
+    UnlockDoneFunc  done;
+    gpointer        user_data;
+} UnlockPrompt;
+
+static void
+on_unlock_reply (const gchar *passphrase,
+                 gpointer     user_data)
+{
+    UnlockPrompt *prompt = user_data;
+
+    /* A wrong passphrase would load an empty history and let the next save
+     * overwrite the real data, so never accept one that does not decrypt: ask
+     * again instead. */
+    if (passphrase && !g_paste_file_backend_passphrase_can_decrypt (prompt->settings, passphrase))
+    {
+        g_paste_storage_migration_prompt_passphrase (prompt->application, FALSE,
+                                                     _("Wrong passphrase, please try again"),
+                                                     on_unlock_reply, prompt);
+        return;
+    }
+
+    /* NULL on dismissal: leave no passphrase set. */
+    if (passphrase)
+        g_paste_storage_backend_set_passphrase (passphrase);
+
+    UnlockDoneFunc done = prompt->done;
+    gpointer done_data = prompt->user_data;
+
+    g_free (prompt);
+
+    if (done)
+        done (done_data);
+}
+
+/* Shared "unlock an existing encrypted history" prompt: ask for the passphrase,
+ * verify it actually decrypts, re-prompt on a wrong one, then call @done once
+ * settled (the passphrase is set on success, left unset on dismissal). Callers
+ * try the keyring first; this is the prompt half they fall back to. */
+static void
+unlock_prompt (GtkApplication *application,
+               GPasteSettings *settings,
+               UnlockDoneFunc  done,
+               gpointer        user_data)
+{
+    UnlockPrompt *prompt = g_new0 (UnlockPrompt, 1);
+
+    prompt->application = application;
+    prompt->settings = settings;
+    prompt->done = done;
+    prompt->user_data = user_data;
+
+    g_paste_storage_migration_prompt_passphrase (application, FALSE, NULL, on_unlock_reply, prompt);
+}
+
 static void
 on_passphrase_set (const gchar *passphrase,
                    gpointer     user_data)
@@ -327,28 +387,16 @@ on_passphrase_set (const gchar *passphrase,
     apply_migration (self, G_PASTE_STORAGE_ENCRYPTED_FILE);
 }
 
-/* The existing encrypted history we are migrating away from has to be decrypted
- * to import (or listed to delete), so it needs its own passphrase. Verify it
- * unlocks the data and re-prompt on a wrong one, then apply with the chosen
- * target. */
+/* Once the source encrypted history is unlocked, apply the migration with the
+ * chosen target; on dismissal (no passphrase) stay on the dialog instead. */
 static void
-on_source_passphrase_set (const gchar *passphrase,
-                          gpointer     user_data)
+on_source_unlocked (gpointer user_data)
 {
     MigrationData *self = user_data;
 
-    if (!passphrase)
+    if (!g_paste_storage_backend_get_passphrase ())
         return;
 
-    if (!g_paste_file_backend_passphrase_can_decrypt (self->settings, passphrase))
-    {
-        g_paste_storage_migration_prompt_passphrase (self->application, FALSE,
-                                                     _("Wrong passphrase, please try again"),
-                                                     on_source_passphrase_set, self);
-        return;
-    }
-
-    g_paste_storage_backend_set_passphrase (passphrase);
     apply_migration (self, backend_for_index (self, adw_combo_row_get_selected (self->backend_row)));
 }
 #endif
@@ -378,12 +426,10 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
         (adw_switch_row_get_active (self->import_row) || adw_switch_row_get_active (self->cleanup_row)))
     {
 #ifdef G_PASTE_ENABLE_LIBSECRET
-        try_keyring_passphrase (self->settings);
+        if (!try_keyring_passphrase (self->settings))
 #endif
-
-        if (!g_paste_storage_backend_get_passphrase ())
         {
-            g_paste_storage_migration_prompt_passphrase (self->application, FALSE, NULL, on_source_passphrase_set, self);
+            unlock_prompt (self->application, self->settings, on_source_unlocked, self);
             return;
         }
     }
@@ -872,96 +918,54 @@ g_paste_storage_migration_prompt_passphrase (GtkApplication              *applic
     gtk_window_present (self->window);
 }
 
-static void
-on_prepare_done (gpointer user_data)
+G_PASTE_VISIBLE gboolean
+g_paste_storage_decryption_needed (GPasteSettings *settings)
 {
-    g_main_loop_quit (user_data);
-}
+    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), FALSE);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-typedef struct
-{
-    GtkApplication *application;
-    GPasteSettings *settings;
-    GMainLoop      *loop;
-} UnlockData;
+    /* Only an encrypted history that is not already unlocked needs decrypting. */
+    if (g_paste_settings_get_storage_backend (settings) != G_PASTE_STORAGE_ENCRYPTED_FILE ||
+        g_paste_storage_backend_get_passphrase ())
+        return FALSE;
 
-static void
-on_prepare_passphrase (const gchar *passphrase,
-                       gpointer     user_data)
-{
-    UnlockData *data = user_data;
-
-    /* Dismissed: leave no passphrase set. The encrypted backend then refuses to
-     * store anything (it must not fall back to plaintext) and the on-disk history
-     * is left untouched, so nothing is lost. */
-    if (!passphrase)
-    {
-        g_main_loop_quit (data->loop);
-        return;
-    }
-
-    /* Never accept a passphrase that does not decrypt the existing history: using
-     * it would load an empty history and the first save would overwrite — and
-     * destroy — the real, still-encrypted data. Ask again instead. */
-    if (!g_paste_file_backend_passphrase_can_decrypt (data->settings, passphrase))
-    {
-        g_paste_storage_migration_prompt_passphrase (data->application, FALSE,
-                                                     _("Wrong passphrase, please try again"),
-                                                     on_prepare_passphrase, data);
-        return;
-    }
-
-    g_paste_storage_backend_set_passphrase (passphrase);
-    g_main_loop_quit (data->loop);
-}
+#ifdef G_PASTE_ENABLE_LIBSECRET
+    /* A keyring passphrase that unlocks the history is applied here, so no prompt
+     * (and, in gnome-shell, no helper) is needed: the caller can load straight
+     * away with the passphrase now set in this process. */
+    if (try_keyring_passphrase (settings))
+        return FALSE;
 #endif
 
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+/**
+ * g_paste_storage_decryption_show:
+ * @application: a #GtkApplication instance
+ * @settings: a #GPasteSettings instance
+ * @done: (scope async) (nullable): called once the history is unlocked or the prompt dismissed
+ * @user_data: data passed to @done
+ *
+ * Unlock an already-encrypted history through a passphrase prompt.
+ */
 G_PASTE_VISIBLE void
-g_paste_storage_migration_prepare (GtkApplication *application,
-                                   GPasteSettings *settings,
-                                   gboolean        force)
+g_paste_storage_decryption_show (GtkApplication                 *application,
+                                 GPasteSettings                 *settings,
+                                 GPasteStorageMigrationDoneFunc  done,
+                                 gpointer                        user_data)
 {
     g_return_if_fail (GTK_IS_APPLICATION (application));
     g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
 
-    /* Also reachable later through the "storage-migration" action. */
-    g_paste_storage_migration_register_action (application, settings);
-
-    /* Let the user pick (or confirm) where the history is stored before the
-     * daemon starts persisting anything. @force skips the revision check so the
-     * standalone helper always shows the dialog when launched explicitly. */
-    if (force || g_paste_storage_migration_needed (settings))
-    {
-        g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
-
-        adw_init ();
-        g_paste_storage_migration_show (application, settings, on_prepare_done, loop);
-        g_main_loop_run (loop);
-    }
-
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    /* An already-configured encrypted history needs to be unlocked before the
-     * daemon loads it. */
-    if (g_paste_settings_get_storage_backend (settings) == G_PASTE_STORAGE_ENCRYPTED_FILE &&
-        !g_paste_storage_backend_get_passphrase ())
-    {
-#ifdef G_PASTE_ENABLE_LIBSECRET
-        /* Prefer a passphrase remembered in the keyring over prompting (a stale
-         * one that no longer decrypts is discarded by try_keyring_passphrase). */
-        try_keyring_passphrase (settings);
-#endif
-
-        if (!g_paste_storage_backend_get_passphrase ())
-        {
-            g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
-            UnlockData data = { application, settings, loop };
-
-            adw_init ();
-            g_paste_storage_migration_prompt_passphrase (application, FALSE, NULL, on_prepare_passphrase, &data);
-            g_main_loop_run (loop);
-        }
-    }
+    unlock_prompt (application, settings, done, user_data);
+#else
+    if (done)
+        done (user_data);
 #endif
 }
 

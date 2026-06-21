@@ -5,15 +5,15 @@ import Gio from 'gi://Gio';
 import GPaste from 'gi://GPaste?version=2';
 import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 
-Gio._promisify(Gio.Subprocess.prototype, 'wait_check_async', 'wait_check_finish');
+Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'communicate_utf8_finish');
 
 // Runs the GPaste daemon inside gnome-shell, mirroring src/daemon/gpaste-daemon.c
 // but driving the mutter (MetaSelection) clipboard backend so the clipboard can
 // be watched from within the compositor itself. Compared to the standalone
 // daemon there is no GApplication, no POSIX signal handling and no re-exec, and
-// the storage-backend choice / migration dialog is not run in-process (it needs
-// gtk_init/Adw, which gnome-shell does not provide): instead the
-// gpaste-daemon-storage-migration helper is spawned for it.
+// the storage-backend choice / migration dialog and the encrypted-history unlock
+// are not run in-process (they need gtk_init/Adw, which gnome-shell does not
+// provide): instead the gpaste-storage helper is spawned for each concern.
 export class GPasteDaemonRunner {
     constructor() {
         this._settings = GPaste.Settings.new();
@@ -23,11 +23,22 @@ export class GPasteDaemonRunner {
     }
 
     async _start() {
-        // The standalone daemon runs g_paste_storage_migration_prepare in-process;
-        // here we shell out to the dedicated helper instead, and wait for it to
-        // settle the storage backend before the daemon loads the history.
+        // The standalone daemon settles this in-process from its own main loop;
+        // here we shell out to the dedicated helper for each concern (migration,
+        // then decryption) and wait for it to settle the storage backend before
+        // the daemon loads the history. Deciding what is needed stays here, in the
+        // launcher (the same migration_needed/decryption_needed checks).
         if (GPasteDaemon.storage_migration_needed(this._settings))
-            await this._runStorageMigration();
+            await this._runStorageCommand('migrate');
+
+        if (this._cancellable.is_cancelled())
+            return;
+
+        // Re-checked after migration, since it may have (re)selected the encrypted
+        // backend; also applies a usable keyring passphrase in this process, in
+        // which case no helper is spawned.
+        if (GPasteDaemon.storage_decryption_needed(this._settings))
+            await this._runStorageCommand('decrypt');
 
         if (this._cancellable.is_cancelled())
             return;
@@ -48,12 +59,17 @@ export class GPasteDaemonRunner {
         this._bus.own_name();
     }
 
-    async _runStorageMigration() {
+    async _runStorageCommand(command) {
         try {
-            const proc = GPaste.util_spawn_storage_migration();
-            await proc.wait_check_async(this._cancellable);
+            const proc = GPaste.util_spawn_storage(command);
+            // The helper writes back the encrypted-history passphrase it ended up
+            // with (it runs in its own process and cannot share the process-wide
+            // global), so set it here before the daemon loads the history.
+            const [, passphrase] = await proc.communicate_utf8_async(null, this._cancellable);
+            if (passphrase)
+                GPasteDaemon.storage_backend_set_passphrase(passphrase);
         } catch (e) {
-            console.error(`GPaste: storage migration helper failed: ${e.message}`);
+            console.error(`GPaste: storage ${command} helper failed: ${e.message}`);
         }
     }
 
@@ -77,5 +93,15 @@ export class GPasteDaemonRunner {
         this._daemon = null;
         this._searchProvider = null;
         this._settings = null;
+
+        // Wipe the master passphrase from gcr secure memory on teardown, the way
+        // the standalone daemon does before exiting.
+        //
+        // storage_backend_set_passphrase is compiled only with encryption support
+        // (G_PASTE_ENABLE_ENCRYPTION), so its binding is missing from builds without
+        // it; calling it unconditionally would throw on the undefined member, hence
+        // the existence check.
+        if (GPasteDaemon.storage_backend_set_passphrase)
+            GPasteDaemon.storage_backend_set_passphrase(null);
     }
 }
