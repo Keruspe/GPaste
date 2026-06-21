@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-12 07:05+0200\n"
+"POT-Creation-Date: 2026-06-21 09:24+0200\n"
 "PO-Revision-Date: 2026-03-16 04:09+0000\n"
 "Last-Translator: தமிழ்நேரம் <tamilneram247@gmail.com>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/gpaste/gpaste/ta/"
@@ -54,7 +54,7 @@ msgid "Preferences"
 msgstr "Gpaste விருப்பத்தேர்வுகள்"
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:20
-#: src/gnome-shell/aboutItem.js:13 src/ui/gpaste-ui-about.c:38
+#: src/gnome-shell/aboutItem.js:13 src/ui/gpaste-ui-header.c:259
 msgid "About"
 msgstr "பற்றி"
 
@@ -114,7 +114,9 @@ msgid "Size of image previews in pixels"
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:50
-msgid "Default size is 100 pixels"
+msgid ""
+"Size of the inline image thumbnail in the history; the larger detail preview "
+"is shown on hover. Default size is 50 pixels."
 msgstr ""
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
@@ -160,7 +162,7 @@ msgstr ""
 "முடக்குகிறது."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:92
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:146
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:77
 msgid "Max displayed history size"
 msgstr "அதிகபட்சம் வரலாற்றைக் காட்டியது"
 
@@ -169,7 +171,7 @@ msgid "Maximum number of items displayed in the history"
 msgstr "வரலாற்றில் காட்டப்படும் அதிகபட்ச உருப்படிகளின் எண்ணிக்கை"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:101
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:105
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:46
 msgid "Max history size"
 msgstr "அதிகபட்ச வரலாற்று அளவு"
 
@@ -178,7 +180,7 @@ msgid "Maximum number of items in history"
 msgstr "வரலாற்றில் அதிகபட்ச உருப்படிகளின் எண்ணிக்கை"
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:110
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:112
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:51
 msgid "Max memory usage (MB)"
 msgstr "அதிகபட்ச நினைவக பயன்பாடு (எம்பி)"
 
@@ -373,451 +375,473 @@ msgid "The settings UI"
 msgstr "அமைப்புகள் இடைமுகம்"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:51
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:62
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:89
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:98
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:110
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:120
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:140
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:153
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:163
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:172
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:60
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:69
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:107
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:116
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:128
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:138
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:158
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:171
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:181
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:200
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:217
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:225
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:233
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:190
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:199
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:218
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:235
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:243
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:251
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:259
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:267
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:275
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:283
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:307
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:315
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:323
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:331
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:339
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:347
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:355
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:363
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:372
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:269
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:277
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:285
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:293
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:301
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:325
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:333
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:341
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:349
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:357
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:365
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:373
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:381
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:390
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:399
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:407
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:415
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:423
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:417
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:425
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:433
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:441
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:449
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:458
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:459
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:467
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:476
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:484
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:505
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:513
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:521
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:529
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:537
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:553
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:561
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:569
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:577
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:593
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:485
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:494
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:502
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:523
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:531
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:539
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:547
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:555
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:571
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:579
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:587
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:595
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:611
 msgid "This is a maintenance release. Changes:"
 msgstr "இது ஒரு பராமரிப்பு வெளியீடு. மாற்றங்கள்:"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:53
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:91
-msgid "GNOME Shell extension: restore keyboard navigation of history items"
+msgid ""
+"GNOME Shell extension: fix history items gradually disappearing from the menu"
 msgstr ""
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:54
 msgid ""
+"UI: fix keyboard input so Escape and Enter no longer swallow text meant for "
+"the search or history switch entries, and type-to-search works right after "
+"startup"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:62
+msgid "GNOME Shell extension: fix keyboard navigation in the history menu"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:63
+msgid "GNOME Shell extension: give every action button the same width"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:71
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:109
+msgid "GNOME Shell extension: restore keyboard navigation of history items"
+msgstr ""
+
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:72
+msgid ""
 "GNOME Shell extension: restore the Ctrl index overlay and Ctrl+0-9 selection"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:55
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:73
 msgid "Build: require GTK 4.18"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:56
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:92
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:74
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:110
 msgid "Fix a typo in the French translation"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:64
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
 msgid "Fix building without the GNOME Shell extension (-Dgnome-shell=false)"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:65
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:83
 msgid ""
 "Restore GTK deprecation version-gating and drop the unused build-time gjs "
 "dependency"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:66
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:84
 msgid "Target GNOME Shell 50 in the extension"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:67
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:85
 msgid "Bump the library soversions to reflect the API/ABI changes since 45.8"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:73
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:91
 msgid ""
 "This is a major release porting GPaste to GTK 4 and libadwaita. Changes:"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:75
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:93
 msgid "Port the daemon, history UI and preferences to GTK 4 and libadwaita"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:76
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:94
 msgid "Show image thumbnails in the history, with configurable preview size"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:77
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:95
 msgid ""
 "Support global keyboard shortcuts on Wayland through the XDG GlobalShortcuts "
 "portal"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:78
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:96
 msgid "Recognise copied colours as dedicated colour items"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:79
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:97
 msgid ""
 "Give keybindings human-readable descriptions and install a daemon desktop "
 "file"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:80
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:98
 msgid "Fix images sometimes being repeatedly re-added to the history"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:81
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:101
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:99
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:119
 msgid ""
 "Fix keyboard shortcuts not triggering when NumLock and CapsLock are both "
 "active"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:82
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:100
 msgid ""
 "Fix several crashes (search provider, UI lifetime, GNOME Shell extension) "
 "and memory leaks"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:83
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:101
 msgid "Modernise the GNOME Shell extension to current conventions"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:100
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:118
 msgid "Fix use-after-free crash in the GNOME Shell search provider"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:102
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:120
 msgid ""
 "Fix memory leaks when re-copying history items and when rebinding shortcuts"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:103
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:121
 msgid "Fix potential crash when enforcing a very small history size"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:104
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:122
 msgid "Build: ship the GSettings schema as a static file"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:112
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:130
 msgid ""
 "GNOME Shell extension now retries the daemon connection before giving up"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:113
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:131
 msgid "Fix test crash when GrabAccelerators is not allowed"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:114
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:132
 msgid "Build: simplify gsettings compilation for tests"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:122
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:140
 msgid "Fix GC crash and signal leak when disabling the GNOME Shell extension"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:123
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:141
 msgid "GNOME Shell extension now handles daemon connection failure gracefully"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:124
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:142
 #, fuzzy
 msgid "Fix crash when a history item has no value yet"
 msgstr "இதுவரை வரலாறு இல்லாதபோது செயலிழப்பை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:125
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:143
 msgid "Fix image files not being deleted when history items are removed"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:126
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:144
 msgid "Fix image files stored in wrong directory"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:127
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:145
 #, fuzzy
 msgid "Fix keyboard focus being stolen by history items on hover"
 msgstr "ஒரே ஒரு உருப்படியுடன் வரலாற்றுக்கு வழிவகுக்கும் பிழையை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:128
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:146
 msgid ""
 "Fix key events incorrectly forwarded to search when another entry has focus"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:129
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:147
 msgid "Fix signal loop when updating shortcut entries from settings"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:130
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:148
 msgid "Fix default history item count not reset after history deletion"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:131
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:149
 msgid "Enforce minimum window size to prevent unresizable state"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:132
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:150
 msgid "Add descriptive tooltips for settings entries"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:133
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:151
 msgid "Build: explicitly link libgpaste libraries against libc"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:134
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:147
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:157
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:166
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:152
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:175
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:184
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:194
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:245
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:287
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:301
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:193
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:202
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:212
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:263
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:305
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:319
 msgid "Translations updates"
 msgstr "மொழிபெயர்ப்பு புதுப்பிப்புகள்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:142
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:160
 msgid ""
 "Fix infinite Pango assertion loop that could fill disk when clipboard "
 "content contained tab characters"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:143
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:161
 msgid "Various bug fixes and memory management improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:144
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:162
 msgid "Daemon improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:145
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:163
 msgid "GNOME Shell extension improvements"
 msgstr ""
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:146
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:164
 #, fuzzy
 msgid "GLib >= 2.76 is now required"
 msgstr "சி.சி.ஆர் 4 இப்போது தேவை"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:155
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:173
 #, fuzzy
 msgid "Support for gnome 50"
 msgstr "க்னோம் 48 க்கான உதவி"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:156
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:174
 #, fuzzy
 msgid "Support for gnome 49"
 msgstr "க்னோம் 48 க்கான உதவி"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:183
 msgid "Support for gnome 48"
 msgstr "க்னோம் 48 க்கான உதவி"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:174
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:192
 msgid "Support for gnome 47"
 msgstr "க்னோம் 47 க்கான உதவி"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:183
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:201
 msgid "Support for gnome 46"
 msgstr "க்னோம் 46 க்கான உதவி"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:190
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:208
 msgid "Stable release for GNOME 45. Changes:"
 msgstr "க்னோம் 45 க்கான நிலையான வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:192
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:210
 msgid "Port to gnome 45"
 msgstr "க்னோம் 45 க்கு துறைமுகம்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:193
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:211
 msgid "Add setting to open ui window centered"
 msgstr "இடைமுகம் சாளரத்தை மையமாகக் கொண்ட அமைப்பைச் சேர்க்கவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:202
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:219
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:253
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:309
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:220
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:237
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:271
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:327
 msgid "Fix a bug leading to history with only one item"
 msgstr "ஒரே ஒரு உருப்படியுடன் வரலாற்றுக்கு வழிவகுக்கும் பிழையை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:208
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:226
 msgid "First release for GNOME 44. Changes:"
 msgstr "க்னோம் 44 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:210
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:228
 msgid "gcr 4 is now required"
 msgstr "சி.சி.ஆர் 4 இப்போது தேவை"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:211
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:229
 msgid "Port to gnome 44"
 msgstr "க்னோம் 44 க்கு துறைமுகம்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:227
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:261
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:317
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:245
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:279
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:335
 msgid "Avoid crash under heavy memory load"
 msgstr "கனமான நினைவக சுமைகளின் கீழ் செயலிழப்பைத் தவிர்க்கவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:235
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:269
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:325
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:401
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:253
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:287
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:343
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:419
 msgid "Respect --use-index when displaying history"
 msgstr "வரலாற்றைக் காண்பிக்கும் போது மரியாதை-use-index"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:241
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:259
 msgid "First release for GNOME 43. Changes:"
 msgstr "க்னோம் 43 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:243
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:261
 msgid "Port to GNOME 43"
 msgstr "க்னோம் 43 க்கு துறைமுகம்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:244
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:262
 msgid "Internal preparation for gtk4 port"
 msgstr "சி.டி.கே 4 போர்ட்டுக்கான உள் தயாரிப்பு"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:277
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:333
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:409
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:295
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:351
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:427
 msgid "Open GPaste UI where the mouse pointer is"
 msgstr "மவுச் சுட்டிக்காட்டி இருக்கும் இடத்தில் gpaste இடைமுகம் ஐத் திறக்கவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:285
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:303
 msgid "Fixes to the new preferences tool"
 msgstr "புதிய விருப்பத்தேர்வுகள் கருவியை சரிசெய்கிறது"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:286
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:304
 msgid "Style fixes"
 msgstr "பாணி திருத்தங்கள்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:293
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:311
 msgid "First release for GNOME 42. Changes:"
 msgstr "க்னோம் 42 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:295
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:313
 msgid ""
 "Old libgpaste replaced by a new minimal libgpaste-2 with no gtk dependency"
 msgstr ""
 "சி.டி.கே சார்பு இல்லாத புதிய குறைந்தபட்ச லிப்க்பேச்ட் -2 ஆல் மாற்றப்பட்ட பழைய லிப்க்பேச்ட்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:296
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:314
 msgid "New libgpaste-gtk3 for utils and settings ui"
 msgstr "பயன்பாடுகள் மற்றும் அமைப்புகளுக்கு இடைமுகம் க்கான புதிய libgpaste-gtk3"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:297
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:315
 msgid "New libgpaste-gtk4 for utils and preferences ui"
 msgstr "பயன்பாடுகள் மற்றும் விருப்பங்களுக்கான புதிய libgpaste-gtk4 இடைமுகம்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:298
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:316
 msgid "New gtk4 based gpaste-preferences utility"
 msgstr "புதிய சி.டி.கே 4 அடிப்படையிலான சிஒட்டு-முன்னுரிமைகள் பயன்பாடு"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:299
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:317
 msgid "Autotools are no longer supported"
 msgstr "ஆட்டோடூல்கள் இனி ஆதரிக்கப்படாது"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:300
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:318
 msgid "Extension updated for gnome-shell 42"
 msgstr "க்னோம்-செல் 42 க்கு நீட்டிப்பு புதுப்பிக்கப்பட்டது"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:341
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:359
 msgid "fix the storage path for meson builds"
 msgstr "மீசன் கட்டமைப்பிற்கான சேமிப்பக பாதையை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:349
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:367
 msgid "fix some race conditions in history handling"
 msgstr "வரலாற்று கையாளுதலில் சில இன நிலைமைகளை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:357
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:375
 msgid "better fix crash when there is no history yet"
 msgstr "இதுவரை வரலாறு இல்லாதபோது செயலிழப்பை சரிசெய்ய சிறந்தது"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:365
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:383
 msgid "fix crash when there is no history yet"
 msgstr "இதுவரை வரலாறு இல்லாதபோது செயலிழப்பை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:366
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:375
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:384
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:393
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:417
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:402
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:411
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:435
 msgid "translations update"
 msgstr "மொழிபெயர்ப்பு புதுப்பிப்பு"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:374
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:392
 msgid "fix gnome-shell exntesion when the daemon restarts"
 msgstr "டீமான் மறுதொடக்கம் செய்யும் போது க்னோம்-செல் எக்சன்டீனை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:383
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:401
 msgid "Fix keybindings for wayland"
 msgstr "வேலண்டிற்கான விசைப்பலகைகளை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:390
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:408
 msgid "First release for GNOME 41. Changes:"
 msgstr "க்னோம் 41 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:392
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:410
 msgid "port to gnome-shell 41"
 msgstr "க்னோம்-செல் 41 க்கு துறைமுகம்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:425
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:443
 msgid "fix a crash in memory usage checking"
 msgstr "நினைவக பயன்பாட்டு சோதனையில் விபத்தை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:432
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:450
 msgid "First release for GNOME 40. Changes:"
 msgstr "க்னோம் 40 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:434
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:452
 msgid "port to gnome-shell 40"
 msgstr "க்னோம்-செல் 40 க்கு துறைமுகம்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:435
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:453
 msgid "placeholder for gnome-shell prefs"
 msgstr "க்னோம்-செல் முன்னுரிமைகளுக்கான ஒதுக்கிடர்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:443
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:507
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:461
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:525
 msgid "fix X11 keybinder outside of GNOME"
 msgstr "க்னோமுக்கு வெளியே x11 கீபிண்டரை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:451
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:469
 msgid "better handling and reporting of invalid uuids passed to gpaste-client"
 msgstr ""
 "gpaste-client க்கு அனுப்பப்பட்ட தவறான uuids களின் சிறந்த கையாளுதல் மற்றும் அறிக்கையிடல்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:452
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:470
 msgid ""
 "gpaste-client now has a --use-index argument for several subcommands to use "
 "index instead of uuid"
@@ -825,91 +849,91 @@ msgstr ""
 "gpaste-client இப்போது uuid க்கு பதிலாகக் குறியீட்டைப் பயன்படுத்தப் பல துணைக் "
 "கமாண்டுகளுக்கு-use-index உரையாடல் உள்ளது"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:460
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:478
 msgid "fix the make-password keybinding"
 msgstr "மேக்-பாச்வேர்ட் கீபிங்கை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:461
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:470
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:479
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:488
 msgid "updated translations"
 msgstr "புதுப்பிக்கப்பட்ட மொழிபெயர்ப்புகள்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:469
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:487
 msgid "gnome-shell extension warning fixes"
 msgstr "க்னோம்-செல் நீட்டிப்பு எச்சரிக்கை திருத்தங்கள்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:478
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:515
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:496
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:533
 msgid "gnome-shell extension cosmetic updates"
 msgstr "க்னோம்-செல் நீட்டிப்பு ஒப்பனை புதுப்பிப்புகள்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:486
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:504
 msgid "Disable images support by default (can be reenabled in preferences)"
 msgstr "முன்னிருப்பாக படங்களின் ஆதரவை முடக்கு (விருப்பங்களில் மீண்டும் உருவாக்கப்படலாம்)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:487
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:505
 msgid "Search now includes passwords (using their names)"
 msgstr "இப்போது தேடலில் கடவுச்சொற்கள் உள்ளன (அவற்றின் பெயர்களைப் பயன்படுத்தி)"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:488
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:506
 msgid "systemd integration enhancements"
 msgstr "SystemD ஒருங்கிணைப்பு மேம்பாடுகள்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:494
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:512
 msgid "First release for GNOME 3.38. Changes:"
 msgstr "க்னோம் 3.38 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:496
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:514
 msgid "Drop the Tracking DBus signal"
 msgstr "கண்காணிப்பு DBUS சமிக்ஞையை கைவிடவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:497
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:515
 msgid "Switch to uuids to identify items"
 msgstr "உருப்படிகளை அடையாளம் காண uuids க்கு மாறவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:498
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:516
 msgid "Bump DBus interface to org.gnome.GPaste2"
 msgstr "Org.gnome.gpasat2 க்கு பம்ப் டிபிஎச் இடைமுகம்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:499
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:517
 msgid "Update to gnome-shell 3.38.0"
 msgstr "க்னோம்-செல் 3.38.0 க்கு புதுப்பிக்கவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:523
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:555
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:597
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:541
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:573
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:615
 msgid "Fix activating items using Ctrl-Number in gnome-shell"
 msgstr "க்னோம்-செல்லில் Ctrl- எண் பயன்படுத்தி செயல்படுத்தும் உருப்படிகளை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:531
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:563
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:596
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:549
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:581
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:614
 msgid "Fix keybinding regrab with gnome-shell"
 msgstr "க்னோம்-செல் உடன் கீபிண்டிங் ரெட்ராபை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:539
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:571
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:557
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:589
 msgid "Fix keybinding grab with gnome-shell"
 msgstr "க்னோம்-செல் மூலம் கீபிங் கிராப்பை சரிசெய்யவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:545
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:563
 msgid "First release for GNOME 3.36. Changes:"
 msgstr "க்னோம் 3.36 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:547
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:565
 msgid "Update to gnome-shell 3.36.0"
 msgstr "க்னோம்-செல் 3.36.0 க்கு புதுப்பிக்கவும்"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:579
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:595
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:597
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:613
 msgid "Compatibility with recent appstream-glib"
 msgstr "அண்மைக் கால ஆப்ச்ட்ரீம்-க்ளிபுடன் பொருந்தக்கூடிய தன்மை"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:585
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:603
 msgid "First release for GNOME 3.34. Changes:"
 msgstr "க்னோம் 3.34 க்கான முதல் வெளியீடு. மாற்றங்கள்:"
 
-#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:587
+#: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:605
 msgid "Update to gnome-shell 3.34.0"
 msgstr "க்னோம்-செல் 3.34.0 க்கு புதுப்பிக்கவும்"
 
@@ -1189,8 +1213,8 @@ msgstr "டீமனை வெற்றிகரமாக மறுபரிச�
 msgid "Cannot add non utf8 data as text."
 msgstr "utf8 அல்லாத தரவை உரையாகச் சேர்க்க முடியாது."
 
-#: src/client/gpaste-client.c:796 src/ui/gpaste-ui-window.c:353
-#: src/ui/gpaste-ui-window.c:354
+#: src/client/gpaste-client.c:796 src/ui/gpaste-ui-window.c:486
+#: src/ui/gpaste-ui-window.c:487
 msgid "Couldn't connect to GPaste daemon"
 msgstr "Gpaste டீமனுடன் இணைக்க முடியவில்லை"
 
@@ -1198,36 +1222,36 @@ msgstr "Gpaste டீமனுடன் இணைக்க முடியவி
 msgid "[Color]"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:266
+#: src/daemon/gpaste-daemon.c:267
 #, fuzzy
 msgid "Convert to Password"
 msgstr "கடவுச்சொல்லை மறுபெயரிடுங்கள்"
 
-#: src/daemon/gpaste-daemon.c:268
+#: src/daemon/gpaste-daemon.c:269
 #, fuzzy
 msgid "Pop from History"
 msgstr "வரலாற்று அணுகல்"
 
-#: src/daemon/gpaste-daemon.c:270
+#: src/daemon/gpaste-daemon.c:271
 #, fuzzy
 msgid "Show History"
 msgstr "வரலாற்று அணுகல்"
 
-#: src/daemon/gpaste-daemon.c:272
+#: src/daemon/gpaste-daemon.c:273
 #, fuzzy
 msgid "Sync Clipboard to Primary"
 msgstr "கிளிப்போர்டை முதன்மை தேர்வுக்கு ஒத்திசைக்கவும்"
 
-#: src/daemon/gpaste-daemon.c:274
+#: src/daemon/gpaste-daemon.c:275
 #, fuzzy
 msgid "Sync Primary to Clipboard"
 msgstr "முதன்மை தேர்வை கிளிப்போர்டுடன் ஒத்திசைக்கவும்"
 
-#: src/daemon/gpaste-daemon.c:276
+#: src/daemon/gpaste-daemon.c:277
 msgid "Launch UI"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:278
+#: src/daemon/gpaste-daemon.c:279
 msgid "Upload to Pastebin"
 msgstr ""
 
@@ -1291,169 +1315,176 @@ msgstr "வரலாற்றை உருவாக்க முடியவி�
 msgid "Failed to register the gtk application"
 msgstr "சி.டி.கே விண்ணப்பத்தை பதிவு செய்வதில் தோல்வி"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:108
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:119
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:40
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:44
 msgid "General behaviour"
 msgstr "பொது நடத்தை"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:121
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:46
 #: src/ui/gpaste-ui-switch.c:93
 msgid "Track clipboard changes"
 msgstr "ட்ராக் இடைநிலைப்பலகை மாற்றங்கள்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:127
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:50
 msgid "Close UI on select"
 msgstr "தேர்ந்தெடுக்கப்பட்ட இடைமுகம் ஐ மூடு"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:133
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:54
 msgid "Open the UI window centered"
 msgstr "இடைமுகம் சாளரத்தைத் திறக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:139
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:58
 msgid "Save history"
 msgstr "வரலாற்றைக் காப்பாற்றுங்கள்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:150
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:70
 msgid "Enable the gnome-shell extension"
 msgstr "க்னோம்-செல் நீட்டிப்பை இயக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:156
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:76
 msgid "Sync the daemon state with the extension's one"
 msgstr "டீமான் நிலையை நீட்டிப்புடன் ஒத்திசைக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:162
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:80
 msgid ""
 "When enabled, the daemon automatically starts or stops tracking clipboard "
 "changes to match the GNOME Shell extension's enabled state"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:166
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:174
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:84
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:75
 msgid "Clipboards synchronization"
 msgstr "கிளிப்போர்டுகள் ஒத்திசைவு"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:168
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:86
 msgid "Primary selection affects history"
 msgstr "முதன்மை தேர்வு வரலாற்றை பாதிக்கிறது"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:174
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:90
 msgid "Synchronize clipboard with primary selection"
 msgstr "முதன்மை தேர்வோடு கிளிப்போர்டை ஒத்திசைக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:181
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:95
 msgid "Optional features"
 msgstr "விருப்ப நற்பொருத்தங்கள்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:183
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:97
 msgid "Trim items"
 msgstr "உருப்படிகளை ஒழுங்கமைக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:189
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:101
 msgid "Detect growing lines"
 msgstr "வளர்ந்து வரும் கோடுகளைக் கண்டறியவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:195
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:105
 msgid ""
 "When enabled, if a new clipboard entry starts with the previous one, the "
 "previous entry is replaced instead of creating a new one"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:92
+#. A plain button that resets the key directly, like the suffix button does;
+#. * no GAction, so there is no action-muxer lookup to get wrong. Disabled
+#. * while the key is already at its default.
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c:63
+msgid "Reset to default"
+msgstr ""
+
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:40
 msgid "History settings"
 msgstr "வரலாற்று அமைப்புகள்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:103
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:44
 msgid "Resources limits"
 msgstr "வள வரம்புகள்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:120
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:57
 msgid "Text limits"
 msgstr "உரை வரம்புகள்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:122
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:59
 msgid "Min text item length"
 msgstr "மணித்துளி உரை உருப்படி நீளம்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:129
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:64
 msgid "Max text item length"
 msgstr "அதிகபட்ச உரை உருப்படி நீளம்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:137
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:70
 msgid "Display settings"
 msgstr "அமைப்புகளைக் காண்பி"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:139
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:72
 msgid "Max element size when displaying"
 msgstr "காண்பிக்கும் போது அதிகபட்ச உறுப்பு அளவு"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:81
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:92
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:40
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:44
 #, fuzzy
 msgid "Images settings"
 msgstr "அமைப்புகள் இடைமுகம்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:94
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:46
 msgid "Images support"
 msgstr "படங்கள் உதவி"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:100
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:50
 msgid "Image previews"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:106
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:54
 msgid "Preview size"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:122
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:40
 msgid "Keyboard shortcuts"
 msgstr "விசைப்பலகை குறுக்குவழிகள்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:133
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:44
 msgid "History access"
 msgstr "வரலாற்று அணுகல்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:136
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:47
 #: src/ui/gpaste-ui-shortcuts-window.c:24
 msgid "Launch the graphical tool"
 msgstr "வரைகலை கருவியைத் தொடங்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:143
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:52
 #: src/ui/gpaste-ui-shortcuts-window.c:26
 msgid "Display the history"
 msgstr "வரலாற்றைக் காண்பி"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:150
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:57
 msgid "Active element manipulation"
 msgstr "செயலில் உறுப்பு கையாளுதல்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:153
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:60
 #: src/ui/gpaste-ui-shortcuts-window.c:25
 msgid "Mark the active item as being a password"
 msgstr "செயலில் உள்ள உருப்படியை கடவுச்சொல் எனக் குறிக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:160
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:65
 #: src/ui/gpaste-ui-shortcuts-window.c:29
 msgid "Upload the active item to a pastebin service"
 msgstr "செயலில் உள்ள உருப்படியை பேச்டெபின் சேவையில் பதிவேற்றவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:167
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:70
 #: src/ui/gpaste-ui-shortcuts-window.c:23
 msgid "Delete the active item from history"
 msgstr "செயலில் உள்ள உருப்படியை வரலாற்றிலிருந்து நீக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:177
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:78
 #: src/ui/gpaste-ui-shortcuts-window.c:27
 msgid "Sync the clipboard to the primary selection"
 msgstr "கிளிப்போர்டை முதன்மை தேர்வுக்கு ஒத்திசைக்கவும்"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:184
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:83
 #: src/ui/gpaste-ui-shortcuts-window.c:28
 msgid "Sync the primary selection to the clipboard"
 msgstr "முதன்மை தேர்வை கிளிப்போர்டுடன் ஒத்திசைக்கவும்"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:51
-#: src/ui/gpaste-ui-edit-item.c:84 src/ui/gpaste-ui-new-item.c:66
-#: src/ui/gpaste-ui-panel.c:311
+#: src/ui/gpaste-ui-edit-item.c:84 src/ui/gpaste-ui-header.c:269
+#: src/ui/gpaste-ui-new-item.c:66 src/ui/gpaste-ui-panel.c:311
 msgid "Cancel"
 msgstr "ரத்துசெய்"
 
@@ -1464,7 +1495,7 @@ msgid "Do you really want to empty \"%s\"?"
 msgstr "நீங்கள் உண்மையில் வரலாற்றை வெறுமை செய்ய விரும்புகிறீர்களா?"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:127
-#: src/ui/gpaste-ui-history.c:153 src/ui/gpaste-ui-history.c:428
+#: src/ui/gpaste-ui-history.c:179 src/ui/gpaste-ui-history.c:641
 #: src/ui/gpaste-ui-panel.c:517
 msgid "Empty"
 msgstr "காலி"
@@ -1473,19 +1504,50 @@ msgstr "காலி"
 msgid "Clipboard management system"
 msgstr ""
 
-#: src/ui/gpaste-ui-delete-item.c:46 src/ui/gpaste-ui-panel.c:358
-#: src/ui/gpaste-ui-panel.c:518
-msgid "Delete"
-msgstr "நீக்கு"
-
 #: src/ui/gpaste-ui-edit-item.c:85 src/ui/gpaste-ui-edit-item.c:139
 msgid "Edit"
 msgstr "தொகு"
 
-#: src/ui/gpaste-ui-history.c:266
+#: src/ui/gpaste-ui-header.c:89
+msgid "Restart"
+msgstr "மறுதொடக்கம்"
+
+#: src/ui/gpaste-ui-header.c:90
+msgid "Do you really want to restart the daemon?"
+msgstr "நீங்கள் உண்மையில் டீமனை மறுதொடக்கம் செய்ய விரும்புகிறீர்களா?"
+
+#: src/ui/gpaste-ui-header.c:225
+#, c-format
+msgid "%u selected"
+msgid_plural "%u selected"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ui/gpaste-ui-header.c:249
+msgid "GPaste Settings"
+msgstr "Gpaste அமைப்புகள்"
+
+#: src/ui/gpaste-ui-header.c:261
+msgid "Restart the daemon"
+msgstr "டீமனை மறுதொடக்கம் செய்யுங்கள்"
+
+#: src/ui/gpaste-ui-header.c:265
+msgid "Select items to merge"
+msgstr ""
+
+#: src/ui/gpaste-ui-history.c:343
 #, fuzzy
 msgid "No Results"
 msgstr "(முடிவு இல்லை)"
+
+#: src/ui/gpaste-ui-item-skeleton.c:421
+msgid "Upload"
+msgstr "பதிவேற்றும்"
+
+#: src/ui/gpaste-ui-item-skeleton.c:422 src/ui/gpaste-ui-panel.c:358
+#: src/ui/gpaste-ui-panel.c:518
+msgid "Delete"
+msgstr "நீக்கு"
 
 #: src/ui/gpaste-ui-new-item.c:67
 msgid "Add new item"
@@ -1518,25 +1580,9 @@ msgstr "மற்றொரு வரலாற்றுக்கு மாறவ�
 msgid "Switch to"
 msgstr "மாறவும்"
 
-#: src/ui/gpaste-ui-reexec.c:45
-msgid "Restart"
-msgstr "மறுதொடக்கம்"
-
-#: src/ui/gpaste-ui-reexec.c:45
-msgid "Do you really want to restart the daemon?"
-msgstr "நீங்கள் உண்மையில் டீமனை மறுதொடக்கம் செய்ய விரும்புகிறீர்களா?"
-
-#: src/ui/gpaste-ui-reexec.c:70
-msgid "Restart the daemon"
-msgstr "டீமனை மறுதொடக்கம் செய்யுங்கள்"
-
 #: src/ui/gpaste-ui-search.c:23
 msgid "Search"
 msgstr "தேடல்"
-
-#: src/ui/gpaste-ui-settings.c:35
-msgid "GPaste Settings"
-msgstr "Gpaste அமைப்புகள்"
 
 #: src/ui/gpaste-ui-shortcuts-window.c:21
 msgid "General"
@@ -1550,20 +1596,45 @@ msgstr "நிறுத்து"
 msgid "Do you really want to stop tracking clipboard changes?"
 msgstr "இடைநிலைப்பலகை மாற்றங்களைக் கண்காணிப்பதை நிறுத்த விரும்புகிறீர்களா?"
 
-#: src/ui/gpaste-ui-upload-item.c:46
-msgid "Upload"
-msgstr "பதிவேற்றும்"
+#. translators: separators inserted between the merged items
+#: src/ui/gpaste-ui-window.c:360
+msgid "New line"
+msgstr ""
 
-#: src/ui/gpaste-ui-window.c:303
+#: src/ui/gpaste-ui-window.c:361
+msgid "Space"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:362
+msgid "Comma"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:363
+msgid "Tabulation"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:371
+msgid "Custom separator"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:376
+msgid "Merge with this separator"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:387
+msgid "Merge"
+msgstr ""
+
+#: src/ui/gpaste-ui-window.c:437
 msgid "Quit"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:380
+#: src/ui/gpaste-ui-window.c:521
 #, fuzzy
 msgid "Histories"
 msgstr "வரலாற்று அணுகல்"
 
-#: src/ui/gpaste-ui-window.c:381
+#: src/ui/gpaste-ui-window.c:522
 #, fuzzy
 msgid "History"
 msgstr "வரலாற்று அணுகல்"

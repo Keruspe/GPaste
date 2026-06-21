@@ -6,7 +6,8 @@ data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in
 src/client/gpaste-client.c
 src/daemon/gpaste-bus.c
 src/daemon/gpaste-bus-object.c
-src/daemon/gpaste-clipboard.c
+src/daemon/gpaste-clipboard-gdk.c
+src/daemon/gpaste-clipboard-provider.c
 src/daemon/gpaste-clipboards-manager.c
 src/daemon/gpaste-color-item.c
 src/daemon/gpaste-daemon.c
@@ -55,7 +56,6 @@ src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-dialog.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c
-src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-manager.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c
 src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-widget.c
