@@ -11,7 +11,8 @@ Translators can use [weblate](https://hosted.weblate.org/projects/gpaste/gpaste/
 
 A library is available for development purposes:
 
-* `libgpaste` contains all the basic objects used by GPaste and allows you to manage preferences and the GPaste daemon.
+* `libgpaste` contains the basic objects used by GPaste and allows you to manage preferences.
+* `libgpaste-daemon` contains the clipboard item hierarchy and the rest of the GPaste daemon objects (including the on-disk storage backends).
 
 A default daemon named `gpaste-daemon` is provided, with seven keybindings:
 
