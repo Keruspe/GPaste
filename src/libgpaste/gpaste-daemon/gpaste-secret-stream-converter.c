@@ -221,6 +221,17 @@ decrypt_process (GPasteSecretStreamConverterPrivate *priv,
         guint64 memlimit = read_u64_le (salt + SALTBYTES + 8);
         const unsigned char *header = salt + SALTBYTES + 16;
 
+        /* The parameters come from an untrusted header; a huge opslimit would make
+         * crypto_pwhash run effectively forever (a denial of service just from
+         * opening the history). We only ever write MODERATE parameters, so reject
+         * anything beyond SENSITIVE as corrupt or tampered. */
+        if (opslimit > crypto_pwhash_OPSLIMIT_SENSITIVE || memlimit > crypto_pwhash_MEMLIMIT_SENSITIVE)
+        {
+            g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
+                                 "Unreasonable key-derivation parameters in the encryption header");
+            return FALSE;
+        }
+
         if (!derive_key (priv, salt, opslimit, memlimit, error))
             return FALSE;
 
@@ -357,6 +368,18 @@ g_paste_secret_stream_converter_iface_init (GConverterIface *iface)
 }
 
 static void
+g_paste_secret_stream_converter_dispose (GObject *object)
+{
+    GPasteSecretStreamConverterPrivate *priv =
+        g_paste_secret_stream_converter_get_instance_private (G_PASTE_SECRET_STREAM_CONVERTER (object));
+
+    g_clear_pointer (&priv->in, g_byte_array_unref);
+    g_clear_pointer (&priv->out, g_byte_array_unref);
+
+    G_OBJECT_CLASS (g_paste_secret_stream_converter_parent_class)->dispose (object);
+}
+
+static void
 g_paste_secret_stream_converter_finalize (GObject *object)
 {
     GPasteSecretStreamConverterPrivate *priv =
@@ -368,15 +391,13 @@ g_paste_secret_stream_converter_finalize (GObject *object)
 
     sodium_memzero (&priv->state, sizeof (priv->state));
 
-    g_byte_array_unref (priv->in);
-    g_byte_array_unref (priv->out);
-
     G_OBJECT_CLASS (g_paste_secret_stream_converter_parent_class)->finalize (object);
 }
 
 static void
 g_paste_secret_stream_converter_class_init (GPasteSecretStreamConverterClass *klass)
 {
+    G_OBJECT_CLASS (klass)->dispose = g_paste_secret_stream_converter_dispose;
     G_OBJECT_CLASS (klass)->finalize = g_paste_secret_stream_converter_finalize;
 }
 
