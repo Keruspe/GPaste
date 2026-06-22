@@ -123,6 +123,7 @@ g_paste_clipboard_meta_on_transfer_done (GObject      *source_object,
                                          gpointer      user_data)
 {
     g_autofree GPasteClipboardMetaReadData *data = user_data;
+    g_autoptr (GPasteClipboardMeta) self = data->self; /* ref taken in read_mime */
     g_autoptr (GOutputStream) ostream = data->ostream;
     g_autoptr (GError) error = NULL;
 
@@ -131,14 +132,17 @@ g_paste_clipboard_meta_on_transfer_done (GObject      *source_object,
         if (error)
             g_debug ("Failed to read selection content: %s", error->message);
         if (data->callback)
-            data->callback (data->self, NULL, data->user_data);
+            data->callback (self, NULL, data->user_data);
         return;
     }
+
+    /* steal_as_bytes requires a closed stream and the transfer leaves it open. */
+    g_output_stream_close (ostream, NULL, NULL);
 
     g_autoptr (GBytes) bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (ostream));
 
     if (data->callback)
-        data->callback (data->self, bytes, data->user_data);
+        data->callback (self, bytes, data->user_data);
 }
 
 static void
@@ -150,7 +154,9 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
     const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
     GPasteClipboardMetaReadData *data = g_new0 (GPasteClipboardMetaReadData, 1);
 
-    data->self = self;
+    /* Hold a ref for the duration of the async transfer so the provider cannot be
+     * finalized out from under the callback (released in on_transfer_done). */
+    data->self = g_object_ref (self);
     data->ostream = g_memory_output_stream_new_resizable ();
     data->callback = callback;
     data->user_data = user_data;
@@ -477,7 +483,7 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
                                    GBytes              *bytes,
                                    gpointer             user_data)
 {
-    GPasteClipboardMeta *other = user_data;
+    g_autoptr (GPasteClipboardMeta) other = user_data; /* ref taken in sync_text */
 
     if (!bytes)
         return;
@@ -496,7 +502,20 @@ static void
 g_paste_clipboard_meta_sync_text (const GPasteClipboardMeta *self,
                                   GPasteClipboardMeta       *other)
 {
-    g_paste_clipboard_meta_read_mime ((GPasteClipboardMeta *) self, META_MIME_TEXT, g_paste_clipboard_meta_sync_ready, other);
+    const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
+    GList *mimetypes = meta_selection_get_mimetypes (priv->selection, priv->type);
+    /* Prefer the utf-8 form but accept bare text/plain too, like update() does, so a
+     * source that only advertises text/plain still syncs (both are static strings,
+     * safe to hand to the async read after the list is freed). */
+    const gchar *mime = mimetypes_contain (mimetypes, META_MIME_TEXT) ? META_MIME_TEXT
+                      : mimetypes_contain (mimetypes, META_MIME_TEXT_PLAIN) ? META_MIME_TEXT_PLAIN
+                      : NULL;
+
+    if (mime)
+        g_paste_clipboard_meta_read_mime ((GPasteClipboardMeta *) self, mime,
+                                          g_paste_clipboard_meta_sync_ready, g_object_ref (other));
+
+    g_list_free_full (mimetypes, g_free);
 }
 
 /* --- store --- */
@@ -673,6 +692,7 @@ g_paste_clipboard_meta_update_maybe_done (GPasteClipboardMetaUpdateData *data)
         g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&data->file_list));
     g_free (data->text);
     g_free (data->mime);
+    g_object_unref (data->self);
     g_free (data);
 }
 
@@ -797,6 +817,8 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
         if (!file_list || !gdk_file_list_get_files (file_list))
             break;
 
+        /* Re-asserting the same file selection must not re-add it, mirroring the
+         * GDK backend's read-path g_paste_clipboard_file_list_equal guard. */
         if (priv->content.kind == CLIPBOARD_CONTENT_FILE_LIST &&
             g_paste_clipboard_file_list_equal (priv->content.file_list, file_list))
             break;
@@ -939,7 +961,9 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
 
     GPasteClipboardMetaUpdateData *data = g_new0 (GPasteClipboardMetaUpdateData, 1);
 
-    data->self = self;
+    /* Hold a ref for the whole update (transfer + deserialize + special-value
+     * reads), released when data is freed in update_maybe_done. */
+    data->self = g_object_ref (self);
     data->callback = callback;
     data->user_data = user_data;
     data->pending = 1;
@@ -951,9 +975,11 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     case CLIPBOARD_CONTENT_FILE_LIST:
     case CLIPBOARD_CONTENT_COLOR:
     case CLIPBOARD_CONTENT_IMAGE:
-        /* Kept for the deferred deserialisation once the bytes have arrived. */
+        /* Kept for the deferred deserialisation once the bytes have arrived. Pass
+         * this owned copy (not content_mime, which aliases the mimetypes list freed
+         * below) to the async transfer, since it reads the string after we return. */
         data->mime = g_strdup (content_mime);
-        g_paste_clipboard_meta_read_mime (self, content_mime, g_paste_clipboard_meta_update_on_value, data);
+        g_paste_clipboard_meta_read_mime (self, data->mime, g_paste_clipboard_meta_update_on_value, data);
         break;
     case CLIPBOARD_CONTENT_TEXT:
         g_paste_clipboard_meta_read_mime (self, content_mime, g_paste_clipboard_meta_update_on_text, data);
