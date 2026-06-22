@@ -8,10 +8,10 @@ msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-21 11:30+0200\n"
-"PO-Revision-Date: 2026-06-12 20:09+0000\n"
+"PO-Revision-Date: 2026-06-23 16:01+0000\n"
 "Last-Translator: Libre <6n0n1m0s@proton.me>\n"
-"Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/es/"
-">\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -116,6 +116,9 @@ msgid ""
 "Size of the inline image thumbnail in the history; the larger detail preview "
 "is shown on hover. Default size is 50 pixels."
 msgstr ""
+"Tamaño de la miniatura de la imagen en línea en la historia; la vista previa "
+"con mayor detalle se muestra al pasar el cursor por encima. El tamaño "
+"predeterminado es de 50 píxeles."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Do we close the UI after selecting an item?"
@@ -445,11 +448,15 @@ msgid ""
 "Fix the daemon failing to restart with \"gpaste-client daemon-reexec\" (the "
 "re-exec path was missing the gpaste libexec subdirectory)"
 msgstr ""
+"Soluciona el daemon al fallar al reiniciar con \"gpaste-cliente daemon-"
+"reexec\" (la ruta re-exec era ausente en el subdirectorio libexec de gpaste)"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:61
 msgid ""
 "GNOME Shell extension: fix history items gradually disappearing from the menu"
 msgstr ""
+"Extensión de GNOME Shell: soluciona elementos desapareciendo gradualmente "
+"desde el menú"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:62
 msgid ""
@@ -457,20 +464,21 @@ msgid ""
 "the search or history switch entries, and type-to-search works right after "
 "startup"
 msgstr ""
+"IU: soluciona entrada del teclado tal que Escape e Intro ya no trague texto "
+"destinado a los apuntes de selector de búsqueda o historia, y el tipo de "
+"búsqueda funciona justo tras el arranque"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:70
-#, fuzzy
 msgid "GNOME Shell extension: fix keyboard navigation in the history menu"
 msgstr ""
-"Extensiones del Shell de GNOME: restaura navegación del teclado de elementos "
-"del historial"
+"Extensiones de GNOME Shell: repara navegación del teclado en el menú del "
+"historial"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:71
-#, fuzzy
 msgid "GNOME Shell extension: give every action button the same width"
 msgstr ""
-"Extensiones del Shell de GNOME: restaura navegación del teclado de elementos "
-"del historial"
+"Extensiones de GNOME Shell: proporciona cada botón de acción con la misma "
+"anchura"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:79
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:125
@@ -1467,7 +1475,7 @@ msgstr ""
 #. * while the key is already at its default.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c:63
 msgid "Reset to default"
-msgstr ""
+msgstr "Restablece a por defecto"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:40
 msgid "History settings"
@@ -1599,8 +1607,8 @@ msgstr "¿Realmente quieres reiniciar el daemon?"
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u seleccionado"
+msgstr[1] "%u seleccionados"
 
 #: src/ui/gpaste-ui-header.c:249
 msgid "GPaste Settings"
@@ -1612,7 +1620,7 @@ msgstr "Restablecer daemon"
 
 #: src/ui/gpaste-ui-header.c:265
 msgid "Select items to merge"
-msgstr ""
+msgstr "Selecciona elementos a fusionar"
 
 #: src/ui/gpaste-ui-history.c:343
 msgid "No Results"
@@ -1675,33 +1683,32 @@ msgstr "¿Realmente quieres dejar de seguir los cambios en el portapapeles?"
 
 #. translators: separators inserted between the merged items
 #: src/ui/gpaste-ui-window.c:360
-#, fuzzy
 msgid "New line"
-msgstr "Nuevo elemento"
+msgstr "Nueva línea"
 
 #: src/ui/gpaste-ui-window.c:361
 msgid "Space"
-msgstr ""
+msgstr "Espacio"
 
 #: src/ui/gpaste-ui-window.c:362
 msgid "Comma"
-msgstr ""
+msgstr "Coma"
 
 #: src/ui/gpaste-ui-window.c:363
 msgid "Tabulation"
-msgstr ""
+msgstr "Tabulador"
 
 #: src/ui/gpaste-ui-window.c:371
 msgid "Custom separator"
-msgstr ""
+msgstr "Separador personalizado"
 
 #: src/ui/gpaste-ui-window.c:376
 msgid "Merge with this separator"
-msgstr ""
+msgstr "Fusiona con este separator"
 
 #: src/ui/gpaste-ui-window.c:387
 msgid "Merge"
-msgstr ""
+msgstr "Fusión"
 
 #: src/ui/gpaste-ui-window.c:437
 msgid "Quit"
