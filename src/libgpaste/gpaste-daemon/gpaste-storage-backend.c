@@ -392,6 +392,13 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
     case G_PASTE_STORAGE_SQLITE:
         return G_PASTE_TYPE_SQLITE_BACKEND;
 #endif
+    case G_PASTE_STORAGE_ENCRYPTED_FILE:
+    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
+        /* Unreachable in practice: g_paste_storage_backend_new () constructs
+         * the encrypted flavor (or downgrades to NOOP) before ever calling us.
+         * Keep the history in memory rather than silently writing
+         * would-be-encrypted data as plaintext, whatever the caller. */
+        return G_PASTE_TYPE_NOOP_BACKEND;
     default:
         /* G_PASTE_STORAGE_DEFAULT, and any unexpected value, map to the plain
          * file backend; return it directly rather than recursing. */
@@ -490,20 +497,11 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
 #ifdef G_PASTE_ENABLE_LIBSECRET
         /* No passphrase set in this process yet (e.g. the in-process daemon in
          * gnome-shell never ran the prompt): fall back to the one remembered in
-         * the keyring before giving up. Only trust it if it actually decrypts the
-         * history: a stale keyring entry must not be used, or the first save would
-         * overwrite the real data with an empty, wrongly-encrypted history. */
-        if (!passphrase && g_paste_storage_keyring_apply ())
-        {
+         * the keyring before giving up. apply_verified only keeps it when it
+         * actually decrypts the history, so a stale entry can never be used (which
+         * would overwrite the real data with an empty, wrongly-encrypted one). */
+        if (!passphrase && g_paste_storage_keyring_apply_verified (storage_kind, settings))
             passphrase = g_paste_storage_backend_get_passphrase ();
-
-            if (passphrase && !g_paste_storage_passphrase_can_decrypt (storage_kind, settings, passphrase))
-            {
-                g_warning ("The passphrase stored in the keyring does not unlock the history");
-                g_paste_storage_backend_set_passphrase (NULL);
-                passphrase = NULL;
-            }
-        }
 #endif
 
         if (passphrase)

@@ -276,9 +276,11 @@ imported_item_matches (const GPasteItem *source,
  * with the same items — matched by uuid in order, contents verified — so the
  * caller never deletes the originals on a genuinely failed write (e.g. an
  * encrypted write that ran out of memory deriving the key, or a row that
- * committed with a corrupt payload). The in-memory *sizes* can legitimately
- * differ across backends (an image read back from a database blob carries its
- * PNG bytes while a path-based one does not), hence no size comparison. */
+ * committed with a corrupt payload). Two things are deliberately not failures:
+ * the destination legitimately dropping items it cannot store (the plain
+ * flavors never persist passwords), and in-memory sizes differing across
+ * backends (an image read back from a database blob carries its PNG bytes
+ * while a path-based one does not), hence no size comparison. */
 static gboolean
 import_histories (GPasteSettings *settings,
                   GPasteStorage   current,
@@ -302,12 +304,22 @@ import_histories (GPasteSettings *settings,
 
         g_paste_storage_backend_read_history (next, *name, &written, &written_size);
 
-        for (const GList *h = history, *w = written; ok && (h || w); h = g_list_next (h), w = g_list_next (w))
+        const GList *w = written;
+
+        for (const GList *h = history; ok && h; h = g_list_next (h))
         {
-            ok = h && w &&
-                 g_paste_str_equal (g_paste_item_get_uuid (h->data), g_paste_item_get_uuid (w->data)) &&
-                 imported_item_matches (h->data, w->data);
+            if (w && g_paste_str_equal (g_paste_item_get_uuid (h->data), g_paste_item_get_uuid (w->data)))
+            {
+                ok = imported_item_matches (h->data, w->data);
+                w = g_list_next (w);
+            }
+            else
+                ok = g_paste_str_equal (g_paste_item_get_kind (h->data), "Password");
         }
+
+        /* Nothing may read back that was not written. */
+        if (w)
+            ok = FALSE;
 
         g_list_free_full (written, g_object_unref);
         g_list_free_full (history, g_object_unref);
@@ -336,21 +348,31 @@ apply_migration (MigrationData *self,
 
     self->applied = TRUE;
 
-    g_paste_settings_set_storage_backend (self->settings, chosen);
-
-    /* Only delete the old data once the import (if any) is confirmed, so a failed
-     * import can never wipe the history it was meant to migrate. */
+    /* Import (if any) before switching the backend, so a failed write never leaves
+     * the daemon pointed at an empty new backend with the real data orphaned. */
     gboolean imported = TRUE;
 
     if (import && can_import (self, chosen))
         imported = import_histories (self->settings, self->current, chosen);
 
-    if (cleanup && imported)
-        cleanup_histories (self->settings, self->current);
-    else if (cleanup)
-        g_warning ("History import failed; keeping the old data instead of deleting it");
+    if (import && !imported)
+    {
+        /* The import genuinely failed: keep the current backend, data and revision
+         * untouched so nothing is lost or hidden and the migration is offered
+         * again next time rather than silently leaving an empty new backend. */
+        g_warning ("History import failed; keeping the current storage backend and old data");
+    }
+    else
+    {
+        g_paste_settings_set_storage_backend (self->settings, chosen);
 
-    g_paste_settings_set_storage_backend_revision (self->settings, G_PASTE_STORAGE_BACKEND_REVISION);
+        /* Only delete the old data once the import is confirmed, so a failed
+         * import can never wipe the history it was meant to migrate. */
+        if (cleanup && imported)
+            cleanup_histories (self->settings, self->current);
+
+        g_paste_settings_set_storage_backend_revision (self->settings, G_PASTE_STORAGE_BACKEND_REVISION);
+    }
 
     /* Destroying the window frees self (its data); grab the callback first. */
     GPasteStorageMigrationDoneFunc done = self->done;
@@ -361,28 +383,6 @@ apply_migration (MigrationData *self,
     if (done)
         done (done_data);
 }
-
-#ifdef G_PASTE_ENABLE_LIBSECRET
-/* Try the passphrase remembered in the keyring, discarding it when it has gone
- * stale and no longer decrypts the history (so a stale entry never gets used).
- * Returns %TRUE when a usable passphrase is now set. */
-static gboolean
-try_keyring_passphrase (GPasteStorage   storage_kind,
-                        GPasteSettings *settings)
-{
-    if (!g_paste_storage_keyring_apply ())
-        return FALSE;
-
-    if (!g_paste_storage_passphrase_can_decrypt (storage_kind, settings, g_paste_storage_backend_get_passphrase ()))
-    {
-        g_warning ("The passphrase stored in the keyring does not unlock the history; asking for it");
-        g_paste_storage_backend_set_passphrase (NULL);
-        return FALSE;
-    }
-
-    return TRUE;
-}
-#endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 typedef void (*UnlockDoneFunc) (gpointer user_data);
@@ -501,7 +501,7 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
         (adw_switch_row_get_active (self->import_row) || adw_switch_row_get_active (self->cleanup_row)))
     {
 #ifdef G_PASTE_ENABLE_LIBSECRET
-        if (!try_keyring_passphrase (self->current, self->settings))
+        if (!g_paste_storage_keyring_apply_verified (self->current, self->settings))
 #endif
         {
             unlock_prompt (self->application, self->settings, self->current, on_source_unlocked, self);
@@ -1016,7 +1016,7 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
     /* A keyring passphrase that unlocks the history is applied here, so no prompt
      * (and, in gnome-shell, no helper) is needed: the caller can load straight
      * away with the passphrase now set in this process. */
-    if (try_keyring_passphrase (g_paste_settings_get_storage_backend (settings), settings))
+    if (g_paste_storage_keyring_apply_verified (g_paste_settings_get_storage_backend (settings), settings))
         return FALSE;
 #endif
 

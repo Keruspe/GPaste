@@ -22,7 +22,9 @@ g_paste_storage_keyring_schema (void)
     return &schema;
 }
 
-G_PASTE_VISIBLE gboolean
+/* Internal on purpose: applying a remembered passphrase without checking that it
+ * still decrypts the history is the footgun apply_verified() exists to close. */
+static gboolean
 g_paste_storage_keyring_apply (void)
 {
     g_autoptr (GError) error = NULL;
@@ -36,6 +38,25 @@ g_paste_storage_keyring_apply (void)
 
     g_paste_storage_backend_set_passphrase (passphrase);
     secret_password_free (passphrase);
+
+    return TRUE;
+}
+
+G_PASTE_VISIBLE gboolean
+g_paste_storage_keyring_apply_verified (GPasteStorage   storage_kind,
+                                        GPasteSettings *settings)
+{
+    if (!g_paste_storage_keyring_apply ())
+        return FALSE;
+
+    const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
+
+    if (passphrase && !g_paste_storage_passphrase_can_decrypt (storage_kind, settings, passphrase))
+    {
+        g_warning ("The passphrase stored in the keyring does not unlock the history");
+        g_paste_storage_backend_set_passphrase (NULL);
+        return FALSE;
+    }
 
     return TRUE;
 }
