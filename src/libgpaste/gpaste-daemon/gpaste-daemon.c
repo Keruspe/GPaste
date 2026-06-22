@@ -477,6 +477,16 @@ _g_paste_daemon_changed (gpointer data)
     g_paste_daemon_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0);
 }
 
+/* One-shot startup nudge: owns a ref (taken at the call site) so the daemon
+ * cannot be finalized before the timeout fires, which would update freed memory. */
+static void
+_g_paste_daemon_changed_once (gpointer data)
+{
+    g_autoptr (GPasteDaemon) self = data;
+
+    _g_paste_daemon_changed (self);
+}
+
 static void
 g_paste_daemon_dispose (GObject *object)
 {
@@ -526,7 +536,7 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
     g_signal_group_set_target (priv->history_signals, priv->history);
     priv->registered = TRUE;
 
-    g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed, self), "[GPaste] Startup - changed");
+    g_source_set_name_by_id (g_timeout_add_seconds_once (1, _g_paste_daemon_changed_once, g_object_ref (self)), "[GPaste] Startup - changed");
 
     return TRUE;
 }
@@ -560,7 +570,8 @@ on_screensaver_client_ready (GObject      *source_object G_GNUC_UNUSED,
                              GAsyncResult *res,
                              gpointer      user_data)
 {
-    GPasteDaemonPrivate *priv = user_data;
+    g_autoptr (GPasteDaemon) self = user_data; /* ref taken at the call site */
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (self);
     g_autoptr (GError) error = NULL;
     GPasteScreensaverClient *screensaver = priv->screensaver = g_paste_screensaver_client_new_finish (res, &error);
 
@@ -634,8 +645,9 @@ g_paste_daemon_init (GPasteDaemon *self)
                                     G_CALLBACK (g_paste_daemon_on_screensaver_active_changed),
                                     priv);
 
-    g_paste_screensaver_client_new (on_screensaver_client_ready, priv);
-    /* Hold a ref across the async call: the callback owns it (g_autoptr). */
+    /* Hold a ref across each async call: the callback owns it (g_autoptr), so the
+     * daemon cannot be finalized out from under the in-flight client creation. */
+    g_paste_screensaver_client_new (on_screensaver_client_ready, g_object_ref (self));
     g_paste_global_shortcut_client_new (on_portal_client_ready, g_object_ref (self));
 }
 

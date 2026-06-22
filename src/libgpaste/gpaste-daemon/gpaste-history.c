@@ -903,10 +903,10 @@ g_paste_history_on_loaded (gpointer  user_data,
     priv->size = size;
 
     if (priv->history)
-    {
         g_paste_history_activate_first (self, TRUE);
-        g_paste_history_private_elect_new_biggest (priv);
-    }
+
+    /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
+    g_paste_history_private_elect_new_biggest (priv);
 
     if (save_after)
         g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, 0, G_PASTE_HISTORY_SAVE_FULL, NULL, NULL);

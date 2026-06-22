@@ -802,7 +802,11 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         g_clear_pointer (&data.name, g_free);
         g_clear_pointer (&data.text, g_free);
 
-        if (data.version != HISTORY_CURRENT)
+        /* Rewrite only to migrate a recognised older format. A HISTORY_INVALID
+         * version means we never parsed a valid <history> header (a corrupt file,
+         * or one written by a newer GPaste): leave it untouched rather than
+         * overwriting it with a partial parse and destroying its contents. */
+        if (data.version != HISTORY_CURRENT && data.version != HISTORY_INVALID)
             g_paste_file_backend_write_history_file (self, history_file_path, *history);
     }
     else
