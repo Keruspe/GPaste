@@ -12,6 +12,8 @@ G_BEGIN_DECLS
 typedef enum {
     G_PASTE_STORAGE_NOOP,
     G_PASTE_STORAGE_FILE,
+    G_PASTE_STORAGE_ENCRYPTED_FILE,
+    G_PASTE_N_STORAGE, /* must stay last, before the aliases */
     G_PASTE_STORAGE_DEFAULT = G_PASTE_STORAGE_FILE
 } GPasteStorage;
 
@@ -89,5 +91,10 @@ void     g_paste_storage_backend_clear_history        (const GPasteStorageBacken
 
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+void         g_paste_storage_backend_set_passphrase (const gchar *passphrase);
+const gchar *g_paste_storage_backend_get_passphrase (void);
+#endif
 
 G_END_DECLS

@@ -56,6 +56,13 @@ if libsodium_dep.found()
   add_project_arguments('-DG_PASTE_ENABLE_ENCRYPTION', language: 'c')
 endif
 
+# Optional libsecret support to remember the encryption passphrase in the
+# keyring. Only useful alongside encryption.
+libsecret_dep = dependency('libsecret-1', required: get_option('libsecret'))
+if libsodium_dep.found() and libsecret_dep.found()
+  add_project_arguments('-DG_PASTE_ENABLE_LIBSECRET', language: 'c')
+endif
+
 userunit_dir = get_option('systemd-user-unit-dir')
 if userunit_dir == ''
   if get_option('systemd')

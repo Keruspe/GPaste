@@ -62,6 +62,13 @@ if libsodium_dep.found()
   gpaste_daemon_deps += libsodium_dep
 endif
 
+# Optional libsecret support to remember the passphrase in the keyring.
+if libsodium_dep.found() and libsecret_dep.found()
+  gpaste_daemon_sources += [ 'gpaste-storage-keyring.c' ]
+  gpaste_daemon_headers += [ 'gpaste-storage-keyring.h' ]
+  gpaste_daemon_deps += libsecret_dep
+endif
+
 gpaste_daemon_headers_dep = declare_dependency(
   include_directories: include_directories('.', '../libgpaste'),
   sources: gpaste_daemon_headers,

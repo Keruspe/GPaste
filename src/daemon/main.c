@@ -7,7 +7,12 @@
 #include <gpaste-bus.h>
 #include <gpaste-daemon.h>
 #include <gpaste-search-provider.h>
+#include <gpaste-storage-backend.h>
 #include <gpaste-storage-migration.h>
+
+#ifdef G_PASTE_ENABLE_LIBSECRET
+#include <gpaste-storage-keyring.h>
+#endif
 
 #ifdef G_OS_UNIX
 #  include <glib-unix.h>
@@ -118,6 +123,18 @@ on_storage_migration_done (gpointer user_data)
     g_main_loop_quit (user_data);
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+static void
+on_storage_passphrase (const gchar *passphrase,
+                       gpointer     user_data)
+{
+    if (passphrase)
+        g_paste_storage_backend_set_passphrase (passphrase);
+
+    g_main_loop_quit (user_data);
+}
+#endif
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -143,6 +160,28 @@ main (gint argc, gchar *argv[])
         g_paste_storage_migration_show (app, settings, on_storage_migration_done, loop);
         g_main_loop_run (loop);
     }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* An already-configured encrypted history needs to be unlocked before the
+     * daemon loads it. */
+    if (g_paste_settings_get_storage_backend (settings) == G_PASTE_STORAGE_ENCRYPTED_FILE &&
+        !g_paste_storage_backend_get_passphrase ())
+    {
+#ifdef G_PASTE_ENABLE_LIBSECRET
+        /* Prefer a passphrase remembered in the keyring over prompting. */
+        g_paste_storage_keyring_apply ();
+#endif
+
+        if (!g_paste_storage_backend_get_passphrase ())
+        {
+            g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
+
+            adw_init ();
+            g_paste_storage_migration_prompt_passphrase (app, FALSE, on_storage_passphrase, loop);
+            g_main_loop_run (loop);
+        }
+    }
+#endif
 
     g_autofree CallbackData *data = g_new0 (CallbackData, 1);
     g_autoptr (GPasteDaemon) g_paste_daemon = data->daemon = g_paste_daemon_new ();
@@ -181,6 +220,11 @@ main (gint argc, gchar *argv[])
 
     g_signal_handler_disconnect (bus, c_signals[C_NAME_LOST]);
     g_signal_handler_disconnect (g_paste_daemon, c_signals[C_REEXECUTE_SELF]);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* Wipe the master passphrase from secure memory before exiting. */
+    g_paste_storage_backend_set_passphrase (NULL);
+#endif
 
     return exit_status;
 }

@@ -6,6 +6,42 @@
 #include <gpaste-file-backend.h>
 #include <gpaste-noop-backend.h>
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#define GCR_API_SUBJECT_TO_CHANGE
+#include <gcr/gcr.h>
+
+/* The daemon's single master passphrase for the encrypted backend, obtained
+ * once at startup (prompt or keyring). Kept process-wide in gcr secure memory
+ * so every history the daemon builds resolves the encrypted backend without
+ * threading the secret through every constructor. */
+static gchar *g_paste_storage_passphrase = NULL;
+
+/**
+ * g_paste_storage_backend_set_passphrase:
+ * @passphrase: (nullable): the master passphrase, or %NULL to clear it
+ *
+ * Set the passphrase used by every encrypted file backend created afterwards.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_set_passphrase (const gchar *passphrase)
+{
+    gcr_secure_memory_strfree (g_paste_storage_passphrase);
+    g_paste_storage_passphrase = (passphrase && *passphrase) ? gcr_secure_memory_strdup (passphrase) : NULL;
+}
+
+/**
+ * g_paste_storage_backend_get_passphrase:
+ *
+ * Returns: (nullable): the master passphrase set with
+ *          g_paste_storage_backend_set_passphrase(), or %NULL
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_storage_backend_get_passphrase (void)
+{
+    return g_paste_storage_passphrase;
+}
+#endif
+
 typedef struct
 {
     GPasteSettings *settings;
@@ -274,6 +310,21 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
                              GPasteSettings *settings)
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    if (storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE)
+    {
+        const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
+
+        if (passphrase)
+            return g_paste_file_backend_new_encrypted (settings, passphrase);
+
+        /* Without a passphrase we must not fall back to plaintext on disk;
+         * keep the history in memory only. */
+        g_warning ("No passphrase for the encrypted storage backend; not storing the history");
+        storage_kind = G_PASTE_STORAGE_NOOP;
+    }
+#endif
 
     GPasteStorageBackend *self = g_object_new (_g_paste_storage_backend_get_type (storage_kind), NULL);
     GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);

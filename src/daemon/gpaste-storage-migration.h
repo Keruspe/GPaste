@@ -12,11 +12,23 @@ G_BEGIN_DECLS
 /* Bump whenever the storage layout changes in a way that should prompt the user
  * to (re)choose a backend. The dialog is shown on startup while the stored
  * "storage-backend-revision" differs from this. */
-#define G_PASTE_STORAGE_BACKEND_REVISION 1
+#define G_PASTE_STORAGE_BACKEND_REVISION 2
 
 typedef void (*GPasteStorageMigrationDoneFunc) (gpointer user_data);
 
+/* Receives the entered passphrase, or %NULL if the prompt was dismissed. */
+typedef void (*GPasteStoragePassphraseFunc) (const gchar *passphrase,
+                                             gpointer     user_data);
+
 gboolean g_paste_storage_migration_needed (GPasteSettings *settings);
+
+/* Ask the user for the encrypted history passphrase. @confirm asks for it twice
+ * (with a data-loss warning) when setting up a new encrypted history; otherwise
+ * it is a single unlock field. Lives in the daemon, not the UI. */
+void g_paste_storage_migration_prompt_passphrase (GtkApplication              *application,
+                                                  gboolean                     confirm,
+                                                  GPasteStoragePassphraseFunc  done,
+                                                  gpointer                     user_data);
 
 void g_paste_storage_migration_show (GtkApplication                 *application,
                                      GPasteSettings                 *settings,
