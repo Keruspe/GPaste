@@ -50,6 +50,12 @@ endif
 
 libgpaste_deps = [ gio_dep, glib_dep, gobject_dep ]
 
+# Optional libsodium-based history encryption (used by the daemon's storage backend).
+libsodium_dep = dependency('libsodium', required: get_option('encryption'))
+if libsodium_dep.found()
+  add_project_arguments('-DG_PASTE_ENABLE_ENCRYPTION', language: 'c')
+endif
+
 userunit_dir = get_option('systemd-user-unit-dir')
 if userunit_dir == ''
   if get_option('systemd')

@@ -4,6 +4,14 @@
 #include <gpaste-history.h>
 #include <gpaste-text-item.h>
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <gpaste/gpaste-util.h>
+
+#include <gpaste-file-backend.h>
+#include <gpaste-password-item.h>
+#include <string.h>
+#endif
+
 /* Build a fresh, empty history backed by an in-memory GSettings.
  * Growing-lines merging is disabled so distinct strings stay distinct. */
 static GPasteHistory *
@@ -273,6 +281,70 @@ test_save_load_roundtrip (void)
     }
 }
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* The encrypted file backend must round-trip a history (keeping password
+ * entries and their real value), and the on-disk ".xmls" file must actually be
+ * ciphertext rather than the plaintext XML. */
+static void
+test_encrypted_roundtrip (void)
+{
+    const gchar *name = "encrypted";
+    const gchar *secret = "s3cr3t-passw0rd";
+    const gchar *pw_name = "my login";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_paste_settings_set_save_history (settings, TRUE);
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
+
+    GList *items = NULL;
+    items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
+    items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+
+    g_paste_storage_backend_write_history (backend, name, items);
+
+    /* On disk: ".xmls", starting with our magic, with no plaintext leaking. */
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "xmls");
+    g_autofree gchar *raw = NULL;
+    gsize raw_len = 0;
+    g_assert_true (g_file_get_contents (path, &raw, &raw_len, NULL));
+    g_assert_cmpuint (raw_len, >=, 8);
+    g_assert_cmpint (memcmp (raw, "GPSTENC1", 8), ==, 0);
+    g_assert_null (g_strstr_len (raw, raw_len, secret));
+    g_assert_null (g_strstr_len (raw, raw_len, "<?xml"));
+
+    /* Read back through the same backend. */
+    GList *loaded = NULL;
+    gsize size = 0;
+    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+    g_assert_cmpuint (g_list_length (loaded), ==, 2);
+
+    gboolean found_text = FALSE;
+    gboolean found_password = FALSE;
+    for (const GList *l = loaded; l; l = l->next)
+    {
+        GPasteItem *item = l->data;
+
+        if (g_strcmp0 (g_paste_item_get_kind (item), "Password") == 0)
+        {
+            found_password = TRUE;
+            g_assert_cmpstr (g_paste_item_get_real_value (item), ==, secret);
+            g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), ==, pw_name);
+        }
+        else
+        {
+            found_text = TRUE;
+            g_assert_cmpstr (g_paste_item_get_value (item), ==, "plain text entry");
+        }
+    }
+    g_assert_true (found_text);
+    g_assert_true (found_password);
+
+    g_list_free_full (loaded, g_object_unref);
+    g_list_free_full (items, g_object_unref);
+}
+#endif
+
 int
 main (int argc, char *argv[])
 {
@@ -297,6 +369,9 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
     g_test_add_func ("/history/empty", test_empty);
     g_test_add_func ("/history/save_load_roundtrip", test_save_load_roundtrip);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
+#endif
 
     return g_test_run ();
 }

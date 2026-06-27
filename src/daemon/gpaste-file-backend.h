@@ -20,4 +20,9 @@ struct _GPasteFileBackendClass
                                          GFile                   *output_file);
 };
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+GPasteStorageBackend *g_paste_file_backend_new_encrypted (GPasteSettings *settings,
+                                                          const gchar    *passphrase);
+#endif
+
 G_END_DECLS

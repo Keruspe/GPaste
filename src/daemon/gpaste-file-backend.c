@@ -6,10 +6,48 @@
 #include <gpaste-color-item.h>
 #include <gpaste-file-backend.h>
 #include <gpaste-image-item.h>
+#include <gpaste-item.h>
 #include <gpaste-password-item.h>
 #include <gpaste-uris-item.h>
 
-G_PASTE_DEFINE_TYPE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#define GCR_API_SUBJECT_TO_CHANGE
+#include <gcr/gcr.h>
+
+#include <gpaste-secret-stream-converter.h>
+#endif
+
+typedef struct
+{
+    /* When set (in gcr secure memory), the history is encrypted on disk: the
+     * file streams are wrapped with a secretstream converter, the ".xmls"
+     * extension is used, and password entries are persisted (encrypted) rather
+     * than skipped. NULL means a plain ".xml" history. */
+    gchar *passphrase;
+} GPasteFileBackendPrivate;
+
+G_PASTE_DEFINE_TYPE_WITH_PRIVATE (FileBackend, file_backend, G_PASTE_TYPE_STORAGE_BACKEND)
+
+/* The passphrase, or NULL for a plain history. Safe to call whether or not
+ * encryption was built in (it is always NULL without it). */
+static const gchar *
+g_paste_file_backend_get_passphrase (const GPasteStorageBackend *self)
+{
+    const GPasteFileBackendPrivate *priv = _g_paste_file_backend_get_instance_private (_G_PASTE_FILE_BACKEND (self));
+
+    return priv->passphrase;
+}
+
+static gboolean
+_g_paste_file_backend_write_password_name (GOutputStream           *stream,
+                                           const GPastePasswordItem *item,
+                                           GError                  **error)
+{
+    g_autofree gchar *name = g_paste_util_xml_encode (g_paste_password_item_get_name (item));
+
+    return g_output_stream_write_all (stream, "\" name=\"", 8, NULL, NULL /* cancellable */, error) &&
+           g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error);
+}
 
 static gboolean
 _g_paste_file_backend_write_image_metadata (GOutputStream         *stream,
@@ -81,6 +119,9 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
     }
 
     const GPasteFileBackend *real_self = _G_PASTE_FILE_BACKEND (self);
+    /* An encrypted history keeps password entries (the file is unreadable
+     * without the passphrase) and persists their real value, not the mask. */
+    gboolean encrypted = (g_paste_file_backend_get_passphrase (self) != NULL);
 
     g_autofree gchar *tmp_path = g_strconcat (history_file_path, ".tmp", NULL);
     g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp_path);
@@ -106,16 +147,20 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
         const gchar *kind = g_paste_item_get_kind (item);
         const gchar *uuid = g_paste_item_get_uuid (item);
 
-        if (g_paste_str_equal (kind, "Password"))
+        if (!encrypted && g_paste_str_equal (kind, "Password"))
             continue;
 
         const GSList *special_values = g_paste_item_get_special_values (item);
-        g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_value (item));
+        /* get_value only differs from get_real_value for passwords (it masks
+         * them), and those are skipped above unless encrypted, so the real
+         * value is always what we want to persist here. */
+        g_autofree gchar *text = g_paste_util_xml_encode (g_paste_item_get_real_value (item));
 
         if (!g_output_stream_write_all (stream, "  <item kind=\"", 14, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, kind, strlen (kind), NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, "\" uuid=\"", 8, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, uuid, strlen (uuid), NULL, NULL /* cancellable */, &error) ||
+            (_G_PASTE_IS_PASSWORD_ITEM (item) && !_g_paste_file_backend_write_password_name (stream, _G_PASTE_PASSWORD_ITEM (item), &error)) ||
             (_G_PASTE_IS_IMAGE_ITEM (item) && !_g_paste_file_backend_write_image_metadata (stream, _G_PASTE_IMAGE_ITEM (item), &error)) ||
             !g_output_stream_write_all (stream, "\">\n    <value><![CDATA[", 23, NULL, NULL /* cancellable */, &error) ||
             !g_output_stream_write_all (stream, text, strlen (text), NULL, NULL /* cancellable */, &error) ||
@@ -532,6 +577,48 @@ static void on_error (GMarkupParseContext *context   G_GNUC_UNUSED,
 /* End XML Parser */
 /******************/
 
+/* Load the raw history document, transparently decrypting it for an encrypted
+ * backend. Returns the (caller-owned) bytes through @text / @text_length. */
+static gboolean
+g_paste_file_backend_load_contents (const GPasteStorageBackend *self,
+                                    const gchar                *history_file_path,
+                                    GFile                      *history_file,
+                                    gchar                     **text,
+                                    gsize                      *text_length,
+                                    GError                    **error)
+{
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    const gchar *passphrase = g_paste_file_backend_get_passphrase (self);
+
+    if (passphrase)
+    {
+        g_autoptr (GFileInputStream) file_in = g_file_read (history_file, NULL, error);
+
+        if (!file_in)
+            return FALSE;
+
+        g_autoptr (GConverter) converter = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_DECRYPT, passphrase);
+        g_autoptr (GInputStream) decrypted = g_converter_input_stream_new (G_INPUT_STREAM (file_in), converter);
+        g_autoptr (GOutputStream) buffer = g_memory_output_stream_new_resizable ();
+
+        if (g_output_stream_splice (buffer, decrypted,
+                                    G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                    NULL, error) < 0)
+            return FALSE;
+
+        *text_length = g_memory_output_stream_get_data_size (G_MEMORY_OUTPUT_STREAM (buffer));
+        *text = g_memory_output_stream_steal_data (G_MEMORY_OUTPUT_STREAM (buffer));
+
+        return TRUE;
+    }
+#else
+    (void) self;
+    (void) history_file;
+#endif
+
+    return g_file_get_contents (history_file_path, text, text_length, error);
+}
+
 static void
 g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
                                         const gchar                *history_file_path,
@@ -577,7 +664,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
         gsize text_length;
         g_autoptr (GError) error = NULL;
 
-        if (!g_file_get_contents (history_file_path, &text, &text_length, &error))
+        if (!g_paste_file_backend_load_contents (self, history_file_path, history_file, &text, &text_length, &error))
         {
             g_warning ("Failed to read history file: %s", error->message);
             return;
@@ -617,21 +704,25 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
 }
 
 static void
-g_paste_file_backend_delete_history (const GPasteStorageBackend *self G_GNUC_UNUSED,
+g_paste_file_backend_delete_history (const GPasteStorageBackend *self,
                                       const gchar                *name,
                                       GError                   **error)
 {
-    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, "xml");
+    g_autoptr (GFile) history_file = g_paste_util_get_history_file (name, _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self));
 
     g_file_delete (history_file, NULL, error);
 }
 
 static GStrv
-g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNUSED,
+g_paste_file_backend_list_histories (const GPasteStorageBackend *self,
                                       GError                   **error)
 {
     g_autoptr (GStrvBuilder) history_names = g_strv_builder_new ();
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
+    /* List only the histories of this backend's flavour (plain ".xml" or
+     * encrypted ".xmls"), so the two never get mixed up. */
+    g_autofree gchar *suffix = g_strconcat (".", _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_extension (self), NULL);
+    gsize suffix_len = strlen (suffix);
     g_autoptr (GFileEnumerator) histories = g_file_enumerate_children (history_dir,
                                                                        G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
                                                                        G_FILE_QUERY_INFO_NONE,
@@ -660,11 +751,11 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
 
         const gchar *raw_name = g_file_info_get_display_name (h);
 
-        if (g_str_has_suffix (raw_name, ".xml"))
+        if (g_str_has_suffix (raw_name, suffix))
         {
             g_autofree gchar *name = g_strdup (raw_name);
 
-            name[strlen (name) - 4] = '\0';
+            name[strlen (name) - suffix_len] = '\0';
             g_strv_builder_take (history_names, g_steal_pointer (&name));
         }
     }
@@ -673,9 +764,10 @@ g_paste_file_backend_list_histories (const GPasteStorageBackend *self G_GNUC_UNU
 }
 
 static const gchar *
-g_paste_file_backend_get_extension (const GPasteStorageBackend *self G_GNUC_UNUSED)
+g_paste_file_backend_get_extension (const GPasteStorageBackend *self)
 {
-    return "xml";
+    /* ".xmls" (s for "secret", like https vs http) for an encrypted history. */
+    return g_paste_file_backend_get_passphrase (self) ? "xmls" : "xml";
 }
 
 static GOutputStream *
@@ -690,9 +782,40 @@ g_paste_file_backend_get_output_stream (const GPasteFileBackend *self G_GNUC_UNU
                                                               NULL, /* cancellable */
                                                               &error));
     if (!stream)
+    {
         g_warning ("Failed to open history temp file for writing: %s", error->message);
+        return NULL;
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    const GPasteFileBackendPrivate *priv = _g_paste_file_backend_get_instance_private (self);
+
+    if (priv->passphrase)
+    {
+        g_autoptr (GConverter) converter = g_paste_secret_stream_converter_new (G_PASTE_SECRET_STREAM_ENCRYPT, priv->passphrase);
+        GOutputStream *encrypted = g_converter_output_stream_new (stream, converter);
+
+        /* The converter stream now owns the file stream (and flushes the FINAL
+         * tag when closed). */
+        g_object_unref (stream);
+        stream = encrypted;
+    }
+#endif
+
     return stream;
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+static void
+g_paste_file_backend_finalize (GObject *object)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
+
+    gcr_secure_memory_strfree (priv->passphrase);
+
+    G_OBJECT_CLASS (g_paste_file_backend_parent_class)->finalize (object);
+}
+#endif
 
 static void
 g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
@@ -706,9 +829,42 @@ g_paste_file_backend_class_init (GPasteFileBackendClass *klass)
     storage_class->list_histories = g_paste_file_backend_list_histories;
 
     klass->get_output_stream = g_paste_file_backend_get_output_stream;
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    G_OBJECT_CLASS (klass)->finalize = g_paste_file_backend_finalize;
+#endif
 }
 
 static void
 g_paste_file_backend_init (GPasteFileBackend *self G_GNUC_UNUSED)
 {
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/**
+ * g_paste_file_backend_new_encrypted:
+ * @settings: a #GPasteSettings instance
+ * @passphrase: the passphrase the encryption key is derived from
+ *
+ * Create a file storage backend that encrypts the history on disk (with the
+ * ".xmls" extension) using @passphrase. Unlike the plain backend it persists
+ * password entries, since the file is unreadable without the passphrase.
+ *
+ * Returns: (transfer full): a newly allocated #GPasteStorageBackend
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteStorageBackend *
+g_paste_file_backend_new_encrypted (GPasteSettings *settings,
+                                    const gchar    *passphrase)
+{
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
+    g_return_val_if_fail (passphrase && *passphrase, NULL);
+
+    GPasteStorageBackend *self = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+
+    priv->passphrase = gcr_secure_memory_strdup (passphrase);
+
+    return self;
+}
+#endif

@@ -53,12 +53,21 @@ gpaste_daemon_headers = [
   'gpaste-uris-item.h',
 ]
 
+gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ]
+
+# Optional libsodium-based encryption converter for the history storage.
+if libsodium_dep.found()
+  gpaste_daemon_sources += [ 'gpaste-secret-stream-converter.c' ]
+  gpaste_daemon_headers += [ 'gpaste-secret-stream-converter.h' ]
+  gpaste_daemon_deps += libsodium_dep
+endif
+
 gpaste_daemon_headers_dep = declare_dependency(
   include_directories: include_directories('.', '../libgpaste'),
   sources: gpaste_daemon_headers,
 )
 
-gpaste_daemon_deps = [ gcr_dep, glib_dep, gtk4_dep, gtk4x11_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep, gpaste_daemon_headers_dep ]
+gpaste_daemon_deps += gpaste_daemon_headers_dep
 
 # Everything but main.c, as a static library so the test suite can link the
 # daemon-internal types (history, items, backends) without an install.
