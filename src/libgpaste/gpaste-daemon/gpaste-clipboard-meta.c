@@ -3,11 +3,13 @@
 
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <gdk/gdk.h>
 
 #include <gpaste-daemon/gpaste-binary-data.h>
+#include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
@@ -41,15 +43,6 @@
 #define META_MIME_IMAGE      "image/png"
 #define META_MIME_URIS       "text/uri-list"
 
-typedef enum
-{
-    CLIPBOARD_CONTENT_NONE,
-    CLIPBOARD_CONTENT_TEXT,
-    CLIPBOARD_CONTENT_IMAGE,
-    CLIPBOARD_CONTENT_FILE_LIST,
-    CLIPBOARD_CONTENT_COLOR,
-} GPasteClipboardContent;
-
 struct _GPasteClipboardMeta
 {
     GObject parent_instance;
@@ -64,42 +57,13 @@ typedef struct
     MetaSelectionSource   *owned_source;
     gulong                 owner_changed_id;
 
-    GPasteClipboardContent content_kind;
-    gchar                 *str;
-    GdkFileList           *file_list;
-    GdkRGBA                rgba;
+    GPasteClipboardContent content;
 } GPasteClipboardMetaPrivate;
 
 static void g_paste_clipboard_meta_provider_iface_init (GPasteClipboardProviderInterface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_PRIVATE_AND_INTERFACE (ClipboardMeta, clipboard_meta, G_TYPE_OBJECT,
                                                 G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_meta_provider_iface_init)
-
-static const gchar *
-_g_paste_clipboard_meta_private_target_name (const GPasteClipboardMetaPrivate *priv)
-{
-    return priv->is_clipboard ? "CLIPBOARD" : "PRIMARY";
-}
-
-static void
-g_paste_clipboard_meta_private_clear_content (GPasteClipboardMetaPrivate *priv)
-{
-    switch (priv->content_kind)
-    {
-    case CLIPBOARD_CONTENT_TEXT:
-    case CLIPBOARD_CONTENT_IMAGE:
-        g_clear_pointer (&priv->str, g_free);
-        break;
-    case CLIPBOARD_CONTENT_FILE_LIST:
-        if (priv->file_list)
-            g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
-        break;
-    case CLIPBOARD_CONTENT_COLOR:
-    case CLIPBOARD_CONTENT_NONE:
-        break;
-    }
-    priv->content_kind = CLIPBOARD_CONTENT_NONE;
-}
 
 static gboolean
 g_paste_clipboard_meta_is_clipboard (const GPasteClipboardMeta *self)
@@ -114,7 +78,7 @@ g_paste_clipboard_meta_get_text (const GPasteClipboardMeta *self)
 {
     const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
 
-    return (priv->content_kind == CLIPBOARD_CONTENT_TEXT) ? priv->str : NULL;
+    return g_paste_clipboard_content_get_text (&priv->content);
 }
 
 static const gchar *
@@ -122,7 +86,7 @@ g_paste_clipboard_meta_get_image_checksum (const GPasteClipboardMeta *self)
 {
     const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
 
-    return (priv->content_kind == CLIPBOARD_CONTENT_IMAGE) ? priv->str : NULL;
+    return g_paste_clipboard_content_get_image_checksum (&priv->content);
 }
 
 /* --- mimetype helpers --- */
@@ -213,14 +177,28 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
  * The daemon is single-threaded (GTK main loop), so a plain #GType -> formats
  * cache needs no extra locking beyond creating it once.
  */
+static GHashTable *g_paste_clipboard_meta_deserialize_formats_cache = NULL;
+
+static void
+g_paste_clipboard_meta_clear_deserialize_formats_cache (void)
+{
+    g_clear_pointer (&g_paste_clipboard_meta_deserialize_formats_cache, g_hash_table_destroy);
+}
+
 static GdkContentFormats *
 g_paste_clipboard_meta_deserialize_formats (GType type)
 {
-    static GHashTable *cache = NULL;
+    if (g_once_init_enter_pointer (&g_paste_clipboard_meta_deserialize_formats_cache))
+    {
+        /* The cached formats are owned by the table (one ref each); free them
+         * along with the process-wide cache at exit. */
+        GHashTable *cache = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) gdk_content_formats_unref);
 
-    if (g_once_init_enter_pointer (&cache))
-        g_once_init_leave_pointer (&cache, g_hash_table_new (NULL, NULL));
+        atexit (g_paste_clipboard_meta_clear_deserialize_formats_cache);
+        g_once_init_leave_pointer (&g_paste_clipboard_meta_deserialize_formats_cache, cache);
+    }
 
+    GHashTable *cache = g_paste_clipboard_meta_deserialize_formats_cache;
     GdkContentFormats *formats = g_hash_table_lookup (cache, GSIZE_TO_POINTER (type));
 
     if (!formats)
@@ -470,12 +448,9 @@ static void
 g_paste_clipboard_meta_private_set_text (GPasteClipboardMetaPrivate *priv,
                                          const gchar                *text)
 {
-    g_paste_clipboard_meta_private_clear_content (priv);
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
-    g_debug ("%s: set text", _g_paste_clipboard_meta_private_target_name (priv));
-
-    priv->content_kind = CLIPBOARD_CONTENT_TEXT;
-    priv->str = g_strdup (text);
+    g_paste_clipboard_content_set_text (&priv->content, text);
 }
 
 static void
@@ -484,7 +459,7 @@ g_paste_clipboard_meta_select_text (GPasteClipboardMeta *self,
 {
     GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
 
-    g_debug ("%s: select text", _g_paste_clipboard_meta_private_target_name (priv));
+    g_debug ("%s: select text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
     g_paste_clipboard_meta_private_set_text (priv, text);
 
@@ -542,7 +517,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
 {
     GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
 
-    g_debug ("%s: select item", _g_paste_clipboard_meta_private_target_name (priv));
+    g_debug ("%s: select item", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -552,9 +527,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         if (!texture)
             return FALSE;
 
-        g_paste_clipboard_meta_private_clear_content (priv);
-        priv->content_kind = CLIPBOARD_CONTENT_IMAGE;
-        priv->str = g_strdup (checksum);
+        g_paste_clipboard_content_set_image_checksum (&priv->content, checksum);
 
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -570,9 +543,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     {
         const GdkRGBA *rgba = g_paste_color_item_get_rgba (G_PASTE_COLOR_ITEM (item));
 
-        g_paste_clipboard_meta_private_clear_content (priv);
-        priv->content_kind = CLIPBOARD_CONTENT_COLOR;
-        priv->rgba = *rgba;
+        g_paste_clipboard_content_set_color (&priv->content, rgba);
 
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -595,9 +566,7 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     {
         GdkFileList *file_list = g_paste_uris_item_get_file_list (G_PASTE_URIS_ITEM (item));
 
-        g_paste_clipboard_meta_private_clear_content (priv);
-        priv->content_kind = CLIPBOARD_CONTENT_FILE_LIST;
-        priv->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
+        g_paste_clipboard_content_set_file_list (&priv->content, file_list);
 
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
@@ -626,26 +595,12 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     return TRUE;
 }
 
-/* --- ensure_not_empty --- */
-
-static void
-g_paste_clipboard_meta_ensure_not_empty (GPasteClipboardMeta *self,
-                                         GPasteHistory       *history)
+static gboolean
+g_paste_clipboard_meta_is_empty (const GPasteClipboardMeta *self)
 {
     const GPasteClipboardMetaPrivate *priv = _g_paste_clipboard_meta_get_instance_private (self);
 
-    if (priv->content_kind != CLIPBOARD_CONTENT_NONE)
-        return;
-
-    const GList *hist = g_paste_history_get_history (history);
-
-    if (hist)
-    {
-        GPasteItem *item = hist->data;
-
-        if (!g_paste_clipboard_meta_select_item (self, item))
-            g_paste_history_remove (history, 0);
-    }
+    return g_paste_clipboard_content_is_empty (&priv->content);
 }
 
 /* --- update --- */
@@ -655,7 +610,7 @@ typedef struct {
     GPasteClipboardProviderUpdateCallback callback;
     gpointer                              user_data;
     gint                                  pending;
-    GPasteClipboardContent                content_kind;
+    GPasteClipboardContentKind            content_kind;
     gboolean                              produced;
     gchar                                *text;
     GdkTexture                           *texture;
@@ -744,37 +699,29 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self,
     }
 
     g_autofree gchar *text = g_strndup (raw, size);
-    g_autofree gchar *stripped = g_strstrip (g_strdup (text));
-    gboolean trim_items = g_paste_settings_get_trim_items (priv->settings);
-    const gchar *to_add = trim_items ? stripped : text;
-    guint64 length = strlen (to_add);
+    g_autofree gchar *value = NULL;
 
-    if (length < g_paste_settings_get_min_text_item_size (priv->settings) ||
-        length > g_paste_settings_get_max_text_item_size (priv->settings))
+    switch (g_paste_clipboard_content_classify_text (&priv->content, priv->settings, priv->is_clipboard, text, &value))
     {
+    case G_PASTE_CLIPBOARD_TEXT_REJECT:
         g_paste_clipboard_meta_update_maybe_done (data);
         return;
+    case G_PASTE_CLIPBOARD_TEXT_RESELECT:
+        g_paste_clipboard_meta_select_text (self, value);
+        break;
+    case G_PASTE_CLIPBOARD_TEXT_SET:
+        g_paste_clipboard_meta_private_set_text (priv, value);
+        break;
     }
-
-    if (priv->content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_str_equal (priv->str, to_add))
-    {
-        g_paste_clipboard_meta_update_maybe_done (data);
-        return;
-    }
-
-    if (trim_items && priv->is_clipboard && !g_paste_str_equal (text, stripped))
-        g_paste_clipboard_meta_select_text (self, stripped);
-    else
-        g_paste_clipboard_meta_private_set_text (priv, to_add);
 
     data->produced = TRUE;
-    data->text = g_strdup (priv->str);
+    data->text = g_strdup (priv->content.str);
     g_paste_clipboard_meta_update_maybe_done (data);
 }
 
 /* The GType GDK deserialises each non-text content kind into. */
 static GType
-g_paste_clipboard_meta_content_gtype (GPasteClipboardContent content_kind)
+g_paste_clipboard_meta_content_gtype (GPasteClipboardContentKind content_kind)
 {
     switch (content_kind)
     {
@@ -820,12 +767,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
 
         g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
 
-        if (priv->content_kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->str))
+        if (priv->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->content.str))
             break;
 
-        g_paste_clipboard_meta_private_clear_content (priv);
-        priv->content_kind = CLIPBOARD_CONTENT_IMAGE;
-        priv->str = g_strdup (checksum);
+        g_paste_clipboard_content_set_image_checksum (&priv->content, checksum);
 
         data->produced = TRUE;
         data->texture = g_steal_pointer (&texture);
@@ -835,12 +780,10 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
     {
         const GdkRGBA *rgba = g_value_get_boxed (&value);
 
-        if (!rgba || (priv->content_kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &priv->rgba)))
+        if (!rgba || (priv->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &priv->content.rgba)))
             break;
 
-        g_paste_clipboard_meta_private_clear_content (priv);
-        priv->content_kind = CLIPBOARD_CONTENT_COLOR;
-        priv->rgba = *rgba;
+        g_paste_clipboard_content_set_color (&priv->content, rgba);
 
         data->produced = TRUE;
         data->rgba = *rgba;
@@ -853,9 +796,11 @@ g_paste_clipboard_meta_update_on_value_deserialized (GObject      *source_object
         if (!file_list || !gdk_file_list_get_files (file_list))
             break;
 
-        g_paste_clipboard_meta_private_clear_content (priv);
-        priv->content_kind = CLIPBOARD_CONTENT_FILE_LIST;
-        priv->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
+        if (priv->content.kind == CLIPBOARD_CONTENT_FILE_LIST &&
+            g_paste_clipboard_file_list_equal (priv->content.file_list, file_list))
+            break;
+
+        g_paste_clipboard_content_set_file_list (&priv->content, file_list);
 
         data->produced = TRUE;
         data->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
@@ -947,7 +892,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
 {
     GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (self);
     GList *mimetypes = meta_selection_get_mimetypes (priv->selection, priv->type);
-    GPasteClipboardContent content_kind = CLIPBOARD_CONTENT_NONE;
+    GPasteClipboardContentKind content_kind = CLIPBOARD_CONTENT_NONE;
     const gchar *content_mime = NULL;
 
     if ((content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_FILE_LIST, META_MIME_URIS)))
@@ -972,7 +917,7 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     else
     {
         g_list_free_full (mimetypes, g_free);
-        g_paste_clipboard_meta_private_clear_content (priv);
+        g_paste_clipboard_content_clear (&priv->content);
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
         return;
@@ -1042,85 +987,12 @@ g_paste_clipboard_meta_on_owner_changed (GPasteClipboardMeta *self,
     if (source && source == priv->owned_source)
         return;
 
-    g_debug ("%s: owner change", _g_paste_clipboard_meta_private_target_name (priv));
+    g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (priv->is_clipboard));
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (self));
 }
 
 /* GPasteClipboardProvider interface adapters */
-
-static gboolean
-provider_is_clipboard (const GPasteClipboardProvider *self)
-{
-    return g_paste_clipboard_meta_is_clipboard (G_PASTE_CLIPBOARD_META ((gpointer) self));
-}
-
-static const gchar *
-provider_get_text (const GPasteClipboardProvider *self)
-{
-    return g_paste_clipboard_meta_get_text (G_PASTE_CLIPBOARD_META ((gpointer) self));
-}
-
-static const gchar *
-provider_get_image_checksum (const GPasteClipboardProvider *self)
-{
-    return g_paste_clipboard_meta_get_image_checksum (G_PASTE_CLIPBOARD_META ((gpointer) self));
-}
-
-static void
-provider_update (GPasteClipboardProvider              *self,
-                 GPasteClipboardProviderUpdateCallback callback,
-                 gpointer                              user_data)
-{
-    g_paste_clipboard_meta_update (G_PASTE_CLIPBOARD_META (self), callback, user_data);
-}
-
-static void
-provider_select_text (GPasteClipboardProvider *self,
-                      const gchar             *text)
-{
-    g_paste_clipboard_meta_select_text (G_PASTE_CLIPBOARD_META (self), text);
-}
-
-static void
-provider_sync_text (const GPasteClipboardProvider *self,
-                    GPasteClipboardProvider       *other)
-{
-    g_paste_clipboard_meta_sync_text (G_PASTE_CLIPBOARD_META ((gpointer) self), G_PASTE_CLIPBOARD_META (other));
-}
-
-static gboolean
-provider_select_item (GPasteClipboardProvider *self,
-                      GPasteItem              *item)
-{
-    return g_paste_clipboard_meta_select_item (G_PASTE_CLIPBOARD_META (self), item);
-}
-
-static void
-provider_ensure_not_empty (GPasteClipboardProvider *self,
-                           GPasteHistory           *history)
-{
-    g_paste_clipboard_meta_ensure_not_empty (G_PASTE_CLIPBOARD_META (self), history);
-}
-
-static void
-provider_store (GPasteClipboardProvider *self)
-{
-    g_paste_clipboard_meta_store (G_PASTE_CLIPBOARD_META (self));
-}
-
-static void
-g_paste_clipboard_meta_provider_iface_init (GPasteClipboardProviderInterface *iface)
-{
-    iface->is_clipboard = provider_is_clipboard;
-    iface->get_text = provider_get_text;
-    iface->get_image_checksum = provider_get_image_checksum;
-    iface->update = provider_update;
-    iface->select_text = provider_select_text;
-    iface->sync_text = provider_sync_text;
-    iface->select_item = provider_select_item;
-    iface->ensure_not_empty = provider_ensure_not_empty;
-    iface->store = provider_store;
-}
+G_PASTE_CLIPBOARD_PROVIDER_DEFINE_VFUNCS (meta, META)
 
 static void
 g_paste_clipboard_meta_dispose (GObject *object)
@@ -1144,7 +1016,7 @@ g_paste_clipboard_meta_finalize (GObject *object)
 {
     GPasteClipboardMetaPrivate *priv = g_paste_clipboard_meta_get_instance_private (G_PASTE_CLIPBOARD_META (object));
 
-    g_paste_clipboard_meta_private_clear_content (priv);
+    g_paste_clipboard_content_clear (&priv->content);
 
     G_OBJECT_CLASS (g_paste_clipboard_meta_parent_class)->finalize (object);
 }

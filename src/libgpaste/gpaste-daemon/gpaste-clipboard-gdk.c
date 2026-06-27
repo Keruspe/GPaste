@@ -3,8 +3,7 @@
 
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
-#include <string.h>
-
+#include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-gdk.h>
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
@@ -23,27 +22,13 @@ enum
     C_LAST_SIGNAL
 };
 
-typedef enum
-{
-    CLIPBOARD_CONTENT_NONE,
-    CLIPBOARD_CONTENT_TEXT,
-    CLIPBOARD_CONTENT_IMAGE,
-    CLIPBOARD_CONTENT_FILE_LIST,
-    CLIPBOARD_CONTENT_COLOR,
-} GPasteClipboardContent;
-
 typedef struct
 {
     GdkClipboard          *real;
     gboolean               is_clipboard;
     GPasteSettings        *settings;
 
-    GPasteClipboardContent content_kind;
-    union {
-        gchar       *str;
-        GdkFileList *file_list;
-        GdkRGBA      rgba;
-    };
+    GPasteClipboardContent content;
 
     guint64                c_signals[C_LAST_SIGNAL];
 } GPasteClipboardGdkPrivate;
@@ -74,44 +59,16 @@ g_paste_clipboard_gdk_get_text (const GPasteClipboardGdk *self)
 {
     const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
 
-    return (priv->content_kind == CLIPBOARD_CONTENT_TEXT) ? priv->str : NULL;
-}
-
-static const gchar *
-_g_paste_clipboard_gdk_private_target_name (const GPasteClipboardGdkPrivate *priv)
-{
-    return priv->is_clipboard ? "CLIPBOARD" : "PRIMARY";
-}
-
-static void
-g_paste_clipboard_gdk_private_clear_content (GPasteClipboardGdkPrivate *priv)
-{
-    switch (priv->content_kind)
-    {
-    case CLIPBOARD_CONTENT_TEXT:
-    case CLIPBOARD_CONTENT_IMAGE:
-        g_clear_pointer (&priv->str, g_free);
-        break;
-    case CLIPBOARD_CONTENT_FILE_LIST:
-        g_boxed_free (GDK_TYPE_FILE_LIST, g_steal_pointer (&priv->file_list));
-        break;
-    case CLIPBOARD_CONTENT_COLOR:
-    case CLIPBOARD_CONTENT_NONE:
-        break;
-    }
-    priv->content_kind = CLIPBOARD_CONTENT_NONE;
+    return g_paste_clipboard_content_get_text (&priv->content);
 }
 
 static void
 g_paste_clipboard_gdk_private_set_text (GPasteClipboardGdkPrivate *priv,
                                         const gchar               *text)
 {
-    g_paste_clipboard_gdk_private_clear_content (priv);
+    g_debug ("%s: set text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
-    g_debug ("%s: set text", _g_paste_clipboard_gdk_private_target_name (priv));
-
-    priv->content_kind = CLIPBOARD_CONTENT_TEXT;
-    priv->str = g_strdup (text);
+    g_paste_clipboard_content_set_text (&priv->content, text);
 }
 
 static void g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
@@ -143,35 +100,24 @@ g_paste_clipboard_gdk_on_text_ready (GObject      *source_object,
     }
 
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
-    GPasteSettings *settings = priv->settings;
-    g_autofree gchar *stripped = g_strstrip (g_strdup (text));
-    gboolean trim_items = g_paste_settings_get_trim_items (settings);
-    const gchar *to_add = trim_items ? stripped : text;
-    guint64 length = strlen (to_add);
+    g_autofree gchar *value = NULL;
 
-    if (length < g_paste_settings_get_min_text_item_size (settings) ||
-        length > g_paste_settings_get_max_text_item_size (settings))
+    switch (g_paste_clipboard_content_classify_text (&priv->content, priv->settings, priv->is_clipboard, text, &value))
     {
+    case G_PASTE_CLIPBOARD_TEXT_REJECT:
         if (data->callback)
             data->callback (self, NULL, data->user_data);
         return;
+    case G_PASTE_CLIPBOARD_TEXT_RESELECT:
+        g_paste_clipboard_gdk_select_text (self, value);
+        break;
+    case G_PASTE_CLIPBOARD_TEXT_SET:
+        g_paste_clipboard_gdk_private_set_text (priv, value);
+        break;
     }
-    if (priv->content_kind == CLIPBOARD_CONTENT_TEXT && g_paste_str_equal (priv->str, to_add))
-    {
-        if (data->callback)
-            data->callback (self, NULL, data->user_data);
-        return;
-    }
-
-    if (trim_items &&
-        priv->is_clipboard &&
-        !g_paste_str_equal (text, stripped))
-            g_paste_clipboard_gdk_select_text (self, stripped);
-    else
-        g_paste_clipboard_gdk_private_set_text (priv, to_add);
 
     if (data->callback)
-        data->callback (self, priv->str, data->user_data);
+        data->callback (self, priv->content.str, data->user_data);
 }
 
 static void
@@ -198,7 +144,7 @@ g_paste_clipboard_gdk_select_text (GPasteClipboardGdk *self,
 {
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
 
-    g_debug ("%s: select text", _g_paste_clipboard_gdk_private_target_name (priv));
+    g_debug ("%s: select text", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
     /* Avoid cycling twice as gdk_clipboard_set_text will make the clipboards manager react */
     g_paste_clipboard_gdk_private_set_text (priv, text);
@@ -244,7 +190,7 @@ g_paste_clipboard_gdk_store (GPasteClipboardGdk *self)
 {
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
 
-    g_debug ("%s: store", _g_paste_clipboard_gdk_private_target_name (priv));
+    g_debug ("%s: store", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
     gdk_clipboard_store_async (priv->real,
                                G_PRIORITY_DEFAULT,
@@ -258,64 +204,32 @@ g_paste_clipboard_gdk_get_image_checksum (const GPasteClipboardGdk *self)
 {
     const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
 
-    return (priv->content_kind == CLIPBOARD_CONTENT_IMAGE) ? priv->str : NULL;
+    return g_paste_clipboard_content_get_image_checksum (&priv->content);
 }
 
 static void
 g_paste_clipboard_gdk_private_set_image_checksum (GPasteClipboardGdkPrivate *priv,
                                                   const gchar               *image_checksum)
 {
-    g_paste_clipboard_gdk_private_clear_content (priv);
-    priv->content_kind = CLIPBOARD_CONTENT_IMAGE;
-    priv->str = g_strdup (image_checksum);
-}
-
-static gboolean
-g_paste_file_list_equal (GdkFileList *a,
-                         GdkFileList *b)
-{
-    if (a == b)
-        return TRUE;
-    if (!a || !b)
-        return FALSE;
-
-    GSList *fa = gdk_file_list_get_files (a);
-    GSList *fb = gdk_file_list_get_files (b);
-
-    for (; fa && fb; fa = fa->next, fb = fb->next)
-    {
-        if (!g_file_equal (G_FILE (fa->data), G_FILE (fb->data)))
-            return FALSE;
-    }
-
-    return !fa && !fb;
+    g_paste_clipboard_content_set_image_checksum (&priv->content, image_checksum);
 }
 
 static void
 g_paste_clipboard_gdk_private_set_color (GPasteClipboardGdkPrivate *priv,
                                          const GdkRGBA             *rgba)
 {
-    g_paste_clipboard_gdk_private_clear_content (priv);
+    g_debug ("%s: set color", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
-    g_debug ("%s: set color", _g_paste_clipboard_gdk_private_target_name (priv));
-
-    priv->content_kind = CLIPBOARD_CONTENT_COLOR;
-    priv->rgba = *rgba;
+    g_paste_clipboard_content_set_color (&priv->content, rgba);
 }
 
 static void
 g_paste_clipboard_gdk_private_set_file_list (GPasteClipboardGdkPrivate *priv,
                                              GdkFileList               *file_list)
 {
-    g_paste_clipboard_gdk_private_clear_content (priv);
+    g_debug ("%s: set file list", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
-    g_debug ("%s: set file list", _g_paste_clipboard_gdk_private_target_name (priv));
-
-    if (file_list)
-    {
-        priv->content_kind = CLIPBOARD_CONTENT_FILE_LIST;
-        priv->file_list = g_boxed_copy (GDK_TYPE_FILE_LIST, file_list);
-    }
+    g_paste_clipboard_content_set_file_list (&priv->content, file_list);
 }
 
 static void
@@ -325,7 +239,7 @@ g_paste_clipboard_gdk_private_select_texture (GPasteClipboardGdkPrivate *priv,
 {
     g_return_if_fail (GDK_IS_TEXTURE (texture));
 
-    g_debug ("%s: select image", _g_paste_clipboard_gdk_private_target_name (priv));
+    g_debug ("%s: select image", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
     g_paste_clipboard_gdk_private_set_image_checksum (priv, checksum);
     gdk_clipboard_set (priv->real, GDK_TYPE_TEXTURE, texture);
@@ -361,7 +275,7 @@ g_paste_clipboard_gdk_on_texture_ready (GObject      *source_object,
     g_autofree gchar *checksum = g_paste_gtk_util_compute_checksum (texture);
     GdkTexture *result = NULL;
 
-    if (priv->content_kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->str))
+    if (priv->content.kind == CLIPBOARD_CONTENT_IMAGE && g_paste_str_equal (checksum, priv->content.str))
     {
         /* Same image, nothing to do */
     }
@@ -433,7 +347,7 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
 
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
 
-    if (priv->content_kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &priv->rgba))
+    if (priv->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &priv->content.rgba))
     {
         if (data->callback)
             data->callback (self, NULL, data->user_data);
@@ -443,7 +357,7 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
     g_paste_clipboard_gdk_private_set_color (priv, rgba);
 
     if (data->callback)
-        data->callback (self, &priv->rgba, data->user_data);
+        data->callback (self, &priv->content.rgba, data->user_data);
 }
 
 static void
@@ -559,7 +473,7 @@ typedef struct {
     GPasteClipboardProviderUpdateCallback callback;
     gpointer                              user_data;
     gint                                  pending;
-    GPasteClipboardContent                content_kind;
+    GPasteClipboardContentKind            content_kind;
     union {
         const gchar   *text;
         GdkTexture    *texture;
@@ -645,14 +559,14 @@ g_paste_clipboard_gdk_update_on_file_list_ready (GObject      *source_object,
 
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
 
-    if (g_paste_file_list_equal (priv->file_list, file_list))
+    if (g_paste_clipboard_file_list_equal (priv->content.file_list, file_list))
     {
         g_paste_clipboard_gdk_update_maybe_done (data);
         return;
     }
 
     g_paste_clipboard_gdk_private_set_file_list (priv, file_list);
-    data->file_list = priv->file_list;
+    data->file_list = priv->content.file_list;
 
     g_paste_clipboard_gdk_update_maybe_done (data);
 }
@@ -722,7 +636,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
 {
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
     GdkContentFormats *formats = gdk_clipboard_get_formats (priv->real);
-    GPasteClipboardContent content_kind = CLIPBOARD_CONTENT_NONE;
+    GPasteClipboardContentKind content_kind = CLIPBOARD_CONTENT_NONE;
     if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_FILE_LIST))
         content_kind = CLIPBOARD_CONTENT_FILE_LIST;
     else if (gdk_content_formats_contain_gtype (formats, GDK_TYPE_RGBA))
@@ -737,7 +651,7 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
         /* No recognized content: the selection was released or the owner
          * provides no type we handle. Clear our cache so callers see an
          * empty clipboard and act accordingly (e.g. ensure_not_empty). */
-        g_paste_clipboard_gdk_private_clear_content (priv);
+        g_paste_clipboard_content_clear (&priv->content);
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, user_data);
         return;
@@ -800,7 +714,7 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
 {
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (self);
 
-    g_debug ("%s: select item", _g_paste_clipboard_gdk_private_target_name (priv));
+    g_debug ("%s: select item", g_paste_clipboard_provider_target_name (priv->is_clipboard));
 
     if (_G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -864,24 +778,12 @@ g_paste_clipboard_gdk_select_item (GPasteClipboardGdk *self,
     return TRUE;
 }
 
-static void
-g_paste_clipboard_gdk_ensure_not_empty (GPasteClipboardGdk *self,
-                                        GPasteHistory      *history)
+static gboolean
+g_paste_clipboard_gdk_is_empty (const GPasteClipboardGdk *self)
 {
     const GPasteClipboardGdkPrivate *priv = _g_paste_clipboard_gdk_get_instance_private (self);
 
-    if (priv->content_kind != CLIPBOARD_CONTENT_NONE)
-        return;
-
-    const GList *hist = g_paste_history_get_history (history);
-
-    if (hist)
-    {
-        GPasteItem *item = hist->data;
-
-        if (!g_paste_clipboard_gdk_select_item (self, item))
-            g_paste_history_remove (history, 0);
-    }
+    return g_paste_clipboard_content_is_empty (&priv->content);
 }
 
 static void
@@ -901,85 +803,12 @@ g_paste_clipboard_gdk_on_real_changed (GPasteClipboardGdk *self)
     if (gdk_content_formats_is_empty (gdk_clipboard_get_formats (priv->real)))
         return;
 
-    g_debug ("%s: owner change", _g_paste_clipboard_gdk_private_target_name (priv));
+    g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (priv->is_clipboard));
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (self));
 }
 
 /* GPasteClipboardProvider interface adapters */
-
-static gboolean
-provider_is_clipboard (const GPasteClipboardProvider *self)
-{
-    return g_paste_clipboard_gdk_is_clipboard (G_PASTE_CLIPBOARD_GDK ((gpointer) self));
-}
-
-static const gchar *
-provider_get_text (const GPasteClipboardProvider *self)
-{
-    return g_paste_clipboard_gdk_get_text (G_PASTE_CLIPBOARD_GDK ((gpointer) self));
-}
-
-static const gchar *
-provider_get_image_checksum (const GPasteClipboardProvider *self)
-{
-    return g_paste_clipboard_gdk_get_image_checksum (G_PASTE_CLIPBOARD_GDK ((gpointer) self));
-}
-
-static void
-provider_update (GPasteClipboardProvider              *self,
-                 GPasteClipboardProviderUpdateCallback callback,
-                 gpointer                              user_data)
-{
-    g_paste_clipboard_gdk_update (G_PASTE_CLIPBOARD_GDK (self), callback, user_data);
-}
-
-static void
-provider_select_text (GPasteClipboardProvider *self,
-                      const gchar             *text)
-{
-    g_paste_clipboard_gdk_select_text (G_PASTE_CLIPBOARD_GDK (self), text);
-}
-
-static void
-provider_sync_text (const GPasteClipboardProvider *self,
-                    GPasteClipboardProvider       *other)
-{
-    g_paste_clipboard_gdk_sync_text (G_PASTE_CLIPBOARD_GDK ((gpointer) self), G_PASTE_CLIPBOARD_GDK (other));
-}
-
-static gboolean
-provider_select_item (GPasteClipboardProvider *self,
-                      GPasteItem              *item)
-{
-    return g_paste_clipboard_gdk_select_item (G_PASTE_CLIPBOARD_GDK (self), item);
-}
-
-static void
-provider_ensure_not_empty (GPasteClipboardProvider *self,
-                           GPasteHistory           *history)
-{
-    g_paste_clipboard_gdk_ensure_not_empty (G_PASTE_CLIPBOARD_GDK (self), history);
-}
-
-static void
-provider_store (GPasteClipboardProvider *self)
-{
-    g_paste_clipboard_gdk_store (G_PASTE_CLIPBOARD_GDK (self));
-}
-
-static void
-g_paste_clipboard_gdk_provider_iface_init (GPasteClipboardProviderInterface *iface)
-{
-    iface->is_clipboard = provider_is_clipboard;
-    iface->get_text = provider_get_text;
-    iface->get_image_checksum = provider_get_image_checksum;
-    iface->update = provider_update;
-    iface->select_text = provider_select_text;
-    iface->sync_text = provider_sync_text;
-    iface->select_item = provider_select_item;
-    iface->ensure_not_empty = provider_ensure_not_empty;
-    iface->store = provider_store;
-}
+G_PASTE_CLIPBOARD_PROVIDER_DEFINE_VFUNCS (gdk, GDK)
 
 static void
 g_paste_clipboard_gdk_dispose (GObject *object)
@@ -1001,7 +830,7 @@ g_paste_clipboard_gdk_finalize (GObject *object)
 {
     GPasteClipboardGdkPrivate *priv = g_paste_clipboard_gdk_get_instance_private (G_PASTE_CLIPBOARD_GDK (object));
 
-    g_paste_clipboard_gdk_private_clear_content (priv);
+    g_paste_clipboard_content_clear (&priv->content);
 
     G_OBJECT_CLASS (g_paste_clipboard_gdk_parent_class)->finalize (object);
 }

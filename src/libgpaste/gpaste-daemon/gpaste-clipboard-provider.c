@@ -85,6 +85,22 @@ g_paste_clipboard_provider_get_image_checksum (const GPasteClipboardProvider *se
 }
 
 /**
+ * g_paste_clipboard_provider_is_empty:
+ * @self: a #GPasteClipboardProvider instance
+ *
+ * Get whether the provider currently holds no content
+ *
+ * Returns: %TRUE if the provider holds nothing
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_clipboard_provider_is_empty (const GPasteClipboardProvider *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self), TRUE);
+
+    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->is_empty (self);
+}
+
+/**
  * g_paste_clipboard_provider_update:
  * @self: a #GPasteClipboardProvider instance
  * @callback: (scope async): the callback to be called when the content is ready
@@ -172,7 +188,21 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
     g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
     g_return_if_fail (_G_PASTE_IS_HISTORY (history));
 
-    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->ensure_not_empty (self, history);
+    /* Identical for every backend: if we hold nothing, re-own the selection with
+     * the history's head (dropping it if the backend rejects it). Backends only
+     * report emptiness through the is_empty vfunc. */
+    if (!g_paste_clipboard_provider_is_empty (self))
+        return;
+
+    const GList *hist = g_paste_history_get_history (history);
+
+    if (!hist)
+        return;
+
+    GPasteItem *item = hist->data;
+
+    if (!g_paste_clipboard_provider_select_item (self, item))
+        g_paste_history_remove (history, 0);
 }
 
 /**
@@ -202,4 +232,16 @@ g_paste_clipboard_provider_emit_changed (GPasteClipboardProvider *self)
     g_return_if_fail (_G_PASTE_IS_CLIPBOARD_PROVIDER (self));
 
     g_signal_emit (self, signals[CHANGED], 0);
+}
+
+/**
+ * g_paste_clipboard_provider_target_name:
+ * @is_clipboard: whether the provider drives the clipboard
+ *
+ * Returns: the selection's name ("CLIPBOARD" or "PRIMARY"), for debug logging
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_clipboard_provider_target_name (gboolean is_clipboard)
+{
+    return is_clipboard ? "CLIPBOARD" : "PRIMARY";
 }
