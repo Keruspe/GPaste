@@ -4,6 +4,7 @@
 #include <gpaste/gpaste-util.h>
 
 #include <gpaste-file-backend.h>
+#include <gpaste-noop-backend.h>
 
 typedef struct
 {
@@ -251,6 +252,8 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
     {
     case G_PASTE_STORAGE_FILE:
         return G_PASTE_TYPE_FILE_BACKEND;
+    case G_PASTE_STORAGE_NOOP:
+        return G_PASTE_TYPE_NOOP_BACKEND;
     default:
         return _g_paste_storage_backend_get_type (G_PASTE_STORAGE_DEFAULT);
     }

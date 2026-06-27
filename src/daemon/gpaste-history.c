@@ -1247,7 +1247,7 @@ g_paste_history_new (GPasteSettings *settings)
     GPasteHistory *self = g_object_new (G_PASTE_TYPE_HISTORY, NULL);
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
-    priv->backend = g_paste_storage_backend_new (G_PASTE_STORAGE_DEFAULT, settings);
+    priv->backend = g_paste_storage_backend_new (g_paste_settings_get_storage_backend (settings), settings);
     priv->saver = g_paste_history_saver_new (priv->backend, self, g_paste_history_on_loaded);
     priv->settings = g_object_ref (settings);
 

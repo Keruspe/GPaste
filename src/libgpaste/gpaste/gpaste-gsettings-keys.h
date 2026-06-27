@@ -35,6 +35,8 @@ G_BEGIN_DECLS
 #define G_PASTE_RICH_TEXT_SUPPORT_SETTING          "rich-text-support"
 #define G_PASTE_SAVE_HISTORY_SETTING               "save-history"
 #define G_PASTE_SHOW_HISTORY_SETTING               "show-history"
+#define G_PASTE_STORAGE_BACKEND_SETTING            "storage-backend"
+#define G_PASTE_STORAGE_BACKEND_REVISION_SETTING   "storage-backend-revision"
 #define G_PASTE_SYNC_CLIPBOARD_TO_PRIMARY_SETTING  "sync-clipboard-to-primary"
 #define G_PASTE_SYNC_PRIMARY_TO_CLIPBOARD_SETTING  "sync-primary-to-clipboard"
 #define G_PASTE_SYNCHRONIZE_CLIPBOARDS_SETTING     "synchronize-clipboards"

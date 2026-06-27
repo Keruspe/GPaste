@@ -39,6 +39,8 @@ typedef struct
     gboolean   rich_text_support;
     gboolean   save_history;
     gchar     *show_history;
+    guint      storage_backend;
+    guint64    storage_backend_revision;
     gchar     *sync_clipboard_to_primary;
     gchar     *sync_primary_to_clipboard;
     gboolean   synchronize_clipboards;
@@ -101,6 +103,7 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 
 #define BOOLEAN_SETTING(name, key) TRIVIAL_SETTING (name, key, gboolean, boolean, FALSE)
 #define UNSIGNED_SETTING(name, key) TRIVIAL_SETTING (name, key, guint64, uint64, 0)
+#define ENUM_SETTING(name, key) TRIVIAL_SETTING (name, key, guint, enum, 0)
 
 #define STRING_SETTING(name, key) SETTING (name, key, const gchar *, string, NULL,                \
                                            g_return_if_fail (value);                              \
@@ -583,6 +586,52 @@ BOOLEAN_SETTING (save_history, SAVE_HISTORY)
 STRING_SETTING (show_history, SHOW_HISTORY)
 
 /**
+ * g_paste_settings_get_storage_backend:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "storage-backend" setting
+ *
+ * Returns: the value of the "storage-backend" setting (a #GPasteStorage)
+ */
+/**
+ * g_paste_settings_reset_storage_backend:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "storage-backend" setting
+ */
+/**
+ * g_paste_settings_set_storage_backend:
+ * @self: a #GPasteSettings instance
+ * @value: the storage backend to use (a #GPasteStorage)
+ *
+ * Change the "storage-backend" setting
+ */
+ENUM_SETTING (storage_backend, STORAGE_BACKEND)
+
+/**
+ * g_paste_settings_get_storage_backend_revision:
+ * @self: a #GPasteSettings instance
+ *
+ * Get the "storage-backend-revision" setting
+ *
+ * Returns: the value of the "storage-backend-revision" setting
+ */
+/**
+ * g_paste_settings_reset_storage_backend_revision:
+ * @self: a #GPasteSettings instance
+ *
+ * Reset the "storage-backend-revision" setting
+ */
+/**
+ * g_paste_settings_set_storage_backend_revision:
+ * @self: a #GPasteSettings instance
+ * @value: the last processed storage backend revision
+ *
+ * Change the "storage-backend-revision" setting
+ */
+UNSIGNED_SETTING (storage_backend_revision, STORAGE_BACKEND_REVISION)
+
+/**
  * g_paste_settings_get_sync_clipboard_to_primary:
  * @self: a #GPasteSettings instance
  *
@@ -891,6 +940,8 @@ static const GPasteSettingEntry setting_entries[] = {
     SETTING_ENTRY (RICH_TEXT_SUPPORT, rich_text_support),
     SETTING_ENTRY (SAVE_HISTORY, save_history),
     KEYBINDING_ENTRY (SHOW_HISTORY, show_history),
+    SETTING_ENTRY (STORAGE_BACKEND, storage_backend),
+    SETTING_ENTRY (STORAGE_BACKEND_REVISION, storage_backend_revision),
     KEYBINDING_ENTRY (SYNC_CLIPBOARD_TO_PRIMARY, sync_clipboard_to_primary),
     KEYBINDING_ENTRY (SYNC_PRIMARY_TO_CLIPBOARD, sync_primary_to_clipboard),
     SETTING_ENTRY (SYNCHRONIZE_CLIPBOARDS, synchronize_clipboards),
@@ -970,6 +1021,8 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     BOOL (rich_text_support,          RICH_TEXT_SUPPORT)            \
     BOOL (save_history,               SAVE_HISTORY)                 \
     STR  (show_history,               SHOW_HISTORY)                 \
+    UINT (storage_backend,            STORAGE_BACKEND)              \
+    UINT (storage_backend_revision,   STORAGE_BACKEND_REVISION)     \
     STR  (sync_clipboard_to_primary,  SYNC_CLIPBOARD_TO_PRIMARY)    \
     STR  (sync_primary_to_clipboard,  SYNC_PRIMARY_TO_CLIPBOARD)    \
     BOOL (synchronize_clipboards,     SYNCHRONIZE_CLIPBOARDS)       \

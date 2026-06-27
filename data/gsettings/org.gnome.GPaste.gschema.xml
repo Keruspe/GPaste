@@ -1,4 +1,9 @@
 <schemalist>
+    <enum id="org.gnome.GPaste.StorageBackend">
+      <value nick="none" value="0"/>
+      <value nick="file" value="1"/>
+    </enum>
+
     <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="GPaste">
 
     <key name="element-size" type="t">
@@ -161,6 +166,22 @@
       <description>
         By default, hitting ctrl + alt + h displays the menu ("&lt;Ctrl&gt;&lt;Alt&gt;H").
         An empty string here disables this functionnality.
+      </description>
+    </key>
+
+    <key name="storage-backend" enum="org.gnome.GPaste.StorageBackend">
+      <default>'file'</default>
+      <summary>Where the history is stored</summary>
+      <description>
+        The storage backend used to persist the history: "file" keeps the current on-disk history, "none" stores nothing. The migration dialog lets the user pick.
+      </description>
+    </key>
+
+    <key name="storage-backend-revision" type="t">
+      <default>0</default>
+      <summary>Last processed storage backend revision</summary>
+      <description>
+        Internal: the storage-backend revision the daemon last migrated to. When it differs from the daemon's current revision, the storage migration dialog is shown on startup.
       </description>
     </key>
 

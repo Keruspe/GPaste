@@ -134,6 +134,8 @@ global:
     g_paste_settings_get_rich_text_support;
     g_paste_settings_get_save_history;
     g_paste_settings_get_show_history;
+    g_paste_settings_get_storage_backend;
+    g_paste_settings_get_storage_backend_revision;
     g_paste_settings_get_sync_clipboard_to_primary;
     g_paste_settings_get_sync_primary_to_clipboard;
     g_paste_settings_get_synchronize_clipboards;
@@ -165,6 +167,8 @@ global:
     g_paste_settings_reset_rich_text_support;
     g_paste_settings_reset_save_history;
     g_paste_settings_reset_show_history;
+    g_paste_settings_reset_storage_backend;
+    g_paste_settings_reset_storage_backend_revision;
     g_paste_settings_reset_sync_clipboard_to_primary;
     g_paste_settings_reset_sync_primary_to_clipboard;
     g_paste_settings_reset_synchronize_clipboards;
@@ -193,6 +197,8 @@ global:
     g_paste_settings_set_rich_text_support;
     g_paste_settings_set_save_history;
     g_paste_settings_set_show_history;
+    g_paste_settings_set_storage_backend;
+    g_paste_settings_set_storage_backend_revision;
     g_paste_settings_set_sync_clipboard_to_primary;
     g_paste_settings_set_sync_primary_to_clipboard;
     g_paste_settings_set_synchronize_clipboards;

@@ -7,6 +7,7 @@
 #include <gpaste-bus.h>
 #include <gpaste-daemon.h>
 #include <gpaste-search-provider.h>
+#include <gpaste-storage-migration.h>
 
 #ifdef G_OS_UNIX
 #  include <glib-unix.h>
@@ -111,6 +112,12 @@ on_bus_acquired (GPasteBus *bus,
     g_source_set_name_by_id (g_idle_add_once (register_search_provider, user_data), "[GPaste] register_search_provider");
 }
 
+static void
+on_storage_migration_done (gpointer user_data)
+{
+    g_main_loop_quit (user_data);
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -121,6 +128,21 @@ main (gint argc, gchar *argv[])
 
     /* Keep the gapplication around */
     g_application_hold (gapp);
+
+    /* Let the user pick (or confirm) where the history is stored before the
+     * daemon starts persisting anything. The dialog is also reachable later
+     * through the "storage-migration" action. */
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_paste_storage_migration_register_action (app, settings);
+
+    if (g_paste_storage_migration_needed (settings))
+    {
+        g_autoptr (GMainLoop) loop = g_main_loop_new (NULL, FALSE);
+
+        adw_init ();
+        g_paste_storage_migration_show (app, settings, on_storage_migration_done, loop);
+        g_main_loop_run (loop);
+    }
 
     g_autofree CallbackData *data = g_new0 (CallbackData, 1);
     g_autoptr (GPasteDaemon) g_paste_daemon = data->daemon = g_paste_daemon_new ();
