@@ -183,61 +183,31 @@ on_state_changed (GObject    *object G_GNUC_UNUSED,
     update_state (user_data);
 }
 
-/* AdwComboRow ellipsizes both the label previewing the current selection and the
- * ones in its dropdown, and exposes neither a property to stop it nor the labels
- * themselves. They are plain GtkLabels in the row's widget tree though, so reach
- * them by walking it and turn ellipsization off, showing the longer backend
- * descriptions in full. */
+/* AdwComboRow ellipsizes the backend labels — both the dropdown rows and the
+ * GtkInscription previewing the current selection — and offers no property to
+ * stop it. Give it our own factory of plain GtkLabels instead, which it uses for
+ * the dropdown rows and the selected-value preview alike, so the longer backend
+ * descriptions show in full. */
 static void
-disable_label_ellipsize (GtkWidget *widget)
+backend_label_setup (GtkSignalListItemFactory *factory G_GNUC_UNUSED,
+                     GtkListItem              *item,
+                     gpointer                  user_data G_GNUC_UNUSED)
 {
-    if (GTK_IS_LABEL (widget))
-    {
-        gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_NONE);
-        gtk_label_set_max_width_chars (GTK_LABEL (widget), -1);
-    }
+    GtkWidget *label = gtk_label_new (NULL);
 
-    for (GtkWidget *child = gtk_widget_get_first_child (widget);
-         child;
-         child = gtk_widget_get_next_sibling (child))
-        disable_label_ellipsize (child);
+    gtk_label_set_xalign (GTK_LABEL (label), 0.0);
+    gtk_list_item_set_child (item, label);
 }
 
 static void
-disable_popover_ellipsize (gpointer data)
+backend_label_bind (GtkSignalListItemFactory *factory G_GNUC_UNUSED,
+                    GtkListItem              *item,
+                    gpointer                  user_data G_GNUC_UNUSED)
 {
-    disable_label_ellipsize (data);
-    g_object_unref (data);
-}
+    GtkStringObject *string = gtk_list_item_get_item (item);
 
-/* The dropdown labels only exist once the popover's list view has been allocated,
- * which happens after "map"; defer to an idle so they are there when we walk it.
- * The ref keeps the popover alive in case the window is torn down meanwhile. */
-static void
-on_backend_popover_mapped (GtkWidget *popover,
-                           gpointer   user_data G_GNUC_UNUSED)
-{
-    guint id = g_idle_add_once (disable_popover_ellipsize, g_object_ref (popover));
-    g_source_set_name_by_id (id, "[gpaste] disable combo dropdown ellipsize");
-}
-
-/* Disable ellipsization on the preview label now and, since the dropdown labels
- * are (re)built every time it opens, re-run the walk whenever the popover maps. */
-static void
-disable_backend_combo_ellipsize (GtkWidget *widget)
-{
-    if (GTK_IS_LABEL (widget))
-    {
-        gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_NONE);
-        gtk_label_set_max_width_chars (GTK_LABEL (widget), -1);
-    }
-    else if (GTK_IS_POPOVER (widget))
-        g_signal_connect (widget, "map", G_CALLBACK (on_backend_popover_mapped), NULL);
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget);
-         child;
-         child = gtk_widget_get_next_sibling (child))
-        disable_backend_combo_ellipsize (child);
+    gtk_label_set_label (GTK_LABEL (gtk_list_item_get_child (item)),
+                         gtk_string_object_get_string (string));
 }
 
 /* Returns TRUE only if every history was copied into @chosen and reads back with
@@ -527,7 +497,12 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     g_object_unref (backends);
 
     adw_combo_row_set_selected (self->backend_row, index_for_backend (self, current));
-    disable_backend_combo_ellipsize (backend_row);
+
+    GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
+    g_signal_connect (factory, "setup", G_CALLBACK (backend_label_setup), NULL);
+    g_signal_connect (factory, "bind", G_CALLBACK (backend_label_bind), NULL);
+    adw_combo_row_set_factory (self->backend_row, factory);
+    g_object_unref (factory);
 
     GtkWidget *import_row = adw_switch_row_new ();
     self->import_row = ADW_SWITCH_ROW (import_row);
