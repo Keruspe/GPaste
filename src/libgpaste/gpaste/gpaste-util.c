@@ -607,25 +607,19 @@ g_paste_util_get_history_file (const gchar *name,
 
 /**
  * g_paste_util_ensure_history_dir_exists:
- * @settings: a #GPasteSettings instance
  *
  * Ensure the history dir exists
  *
  * Returns: where it exists or if there was an error creating it
  */
 G_PASTE_VISIBLE gboolean
-g_paste_util_ensure_history_dir_exists (const GPasteSettings *settings)
+g_paste_util_ensure_history_dir_exists (void)
 {
-    g_return_val_if_fail (_G_PASTE_IS_SETTINGS (settings), FALSE);
-
     g_autoptr (GFile) history_dir = g_paste_util_get_history_dir ();
 
     if (!g_file_query_exists (history_dir,
                               NULL)) /* cancellable */
     {
-        if (!g_paste_settings_get_save_history (settings))
-            return TRUE;
-
         g_autoptr (GError) error = NULL;
 
         g_file_make_directory_with_parents (history_dir,

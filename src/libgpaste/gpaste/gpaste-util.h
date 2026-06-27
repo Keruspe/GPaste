@@ -52,6 +52,6 @@ gchar *g_paste_util_get_history_file_path (const gchar *name,
 GFile *g_paste_util_get_history_file      (const gchar *name,
                                            const gchar *extension);
 
-gboolean g_paste_util_ensure_history_dir_exists (const GPasteSettings *settings);
+gboolean g_paste_util_ensure_history_dir_exists (void);
 
 G_END_DECLS

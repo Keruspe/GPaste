@@ -132,7 +132,6 @@ global:
     g_paste_settings_get_pop;
     g_paste_settings_get_primary_to_history;
     g_paste_settings_get_rich_text_support;
-    g_paste_settings_get_save_history;
     g_paste_settings_get_show_history;
     g_paste_settings_get_storage_backend;
     g_paste_settings_get_storage_backend_revision;
@@ -165,7 +164,6 @@ global:
     g_paste_settings_reset_pop;
     g_paste_settings_reset_primary_to_history;
     g_paste_settings_reset_rich_text_support;
-    g_paste_settings_reset_save_history;
     g_paste_settings_reset_show_history;
     g_paste_settings_reset_storage_backend;
     g_paste_settings_reset_storage_backend_revision;
@@ -195,7 +193,6 @@ global:
     g_paste_settings_set_pop;
     g_paste_settings_set_primary_to_history;
     g_paste_settings_set_rich_text_support;
-    g_paste_settings_set_save_history;
     g_paste_settings_set_show_history;
     g_paste_settings_set_storage_backend;
     g_paste_settings_set_storage_backend_revision;

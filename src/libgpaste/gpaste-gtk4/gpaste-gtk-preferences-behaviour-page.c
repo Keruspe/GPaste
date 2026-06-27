@@ -54,10 +54,6 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
                                                        _("Open the UI window centered"),
                                                        G_PASTE_OPEN_CENTERED_SETTING,
                                                        settings);
-    g_paste_gtk_preferences_group_add_boolean_setting (group,
-                                                       _("Save history"),
-                                                       G_PASTE_SAVE_HISTORY_SETTING,
-                                                       settings);
     g_paste_gtk_preferences_page_add_group (G_PASTE_GTK_PREFERENCES_PAGE (self), group);
 
     if (g_paste_util_has_gnome_shell ())

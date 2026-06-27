@@ -153,14 +153,6 @@
       </description>
     </key>
 
-    <key name="save-history" type="b">
-      <default>true</default>
-      <summary>Do we save the history from one session to another?</summary>
-      <description>
-        By default, we're saving it
-      </description>
-    </key>
-
     <key name="show-history" type="s">
       <default>'&lt;Ctrl&gt;&lt;Alt&gt;H'</default>
       <summary>The keyboard shortcut to display the menu</summary>

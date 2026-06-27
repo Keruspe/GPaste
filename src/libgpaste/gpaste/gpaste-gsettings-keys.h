@@ -33,7 +33,6 @@ G_BEGIN_DECLS
 #define G_PASTE_POP_SETTING                        "pop"
 #define G_PASTE_PRIMARY_TO_HISTORY_SETTING         "primary-to-history"
 #define G_PASTE_RICH_TEXT_SUPPORT_SETTING          "rich-text-support"
-#define G_PASTE_SAVE_HISTORY_SETTING               "save-history"
 #define G_PASTE_SHOW_HISTORY_SETTING               "show-history"
 #define G_PASTE_STORAGE_BACKEND_SETTING            "storage-backend"
 #define G_PASTE_STORAGE_BACKEND_REVISION_SETTING   "storage-backend-revision"

@@ -293,7 +293,6 @@ test_encrypted_roundtrip (void)
     const gchar *pw_name = "my login";
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    g_paste_settings_set_save_history (settings, TRUE);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
 

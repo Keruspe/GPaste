@@ -100,23 +100,10 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
                                          const gchar                *history_file_path,
                                          const GList                *history)
 {
-    const GPasteSettings *settings = _G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->get_settings (self);
-
-    if (!g_paste_util_ensure_history_dir_exists (settings))
+    if (!g_paste_util_ensure_history_dir_exists ())
         return;
 
     g_autoptr (GFile) history_file = g_file_new_for_path (history_file_path);
-
-    if (!g_paste_settings_get_save_history (settings))
-    {
-        g_autoptr (GError) error = NULL;
-        if (!g_file_delete (history_file, NULL, &error) &&
-            !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        {
-            g_warning ("Failed to delete history file: %s", error->message);
-        }
-        return;
-    }
 
     const GPasteFileBackend *real_self = _G_PASTE_FILE_BACKEND (self);
     /* An encrypted history keeps password entries (the file is unreadable
@@ -693,7 +680,7 @@ g_paste_file_backend_read_history_file (const GPasteStorageBackend *self,
     else
     {
         /* Create the empty file to be listed as an available history */
-        if (g_paste_util_ensure_history_dir_exists (settings))
+        if (g_paste_util_ensure_history_dir_exists ())
         {
             g_autoptr (GError) error = NULL;
             g_autoptr (GFileOutputStream) created = g_file_create (history_file, G_FILE_CREATE_NONE, NULL, &error);

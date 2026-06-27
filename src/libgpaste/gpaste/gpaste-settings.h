@@ -33,7 +33,6 @@ guint64      g_paste_settings_get_min_text_item_size         (const GPasteSettin
 const gchar *g_paste_settings_get_pop                        (const GPasteSettings *self);
 gboolean     g_paste_settings_get_primary_to_history         (const GPasteSettings *self);
 gboolean     g_paste_settings_get_rich_text_support          (const GPasteSettings *self);
-gboolean     g_paste_settings_get_save_history               (const GPasteSettings *self);
 const gchar *g_paste_settings_get_show_history               (const GPasteSettings *self);
 guint        g_paste_settings_get_storage_backend            (const GPasteSettings *self);
 guint64      g_paste_settings_get_storage_backend_revision   (const GPasteSettings *self);
@@ -63,7 +62,6 @@ void g_paste_settings_reset_min_text_item_size         (GPasteSettings *self);
 void g_paste_settings_reset_pop                        (GPasteSettings *self);
 void g_paste_settings_reset_primary_to_history         (GPasteSettings *self);
 void g_paste_settings_reset_rich_text_support          (GPasteSettings *self);
-void g_paste_settings_reset_save_history               (GPasteSettings *self);
 void g_paste_settings_reset_show_history               (GPasteSettings *self);
 void g_paste_settings_reset_storage_backend            (GPasteSettings *self);
 void g_paste_settings_reset_storage_backend_revision   (GPasteSettings *self);
@@ -110,8 +108,6 @@ void g_paste_settings_set_pop                        (GPasteSettings *self,
 void g_paste_settings_set_primary_to_history         (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_rich_text_support          (GPasteSettings *self,
-                                                      gboolean        value);
-void g_paste_settings_set_save_history               (GPasteSettings *self,
                                                       gboolean        value);
 void g_paste_settings_set_show_history               (GPasteSettings *self,
                                                       const gchar    *value);

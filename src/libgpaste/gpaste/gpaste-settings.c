@@ -37,7 +37,6 @@ typedef struct
     gchar     *pop;
     gboolean   primary_to_history;
     gboolean   rich_text_support;
-    gboolean   save_history;
     gchar     *show_history;
     guint      storage_backend;
     guint64    storage_backend_revision;
@@ -540,29 +539,6 @@ BOOLEAN_SETTING (primary_to_history, PRIMARY_TO_HISTORY)
 BOOLEAN_SETTING (rich_text_support, RICH_TEXT_SUPPORT)
 
 /**
- * g_paste_settings_get_save_history:
- * @self: a #GPasteSettings instance
- *
- * Get the "save-history" setting
- *
- * Returns: the value of the "save-history" setting
- */
-/**
- * g_paste_settings_reset_save_history:
- * @self: a #GPasteSettings instance
- *
- * Reset the "save-history" setting
- */
-/**
- * g_paste_settings_set_save_history:
- * @self: a #GPasteSettings instance
- * @value: whether to save or not the history
- *
- * Change the "save-history" setting
- */
-BOOLEAN_SETTING (save_history, SAVE_HISTORY)
-
-/**
  * g_paste_settings_get_show_history:
  * @self: a #GPasteSettings instance
  *
@@ -938,7 +914,6 @@ static const GPasteSettingEntry setting_entries[] = {
     KEYBINDING_ENTRY (POP, pop),
     SETTING_ENTRY (PRIMARY_TO_HISTORY, primary_to_history),
     SETTING_ENTRY (RICH_TEXT_SUPPORT, rich_text_support),
-    SETTING_ENTRY (SAVE_HISTORY, save_history),
     KEYBINDING_ENTRY (SHOW_HISTORY, show_history),
     SETTING_ENTRY (STORAGE_BACKEND, storage_backend),
     SETTING_ENTRY (STORAGE_BACKEND_REVISION, storage_backend_revision),
@@ -1019,7 +994,6 @@ g_paste_settings_settings_changed (GSettings   *settings G_GNUC_UNUSED,
     STR  (pop,                        POP)                          \
     BOOL (primary_to_history,         PRIMARY_TO_HISTORY)           \
     BOOL (rich_text_support,          RICH_TEXT_SUPPORT)            \
-    BOOL (save_history,               SAVE_HISTORY)                 \
     STR  (show_history,               SHOW_HISTORY)                 \
     UINT (storage_backend,            STORAGE_BACKEND)              \
     UINT (storage_backend_revision,   STORAGE_BACKEND_REVISION)     \
