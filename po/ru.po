@@ -8,10 +8,10 @@ msgstr ""
 "Project-Id-Version: gpaste 3.42.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-21 11:30+0200\n"
-"PO-Revision-Date: 2026-06-16 08:05+0000\n"
+"PO-Revision-Date: 2026-06-28 02:01+0000\n"
 "Last-Translator: Сергей <asvmail.as@gmail.com>\n"
-"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/ru/"
-">\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/gpaste/gpaste/"
+"ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -116,6 +116,8 @@ msgid ""
 "Size of the inline image thumbnail in the history; the larger detail preview "
 "is shown on hover. Default size is 50 pixels."
 msgstr ""
+"Размер миниатюры изображения в истории; более подробный вариант отображается "
+"при наведении курсора. Размер по умолчанию — 50 пикселей."
 
 #: data/gsettings/org.gnome.GPaste.gschema.xml:57
 msgid "Do we close the UI after selecting an item?"
@@ -439,11 +441,16 @@ msgid ""
 "Fix the daemon failing to restart with \"gpaste-client daemon-reexec\" (the "
 "re-exec path was missing the gpaste libexec subdirectory)"
 msgstr ""
+"Исправлена ошибка, из-за которой демон не перезапускался с помощью команды «"
+"gpaste-client daemon-reexec» (в пути к re-exec отсутствовал подкаталог "
+"libexec)"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:61
 msgid ""
 "GNOME Shell extension: fix history items gradually disappearing from the menu"
 msgstr ""
+"GNOME Shell extension: Исправлена ошибка, из-за которой элементы истории "
+"постепенно исчезали из меню"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:62
 msgid ""
@@ -451,20 +458,21 @@ msgid ""
 "the search or history switch entries, and type-to-search works right after "
 "startup"
 msgstr ""
+"Пользовательский интерфейс: исправлен ввод с клавиатуры, так что клавиши "
+"Escape и Enter больше не «проглатывают» текст, предназначенный для поиска "
+"или переключения записей в истории, а функция поиска по мере набора работает "
+"сразу после запуска"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:70
-#, fuzzy
 msgid "GNOME Shell extension: fix keyboard navigation in the history menu"
 msgstr ""
-"GNOME Shell extension: восстановление навигации по элементам истории с "
-"помощью клавиатуры"
+"GNOME Shell extension: исправлена навигация по элементам истории с помощью "
+"клавиатуры"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:71
-#, fuzzy
 msgid "GNOME Shell extension: give every action button the same width"
 msgstr ""
-"GNOME Shell extension: восстановление навигации по элементам истории с "
-"помощью клавиатуры"
+"GNOME Shell extension: всем кнопкам действий присвоена одинаковая ширина"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:79
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:125
@@ -630,6 +638,7 @@ msgstr ""
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:157
 msgid "GNOME Shell extension now handles daemon connection failure gracefully"
 msgstr ""
+"GNOME Shell extension теперь корректно обрабатывает сбои подключения демона"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:158
 msgid "Fix crash when a history item has no value yet"
@@ -657,22 +666,30 @@ msgstr ""
 msgid ""
 "Fix key events incorrectly forwarded to search when another entry has focus"
 msgstr ""
+"Исправлена ошибка, из-за которой события нажатия клавиш некорректно "
+"перенаправлялись в поиск, когда фокус находился на другой записи"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:163
 msgid "Fix signal loop when updating shortcut entries from settings"
 msgstr ""
+"Исправлено зацикливание сигнала при обновлении записей комбинаций клавиш в "
+"настройках"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:164
 msgid "Fix default history item count not reset after history deletion"
 msgstr ""
+"Исправлена ошибка, из-за которой счётчик элементов истории по умолчанию не "
+"сбрасывался после удаления истории"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:165
 msgid "Enforce minimum window size to prevent unresizable state"
 msgstr ""
+"Установлен минимальный размер окна, чтобы предотвратить невозможность "
+"изменения его размера"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:166
 msgid "Add descriptive tooltips for settings entries"
-msgstr ""
+msgstr "Добавлены пояснительные всплывающие подсказки для пунктов настроек"
 
 #: data/metainfo/org.gnome.GPaste.Ui.metainfo.xml.in:167
 msgid "Build: explicitly link libgpaste libraries against libc"
@@ -1288,32 +1305,27 @@ msgstr "Не удалось подключиться к демону GPaste"
 
 #: src/daemon/gpaste-color-item.c:73
 msgid "[Color]"
-msgstr ""
+msgstr "[Цвет]"
 
 #: src/daemon/gpaste-daemon.c:267
-#, fuzzy
 msgid "Convert to Password"
-msgstr "переименовать пароль"
+msgstr "Преобразовать в пароль"
 
 #: src/daemon/gpaste-daemon.c:269
-#, fuzzy
 msgid "Pop from History"
-msgstr "Доступ к истории"
+msgstr "Выталкивать из списка истории"
 
 #: src/daemon/gpaste-daemon.c:271
-#, fuzzy
 msgid "Show History"
-msgstr "Доступ к истории"
+msgstr "Показать историю"
 
 #: src/daemon/gpaste-daemon.c:273
-#, fuzzy
 msgid "Sync Clipboard to Primary"
-msgstr "Синхронизировать буфер обмена с основным выделением"
+msgstr "Синхронизировать буфер обмена с первичным буфером выделения"
 
 #: src/daemon/gpaste-daemon.c:275
-#, fuzzy
 msgid "Sync Primary to Clipboard"
-msgstr "Синхронизировать основное выделение с буфером обмена"
+msgstr "Синхронизировать первичный буфер выделения с буфером обмена"
 
 #: src/daemon/gpaste-daemon.c:277
 msgid "Launch UI"
@@ -1321,7 +1333,7 @@ msgstr ""
 
 #: src/daemon/gpaste-daemon.c:279
 msgid "Upload to Pastebin"
-msgstr ""
+msgstr "Загрузить на Pastebin"
 
 #. Translators: strftime format for image timestamps. Rearrange to match your locale's date/time convention.
 #: src/daemon/gpaste-image-item.c:219
@@ -1420,7 +1432,7 @@ msgid ""
 msgstr ""
 "При включённом параметре: демон автоматически запускает или останавливает "
 "отслеживание изменений в буфере обмена в соответствии с состоянием включения "
-"GNOME Shell extension."
+"GNOME Shell extension"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:84
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:75
@@ -1460,7 +1472,7 @@ msgstr ""
 #. * while the key is already at its default.
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c:63
 msgid "Reset to default"
-msgstr ""
+msgstr "Сбросить к исходным"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-history-settings-page.c:40
 msgid "History settings"
@@ -1492,9 +1504,8 @@ msgstr "Максимальный размер элемента при отобр
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:40
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:44
-#, fuzzy
 msgid "Images settings"
-msgstr "Настройки интерфейса"
+msgstr "Настройки изображений"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:46
 msgid "Images support"
@@ -1502,7 +1513,7 @@ msgstr "Поддержка изображений"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:50
 msgid "Image previews"
-msgstr ""
+msgstr "Предпросмотр изображений"
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-images-page.c:54
 msgid "Preview size"
@@ -1593,9 +1604,9 @@ msgstr "Вы действительно хотите перезапустить 
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%u выделен"
+msgstr[1] "%u выделено"
+msgstr[2] "%u выделено"
 
 #: src/ui/gpaste-ui-header.c:249
 msgid "GPaste Settings"
@@ -1607,7 +1618,7 @@ msgstr "Перезапустить демон"
 
 #: src/ui/gpaste-ui-header.c:265
 msgid "Select items to merge"
-msgstr ""
+msgstr "Выберите элементы для объединения"
 
 #: src/ui/gpaste-ui-history.c:343
 msgid "No Results"
@@ -1645,9 +1656,8 @@ msgid "Are you sure you want to delete \"%s\"?"
 msgstr "Вы уверены, что хотите удалить «%s»?"
 
 #: src/ui/gpaste-ui-panel.c:441
-#, fuzzy
 msgid "Switch to history"
-msgstr "переключиться на другую историю"
+msgstr "Переключиться на историю"
 
 #: src/ui/gpaste-ui-panel.c:448
 msgid "Switch to"
@@ -1672,42 +1682,40 @@ msgstr ""
 
 #. translators: separators inserted between the merged items
 #: src/ui/gpaste-ui-window.c:360
-#, fuzzy
 msgid "New line"
-msgstr "Новый элемент"
+msgstr "Новая линия"
 
 #: src/ui/gpaste-ui-window.c:361
 msgid "Space"
-msgstr ""
+msgstr "Пробел"
 
 #: src/ui/gpaste-ui-window.c:362
 msgid "Comma"
-msgstr ""
+msgstr "Запятая"
 
 #: src/ui/gpaste-ui-window.c:363
 msgid "Tabulation"
-msgstr ""
+msgstr "Табуляция"
 
 #: src/ui/gpaste-ui-window.c:371
 msgid "Custom separator"
-msgstr ""
+msgstr "Пользовательский разделитель"
 
 #: src/ui/gpaste-ui-window.c:376
 msgid "Merge with this separator"
-msgstr ""
+msgstr "Объединить с помощью этого разделителя"
 
 #: src/ui/gpaste-ui-window.c:387
 msgid "Merge"
-msgstr ""
+msgstr "Объединить"
 
 #: src/ui/gpaste-ui-window.c:437
 msgid "Quit"
 msgstr "Выход"
 
 #: src/ui/gpaste-ui-window.c:521
-#, fuzzy
 msgid "Histories"
-msgstr "Доступ к истории"
+msgstr "История"
 
 #: src/ui/gpaste-ui-window.c:522
 msgid "History"
