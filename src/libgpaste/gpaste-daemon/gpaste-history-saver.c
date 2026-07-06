@@ -242,7 +242,11 @@ g_paste_history_saver_drain (GPasteHistorySaver *self)
         g_paste_history_saver_write_free (data);
     }
 
-    priv->write_in_progress = FALSE;
+    /* Deliberately *not* clearing write_in_progress: the drained task's completion
+     * callback is still queued on the main context and will clear it (and pick up
+     * anything recorded meanwhile). Clearing it here would let a record() made
+     * after a resumed handover start a second worker while that callback then
+     * starts a third — two threads rewriting the same history at once. */
 }
 
 /****************/

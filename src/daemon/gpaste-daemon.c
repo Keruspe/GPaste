@@ -10,6 +10,9 @@
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 
+#include <errno.h>
+#include <unistd.h>
+
 #ifdef G_OS_UNIX
 #  include <glib-unix.h>
 #endif
@@ -47,21 +50,33 @@ flush_and_unlock (DaemonContext *ctx)
 
 static void
 reexec (GPasteDaemon *g_paste_daemon,
-        gpointer      user_data)
+        gpointer      user_data G_GNUC_UNUSED)
 {
-    DaemonContext *ctx = user_data;
-
     /* The clipboards manager was already stored by g_paste_daemon_reexecute();
      * make sure the history hits the disk too before we hand over to the new
-     * process, which will block on the storage lock until we release it. */
+     * process, which blocks on the storage lock until we release it. The lock is
+     * left held: a successful exec releases it automatically (its fd is CLOEXEC),
+     * so the successor waits until we are actually gone. */
     if (g_paste_daemon)
         g_paste_daemon_flush (g_paste_daemon);
 
-    g_paste_storage_backend_unlock ();
-
-    g_application_quit (ctx->gapp);
-
+    /* execl replaces this process on success and only returns on failure, so do
+     * NOT quit the application first: a failed exec (e.g. the binary is missing)
+     * must leave the current daemon running rather than exit into no daemon.
+     *
+     * Prefer the installed binary — correct after an upgrade, where the same path
+     * now holds the new inode — then fall back to the exact binary currently
+     * running, so a daemon started uninstalled from the build tree (whose install
+     * path does not exist) still re-execs itself. */
     execl (PKGLIBEXECDIR "/gpaste-daemon", "gpaste-daemon", NULL);
+    execl ("/proc/self/exe", "gpaste-daemon", NULL);
+
+    /* Reached only if both execs failed: keep this daemon running and resume
+     * recording (g_paste_daemon_flush() stopped it above). */
+    g_warning ("%s: %s", _("Failed to reexecute the daemon"), g_strerror (errno));
+
+    if (g_paste_daemon)
+        g_paste_daemon_resume (g_paste_daemon);
 }
 
 #ifdef G_OS_UNIX
@@ -86,7 +101,10 @@ usr1_handler (gpointer user_data)
     /* reexec ignores its first argument, so the context is all it needs. */
     reexec (ctx->daemon, ctx);
 
-    return G_SOURCE_REMOVE;
+    /* Only reached when the exec failed and the daemon resumed: keep the
+     * source so a later SIGUSR1 (e.g. once the binary is back in place) can
+     * still trigger a re-exec. A successful exec replaces the process. */
+    return G_SOURCE_CONTINUE;
 }
 #endif
 

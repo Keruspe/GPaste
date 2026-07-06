@@ -109,6 +109,24 @@ g_paste_daemon_flush (GPasteDaemon *self)
     g_paste_history_flush (priv->history);
 }
 
+/**
+ * g_paste_daemon_resume:
+ * @self: (transfer none): the #GPasteDaemon
+ *
+ * Undo a previous g_paste_daemon_flush(): resume recording. Meant for a handover
+ * that did not happen (e.g. a re-exec whose exec failed), so the daemon that is
+ * still running keeps persisting the history.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_resume (GPasteDaemon *self)
+{
+    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
+
+    g_paste_history_resume (priv->history);
+}
+
 static void
 g_paste_daemon_tracking (GPasteDaemon   *self,
                          gboolean        tracking_state,

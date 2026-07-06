@@ -870,6 +870,25 @@ g_paste_history_flush (GPasteHistory *self)
     g_paste_history_saver_drain (priv->saver);
 }
 
+/**
+ * g_paste_history_resume:
+ * @self: a #GPasteHistory instance
+ *
+ * Undo a previous g_paste_history_flush(): resume recording changes. Meant for a
+ * handover that did not actually happen (e.g. a re-exec whose exec failed), so
+ * the surviving daemon keeps persisting the history.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_resume (GPasteHistory *self)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    priv->stopped = FALSE;
+}
+
 static void
 g_paste_history_load_locked (GPasteHistory        *self,
                              GPasteHistoryPrivate *priv,
