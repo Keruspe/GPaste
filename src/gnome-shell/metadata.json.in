@@ -1,6 +1,6 @@
 {
     "shell-version": [ "51" ],
-    "session-modes": [ "user" ],
+    "session-modes": [ "user", "unlock-dialog" ],
     "uuid": "GPaste@gnome-shell-extensions.gnome.org",
     "name": "GPaste",
     "version": "@version@",

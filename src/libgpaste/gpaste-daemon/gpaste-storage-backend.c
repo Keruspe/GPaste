@@ -11,6 +11,13 @@
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
 #endif
 
+#ifdef G_OS_UNIX
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
+#endif
+
 #ifdef G_PASTE_ENABLE_LIBSECRET
 #include <gpaste-daemon/gpaste-storage-keyring.h>
 #endif
@@ -50,6 +57,121 @@ g_paste_storage_backend_get_passphrase (void)
     return g_paste_storage_passphrase;
 }
 #endif
+
+/* Process-wide advisory lock serialising history persistence across daemons.
+ * Whoever persists holds it for its whole lifetime; a daemon taking over (the
+ * gnome-shell extension replacing the standalone daemon, or vice versa) blocks
+ * on it before its first read, so it never loads a stale history while the
+ * previous owner is still flushing its final state. The kernel drops the lock
+ * when the holder's process dies, so a crash cannot wedge the successor. */
+static GMutex   g_paste_storage_lock_mutex;
+static gint     g_paste_storage_lock_fd = -1;
+/* Set by _unlock() so a wait still in progress on the worker thread gives up
+ * instead of installing a lock nobody wants any more. Written under the mutex,
+ * which is only ever held for the bookkeeping — never across the wait — hence
+ * read atomically from the waiting thread. */
+static gint     g_paste_storage_lock_released;
+
+/**
+ * g_paste_storage_backend_lock:
+ *
+ * Acquire the process-wide history lock, blocking until any other daemon holding
+ * it releases it (or its process dies). Idempotent: once held, further calls are
+ * a no-op. Meant to be called from the history-loading worker thread, before the
+ * first read, so a takeover waits out the previous owner's final write.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_lock (void)
+{
+#ifdef G_OS_UNIX
+    {
+        g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
+
+        if (g_paste_storage_lock_fd >= 0)
+            return;
+
+        g_atomic_int_set (&g_paste_storage_lock_released, FALSE);
+    }
+
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+
+    g_mkdir_with_parents (dir, 0700);
+
+    g_autofree gchar *path = g_build_filename (dir, "lock", NULL);
+    gint fd = open (path, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+
+    if (fd < 0)
+    {
+        g_warning ("Failed to open the history lock file: %s", g_strerror (errno));
+        return;
+    }
+
+    gint64 start = g_get_monotonic_time ();
+    gboolean logged = FALSE;
+
+    /* The wait deliberately happens *outside* the mutex: it can last as long as
+     * the previous daemon takes to finish writing, and _unlock() runs on the main
+     * thread of every exit path — holding the mutex here would block it (and, in
+     * the gnome-shell host, freeze the compositor) for that whole time. */
+    while (flock (fd, LOCK_EX | LOCK_NB) < 0)
+    {
+        if (errno != EWOULDBLOCK && errno != EINTR)
+        {
+            g_warning ("Failed to lock the history: %s", g_strerror (errno));
+            close (fd);
+            return;
+        }
+
+        /* A brief handover is normal; only warn if the previous daemon really is
+         * taking a long time to finish writing, so a stuck one is diagnosable. */
+        if (!logged && g_get_monotonic_time () - start > 5 * G_USEC_PER_SEC)
+        {
+            g_message ("Waiting for the previous GPaste daemon to finish writing the history");
+            logged = TRUE;
+        }
+
+        if (g_atomic_int_get (&g_paste_storage_lock_released))
+        {
+            close (fd);
+            return;
+        }
+
+        g_usleep (100 * 1000); /* 100ms */
+    }
+
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
+
+    /* Someone unlocked (or won the race) while we were waiting: drop ours. */
+    if (g_paste_storage_lock_fd >= 0 || g_atomic_int_get (&g_paste_storage_lock_released))
+        close (fd);
+    else
+        g_paste_storage_lock_fd = fd;
+#endif
+}
+
+/**
+ * g_paste_storage_backend_unlock:
+ *
+ * Release the process-wide history lock acquired with
+ * g_paste_storage_backend_lock(). Call it after the final write has been flushed,
+ * so a daemon taking over can proceed. Safe to call when the lock is not held.
+ */
+G_PASTE_VISIBLE void
+g_paste_storage_backend_unlock (void)
+{
+#ifdef G_OS_UNIX
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
+
+    g_atomic_int_set (&g_paste_storage_lock_released, TRUE);
+
+    if (g_paste_storage_lock_fd < 0)
+        return;
+
+    /* Closing the fd drops the flock. */
+    close (g_paste_storage_lock_fd);
+    g_paste_storage_lock_fd = -1;
+#endif
+}
 
 typedef struct
 {

@@ -32,6 +32,14 @@ typedef struct
      * coalesced down to the latest snapshot and never holds more than one. */
     GQueue                       pending;
 
+    /* Handshake for g_paste_history_saver_drain(): the worker thread clears
+     * @worker_running and signals @drain_cond when it finishes its write, so a
+     * synchronous drain on the main thread can wait for it without spinning the
+     * main loop (which is what would otherwise dispatch the write-done callback). */
+    GMutex                       drain_mutex;
+    GCond                        drain_cond;
+    gboolean                     worker_running;
+
     gboolean                     load_in_progress;
     guint64                      load_generation;
 } GPasteHistorySaverPrivate;
@@ -44,6 +52,7 @@ G_PASTE_DEFINE_TYPE_WITH_PRIVATE (HistorySaver, history_saver, G_TYPE_OBJECT)
 
 typedef struct
 {
+    GPasteHistorySaver   *saver; /* not ref'd: the owner keeps it alive for the task */
     GPasteStorageBackend *backend;
     GPasteHistorySaveOp   op;
     gchar                *name;
@@ -64,13 +73,8 @@ g_paste_history_saver_write_free (gpointer data)
 }
 
 static void
-g_paste_history_saver_write_task (GTask        *task,
-                                  gpointer      source_object G_GNUC_UNUSED,
-                                  gpointer      task_data,
-                                  GCancellable *cancellable G_GNUC_UNUSED)
+g_paste_history_saver_do_write (const GPasteHistorySaverWrite *data)
 {
-    const GPasteHistorySaverWrite *data = task_data;
-
     switch (data->op)
     {
     case G_PASTE_HISTORY_SAVE_ADD:
@@ -90,6 +94,24 @@ g_paste_history_saver_write_task (GTask        *task,
         g_paste_storage_backend_write_history (data->backend, data->name, data->history);
         break;
     }
+}
+
+static void
+g_paste_history_saver_write_task (GTask        *task,
+                                  gpointer      source_object G_GNUC_UNUSED,
+                                  gpointer      task_data,
+                                  GCancellable *cancellable G_GNUC_UNUSED)
+{
+    const GPasteHistorySaverWrite *data = task_data;
+    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (data->saver);
+
+    g_paste_history_saver_do_write (data);
+
+    /* Let a concurrent g_paste_history_saver_drain() know this write is done. */
+    g_mutex_lock (&priv->drain_mutex);
+    priv->worker_running = FALSE;
+    g_cond_signal (&priv->drain_cond);
+    g_mutex_unlock (&priv->drain_mutex);
 
     g_task_return_boolean (task, TRUE);
 }
@@ -105,6 +127,12 @@ g_paste_history_saver_start_write (GPasteHistorySaver *self)
         return;
 
     priv->write_in_progress = TRUE;
+
+    /* Set before launching so a drain that runs before the worker starts still
+     * sees the write as in flight and waits for it. */
+    g_mutex_lock (&priv->drain_mutex);
+    priv->worker_running = TRUE;
+    g_mutex_unlock (&priv->drain_mutex);
 
     GPasteHistorySaverWrite *data = g_queue_pop_head (&priv->pending);
 
@@ -167,6 +195,7 @@ g_paste_history_saver_record (GPasteHistorySaver  *self,
     }
 
     GPasteHistorySaverWrite *data = g_new0 (GPasteHistorySaverWrite, 1);
+    data->saver = self;
     data->backend = g_object_ref (priv->backend);
     data->op = op;
     data->name = g_strdup (name);
@@ -177,6 +206,43 @@ g_paste_history_saver_record (GPasteHistorySaver  *self,
     g_queue_push_tail (&priv->pending, data);
 
     g_paste_history_saver_start_write (self);
+}
+
+/**
+ * g_paste_history_saver_drain:
+ * @self: a #GPasteHistorySaver
+ *
+ * Synchronously flush every queued write to disk and wait for any in-flight one
+ * to finish. Meant to be called on the main thread from an exit path (the daemon
+ * losing its name to a takeover, or being told to stop), so no clipboard change
+ * is lost before the successor loads the history. Records made afterwards would
+ * queue again, so the caller must stop recording (see g_paste_history_flush()).
+ */
+G_PASTE_VISIBLE void
+g_paste_history_saver_drain (GPasteHistorySaver *self)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY_SAVER (self));
+
+    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
+
+    /* Wait for the in-flight worker write (if any) to finish. We cannot spin the
+     * main loop here (that is where the write-done callback would run), so the
+     * worker signals us directly when its write completes. */
+    g_mutex_lock (&priv->drain_mutex);
+    while (priv->worker_running)
+        g_cond_wait (&priv->drain_cond, &priv->drain_mutex);
+    g_mutex_unlock (&priv->drain_mutex);
+
+    /* Apply whatever is still queued synchronously, in order. */
+    while (!g_queue_is_empty (&priv->pending))
+    {
+        GPasteHistorySaverWrite *data = g_queue_pop_head (&priv->pending);
+
+        g_paste_history_saver_do_write (data);
+        g_paste_history_saver_write_free (data);
+    }
+
+    priv->write_in_progress = FALSE;
 }
 
 /****************/
@@ -222,6 +288,10 @@ g_paste_history_saver_load_task (GTask        *task,
 {
     const GPasteHistorySaverLoadData *data = task_data;
     GPasteHistorySaverLoadResult *result = g_new0 (GPasteHistorySaverLoadResult, 1);
+
+    /* First file access of the process: block until any previous daemon has
+     * finished flushing and released the lock, so we never load a stale history. */
+    g_paste_storage_backend_lock ();
 
     g_paste_storage_backend_read_history (data->backend, data->name, &result->history, &result->size);
     g_task_return_pointer (task, result, (GDestroyNotify) g_paste_history_saver_load_result_free);
@@ -327,9 +397,21 @@ g_paste_history_saver_dispose (GObject *object)
 }
 
 static void
+g_paste_history_saver_finalize (GObject *object)
+{
+    GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (G_PASTE_HISTORY_SAVER (object));
+
+    g_mutex_clear (&priv->drain_mutex);
+    g_cond_clear (&priv->drain_cond);
+
+    G_OBJECT_CLASS (g_paste_history_saver_parent_class)->finalize (object);
+}
+
+static void
 g_paste_history_saver_class_init (GPasteHistorySaverClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_history_saver_dispose;
+    G_OBJECT_CLASS (klass)->finalize = g_paste_history_saver_finalize;
 }
 
 static void
@@ -338,6 +420,8 @@ g_paste_history_saver_init (GPasteHistorySaver *self)
     GPasteHistorySaverPrivate *priv = g_paste_history_saver_get_instance_private (self);
 
     g_queue_init (&priv->pending);
+    g_mutex_init (&priv->drain_mutex);
+    g_cond_init (&priv->drain_cond);
 }
 
 /**

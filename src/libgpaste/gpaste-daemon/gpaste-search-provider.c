@@ -275,6 +275,22 @@ g_paste_search_provider_unregister_object (gpointer user_data)
     priv->registered = FALSE;
 }
 
+/* See g_paste_bus_object_unregister_on_connection(): the registration owns a
+ * reference on us, so it has to be dropped explicitly or the object path stays
+ * exported on a connection that outlives the daemon (gnome-shell's). */
+static void
+g_paste_search_provider_unregister_on_connection (GPasteBusObject *self)
+{
+    GPasteSearchProviderPrivate *priv = g_paste_search_provider_get_instance_private (G_PASTE_SEARCH_PROVIDER (self));
+
+    if (!priv->connection)
+        return;
+
+    g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
+    priv->id_on_bus = 0;
+    g_clear_object (&priv->connection);
+}
+
 static void
 g_paste_search_provider_dispose (GObject *object)
 {
@@ -283,10 +299,14 @@ g_paste_search_provider_dispose (GObject *object)
     if (priv->connection)
     {
         g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
+        priv->id_on_bus = 0;
         g_clear_object (&priv->connection);
-        g_clear_pointer (&priv->g_paste_search_provider_dbus_info, g_dbus_node_info_unref);
-        g_clear_object (&priv->client);
     }
+
+    /* Not gated on the connection: it may already have been dropped by
+     * g_paste_search_provider_unregister_on_connection(). */
+    g_clear_pointer (&priv->g_paste_search_provider_dbus_info, g_dbus_node_info_unref);
+    g_clear_object (&priv->client);
 
     G_OBJECT_CLASS (g_paste_search_provider_parent_class)->dispose (object);
 }
@@ -317,6 +337,7 @@ g_paste_search_provider_class_init (GPasteSearchProviderClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_search_provider_dispose;
     G_PASTE_BUS_OBJECT_CLASS (klass)->register_on_connection = g_paste_search_provider_register_on_connection;
+    G_PASTE_BUS_OBJECT_CLASS (klass)->unregister_on_connection = g_paste_search_provider_unregister_on_connection;
 }
 
 static void

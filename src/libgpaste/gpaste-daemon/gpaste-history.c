@@ -35,6 +35,10 @@ typedef struct
 
     gchar                *name;
 
+    /* Set once the history has been flushed for shutdown/handover: no further
+     * change is persisted, so a successor daemon owns the on-disk state. */
+    gboolean              stopped;
+
     /* Note: we never track the first (active) item here */
     const gchar          *biggest_uuid;
     guint64               biggest_size;
@@ -174,8 +178,9 @@ g_paste_history_update (GPasteHistory      *self,
     GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
 
     /* Don't persist intermediate states while an async load is replacing the
-     * history; the load result will trigger its own save when appropriate. */
-    if (!g_paste_history_saver_is_loading (priv->saver))
+     * history (the load result triggers its own save when appropriate), nor once
+     * we have been flushed for handover (a successor daemon owns the file now). */
+    if (!priv->stopped && !g_paste_history_saver_is_loading (priv->saver))
     {
         /* An incremental backend only ever consumes the snapshot on an add (to
          * reconcile dedups and evictions that ride along with it); skip the
@@ -843,6 +848,26 @@ g_paste_history_save (GPasteHistory *self,
     G_PASTE_LOCK_HISTORY;
 
     g_paste_storage_backend_write_history (priv->backend, (name) ? name : priv->name, priv->history);
+}
+
+/**
+ * g_paste_history_flush:
+ * @self: a #GPasteHistory instance
+ *
+ * Persist every pending change and wait for it to hit the disk, then stop
+ * recording further changes. Meant for an exit/handover path: after this returns
+ * the on-disk history is up to date and can be handed over to a successor daemon.
+ */
+G_PASTE_VISIBLE void
+g_paste_history_flush (GPasteHistory *self)
+{
+    g_return_if_fail (_G_PASTE_IS_HISTORY (self));
+
+    GPasteHistoryPrivate *priv = g_paste_history_get_instance_private (self);
+    G_PASTE_LOCK_HISTORY;
+
+    priv->stopped = TRUE;
+    g_paste_history_saver_drain (priv->saver);
 }
 
 static void

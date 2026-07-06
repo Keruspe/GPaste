@@ -90,6 +90,25 @@ g_paste_daemon_show_history (GPasteDaemon *self,
     G_PASTE_SEND_DBUS_SIGNAL_WITH_ERROR (SHOW_HISTORY);
 }
 
+/**
+ * g_paste_daemon_flush:
+ * @self: (transfer none): the #GPasteDaemon
+ *
+ * Persist every pending history change and wait for it to hit the disk, then
+ * stop recording. Meant for an exit/handover path (the daemon losing its name to
+ * a takeover, or being told to stop): once this returns the on-disk history is up
+ * to date, so a successor daemon can load it without losing the last changes.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_flush (GPasteDaemon *self)
+{
+    g_return_if_fail (_G_PASTE_IS_DAEMON (self));
+
+    const GPasteDaemonPrivate *priv = _g_paste_daemon_get_instance_private (self);
+
+    g_paste_history_flush (priv->history);
+}
+
 static void
 g_paste_daemon_tracking (GPasteDaemon   *self,
                          gboolean        tracking_state,
@@ -421,6 +440,22 @@ g_paste_daemon_unregister_object (gpointer user_data)
     priv->registered = FALSE;
 }
 
+/* Drop the D-Bus registration (and with it the reference it holds on us), so the
+ * object path is free again for a successor daemon built on the same, still-alive
+ * connection — which is exactly what the gnome-shell host does on re-enable. */
+static void
+g_paste_daemon_unregister_on_connection (GPasteBusObject *self)
+{
+    GPasteDaemonPrivate *priv = g_paste_daemon_get_instance_private (G_PASTE_DAEMON (self));
+
+    if (!priv->connection)
+        return;
+
+    g_dbus_connection_unregister_object (priv->connection, priv->id_on_bus);
+    priv->id_on_bus = 0;
+    g_clear_object (&priv->connection);
+}
+
 static void
 g_paste_daemon_on_history_update (GPasteDaemon      *self,
                                   GPasteUpdateAction action,
@@ -546,6 +581,7 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
 {
     G_OBJECT_CLASS (klass)->dispose = g_paste_daemon_dispose;
     G_PASTE_BUS_OBJECT_CLASS (klass)->register_on_connection = g_paste_daemon_register_on_connection;
+    G_PASTE_BUS_OBJECT_CLASS (klass)->unregister_on_connection = g_paste_daemon_unregister_on_connection;
 
     /**
      * GPasteDaemon::reexecute-self:

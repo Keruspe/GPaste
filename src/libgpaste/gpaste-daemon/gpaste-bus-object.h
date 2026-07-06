@@ -19,10 +19,15 @@ struct _GPasteBusObjectClass
     gboolean (*register_on_connection) (GPasteBusObject *self,
                                         GDBusConnection *connection,
                                         GError         **error);
+    /* Drop the registration made above. Implementations must be idempotent: the
+     * bus calls this when it stops owning the name, and dispose may run later. */
+    void     (*unregister_on_connection) (GPasteBusObject *self);
 };
 
 gboolean g_paste_bus_object_register_on_connection (GPasteBusObject *self,
                                                     GDBusConnection *connection,
                                                     GError         **error);
+
+void g_paste_bus_object_unregister_on_connection (GPasteBusObject *self);
 
 G_END_DECLS

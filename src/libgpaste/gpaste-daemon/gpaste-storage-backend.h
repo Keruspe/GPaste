@@ -93,6 +93,9 @@ void     g_paste_storage_backend_clear_history        (const GPasteStorageBacken
 
 gboolean g_paste_storage_backend_is_incremental       (const GPasteStorageBackend *self);
 
+void g_paste_storage_backend_lock   (void);
+void g_paste_storage_backend_unlock (void);
+
 GPasteStorageBackend *g_paste_storage_backend_new (GPasteStorage   storage_kind,
                                                    GPasteSettings *settings);
 

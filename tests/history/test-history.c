@@ -541,6 +541,70 @@ test_save_load_roundtrip (void)
     }
 }
 
+/* g_paste_history_flush() must get every pending change to disk synchronously,
+ * without the caller having to pump the main loop: an exit/handover path relies
+ * on the on-disk history being complete the moment flush() returns. */
+static void
+test_flush_persists_synchronously (void)
+{
+    const gchar *name = "flush-sync";
+
+    {
+        g_autoptr (GPasteHistory) writer = make_plain_history ();
+        g_paste_history_load (writer, name);
+
+        g_paste_history_add (writer, g_paste_text_item_new ("one"));
+        g_paste_history_add (writer, g_paste_text_item_new ("two"));
+
+        /* Note: no main-loop pumping here, unlike the roundtrip test. */
+        g_paste_history_flush (writer);
+    }
+
+    {
+        g_autoptr (GPasteHistory) reader = make_plain_history ();
+        g_paste_history_load_async (reader, name);
+
+        g_assert_true (pump_until_length (reader, 2, 5000));
+        g_assert_cmpstr (value_at (reader, 0), ==, "two");
+        g_assert_cmpstr (value_at (reader, 1), ==, "one");
+    }
+}
+
+/* After a flush the history stops persisting changes, so a successor daemon that
+ * has taken over the on-disk state is not overwritten by our late edits. */
+static void
+test_flush_stops_recording (void)
+{
+    const gchar *name = "flush-stop";
+
+    {
+        g_autoptr (GPasteHistory) writer = make_plain_history ();
+        g_paste_history_load (writer, name);
+
+        g_paste_history_add (writer, g_paste_text_item_new ("kept"));
+        g_paste_history_flush (writer);
+
+        /* This change happens after the flush: it stays in memory but must never
+         * reach the disk. Pump the loop so an (erroneous) async write would run. */
+        g_paste_history_add (writer, g_paste_text_item_new ("dropped"));
+
+        for (guint i = 0; i < 100; ++i)
+        {
+            while (g_main_context_iteration (NULL, FALSE))
+                ;
+            g_usleep (1000);
+        }
+    }
+
+    {
+        g_autoptr (GPasteHistory) reader = make_plain_history ();
+        g_paste_history_load_async (reader, name);
+
+        g_assert_true (pump_until_length (reader, 1, 5000));
+        g_assert_cmpstr (value_at (reader, 0), ==, "kept");
+    }
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* The encrypted file backend must round-trip a history (keeping password
  * entries and their real value), and the on-disk ".xmls" file must actually be
@@ -1474,6 +1538,8 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/select_moves_to_front", test_select_moves_to_front);
     g_test_add_func ("/history/empty", test_empty);
     g_test_add_func ("/history/save_load_roundtrip", test_save_load_roundtrip);
+    g_test_add_func ("/history/flush_persists_synchronously", test_flush_persists_synchronously);
+    g_test_add_func ("/history/flush_stops_recording", test_flush_stops_recording);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/history/encrypted_roundtrip", test_encrypted_roundtrip);
 #endif

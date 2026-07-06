@@ -17,7 +17,8 @@ G_PASTE_FINAL_TYPE (Bus, bus, BUS, GObject)
 void g_paste_bus_add_object (GPasteBus       *self,
                              GPasteBusObject *object);
 
-void g_paste_bus_own_name (GPasteBus *self);
+void g_paste_bus_own_name_full (GPasteBus *self,
+                                gboolean   replace);
 
 void g_paste_bus_unown_name (GPasteBus *self);
 
