@@ -3,6 +3,7 @@
       <value nick="none" value="0"/>
       <value nick="file" value="1"/>
       <value nick="encrypted-file" value="2"/>
+      <value nick="sqlite" value="3"/>
     </enum>
 
     <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="GPaste">

@@ -56,6 +56,11 @@ detect_current_backend (GPasteSettings *settings)
         return G_PASTE_STORAGE_ENCRYPTED_FILE;
 #endif
 
+    g_autoptr (GFile) db = g_paste_util_get_history_file (name, "db");
+
+    if (g_file_query_exists (db, NULL))
+        return G_PASTE_STORAGE_SQLITE;
+
     g_autoptr (GFile) plain = g_paste_util_get_history_file (name, "xml");
 
     if (g_file_query_exists (plain, NULL))
@@ -63,6 +68,7 @@ detect_current_backend (GPasteSettings *settings)
 
     /* No history under the active name: fall back to the more-used flavour. */
     guint plain_count = 0;
+    guint db_count = 0;
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     guint encrypted_count = 0;
 #endif
@@ -84,6 +90,8 @@ detect_current_backend (GPasteSettings *settings)
 
             if (g_str_has_suffix (child_name, ".xml"))
                 ++plain_count;
+            else if (g_str_has_suffix (child_name, ".db"))
+                ++db_count;
 #ifdef G_PASTE_ENABLE_ENCRYPTION
             else if (g_str_has_suffix (child_name, ".xmls"))
                 ++encrypted_count;
@@ -92,9 +100,12 @@ detect_current_backend (GPasteSettings *settings)
     }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    if (encrypted_count > 0 && encrypted_count >= plain_count)
+    if (encrypted_count > 0 && encrypted_count >= plain_count && encrypted_count >= db_count)
         return G_PASTE_STORAGE_ENCRYPTED_FILE;
 #endif
+
+    if (db_count > 0 && db_count >= plain_count)
+        return G_PASTE_STORAGE_SQLITE;
 
     if (plain_count > 0)
         return G_PASTE_STORAGE_FILE;
@@ -533,6 +544,8 @@ g_paste_storage_migration_show (GtkApplication                 *application,
     gtk_string_list_append (backends, _("Store the history in an encrypted file"));
     self->backends[self->n_backends++] = G_PASTE_STORAGE_ENCRYPTED_FILE;
 #endif
+    gtk_string_list_append (backends, _("Store the history in a SQLite database"));
+    self->backends[self->n_backends++] = G_PASTE_STORAGE_SQLITE;
     gtk_string_list_append (backends, _("Don't store anything"));
     self->backends[self->n_backends++] = G_PASTE_STORAGE_NOOP;
 
