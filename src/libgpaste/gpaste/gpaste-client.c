@@ -54,6 +54,9 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 #define DBUS_ASYNC_FINISH_RET_STRING \
     DBUS_ASYNC_FINISH_RET_STRING_BASE (CLIENT)
 
+#define DBUS_ASYNC_FINISH_RET_BYTES \
+    DBUS_ASYNC_FINISH_RET_BYTES_BASE (CLIENT)
+
 #define DBUS_ASYNC_FINISH_RET_ITEM \
     DBUS_ASYNC_FINISH_RET_ITEM_BASE (CLIENT)
 
@@ -90,6 +93,9 @@ static guint64 signals[LAST_SIGNAL] = { 0 };
 
 #define DBUS_CALL_ONE_PARAM_RET_STRING(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRING_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
+
+#define DBUS_CALL_ONE_PARAM_RET_BYTES(method, param_type, param_name) \
+    DBUS_CALL_ONE_PARAM_RET_BYTES_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
 
 #define DBUS_CALL_ONE_PARAM_RET_STRV(method, param_type, param_name) \
     DBUS_CALL_ONE_PARAM_RET_STRV_BASE (CLIENT, param_type, param_name, G_PASTE_DAEMON_##method)
@@ -477,6 +483,25 @@ g_paste_client_get_history_size_sync (GPasteClient *self,
                                       GError      **error)
 {
     DBUS_CALL_ONE_PARAM_RET_UINT64 (GET_HISTORY_SIZE, string, name);
+}
+
+/**
+ * g_paste_client_get_image_sync:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the image element we want to get
+ * @error: a #GError
+ *
+ * Get an image item's bytes from the #GPasteDaemon, so clients never have to
+ * dereference the item's path themselves
+ *
+ * Returns: (transfer full): the PNG image bytes
+ */
+G_PASTE_VISIBLE GBytes *
+g_paste_client_get_image_sync (GPasteClient *self,
+                               const gchar  *uuid,
+                               GError      **error)
+{
+    DBUS_CALL_ONE_PARAM_RET_BYTES (GET_IMAGE, string, uuid);
 }
 
 /**
@@ -1079,6 +1104,25 @@ g_paste_client_get_history_size (GPasteClient       *self,
                                  gpointer            user_data)
 {
     DBUS_CALL_ONE_PARAM_ASYNC (GET_HISTORY_SIZE, string, name);
+}
+
+/**
+ * g_paste_client_get_image:
+ * @self: a #GPasteClient instance
+ * @uuid: the uuid of the image element we want to get
+ * @callback: (nullable): A #GAsyncReadyCallback to call when the request is satisfied or %NULL if you don't
+ * care about the result of the method invocation.
+ * @user_data: (nullable): The data to pass to @callback.
+ *
+ * Get an image item's bytes from the #GPasteDaemon
+ */
+G_PASTE_VISIBLE void
+g_paste_client_get_image (GPasteClient       *self,
+                          const gchar        *uuid,
+                          GAsyncReadyCallback callback,
+                          gpointer            user_data)
+{
+    DBUS_CALL_ONE_PARAM_ASYNC (GET_IMAGE, string, uuid);
 }
 
 /**
@@ -1695,6 +1739,24 @@ g_paste_client_get_raw_element_finish (GPasteClient *self,
                                        GError      **error)
 {
     DBUS_ASYNC_FINISH_RET_STRING;
+}
+
+/**
+ * g_paste_client_get_image_finish:
+ * @self: a #GPasteClient instance
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to the async call.
+ * @error: a #GError
+ *
+ * Get an image item's bytes from the #GPasteDaemon
+ *
+ * Returns: (transfer full): the PNG image bytes
+ */
+G_PASTE_VISIBLE GBytes *
+g_paste_client_get_image_finish (GPasteClient *self,
+                                 GAsyncResult *result,
+                                 GError      **error)
+{
+    DBUS_ASYNC_FINISH_RET_BYTES;
 }
 
 /**

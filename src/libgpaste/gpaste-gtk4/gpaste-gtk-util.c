@@ -78,6 +78,31 @@ g_paste_gtk_util_compute_checksum (GdkTexture *image)
     return g_compute_checksum_for_data (G_CHECKSUM_SHA256, data, length);
 }
 
+/**
+ * g_paste_gtk_util_get_image_finish:
+ * @client: the #GPasteClient the g_paste_client_get_image() call was made on
+ * @result: A #GAsyncResult obtained from the #GAsyncReadyCallback passed to g_paste_client_get_image()
+ * @error: a #GError
+ *
+ * Finish a g_paste_client_get_image() call as a ready-to-display texture. The
+ * core client stays toolkit-free and hands image items over as bytes; this is
+ * the GTK-side conversion for its consumers.
+ *
+ * Returns: (transfer full) (nullable): the image as a newly allocated #GdkTexture
+ */
+G_PASTE_VISIBLE GdkTexture *
+g_paste_gtk_util_get_image_finish (GPasteClient *client,
+                                   GAsyncResult *result,
+                                   GError      **error)
+{
+    g_autoptr (GBytes) bytes = g_paste_client_get_image_finish (client, result, error);
+
+    if (!bytes)
+        return NULL;
+
+    return gdk_texture_new_from_bytes (bytes, error);
+}
+
 typedef struct {
     GPasteClient *client;
     gchar        *history;

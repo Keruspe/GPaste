@@ -348,6 +348,8 @@ g_paste_daemon_dbus_method_call (GDBusConnection       *connection     G_GNUC_UN
         answer = g_paste_daemon_methods_get_history_name (&methods);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_HISTORY_SIZE))
         answer = g_paste_daemon_methods_get_history_size (&methods, parameters);
+    else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_IMAGE))
+        answer = g_paste_daemon_methods_get_image (&methods, parameters, &error, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_ELEMENT))
         answer = g_paste_daemon_methods_get_raw_element (&methods, parameters, &err);
     else if (g_paste_str_equal (method_name, G_PASTE_DAEMON_GET_RAW_HISTORY))
