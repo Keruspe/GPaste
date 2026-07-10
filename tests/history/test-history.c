@@ -18,6 +18,7 @@
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-sqlite-backend.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
@@ -357,16 +358,18 @@ test_encrypted_roundtrip (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
-/* Read @name through a fresh backend until its stored values exactly match
- * @values, front to back (the saver persists in the background, so intermediate
- * states — e.g. a matching length — are not enough to know it caught up). */
+/* Read @name through a fresh backend of @kind until its stored values exactly
+ * match @values, front to back (the saver persists in the background, so
+ * intermediate states — e.g. a matching length — are not enough to know it
+ * caught up). */
 static gboolean
-sqlite_wait_for_values (GPasteSettings      *settings,
+sqlite_wait_for_values (GPasteStorage        kind,
+                        GPasteSettings      *settings,
                         const gchar         *name,
                         const gchar * const *values,
                         guint                max_ms)
 {
-    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (kind, settings);
     guint expected = g_strv_length ((GStrv) values);
 
     for (guint i = 0; i < max_ms; ++i)
@@ -527,7 +530,7 @@ test_sqlite_incremental (void)
     g_paste_history_remove (history, 2);
 
     const gchar * const after_ops[] = { "a", "b", NULL };
-    g_assert_true (sqlite_wait_for_values (settings, name, after_ops, 5000));
+    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_SQLITE, settings, name, after_ops, 5000));
 
     /* Overflow past max-history-size: evicted tail rows must be reconciled
      * away even though they get no remove operation of their own. */
@@ -540,13 +543,13 @@ test_sqlite_incremental (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 5);
 
     const gchar * const after_overflow[] = { "item-5", "item-4", "item-3", "item-2", "item-1", NULL };
-    g_assert_true (sqlite_wait_for_values (settings, name, after_overflow, 5000));
+    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_SQLITE, settings, name, after_overflow, 5000));
 
     /* Emptying clears the database but keeps the history listed. */
     g_paste_history_empty (history);
 
     const gchar * const after_empty[] = { NULL };
-    g_assert_true (sqlite_wait_for_values (settings, name, after_empty, 5000));
+    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_SQLITE, settings, name, after_empty, 5000));
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
     g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
@@ -815,6 +818,228 @@ test_sqlite_version_guard (void)
 }
 #endif
 
+#if defined(G_PASTE_ENABLE_SQLITE) && defined(G_PASTE_ENABLE_ENCRYPTION)
+/* Scan a file's raw bytes for a plaintext needle. */
+static gboolean
+file_contains (const gchar *path,
+               const gchar *needle)
+{
+    g_autofree gchar *raw = NULL;
+    gsize raw_len = 0;
+
+    if (!g_file_get_contents (path, &raw, &raw_len, NULL))
+        return FALSE;
+
+    return g_strstr_len (raw, raw_len, needle) != NULL;
+}
+
+/* The encrypted SQLite flavor must round-trip everything the plain one does,
+ * plus password items (real value and name), with no plaintext content ever
+ * reaching the ".dbs" file. */
+static void
+test_encrypted_sqlite_roundtrip (void)
+{
+    const gchar *name = "sqlite-encrypted";
+    const gchar *master = "the master passphrase";
+    const gchar *secret = "s3cr3t-passw0rd";
+    const gchar *pw_name = "my login";
+    const gchar *text_value = "plain text entry";
+    const gchar *html_value = "<b>hidden markup</b>";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    GList *items = NULL;
+    GPasteItem *text = g_paste_text_item_new (text_value);
+
+    g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_TEXT_HTML,
+                                                                   g_bytes_new_static (html_value, strlen (html_value))));
+    items = g_list_append (items, text);
+    items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
+    items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(0,255,0)"));
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, master);
+
+        g_assert_true (g_paste_storage_backend_is_incremental (backend));
+        g_paste_storage_backend_write_history (backend, name, items);
+
+        g_auto (GStrv) names = g_paste_storage_backend_list_histories (backend, NULL);
+        g_assert_true (g_strv_contains ((const gchar * const *) names, name));
+
+        /* Dropping the backend closes the connection, checkpointing the WAL so
+         * everything is in the main database file for the scan below. */
+    }
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "dbs");
+
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_false (file_contains (path, text_value));
+    g_assert_false (file_contains (path, html_value));
+    g_assert_false (file_contains (path, secret));
+    g_assert_false (file_contains (path, pw_name));
+
+    /* The passphrase verification is quiet and flavor-aware. */
+    g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, master));
+    g_assert_false (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, "not the passphrase"));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, master);
+    GList *loaded = NULL;
+    gsize size = 0;
+
+    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 3);
+
+    const GPasteItem *read_text = loaded->data;
+    const GPasteItem *read_password = loaded->next->data;
+    const GPasteItem *read_color = loaded->next->next->data;
+
+    g_assert_cmpstr (g_paste_item_get_value (read_text), ==, text_value);
+
+    const GSList *svs = g_paste_item_get_special_values (read_text);
+    g_assert_cmpuint (g_slist_length ((GSList *) svs), ==, 1);
+    g_assert_cmpint (g_paste_binary_data_get_mime (svs->data), ==, G_PASTE_SPECIAL_ATOM_TEXT_HTML);
+    g_assert_cmpmem (g_bytes_get_data (g_paste_binary_data_get_bytes (svs->data), NULL), strlen (html_value),
+                     html_value, strlen (html_value));
+
+    g_assert_cmpstr (g_paste_item_get_kind (read_password), ==, "Password");
+    g_assert_cmpstr (g_paste_item_get_real_value (read_password), ==, secret);
+    g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM ((gpointer) read_password)), ==, pw_name);
+
+    g_assert_cmpstr (g_paste_item_get_value (read_color), ==, g_paste_item_get_value (g_list_nth_data (items, 2)));
+
+    g_list_free_full (loaded, g_object_unref);
+    g_list_free_full (items, g_object_unref);
+}
+
+/* A wrong passphrase must be refused outright — reads come back empty, writes
+ * are dropped, the real data survives — while an *empty* encrypted history is
+ * silently re-keyed for the new passphrase instead of locking the user out. */
+static void
+test_encrypted_sqlite_wrong_passphrase (void)
+{
+    if (g_test_subprocess ())
+    {
+        /* The refusals below warn; g_test_expect_message cannot swallow them
+         * under structured logging, so drop warning fatality in this subprocess
+         * and let the parent match them on stderr. */
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        const gchar *name = "sqlite-encrypted-wrong";
+
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "right passphrase");
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "wrong passphrase");
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_assert_null (loaded);
+
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_list_free_full (items, g_object_unref);
+        }
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "right passphrase");
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+            g_assert_cmpuint (g_list_length (loaded), ==, 1);
+            g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "precious");
+            g_list_free_full (loaded, g_object_unref);
+        }
+
+        /* An empty encrypted history holds nothing to lose: a different
+         * passphrase re-keys it instead of refusing it. */
+        const gchar *empty_name = "sqlite-encrypted-empty";
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "original passphrase");
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_paste_storage_backend_read_history (backend, empty_name, &loaded, &size);
+            g_assert_null (loaded);
+        }
+
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "replacement passphrase");
+            GList *loaded = NULL;
+            gsize size = 0;
+
+            g_paste_storage_backend_read_history (backend, empty_name, &loaded, &size);
+            g_assert_null (loaded);
+
+            GList *items = g_list_append (NULL, g_paste_text_item_new ("fresh start"));
+
+            g_paste_storage_backend_write_history (backend, empty_name, items);
+            g_list_free_full (items, g_object_unref);
+
+            g_paste_storage_backend_read_history (backend, empty_name, &loaded, &size);
+            g_assert_cmpuint (g_list_length (loaded), ==, 1);
+            g_list_free_full (loaded, g_object_unref);
+        }
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+    g_test_trap_assert_passed ();
+    g_test_trap_assert_stderr ("*does not unlock*");
+}
+
+/* The incremental save path works identically through the encrypted flavor,
+ * driven by the factory + process-wide passphrase like the daemon does it. */
+static void
+test_encrypted_sqlite_incremental (void)
+{
+    const gchar *name = "sqlite-encrypted-incr";
+
+    g_paste_storage_backend_set_passphrase ("incremental passphrase");
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_max_history_size (settings, 5);
+    g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_SQLITE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, name);
+
+    g_paste_history_add (history, g_paste_text_item_new ("a"));
+    g_autofree gchar *uuid_a = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 0)));
+    g_paste_history_add (history, g_paste_text_item_new ("b"));
+    g_paste_history_add (history, g_paste_text_item_new ("c"));
+    g_assert_true (g_paste_history_select (history, uuid_a));
+    g_paste_history_remove (history, 1); /* [a, c, b] -> drop c */
+
+    const gchar * const after_ops[] = { "a", "b", NULL };
+    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, name, after_ops, 5000));
+
+    g_paste_history_empty (history);
+
+    const gchar * const after_empty[] = { NULL };
+    g_assert_true (sqlite_wait_for_values (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, name, after_empty, 5000));
+
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+#endif
+
 int
 main (int argc, char *argv[])
 {
@@ -849,6 +1074,11 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    g_test_add_func ("/history/encrypted_sqlite_roundtrip", test_encrypted_sqlite_roundtrip);
+    g_test_add_func ("/history/encrypted_sqlite_wrong_passphrase", test_encrypted_sqlite_wrong_passphrase);
+    g_test_add_func ("/history/encrypted_sqlite_incremental", test_encrypted_sqlite_incremental);
+#endif
 #endif
 
     return g_test_run ();

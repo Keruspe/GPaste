@@ -42,7 +42,7 @@ on_storage_done (gpointer user_data)
      * cannot prompt itself); only meaningful while the history stays encrypted. */
     const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
 
-    if (passphrase && g_paste_settings_get_storage_backend (ctx->settings) == G_PASTE_STORAGE_ENCRYPTED_FILE)
+    if (passphrase && g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (ctx->settings)))
     {
         /* Only hand the passphrase back over the pipe the spawning gnome-shell
          * daemon set up to read it. Launched as a desktop action, stdout is the

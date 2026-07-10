@@ -4,6 +4,7 @@
       <value nick="file" value="1"/>
       <value nick="encrypted-file" value="2"/>
       <value nick="sqlite" value="3"/>
+      <value nick="encrypted-sqlite" value="4"/>
     </enum>
 
     <schema id="org.gnome.GPaste" path="/org/gnome/GPaste/" gettext-domain="GPaste">
@@ -167,7 +168,7 @@
       <default>'file'</default>
       <summary>Where the history is stored</summary>
       <description>
-        The storage backend used to persist the history: "file" keeps the current on-disk history, "sqlite" stores it in a per-history database, "none" stores nothing. The migration dialog lets the user pick.
+        The storage backend used to persist the history: "file" keeps the current on-disk history, "sqlite" stores it in a per-history database (with an "encrypted-sqlite" flavor), "none" stores nothing. The migration dialog lets the user pick.
       </description>
     </key>
 
