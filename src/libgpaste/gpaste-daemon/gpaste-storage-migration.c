@@ -4,6 +4,7 @@
 #include <gpaste/gpaste-util.h>
 
 #include <gpaste-daemon/gpaste-file-backend.h>
+#include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-noop-backend.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
@@ -254,9 +255,30 @@ backend_label_bind (GtkSignalListItemFactory *factory G_GNUC_UNUSED,
                          gtk_string_object_get_string (string));
 }
 
-/* Returns TRUE only if every history was copied into @chosen and reads back with
- * the expected size, so the caller never deletes the originals on a failed write
- * (e.g. an encrypted write that ran out of memory deriving the key). */
+/* Whether @written faithfully reproduces @source: same kind, and same content
+ * — an image's identity is its checksum (its value is a per-backend cache
+ * path), everything else compares by real value. */
+static gboolean
+imported_item_matches (const GPasteItem *source,
+                       const GPasteItem *written)
+{
+    if (!g_paste_str_equal (g_paste_item_get_kind (source), g_paste_item_get_kind (written)))
+        return FALSE;
+
+    if (_G_PASTE_IS_IMAGE_ITEM (source))
+        return g_paste_str_equal (g_paste_image_item_get_checksum (_G_PASTE_IMAGE_ITEM (source)),
+                                  g_paste_image_item_get_checksum (_G_PASTE_IMAGE_ITEM (written)));
+
+    return g_paste_str_equal (g_paste_item_get_real_value (source), g_paste_item_get_real_value (written));
+}
+
+/* Returns TRUE only if every history was copied into @chosen and reads back
+ * with the same items — matched by uuid in order, contents verified — so the
+ * caller never deletes the originals on a genuinely failed write (e.g. an
+ * encrypted write that ran out of memory deriving the key, or a row that
+ * committed with a corrupt payload). The in-memory *sizes* can legitimately
+ * differ across backends (an image read back from a database blob carries its
+ * PNG bytes while a path-based one does not), hence no size comparison. */
 static gboolean
 import_histories (GPasteSettings *settings,
                   GPasteStorage   current,
@@ -274,16 +296,21 @@ import_histories (GPasteSettings *settings,
 
         g_paste_storage_backend_read_history (previous, *name, &history, &size);
         g_paste_storage_backend_write_history (next, *name, history);
-        g_list_free_full (history, g_object_unref);
 
         GList *written = NULL;
         gsize written_size = 0;
 
         g_paste_storage_backend_read_history (next, *name, &written, &written_size);
-        g_list_free_full (written, g_object_unref);
 
-        if (written_size != size)
-            ok = FALSE;
+        for (const GList *h = history, *w = written; ok && (h || w); h = g_list_next (h), w = g_list_next (w))
+        {
+            ok = h && w &&
+                 g_paste_str_equal (g_paste_item_get_uuid (h->data), g_paste_item_get_uuid (w->data)) &&
+                 imported_item_matches (h->data, w->data);
+        }
+
+        g_list_free_full (written, g_object_unref);
+        g_list_free_full (history, g_object_unref);
     }
 
     return ok;

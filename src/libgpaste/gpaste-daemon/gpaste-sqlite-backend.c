@@ -434,7 +434,8 @@ g_paste_sqlite_backend_create_schema (sqlite3 *db)
         "    rank     INTEGER NOT NULL," /* highest = front of the history */
         "    date     INTEGER,"          /* Image: unix seconds */
         "    checksum TEXT,"             /* Image: hex sha256 */
-        "    name     TEXT"              /* Password: reserved for an encrypted variant */
+        "    name     TEXT,"             /* Password: reserved for an encrypted variant */
+        "    image    BLOB"              /* Image: the encoded PNG */
         ");"
         "CREATE UNIQUE INDEX IF NOT EXISTS items_rank ON items (rank DESC);"
         "CREATE TABLE IF NOT EXISTS special_values ("
@@ -446,12 +447,15 @@ g_paste_sqlite_backend_create_schema (sqlite3 *db)
         ");");
 }
 
+/* Upgrade a database created by an older GPaste (its user_version is @from) to
+ * the current schema. There is nothing to migrate yet — the schema has only
+ * ever had one version — but the mechanism is here for the first change that
+ * needs it: add a `case @from` per historical version, each falling through to
+ * the next so any old database upgrades stepwise. */
 static gboolean
 g_paste_sqlite_backend_migrate_schema (sqlite3 *db,
                                        gint64   from)
 {
-    /* One case per historical schema version, each falling through to the next
-     * so any old database upgrades stepwise to the current version. */
     switch (from)
     {
     default:
@@ -686,6 +690,34 @@ g_paste_sqlite_backend_rewrite_special_values (sqlite3          *db,
     return success && g_paste_sqlite_backend_write_special_values (db, key, item_id, item);
 }
 
+/* Bind an image item's PNG for the `image` blob column: from the bytes the
+ * item carries, falling back to reading its on-disk cache file for a path-based
+ * item that carries none (e.g. imported from the file backend). No bytes
+ * anywhere leaves the column NULL. */
+static void
+g_paste_sqlite_backend_bind_image (sqlite3_stmt          *stmt,
+                                   gint                   position,
+                                   const guchar          *key,
+                                   const GPasteImageItem *image)
+{
+    GBytes *png = g_paste_image_item_get_png_bytes (image);
+
+    if (png)
+    {
+        gsize length;
+        gconstpointer data = g_bytes_get_data (png, &length);
+
+        g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
+        return;
+    }
+
+    g_autofree gchar *data = NULL;
+    gsize length = 0;
+
+    if (g_file_get_contents (g_paste_item_get_value (G_PASTE_ITEM ((gpointer) image)), &data, &length, NULL))
+        g_paste_sqlite_backend_bind_content (stmt, position, key, data, length);
+}
+
 /* Insert @item with @rank, or move the already-stored item with the same uuid
  * to @rank (its value never changes, only its position). Special values are
  * rewritten from the item either way. */
@@ -698,7 +730,7 @@ g_paste_sqlite_backend_upsert_item (sqlite3          *db,
     sqlite3_stmt *stmt = NULL;
 
     if (sqlite3_prepare_v2 (db,
-                            "INSERT INTO items (uuid, kind, value, rank, date, checksum, name) VALUES (?, ?, ?, ?, ?, ?, ?) "
+                            "INSERT INTO items (uuid, kind, value, rank, date, checksum, name, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
                             "ON CONFLICT (uuid) DO UPDATE SET rank = excluded.rank "
                             "RETURNING id;",
                             -1, &stmt, NULL) != SQLITE_OK)
@@ -720,6 +752,7 @@ g_paste_sqlite_backend_upsert_item (sqlite3          *db,
         sqlite3_bind_int64 (stmt, 5, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
         if (checksum)
             sqlite3_bind_text (stmt, 6, checksum, -1, SQLITE_STATIC);
+        g_paste_sqlite_backend_bind_image (stmt, 8, key, image);
     }
     else if (_G_PASTE_IS_PASSWORD_ITEM (item))
         g_paste_sqlite_backend_bind_text (stmt, 7, key, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item)));
@@ -890,8 +923,27 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         if (images_support && sqlite3_column_type (stmt, 4) != SQLITE_NULL)
         {
             g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (sqlite3_column_int64 (stmt, 4));
+            const gchar *checksum = (const gchar *) sqlite3_column_text (stmt, 5);
 
-            return g_paste_image_item_new_from_file (value, date, (const gchar *) sqlite3_column_text (stmt, 5));
+            /* The stored blob is the source of truth; the path-based fallback
+             * only covers a row whose image could not be materialized (a file
+             * import whose cache file had already gone). */
+            if (sqlite3_column_type (stmt, 7) != SQLITE_NULL)
+            {
+                gsize length = 0;
+                guchar *data = g_paste_sqlite_backend_read_content (stmt, 7, key, &length);
+
+                if (data)
+                {
+                    g_autoptr (GBytes) png = g_bytes_new_take (data, length);
+
+                    return g_paste_image_item_new_from_bytes (png, date, checksum);
+                }
+
+                g_warning ("sqlite: failed to decrypt an image; falling back to its cache file");
+            }
+
+            return g_paste_image_item_new_from_file (value, date, checksum);
         }
 
         g_autoptr (GFile) img_file = g_file_new_for_path (value);
@@ -933,7 +985,7 @@ g_paste_sqlite_backend_read_history_file (const GPasteStorageBackend *self,
 
     sqlite3_stmt *stmt = NULL;
 
-    if (sqlite3_prepare_v2 (db, "SELECT id, uuid, kind, value, date, checksum, name FROM items ORDER BY rank DESC LIMIT ?;", -1, &stmt, NULL) != SQLITE_OK)
+    if (sqlite3_prepare_v2 (db, "SELECT id, uuid, kind, value, date, checksum, name, image FROM items ORDER BY rank DESC LIMIT ?;", -1, &stmt, NULL) != SQLITE_OK)
     {
         g_warning ("sqlite: failed to prepare history query: %s", sqlite3_errmsg (db));
         return;
@@ -1163,7 +1215,7 @@ g_paste_sqlite_backend_replace_item (const GPasteStorageBackend *self,
 
     sqlite3_stmt *stmt = NULL;
     gboolean success = (sqlite3_prepare_v2 (db,
-                                            "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ?, name = ? WHERE uuid = ? "
+                                            "UPDATE items SET uuid = ?, kind = ?, value = ?, date = ?, checksum = ?, name = ?, image = ? WHERE uuid = ? "
                                             "RETURNING id;",
                                             -1, &stmt, NULL) == SQLITE_OK);
 
@@ -1186,11 +1238,12 @@ g_paste_sqlite_backend_replace_item (const GPasteStorageBackend *self,
         sqlite3_bind_int64 (stmt, 4, g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)));
         if (checksum)
             sqlite3_bind_text (stmt, 5, checksum, -1, SQLITE_STATIC);
+        g_paste_sqlite_backend_bind_image (stmt, 7, key, image);
     }
     else if (_G_PASTE_IS_PASSWORD_ITEM (item))
         g_paste_sqlite_backend_bind_text (stmt, 6, key, g_paste_password_item_get_name (_G_PASTE_PASSWORD_ITEM (item)));
 
-    sqlite3_bind_text (stmt, 7, old_uuid, -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 8, old_uuid, -1, SQLITE_STATIC);
 
     /* No row means the replaced item was never persisted (e.g. renaming a
      * password): nothing to update. */

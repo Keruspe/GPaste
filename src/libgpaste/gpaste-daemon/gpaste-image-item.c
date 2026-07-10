@@ -19,6 +19,11 @@ typedef struct _GPasteImageItemPrivate
     gchar      *checksum;
     GDateTime  *date;
     GdkTexture *image;
+    /* The encoded PNG, kept across IDLE (unlike the heavy decoded texture) so
+     * the item never depends on its on-disk cache file: a storage backend can
+     * persist it as a blob and hand it back on load, and the texture can be
+     * rebuilt from it. NULL for items loaded by path only. */
+    GBytes     *png;
 
     guint64    additional_size;
 } GPasteImageItemPrivate;
@@ -79,6 +84,37 @@ g_paste_image_item_get_image (const GPasteImageItem *self)
     return priv->image;
 }
 
+/**
+ * g_paste_image_item_get_png_bytes:
+ * @self: a #GPasteImageItem instance
+ *
+ * Get the encoded PNG contained in the #GPasteImageItem, when it carries one
+ * (an item loaded from its on-disk cache file by path does not)
+ *
+ * Returns: (transfer none) (nullable): the PNG bytes
+ */
+G_PASTE_VISIBLE GBytes *
+g_paste_image_item_get_png_bytes (const GPasteImageItem *self)
+{
+    g_return_val_if_fail (_G_PASTE_IS_IMAGE_ITEM (self), NULL);
+
+    const GPasteImageItemPrivate *priv = _g_paste_image_item_get_instance_private (self);
+
+    return priv->png;
+}
+
+/* Attach the encoded PNG (transfer full) and account for the memory it keeps
+ * across IDLE (unlike additional_size, which only tracks the decoded texture). */
+static void
+g_paste_image_item_take_png (GPasteItem *self,
+                             GBytes     *png)
+{
+    GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (self));
+
+    priv->png = png;
+    g_paste_item_add_size (self, g_bytes_get_size (png));
+}
+
 static gboolean
 g_paste_image_item_equals (const GPasteItem *self,
                            const GPasteItem *other)
@@ -136,7 +172,9 @@ g_paste_image_item_set_state (GPasteItem     *self,
         if (!priv->image)
         {
             g_autoptr (GError) error = NULL;
-            priv->image = gdk_texture_new_from_filename (g_paste_item_get_value (self), &error);
+            priv->image = (priv->png)
+                ? gdk_texture_new_from_bytes (priv->png, &error)
+                : gdk_texture_new_from_filename (g_paste_item_get_value (self), &error);
             if (error)
                 g_warning ("Failed to load image from %s: %s", g_paste_item_get_value (self), error->message);
             if (!priv->checksum)
@@ -154,6 +192,7 @@ g_paste_image_item_dispose (GObject *object)
     GPasteImageItemPrivate *priv = g_paste_image_item_get_instance_private (G_PASTE_IMAGE_ITEM (object));
     g_clear_pointer (&priv->date, g_date_time_unref);
     g_clear_object (&priv->image);
+    g_clear_pointer (&priv->png, g_bytes_unref);
 
     G_OBJECT_CLASS (g_paste_image_item_parent_class)->dispose (object);
 }
@@ -232,45 +271,26 @@ _g_paste_image_item_new (const gchar *path,
     return self;
 }
 
-typedef struct
+/* The canonical on-disk cache location of an image: <history-dir>/images/<checksum>.png */
+static gchar *
+g_paste_image_item_get_image_path (const gchar *checksum)
 {
-    GdkTexture *texture;
-    gchar      *path;
-} GPasteImageSaveData;
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
 
-static void
-g_paste_image_save_data_free (gpointer data)
-{
-    g_autofree GPasteImageSaveData *d = data;
-    g_clear_object (&d->texture);
-    g_clear_pointer (&d->path, g_free);
-}
-
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteImageSaveData, g_paste_image_save_data_free)
-
-static void g_paste_image_save_done (GObject *source_object, GAsyncResult *result, gpointer user_data);
-
-static void
-g_paste_image_save_task (GTask        *task,
-                         gpointer      source_object G_GNUC_UNUSED,
-                         gpointer      task_data,
-                         GCancellable *cancellable G_GNUC_UNUSED)
-{
-    const GPasteImageSaveData *data = task_data;
-    g_task_return_boolean (task, gdk_texture_save_to_png (data->texture, data->path));
+    return g_build_filename (history_dir, "images", filename, NULL);
 }
 
 static void
-g_paste_image_save_done (GObject      *source_object G_GNUC_UNUSED,
+g_paste_image_save_done (GObject      *source_object,
                          GAsyncResult *result,
-                         gpointer      user_data G_GNUC_UNUSED)
+                         gpointer      user_data)
 {
+    g_autofree gchar *path = user_data;
     g_autoptr (GError) error = NULL;
-    if (!g_task_propagate_boolean (G_TASK (result), &error))
-    {
-        const GPasteImageSaveData *data = g_task_get_task_data (G_TASK (result));
-        g_warning ("Failed to save image to %s: %s", data->path, error ? error->message : "unknown error");
-    }
+
+    if (!g_file_replace_contents_finish (G_FILE (source_object), result, NULL, &error))
+        g_warning ("Failed to save image to %s: %s", path, error ? error->message : "unknown error");
 }
 
 /**
@@ -300,23 +320,79 @@ g_paste_image_item_new (GdkTexture *texture)
         return NULL;
     }
 
-    g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
-    g_autofree gchar *path = g_build_filename (images_dir_path, filename, NULL);
+    g_autofree gchar *path = g_paste_image_item_get_image_path (checksum);
     GPasteItem *self = _g_paste_image_item_new (path,
                                                 g_date_time_new_now_local (),
                                                 g_object_ref (texture),
-                                                g_steal_pointer (&checksum));
+                                                g_strdup (checksum));
     if (!self)
         return NULL;
 
-    g_autoptr (GPasteImageSaveData) data = g_new (GPasteImageSaveData, 1);
-    data->texture = g_object_ref (texture);
-    data->path = g_strdup (g_paste_item_get_value (self));
+    /* Encode once: the item carries its PNG (so storage backends and D-Bus
+     * clients get the bytes without touching the disk) and the same bytes are
+     * written asynchronously to the on-disk cache file. */
+    g_autoptr (GBytes) png = gdk_texture_save_to_png_bytes (texture);
 
-    g_autoptr (GTask) task = g_task_new (NULL, NULL, g_paste_image_save_done, NULL);
-    g_task_set_static_name (task, "gpaste-image-save");
-    g_task_set_task_data (task, g_steal_pointer (&data), g_paste_image_save_data_free);
-    g_task_run_in_thread (task, g_paste_image_save_task);
+    g_paste_image_item_take_png (self, g_bytes_ref (png));
+
+    g_autoptr (GFile) image_file = g_file_new_for_path (path);
+
+    g_file_replace_contents_bytes_async (image_file, png,
+                                         NULL,  /* etag */
+                                         FALSE, /* make_backup */
+                                         G_FILE_CREATE_NONE,
+                                         NULL,  /* cancellable */
+                                         g_paste_image_save_done,
+                                         g_strdup (path));
+
+    return self;
+}
+
+/**
+ * g_paste_image_item_new_from_bytes:
+ * @png: the encoded PNG we want to be contained in the #GPasteImageItem
+ * @date: (transfer none): the date at which the image was created
+ * @checksum: (nullable): the image's known SHA256 checksum, or %NULL to compute it
+ *
+ * Create a new instance of #GPasteImageItem from its encoded bytes (e.g. a
+ * storage backend's blob), independent of any on-disk cache file. The item's
+ * value is the canonical cache path the file would live at, but the file is
+ * neither read nor written.
+ *
+ * Returns: (nullable): a newly allocated #GPasteImageItem
+ *          free it with g_object_unref
+ */
+G_PASTE_VISIBLE GPasteItem *
+g_paste_image_item_new_from_bytes (GBytes      *png,
+                                   GDateTime   *date,
+                                   const gchar *checksum)
+{
+    g_return_val_if_fail (png, NULL);
+    g_return_val_if_fail (date, NULL);
+
+    g_autoptr (GError) error = NULL;
+    GdkTexture *texture = gdk_texture_new_from_bytes (png, &error);
+
+    if (!texture)
+    {
+        g_warning ("Failed to load image from its stored bytes: %s", error ? error->message : "unknown error");
+        return NULL;
+    }
+
+    g_autofree gchar *sum = (checksum) ? g_strdup (checksum) : g_paste_gtk_util_compute_checksum (texture);
+    g_autofree gchar *path = g_paste_image_item_get_image_path (sum);
+    GPasteItem *self = _g_paste_image_item_new (path,
+                                                g_date_time_ref (date),
+                                                texture,
+                                                g_steal_pointer (&sum));
+
+    if (!self)
+        return NULL;
+
+    g_paste_image_item_take_png (self, g_bytes_ref (png));
+    /* Like an item loaded by path: rest in the history without the decoded
+     * texture (the PNG bytes stay to rebuild it on activation). */
+    g_paste_item_set_state (self, G_PASTE_ITEM_STATE_IDLE);
 
     return self;
 }
