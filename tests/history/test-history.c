@@ -23,6 +23,7 @@
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <sqlite3.h>
+#include <string.h>
 #endif
 
 /* Build a fresh, empty history backed by an in-memory GSettings.
@@ -402,6 +403,43 @@ sqlite_wait_for_values (GPasteStorage        kind,
 /* The SQLite backend must round-trip every item kind with full data parity
  * with the plain XML backend: kind, uuid, value, image date+checksum, special
  * values (mime + bytes, in order) — and skip password items just like it. */
+/* A real (1x1 transparent) PNG for the image item tests. */
+static GBytes *
+test_png_bytes (void)
+{
+    gsize length = 0;
+    guchar *data = g_base64_decode ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                                    &length);
+
+    return g_bytes_new_take (data, length);
+}
+
+/* Scan a file's raw bytes for a plaintext needle. Binary-safe: g_strstr_len
+ * stops at embedded NULs, which a database file is full of. */
+static gboolean
+file_contains (const gchar *path,
+               const gchar *needle)
+{
+    g_autofree gchar *raw = NULL;
+    gsize raw_len = 0;
+
+    if (!g_file_get_contents (path, &raw, &raw_len, NULL))
+        return FALSE;
+
+    gsize needle_len = strlen (needle);
+
+    if (raw_len < needle_len)
+        return FALSE;
+
+    for (gsize i = 0; i + needle_len <= raw_len; ++i)
+    {
+        if (!memcmp (raw + i, needle, needle_len))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static void
 test_sqlite_roundtrip (void)
 {
@@ -421,11 +459,11 @@ test_sqlite_roundtrip (void)
     g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_ATOM_GNOME_COPIED_FILES,
                                                                    g_bytes_new_static ("copy\nfile:///tmp/x", 18)));
 
-    /* An image item loads its texture from disk at construction, so write a
-     * real (1x1 transparent) PNG into our throwaway data dir. */
+    /* An image item loaded by path reads its file at construction, so write a
+     * real PNG into our throwaway data dir. */
+    g_autoptr (GBytes) orig_png = test_png_bytes ();
     gsize png_len = 0;
-    g_autofree guchar *png = g_base64_decode ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-                                              &png_len);
+    gconstpointer png = g_bytes_get_data (orig_png, &png_len);
     g_autofree gchar *png_path = g_build_filename (g_get_user_data_dir (), "gpaste-test-image.png", NULL);
     g_assert_true (g_file_set_contents (png_path, (const gchar *) png, png_len, NULL));
 
@@ -466,7 +504,10 @@ test_sqlite_roundtrip (void)
 
         g_assert_cmpstr (g_paste_item_get_kind (read), ==, g_paste_item_get_kind (orig));
         g_assert_cmpstr (g_paste_item_get_uuid (read), ==, g_paste_item_get_uuid (orig));
-        g_assert_cmpstr (g_paste_item_get_real_value (read), ==, g_paste_item_get_real_value (orig));
+        /* An image comes back from its stored blob, re-anchored at its
+         * canonical cache path — its bytes are compared below instead. */
+        if (!g_paste_str_equal (g_paste_item_get_kind (read), "Image"))
+            g_assert_cmpstr (g_paste_item_get_real_value (read), ==, g_paste_item_get_real_value (orig));
     }
 
     /* Special values survive with their mimes, bytes and order. */
@@ -484,12 +525,19 @@ test_sqlite_roundtrip (void)
         g_assert_true (g_bytes_equal (g_paste_binary_data_get_bytes (read_sv), g_paste_binary_data_get_bytes (orig_sv)));
     }
 
-    /* Image metadata survives. */
+    /* Image metadata survives, and the image itself comes back as the blob the
+     * backend stored — byte-identical to the source PNG, so the item no longer
+     * depends on any file on disk. */
     const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (g_list_nth_data (loaded, 3));
 
     g_assert_cmpint (g_date_time_to_unix ((GDateTime *) g_paste_image_item_get_date (image)), ==, 1234567890);
     g_assert_cmpstr (g_paste_image_item_get_checksum (image), ==,
                      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+
+    GBytes *read_png = g_paste_image_item_get_png_bytes (image);
+
+    g_assert_nonnull (read_png);
+    g_assert_true (g_bytes_equal (read_png, orig_png));
 
     g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
@@ -693,6 +741,70 @@ test_sqlite_cascade (void)
     g_list_free_full (items, g_object_unref);
 }
 
+/* The stored blob is the source of truth for images: an item must survive the
+ * complete absence of its on-disk cache file — including rebuilding its
+ * texture — while a plain database visibly contains the PNG. */
+static void
+test_sqlite_image_blob (void)
+{
+    const gchar *name = "sqlite-image-blob";
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes ();
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+    g_assert_nonnull (items->data);
+
+    /* The bytes-built item never touches the disk: its canonical cache file
+     * does not exist. */
+    const gchar *cache_path = g_paste_item_get_value (items->data);
+
+    g_assert_false (g_file_test (cache_path, G_FILE_TEST_EXISTS));
+
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+        g_paste_storage_backend_write_history (backend, name, items);
+        /* Dropping the backend checkpoints the WAL for the scan below. */
+    }
+
+    /* A plain database carries the PNG in clear (its IHDR chunk shows). */
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+
+    g_assert_true (file_contains (path, "IHDR"));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    GList *loaded = NULL;
+    gsize size = 0;
+
+    g_paste_storage_backend_read_history (backend, name, &loaded, &size);
+
+    g_assert_cmpuint (g_list_length (loaded), ==, 1);
+
+    GPasteItem *read = loaded->data;
+    const GPasteImageItem *image = _G_PASTE_IMAGE_ITEM (read);
+    GBytes *read_png = g_paste_image_item_get_png_bytes (image);
+
+    g_assert_cmpstr (g_paste_item_get_kind (read), ==, "Image");
+    g_assert_nonnull (read_png);
+    g_assert_true (g_bytes_equal (read_png, png));
+    g_assert_cmpstr (g_paste_image_item_get_checksum (image),
+                     ==, g_paste_image_item_get_checksum (_G_PASTE_IMAGE_ITEM (items->data)));
+
+    /* The texture rebuilds from the bytes, with no file anywhere. */
+    g_assert_false (g_file_test (g_paste_item_get_value (read), G_FILE_TEST_EXISTS));
+    g_paste_item_set_state (read, G_PASTE_ITEM_STATE_ACTIVE);
+    g_assert_nonnull (g_paste_image_item_get_image (image));
+    g_paste_item_set_state (read, G_PASTE_ITEM_STATE_IDLE);
+
+    g_list_free_full (loaded, g_object_unref);
+    g_list_free_full (items, g_object_unref);
+}
+
 /* Switching histories loads with save_after=TRUE so a snapshot-rewriting
  * backend persists its read-time normalization — for an incremental backend
  * that full rewrite is skipped: the database must keep rows beyond
@@ -775,8 +887,15 @@ test_sqlite_version_guard (void)
 
         g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
         sqlite3 *db = NULL;
+        sqlite3_stmt *stmt = NULL;
+        gint64 current_version = 0;
 
+        /* Remember the real schema version to restore it after tampering. */
         g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_prepare_v2 (db, "PRAGMA user_version;", -1, &stmt, NULL), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_step (stmt), ==, SQLITE_ROW);
+        current_version = sqlite3_column_int64 (stmt, 0);
+        sqlite3_finalize (stmt);
         g_assert_cmpint (sqlite3_exec (db, "PRAGMA user_version = 99;", NULL, NULL, NULL), ==, SQLITE_OK);
         sqlite3_close (db);
 
@@ -796,8 +915,10 @@ test_sqlite_version_guard (void)
         }
 
         /* Once the version is back within range, the original data is intact. */
+        g_autofree gchar *restore = g_strdup_printf ("PRAGMA user_version = %" G_GINT64_FORMAT ";", current_version);
+
         g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
-        g_assert_cmpint (sqlite3_exec (db, "PRAGMA user_version = 1;", NULL, NULL, NULL), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, restore, NULL, NULL, NULL), ==, SQLITE_OK);
         sqlite3_close (db);
 
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
@@ -819,20 +940,6 @@ test_sqlite_version_guard (void)
 #endif
 
 #if defined(G_PASTE_ENABLE_SQLITE) && defined(G_PASTE_ENABLE_ENCRYPTION)
-/* Scan a file's raw bytes for a plaintext needle. */
-static gboolean
-file_contains (const gchar *path,
-               const gchar *needle)
-{
-    g_autofree gchar *raw = NULL;
-    gsize raw_len = 0;
-
-    if (!g_file_get_contents (path, &raw, &raw_len, NULL))
-        return FALSE;
-
-    return g_strstr_len (raw, raw_len, needle) != NULL;
-}
-
 /* The encrypted SQLite flavor must round-trip everything the plain one does,
  * plus password items (real value and name), with no plaintext content ever
  * reaching the ".dbs" file. */
@@ -848,6 +955,10 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes ();
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
     GList *items = NULL;
     GPasteItem *text = g_paste_text_item_new (text_value);
 
@@ -856,6 +967,7 @@ test_encrypted_sqlite_roundtrip (void)
     items = g_list_append (items, text);
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret));
     items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(0,255,0)"));
+    items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, master);
@@ -877,6 +989,8 @@ test_encrypted_sqlite_roundtrip (void)
     g_assert_false (file_contains (path, html_value));
     g_assert_false (file_contains (path, secret));
     g_assert_false (file_contains (path, pw_name));
+    /* The image blob is encrypted too: no PNG chunk marker in clear. */
+    g_assert_false (file_contains (path, "IHDR"));
 
     /* The passphrase verification is quiet and flavor-aware. */
     g_assert_true (g_paste_storage_passphrase_can_decrypt (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, master));
@@ -888,11 +1002,12 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_paste_storage_backend_read_history (backend, name, &loaded, &size);
 
-    g_assert_cmpuint (g_list_length (loaded), ==, 3);
+    g_assert_cmpuint (g_list_length (loaded), ==, 4);
 
     const GPasteItem *read_text = loaded->data;
     const GPasteItem *read_password = loaded->next->data;
     const GPasteItem *read_color = loaded->next->next->data;
+    const GPasteItem *read_image = loaded->next->next->next->data;
 
     g_assert_cmpstr (g_paste_item_get_value (read_text), ==, text_value);
 
@@ -907,6 +1022,11 @@ test_encrypted_sqlite_roundtrip (void)
     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM ((gpointer) read_password)), ==, pw_name);
 
     g_assert_cmpstr (g_paste_item_get_value (read_color), ==, g_paste_item_get_value (g_list_nth_data (items, 2)));
+
+    GBytes *read_png = g_paste_image_item_get_png_bytes (_G_PASTE_IMAGE_ITEM (read_image));
+
+    g_assert_nonnull (read_png);
+    g_assert_true (g_bytes_equal (read_png, png));
 
     g_list_free_full (loaded, g_object_unref);
     g_list_free_full (items, g_object_unref);
@@ -1072,6 +1192,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/history/sqlite_incremental", test_sqlite_incremental);
     g_test_add_func ("/history/sqlite_replace", test_sqlite_replace);
     g_test_add_func ("/history/sqlite_cascade", test_sqlite_cascade);
+    g_test_add_func ("/history/sqlite_image_blob", test_sqlite_image_blob);
     g_test_add_func ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     g_test_add_func ("/history/sqlite_version_guard", test_sqlite_version_guard);
 #ifdef G_PASTE_ENABLE_ENCRYPTION

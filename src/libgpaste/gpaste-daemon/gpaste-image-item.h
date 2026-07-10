@@ -13,13 +13,17 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (ImageItem, image_item, IMAGE_ITEM, GPasteItem)
 
-const gchar     *g_paste_image_item_get_checksum (const GPasteImageItem *self);
-const GDateTime *g_paste_image_item_get_date     (const GPasteImageItem *self);
-GdkTexture      *g_paste_image_item_get_image    (const GPasteImageItem *self);
+const gchar     *g_paste_image_item_get_checksum  (const GPasteImageItem *self);
+const GDateTime *g_paste_image_item_get_date      (const GPasteImageItem *self);
+GdkTexture      *g_paste_image_item_get_image     (const GPasteImageItem *self);
+GBytes          *g_paste_image_item_get_png_bytes (const GPasteImageItem *self);
 
-GPasteItem      *g_paste_image_item_new           (GdkTexture  *texture);
-GPasteItem      *g_paste_image_item_new_from_file (const gchar *path,
-                                                   GDateTime   *date,
-                                                   const gchar *checksum);
+GPasteItem      *g_paste_image_item_new            (GdkTexture  *texture);
+GPasteItem      *g_paste_image_item_new_from_file  (const gchar *path,
+                                                    GDateTime   *date,
+                                                    const gchar *checksum);
+GPasteItem      *g_paste_image_item_new_from_bytes (GBytes      *png,
+                                                    GDateTime   *date,
+                                                    const gchar *checksum);
 
 G_END_DECLS

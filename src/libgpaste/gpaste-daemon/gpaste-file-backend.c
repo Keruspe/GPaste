@@ -49,6 +49,39 @@ _g_paste_file_backend_write_password_name (GOutputStream           *stream,
            g_output_stream_write_all (stream, name, strlen (name), NULL, NULL /* cancellable */, error);
 }
 
+/* The XML history references images by path, so an item that only carries its
+ * PNG bytes (loaded from a blob-storing backend, e.g. a sqlite -> file
+ * migration) must have its cache file materialized for the reference to
+ * resolve. Best effort: a failure only costs this image, not the write. */
+static void
+_g_paste_file_backend_ensure_image_file (const GPasteImageItem *item)
+{
+    GBytes *png = g_paste_image_item_get_png_bytes (item);
+    const gchar *path = g_paste_item_get_value (G_PASTE_ITEM ((gpointer) item));
+
+    if (!png || g_file_test (path, G_FILE_TEST_EXISTS))
+        return;
+
+    g_autofree gchar *images_dir = g_path_get_dirname (path);
+    g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
+    g_autoptr (GError) error = NULL;
+
+    if (!g_file_make_directory_with_parents (dir, NULL, &error) &&
+        !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+    {
+        g_warning ("Failed to create images directory: %s", error->message);
+        return;
+    }
+
+    g_clear_error (&error);
+
+    gsize length;
+    gconstpointer data = g_bytes_get_data (png, &length);
+
+    if (!g_file_set_contents (path, data, length, &error))
+        g_warning ("Failed to materialize image to %s: %s", path, error->message);
+}
+
 static gboolean
 _g_paste_file_backend_write_image_metadata (GOutputStream         *stream,
                                             const GPasteImageItem *item,
@@ -136,6 +169,9 @@ g_paste_file_backend_write_history_file (const GPasteStorageBackend *self,
 
         if (!encrypted && g_paste_str_equal (kind, "Password"))
             continue;
+
+        if (_G_PASTE_IS_IMAGE_ITEM (item))
+            _g_paste_file_backend_ensure_image_file (_G_PASTE_IMAGE_ITEM (item));
 
         const GSList *special_values = g_paste_item_get_special_values (item);
         /* get_value only differs from get_real_value for passwords (it masks
