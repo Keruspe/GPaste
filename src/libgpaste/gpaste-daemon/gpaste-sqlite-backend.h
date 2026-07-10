@@ -11,4 +11,12 @@ G_BEGIN_DECLS
 
 G_PASTE_FINAL_TYPE (SqliteBackend, sqlite_backend, SQLITE_BACKEND, GPasteStorageBackend)
 
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+GPasteStorageBackend *g_paste_sqlite_backend_new_encrypted (GPasteSettings *settings,
+                                                            const gchar    *passphrase);
+
+gboolean g_paste_sqlite_backend_passphrase_can_decrypt (GPasteSettings *settings,
+                                                        const gchar    *passphrase);
+#endif
+
 G_END_DECLS

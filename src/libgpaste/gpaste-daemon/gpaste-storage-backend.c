@@ -334,6 +334,73 @@ _g_paste_storage_backend_get_type (GPasteStorage storage_kind)
 }
 
 /**
+ * g_paste_storage_is_encrypted:
+ * @storage_kind: a #GPasteStorage kind
+ *
+ * Whether @storage_kind encrypts the history on disk. This classifies the kind
+ * itself, independently of the features built in: a build unable to construct
+ * an encrypted backend must degrade it to "no storage", never to plaintext.
+ *
+ * Returns: %TRUE for the encrypted storage kinds
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_is_encrypted (GPasteStorage storage_kind)
+{
+    return storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE ||
+           storage_kind == G_PASTE_STORAGE_ENCRYPTED_SQLITE;
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/**
+ * g_paste_storage_passphrase_can_decrypt:
+ * @storage_kind: the encrypted #GPasteStorage kind to verify against
+ * @settings: a #GPasteSettings instance
+ * @passphrase: the passphrase to check
+ *
+ * Check whether @passphrase actually unlocks the existing encrypted history of
+ * the @storage_kind flavor, so a wrong (or stale keyring) passphrase is never
+ * accepted and given the chance to overwrite the real data.
+ *
+ * Returns: %FALSE only when encrypted data is present and @passphrase does not
+ *          unlock it
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
+                                        GPasteSettings *settings,
+                                        const gchar    *passphrase)
+{
+    switch (storage_kind)
+    {
+#ifdef G_PASTE_ENABLE_SQLITE
+    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
+        return g_paste_sqlite_backend_passphrase_can_decrypt (settings, passphrase);
+#endif
+    default:
+        return g_paste_file_backend_passphrase_can_decrypt (settings, passphrase);
+    }
+}
+
+/* NULL when this build cannot construct the requested encrypted flavor. */
+static GPasteStorageBackend *
+_g_paste_storage_backend_new_encrypted (GPasteStorage   storage_kind,
+                                        GPasteSettings *settings,
+                                        const gchar    *passphrase)
+{
+    switch (storage_kind)
+    {
+    case G_PASTE_STORAGE_ENCRYPTED_FILE:
+        return g_paste_file_backend_new_encrypted (settings, passphrase);
+#ifdef G_PASTE_ENABLE_SQLITE
+    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
+        return g_paste_sqlite_backend_new_encrypted (settings, passphrase);
+#endif
+    default:
+        return NULL;
+    }
+}
+#endif
+
+/**
  * g_paste_storage_backend_new:
  * @storage_kind: the kind of storage we want to use to save and load history
  * @settings: a #GPasteSettings instance
@@ -349,9 +416,9 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
 {
     g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-    if (storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE)
+    if (g_paste_storage_is_encrypted (storage_kind))
     {
+#ifdef G_PASTE_ENABLE_ENCRYPTION
         const gchar *passphrase = g_paste_storage_backend_get_passphrase ();
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
@@ -364,7 +431,7 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
         {
             passphrase = g_paste_storage_backend_get_passphrase ();
 
-            if (passphrase && !g_paste_file_backend_passphrase_can_decrypt (settings, passphrase))
+            if (passphrase && !g_paste_storage_passphrase_can_decrypt (storage_kind, settings, passphrase))
             {
                 g_warning ("The passphrase stored in the keyring does not unlock the history");
                 g_paste_storage_backend_set_passphrase (NULL);
@@ -374,14 +441,21 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
 #endif
 
         if (passphrase)
-            return g_paste_file_backend_new_encrypted (settings, passphrase);
+        {
+            GPasteStorageBackend *backend = _g_paste_storage_backend_new_encrypted (storage_kind, settings, passphrase);
 
-        /* Without a passphrase we must not fall back to plaintext on disk;
-         * keep the history in memory only. */
+            if (backend)
+                return backend;
+        }
+
+        /* Without a passphrase (or the flavor's support built in) we must not
+         * fall back to plaintext on disk; keep the history in memory only. */
         g_warning ("No passphrase for the encrypted storage backend; not storing the history");
+#else
+        g_warning ("Encrypted storage is not built in; not storing the history");
+#endif
         storage_kind = G_PASTE_STORAGE_NOOP;
     }
-#endif
 
     GPasteStorageBackend *self = g_object_new (_g_paste_storage_backend_get_type (storage_kind), NULL);
     GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);

@@ -54,6 +54,13 @@ detect_current_backend (GPasteSettings *settings)
 
     if (g_file_query_exists (encrypted, NULL))
         return G_PASTE_STORAGE_ENCRYPTED_FILE;
+
+#ifdef G_PASTE_ENABLE_SQLITE
+    g_autoptr (GFile) encrypted_database = g_paste_util_get_history_file (name, "dbs");
+
+    if (g_file_query_exists (encrypted_database, NULL))
+        return G_PASTE_STORAGE_ENCRYPTED_SQLITE;
+#endif
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -72,6 +79,9 @@ detect_current_backend (GPasteSettings *settings)
     guint plain_count = 0;
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     guint encrypted_count = 0;
+#ifdef G_PASTE_ENABLE_SQLITE
+    guint encrypted_db_count = 0;
+#endif
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
     guint db_count = 0;
@@ -97,6 +107,10 @@ detect_current_backend (GPasteSettings *settings)
 #ifdef G_PASTE_ENABLE_ENCRYPTION
             else if (g_str_has_suffix (child_name, ".xmls"))
                 ++encrypted_count;
+#ifdef G_PASTE_ENABLE_SQLITE
+            else if (g_str_has_suffix (child_name, ".dbs"))
+                ++encrypted_db_count;
+#endif
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
             else if (g_str_has_suffix (child_name, ".db"))
@@ -105,13 +119,20 @@ detect_current_backend (GPasteSettings *settings)
         }
     }
 
+    /* Precedence mirrors the active-name checks above: encrypted flavours win
+     * ties, so an existing encrypted setup is never demoted. */
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     if (encrypted_count > 0 && encrypted_count >= plain_count
 #ifdef G_PASTE_ENABLE_SQLITE
-        && encrypted_count >= db_count
+        && encrypted_count >= db_count && encrypted_count >= encrypted_db_count
 #endif
        )
         return G_PASTE_STORAGE_ENCRYPTED_FILE;
+
+#ifdef G_PASTE_ENABLE_SQLITE
+    if (encrypted_db_count > 0 && encrypted_db_count >= plain_count && encrypted_db_count >= db_count)
+        return G_PASTE_STORAGE_ENCRYPTED_SQLITE;
+#endif
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
@@ -319,12 +340,13 @@ apply_migration (MigrationData *self,
  * stale and no longer decrypts the history (so a stale entry never gets used).
  * Returns %TRUE when a usable passphrase is now set. */
 static gboolean
-try_keyring_passphrase (GPasteSettings *settings)
+try_keyring_passphrase (GPasteStorage   storage_kind,
+                        GPasteSettings *settings)
 {
     if (!g_paste_storage_keyring_apply ())
         return FALSE;
 
-    if (!g_paste_file_backend_passphrase_can_decrypt (settings, g_paste_storage_backend_get_passphrase ()))
+    if (!g_paste_storage_passphrase_can_decrypt (storage_kind, settings, g_paste_storage_backend_get_passphrase ()))
     {
         g_warning ("The passphrase stored in the keyring does not unlock the history; asking for it");
         g_paste_storage_backend_set_passphrase (NULL);
@@ -342,6 +364,7 @@ typedef struct
 {
     GtkApplication *application;
     GPasteSettings *settings;
+    GPasteStorage   storage_kind; /* the encrypted flavour being unlocked */
     UnlockDoneFunc  done;
     gpointer        user_data;
 } UnlockPrompt;
@@ -355,7 +378,7 @@ on_unlock_reply (const gchar *passphrase,
     /* A wrong passphrase would load an empty history and let the next save
      * overwrite the real data, so never accept one that does not decrypt: ask
      * again instead. */
-    if (passphrase && !g_paste_file_backend_passphrase_can_decrypt (prompt->settings, passphrase))
+    if (passphrase && !g_paste_storage_passphrase_can_decrypt (prompt->storage_kind, prompt->settings, passphrase))
     {
         g_paste_storage_migration_prompt_passphrase (prompt->application, FALSE,
                                                      _("Wrong passphrase, please try again"),
@@ -383,6 +406,7 @@ on_unlock_reply (const gchar *passphrase,
 static void
 unlock_prompt (GtkApplication *application,
                GPasteSettings *settings,
+               GPasteStorage   storage_kind,
                UnlockDoneFunc  done,
                gpointer        user_data)
 {
@@ -390,6 +414,7 @@ unlock_prompt (GtkApplication *application,
 
     prompt->application = application;
     prompt->settings = settings;
+    prompt->storage_kind = storage_kind;
     prompt->done = done;
     prompt->user_data = user_data;
 
@@ -407,7 +432,7 @@ on_passphrase_set (const gchar *passphrase,
         return;
 
     g_paste_storage_backend_set_passphrase (passphrase);
-    apply_migration (self, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    apply_migration (self, backend_for_index (self, adw_combo_row_get_selected (self->backend_row)));
 }
 
 /* Once the source encrypted history is unlocked, apply the migration with the
@@ -435,7 +460,7 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
     /* Switching to encrypted storage needs a (new) passphrase to store with.
      * Keeping the existing encrypted backend does not: its passphrase is obtained
      * later through the daemon's normal unlock flow. */
-    if (chosen == G_PASTE_STORAGE_ENCRYPTED_FILE && chosen != self->current &&
+    if (g_paste_storage_is_encrypted (chosen) && chosen != self->current &&
         !g_paste_storage_backend_get_passphrase ())
     {
         g_paste_storage_migration_prompt_passphrase (self->application, TRUE, NULL, on_passphrase_set, self);
@@ -445,14 +470,14 @@ on_apply (GtkButton *button G_GNUC_UNUSED,
     /* Importing from (or deleting) an existing encrypted history needs its
      * passphrase to read or list it. Prefer one remembered in the keyring, and
      * only prompt when there is none or it has gone stale. */
-    if (self->current == G_PASTE_STORAGE_ENCRYPTED_FILE && !g_paste_storage_backend_get_passphrase () &&
+    if (g_paste_storage_is_encrypted (self->current) && !g_paste_storage_backend_get_passphrase () &&
         (adw_switch_row_get_active (self->import_row) || adw_switch_row_get_active (self->cleanup_row)))
     {
 #ifdef G_PASTE_ENABLE_LIBSECRET
-        if (!try_keyring_passphrase (self->settings))
+        if (!try_keyring_passphrase (self->current, self->settings))
 #endif
         {
-            unlock_prompt (self->application, self->settings, on_source_unlocked, self);
+            unlock_prompt (self->application, self->settings, self->current, on_source_unlocked, self);
             return;
         }
     }
@@ -559,6 +584,10 @@ g_paste_storage_migration_show (GtkApplication                 *application,
 #ifdef G_PASTE_ENABLE_SQLITE
     gtk_string_list_append (backends, _("Store the history in a database"));
     self->backends[self->n_backends++] = G_PASTE_STORAGE_SQLITE;
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    gtk_string_list_append (backends, _("Store the history in an encrypted database"));
+    self->backends[self->n_backends++] = G_PASTE_STORAGE_ENCRYPTED_SQLITE;
+#endif
 #endif
     gtk_string_list_append (backends, _("Don't store anything"));
     self->backends[self->n_backends++] = G_PASTE_STORAGE_NOOP;
@@ -952,7 +981,7 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* Only an encrypted history that is not already unlocked needs decrypting. */
-    if (g_paste_settings_get_storage_backend (settings) != G_PASTE_STORAGE_ENCRYPTED_FILE ||
+    if (!g_paste_storage_is_encrypted (g_paste_settings_get_storage_backend (settings)) ||
         g_paste_storage_backend_get_passphrase ())
         return FALSE;
 
@@ -960,7 +989,7 @@ g_paste_storage_decryption_needed (GPasteSettings *settings)
     /* A keyring passphrase that unlocks the history is applied here, so no prompt
      * (and, in gnome-shell, no helper) is needed: the caller can load straight
      * away with the passphrase now set in this process. */
-    if (try_keyring_passphrase (settings))
+    if (try_keyring_passphrase (g_paste_settings_get_storage_backend (settings), settings))
         return FALSE;
 #endif
 
@@ -989,7 +1018,7 @@ g_paste_storage_decryption_show (GtkApplication                 *application,
     g_return_if_fail (_G_PASTE_IS_SETTINGS (settings));
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    unlock_prompt (application, settings, done, user_data);
+    unlock_prompt (application, settings, g_paste_settings_get_storage_backend (settings), done, user_data);
 #else
     if (done)
         done (user_data);
